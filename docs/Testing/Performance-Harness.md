@@ -97,6 +97,30 @@ there — this is a structural limitation, not a cost decision.
 The execution-target evaluation behind this is recorded in
 [E2E Execution Target](E2E-Execution-Target).
 
+## The Drive Legs
+
+The jank and memory legs both `flutter drive` the same journey, but with
+opposite settings, and each is preceded by a full `flutter clean`.
+
+The clean is not optional. flutter does not rebuild when only the entry-point
+`--target` changes, so without it the drive legs run whatever the startup legs
+compiled (`lib/main.dart`) instead of the journey, and the driver never
+connects. Because a clean deletes `build/`, `capture_perf_run.sh` stages every
+artifact in a temporary directory and copies the finished set to `--output-dir`
+at the end.
+
+The **jank leg** runs with `--no-dds`. The `integration_test` binding's
+`traceAction` opens its own VM-service connection to record the timeline, and
+DDS in front of the service refuses it.
+
+The **memory leg** does the opposite. `--profile-memory` is a DDS feature, so
+the leg keeps DDS and passes `--dart-define=PERF_TRACE_TIMELINE=false`. The
+journey test reads that flag and walks the same steps without `traceAction`, so
+there is no second VM-service connection to conflict with DDS.
+
+`--no-dds` can occasionally lose a race resuming the app isolate, so each drive
+leg runs in a short retry loop.
+
 ## The `perf` Environment
 
 `scripts/ci/generate_env_file.sh` has a `perf` case that disables analytics,
