@@ -396,7 +396,8 @@ comprehensive_check() {
     # relies on lib/main.dart's default (devEnv), so we assert against that
     # default explicitly rather than leaving the pairing unenforced (CA-926).
     bash scripts/ci/assert_flavor_environment.sh fishfood dev
-    fvm flutter build apk --debug --flavor fishfood
+    fvm flutter build apk --debug --flavor fishfood --dart-define-from-file=config/flavors/fishfood.json
+
 
     # Check for APK in flavor-specific location
     APK_PATH="build/app/outputs/flutter-apk/app-fishfood-debug.apk"
