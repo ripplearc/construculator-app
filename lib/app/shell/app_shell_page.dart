@@ -65,16 +65,17 @@ class _AppShellPageState extends State<AppShellPage> {
 
     final bloc = context.read<AppShellBloc>();
     final state = bloc.state;
+    final activeTabs = widget.tabModuleManager.activeTabs;
     final currentNavigator =
-        _tabNavigatorKeys[state.selectedTabIndex].currentState;
+        _tabNavigatorKeys[activeTabs.indexOf(state.selectedTab)].currentState;
 
     if (currentNavigator != null && currentNavigator.canPop()) {
       currentNavigator.pop();
       return;
     }
 
-    if (state.selectedTabIndex != 0) {
-      bloc.add(const AppShellTabSelected(ShellTab.calculations));
+    if (state.selectedTab != activeTabs.first) {
+      bloc.add(AppShellTabSelected(activeTabs.first));
       return;
     }
 
@@ -138,8 +139,8 @@ class _AppShellPageState extends State<AppShellPage> {
             body: Stack(
               children: List.generate(activeTabs.length, (index) {
                 final tab = activeTabs[index];
-                final isLoaded = state.loadedTabIndexes.contains(index);
-                final isActive = state.selectedTabIndex == index;
+                final isLoaded = state.loadedTabs.contains(tab);
+                final isActive = state.selectedTab == tab;
                 return Offstage(
                   offstage: !isActive,
                   child: TickerMode(
@@ -164,7 +165,7 @@ class _AppShellPageState extends State<AppShellPage> {
                 tabs: activeTabs
                     .map((tab) => _bottomNavTabFor(context, tab))
                     .toList(growable: false),
-                selectedIndex: state.selectedTabIndex,
+                selectedIndex: activeTabs.indexOf(state.selectedTab),
                 onTabSelected: _handleTabTap,
                 onActionButtonPressed: state.calculatorEnabled
                     ? () => widget.router.pushNamed(calculatorBaseRoute)
