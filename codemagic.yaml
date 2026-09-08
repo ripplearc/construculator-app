@@ -402,6 +402,8 @@ workflows:
       - name: Build Android Debug
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/assert_flavor_environment.sh
+          bash scripts/ci/assert_flavor_environment.sh fishfood dev
           fvm flutter build apk \
             --flavor fishfood \
             --dart-define=ENVIRONMENT=dev
@@ -570,6 +572,8 @@ workflows:
       - name: Build Android Debug
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/assert_flavor_environment.sh
+          bash scripts/ci/assert_flavor_environment.sh fishfood dev
           fvm flutter build apk \
             --flavor fishfood \
             --dart-define=ENVIRONMENT=dev
@@ -703,6 +707,8 @@ workflows:
       - name: Build Android APK
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/assert_flavor_environment.sh
+          bash scripts/ci/assert_flavor_environment.sh dogfood qa
           fvm flutter build apk \
             --release \
             --flavor dogfood \
