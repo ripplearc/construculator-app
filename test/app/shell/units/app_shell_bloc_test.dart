@@ -56,7 +56,10 @@ void main() {
       build: () => Modular.get<AppShellBloc>(),
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        const AppShellState(
+          selectedTab: ShellTab.calculations,
+          loadedTabs: {ShellTab.calculations},
+        ),
       ],
       verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue),
     );
@@ -76,15 +79,22 @@ void main() {
 
     test('state copyWith preserves values when parameters are omitted', () {
       const state = AppShellState(
-        selectedTabIndex: 1,
-        loadedTabIndexes: {0, 1},
+        selectedTab: ShellTab.estimates,
+        loadedTabs: {ShellTab.calculations, ShellTab.estimates},
       );
 
       final copiedState = state.copyWith();
 
-      expect(copiedState.selectedTabIndex, 1);
-      expect(copiedState.loadedTabIndexes, {0, 1});
-      expect(copiedState.props, [1, {0, 1}, false]);
+      expect(copiedState.selectedTab, ShellTab.estimates);
+      expect(copiedState.loadedTabs, {
+        ShellTab.calculations,
+        ShellTab.estimates,
+      });
+      expect(copiedState.props, [
+        ShellTab.estimates,
+        {ShellTab.calculations, ShellTab.estimates},
+        false,
+      ]);
       expect(copiedState, equals(state));
     });
 
@@ -96,13 +106,13 @@ void main() {
         bloc.add(const AppShellInitialized());
       },
       expect: () => [
-        AppShellState(
-          selectedTabIndex: ShellTab.estimates.index,
-          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
+        const AppShellState(
+          selectedTab: ShellTab.estimates,
+          loadedTabs: {ShellTab.calculations, ShellTab.estimates},
         ),
-        AppShellState(
-          selectedTabIndex: ShellTab.calculations.index,
-          loadedTabIndexes: {ShellTab.calculations.index},
+        const AppShellState(
+          selectedTab: ShellTab.calculations,
+          loadedTabs: {ShellTab.calculations},
         ),
       ],
       verify: (bloc) {
@@ -117,9 +127,9 @@ void main() {
         bloc.add(const AppShellTabSelected(ShellTab.estimates));
       },
       expect: () => [
-        AppShellState(
-          selectedTabIndex: ShellTab.estimates.index,
-          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
+        const AppShellState(
+          selectedTab: ShellTab.estimates,
+          loadedTabs: {ShellTab.calculations, ShellTab.estimates},
         ),
       ],
       verify: (bloc) {
@@ -142,8 +152,8 @@ void main() {
       build: () => _buildBlocWithFlag(true),
       expect: () => [
         const AppShellState(
-          selectedTabIndex: 0,
-          loadedTabIndexes: {0},
+          selectedTab: ShellTab.calculations,
+          loadedTabs: {ShellTab.calculations},
           calculatorEnabled: true,
         ),
       ],
@@ -153,7 +163,10 @@ void main() {
       'emits calculatorEnabled: false (fails closed) when the flag is unset',
       build: () => _buildBlocWithFlag(null),
       expect: () => [
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        const AppShellState(
+          selectedTab: ShellTab.calculations,
+          loadedTabs: {ShellTab.calculations},
+        ),
       ],
     );
 
@@ -161,7 +174,10 @@ void main() {
       'emits calculatorEnabled: false when the flag resolves false',
       build: () => _buildBlocWithFlag(false),
       expect: () => [
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        const AppShellState(
+          selectedTab: ShellTab.calculations,
+          loadedTabs: {ShellTab.calculations},
+        ),
       ],
     );
   });

@@ -3,11 +3,11 @@ part of 'app_shell_bloc.dart';
 /// Represents the state of the app shell, including the currently selected tab
 /// and the set of tabs that have been loaded.
 class AppShellState extends Equatable {
-  /// The index of the currently active tab.
-  final int selectedTabIndex;
+  /// The currently active tab.
+  final ShellTab selectedTab;
 
-  /// The set of indices of all tabs that have been loaded.
-  final Set<int> loadedTabIndexes;
+  /// The set of all tabs that have been loaded.
+  final Set<ShellTab> loadedTabs;
 
   /// Whether the Calculator entry point should be reachable, driven by the
   /// `calculator-enabled` PostHog feature flag. Defaults to `false` (fails
@@ -15,27 +15,27 @@ class AppShellState extends Equatable {
   final bool calculatorEnabled;
 
   const AppShellState({
-    required this.selectedTabIndex,
-    required this.loadedTabIndexes,
+    required this.selectedTab,
+    required this.loadedTabs,
     this.calculatorEnabled = false,
   });
 
   AppShellState copyWith({
-    int? selectedTabIndex,
-    Set<int>? loadedTabIndexes,
+    ShellTab? selectedTab,
+    Set<ShellTab>? loadedTabs,
     bool? calculatorEnabled,
   }) {
     return AppShellState(
-      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
-      loadedTabIndexes: loadedTabIndexes ?? this.loadedTabIndexes,
+      selectedTab: selectedTab ?? this.selectedTab,
+      loadedTabs: loadedTabs ?? this.loadedTabs,
       calculatorEnabled: calculatorEnabled ?? this.calculatorEnabled,
     );
   }
 
   @override
   List<Object?> get props => [
-    selectedTabIndex,
-    loadedTabIndexes,
+    selectedTab,
+    loadedTabs,
     calculatorEnabled,
   ];
 }
