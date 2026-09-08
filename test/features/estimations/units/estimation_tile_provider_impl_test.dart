@@ -1,9 +1,9 @@
 // ignore_for_file: no_direct_instantiation
 
-import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
-import 'package:construculator/features/estimation/presentation/widgets/shared_estimation_tile.dart';
+import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_data.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/estimation/presentation/widgets/shared_estimation_tile.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,116 +1,82 @@
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+class DashboardPage extends StatelessWidget {
+  final AppRouter router;
 
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
-  String userInfo = '...';
-  final AppRouter _router = Modular.get<AppRouter>();
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    notifier.onUserProfileChanged.listen((event) {
-      if (event == null) {
-        final cred = authManager.getCurrentCredentials();
-        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
-      }
-    });
-    final cred = authManager.getCurrentCredentials();
-    if (cred.data?.id == null) {
-      _router.navigate(fullLoginRoute);
-    } else {
-      authManager
-          .getUserProfile(cred.data?.id ?? '')
-          .then((result) {
-            if (result.isSuccess && result.data != null) {
-              setState(() {
-                userInfo =
-                    '${result.data?.firstName} ${result.data?.lastName}!';
-              });
-            }
-          })
-          .catchError((error) {
-            if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile', 'Close');
-          });
-    }
-    super.initState();
-  }
+  const DashboardPage({super.key, required this.router});
 
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
-    final colors = context.colorTheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Construculator'),
-        centerTitle: true,
-        backgroundColor: colors.pageBackground,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(CoreSpacing.space6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.dashboard,
-                    size: CoreSpacing.space16,
-                    color: Theme.of(context).primaryColor,
+    return BlocConsumer<DashboardBloc, DashboardState>(
+      listenWhen: (_, curr) =>
+          curr is DashboardNavigateToLogin ||
+          curr is DashboardNavigateToCreateAccount,
+      listener: (context, state) {
+        if (state is DashboardNavigateToLogin) {
+          router.navigate(fullLoginRoute);
+        } else if (state is DashboardNavigateToCreateAccount) {
+          router.navigate(fullCreateAccountRoute, arguments: state.email);
+        }
+      },
+      buildWhen: (_, curr) => curr is DashboardUserLoaded,
+      builder: (context, state) {
+        final userDisplayName =
+            state is DashboardUserLoaded ? state.userDisplayName : '...';
+        return Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(CoreSpacing.space6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      CoreIconWidget(
+                        icon: CoreIcons.home,
+                        size: CoreSpacing.space16,
+                        color: Theme.of(context).primaryColor,
+                      ),
+                      const SizedBox(height: CoreSpacing.space6),
+                      Text(
+                        'Welcome back, $userDisplayName',
+                        textAlign: TextAlign.center,
+                        style: typography.headlineMediumSemiBold,
+                      ),
+                      const SizedBox(height: CoreSpacing.space2),
+                      Text(
+                        'You are now logged in to your account',
+                        textAlign: TextAlign.center,
+                        style: typography.bodyLargeRegular,
+                      ),
+                      const SizedBox(height: CoreSpacing.space8),
+                    ],
                   ),
-                  const SizedBox(height: CoreSpacing.space6),
-                  Text(
-                    'Welcome back, $userInfo',
-                    textAlign: TextAlign.center,
-                    style: typography.headlineMediumSemiBold,
+                ),
+                const SizedBox(height: CoreSpacing.space8),
+                RecentEstimationsSection(router: router),
+                const SizedBox(height: CoreSpacing.space8),
+                Center(
+                  child: CoreButton(
+                    onPressed: () => context
+                        .read<DashboardBloc>()
+                        .add(const DashboardLogoutRequested()),
+                    label: 'Logout',
+                    centerAlign: true,
                   ),
-                  const SizedBox(height: CoreSpacing.space2),
-                  Text(
-                    'You are now logged in to your account',
-                    textAlign: TextAlign.center,
-                    style: typography.bodyLargeRegular,
-                  ),
-                  const SizedBox(height: CoreSpacing.space8),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: CoreSpacing.space8),
-            const RecentEstimationsSection(),
-            const SizedBox(height: CoreSpacing.space8),
-            Center(
-              child: CoreButton(
-                onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
-                  _router.navigate(fullLoginRoute);
-                },
-                label: 'Logout',
-                centerAlign: true,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

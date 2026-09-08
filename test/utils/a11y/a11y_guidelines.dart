@@ -88,6 +88,11 @@ Future<void> expectMeetsTapTargetAndLabelGuidelines(
 /// the guideline check. Use it for form filling, scrolling, or other setup needed
 /// to make the target visible or interactive.
 ///
+/// [checkTextContrastInDarkTheme] controls whether the contrast check runs for
+/// the dark theme. Set to false when a known third-party component on the page
+/// has insufficient dark-mode contrast that is tracked in a separate ticket;
+/// this preserves the light-theme contrast check while skipping the dark one.
+///
 /// Example:
 /// ```dart
 /// await setupA11yTest(tester);
@@ -104,9 +109,11 @@ Future<void> expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
   bool checkTapTargetSize = true,
   bool checkLabeledTapTarget = true,
   bool checkTextContrast = true,
+  bool checkTextContrastInDarkTheme = true,
   Future<void> Function(WidgetTester tester)? setupAfterPump,
 }) async {
   for (final theme in kA11yTestThemes) {
+    final isDark = theme.brightness == Brightness.dark;
     final widget = buildWidget(theme);
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
@@ -118,7 +125,7 @@ Future<void> expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
       targetFinder,
       checkTapTargetSize: checkTapTargetSize,
       checkLabeledTapTarget: checkLabeledTapTarget,
-      checkTextContrast: checkTextContrast,
+      checkTextContrast: isDark ? (checkTextContrast && checkTextContrastInDarkTheme) : checkTextContrast,
     );
   }
 }

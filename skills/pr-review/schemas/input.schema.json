@@ -17,16 +17,30 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["RULE_4", "RULE_5", "RULE_10"]
+        "enum": [
+          "Digestible PR",
+          "Naming & Abstraction",
+          "Test Double Pattern",
+          "CoreUI Components",
+          "UI / Business Separation",
+          "Stream Lifecycle",
+          "Self-Documenting Code",
+          "Widget Test Finders",
+          "Unit Test Behavior",
+          "Localization",
+          "Mutation Testing",
+          "Accessibility",
+          "Sentry Logging"
+        ]
       },
-      "description": "Optional subset of POC rules to apply",
+      "description": "Optional subset of rules to apply, by name. Any active rule name is valid; \"Abstraction Naming\" and \"State Derivation\" are deprecated (covered by \"Naming & Abstraction\" and \"UI / Business Separation\"). When omitted, all applicable rules auto-run.",
       "default": null
     },
     "output_format": {
       "type": "string",
       "enum": ["json", "markdown", "both"],
       "description": "Preferred output format (json for agent automation, markdown for humans)",
-      "default": "json"
+      "default": "markdown"
     },
     "max_file_size_kb": {
       "type": "number",
@@ -34,6 +48,11 @@
       "maximum": 1000,
       "description": "Skip files larger than this size",
       "default": 100
+    },
+    "output_dir": {
+      "type": "string",
+      "description": "Output directory for the .md review file (repo-root-relative)",
+      "default": "reviews/"
     }
   },
   "additionalProperties": false

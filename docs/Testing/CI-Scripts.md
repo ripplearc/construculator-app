@@ -126,6 +126,8 @@ This keeps pre-checks faster while preserving quality on authored code.
 - The script looks for changed XML config files under:
    - `test/features/**/mutations/*.xml`
    - `test/libraries/**/mutations/*.xml`
+   - `test/app/**/mutations/*.xml`
+   - `test/tools/**/mutations/*.xml`
 - If no mutation config changed, mutation run is skipped with a success exit.
 - If configs changed, the script runs:
 
@@ -301,9 +303,11 @@ Example variables in `construculator_dev`:
 ENVIRONMENT=dev
 SENTRY_DSN=           (empty - Sentry disabled in dev)
 API_URL=http://localhost:8000/api
-SUPABASE_URL=http://localhost:54321
+SUPABASE_URL=http://localhost:24321
 DEBUG_MODE=true
-ANALYTICS_ENABLED=false
+ANALYTICS_ENABLED=true
+POSTHOG_API_KEY=...   (dev only for now)
+POSTHOG_HOST=...      (dev only for now)
 ```
 
 Example variables in `construculator_qa`:
@@ -314,8 +318,12 @@ SENTRY_DSN=https://...@sentry.io/...
 API_URL=https://qa-api.construculator.com/api
 SUPABASE_URL=https://qa-project.supabase.co
 DEBUG_MODE=false
-ANALYTICS_ENABLED=true
+ANALYTICS_ENABLED=false
+POSTHOG_API_KEY=      (empty - PostHog is dev-only for now)
+POSTHOG_HOST=         (empty - PostHog is dev-only for now)
 ```
+
+`ANALYTICS_ENABLED` is the single kill switch for analytics — it currently gates PostHog and is reused rather than adding a parallel `POSTHOG_ENABLED` flag. `POSTHOG_DEBUG` follows `DEBUG_MODE` per environment (`true` in dev, `false` in qa/prod) and doesn't need to be set explicitly in Codemagic; the script defaults it per `ENVIRONMENT`.
 
 ### Common environment variables
 
@@ -372,9 +380,23 @@ These paths are assumed by script and workflow logic. Tests outside these patter
 - `test/features/**/screenshots/*.dart`
 - `test/features/**/mutations/*.xml`
 - `test/libraries/**/units/*.dart`
+- `test/libraries/**/widgets/*.dart`
 - `test/libraries/**/mutations/*.xml`
+- `test/app/**/units/*.dart`
+- `test/app/**/widgets/*.dart`
+- `test/tools/**/units/*.dart`
+- `test/tools/**/widgets/*.dart`
 
 When adding new test suites, keep naming and placement consistent with existing conventions.
+
+`test/tools/**` holds tests for repository tooling that ships outside `lib/` —
+for example the performance report builder under `scripts/perf/`. Tooling tests
+live here rather than under `test/libraries/**` so they are not mistaken for
+tests of shipped application code.
+
+Performance journeys under `integration_test/` are deliberately **not** covered
+by these paths. They need a device and are run by the weekly performance
+harness, not by the per-PR unit test steps.
 
 ## Failure Modes and Troubleshooting
 

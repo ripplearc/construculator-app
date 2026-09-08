@@ -17,7 +17,6 @@ void main() {
     setUp(() {
       testUser = UserProfile(
         id: 'user-123',
-        credentialId: 'cred-123',
         firstName: 'John',
         lastName: 'Doe',
         professionalRole: 'Project Manager',

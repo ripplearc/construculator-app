@@ -12,47 +12,53 @@ void main() {
     await loadAppFonts();
   });
 
-  group('ErrorWidgetBuilder Screenshot Tests', () {
-    Future<void> pumpErrorWidget({
-      required WidgetTester tester,
-      String? error,
-      String? link,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Scaffold(
-            body: Center(
-              child: Builder(
-                builder: (context) {
-                  return buildErrorWidgetWithLink(
-                    context: context,
-                    errorText: error,
-                    linkText: link,
-                    onPressed: () {},
-                  );
-                },
-              ),
+  Future<void> pumpErrorWidget({
+    required WidgetTester tester,
+    required ThemeData theme,
+    String? error,
+    String? link,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: Scaffold(
+          body: Center(
+            child: Builder(
+              builder: (context) {
+                return buildErrorWidgetWithLink(
+                  context: context,
+                  errorText: error,
+                  linkText: link,
+                  onPressed: () {},
+                );
+              },
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  screenshotThemeGroups('ErrorWidgetBuilder Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders error only correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpErrorWidget(
         tester: tester,
         error: 'Email not found. Please ',
         link: 'register',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Center),
         matchesGoldenFile(
-          'goldens/error_widget_builder/${size.width}x${size.height}/error_widget_builder_error_only.png',
+          'goldens/error_widget_builder/${size.width}x${size.height}/error_widget_builder_error_only$suffix.png',
         ),
       );
     });
@@ -60,16 +66,18 @@ void main() {
     testWidgets('renders error with link correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpErrorWidget(
         tester: tester,
         error: 'Email ID already registered with us. Please ',
         link: 'login',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Center),
         matchesGoldenFile(
-          'goldens/error_widget_builder/${size.width}x${size.height}/error_widget_builder_error_with_link.png',
+          'goldens/error_widget_builder/${size.width}x${size.height}/error_widget_builder_error_with_link$suffix.png',
         ),
       );
     });

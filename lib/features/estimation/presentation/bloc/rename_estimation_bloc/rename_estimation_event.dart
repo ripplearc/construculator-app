@@ -29,14 +29,12 @@ class RenameEstimationTextChanged extends RenameEstimationEvent {
 class RenameEstimationRequested extends RenameEstimationEvent {
   final String estimationId;
   final String newName;
-  final String projectId;
 
   const RenameEstimationRequested({
     required this.estimationId,
     required this.newName,
-    required this.projectId,
   });
 
   @override
-  List<Object> get props => [estimationId, newName, projectId];
+  List<Object> get props => [estimationId, newName];
 }

@@ -9,6 +9,8 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -27,8 +29,10 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late CostEstimationRepository repository;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
     const String testProjectId = 'test-project-123';
-    const Duration streamDebounceWaitDuration = Duration(milliseconds: 500);
+    const String secondProjectId = 'test-project-456';
+    const Duration streamDebounceWaitDuration = Duration(milliseconds: 450);
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -39,6 +43,13 @@ void main() {
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostEstimationRepository>();
+
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
     });
 
     tearDownAll(() {
@@ -47,6 +58,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       bloc = Modular.get<CostEstimationListBloc>();
     });
 
@@ -99,9 +111,7 @@ void main() {
           seedEstimationTable([estimationMap1, estimationMap2]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -134,13 +144,8 @@ void main() {
           seedEstimationTable([]);
           return bloc;
         },
-        act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
-          // Wait for the empty state to ensure the async operation and debounce complete
-          await bloc.stream.firstWhere((s) => s is CostEstimationListEmpty);
-        },
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
+        wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListEmpty>(),
@@ -159,9 +164,7 @@ void main() {
           seedEstimationTable([estimationMap]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -185,9 +188,7 @@ void main() {
               SupabaseExceptionType.socket;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -199,7 +200,8 @@ void main() {
                   errorType: EstimationErrorType.connectionError,
                 ),
               )
-              .having((state) => state.estimates, 'empty estimates', isEmpty),
+              .having((state) => state.estimates, 'empty estimates', isEmpty)
+              .having((state) => state.hasMore, 'hasMore', isTrue),
         ],
       );
 
@@ -211,9 +213,7 @@ void main() {
               SupabaseExceptionType.type;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -223,7 +223,8 @@ void main() {
                 'failure',
                 EstimationFailure(errorType: EstimationErrorType.parsingError),
               )
-              .having((state) => state.estimates, 'empty estimates', isEmpty),
+              .having((state) => state.estimates, 'empty estimates', isEmpty)
+              .having((state) => state.hasMore, 'hasMore', isTrue),
         ],
       );
 
@@ -235,9 +236,7 @@ void main() {
               SupabaseExceptionType.timeout;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -247,12 +246,28 @@ void main() {
                 'failure',
                 EstimationFailure(errorType: EstimationErrorType.timeoutError),
               )
-              .having((state) => state.estimates, 'empty estimates', isEmpty),
+              .having((state) => state.estimates, 'empty estimates', isEmpty)
+              .having((state) => state.hasMore, 'hasMore', isTrue),
         ],
       );
     });
 
     group('Edge cases', () {
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit error with unexpected failure when start watching with null project id',
+        build: () {
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
+        expect: () => [
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates, 'estimates', isEmpty)
+              .having((s) => s.hasMore, 'hasMore', isTrue),
+        ],
+      );
+
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should retain existing estimations when stream emits a failure',
         build: () {
@@ -266,9 +281,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
@@ -291,6 +304,7 @@ void main() {
           isA<CostEstimationListError>()
               .having((e) => e.failure, 'failure', UnexpectedFailure())
               .having((e) => e.estimates.length, 'estimates length', 1)
+              .having((e) => e.hasMore, 'hasMore', isFalse)
               .having((e) => e.estimates, 'estimates', [
                 CostEstimateDto.fromJson(
                   buildEstimationMap(
@@ -301,6 +315,46 @@ void main() {
                   ),
                 ).toDomain(),
               ]),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit unexpected failure and keep loaded estimates when project id becomes null',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-prev-1',
+            projectId: testProjectId,
+            estimateName: 'Previous Estimation',
+            totalCost: 3000.0,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Previous Estimation',
+              ),
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having((s) => s.hasMore, 'hasMore', isFalse)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Previous Estimation',
+              ),
         ],
       );
     });
@@ -322,11 +376,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -376,11 +428,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -395,7 +445,7 @@ void main() {
         'should not load more when state is not CostEstimationListLoaded',
         build: () => bloc,
         act: (bloc) {
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         expect: () => [],
       );
@@ -416,16 +466,14 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
           fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
           fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
 
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -448,6 +496,7 @@ void main() {
                 'preserved estimates',
                 CostEstimationRepositoryImpl.defaultPageSize,
               )
+              .having((s) => s.hasMore, 'hasMore', isTrue)
               .having(
                 (s) => s.failure,
                 'failure',
@@ -471,12 +520,10 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -507,6 +554,47 @@ void main() {
               ),
         ],
       );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit unexpected failure with preserved estimates when load more is called with null project id',
+        build: () {
+          final allMaps = List.generate(
+            CostEstimationRepositoryImpl.defaultPageSize,
+            (i) => buildEstimationMap(
+              id: 'est-$i',
+              projectId: testProjectId,
+              estimateName: 'Estimation $i',
+              totalCost: (i + 1) * 1000.0,
+            ),
+          );
+          seedEstimationTable(allMaps);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          // Use reset (no stream event) so _onLoadMore runs while state is
+          // still Loaded with a null projectId — exercises the null guard
+          // at line 206 without a timing race against _onProjectUnavailable.
+          fakeCurrentProjectNotifier.reset(projectId: null);
+          bloc.add(const CostEstimationListLoadMore());
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.hasMore, 'hasMore', isTrue)
+              .having(
+                (s) => s.estimates.length,
+                'estimates length',
+                CostEstimationRepositoryImpl.defaultPageSize,
+              ),
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates, 'estimates', isNotEmpty)
+              .having((s) => s.hasMore, 'hasMore', isTrue),
+        ],
+      );
     });
 
     group('Refresh scenarios', () {
@@ -522,9 +610,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
           fakeSupabaseWrapper.clearTableData(
@@ -543,7 +629,7 @@ void main() {
             ),
           ]);
 
-          bloc.add(const CostEstimationListRefresh(projectId: testProjectId));
+          bloc.add(const CostEstimationListRefresh());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -569,10 +655,8 @@ void main() {
           return bloc;
         },
         act: (bloc) {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
-          bloc.add(const CostEstimationListRefresh(projectId: testProjectId));
+          bloc.add(const CostEstimationListStartWatching());
+          bloc.add(const CostEstimationListRefresh());
         },
         expect: () => [isA<CostEstimationListLoading>()],
         verify: (_) {
@@ -582,6 +666,30 @@ void main() {
           expect(calls, hasLength(0));
           fakeSupabaseWrapper.completer!.complete();
         },
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit unexpected failure when refresh is called with null project id',
+        build: () {
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+            estimateName: 'Some Estimation',
+            totalCost: 1000.0,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) {
+          bloc.add(const CostEstimationListRefresh());
+        },
+        expect: () => [
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates, 'estimates', isEmpty)
+              .having((s) => s.hasMore, 'hasMore', isTrue),
+        ],
       );
     });
 
@@ -595,16 +703,14 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListError);
           await repository.fetchInitialEstimations(testProjectId);
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
-          isA<CostEstimationListError>(),
+          isA<CostEstimationListError>().having((s) => s.hasMore, 'hasMore', isTrue),
         ],
       );
 
@@ -619,9 +725,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
           await repository.fetchInitialEstimations(testProjectId);
         },
@@ -635,6 +739,90 @@ void main() {
 
     group('Bloc lifecycle', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should not react to project changes after close',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+            estimateName: 'Project One Estimate',
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+
+          await bloc.close();
+
+          fakeCurrentProjectNotifier.setCurrentProjectId(secondProjectId);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Project One Estimate',
+              ),
+        ],
+        verify: (_) {
+          final calls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectPaginated',
+          );
+          expect(calls, hasLength(1));
+          expect(fakeCurrentProjectNotifier.projectIdChangedEvents, [
+            secondProjectId,
+          ]);
+        },
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should re-watch and refetch when current project id changes',
+        build: () {
+          seedEstimationTable([
+            buildEstimationMap(
+              id: 'est-project-1',
+              projectId: testProjectId,
+              estimateName: 'Project One Estimate',
+            ),
+            buildEstimationMap(
+              id: 'est-project-2',
+              projectId: secondProjectId,
+              estimateName: 'Project Two Estimate',
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          fakeCurrentProjectNotifier.setCurrentProjectId(secondProjectId);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'project 1 length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'project 1 estimate name',
+                'Project One Estimate',
+              ),
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'project 2 length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'project 2 estimate name',
+                'Project Two Estimate',
+              ),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should cancel stream subscription when bloc is fetched again',
         build: () {
           final estimationMap = buildEstimationMap(
@@ -645,13 +833,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [

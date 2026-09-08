@@ -23,6 +23,8 @@ custom_lint:
   rules:
     - prefer_fake_over_mock
     - forbid_forced_unwrapping
+    - feature_module_isolation
+    - forbid_modular_get_outside_module
     - no_optional_operators_in_tests
     - no_direct_instantiation
     - document_fake_parameters
@@ -36,14 +38,18 @@ custom_lint:
     - sealed_over_dynamic
     - avoid_static_colors
     - avoid_static_typography
-    - forbid_modular_get_outside_module: false # TODO: [CA-627] [Infra] Publish forbid_modular_get_outside_module linter rule and audit construculator-app violations https://ripplearc.youtrack.cloud/issue/CA-627/Infra-Publish-forbidmodulargetinbloc-linter-rule-and-audit-construculator-app-violations
     - document_enum: false # TODO: [CA-641] [Infra] Enable & Resolve document_enum Linter Violations https://ripplearc.youtrack.cloud/issue/CA-641/Infra-Enable-Resolve-documentenum-Linter-Violations
-    - feature_module_isolation: false # TODO: [CA-642] [Infra] Enforce Feature Module Isolation & Refactor Cross-Module Dependencies https://ripplearc.youtrack.cloud/issue/CA-642/Infra-Enforce-Feature-Module-Isolation-Refactor-Cross-Module-Dependencies
     - restrict_core_icon_data: false # TODO: [CA-633] [Lint] Scope restrict_core_icon_data rule in ripplearc-flutter-lint to fire only outside coreui https://ripplearc.youtrack.cloud/issue/CA-633/Lint-Scope-restrictcoreicondata-rule-in-ripplearc-flutter-lint-to-fire-only-outside-coreui
 
   no_direct_instantiation:
     ignored_base_classes:
         - 'State'
+    # Matches are global by class-name prefix, not scoped to any one file:
+    # allowlisting a vendor type here (e.g. PostHogConfig, Posthog,
+    # SentryFlutterOptions) lets ANY file construct it directly. The lint
+    # rule cannot enforce that only the designated wrapper (e.g.
+    # PosthogWrapperImpl) does so — that boundary is a code-review
+    # convention, not a guarantee from this rule.
     ast_type_prefixes:
         - 'Fake'
         - '_Fake'
@@ -53,9 +59,45 @@ custom_lint:
         - 'CancelableOperation'
         - 'AppLocalizationsEn'
         - 'Breadcrumb'
+        - 'SentryFlutterOptions'
+        - 'SentryId'
         - 'LogEvent'
         - 'AppLogFilter'
         - 'SentryUser'
+        - 'CrudEntry'
+        - 'PowerSyncCredentials'
+        - 'Posthog'
+        - 'PostHogConfig'
+        - 'PowerSyncDatabase'
+        # package:xml's parser entry point, used by the E2E report builder. It
+        # is a vendor type produced from a file on disk, not an injected
+        # collaborator, so the builder has no alternative to naming it.
+        - 'XmlDocument'
+        # JUnit result value objects built from a parsed report. They are
+        # constructed from data, not injected, so the E2E reporter has no
+        # alternative to instantiating them.
+        - 'AttemptResults'
+        - 'CaseAttempt'
+        # Trend-store value objects built from published run records. They are
+        # constructed from data, not injected, so the dashboard builder has no
+        # alternative to instantiating them.
+        - 'MetricSeries'
+        - 'SeriesPoint'
+        # The per-journey and per-suite groupings those series are collected
+        # into, and the per-CUJ rollup. Also computed from stored runs rather
+        # than injected.
+        - 'SystemHealthGroup'
+        - 'E2eGroup'
+        - 'CujSummary'
+        # Chart geometry derived from a series' own min/max. Private to the
+        # renderer and built by a factory from that data, so there is nothing
+        # to inject; '_Fake' above is the existing precedent for a private
+        # prefix in this list.
+        - '_Scale'
+        # flutter_driver value objects built from a recorded trace. They are
+        # constructed from data, not injected, so the perf driver has no
+        # alternative to instantiating them. Covers TimelineSummary too.
+        - 'Timeline'
 
 linter:
   # The lint rules applied to this project can be customized in the

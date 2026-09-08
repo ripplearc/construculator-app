@@ -17,7 +17,7 @@ void main() {
   group('User Model', () {
     group('empty factory', () {
       test('should create empty User with default values', () {
-        final user = User.empty();
+        final user = User.empty(createdAt: clock.now(), updatedAt: clock.now());
         expect(user.id, '');
         expect(user.credentialId, '');
         expect(user.email, '');
@@ -35,7 +35,7 @@ void main() {
       test('should create empty User with recent timestamps', () {
         final beforeCreation = clock.now();
 
-        final user = User.empty();
+        final user = User.empty(createdAt: clock.now(), updatedAt: clock.now());
 
         final afterCreation = clock.now();
 

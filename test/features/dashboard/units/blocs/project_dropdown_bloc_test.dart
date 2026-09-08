@@ -1,18 +1,41 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+
+// Minimal harness that provides ProjectDropdownBloc as a factory (i.add) so
+// blocTest can resolve a fresh instance per test via Modular.get without the
+// singleton lifecycle issue that addLazySingleton would cause.
+class _ProjectDropdownBlocTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _ProjectDropdownBlocTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    ProjectLibraryModule(appBootstrap),
+  ];
+
+  @override
+  void binds(Injector i) {
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+  }
+}
 
 void main() {
   group('ProjectDropdownBloc', () {
@@ -252,9 +275,9 @@ void main() {
           expect: () => [
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadFailure>().having(
-              (state) => state.message,
-              'message',
-              isNotEmpty,
+              (state) => state.failure,
+              'failure',
+              isA<ProjectFailure>(),
             ),
           ],
         );
@@ -495,14 +518,277 @@ void main() {
         ],
       );
     });
+
+    group('ProjectDropdownSearchChanged', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'filters visibleProjects by query while retaining the full projects list',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Material of building',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('material'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>()
+              .having((state) => state.searchQuery, 'searchQuery', 'material')
+              .having((state) => state.projects.length, 'projects.length', 2)
+              .having(
+                (state) => state.visibleProjects.length,
+                'visibleProjects.length',
+                1,
+              )
+              .having(
+                (state) => state.visibleProjects.first.id,
+                'visibleProjects.first.id',
+                'project-2',
+              ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'ignores search changes before projects have loaded',
+        build: () => Modular.get<ProjectDropdownBloc>(),
+        act: (bloc) => bloc.add(const ProjectDropdownSearchChanged('query')),
+        expect: () => <ProjectDropdownState>[],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'deduplication guard — identical consecutive queries emit only one state',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.searchQuery,
+            'searchQuery',
+            'my',
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'searchQuery is preserved when a project refresh arrives during LoadSuccess',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'my',
+          );
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project updated',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadSuccess &&
+                s.selectedProject!.projectName == 'My project updated',
+          );
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.searchQuery,
+            'searchQuery',
+            'my',
+          ),
+          isA<ProjectDropdownLoadSuccess>()
+              .having((s) => s.searchQuery, 'searchQuery', 'my')
+              .having(
+                (s) => s.selectedProject!.projectName,
+                'selectedProject.projectName',
+                'My project updated',
+              ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'case-insensitive match — MATERIAL matches Material of building',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Material of building',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('MATERIAL'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>()
+              .having(
+                (s) => s.visibleProjects.length,
+                'visibleProjects.length',
+                1,
+              )
+              .having(
+                (s) => s.visibleProjects.first.id,
+                'visibleProjects.first.id',
+                'project-2',
+              ),
+        ],
+      );
+    });
+
+    group('settingsAccessibleProjectIds', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'success state contains only projects granted view_project',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Denied',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-1', [
+            PermissionConstants.viewProject,
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-2', [
+            PermissionConstants.editProject,
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadSuccess ||
+                s is ProjectDropdownLoadFailure,
+          );
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.settingsAccessibleProjectIds,
+            'settingsAccessibleProjectIds',
+            {'project-1'},
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'cached failure state preserves settingsAccessibleProjectIds',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-1', [
+            PermissionConstants.viewProject,
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          // Make the next watch re-query throw so the stream errors and the
+          // bloc emits a cached failure.
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.socket;
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ]);
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.settingsAccessibleProjectIds,
+            'settingsAccessibleProjectIds',
+            {'project-1'},
+          ),
+          isA<ProjectDropdownLoadFailure>()
+              .having(
+                (s) => s.cachedProjects.length,
+                'cachedProjects.length',
+                1,
+              )
+              .having(
+                (s) => s.settingsAccessibleProjectIds,
+                'settingsAccessibleProjectIds',
+                {'project-1'},
+              ),
+        ],
+      );
+    });
   });
 }
 
-class _ProjectDropdownBlocTestModule extends Module {
-  final AppBootstrap bootstrap;
-
-  _ProjectDropdownBlocTestModule(this.bootstrap);
-
-  @override
-  List<Module> get imports => [ClockTestModule(), DashboardModule(bootstrap)];
-}

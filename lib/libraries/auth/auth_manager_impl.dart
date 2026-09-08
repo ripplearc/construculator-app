@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -19,17 +22,16 @@ class AuthManagerImpl implements AuthManager {
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
   final SentryWrapper _sentryWrapper;
+  final AnalyticsRepository _analyticsRepository;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
-    required SupabaseWrapper wrapper,
-    required AuthRepository authRepository,
-    required AuthNotifierController authNotifier,
-    required SentryWrapper sentryWrapper,
-  }) : _wrapper = wrapper,
-       _authRepository = authRepository,
-       _authNotifier = authNotifier,
-       _sentryWrapper = sentryWrapper {
+    required this._wrapper,
+    required this._authRepository,
+    required this._authNotifier,
+    required this._sentryWrapper,
+    required this._analyticsRepository,
+  }) {
     _initAuthListener();
   }
 
@@ -165,6 +167,13 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
+      await _analyticsRepository.identify(
+        userId: user.id,
+        properties: const AnalyticsUserProperties(),
+      );
 
       _logger.info('Login successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
@@ -201,6 +210,13 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
+      await _analyticsRepository.identify(
+        userId: user.id,
+        properties: const AnalyticsUserProperties(),
+      );
 
       _logger.info('Registration successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
@@ -273,6 +289,13 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
+      await _analyticsRepository.identify(
+        userId: user.id,
+        properties: const AnalyticsUserProperties(),
+      );
 
       _logger.info('OTP verification successful for: $address');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
@@ -329,6 +352,12 @@ class AuthManagerImpl implements AuthManager {
       await _wrapper.signOut();
 
       await _sentryWrapper.setUser(null);
+      unawaited(
+        _analyticsRepository.track(
+          const AnalyticsEvent(name: 'user_logged_out'),
+        ),
+      );
+      await _analyticsRepository.reset();
 
       _logger.info('Logout successful');
       return AuthResult.success(null);

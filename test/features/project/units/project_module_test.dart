@@ -44,7 +44,8 @@ void main() {
       final bloc = Modular.get<GetProjectBloc>();
 
       expect(notifier, isA<CurrentProjectNotifierImpl>());
-      expect((notifier as CurrentProjectNotifierImpl).currentProjectId, isNull);
+      // No project is selected on init; ProjectDropdownBloc sets it after loading.
+      expect(notifier.currentProjectId, isNull);
       expect(useCase, isA<GetProjectHeaderUseCase>());
       expect(bloc, isA<GetProjectBloc>());
 

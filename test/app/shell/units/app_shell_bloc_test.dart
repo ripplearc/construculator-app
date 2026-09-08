@@ -1,31 +1,37 @@
+// ignore_for_file: no_direct_instantiation
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 
-TabModuleManager _noOpLoader() {
-  final clock = FakeClockImpl();
-  return TabModuleManager(
-    FakeAppBootstrapFactory.create(
-      supabaseWrapper: FakeSupabaseWrapper(clock: clock),
-    ),
-    providers: {
-      for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
-    },
+AppShellBloc _buildBlocWithFlag(bool? calculatorEnabled) {
+  final featureFlagRepository = FakeFeatureFlagRepository();
+  if (calculatorEnabled != null) {
+    featureFlagRepository.flagOverrides['calculator-enabled'] =
+        calculatorEnabled;
+  }
+  final appBootstrap = FakeAppBootstrapFactory.create(
+    featureFlagRepository: featureFlagRepository,
+  );
+  return AppShellBloc(
+    moduleLoader: TabModuleManager(appBootstrap, providers: const {}),
+    featureFlagRepository: featureFlagRepository,
   );
 }
 
 void main() {
   late AppShellBloc bloc;
+  late TabModuleManager tabModuleManager;
 
   setUp(() {
-    Modular.init(_AppShellBlocTestModule());
+    Modular.init(ShellModule(FakeAppBootstrapFactory.create()));
+    tabModuleManager = Modular.get<TabModuleManager>();
     bloc = Modular.get<AppShellBloc>();
   });
 
@@ -35,20 +41,27 @@ void main() {
   });
 
   group('AppShellBloc', () {
-    test('initial state has tab 0 loaded', () {
-      expect(bloc.state.selectedTabIndex, 0);
-      expect(bloc.state.loadedTabIndexes, {0});
-    });
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculations tab loaded after AppShellInitialized',
+      build: () => Modular.get<AppShellBloc>(),
+      act: (b) => b.add(const AppShellInitialized()),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
+      verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue),
+    );
 
     test('events expose value equality through props', () {
       expect(
-        const AppShellTabSelected(2).props,
-        const AppShellTabSelected(2).props,
+        const AppShellTabSelected(ShellTab.estimates).props,
+        const AppShellTabSelected(ShellTab.estimates).props,
       );
       expect(
-        const AppShellTabSelected(2),
-        equals(const AppShellTabSelected(2)),
+        const AppShellTabSelected(ShellTab.estimates),
+        equals(const AppShellTabSelected(ShellTab.estimates)),
       );
+      expect(const AppShellInitialized().props, isEmpty);
+      expect(const AppShellInitialized(), equals(const AppShellInitialized()));
     });
 
     test('state copyWith preserves values when parameters are omitted', () {
@@ -61,39 +74,85 @@ void main() {
 
       expect(copiedState.selectedTabIndex, 1);
       expect(copiedState.loadedTabIndexes, {0, 1});
-      expect(copiedState.props, [
-        1,
-        {0, 1},
-      ]);
+      expect(copiedState.props, [1, {0, 1}, false]);
       expect(copiedState, equals(state));
     });
 
     blocTest<AppShellBloc, AppShellState>(
-      'updates selected tab and tracks lazy-loaded tabs',
-      build: () => Modular.get<AppShellBloc>(),
+      'processes AppShellTabSelected then AppShellInitialized: loads the selected tab, then initializes calculations',
+      build: () => bloc,
       act: (bloc) {
-        bloc.add(const AppShellTabSelected(1));
-        bloc.add(const AppShellTabSelected(3));
+        bloc.add(const AppShellTabSelected(ShellTab.estimates));
+        bloc.add(const AppShellInitialized());
       },
       expect: () => [
-        const AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1}),
-        const AppShellState(selectedTabIndex: 3, loadedTabIndexes: {0, 1, 3}),
+        AppShellState(
+          selectedTabIndex: ShellTab.estimates.index,
+          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
+        ),
+        AppShellState(
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.calculations.index},
+        ),
       ],
+      verify: (bloc) {
+        expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue);
+      },
+    );
+
+    blocTest<AppShellBloc, AppShellState>(
+      'updates selected tab and tracks lazy-loaded tabs',
+      build: () => bloc,
+      act: (bloc) {
+        bloc.add(const AppShellTabSelected(ShellTab.estimates));
+      },
+      expect: () => [
+        AppShellState(
+          selectedTabIndex: ShellTab.estimates.index,
+          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
+        ),
+      ],
+      verify: (bloc) {
+        expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue);
+        expect(tabModuleManager.isLoaded(ShellTab.estimates), isTrue);
+      },
     );
 
     blocTest<AppShellBloc, AppShellState>(
       'does not emit when selecting current tab',
-      build: () => Modular.get<AppShellBloc>(),
-      act: (bloc) => bloc.add(const AppShellTabSelected(0)),
+      build: () => bloc,
+      act: (bloc) => bloc.add(const AppShellTabSelected(ShellTab.calculations)),
       expect: () => <AppShellState>[],
     );
   });
-}
 
-class _AppShellBlocTestModule extends Module {
-  @override
-  void binds(Injector i) {
-    i.add<TabModuleManager>(_noOpLoader);
-    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
-  }
+  group('calculator-enabled flag', () {
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: true when the flag resolves true',
+      build: () => _buildBlocWithFlag(true),
+      expect: () => [
+        const AppShellState(
+          selectedTabIndex: 0,
+          loadedTabIndexes: {0},
+          calculatorEnabled: true,
+        ),
+      ],
+    );
+
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: false (fails closed) when the flag is unset',
+      build: () => _buildBlocWithFlag(null),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
+    );
+
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: false when the flag resolves false',
+      build: () => _buildBlocWithFlag(false),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
+    );
+  });
 }

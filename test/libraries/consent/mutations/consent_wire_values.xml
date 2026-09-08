@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT WIRE VALUES MUTATION TESTING -->
+    <!-- Targets: the ConsentType/ConsentAction wire mappings and
+         parseTimestampOrEpoch, shared by both consent DTOs. Critical path:
+         an unrecognised value must resolve to null rather than a guessed
+         type/action, and a guessed ConsentAction.accepted would read as
+         consent the user never gave. -->
+
+    <files>
+        <file>lib/libraries/consent/data/models/consent_wire_values.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: ConsentTypeWireValue.toJson returns the wrong wire value
+             for termsAndPrivacy -->
+        <regex pattern="ConsentType\.termsAndPrivacy =&gt; 'terms_and_privacy'," dotAll="true" id="consent_wire_values.consent_type.to_json.wrong_terms_value">
+            <mutation text="ConsentType.termsAndPrivacy =&gt; 'analytics',"/>
+        </regex>
+
+        <!-- RULE 2: ConsentTypeWireValue.toJson returns the wrong wire value
+             for analytics -->
+        <regex pattern="ConsentType\.analytics =&gt; 'analytics'," dotAll="true" id="consent_wire_values.consent_type.to_json.wrong_analytics_value">
+            <mutation text="ConsentType.analytics =&gt; 'terms_and_privacy',"/>
+        </regex>
+
+        <!-- RULE 3: ConsentTypeWireValue.fromJson defaults an unrecognised
+             value to a real type instead of null -->
+        <regex pattern="'analytics' =&gt; ConsentType\.analytics,\n    _ =&gt; null," dotAll="true" id="consent_wire_values.consent_type.from_json.default_instead_of_null">
+            <mutation text="'analytics' =&gt; ConsentType.analytics,\n    _ =&gt; ConsentType.termsAndPrivacy,"/>
+        </regex>
+
+        <!-- RULE 4: ConsentActionWireValue.toJson returns the wrong wire
+             value for accepted -->
+        <regex pattern="ConsentAction\.accepted =&gt; 'accepted'," dotAll="true" id="consent_wire_values.consent_action.to_json.wrong_accepted_value">
+            <mutation text="ConsentAction.accepted =&gt; 'withdrawn',"/>
+        </regex>
+
+        <!-- RULE 5: ConsentActionWireValue.toJson returns the wrong wire
+             value for withdrawn -->
+        <regex pattern="ConsentAction\.withdrawn =&gt; 'withdrawn'," dotAll="true" id="consent_wire_values.consent_action.to_json.wrong_withdrawn_value">
+            <mutation text="ConsentAction.withdrawn =&gt; 'accepted',"/>
+        </regex>
+
+        <!-- RULE 6: ConsentActionWireValue.fromJson defaults an unrecognised
+             value to accepted -- the outcome the class doc says must never
+             happen -->
+        <regex pattern="'withdrawn' =&gt; ConsentAction\.withdrawn,\n    _ =&gt; null," dotAll="true" id="consent_wire_values.consent_action.from_json.default_to_accepted">
+            <mutation text="'withdrawn' =&gt; ConsentAction.withdrawn,\n    _ =&gt; ConsentAction.accepted,"/>
+        </regex>
+
+        <!-- RULE 7: parseTimestampOrEpoch stops passing a DateTime through
+             unchanged -->
+        <regex pattern="if \(value is DateTime\) return value;" dotAll="true" id="consent_wire_values.parse_timestamp.skip_datetime_passthrough">
+            <mutation text="if (false) return value;"/>
+        </regex>
+
+        <!-- RULE 8: parseTimestampOrEpoch stops parsing a valid string -->
+        <regex pattern="if \(parsed != null\) return parsed;" dotAll="true" id="consent_wire_values.parse_timestamp.skip_string_parse">
+            <mutation text="if (false) return parsed;"/>
+        </regex>
+
+        <!-- RULE 9: parseTimestampOrEpoch's fallback drops the UTC flag --
+             the flag participates in equality via props, so a local epoch
+             would compare differently by machine -->
+        <regex pattern="DateTime\.fromMillisecondsSinceEpoch\(0, isUtc: true\);" dotAll="true" id="consent_wire_values.parse_timestamp.drop_utc_flag">
+            <mutation text="DateTime.fromMillisecondsSinceEpoch(0);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_wire_values" expected-return="0">flutter test test/libraries/consent/units/data/models/consent_wire_values_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

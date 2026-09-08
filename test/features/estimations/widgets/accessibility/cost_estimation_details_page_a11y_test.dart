@@ -42,6 +42,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late Clock clock;
   late AppBootstrap appBootstrap;
+  late AppLocalizations l10n;
 
   const testEstimationId = 'test-estimation-id';
   const testEstimationRoute = '$fullEstimationDetailsRoute/$testEstimationId';
@@ -57,6 +58,7 @@ void main() {
     );
     Modular.init(_CostEstimationDetailsPageA11yTestModule(appBootstrap));
     Modular.setInitialRoute(testEstimationRoute);
+    l10n = lookupAppLocalizations(const Locale('en'));
   });
 
   tearDownAll(() {
@@ -118,33 +120,7 @@ void main() {
   }
 
   group('CostEstimationDetailsPage – accessibility', () {
-    testWidgets(
-      'meets a11y text contrast for coming soon message in both themes',
-      (tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
-
-        await setupA11yTest(tester);
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        const comingSoonText =
-            'Cost estimation details will be available in a future update.';
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeApp(theme: theme),
-          find.text(comingSoonText),
-          checkTextContrast: false,
-          setupAfterPump: (t) async {
-            Modular.to.navigate(testEstimationRoute);
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
-
-    testWidgets('meets a11y text contrast for app bar title in both themes', (
+    testWidgets('a11y: back button has label and tap target in both themes', (
       tester,
     ) async {
       setUpAuthenticatedUser(
@@ -158,8 +134,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeApp(theme: theme),
-        find.text('Estimation Details'),
-        checkTextContrast: false,
+        find.bySemanticsLabel(l10n.backLabel),
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
           await t.pumpAndSettle();
@@ -167,28 +142,24 @@ void main() {
       );
     });
 
-    testWidgets(
-      'meets a11y text contrast for estimation ID text in both themes',
-      (tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
+    testWidgets('a11y: page passes in both themes', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
 
-        await setupA11yTest(tester);
-        await pumpAppAtRoute(tester, testEstimationRoute);
+      await setupA11yTest(tester);
+      await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeApp(theme: theme),
-          find.text('Estimation ID: $testEstimationId'),
-          checkTextContrast: false,
-          setupAfterPump: (t) async {
-            Modular.to.navigate(testEstimationRoute);
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeApp(theme: theme),
+        find.byKey(const Key('cost_estimation_details_tab_view')),
+        setupAfterPump: (t) async {
+          Modular.to.navigate(testEstimationRoute);
+          await t.pumpAndSettle();
+        },
+      );
+    });
   });
 }

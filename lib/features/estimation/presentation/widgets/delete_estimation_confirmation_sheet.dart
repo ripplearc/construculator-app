@@ -67,7 +67,7 @@ class _DeleteEstimationConfirmationSheetState
                 child: Center(
                   child: CoreIconWidget(
                     icon: CoreIcons.delete,
-                    size: 32,
+                    size: CoreIconSize.size24,
                     color: colorTheme.iconRed,
                   ),
                 ),

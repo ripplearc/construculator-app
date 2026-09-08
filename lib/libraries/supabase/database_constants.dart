@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Centralized database table and column name constants.
 ///
 /// This file contains all database table names and column names used across
@@ -13,16 +14,64 @@ class DatabaseConstants {
   // Table names
   static const String costEstimatesTable = 'cost_estimates';
   static const String costEstimationLogsTable = 'cost_estimate_logs';
+  static const String costItemsTable = 'cost_items';
   static const String projectsTable = 'projects';
   static const String projectMembersTable = 'project_members';
   static const String searchHistoryTable = 'search_history';
+  static const String tagsTable = 'tags';
+
+  /// View exposing exactly one row per consent type: the highest version whose
+  /// `effective_from` has passed.
+  ///
+  /// The database owns both rules — highest version wins, and a version dated
+  /// in the future is not yet in force — so a scheduled publication goes live
+  /// on its own without a client release. The client never selects the
+  /// underlying `consent_versions` table: working out which row is current is
+  /// not a decision it should be making.
+  static const String currentConsentVersionsView = 'current_consent_versions';
+
+  /// Table storing per-user project search history. Fully isolated from
+  /// [searchHistoryTable] (which serves Global Search) — neither feature reads
+  /// from nor writes to the other's table.
+  static const String projectSearchHistoryTable = 'project_search_history';
 
   // RPC function names
   static const String globalSearchRpcFunction = 'global_search';
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
 
+  /// The RPC that returns the project owners the caller can filter by.
+  ///
+  /// The backend scopes the result to owners (project creators) of projects
+  /// the authenticated caller can access; identity is derived from the
+  /// Supabase auth session JWT, so no explicit user id param is required.
+  static const String projectOwnersRpcFunction = 'get_project_owners';
+
+  /// RPC returning up to 10 personalized project-search suggestion terms for
+  /// the authenticated user. Backend enforces `user_id == auth.uid()` and
+  /// raises `42501` on mismatch.
+  static const String projectSearchSuggestionsRpcFunction =
+      'get_project_search_suggestions';
+
+  /// Parameter name for the `user_id` argument of
+  /// [projectSearchSuggestionsRpcFunction].
+  static const String projectSearchSuggestionsUserIdParam = 'user_id';
+
+  // RPC param values
+  /// The scope value passed to the [globalSearchRpcFunction] RPC to restrict
+  /// results to the dashboard context (projects, estimations, members).
+  static const String globalSearchDashboardScope = 'dashboard';
+
+  // global_search RPC defaults
+  /// Default maximum number of results returned by the
+  /// [globalSearchRpcFunction] RPC.
+  static const int globalSearchDefaultLimit = 20;
+
+  /// Default result offset for the [globalSearchRpcFunction] RPC (zero-based).
+  static const int globalSearchDefaultOffset = 0;
+
   // Column names
   static const String idColumn = 'id';
+  static const String nameColumn = 'name';
   static const String projectIdColumn = 'project_id';
   static const String userIdColumn = 'user_id';
   static const String creatorUserIdColumn = 'creator_user_id';
@@ -50,6 +99,16 @@ class DatabaseConstants {
   static const String searchHistoryUpsertConflictColumns =
       '$userIdColumn,$searchTermColumn,$scopeColumn';
 
+  /// Unique constraint columns for [projectSearchHistoryTable] upsert.
+  /// Used with [SupabaseWrapper.upsert] onConflict parameter.
+  static const String projectSearchHistoryUpsertConflictColumns =
+      '$userIdColumn,$searchTermColumn';
+
+  /// Maximum number of recent project-search entries returned by
+  /// [ProjectSearchDataSource.getRecentProjectSearches]. Rows are bounded at
+  /// the DB level via the `limit` parameter on [SupabaseWrapper.selectMatch].
+  static const int recentProjectSearchesMaxResults = 50;
+
   // User profile columns (id field uses the shared idColumn above)
   static const String credentialIdColumn = 'credential_id';
   static const String firstNameColumn = 'first_name';
@@ -63,4 +122,18 @@ class DatabaseConstants {
   static const String userColumn = 'user';
   static const String activityDetailsColumn = 'activity_details';
   static const String loggedAtColumn = 'logged_at';
+
+  // Cost Items columns
+  static const String itemTypeColumn = 'item_type';
+
+  // Consent columns (id and user_id use the shared columns above; these
+  // tables timestamp with published_at and recorded_at, not created_at)
+  static const String consentTypeColumn = 'consent_type';
+  static const String versionColumn = 'version';
+  static const String documentUrlColumn = 'document_url';
+  static const String publishedAtColumn = 'published_at';
+  static const String actionColumn = 'action';
+  static const String recordedAtColumn = 'recorded_at';
+  static const String appVersionColumn = 'app_version';
+  static const String platformColumn = 'platform';
 }

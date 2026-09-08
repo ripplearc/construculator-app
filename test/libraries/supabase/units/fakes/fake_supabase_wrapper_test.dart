@@ -417,6 +417,29 @@ void main() {
         expect(user, isNull);
       });
 
+      test('currentSession returns null when no user is signed in', () {
+        expect(fakeWrapper.currentSession, isNull);
+      });
+
+      test(
+        'currentSession returns a FakeSession with correct tokens after sign-in',
+        () async {
+          await fakeWrapper.signInWithPassword(
+            email: 'session@example.com',
+            password: 'password',
+          );
+
+          final session = fakeWrapper.currentSession;
+          expect(session, isA<FakeSession>());
+          expect(session!.user.email, equals('session@example.com'));
+          expect(
+            session.accessToken,
+            equals('fake-access-token-${fakeWrapper.currentUser!.id}'),
+          );
+          expect(session.refreshToken, equals('fake-refresh-token'));
+        },
+      );
+
       test('isAuthenticated reflects the current sign-in status', () async {
         // Initially not authenticated
         expect(
@@ -1258,6 +1281,7 @@ void main() {
             table: 'items',
             columns: 'id,status',
             filters: {'project_id': 'p1', 'status': 'active'},
+            limit: 3,
           );
 
           final calls = fakeWrapper.getMethodCallsFor('selectMatch');
@@ -1269,6 +1293,106 @@ void main() {
             call['filters'],
             equals({'project_id': 'p1', 'status': 'active'}),
           );
+          expect(call['limit'], equals(3));
+        });
+
+        test(
+          'omits orderBy key from recorded call when orderBy is null',
+          () async {
+            fakeWrapper.addTableData('items', []);
+
+            await fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+
+            final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+            expect(
+              call.containsKey('orderBy'),
+              isFalse,
+              reason:
+                  'orderBy must not appear in the recorded call when omitted',
+            );
+          },
+        );
+
+        test('omits limit key from recorded call when limit is null', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(
+            call.containsKey('limit'),
+            isFalse,
+            reason: 'limit must not appear in the recorded call when omitted',
+          );
+        });
+
+        test('records retry as true by default', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(call['retry'], isTrue);
+        });
+
+        test('records retry as false when passed', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+            retry: false,
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(call['retry'], isFalse);
+        });
+
+        test('truncates matching rows to limit after ordering', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'rank': 3},
+            {'id': '2', 'project_id': 'p1', 'rank': 1},
+            {'id': '3', 'project_id': 'p1', 'rank': 2},
+            {'id': '4', 'project_id': 'p2', 'rank': 0},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+            orderBy: 'rank',
+            limit: 2,
+          );
+
+          expect(result, hasLength(2));
+          expect(
+            result.map((row) => row['id']),
+            equals(['2', '3']),
+            reason: 'Limit must apply to the ordered rows, not insertion order',
+          );
+        });
+
+        test('returns all matching rows when limit is null', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1'},
+            {'id': '2', 'project_id': 'p1'},
+            {'id': '3', 'project_id': 'p1'},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          expect(result, hasLength(3));
         });
 
         test('records call before delay completes', () async {
@@ -1538,6 +1662,31 @@ void main() {
                 'message',
                 contains('Upsert failed'),
               ),
+            ),
+          );
+        });
+
+        test('throws PostgrestException with 42501 on RLS denial', () async {
+          fakeWrapper.shouldThrowOnUpsert = true;
+          fakeWrapper.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+          fakeWrapper.upsertErrorMessage =
+              'permission denied for table projects';
+
+          await expectLater(
+            () async => fakeWrapper.upsert(
+              table: 'projects',
+              data: {'id': 'p1'},
+              onConflict: 'id',
+            ),
+            throwsA(
+              isA<supabase.PostgrestException>()
+                  .having((e) => e.code, 'code', '42501')
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    'permission denied for table projects',
+                  ),
             ),
           );
         });

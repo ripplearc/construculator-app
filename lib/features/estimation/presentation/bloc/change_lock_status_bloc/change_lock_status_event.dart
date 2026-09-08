@@ -18,18 +18,15 @@ abstract class ChangeLockStatusEvent extends Equatable {
 /// Parameters:
 /// * [estimationId] - The unique identifier of the estimation whose lock status will be changed
 /// * [isLocked] - The new lock status to be applied (true for locked, false for unlocked)
-/// * [projectId] - The unique identifier of the project containing the estimation
 class ChangeLockStatusRequested extends ChangeLockStatusEvent {
   final String estimationId;
   final bool isLocked;
-  final String projectId;
 
   const ChangeLockStatusRequested({
     required this.estimationId,
     required this.isLocked,
-    required this.projectId,
   });
 
   @override
-  List<Object> get props => [estimationId, isLocked, projectId];
+  List<Object> get props => [estimationId, isLocked];
 }

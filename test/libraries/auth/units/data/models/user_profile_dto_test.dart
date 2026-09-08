@@ -24,7 +24,6 @@ void main() {
 
     const testEntity = UserProfile(
       id: 'user-123',
-      credentialId: 'cred-456',
       firstName: 'John',
       lastName: 'Doe',
       professionalRole: 'Project Manager',
@@ -132,10 +131,18 @@ void main() {
     });
 
     group('fromDomain', () {
-      test('converts domain entity to DTO', () {
+      test('converts domain entity to DTO without credentialId', () {
+        const expectedDto = UserProfileDto(
+          id: 'user-123',
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Project Manager',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+        );
+
         final dto = UserProfileDto.fromDomain(testEntity);
 
-        expect(dto, testDto);
+        expect(dto, expectedDto);
       });
 
       test('preserves null optional fields', () {
@@ -171,7 +178,9 @@ void main() {
         final dto = UserProfileDto.fromDomain(testEntity);
         final json = dto.toJson();
 
-        expect(json, testJson);
+        final expectedJson = Map<String, dynamic>.from(testJson)
+          ..['credential_id'] = null;
+        expect(json, expectedJson);
       });
 
       test('JSON -> DTO -> JSON produces identical result', () {

@@ -44,13 +44,23 @@ void main() {
       'logged_at': '2025-02-25T14:30:00.000Z',
     };
 
+    // fromDomain cannot restore credential_id since UserProfile does not
+    // carry it; expectations for entity-sourced DTOs use this user JSON.
+    final fromDomainUserJson = {
+      'id': 'user-123',
+      'credential_id': null,
+      'first_name': 'John',
+      'last_name': 'Doe',
+      'professional_role': 'Project Manager',
+      'profile_photo_url': 'https://example.com/photo.jpg',
+    };
+
     final testEntity = CostEstimationLog(
       id: 'log-123',
       estimateId: 'estimate-456',
       activity: CostEstimationActivityType.costEstimationRenamed,
       user: const UserProfile(
         id: 'user-123',
-        credentialId: 'cred-456',
         firstName: 'John',
         lastName: 'Doe',
         professionalRole: 'Project Manager',
@@ -194,7 +204,6 @@ void main() {
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
-          credentialId: 'cred-456',
           profilePhotoUrl: 'https://example.com/photo.jpg',
         );
         expect(entity.user, expectedUser);
@@ -217,9 +226,21 @@ void main() {
 
     group('fromDomain', () {
       test('converts domain entity to DTO', () {
+        final expectedDto = CostEstimationLogDto(
+          id: 'log-123',
+          estimateId: 'estimate-456',
+          activity: 'cost_estimation_renamed',
+          user: fromDomainUserJson,
+          activityDetails: const {
+            'oldName': 'Old Estimation',
+            'newName': 'New Estimation',
+          },
+          loggedAt: '2025-02-25T14:30:00.000Z',
+        );
+
         final dto = CostEstimationLogDto.fromDomain(testEntity);
 
-        expect(dto, testDto);
+        expect(dto, expectedDto);
       });
 
       test('converts activity enum to string', () {
@@ -236,7 +257,7 @@ void main() {
           id: 'log-999',
           estimateId: 'estimate-123',
           activity: 'task_assigned',
-          user: testDto.user,
+          user: fromDomainUserJson,
           activityDetails: const {},
           loggedAt: DateTime(2025, 2, 25).toIso8601String(),
         );
@@ -250,15 +271,7 @@ void main() {
         final dto = CostEstimationLogDto.fromDomain(testEntity);
 
         expect(dto.user, isA<Map<String, dynamic>>());
-        final expectedUserJson = {
-          'id': 'user-123',
-          'credential_id': 'cred-456',
-          'first_name': 'John',
-          'last_name': 'Doe',
-          'professional_role': 'Project Manager',
-          'profile_photo_url': 'https://example.com/photo.jpg',
-        };
-        expect(dto.user, expectedUserJson);
+        expect(dto.user, fromDomainUserJson);
       });
     });
 
@@ -274,7 +287,9 @@ void main() {
         final dto = CostEstimationLogDto.fromDomain(testEntity);
         final json = dto.toJson();
 
-        expect(json, testJson);
+        final expectedJson = Map<String, dynamic>.from(testJson)
+          ..['user'] = fromDomainUserJson;
+        expect(json, expectedJson);
       });
 
       test('JSON -> DTO -> JSON produces identical result', () {

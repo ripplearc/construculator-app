@@ -15,12 +15,6 @@ class UserProfile extends Equatable {
   /// Unique identifier for the user
   final String id;
 
-  // TODO: [CA-614] credentialId is an internal Supabase Auth identifier (used in
-  // RLS/JWT) with no domain meaning. Strip from UserProfile and UserProfileDto.toDomain()
-  // once all 31 consumers are audited. Do not read or surface this field outside the
-  // auth library. https://ripplearc.youtrack.cloud/issue/CA-614
-  final String? credentialId;
-
   /// User's first name
   final String firstName;
 
@@ -35,7 +29,6 @@ class UserProfile extends Equatable {
 
   const UserProfile({
     required this.id,
-    this.credentialId,
     required this.firstName,
     required this.lastName,
     required this.professionalRole,
@@ -55,7 +48,6 @@ class UserProfile extends Equatable {
   /// Creates a copy of this UserProfile with the given fields replaced
   UserProfile copyWith({
     String? id,
-    String? credentialId,
     String? firstName,
     String? lastName,
     String? professionalRole,
@@ -63,7 +55,6 @@ class UserProfile extends Equatable {
   }) {
     return UserProfile(
       id: id ?? this.id,
-      credentialId: credentialId ?? this.credentialId,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       professionalRole: professionalRole ?? this.professionalRole,
@@ -74,7 +65,6 @@ class UserProfile extends Equatable {
   @override
   List<Object?> get props => [
     id,
-    credentialId,
     firstName,
     lastName,
     professionalRole,

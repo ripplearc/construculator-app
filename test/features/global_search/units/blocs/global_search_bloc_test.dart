@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
-
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -13,6 +14,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
@@ -51,6 +53,16 @@ Map<String, dynamic> _fakeProjectData({String? id, String? projectName}) {
   };
 }
 
+Future<void> _untilHandlerRuns(
+  bool Function() condition, {
+  int maxTurns = 100,
+}) async {
+  for (var turn = 0; turn < maxTurns; turn++) {
+    if (condition()) return;
+    await Future<void>.microtask(() {});
+  }
+}
+
 Map<String, dynamic> _fakeSearchHistoryData({
   required String userId,
   required String searchTerm,
@@ -64,6 +76,35 @@ Map<String, dynamic> _fakeSearchHistoryData({
     DatabaseConstants.searchCountColumn: 1,
     DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
   };
+}
+
+// Builds a global_search RPC response map from the given per-domain rows.
+Map<String, dynamic> _globalSearchResponse({
+  List<Map<String, dynamic>> projects = const [],
+  List<Map<String, dynamic>> estimations = const [],
+  List<Map<String, dynamic>> members = const [],
+}) {
+  return {
+    'projects': projects,
+    'estimations': estimations,
+    'members': members,
+  };
+}
+
+// Builds [count] estimation rows with sequential ids starting at
+// [startIndex], so successive pages carry distinct, ordered ids.
+List<Map<String, dynamic>> _fakeEstimationPage(
+  int count, {
+  int startIndex = 0,
+}) {
+  return List.generate(
+    count,
+    (i) => estimation_factory.EstimationTestDataMapFactory
+        .createFakeEstimationData(
+      id: 'est-${startIndex + i}',
+      estimateName: 'Estimation ${startIndex + i}',
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +135,40 @@ void main() {
     setUp(() {
       fakeSupabase.reset();
     });
+
+    void seedTags(List<String> names) {
+      fakeSupabase.addTableData(
+        DatabaseConstants.tagsTable,
+        names
+            .map(
+              (name) => <String, dynamic>{
+                DatabaseConstants.idColumn: 'tag-$name',
+                DatabaseConstants.nameColumn: name,
+              },
+            )
+            .toList(),
+      );
+    }
+
+    // Seeds the project owners RPC with one owner per (id, firstName) pair,
+    // preserving order so tests can assert the bloc keeps RPC ordering.
+    void seedOwners(List<({String id, String firstName})> owners) {
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.projectOwnersRpcFunction,
+        owners
+            .map(
+              (owner) => <String, dynamic>{
+                DatabaseConstants.idColumn: owner.id,
+                DatabaseConstants.credentialIdColumn: null,
+                DatabaseConstants.firstNameColumn: owner.firstName,
+                DatabaseConstants.lastNameColumn: 'Doe',
+                DatabaseConstants.professionalRoleColumn: 'Engineer',
+                DatabaseConstants.profilePhotoUrlColumn: null,
+              },
+            )
+            .toList(),
+      );
+    }
 
     test(
       'initial state is GlobalSearchInitial (cold start, no history yet)',
@@ -143,7 +218,7 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchLoadFailure when Supabase throws on getRecentSearches',
+        'emits GlobalSearchRecentsLoadFailure when Supabase throws on getRecentSearches',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -158,7 +233,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchStarted()),
         expect: () => [
-          isA<GlobalSearchLoadFailure>().having(
+          isA<GlobalSearchRecentsLoadFailure>().having(
             (s) => s.failure,
             'failure',
             SearchFailure(errorType: SearchErrorType.timeoutError),
@@ -214,20 +289,21 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
           bloc.add(const GlobalSearchQueryUpdated(query: 'stale-query'));
-          // Await the debounced GlobalSearchReady emission before re-opening
-          // the screen, so the state sequence is deterministic.
-          await bloc.stream.first;
+          await bloc.stream.firstWhere((s) =>
+              s is GlobalSearchReady &&
+              s.query == 'stale-query' &&
+              !s.suggestionsLoading);
           bloc.add(const GlobalSearchStarted());
         },
         wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchReady(recentSearches: [], query: 'stale-query'),
           isA<GlobalSearchReady>().having(
             (s) => s.query,
             'query is reset to empty on fresh start',
             isEmpty,
           ),
         ],
+        skip: 2,
       );
     });
 
@@ -280,6 +356,76 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchEmptyQuery and skips search when query is empty',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: '')),
+        expect: () => [const GlobalSearchEmptyQuery()],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchEmptyQuery and skips search when query is whitespace only',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: '   ')),
+        expect: () => [const GlobalSearchEmptyQuery()],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves the previous query when an empty query is submitted',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Establish a valid current query first.
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadEmpty);
+          // Submit an invalid query; the early-return guard must fire before
+          // the bloc's current query is mutated.
+          bloc.add(const GlobalSearchPerformed(query: '   '));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchEmptyQuery);
+          // GlobalSearchTagFiltersApplied echoes the bloc's current query in
+          // GlobalSearchReady, exposing any mutation from the empty submission.
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          // The results surface was still active (the empty submission
+          // returned early without deactivating it), so applying the tag
+          // re-runs the preserved 'foundation' query (CA-901).
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadEmpty);
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
+          const GlobalSearchEmptyQuery(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.query,
+            'query unchanged by the empty submission',
+            'foundation',
+          ),
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'trims surrounding whitespace before searching and reports trimmed query',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const GlobalSearchPerformed(query: '  foundation  ')),
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'emits [GlobalSearchLoadInProgress, GlobalSearchLoadFailure] when Supabase throws on search',
         setUp: () {
           fakeSupabase.shouldThrowOnRpc = true;
@@ -307,11 +453,13 @@ void main() {
         act: (bloc) => bloc.add(const GlobalSearchPerformed(query: 'test')),
         expect: () => [
           const GlobalSearchLoadInProgress(query: 'test'),
-          isA<GlobalSearchLoadFailure>().having(
-            (s) => s.failure,
-            'failure',
-            SearchFailure(errorType: SearchErrorType.timeoutError),
-          ),
+          isA<GlobalSearchLoadFailure>()
+              .having(
+                (s) => s.failure,
+                'failure',
+                SearchFailure(errorType: SearchErrorType.timeoutError),
+              )
+              .having((s) => s.query, 'query', 'test'),
         ],
       );
 
@@ -357,7 +505,8 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'uses supplied scope — emits correct states when scope is estimation',
+        'uses the selected scope — forwards estimation to the RPC after a '
+        'GlobalSearchScopeChanged',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -366,6 +515,13 @@ void main() {
               createdAt: fakeClock.now().toIso8601String(),
             ),
           );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(
+              userId: _testUserId,
+              searchTerm: 'girder',
+              scope: SearchScope.estimation,
+            ),
+          ]);
           fakeSupabase.setRpcResponse(
             DatabaseConstants.globalSearchRpcFunction,
             {
@@ -376,13 +532,30 @@ void main() {
           );
         },
         build: () => Modular.get<GlobalSearchBloc>(),
-        act: (bloc) => bloc.add(
-          const GlobalSearchPerformed(
-            query: 'steel',
-            scope: SearchScope.estimation,
-          ),
-        ),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          // Wait for the scope's history reload to land before performing, so
+          // its Ready emission cannot interleave with the search states.
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
         expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches',
+            ['girder'],
+          ),
           const GlobalSearchLoadInProgress(query: 'steel'),
           isA<GlobalSearchLoadSuccess>(),
         ],
@@ -397,7 +570,7 @@ void main() {
           expect(
             rpcParams['scope'],
             equals(SearchScope.estimation.name),
-            reason: 'scope must be forwarded to the RPC',
+            reason: 'the bloc-selected scope must be forwarded to the RPC',
           );
         },
       );
@@ -479,22 +652,918 @@ void main() {
           );
         },
       );
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards the alphabetically first selected tag to the RPC when multiple tags are active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Apply two tags; 'Roofing' sorts before 'Wall' alphabetically.
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Wall', 'Roofing'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags applied',
+            containsAll(['Wall', 'Roofing']),
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_tag'],
+            equals('Roofing'),
+            reason: 'must forward the alphabetically first tag, not an arbitrary Set element',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards all selected owner ids to the RPC sorted alphabetically when multiple owners are active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Apply two owners; 'owner-1' sorts before 'owner-2'.
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(
+              ownerIds: {'owner-2', 'owner-1'},
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners applied',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams =
+              globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_owners'],
+            equals(['owner-1', 'owner-2']),
+            reason:
+                'must forward every selected owner id, sorted so equal '
+                'selections always produce the same RPC payload',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards a null owner filter to the RPC when no owners are selected',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: 'steel')),
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams =
+              globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_owners'],
+            isNull,
+            reason:
+                'an empty owner selection must be forwarded as null, the '
+                'backend contract for "no owner filter"',
+          );
+        },
+      );
+    });
+
+    group('GlobalSearchLoadMoreRequested', () {
+      // Runs a first search returning a full page of 20 estimations and
+      // waits for its results surface, so each test starts from a
+      // paginatable LoadSuccess.
+      Future<void> performFullFirstPage(GlobalSearchBloc bloc) async {
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.globalSearchRpcFunction,
+          _globalSearchResponse(estimations: _fakeEstimationPage(20)),
+        );
+        bloc.add(const GlobalSearchPerformed(query: 'wall'));
+        await bloc.stream.firstWhere(
+          (state) => state is GlobalSearchLoadSuccess,
+        );
+      }
+
+      // Returns the params of every global_search RPC call made so far.
+      List<Map<String, dynamic>> globalSearchRpcParams() {
+        return fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            )
+            .map((call) => call['params'] as Map<String, dynamic>)
+            .toList();
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'appends the next page and advances the estimations offset',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(5, startIndex: 20),
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 25,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>()
+              .having((s) => s.results.estimations, 'first page', hasLength(20))
+              .having((s) => s.hasMoreEstimations, 'hasMore', isTrue)
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'loaded results stay visible while the page loads',
+                hasLength(20),
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.inProgress,
+              ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'appended results',
+                hasLength(25),
+              )
+              .having(
+                (s) => s.hasMoreEstimations,
+                'short page exhausts the domain',
+                isFalse,
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(paramsPerCall, hasLength(2));
+          expect(
+            paramsPerCall.first['estimations_offset'],
+            0,
+            reason: 'a fresh search always starts at the first page',
+          );
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            20,
+            reason: 'the page fetch must advance the offset by the page size',
+          );
+          expect(paramsPerCall.last['limit'], 20);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'deduplicates rows that shifted pages server-side and preserves order',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: [
+                // est-19 already rendered from the first page: a row pushed
+                // onto page two by an insert between the fetches.
+                ..._fakeEstimationPage(1, startIndex: 19),
+                ..._fakeEstimationPage(2, startIndex: 20),
+              ],
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length > 20,
+          );
+        },
+        verify: (bloc) {
+          final state = bloc.state as GlobalSearchLoadSuccess;
+          final ids = state.results.estimations.map((e) => e.id).toList();
+          expect(
+            ids,
+            List.generate(22, (i) => 'est-$i'),
+            reason:
+                'the duplicated est-19 must appear once, and appended rows '
+                'must keep their page order after the first page',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'does not fetch once the estimations domain is exhausted',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.hasMoreEstimations,
+                'a short first page exhausts the domain',
+                isFalse,
+              ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(1),
+            reason: 'an exhausted domain must not trigger further fetches',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched while a page fetch is in flight',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(2, startIndex: 20),
+            ),
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 22,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          // A single in-flight/idle cycle: the second dispatch is swallowed
+          // by the in-flight guard instead of emitting its own cycle.
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having((s) => s.results.estimations, 'appended', hasLength(22))
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(2),
+            reason:
+                'the duplicate dispatch must not start a second page fetch',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps loaded results on a failed page fetch and appends on retry',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.failure,
+          );
+          fakeSupabase.shouldThrowOnRpc = false;
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(2, startIndex: 20),
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 22,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'loaded results survive the failure',
+                hasLength(20),
+              )
+              .having(
+                (s) => s.hasMoreEstimations,
+                'the failed page can be retried',
+                isTrue,
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.failure,
+              ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'retry appends the page',
+                hasLength(22),
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more after a re-run search fails — stale pagination '
+        'must not resurrect the previous results over the failure surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(const GlobalSearchPerformed(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadFailure,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.hasMoreEstimations,
+            'hasMore',
+            isTrue,
+          ),
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadFailure>(),
+          // No LoadSuccess emission may follow: the failure surface owns
+          // the body until the user retries the search itself.
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(2),
+            reason:
+                'the load-more after a failed search must not fetch a page',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched before any search is performed',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchLoadMoreRequested()),
+        expect: () => <GlobalSearchState>[],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            isEmpty,
+            reason: 'no results surface exists, so nothing may be fetched',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a query edit disowns the in-flight page fetch — its completion '
+        'must not publish results over the suggestions surface',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // Editing the query returns the body to the suggestions surface
+          // and disowns the gated page fetch (its own suggestions fetch is
+          // gated behind the same completer and resumes after it, FIFO).
+          bloc.add(const GlobalSearchQueryUpdated(query: 'girder'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.query == 'girder',
+          );
+          fakeSupabase.completer!.complete();
+          fakeSupabase.shouldDelayOperations = false;
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.suggestionsLoading,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          // The disowned page fetch resolves first (FIFO) and emits nothing;
+          // only the suggestions surface may appear from here on.
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a new search disowns the in-flight page fetch and resets pagination',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // The fresh search's RPC is gated behind the same completer; both
+          // resume FIFO on release, so the disowned page fetch resolves
+          // first and must bail out without emitting.
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          // No append emission from the disowned fetch may interleave here.
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page replaces the disowned append',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse)
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(paramsPerCall, hasLength(3));
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            0,
+            reason: 'a fresh search must reset the pagination cursor',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a GlobalSearchStarted reset disowns the in-flight page fetch — its '
+        'completion must not publish results over the reset surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // The reset's own history fetch must not queue behind the same
+          // gate, so the reset lands while the page fetch is still gated.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere((state) => state is GlobalSearchReady);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.completer!.complete();
+          // The disowned page fetch resumes first (FIFO); a fresh search
+          // acts as the barrier proving it emitted nothing on its way out.
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchReady(),
+          // No append emission from the disowned fetch may interleave here.
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page replaces the disowned append',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(3),
+            reason:
+                'first search, the disowned page fetch, and the fresh search '
+                '— the reset must not fetch a page of its own',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more after a query edit, even though a query was '
+        'performed earlier',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          // Editing the query leaves _lastPerformedQuery set but takes the
+          // body off the results surface, so only the first half of the
+          // load-more guard can reject the event.
+          bloc.add(const GlobalSearchQueryUpdated(query: 'girder'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.query == 'girder' &&
+                !state.suggestionsLoading,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse),
+          // No results emission may follow the load-more.
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(1),
+            reason:
+                'the suggestions surface owns the body, so no page may be '
+                'fetched',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'an empty-query submit disowns the in-flight page fetch — its '
+        'completion must not repaint results over the validation surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          fakeSupabase.shouldDelayOperations = false;
+          // Clearing the field and submitting inside the query-update
+          // debounce window lands on the empty-query branch.
+          bloc.add(const GlobalSearchPerformed(query: '   '));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchEmptyQuery,
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.completer!.complete();
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchEmptyQuery(),
+          // No append emission from the disowned fetch may interleave here.
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'fresh first page replaces the disowned append',
+            hasLength(3),
+          ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(3),
+            reason:
+                'first search, the disowned page fetch, and the fresh search '
+                '— the empty submit must not fetch anything itself',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched inside a non-empty submit\'s '
+        'in-flight window — the previous search\'s cursor must not survive '
+        'into the new one',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          // Gate the fresh search's RPC so the load-more lands inside its
+          // in-flight window, where the previous search's pagination fields
+          // would be the only thing letting it through the guards.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadInProgress && state.query == 'fresh',
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.shouldDelayOperations = false;
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.results.estimations.length == 3,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          // No emission from the rejected load-more may interleave here:
+          // the submit reset the cursor before its await, so the guard
+          // rejects on _hasMoreEstimations.
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page owns the surface',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(
+            paramsPerCall,
+            hasLength(2),
+            reason:
+                'first search and the fresh search only — the load-more in '
+                'the in-flight window must not fetch a page of its own',
+          );
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            0,
+            reason: 'the fresh search must start from the reset cursor',
+          );
+        },
+      );
     });
 
     group('GlobalSearchQueryUpdated', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchReady with updated query and empty recentSearches',
+        'fetches suggestions on first non-empty query and emits filtered list',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation', 'foundation repair', 'concrete'],
+          );
+        },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) =>
             bloc.add(const GlobalSearchQueryUpdated(query: 'foundation')),
         wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchReady(recentSearches: [], query: 'foundation'),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.suggestions,
+                'suggestions',
+                ['foundation', 'foundation repair'],
+              ),
         ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchReady with empty query when query is cleared',
+        'emits empty suggestions list when query is cleared',
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '')),
         wait: const Duration(milliseconds: 310),
@@ -502,15 +1571,297 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'does not make any Supabase calls when query is updated',
-        build: () => Modular.get<GlobalSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const GlobalSearchQueryUpdated(query: 'concrete')),
-        wait: const Duration(milliseconds: 310),
-        verify: (_) {
-          expect(fakeSupabase.getMethodCallsFor('rpc'), isEmpty);
-          expect(fakeSupabase.getMethodCallsFor('selectMatch'), isEmpty);
+        'clears suggestionsLoading when clearing the query cancels the '
+        'in-flight fetch',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
         },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchQueryUpdated(query: 'foundation'));
+          // Wait for the fetch to be in flight, then clear the query — the
+          // switchMap transformer cancels the fetch handler, so its
+          // completion can never emit. The empty-query emission must not
+          // report a loading fetch.
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.suggestionsLoading,
+          );
+          bloc.add(const GlobalSearchQueryUpdated(query: ''));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.query.isEmpty,
+          );
+          // Release the cancelled fetch; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
+          fakeSupabase.completer!.complete();
+        },
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', isEmpty)
+              .having(
+                (s) => s.suggestionsLoading,
+                'loading reset with the cancelled fetch',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'stale cancelled fetch does not clear the loading flag owned by a '
+        'newer fetch',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final firstFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchQueryUpdated(query: 'fo'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.suggestionsLoading,
+          );
+          // The second fetch awaits its own gate so the first one can be
+          // released while the second is still in flight.
+          final secondFetchGate = Completer<void>();
+          fakeSupabase.completer = secondFetchGate;
+          bloc.add(const GlobalSearchQueryUpdated(query: 'found'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.query == 'found',
+          );
+          // Release the superseded first fetch; its continuation must not
+          // touch the flag. A concurrently-handled event emitting afterwards
+          // must still see the newer fetch's loading flag.
+          firstFetchGate.complete();
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedOwnerIds.contains('owner-1'),
+          );
+          secondFetchGate.complete();
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && !state.suggestionsLoading,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'fo')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', {
+                'owner-1',
+              })
+              .having(
+                (s) => s.suggestionsLoading,
+                'loading survives the stale fetch completing',
+                isTrue,
+              ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having((s) => s.suggestions, 'suggestions', ['foundation']),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a fetch surviving a GlobalSearchStarted reset does not mark '
+        'suggestions as fetched — the next keystroke refetches',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final suggestionsFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchQueryUpdated(query: 'fo'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.suggestionsLoading,
+          );
+          // Later operations run ungated; only the in-flight suggestions
+          // fetch stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && !state.suggestionsLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not resurrect the cache or mark suggestions as fetched. Its
+          // pure-microtask continuation drains before the debounce timer
+          // delivers the next keystroke, so no pump loop is needed.
+          suggestionsFetchGate.complete();
+          bloc.add(const GlobalSearchQueryUpdated(query: 'found'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.query == 'found' &&
+                !state.suggestionsLoading,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'fo')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query after reset', isEmpty)
+              .having((s) => s.suggestionsLoading, 'loading', isFalse),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'found')
+              .having(
+                (s) => s.suggestionsLoading,
+                'post-reset keystroke starts a fresh fetch',
+                isTrue,
+              ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having((s) => s.suggestions, 'suggestions', ['foundation']),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'skips the suggestions fetch when query is whitespace-only',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation', 'concrete'],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '   ')),
+        wait: const Duration(milliseconds: 310),
+        expect: () => [const GlobalSearchReady()],
+        verify: (_) {
+          final rpcCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.searchSuggestionsRpcFunction,
+              );
+          expect(rpcCalls, isEmpty);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached raw suggestions on subsequent query updates with no extra RPC',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['Carpentry', 'Carparking', 'Plumbing', 'Concrete'],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchQueryUpdated(query: 'Car'));
+          await bloc.stream.firstWhere((s) =>
+              s is GlobalSearchReady && !s.suggestionsLoading);
+          bloc.add(const GlobalSearchQueryUpdated(query: 'Con'));
+        },
+        wait: const Duration(milliseconds: 700),
+        verify: (_) {
+          final rpcCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.searchSuggestionsRpcFunction,
+              );
+          expect(rpcCalls, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'caps the filtered suggestions list at 5 items',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            [
+              'C1',
+              'C2',
+              'C3',
+              'C4',
+              'C5',
+              'C6',
+              'C7',
+            ],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: 'C')),
+        wait: const Duration(milliseconds: 310),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestionsLoading,
+            'loading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestions,
+            'suggestions capped at 5',
+            ['C1', 'C2', 'C3', 'C4', 'C5'],
+          ),
+        ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
@@ -526,6 +1877,10 @@ void main() {
           fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
             _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'steel'),
           ]);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
         },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
@@ -538,7 +1893,7 @@ void main() {
           });
           bloc.add(const GlobalSearchQueryUpdated(query: 'concrete'));
         },
-        wait: const Duration(milliseconds: 310),
+        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
@@ -547,9 +1902,17 @@ void main() {
           ),
           isA<GlobalSearchReady>()
               .having((s) => s.query, 'query after QueryUpdated', 'concrete')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue)
               .having(
                 (s) => s.recentSearches,
-                'recentSearches preserved after QueryUpdated',
+                'recentSearches preserved during fetch',
+                contains('steel'),
+              ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.recentSearches,
+                'recentSearches preserved after fetch',
                 contains('steel'),
               ),
         ],
@@ -558,7 +1921,7 @@ void main() {
 
     group('GlobalSearchSuggestionsRequested', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits [GlobalSearchReady loading, GlobalSearchReady with suggestions] when RPC succeeds',
+        'emits empty suggestions list when no query is set',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -581,11 +1944,7 @@ void main() {
             isTrue,
           ),
           isA<GlobalSearchReady>()
-              .having(
-                (s) => s.suggestions,
-                'suggestions',
-                containsAll(['foundation', 'concrete mix', 'steel frame']),
-              )
+              .having((s) => s.suggestions, 'suggestions', isEmpty)
               .having(
                 (s) => s.suggestionsLoading,
                 'suggestionsLoading',
@@ -619,6 +1978,11 @@ void main() {
             (s) => s.failure,
             'failure',
             SearchFailure(errorType: SearchErrorType.timeoutError),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestionsLoading,
+            'suggestionsLoading',
+            isFalse,
           ),
         ],
       );
@@ -662,6 +2026,11 @@ void main() {
             'recentSearches after Started',
             containsAll(['wall', 'concrete']),
           ),
+          isA<GlobalSearchRecentDeleteSuccess>().having(
+            (s) => s.searchTerm,
+            'ack carries the deleted term for the row that requested it',
+            'wall',
+          ),
           isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches after Removed',
@@ -671,7 +2040,8 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchRecentDeleteFailure when delete throws',
+        'emits nothing when the delete fails off the recents surface — a '
+        'late failure must not yank another surface back to recents',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -693,13 +2063,2179 @@ void main() {
             scope: SearchScope.dashboard,
           ),
         ),
+        expect: () => <GlobalSearchState>[],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a dismissal during a scope change deletes from the displayed '
+        "history's scope, not the newly selected one",
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          // Gate the new scope's history reload so the dashboard-scope list
+          // stays displayed while the selected scope is already estimation.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          final scopeChanged = await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady,
+          ) as GlobalSearchReady;
+          expect(scopeChanged.selectedScope, SearchScope.estimation);
+          expect(
+            scopeChanged.recentsScope,
+            SearchScope.dashboard,
+            reason:
+                'the displayed history still belongs to the old scope while '
+                'the reload is gated',
+          );
+          fakeSupabase.completer!.complete();
+          fakeSupabase.shouldDelayOperations = false;
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.estimation,
+          );
+        },
+        verify: (_) {
+          // The page dispatches with Ready.recentsScope; this pins that the
+          // state exposes the old scope for exactly the gated window.
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps the dismissed term in the list when the delete fails, so the '
+        'row can slide back',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'concrete'),
+          ]);
+          fakeSupabase.shouldThrowOnDeleteMatch = true;
+          fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.socket;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.length == 2,
+          );
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchRecentDeleteFailure,
+          );
+        },
+        skip: 1,
         expect: () => [
           isA<GlobalSearchRecentDeleteFailure>().having(
-            (s) => s.failure,
-            'failure',
-            SearchFailure(errorType: SearchErrorType.connectionError),
+            (s) => s.searchTerm,
+            'ack carries the term whose deletion failed',
+            'wall',
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches kept intact',
+            allOf(hasLength(2), containsAll(['wall', 'concrete'])),
           ),
         ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a delete succeeding after the user ran a search emits no ack but '
+        'still prunes the term for the next recents visit',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'concrete'),
+          ]);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'brick'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+          // The delete resolves on microtasks while the results surface owns
+          // the body; the debounced query-clear afterwards is the barrier,
+          // and its Ready re-exposes the pruned cache.
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          bloc.add(const GlobalSearchQueryUpdated(query: ''));
+          await bloc.stream.firstWhere((state) => state is GlobalSearchReady);
+        },
+        skip: 1,
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          // No delete ack may interleave here: the results surface owned
+          // the body when the delete resolved.
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches on returning to recents',
+            allOf(isNot(contains('wall')), contains('concrete')),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a stale delete resolving after a scope switch neither prunes the '
+        "new scope's identically-named entry nor emits an ack",
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(
+              userId: _testUserId,
+              searchTerm: 'wall',
+              scope: SearchScope.estimation,
+            ),
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          // Gate the dashboard-scoped delete in flight. The event emits
+          // nothing before its await, so the backend-call record is the
+          // signal that it reached the gate.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          await _untilHandlerRuns(
+            () => fakeSupabase.getMethodCallsFor('deleteMatch').isNotEmpty,
+          );
+          // The scope switch and its history reload run ungated past the
+          // held delete, so the delete resolves strictly after the
+          // estimation history owns the surface.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.estimation,
+          );
+          fakeSupabase.completer!.complete();
+          // The resumed stale delete must touch nothing; the second scope
+          // switch is the barrier, and its immediate emission re-exposes
+          // the estimation cache.
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.dashboard),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.dashboard,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            contains('wall'),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'scope emitted',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentsScope,
+                'recents lag',
+                SearchScope.dashboard,
+              ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentsScope,
+            'estimation history loaded',
+            SearchScope.estimation,
+          ),
+          // The stale delete's completion must emit nothing in between.
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'scope emitted',
+                SearchScope.dashboard,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation cache un-pruned by the stale dashboard delete',
+                contains('wall'),
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.recentsScope,
+                'dashboard history reloaded',
+                SearchScope.dashboard,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'backend row genuinely deleted',
+                isEmpty,
+              ),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagFiltersApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedTags when tags are applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            containsAll(['Roofing', 'Wall']),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedTags when empty set is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchTagFiltersApplied(tags: {}),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves query and recentSearches when applying tags',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.first;
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Flooring'}),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having((s) => s.query, 'query', isEmpty),
+          isA<GlobalSearchReady>()
+              .having((s) => s.selectedTags, 'selectedTags', contains('Flooring'))
+              .having((s) => s.query, 'query preserved', isEmpty),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with tag removed from selectedTags',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Roofing'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'two tags selected',
+            containsAll(['Roofing', 'Wall']),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedTags,
+                'Roofing removed',
+                isNot(contains('Roofing')),
+              )
+              .having(
+                (s) => s.selectedTags,
+                'Wall remains',
+                contains('Wall'),
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedTags when last tag is cleared',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Flooring'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Flooring'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'one tag selected',
+            contains('Flooring'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags empty after last cleared',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves query and recentSearches when clearing a tag',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.first;
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Carpeting'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Carpeting'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having((s) => s.query, 'initial query', isEmpty),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tag applied',
+            contains('Carpeting'),
+          ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.selectedTags, 'tag cleared', isEmpty)
+              .having((s) => s.query, 'query preserved', isEmpty),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedTags', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedTags when GlobalSearchStarted is dispatched after tags were applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Roofing'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags applied',
+            contains('Roofing'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags reset on restart',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears availableTags when GlobalSearchStarted is dispatched after '
+        'tags were fetched',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedTags(['Roofing']);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableTags.isEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'availableTags',
+            ['Roofing'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTags,
+                'availableTags cleared on restart',
+                isEmpty,
+              )
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              ),
+        ],
+      );
+    });
+
+    group('GlobalSearchAvailableTagsRequested', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits loading then tags sorted alphabetically on success',
+        setUp: () => seedTags(['Wall', 'Carpeting', 'Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTags,
+                'availableTags',
+                ['Carpeting', 'Roofing', 'Wall'],
+              )
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached tags without refetching on subsequent requests',
+        setUp: () => seedTags(['Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        verify: (_) {
+          final selectCalls = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(selectCalls.length, 1);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchTagsLoadFailure then recovers to Ready on error',
+        setUp: () {
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType =
+              SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchTagsLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<SearchFailure>(),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'availableTags stay empty',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps availableTagsLoading true when a concurrent handler emits '
+        'while the tags fetch is in flight',
+        setUp: () {
+          seedTags(['Roofing']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          // Wait for the in-flight loading emission, then dispatch an event
+          // whose handler emits _readyState() while the fetch is still
+          // pending — it must not reset the loading flag.
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.availableTagsLoading,
+          );
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedOwnerIds.contains('owner-1'),
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isTrue,
+              )
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading survives concurrent emission',
+                isTrue,
+              )
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', {
+                'owner-1',
+              }),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', ['Roofing']),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'does not start a duplicate tags fetch when one is already in flight',
+        setUp: () {
+          seedTags(['Roofing']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          // Wait for the in-flight loading emission, then request tags again
+          // — the second request must reuse the in-flight fetch instead of
+          // starting another, whose earlier completion would clear the
+          // loading flag while the later fetch is still running.
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', ['Roofing']),
+        ],
+        verify: (_) {
+          final tagFetches = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(tagFetches, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a tags fetch surviving a GlobalSearchStarted reset neither stomps '
+        'the reset flag nor marks tags as fetched — the next sheet open '
+        'refetches',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedTags(['Roofing']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final tagsFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.availableTagsLoading,
+          );
+          // Later operations run ungated; only the in-flight tags fetch
+          // stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not mark tags as fetched or emit over the reset state.
+          tagsFetchGate.complete();
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableTagsLoading &&
+                state.availableTags.isNotEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading reset on restart',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'post-reset sheet open starts a fresh fetch',
+                isTrue,
+              )
+              .having((s) => s.availableTags, 'availableTags', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', ['Roofing']),
+        ],
+        verify: (_) {
+          final tagFetches = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(tagFetches, hasLength(2));
+        },
+      );
+    });
+
+    group('GlobalSearchTagSearchQueryUpdated', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'filters available tags case-insensitively by substring',
+        setUp: () => seedTags(['Roofing', 'Carpeting', 'Wall', 'Painting']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'ING'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'filtered tags',
+            ['Carpeting', 'Painting', 'Roofing'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'restores the full list when the query is cleared',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: ''));
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'full list restored',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'resets the tag search query when the sheet is reopened',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'query reset restores full list',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchOwnerFiltersApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedOwnerIds when owners are applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchOwnerFiltersApplied(
+            ownerIds: {'owner-1', 'owner-2'},
+          ),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedOwnerIds when empty set is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const GlobalSearchOwnerFiltersApplied(ownerIds: {})),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchOwnerFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with owner removed from selectedOwnerIds',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(
+              ownerIds: {'owner-1', 'owner-2'},
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerFilterCleared(ownerId: 'owner-1'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'two owners selected',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedOwnerIds,
+                'owner-1 removed',
+                isNot(contains('owner-1')),
+              )
+              .having(
+                (s) => s.selectedOwnerIds,
+                'owner-2 remains',
+                contains('owner-2'),
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedOwnerIds when last owner is cleared',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerFilterCleared(ownerId: 'owner-1'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'one owner selected',
+            contains('owner-1'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds empty after last cleared',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedOwnerIds', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedOwnerIds when GlobalSearchStarted is dispatched after owners were applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners applied',
+            contains('owner-1'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners reset on restart',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears availableOwners when GlobalSearchStarted is dispatched after '
+        'owners were fetched',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableOwners.isEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((owner) => owner.id),
+            'availableOwners',
+            ['owner-1'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwners,
+                'availableOwners cleared on restart',
+                isEmpty,
+              )
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              ),
+        ],
+      );
+    });
+
+    group('GlobalSearchDateFilterApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedDateRange when a range is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          GlobalSearchDateFilterApplied(
+            range: DateRange(
+              start: DateTime(2024, 3, 1),
+              end: DateTime(2024, 3, 31),
+            ),
+          ),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange',
+            DateRange(start: DateTime(2024, 3, 1), end: DateTime(2024, 3, 31)),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'replaces a previously applied range when a new one is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 1, 1),
+                end: DateTime(2024, 1, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'first range applied',
+            DateRange(start: DateTime(2024, 1, 1), end: DateTime(2024, 1, 31)),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'second range replaces first',
+            DateRange(start: DateTime(2024, 3, 1), end: DateTime(2024, 3, 31)),
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchDateFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with null selectedDateRange after clearing',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchDateFilterCleared());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange cleared',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedDateRange', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedDateRange when GlobalSearchStarted is dispatched after a range was applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range reset on restart',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchPerformed forwards date range to the RPC', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards filter_by_date_from and filter_by_date_to when a range is active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams = globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_date_from'],
+            equals(DateTime(2024, 3, 1).toIso8601String()),
+          );
+          expect(
+            rpcParams['filter_by_date_to'],
+            equals(DateTime(2024, 3, 31).toIso8601String()),
+          );
+        },
+      );
+    });
+
+    group('GlobalSearchAvailableOwnersRequested', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits loading then owners in RPC order on success',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableOwnersRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwners.map((o) => o.id).toList(),
+                'availableOwners',
+                ['owner-1', 'owner-2'],
+              )
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached owners without refetching on subsequent requests',
+        setUp: () => seedOwners([(id: 'owner-1', firstName: 'John')]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+        },
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(rpcCalls.length, 1);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchOwnersLoadFailure then recovers to Ready on error',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableOwnersRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchOwnersLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<SearchFailure>(),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners,
+            'availableOwners stay empty',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        're-fetches owners on the next request after a failed fetch',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          // Recover the backend, then request again: the failed fetch must
+          // not have cached, so this second request hits the RPC again.
+          fakeSupabase.shouldThrowOnRpc = false;
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableOwnersLoading &&
+                state.availableOwners.isNotEmpty,
+          );
+        },
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(
+            rpcCalls.length,
+            2,
+            reason: 'a failed fetch must not cache; the retry refetches',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'does not start a duplicate owners fetch when one is already in '
+        'flight',
+        setUp: () {
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          // Wait for the in-flight loading emission, then request owners
+          // again — the second request must reuse the in-flight fetch
+          // instead of starting another, whose earlier completion would
+          // clear the loading flag while the later fetch is still running.
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              )
+              .having(
+                (s) => s.availableOwners.map((o) => o.id).toList(),
+                'availableOwners',
+                ['owner-1'],
+              ),
+        ],
+        verify: (_) {
+          final ownerFetches = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(ownerFetches, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'an owners fetch surviving a GlobalSearchStarted reset neither '
+        'stomps the reset flag nor marks owners as fetched — the next sheet '
+        'open refetches',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final ownersFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableOwnersLoading,
+          );
+          // Later operations run ungated; only the in-flight owners fetch
+          // stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not mark owners as fetched or emit over the reset state.
+          ownersFetchGate.complete();
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableOwnersLoading &&
+                state.availableOwners.isNotEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading reset on restart',
+                isFalse,
+              )
+              .having((s) => s.availableOwners, 'availableOwners', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'post-reset sheet open starts a fresh fetch',
+                isTrue,
+              )
+              .having((s) => s.availableOwners, 'availableOwners', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              )
+              .having(
+                (s) => s.availableOwners.map((o) => o.id).toList(),
+                'availableOwners',
+                ['owner-1'],
+              ),
+        ],
+        verify: (_) {
+          final ownerFetches = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(ownerFetches, hasLength(2));
+        },
+      );
+    });
+
+    group('GlobalSearchOwnerSearchQueryUpdated', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'filters available owners case-insensitively by full name substring',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Johnny'),
+          (id: 'owner-3', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'JOHN'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'filtered owners',
+            ['owner-1', 'owner-2'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'restores the full list when the query is cleared',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'john'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: ''));
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'full list restored',
+            ['owner-1', 'owner-2'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'resets the owner search query when the sheet is reopened',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'john'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'query reset restores full list',
+            ['owner-1', 'owner-2'],
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchScopeChanged', () {
+      void seedUserWithScopedHistory() {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: fakeClock.now().toIso8601String(),
+          ),
+        );
+        fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+          _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'foundation'),
+          _fakeSearchHistoryData(
+            userId: _testUserId,
+            searchTerm: 'girder',
+            scope: SearchScope.estimation,
+          ),
+          _fakeSearchHistoryData(
+            userId: _testUserId,
+            searchTerm: 'alice',
+            scope: SearchScope.member,
+          ),
+        ]);
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits the new scope immediately, then the reloaded history for it',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'history kept until the reload lands',
+                ['foundation'],
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation history',
+                ['girder'],
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a change to the already selected scope',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchScopeChanged(scope: SearchScope.dashboard),
+        ),
+        expect: () => <GlobalSearchState>[],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps the previous history and surfaces '
+        'GlobalSearchRecentsLoadFailure when the reload fails',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchRecentsLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            SearchFailure(errorType: SearchErrorType.timeoutError),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'previous history preserved',
+            ['foundation'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a newer scope change disowns the older in-flight history reload',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          // Gate the history reloads so the estimation reload is still in
+          // flight when the member scope change supersedes it. Completing the
+          // gate resumes both reloads FIFO; only the newest may publish.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.estimation,
+          );
+          bloc.add(const GlobalSearchScopeChanged(scope: SearchScope.member));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.member,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('alice'),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.member,
+          ),
+          // The estimation reload's ['girder'] result never publishes: the
+          // member change disowned it via the generation guard.
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.member,
+              )
+              .having((s) => s.recentSearches, 'member history', ['alice']),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a scope change dispatched while GlobalSearchStarted is still '
+        'fetching wins: the disowned initial load neither reverts the scope '
+        'nor replaces the history',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Gate both history fetches on one completer so the scope change is
+          // dispatched while GlobalSearchStarted's own fetch is still in
+          // flight. Completing the gate resumes both FIFO: the initial load
+          // resumes first while already disowned and must bail; only the
+          // scope change's reload may publish.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchStarted());
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.estimation,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+        },
+        // Exactly two emissions: the disowned initial load's late completion
+        // must not emit at all, so no dashboard-scoped state ever appears.
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'history empty until the reload lands',
+                isEmpty,
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope kept by the scope change',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation history',
+                ['girder'],
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'GlobalSearchStarted resets the selected scope to its own scope',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+        },
+        verify: (bloc) {
+          final state = bloc.state as GlobalSearchReady;
+          expect(state.selectedScope, SearchScope.dashboard);
+          expect(state.recentSearches, ['foundation']);
+        },
+      );
+    });
+
+    group('Filter changes re-run the active search', () {
+      List<Map<String, dynamic>> searchCalls() => fakeSupabase
+          .getMethodCallsFor('rpc')
+          .where(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          )
+          .toList();
+
+      void seedOneProjectResult() {
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': [_fakeProjectData()],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a date filter while results are shown re-runs the search '
+        'with the new range',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2026, 1, 1),
+                end: DateTime(2026, 1, 5),
+              ),
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        // The interim ready state (carrying the new range) must be emitted
+        // before the re-run's loading state — pins the handler's
+        // emit-then-re-run ordering, not just the RPC call count.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange',
+            isNotNull,
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(
+            params['filter_by_date_from'],
+            DateTime(2026, 1, 1).toIso8601String(),
+          );
+          expect(
+            params['filter_by_date_to'],
+            DateTime(2026, 1, 5).toIso8601String(),
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a tag filter while results are shown re-runs the search '
+        'with the tag',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], 'Roofing');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clearing a tag filter while results are shown re-runs the search '
+        'without the tag',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Roofing'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            isEmpty,
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], isNull);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'changing the scope while results are shown re-runs the search '
+        'with the new scope',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        // Pins the emit-then-re-run ordering: the eager scope emit, the
+        // re-run's loading state, the per-scope recents reload landing
+        // mid-flight, then the re-run's results.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'recentSearches',
+                ['foundation'],
+              ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having((s) => s.recentSearches, 'recentSearches', isEmpty),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['scope'], 'estimation');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a search dispatched while an older one is still in flight wins: '
+        'the older RPC resolving last cannot publish stale results',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Park the older search's RPC on a gate. Its loading state is
+          // emitted before the RPC await, so once that state is observed the
+          // older search is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final olderSearchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere(
+            (s) => s is GlobalSearchLoadInProgress && s.query == 'foundation',
+          );
+          // The newer search runs ungated and publishes first.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchPerformed(query: 'girder'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          // Swap the RPC response to empty before releasing the older
+          // search: if its late completion ever published, it would emit a
+          // LoadEmpty distinct from the newer LoadSuccess (an identical
+          // LoadSuccess would be deduplicated by Equatable and hide the
+          // regression).
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': <Map<String, dynamic>>[],
+              'estimations': <Map<String, dynamic>>[],
+              'members': <Map<String, dynamic>>[],
+            },
+          );
+          // Release the disowned older search; its generation-guarded
+          // continuation runs to completion during bloc.close() without
+          // emitting.
+          olderSearchGate.complete();
+        },
+        // Exactly three emissions: the older search's late completion must
+        // not publish a stale state over the newer results.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'girder',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'editing the query back while a search is in flight disowns it: the '
+        'late RPC completion cannot publish stale results over the '
+        'suggestions surface',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Park the search's RPC on a gate. Its loading state is emitted
+          // before the RPC await, so once that state is observed the search
+          // is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final searchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere(
+            (s) => s is GlobalSearchLoadInProgress && s.query == 'foundation',
+          );
+          // Clearing the query navigates back to the suggestions surface
+          // while the search RPC is still parked; the edit must disown it.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchQueryUpdated(query: ''));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          // Release the disowned search; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
+          searchGate.complete();
+        },
+        // Exactly two emissions: the disowned search's late completion must
+        // not publish a stale LoadSuccess over the suggestions surface.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchReady>(),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a date filter with no active search emits only the ready '
+        'state and performs no search',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          GlobalSearchDateFilterApplied(
+            range: DateRange(
+              start: DateTime(2026, 1, 1),
+              end: DateTime(2026, 1, 5),
+            ),
+          ),
+        ),
+        expect: () => [isA<GlobalSearchReady>()],
+        verify: (bloc) {
+          expect(searchCalls(), isEmpty);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        're-runs the search when a filter is applied after the filter sheet '
+        'was opened (which emits the ready state)',
+        setUp: () {
+          seedOneProjectResult();
+          fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+            {
+              DatabaseConstants.idColumn: 'tag-Roofing',
+              DatabaseConstants.nameColumn: 'Roofing',
+            },
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          // Opening the tags sheet emits the ready state — this must not
+          // clear the active-search signal used by the re-run.
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        // Pins the emit-then-re-run ordering: results, sheet-open ready
+        // (loading then loaded), filter-applied ready, then the re-run pair.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            true,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                false,
+              )
+              .having((s) => s.selectedTags, 'selectedTags', isEmpty),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], 'Roofing');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'editing the query back to suggestions stops filter changes from '
+        're-running the stale search',
+        setUp: () {
+          seedOneProjectResult();
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchQueryUpdated(query: 'found'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2026, 1, 1),
+                end: DateTime(2026, 1, 5),
+              ),
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+        },
+        verify: (bloc) {
+          // Only the original search ran; the filter change on the
+          // suggestions surface must not resurrect the dismissed results.
+          expect(searchCalls(), hasLength(1));
+        },
       );
     });
   });

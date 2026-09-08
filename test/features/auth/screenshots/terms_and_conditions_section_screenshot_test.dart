@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,19 +14,21 @@ void main() {
     await loadAppFonts();
   });
 
-  group('TermsAndConditions Screenshot Tests', () {
-    Future<void> pumpTermsAndConditions({
-      required WidgetTester tester,
-      required String termsAndConditionsText,
-      required String termsAndServicesLink,
-      required String privacyPolicyLink,
-      required String andAcknowledge,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Material(
-            child: Padding(
+  Future<void> pumpTermsAndConditions({
+    required WidgetTester tester,
+    required String termsAndConditionsText,
+    required String termsAndServicesLink,
+    required String privacyPolicyLink,
+    required String andAcknowledge,
+    required ThemeData theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: TermsAndConditionsSection(
                 termsAndConditionsText: termsAndConditionsText,
@@ -38,13 +41,19 @@ void main() {
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  screenshotThemeGroups('TermsAndConditions Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders terms and conditions correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpTermsAndConditions(
         tester: tester,
@@ -53,12 +62,13 @@ void main() {
         termsAndServicesLink: 'terms & services',
         privacyPolicyLink: 'privacy policy',
         andAcknowledge: 'and acknowledge ',
+        theme: theme,
       );
 
       await expectLater(
-        find.byType(TermsAndConditionsSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement.png',
+          'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement$suffix.png',
         ),
       );
     });

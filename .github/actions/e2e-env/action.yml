@@ -1,0 +1,70 @@
+name: "E2E Environment"
+description: "Starts a Supabase + PowerSync stack for end-to-end tests on a CI runner and reports its connection details. Isolated because each runner starts with no Supabase project of its own."
+
+inputs:
+  backend-repo:
+    description: "Repository holding the Supabase and PowerSync definitions."
+    required: false
+    default: "ripplearc/construculator-backend"
+  backend-ref:
+    description: "Ref of the backend repository to check out."
+    required: false
+    default: "master"
+  backend-path:
+    description: "Path the backend repository is checked out to."
+    required: false
+    default: "construculator-backend"
+  supabase-version:
+    description: "Supabase CLI version. Kept in step with the backend's database_tests workflow."
+    required: false
+    default: "2.106.0"
+
+outputs:
+  supabase-url:
+    description: "Base URL of the Supabase API gateway."
+    value: ${{ steps.stack.outputs.supabase-url }}
+  supabase-anon-key:
+    description: "Anon key of the started stack."
+    value: ${{ steps.stack.outputs.supabase-anon-key }}
+  mailpit-url:
+    description: "Base URL of the Mailpit mail catcher."
+    value: ${{ steps.stack.outputs.mailpit-url }}
+  powersync-url:
+    description: "Base URL of the PowerSync service."
+    value: ${{ steps.stack.outputs.powersync-url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check out backend
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.backend-repo }}
+        ref: ${{ inputs.backend-ref }}
+        path: ${{ inputs.backend-path }}
+
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: ${{ inputs.supabase-version }}
+
+    - name: Start environment
+      shell: bash
+      env:
+        E2E_BACKEND_DIR: ${{ github.workspace }}/${{ inputs.backend-path }}
+      run: ${{ github.workspace }}/scripts/e2e/start_env.sh
+
+    - name: Report connection details
+      id: stack
+      shell: bash
+      working-directory: ${{ inputs.backend-path }}
+      run: |
+        source "${{ github.workspace }}/scripts/e2e/lib.sh"
+        anon_key="$(supabase status -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["ANON_KEY"])')"
+        echo "::add-mask::$anon_key"
+        {
+          echo "supabase-url=http://127.0.0.1:${E2E_SUPABASE_API_PORT}"
+          echo "supabase-anon-key=$anon_key"
+          echo "mailpit-url=http://127.0.0.1:${E2E_MAILPIT_PORT}"
+          echo "powersync-url=http://127.0.0.1:${E2E_POWERSYNC_PORT}"
+        } >> "$GITHUB_OUTPUT"

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -27,8 +28,16 @@ class FakeProjectRepository implements ProjectRepository {
   // Tracks permissions by project ID for testing
   final Map<String, List<String>> _projectPermissions = {};
 
+  /// The project id that [findCurrentProjectForUser] treats as currently selected.
+  String? currentProjectId;
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
+
+  /// When non-null, [getProject] throws this typed [Failure] after recording
+  /// the call, mirroring the real repository which maps errors at the
+  /// boundary and rethrows them as [Failure]s.
+  Failure? getProjectFailure;
 
   /// Controls whether [getProjects] throws an exception.
   bool shouldThrowOnGetProjects = false;
@@ -76,6 +85,10 @@ class FakeProjectRepository implements ProjectRepository {
     }
 
     _methodCalls.add({'method': 'getProject', 'id': id});
+
+    if (getProjectFailure case final failure?) {
+      throw failure;
+    }
 
     if (shouldThrowOnGetProject) {
       _throwConfiguredException(
@@ -235,7 +248,9 @@ class FakeProjectRepository implements ProjectRepository {
 
   /// Resets all fake configurations, clears data
   void reset() {
+    currentProjectId = null;
     shouldThrowOnGetProject = false;
+    getProjectFailure = null;
     shouldThrowOnGetProjects = false;
     shouldThrowOnWatchProjects = false;
     getProjectErrorMessage = null;
@@ -275,6 +290,18 @@ class FakeProjectRepository implements ProjectRepository {
       'permissionKey': permissionKey,
     });
     return _projectPermissions[projectId]?.contains(permissionKey) ?? false;
+  }
+
+  @override
+  Future<Project?> findCurrentProjectForUser(String userId) async {
+    _methodCalls.add({'method': 'findCurrentProjectForUser', 'userId': userId});
+    if (userId.isEmpty) return null;
+    final id = currentProjectId;
+    if (id == null || id.isEmpty) return null;
+    for (final project in _accessibleProjects) {
+      if (project.id == id) return project;
+    }
+    return null;
   }
 
   /// Sets permissions for a specific project (for testing)

@@ -25,6 +25,16 @@ class ProjectDropdownSelected extends ProjectDropdownEvent {
   List<Object?> get props => [projectId];
 }
 
+/// Updates the search query used to filter the loaded project list.
+class ProjectDropdownSearchChanged extends ProjectDropdownEvent {
+  final String query;
+
+  const ProjectDropdownSearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}
+
 /// Triggers an update event when the project list is updated.
 class _ProjectDropdownProjectsUpdated extends ProjectDropdownEvent {
   final List<Project> projects;
@@ -34,12 +44,12 @@ class _ProjectDropdownProjectsUpdated extends ProjectDropdownEvent {
   @override
   List<Object?> get props => [projects];
 }
-/// Triggers a failure event when project list loading fails.
+// Triggers a failure event when project list loading fails.
 class _ProjectDropdownProjectsLoadFailed extends ProjectDropdownEvent {
-  final String message;
+  final Failure failure;
 
-  const _ProjectDropdownProjectsLoadFailed(this.message);
+  const _ProjectDropdownProjectsLoadFailed(this.failure);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [failure];
 }

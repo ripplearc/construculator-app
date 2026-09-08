@@ -1,6 +1,6 @@
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -16,8 +16,9 @@ void main() {
         const params = SearchParamsDto(query: 'bridge');
 
         expect(params.filterByTag, isNull);
-        expect(params.filterByDate, isNull);
-        expect(params.filterByOwner, isNull);
+        expect(params.filterByDateFrom, isNull);
+        expect(params.filterByDateTo, isNull);
+        expect(params.filterByOwners, isNull);
         expect(params.scope, isNull);
       });
     });
@@ -27,8 +28,9 @@ void main() {
         final params = SearchParamsDto(
           query: 'bridge',
           filterByTag: 'residential',
-          filterByDate: DateTime(2025, 3, 1),
-          filterByOwner: 'user-123',
+          filterByDateFrom: DateTime(2025, 3, 1),
+          filterByDateTo: DateTime(2025, 3, 31),
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -48,18 +50,21 @@ void main() {
 
       test('updates all nullable fields when provided', () {
         const params = SearchParamsDto(query: 'bridge');
-        final date = DateTime(2025, 3, 1);
+        final from = DateTime(2025, 3, 1);
+        final to = DateTime(2025, 3, 31);
 
         final copy = params.copyWith(
           filterByTag: 'residential',
-          filterByDate: date,
-          filterByOwner: 'user-123',
+          filterByDateFrom: from,
+          filterByDateTo: to,
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
         );
 
         expect(copy.filterByTag, 'residential');
-        expect(copy.filterByDate, date);
-        expect(copy.filterByOwner, 'user-123');
+        expect(copy.filterByDateFrom, from);
+        expect(copy.filterByDateTo, to);
+        expect(copy.filterByOwners, ['user-123', 'user-456']);
         expect(copy.scope, SearchScopeDto.estimation);
       });
 
@@ -77,34 +82,39 @@ void main() {
         final params = SearchParamsDto(
           query: 'bridge',
           filterByTag: 'residential',
-          filterByDate: DateTime(2025, 3, 1),
-          filterByOwner: 'user-123',
+          filterByDateFrom: DateTime(2025, 3, 1),
+          filterByDateTo: DateTime(2025, 3, 31),
+          filterByOwners: const ['user-123'],
           scope: SearchScopeDto.estimation,
         );
 
         final copy = params.copyWith(
           filterByTag: null,
-          filterByDate: null,
-          filterByOwner: null,
+          filterByDateFrom: null,
+          filterByDateTo: null,
+          filterByOwners: null,
           scope: null,
         );
 
         expect(copy.filterByTag, isNull);
-        expect(copy.filterByDate, isNull);
-        expect(copy.filterByOwner, isNull);
+        expect(copy.filterByDateFrom, isNull);
+        expect(copy.filterByDateTo, isNull);
+        expect(copy.filterByOwners, isNull);
         expect(copy.scope, isNull);
       });
     });
 
     group('Equatable', () {
       test('two instances with same values are equal', () {
-        final date = DateTime(2025, 3, 1);
+        final from = DateTime(2025, 3, 1);
+        final to = DateTime(2025, 3, 31);
 
         final params1 = SearchParamsDto(
           query: 'bridge',
           filterByTag: 'residential',
-          filterByDate: date,
-          filterByOwner: 'user-123',
+          filterByDateFrom: from,
+          filterByDateTo: to,
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -112,8 +122,9 @@ void main() {
         final params2 = SearchParamsDto(
           query: 'bridge',
           filterByTag: 'residential',
-          filterByDate: date,
-          filterByOwner: 'user-123',
+          filterByDateFrom: from,
+          filterByDateTo: to,
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -124,6 +135,19 @@ void main() {
       test('two instances with different query are not equal', () {
         const params1 = SearchParamsDto(query: 'bridge');
         const params2 = SearchParamsDto(query: 'road');
+
+        expect(params1, isNot(equals(params2)));
+      });
+
+      test('two instances with different owner filters are not equal', () {
+        const params1 = SearchParamsDto(
+          query: 'bridge',
+          filterByOwners: ['user-123'],
+        );
+        const params2 = SearchParamsDto(
+          query: 'bridge',
+          filterByOwners: ['user-456'],
+        );
 
         expect(params1, isNot(equals(params2)));
       });

@@ -13,12 +13,16 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class RegisterWithEmailPage extends StatefulWidget {
+  final AppRouter router;
   final String email;
-  const RegisterWithEmailPage({super.key, required this.email});
+  const RegisterWithEmailPage({
+    super.key,
+    required this.router,
+    required this.email,
+  });
 
   @override
   State<RegisterWithEmailPage> createState() => _RegisterWithEmailPageState();
@@ -32,7 +36,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
   List<String>? _emailErrorTextList;
 
   bool _canPressContinue = false;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
     final l10n = context.l10n;
@@ -98,7 +101,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
         listener: (context, state) {
           if (state is OtpVerificationSuccess) {
-            _router.navigate(fullCreateAccountRoute, arguments: email);
+            widget.router.navigate(fullCreateAccountRoute, arguments: email);
           }
           if (state is OtpVerificationFailure) {
             _handleFailure(state.failure);
@@ -212,7 +215,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   errorText: l10n.emailAlreadyRegistered,
                   linkText: l10n.logginLink,
                   onPressed: () {
-                    _router.navigate(
+                    widget.router.navigate(
                       fullLoginRoute,
                       arguments: _emailController.text,
                     );
@@ -253,6 +256,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space10),
                   CoreTextField(
+                    key: const Key('register_email_field'),
                     focusNode: _emailTextFieldFocusNode,
                     controller: _emailController,
                     label: l10n.emailLabel,
@@ -262,6 +266,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreButton(
+                    key: const Key('register_email_continue_button'),
                     onPressed: () {
                       _emailTextFieldFocusNode.unfocus();
                       BlocProvider.of<RegisterWithEmailBloc>(context).add(
@@ -316,7 +321,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             text: l10n.alreadyHaveAccount,
             actionText: l10n.logginLink,
             onPressed: () {
-              _router.navigate(fullLoginRoute);
+              widget.router.navigate(fullLoginRoute);
             },
           ),
         ),

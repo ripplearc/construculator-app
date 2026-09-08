@@ -40,6 +40,10 @@ class WatchRecentEstimationsUseCase {
     final projectId = _currentProjectNotifier.currentProjectId;
 
     if (projectId == null || projectId.isEmpty) {
+      // Defensive only: RecentEstimationsBloc, the sole production caller,
+      // short-circuits (and logs) before invoking this use case without a
+      // selected project — so this branch does not log a duplicate
+      // breadcrumb.
       return Stream.value(
         const Left(
           EstimationFailure(errorType: EstimationErrorType.unexpectedError),

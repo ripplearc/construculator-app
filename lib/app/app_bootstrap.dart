@@ -1,8 +1,12 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:powersync/powersync.dart';
 
 /// The application requires that certain services—such as the Supabase client—are fully
 /// initialized before the [AppModule] is loaded. This is critical for features like
@@ -54,7 +58,11 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// final supabaseWrapper = SupabaseWrapperImpl(envLoader: envLoader);
 /// await supabaseWrapper.initialize();
 ///
-/// final sentryWrapper = SentryWrapperImpl(envLoader: envLoader, config: config);
+/// final sentryWrapper = SentryWrapperImpl(
+///   envLoader: envLoader,
+///   config: config,
+///   sentrySdk: SentrySdkImpl(),
+/// );
 ///
 /// final bootstrap = AppBootstrap(
 ///   config: config,
@@ -91,10 +99,40 @@ class AppBootstrap {
   /// Its [initialize] method must be called with the app runner to enable error tracking.
   final SentryWrapper sentryWrapper;
 
+  /// The analytics repository, resolved to either the real PostHog-backed
+  /// implementation or `NoOpAnalyticsRepository` based on `ANALYTICS_ENABLED`.
+  /// Must be fully initialized (if real) before passing to the app module.
+  final AnalyticsRepository analyticsRepository;
+
+  /// The opened local PowerSync database.
+  ///
+  /// Opened during bootstrap because resolving its on-device path is
+  /// asynchronous and must complete before the module graph is built. It is
+  /// usable offline immediately; syncing starts once `PowerSyncManager`
+  /// connects after authentication.
+  final PowerSyncDatabase powerSyncDatabase;
+
+  /// The feature flag repository, resolved to either the real PostHog-backed
+  /// implementation or `NoOpFeatureFlagRepository` based on
+  /// `ANALYTICS_ENABLED`. Must be fully initialized (if real) before passing
+  /// to the app module.
+  final FeatureFlagRepository featureFlagRepository;
+
+  /// Shared holder of the currently active screen's template name.
+  ///
+  /// Must be passed to both `AnalyticsRepositoryImpl` (which reads it to
+  /// enrich every tracked event) and `AnalyticsNavigatorObserver` (which
+  /// writes it on every navigation) — the same instance to both.
+  final CurrentScreenTracker currentScreenTracker;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
     required this.supabaseWrapper,
     required this.sentryWrapper,
+    required this.analyticsRepository,
+    required this.powerSyncDatabase,
+    required this.featureFlagRepository,
+    required this.currentScreenTracker,
   });
 }

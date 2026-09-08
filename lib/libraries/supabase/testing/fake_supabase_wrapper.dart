@@ -15,8 +15,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
+  /// Synchronous so that emitting an auth event delivers it to listeners
+  /// before control returns to the test, making assertions deterministic
+  /// without draining the real event loop.
   final StreamController<supabase.AuthState> _authStateController =
-      StreamController<supabase.AuthState>.broadcast();
+      StreamController<supabase.AuthState>.broadcast(sync: true);
 
   /// Tracks the currently authenticated user
   FakeUser? _currentUser;
@@ -220,6 +223,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether stream errors should be emitted
   bool shouldEmitStreamErrors = false;
 
+  /// Used to specify the type of exception emitted when [shouldEmitStreamErrors] is true.
+  /// Defaults to [ServerException] when null.
+  SupabaseExceptionType? streamExceptionType;
+
+  /// When true, a stream error emitted via [shouldEmitStreamErrors] also
+  /// closes that table's stream, mimicking a terminal realtime subscribe
+  /// failure (e.g. RealtimeSubscribeException) after which the channel
+  /// emits nothing further.
+  bool shouldCloseStreamOnError = false;
+
   /// Controls whether [signInWithPassword] returns a user
   bool shouldReturnUser = false;
 
@@ -235,7 +248,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   final Clock _clock;
 
   /// Constructor for fake supabase wrapper
-  FakeSupabaseWrapper({required Clock clock}) : _clock = clock;
+  FakeSupabaseWrapper({required this._clock});
 
   /// Sets the current user
   void setCurrentUser(FakeUser? user) {
@@ -256,6 +269,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   @override
   supabase.User? get currentUser => _currentUser;
+
+  @override
+  supabase.Session? get currentSession {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    return FakeSession(
+      accessToken: 'fake-access-token-${user.id}',
+      refreshToken: 'fake-refresh-token',
+      user: user,
+    );
+  }
 
   @override
   bool get isAuthenticated => _currentUser != null;
@@ -430,6 +455,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -452,8 +481,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final filteredData = tableData
+    final filteredData = tableDataSnapshot
         .where((row) => row[filterColumn] == filterValue)
         .toList();
     return filteredData;
@@ -466,14 +494,22 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required Map<String, dynamic> filters,
     String? orderBy,
     bool ascending = true,
+    int? limit,
+    bool retry = true,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
+
     _methodCalls.add({
       'method': 'selectMatch',
       'table': table,
       'columns': columns,
       'filters': Map<String, dynamic>.from(filters),
-      if (orderBy != null) 'orderBy': orderBy,
+      'orderBy': ?orderBy,
       'ascending': ascending,
+      'limit': ?limit,
+      'retry': retry,
     });
 
     if (shouldDelayOperations) {
@@ -491,8 +527,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final results = tableData
+    final results = tableDataSnapshot
         .where(
           (row) =>
               filters.entries.every((entry) => row[entry.key] == entry.value),
@@ -513,6 +548,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       });
     }
 
+    if (limit != null) {
+      return results.take(limit).toList();
+    }
     return results;
   }
 
@@ -523,6 +561,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required List<dynamic> filterValues,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -545,8 +587,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final filteredData = tableData
+    final filteredData = tableDataSnapshot
         .where((row) => filterValues.contains(row[filterColumn]))
         .toList();
     return filteredData;
@@ -563,6 +604,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required int rangeFrom,
     required int rangeTo,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -585,8 +630,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       );
     }
 
-    final tableData = _tables[table] ?? [];
-    var filteredData = tableData
+    var filteredData = tableDataSnapshot
         .where((row) => row[filterColumn] == filterValue)
         .toList();
 
@@ -1048,6 +1092,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         );
       case SupabaseExceptionType.socket:
         throw SocketException(message);
+      case SupabaseExceptionType.network:
+        throw NetworkException(Trace.current(), Exception(message));
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
       case SupabaseExceptionType.type:
@@ -1074,12 +1120,17 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return;
     }
     if (shouldEmitStreamErrors) {
-      controller.addError(
-        ServerException(
-          Trace.current(),
-          Exception('Stream error for table: $table'),
-        ),
-      );
+      try {
+        _throwConfiguredException(
+          streamExceptionType,
+          'Stream error for table: $table',
+        );
+      } catch (e, st) {
+        controller.addError(e, st);
+      }
+      if (shouldCloseStreamOnError) {
+        controller.close();
+      }
       return;
     }
     controller.add(_cloneRows(_tables[table] ?? const []));
@@ -1089,7 +1140,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   }
 
-  /// Adds data to a specific table
+  /// Replaces all rows for [table] and emits the new state to any active stream listeners
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
     _emitTableData(table);
@@ -1231,6 +1282,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldDelayOperations = false;
     completer = null;
     shouldEmitStreamErrors = false;
+    streamExceptionType = null;
+    shouldCloseStreamOnError = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
     _nextId = 1;

@@ -13,10 +13,17 @@ class LoginWithEmailBloc
     extends Bloc<LoginWithEmailEvent, LoginWithEmailState> {
   final CheckEmailAvailabilityUseCase _checkEmailAvailabilityUseCase;
 
+  // Monotonically increasing token for availability checks. Checks fired for
+  // successive keystrokes execute concurrently, so whichever RPC resolved
+  // last used to win the final emit — a stale response for an older input
+  // (e.g. "user@example.co" while typing "user@example.com") could overwrite
+  // the verdict for the email currently in the field. A completed check
+  // whose token is no longer current discards its result instead.
+  int _availabilityCheckGeneration = 0;
+
   LoginWithEmailBloc({
-    required CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase,
-  }) : _checkEmailAvailabilityUseCase = checkEmailAvailabilityUseCase,
-       super(LoginWithEmailInitial()) {
+    required this._checkEmailAvailabilityUseCase,
+  }) : super(LoginWithEmailInitial()) {
     on<LoginEmailAvailabilityCheckRequested>(_onEmailChanged);
     on<LoginWithEmailFormFieldChanged>(_onFormFieldChanged);
   }
@@ -25,8 +32,10 @@ class LoginWithEmailBloc
     LoginEmailAvailabilityCheckRequested event,
     Emitter<LoginWithEmailState> emit,
   ) async {
+    final generation = ++_availabilityCheckGeneration;
     emit(LoginWithEmailAvailabilityLoading());
     final result = await _checkEmailAvailabilityUseCase(event.email);
+    if (generation != _availabilityCheckGeneration) return;
     result.fold(
       (failure) {
         emit(LoginWithEmailAvailabilityCheckFailure(failure: failure));

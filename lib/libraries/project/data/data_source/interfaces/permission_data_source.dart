@@ -17,6 +17,8 @@ abstract class ProjectPermissionDataSource {
   ///
   /// Convenience method that checks if [permissionKey] exists in the
   /// permissions list for [projectId].
+  /// This must remain synchronous because callers use it as a local JWT claim
+  /// lookup and gate mutations before starting async data-source operations.
   ///
   /// [projectId] The UUID of the project
   /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')

@@ -1,0 +1,419 @@
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../utils/fake_app_bootstrap_factory.dart';
+
+void main() {
+  late AppLocalizations l10n;
+  late FakeSupabaseWrapper fakeSupabase;
+
+  setUpAll(() {
+    l10n = lookupAppLocalizations(const Locale('en'));
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
+    );
+    Modular.init(EstimationModule(bootstrap));
+  });
+
+  tearDownAll(() {
+    Modular.dispose();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
+  Widget makeWidget({
+    bool fromCostFile = false,
+    ValueChanged<double>? onTotalChanged,
+    ValueChanged<bool>? onSaveEnabledChanged,
+  }) {
+    return MaterialApp(
+      theme: CoreTheme.light(),
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: BlocProvider<LabourCostFormBloc>(
+          create: (_) => Modular.get<LabourCostFormBloc>(),
+          child: LabourCostFormFields(
+            fromCostFile: fromCostFile,
+            onTotalChanged: onTotalChanged,
+            onSaveEnabledChanged: onSaveEnabledChanged,
+          ),
+        ),
+      ),
+    );
+  }
+
+  group('LabourCostFormFields — manually mode', () {
+    testWidgets('shows labour type text field', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('labour_type_field')), findsOneWidget);
+    });
+
+    testWidgets('shows calc method card', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('calc_method_card')), findsOneWidget);
+    });
+
+    testWidgets('shows crew rate field with dollar suffix', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_rate_field')), findsOneWidget);
+    });
+
+    testWidgets('hides cost file field', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cost_file_field')), findsNothing);
+    });
+
+    testWidgets('hides rate row inside calc method card', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_row')), findsNothing);
+    });
+
+    testWidgets('shows conditional field with "No. of days" label by default', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('conditional_value_field')), findsOneWidget);
+      expect(find.text(l10n.noOfDaysLabel), findsOneWidget);
+    });
+
+    testWidgets('shows crew size field', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_size_field')), findsOneWidget);
+    });
+  });
+
+  group('LabourCostFormFields — from cost file mode', () {
+    testWidgets('shows cost file dropdown placeholder', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cost_file_field')), findsOneWidget);
+    });
+
+    testWidgets('shows labour type dropdown placeholder', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('labour_type_field')), findsOneWidget);
+    });
+
+    testWidgets('hides crew rate field', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_rate_field')), findsNothing);
+    });
+
+    // TODO: [CA-298] Assert rate row is visible once cost file is selected and rate is wired
+    testWidgets('hides rate row inside calc method card until cost file selected', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_row')), findsNothing);
+    });
+  });
+
+  group('LabourCostFormFields — calc method switching', () {
+    testWidgets('per day is selected by default', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
+      expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+    });
+
+    testWidgets('tapping per hours changes conditional field label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.noOfHoursLabel), findsOneWidget);
+      expect(find.text(l10n.noOfDaysLabel), findsNothing);
+    });
+
+    testWidgets('per hours option selected after tap', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+
+      final perHours = tester.getSemantics(
+        find.byKey(const Key('per_hours_option')),
+      );
+      final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
+      expect(perHours.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isFalse);
+    });
+  });
+
+  group('LabourCostFormFields — save enabled', () {
+    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets('calls onSaveEnabledChanged(true) when labour type has text', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+
+      expect(captured, isTrue);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when labour type is cleared', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onSaveEnabledChanged: (v) => captured = v,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      expect(captured, isTrue);
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+  });
+
+  group('LabourCostFormFields — item type error', () {
+    testWidgets('shows error text when labour type is cleared after typing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+
+      expect(find.text(l10n.labourTypeRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides error text when labour type is non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.labourTypeRequiredError), findsNothing);
+    });
+  });
+
+  group('LabourCostFormFields — real-time total', () {
+    testWidgets('calls onTotalChanged with crewRate × value × crewSize', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('crew_rate_field')), '100');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('conditional_value_field')),
+        '5',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('crew_size_field')), '3');
+      await tester.pump();
+
+      expect(capturedTotal, 1500.0);
+    });
+
+    testWidgets('total updates when crew rate changes', (tester) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('conditional_value_field')),
+        '2',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('crew_size_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('crew_rate_field')), '50');
+      await tester.pump();
+
+      expect(capturedTotal, 400.0);
+    });
+
+    testWidgets('calls onTotalChanged with 0 when a field is empty', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('crew_rate_field')), '100');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('crew_size_field')), '3');
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
+    });
+
+    testWidgets('calls onTotalChanged with 0 in fromCostFile mode', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onTotalChanged: (total) => capturedTotal = total,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('conditional_value_field')),
+        '5',
+      );
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
+    });
+
+    testWidgets('resets total to 0 when fromCostFile flips on a mounted widget', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('crew_rate_field')), '100');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('conditional_value_field')),
+        '5',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('crew_size_field')), '3');
+      await tester.pump();
+
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onTotalChanged: (total) => capturedTotal = total,
+        ),
+      );
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
+    });
+  });
+}

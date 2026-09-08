@@ -68,8 +68,8 @@ class EstimationCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.calendar_today_outlined,
+                CoreIconWidget(
+                  icon: CoreIcons.calendar,
                   size: _kEstimationCardInfoIconSize,
                   color: colors.iconGrayMid,
                 ),

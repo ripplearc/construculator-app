@@ -3,7 +3,6 @@ import 'package:construculator/libraries/estimation/domain/entities/lock_status_
 import 'package:construculator/libraries/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 
 /// Represents a cost estimate for a construction project.
 ///
@@ -93,8 +92,9 @@ class CostEstimate extends Equatable {
     LockStatus? lockStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Clock? clock,
   }) {
-    final now = createdAt ?? Modular.get<Clock>().now();
+    final now = createdAt ?? clock?.now() ?? DateTime.now();
     return CostEstimate(
       id: id,
       projectId: projectId,

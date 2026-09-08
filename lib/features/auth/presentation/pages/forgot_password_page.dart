@@ -10,11 +10,12 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
-  const ForgotPasswordPage({super.key});
+  final AppRouter router;
+
+  const ForgotPasswordPage({super.key, required this.router});
 
   @override
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
@@ -24,7 +25,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   final focusNode = FocusNode();
   List<String>? _emailErrorList;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
     final l10n = context.l10n;
@@ -165,7 +165,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
         listener: (context, state) {
           if (state is OtpVerificationSuccess) {
-            _router.navigate(fullSetNewPasswordRoute, arguments: email);
+            widget.router.navigate(fullSetNewPasswordRoute, arguments: email);
           }
           if (state is OtpVerificationFailure) {
             _handleFailure(state.failure);

@@ -13,7 +13,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   final EnvLoader _envLoader;
   static final _logger = AppLogger().tag('SupabaseWrapperImpl');
 
-  SupabaseWrapperImpl({required EnvLoader envLoader}) : _envLoader = envLoader;
+  SupabaseWrapperImpl({required this._envLoader});
 
   @override
   Future<void> initialize() async {
@@ -22,7 +22,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     if (supabaseUrl != null && supabaseAnonKey != null) {
       await supabase.Supabase.initialize(
         url: supabaseUrl,
-        anonKey: supabaseAnonKey,
+        publishableKey: supabaseAnonKey,
         debug: _envLoader.get('DEBUG_MODE') == 'true',
       );
       _supabaseClient = supabase.Supabase.instance.client;
@@ -40,6 +40,9 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
 
   @override
   supabase.User? get currentUser => _supabaseClient.auth.currentUser;
+
+  @override
+  supabase.Session? get currentSession => _supabaseClient.auth.currentSession;
 
   @override
   bool get isAuthenticated => _supabaseClient.auth.currentUser != null;
@@ -124,15 +127,19 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required Map<String, dynamic> filters,
     String? orderBy,
     bool ascending = true,
+    int? limit,
+    bool retry = true,
   }) async {
     var query = _supabaseClient
         .from(table)
         .select(columns)
-        .match(filters.cast<String, Object>());
+        .match(filters.cast<String, Object>())
+        .retry(enabled: retry);
     if (orderBy != null) {
-      return await query.order(orderBy, ascending: ascending);
+      final ordered = query.order(orderBy, ascending: ascending);
+      return limit != null ? await ordered.limit(limit) : await ordered;
     }
-    return await query;
+    return limit != null ? await query.limit(limit) : await query;
   }
 
   @override
@@ -181,9 +188,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required Map<String, dynamic> data,
     required String onConflict,
   }) async {
-    await _supabaseClient
-        .from(table)
-        .upsert(data, onConflict: onConflict);
+    await _supabaseClient.from(table).upsert(data, onConflict: onConflict);
   }
 
   @override

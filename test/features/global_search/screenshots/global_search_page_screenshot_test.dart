@@ -1,0 +1,289 @@
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
+    as estimation_factory;
+import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_project_dropdown_bloc_factory.dart';
+import '../../../utils/screenshot/await_images_extension.dart';
+import '../../../utils/screenshot/font_loader.dart';
+
+const String _testUserId = 'user-screenshot-test';
+const String _testUserEmail = 'screenshot@test.com';
+
+Map<String, dynamic> _fakeHistoryRow(String term) => {
+  DatabaseConstants.idColumn: term,
+  DatabaseConstants.userIdColumn: _testUserId,
+  DatabaseConstants.searchTermColumn: term,
+  DatabaseConstants.scopeColumn: 'dashboard',
+  DatabaseConstants.searchCountColumn: 1,
+  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+};
+
+class _GlobalSearchPageScreenshotModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _GlobalSearchPageScreenshotModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    GlobalSearchModule(appBootstrap),
+  ];
+}
+
+void main() {
+  const size = Size(390, 844);
+  const ratio = 1.0;
+  const testName = 'global_search_page';
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late FakeSupabaseWrapper fakeSupabase;
+
+  setUpAll(() async {
+    await loadAppFontsAll();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    );
+    Modular.init(_GlobalSearchPageScreenshotModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    expect(supabase, isA<FakeSupabaseWrapper>());
+    fakeSupabase = supabase as FakeSupabaseWrapper;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
+  Future<void> pumpGlobalSearchPage({
+    required WidgetTester tester,
+    required ThemeData theme,
+  }) async {
+    final projectDropdownBloc = FakeProjectDropdownBlocFactory.create();
+    addTearDown(projectDropdownBloc.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GlobalSearchPage(
+          router: Modular.get<AppRouter>(),
+          blocFactory: () => Modular.get<GlobalSearchBloc>(),
+          estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: projectDropdownBloc,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
+
+  screenshotThemeGroups('GlobalSearchPage Screenshot Tests', (theme, suffix) {
+    testWidgets('renders default state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets(
+      'renders with search text and clear button visible correctly',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+        final textFieldFinder = find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(textFieldFinder, 'concrete');
+        await tester.pumpAndSettle();
+        expect(find.text('concrete'), findsOneWidget);
+
+        await expectLater(
+          find.byType(GlobalSearchPage),
+          matchesGoldenFile(
+            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets('renders with recent searches correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+        _fakeHistoryRow('Material of building'),
+        _fakeHistoryRow('MD bungalow'),
+      ]);
+
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with active tag filter chips correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+      Modular.get<GlobalSearchBloc>().add(
+        const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with active date filter chip correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+      // Apply a fixed range directly to the in-tree BLoC rather than tapping
+      // through the sheet, which resolves to DateTime.now() and would make the
+      // golden encode the capture date (drifting the next time goldens are
+      // regenerated). GlobalSearchPage creates the BlocProvider internally, so
+      // the BLoC is looked up from a descendant element below it (the factory
+      // registration means Modular.get would return a different instance).
+      final element = tester.element(
+        find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(
+            BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
+          ),
+        ),
+      );
+      BlocProvider.of<GlobalSearchBloc>(element).add(
+        GlobalSearchDateFilterApplied(
+          range: DateRange(
+            start: DateTime(2026, 1, 5),
+            end: DateTime(2026, 1, 12),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders search results correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': <Map<String, dynamic>>[],
+        'estimations': [
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-results-1',
+            estimateName: '2nd Wall Cost Estimate',
+            totalCost: 12343.88,
+          ),
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-results-2',
+            estimateName: 'Steel Frame Estimate',
+            totalCost: 250000.0,
+          ),
+        ],
+        'members': <Map<String, dynamic>>[],
+      });
+
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
+
+      final textFieldFinder = find.descendant(
+        of: find.byType(GlobalSearchPage),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(textFieldFinder, 'estimate');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results$suffix.png',
+        ),
+      );
+    });
+  });
+}

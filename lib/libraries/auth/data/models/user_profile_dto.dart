@@ -12,6 +12,10 @@ class UserProfileDto extends Equatable {
   final String id;
 
   /// The credential ID associated with the user.
+  ///
+  /// Populated only from the database view via [fromJson]; never mapped to
+  /// the domain entity — it is an internal Supabase Auth identifier that
+  /// stays in the data layer.
   final String? credentialId;
 
   /// User's first name.
@@ -68,10 +72,13 @@ class UserProfileDto extends Equatable {
   };
 
   /// Converts this DTO to a domain [UserProfile] entity.
+  ///
+  /// [credentialId] is intentionally not mapped: it is an internal Supabase
+  /// Auth identifier (used in RLS/JWT) with no domain meaning and must not
+  /// surface outside the auth library's data layer.
   UserProfile toDomain() {
     return UserProfile(
       id: id,
-      credentialId: credentialId,
       firstName: firstName,
       lastName: lastName,
       professionalRole: professionalRole,
@@ -80,10 +87,12 @@ class UserProfileDto extends Equatable {
   }
 
   /// Creates a [UserProfileDto] from a domain [UserProfile] entity.
+  ///
+  /// [credentialId] is always `null` here since the domain entity does not
+  /// carry it; only [fromJson] can populate it from the database view.
   factory UserProfileDto.fromDomain(UserProfile userProfile) {
     return UserProfileDto(
       id: userProfile.id,
-      credentialId: userProfile.credentialId,
       firstName: userProfile.firstName,
       lastName: userProfile.lastName,
       professionalRole: userProfile.professionalRole,

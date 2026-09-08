@@ -51,7 +51,7 @@ class FakeAuthRepository implements AuthRepository {
   final Clock _clock;
 
   /// Constructor for fake auth repository
-  FakeAuthRepository({required Clock clock}) : _clock = clock;
+  FakeAuthRepository({required this._clock});
 
   /// Resets all fake state and recorded calls
   void reset() {

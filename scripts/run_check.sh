@@ -74,23 +74,7 @@ filter_coverage_tracefile() {
     '**/*.freezed.dart' \
     '**/l10n/**' \
     -o "$tracefile" \
-    --ignore-errors unused
-}
-
-build_extract_patterns_from_tracefile() {
-  local tracefile="$1"
-  local changed_files="$2"
-
-  local covered_sources
-  covered_sources=$(grep '^SF:' "$tracefile" | cut -d: -f2- || true)
-
-  local file
-  while IFS= read -r file; do
-    [[ -z "$file" ]] && continue
-    if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
-      printf '*/%s\n' "$file"
-    fi
-  done <<< "$changed_files"
+    --ignore-errors unused,empty
 }
 
 pre_check() {
@@ -134,7 +118,7 @@ pre_check() {
   local test_dirs=()
   while IFS= read -r dir; do
     [[ -n "$dir" ]] && test_dirs+=("$dir")
-  done < <(find test/features test/libraries test/app -type d \
+  done < <(find test/features test/libraries test/app test/tools -type d \
     \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
   local changed_tests=""
@@ -152,20 +136,62 @@ pre_check() {
     echo "🧪 Running changed tests..."
     fvm flutter test $changed_tests --update-goldens --coverage
 
-    # Process coverage
-    if [[ -s "coverage/lcov.info" ]]; then
-      filter_coverage_tracefile "coverage/lcov.info"
+    # coverage/lcov.info is only required when a lib/**/*.dart file was
+    # touched at all (added or modified) — flutter test --coverage only
+    # instruments files under lib/, so a change set that touches no lib/
+    # file (e.g. tooling under scripts/) produces an empty/absent lcov.info
+    # by design, not because coverage is missing. --diff-filter=d matches
+    # any non-deletion change (added, modified, renamed, ...), which is
+    # deliberately broader than the added-only changed_source_files below:
+    # a modified lib file with broken coverage must still hard-fail, not
+    # just a newly added one.
+    local changed_lib_files
+    changed_lib_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+      | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+      | while IFS= read -r f; do
+          head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+        done || true)
 
-      local changed_source_files
-      changed_source_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+    if [[ -z "$changed_lib_files" ]]; then
+      echo "✅ No changed source files in lib/. Skipping coverage threshold check for --pre."
+    else
+      # Process coverage
+      if [[ -s "coverage/lcov.info" ]]; then
+        filter_coverage_tracefile "coverage/lcov.info"
 
-      if [[ -z "$changed_source_files" ]]; then
-        echo "✅ No changed source files in lib/. Skipping coverage threshold check for --pre."
-      else
+        # CA-658 scope: only newly added lib/**/*.dart files must have their
+        # own SF: entry in lcov.info (a modified file with pre-existing
+        # coverage isn't required to gain a fresh one from this diff alone).
+        local changed_source_files
+        changed_source_files=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+          | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+          | while IFS= read -r f; do
+              head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+            done || true)
+
+        local covered_sources
+        covered_sources=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
+
         local extract_patterns=()
+        local missing_files=()
+
         while IFS= read -r file; do
-          [[ -n "$file" ]] && extract_patterns+=("$file")
-        done < <(build_extract_patterns_from_tracefile "coverage/lcov.info" "$changed_source_files")
+          [[ -z "$file" ]] && continue
+          if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
+            extract_patterns+=("*/$file")
+          else
+            missing_files+=("$file")
+          fi
+        done <<< "$changed_source_files"
+
+        if [[ ${#missing_files[@]} -gt 0 ]]; then
+          echo "❌ The following changed source files have zero coverage and are absent from lcov.info:"
+          for missing in "${missing_files[@]}"; do
+            echo "  - $missing"
+          done
+          echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+          exit 1
+        fi
 
         if [[ ${#extract_patterns[@]} -eq 0 ]]; then
           echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
@@ -191,10 +217,45 @@ pre_check() {
             fi
           fi
         fi
+      else
+        echo "❌ Coverage file missing"
+        exit 1
       fi
-    else
-      echo "❌ Coverage file missing"
-      exit 1
+    fi
+  fi
+
+  if [[ -z "$changed_tests" ]]; then
+    local changed_source_files_all
+    changed_source_files_all=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+      | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+      | while IFS= read -r f; do
+          head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+        done || true)
+
+    if [[ -n "$changed_source_files_all" ]]; then
+      local covered_all=""
+      if [[ -s "coverage/lcov.info" ]]; then
+        covered_all=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
+      fi
+
+      local uncovered_files=()
+      while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        if [[ -z "$covered_all" ]] || \
+           { ! printf '%s\n' "$covered_all" | grep -Fxq "$file" && \
+             ! printf '%s\n' "$covered_all" | grep -Fxq "$PWD/$file"; }; then
+          uncovered_files+=("$file")
+        fi
+      done <<< "$changed_source_files_all"
+
+      if [[ ${#uncovered_files[@]} -gt 0 ]]; then
+        echo "❌ The following changed source files have zero coverage (not found in any tracefile):"
+        for f in "${uncovered_files[@]}"; do
+          echo "  - $f"
+        done
+        echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+        exit 1
+      fi
     fi
   fi
 }
@@ -208,10 +269,12 @@ run_mutation_tests() {
   echo "🧬 Checking for changed mutation config files..."
   CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- \
     "test/features/**/mutations/*.xml" \
-    "test/libraries/**/mutations/*.xml")
+    "test/libraries/**/mutations/*.xml" \
+    "test/app/**/mutations/*.xml" \
+    "test/tools/**/mutations/*.xml")
 
   if [ -z "$CHANGED_FILES" ]; then
-  echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
+  echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations, test/app/**/mutations, test/tools/**/mutations). Skipping mutation tests."
   exit 0
   fi
 
@@ -256,7 +319,7 @@ comprehensive_check() {
   while IFS= read -r dir; do
     [[ -n "$dir" ]] && unit_test_dirs+=("$dir")
   done < <(
-    find test/features test/libraries test/app -type d \
+    find test/features test/libraries test/app test/tools -type d \
       \( -name "units" -o -name "widgets" \) 2>/dev/null | sort
   )
 

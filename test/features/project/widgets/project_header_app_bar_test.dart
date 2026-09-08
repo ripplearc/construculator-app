@@ -1,9 +1,13 @@
+import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
+import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +19,7 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
   late Clock clock;
   BuildContext? buildContext;
 
@@ -22,8 +27,13 @@ void main() {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+    Modular.replaceInstance<CurrentProjectNotifier>(
+      FakeCurrentProjectNotifier(),
+    );
     fakeProjectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
+    fakeCurrentProjectNotifier =
+        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     clock = Modular.get<Clock>();
   });
 
@@ -31,7 +41,67 @@ void main() {
     Modular.destroy();
   });
 
+  setUp(() {
+    fakeCurrentProjectNotifier.reset();
+  });
+
   group('ProjectHeaderAppBar', () {
+    Future<void> pumpNoProject(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              buildContext = context;
+              return Scaffold(
+                appBar: ProjectHeaderAppBar(
+                  getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows app title when no project is selected', (tester) async {
+      await pumpNoProject(tester);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.appTitle),
+        findsOneWidget,
+      );
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+    });
+
+    test('preferred size matches TitleSearchAppBar so the shell header slot '
+        'keeps one height across project selection', () {
+      final bar = ProjectHeaderAppBar(
+        getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+      );
+      expect(bar.preferredSize, const TitleSearchAppBar().preferredSize);
+      expect(
+        bar.preferredSize.height,
+        CoreSpacing.space12 + CoreSpacing.space2 * 2,
+      );
+    });
+
+    testWidgets(
+      'initial state renders a CoreAppBar at the full preferred height',
+      (tester) async {
+        await pumpNoProject(tester);
+
+        expect(find.byType(CoreAppBar), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(CoreAppBar)).height,
+          CoreSpacing.space12 + CoreSpacing.space2 * 2,
+        );
+      },
+    );
+
     Future<void> pumpProjectHeaderAppBar(
       WidgetTester tester, {
       required String projectId,
@@ -52,6 +122,7 @@ void main() {
 
       fakeProjectRepository.addProject(projectId, project);
       fakeProjectRepository.shouldThrowOnGetProject = shouldThrowOnGetProject;
+      fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -64,7 +135,7 @@ void main() {
               buildContext = context;
               return Scaffold(
                 appBar: ProjectHeaderAppBar(
-                  projectId: projectId,
+                  getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
                   onProjectTap: onProjectTap,
                   onSearchTap: onSearchTap,
                   onNotificationTap: onNotificationTap,
@@ -95,6 +166,24 @@ void main() {
       expect(find.byType(ProjectHeaderAppBar), findsOneWidget);
       expect(find.text(projectName), findsOneWidget);
     });
+
+    testWidgets(
+      'loaded state renders a CoreAppBar at the full preferred height',
+      (tester) async {
+        await pumpProjectHeaderAppBar(
+          tester,
+          projectId: 'test-project-id',
+          projectName: 'Test Project',
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CoreAppBar), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(CoreAppBar)).height,
+          CoreSpacing.space12 + CoreSpacing.space2 * 2,
+        );
+      },
+    );
 
     testWidgets('calls onProjectTap when project name is tapped', (
       WidgetTester tester,
@@ -317,5 +406,49 @@ void main() {
       expect(find.text(l10n().projectLoadError), findsOneWidget);
       expect(find.byType(CoreLoadingIndicator), findsNothing);
     });
+
+    testWidgets(
+      'updates project name when CurrentProjectNotifier emits new id',
+      (WidgetTester tester) async {
+        const projectIdA = 'project-a';
+        const projectNameA = 'Project Alpha';
+        const projectIdB = 'project-b';
+        const projectNameB = 'Project Beta';
+
+        final projectA = Project(
+          id: projectIdA,
+          projectName: projectNameA,
+          creatorUserId: 'user-id',
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          status: ProjectStatus.active,
+        );
+        final projectB = Project(
+          id: projectIdB,
+          projectName: projectNameB,
+          creatorUserId: 'user-id',
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          status: ProjectStatus.active,
+        );
+
+        fakeProjectRepository.addProject(projectIdA, projectA);
+        fakeProjectRepository.addProject(projectIdB, projectB);
+
+        await pumpProjectHeaderAppBar(
+          tester,
+          projectId: projectIdA,
+          projectName: projectNameA,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(projectNameA), findsOneWidget);
+
+        fakeCurrentProjectNotifier.setCurrentProjectId(projectIdB);
+        await tester.pumpAndSettle();
+
+        expect(find.text(projectNameB), findsOneWidget);
+        expect(find.text(projectNameA), findsNothing);
+      },
+    );
   });
 }

@@ -10,11 +10,10 @@ abstract class ProjectUIProvider {
   /// construction of the header so callers can obtain a ready-to-use
   /// widget without depending on the concrete implementation details.
   ///
-  /// The avatar image is now fetched automatically from the user's profile
-  /// via the GetProjectBloc, so it no longer needs to be passed as a parameter.
+  /// The active project and avatar are resolved automatically from
+  /// `CurrentProjectNotifier` and `GetProjectBloc` inside the widget.
   ///
   /// Parameters:
-  /// - [projectId]: Identifier to fetch the project's name shown in the header title.
   /// - [onProjectTap]: Optional callback invoked when the project title is
   ///   tapped (e.g., to open project details).
   /// - [onSearchTap]: Optional callback for the search action button.
@@ -23,7 +22,6 @@ abstract class ProjectUIProvider {
   /// Returns a [PreferredSizeWidget] that can be used directly as an `appBar` in a
   /// `Scaffold`.
   PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
     VoidCallback? onProjectTap,
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,

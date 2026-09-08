@@ -55,6 +55,81 @@
     "description": "Error message for connection errors",
     "context": "N/A"
   },
+  "consentGateAcceptButton": "Agree and continue",
+  "@consentGateAcceptButton": {
+    "description": "Label for the button that records acceptance on the consent gate page",
+    "context": "N/A"
+  },
+  "consentGateBody": "Please review and accept our terms of service and privacy policy to continue.",
+  "@consentGateBody": {
+    "description": "Body text explaining why the consent gate is blocking the app. Neutral wording: this page also serves ConsentNeverGiven, a user with no prior acceptance, for whom 'updated' would be false -- see #548 B1.",
+    "context": "N/A"
+  },
+  "consentGatePrivacyLink": "privacy policy",
+  "@consentGatePrivacyLink": {
+    "description": "Link text opening the privacy policy from the consent gate page",
+    "context": "N/A"
+  },
+  "consentGateRetryButton": "Retry",
+  "@consentGateRetryButton": {
+    "description": "Label for the retry action shown when recording acceptance failed. Matches consentUnavailableRetryButton's wording -- see #548 N2.",
+    "context": "N/A"
+  },
+  "consentGateSubmitErrorMessage": "We couldn't save your response. Please try again.",
+  "@consentGateSubmitErrorMessage": {
+    "description": "Inline error shown under the accept button when the acceptance write failed",
+    "context": "N/A"
+  },
+  "consentGateTermsLink": "terms of service",
+  "@consentGateTermsLink": {
+    "description": "Link text opening the terms of service from the consent gate page",
+    "context": "N/A"
+  },
+  "consentGateTitle": "Review our terms",
+  "@consentGateTitle": {
+    "description": "Title of the consent gate page. Shown for both ConsentOutdated (a republished version) and ConsentNeverGiven (no prior acceptance at all) -- ConsentGateBloc collapses both to ConsentGateBlocked, so one string pair must be true for both audiences. Kept neutral rather than 'We've updated our terms', which asserted a prior agreement ConsentNeverGiven users never made -- see #548 B1. A returning-user-specific 'updated' framing would need ConsentGateBlocked to carry which status produced it, tracked as a follow-up alongside #546 N3.",
+    "context": "N/A"
+  },
+  "consentUnavailableBody": "Check your connection and try again. You'll be able to continue once we can confirm the current terms.",
+  "@consentUnavailableBody": {
+    "description": "Body text shown when the published terms could not be established and there is no prior acceptance",
+    "context": "N/A"
+  },
+  "consentUnavailableRetryButton": "Retry",
+  "@consentUnavailableRetryButton": {
+    "description": "Label for the retry action on the consent unavailable screen",
+    "context": "N/A"
+  },
+  "consentUnavailableTitle": "We couldn't load the terms",
+  "@consentUnavailableTitle": {
+    "description": "Title shown when the consent requirement could not be established at all",
+    "context": "N/A"
+  },
+  "consentWithdrawalCancelButton": "Cancel",
+  "@consentWithdrawalCancelButton": {
+    "description": "Label dismissing the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
+    "context": "N/A"
+  },
+  "consentWithdrawalConfirmButton": "Yes, withdraw",
+  "@consentWithdrawalConfirmButton": {
+    "description": "Label confirming consent withdrawal. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
+    "context": "N/A"
+  },
+  "consentWithdrawalDialogBody": "You'll be signed out and asked to accept the terms again next time you open the app.",
+  "@consentWithdrawalDialogBody": {
+    "description": "Body of the consent withdrawal confirmation explaining the consequence. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
+    "context": "N/A"
+  },
+  "consentWithdrawalDialogTitle": "Withdraw your consent?",
+  "@consentWithdrawalDialogTitle": {
+    "description": "Title of the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
+    "context": "N/A"
+  },
+  "consentWithdrawalTileLabel": "Withdraw consent",
+  "@consentWithdrawalTileLabel": {
+    "description": "Label of the settings row that opens the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
+    "context": "N/A"
+  },
   "continueButton": "Continue",
   "@continueButton": {
     "description": "Label for login button",
@@ -214,6 +289,106 @@
   "@recentEstimationsEmptyState": {
     "description": "Empty state message shown when there are no recent estimations",
     "context": "Dashboard recent estimations section"
+  },
+  "favouritesSectionTitle": "Favourites",
+  "@favouritesSectionTitle": {
+    "description": "Section title for the dashboard favourites widget",
+    "context": "Dashboard favourites section"
+  },
+  "favouritesEmptyState": "No favourites yet.",
+  "@favouritesEmptyState": {
+    "description": "Empty state message shown when there are no favourited items",
+    "context": "Dashboard favourites section"
+  },
+  "sortFavouriteSemanticLabel": "Sort favourites",
+  "@sortFavouriteSemanticLabel": {
+    "description": "Accessibility label for the sort/filter dropdown button in the Favourites header",
+    "context": "Dashboard favourites section"
+  },
+  "sortFavouriteTitle": "Sort favourite",
+  "@sortFavouriteTitle": {
+    "description": "Title of the bottom sheet for sorting/filtering favourites",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteAll": "All",
+  "@sortFavouriteAll": {
+    "description": "Filter option showing all favourites",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteCostEstimations": "Cost estimations",
+  "@sortFavouriteCostEstimations": {
+    "description": "Filter option showing only favourited cost estimations",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteCalculations": "Calculations",
+  "@sortFavouriteCalculations": {
+    "description": "Filter option showing only favourited calculations",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "editProjectButton": "Edit project",
+  "@editProjectButton": {
+    "description": "Label for the button that navigates to the edit project screen",
+    "context": "Project settings"
+  },
+  "editProjectScreenTitle": "Edit Project",
+  "@editProjectScreenTitle": {
+    "description": "AppBar title of the edit project screen",
+    "context": "Project settings"
+  },
+  "projectSettingsSemanticLabel": "Project settings",
+  "@projectSettingsSemanticLabel": {
+    "description": "Accessibility label for the per-project settings icon button in the projects list",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsSheetTitle": "Projects",
+  "@projectsSheetTitle": {
+    "description": "Title of the bottom sheet that lists the user's projects",
+    "context": "Dashboard projects sheet"
+  },
+  "searchProjectsHint": "Search projects",
+  "@searchProjectsHint": {
+    "description": "Hint text for the search field used to filter the projects list",
+    "context": "Dashboard projects sheet"
+  },
+  "createProjectButton": "Create a project",
+  "@createProjectButton": {
+    "description": "Label for the button that starts creating a new project",
+    "context": "Dashboard projects sheet"
+  },
+  "projectCreationSuccessMessage": "You have successfully created a new project",
+  "@projectCreationSuccessMessage": {
+    "description": "Success message shown after a new project has been created",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=64930-5265"
+  },
+  "continueToDashboardButton": "Continue to Dashboard",
+  "@continueToDashboardButton": {
+    "description": "Label for the CTA button on the project creation success sheet that navigates to the dashboard",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=64930-5265"
+  },
+  "projectsEmptyState": "No projects yet.",
+  "@projectsEmptyState": {
+    "description": "Empty state message shown when the user has no projects",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsLoadError": "Failed to load projects.",
+  "@projectsLoadError": {
+    "description": "Error message shown when the projects list cannot be loaded",
+    "context": "Dashboard projects sheet"
+  },
+  "projectDetailScreenTitle": "Project details",
+  "@projectDetailScreenTitle": {
+    "description": "App bar title for the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58447-5986&t=oNA2s0Vw1vZ5uGbB-1"
+  },
+  "projectDetailsLoadError": "Failed to load project details.",
+  "@projectDetailsLoadError": {
+    "description": "Error message shown when the project details screen cannot load the project",
+    "context": "ProjectDetailScreen"
+  },
+  "projectDetailsRetryButton": "Retry",
+  "@projectDetailsRetryButton": {
+    "description": "Label for the retry button on the project details error state",
+    "context": "ProjectDetailScreen"
   },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
@@ -580,11 +755,6 @@
     "description": "Text for add estimation button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6592&t=LRsSVoyqW6AaIfXf-4"
   },
-  "costEstimation": "Cost Estimation",
-  "@costEstimation": {
-    "description": "Label for cost estimation button on dashboard",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57518-25657&t=12IIYBsZE7VQ2Gg0-4"
-  },
   "calculations": "Calculations",
   "@calculations": {
     "description": "Label for calculations tab or header"
@@ -592,6 +762,26 @@
   "members": "Members",
   "@members": {
     "description": "Label for members tab or header"
+  },
+  "invitePeopleTitle": "Invite team members",
+  "@invitePeopleTitle": {
+    "description": "Title for the member invitation widget"
+  },
+  "invitePeopleSubtitle": "You can invite other people by email",
+  "@invitePeopleSubtitle": {
+    "description": "Subtitle for the member invitation widget"
+  },
+  "assignByEmailHint": "Assign by email",
+  "@assignByEmailHint": {
+    "description": "Hint text for the email input in the invitation widget"
+  },
+  "inviteButton": "Invite",
+  "@inviteButton": {
+    "description": "Label for the Invite action button in the member invitation widget"
+  },
+  "contributorRole": "Contributor",
+  "@contributorRole": {
+    "description": "Static role label shown in the invitation widget"
   },
   "costEstimationEmptyMessage": "No estimation added. To add an estimation please click on add button",
   "@costEstimationEmptyMessage": {
@@ -627,6 +817,16 @@
   "@removeAction": {
     "description": "Label for remove action button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53150&t=wjWHI4P6ds90viit-4"
+  },
+  "removeChipLabel": "Remove {email}",
+  "@removeChipLabel": {
+    "description": "Screen-reader label for the remove button on an email chip in the member invitation sheet; includes the email so each chip announces distinctly",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "alice@example.com"
+      }
+    }
   },
   "copyEstimationAction": "Copy cost estimation",
   "@copyEstimationAction": {
@@ -692,6 +892,24 @@
     "description": "Label for cancel/keep button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9022&t=wjWHI4P6ds90viit-4"
   },
+  "deleteProjectConfirmTitle": "Are you sure you want to remove \"{projectName}\" project?",
+  "@deleteProjectConfirmTitle": {
+    "description": "Title for delete project confirmation bottom sheet",
+    "placeholders": {
+      "projectName": {
+        "type": "String",
+        "example": "Material of Building"
+      }
+    }
+  },
+  "deleteProjectWarningMessage": "By removing this project you will lose all calculations, costs, and images attached to your calculations",
+  "@deleteProjectWarningMessage": {
+    "description": "Warning body text for delete project confirmation bottom sheet"
+  },
+  "deleteProjectButton": "Delete project",
+  "@deleteProjectButton": {
+    "description": "Label for the Delete Project button shown to admin users on the project settings screen"
+  },
   "estimationDeletedSuccess": "Estimation deleted successfully",
   "@estimationDeletedSuccess": {
     "description": "Success message shown when an estimation is deleted"
@@ -699,7 +917,7 @@
   "lockLabel": "Lock",
   "@lockLabel": {
     "description": "Label for lock action",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
   },
   "unlockLabel": "Unlock",
   "@unlockLabel": {
@@ -905,6 +1123,32 @@
     "description": "Activity log message for cost file deleted without details",
     "context": "N/A"
   },
+  "uploadedOnLabel": "Uploaded on",
+  "@uploadedOnLabel": {
+    "description": "Label shown before the upload date of a cost file",
+    "context": "CostFileItem metadata row"
+  },
+  "costFilesSectionTitle": "Cost files",
+  "@costFilesSectionTitle": {
+    "description": "Section title for the list of attached cost files on the project details screen",
+    "context": "CostFilesSection"
+  },
+  "costFilesEmptyState": "No cost files attached.",
+  "@costFilesEmptyState": {
+    "description": "Empty state message when no cost files are attached to a project",
+    "context": "CostFilesSection"
+  },
+  "projectLastUpdatedLabel": "Last updated: {date}",
+  "@projectLastUpdatedLabel": {
+    "description": "Last-updated line on the project header card, showing the formatted date",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58447-5986&t=oNA2s0Vw1vZ5uGbB-1",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Oct 12, 2024"
+      }
+    }
+  },
   "activityAttachmentAdded": "Added attachment: {fileName}",
   "@activityAttachmentAdded": {
     "description": "Activity log message for attachment added with file name",
@@ -1041,7 +1285,7 @@
       }
     }
   },
-  "activityEditedFieldValueCurrency": "\u0024{value}",
+  "activityEditedFieldValueCurrency": "${value}",
   "@activityEditedFieldValueCurrency": {
     "description": "Formatted value for currency based edited fields",
     "placeholders": {
@@ -1096,15 +1340,10 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
-    },
+  },
   "appTitle": "Construculator",
   "@appTitle": {
     "description": "Application title displayed in app bar",
-    "context": "AppShellPage"
-  },
-  "homeTab": "Home",
-  "@homeTab": {
-    "description": "Label for home tab in bottom navigation",
     "context": "AppShellPage"
   },
   "calculationsTab": "Calculations",
@@ -1112,14 +1351,946 @@
     "description": "Label for calculations tab in bottom navigation",
     "context": "AppShellPage"
   },
-  "membersTab": "Members",
-  "@membersTab": {
-    "description": "Label for members tab in bottom navigation",
+  "estimatesTab": "Estimates",
+  "@estimatesTab": {
+    "description": "Bottom nav tab label for the cost estimates feature",
     "context": "AppShellPage"
   },
   "permissionDenied": "You don't have permission to perform this action",
   "@permissionDenied": {
     "description": "Error message shown when user lacks permission for an operation",
     "context": "N/A"
+  },
+  "materialsTab": "Materials",
+  "@materialsTab": {
+    "description": "Label for materials tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "laboursTab": "Labours",
+  "@laboursTab": {
+    "description": "Label for labours tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "equipmentsTab": "Equipments",
+  "@equipmentsTab": {
+    "description": "Label for equipments tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noMaterialCostMessage": "No material cost added. For adding cost please click on add button",
+  "@noMaterialCostMessage": {
+    "description": "Empty state message shown when no material costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noLabourCostMessage": "No labour cost added. For adding cost please click on add button",
+  "@noLabourCostMessage": {
+    "description": "Empty state message shown when no labour costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noEquipmentCostMessage": "No equipment cost added. For adding cost please click on add button",
+  "@noEquipmentCostMessage": {
+    "description": "Empty state message shown when no equipment costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "addMaterialCostButton": "Add material cost",
+  "@addMaterialCostButton": {
+    "description": "Label for the add material cost floating action button on the cost estimation details page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6780&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "previewButton": "Preview",
+  "@previewButton": {
+    "description": "Label for the preview button in the cost estimation details bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57376-12679&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "backLabel": "Back",
+  "@backLabel": {
+    "description": "Accessibility label for the back navigation icon",
+    "context": "N/A"
+  },
+  "editEstimationNameLabel": "Edit estimation name",
+  "@editEstimationNameLabel": {
+    "description": "Accessibility label for the edit icon shown next to the estimation title",
+    "context": "N/A"
+  },
+  "editCostItemNameLabel": "Edit cost item name",
+  "@editCostItemNameLabel": {
+    "description": "Accessibility label for the edit icon shown next to the cost item title in the form screen",
+    "context": "N/A"
+  },
+  "moreOptionsLabel": "More options",
+  "@moreOptionsLabel": {
+    "description": "Accessibility label for the more-options (overflow) icon in the app bar",
+    "context": "N/A"
+  },
+  "commentLabel": "Comment",
+  "@commentLabel": {
+    "description": "Accessibility label for the comment icon in the cost estimation details tab view",
+    "context": "N/A"
+  },
+  "addMaterialCostsScreenTitle": "Material cost entry",
+  "@addMaterialCostsScreenTitle": {
+    "description": "App bar title for the add material cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addLabourCostsScreenTitle": "Labour cost entry",
+  "@addLabourCostsScreenTitle": {
+    "description": "App bar title for the add labour cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
+  },
+  "addEquipmentCostsScreenTitle": "Equipment cost entry",
+  "@addEquipmentCostsScreenTitle": {
+    "description": "App bar title for the add equipment cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
+  },
+  "howToCalculateCostLabel": "How you want to calculate cost?",
+  "@howToCalculateCostLabel": {
+    "description": "Label above the manual/cost-file mode toggle on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "fromCostFileMode": "From cost file",
+  "@fromCostFileMode": {
+    "description": "Label for the 'from cost file' mode toggle button on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-6582"
+  },
+  "manuallyMode": "Manually",
+  "@manuallyMode": {
+    "description": "Label for the 'manually' mode toggle button on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "costItemTotalLabel": "Total:",
+  "@costItemTotalLabel": {
+    "description": "Label shown before the running total amount in the cost item form bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addToCostButton": "Add to cost",
+  "@addToCostButton": {
+    "description": "Label for the submit button in the cost item form screen bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "fromCostFileModeSemanticLabel": "Switch to cost file mode",
+  "@fromCostFileModeSemanticLabel": {
+    "description": "Accessibility label for the 'from cost file' toggle button on the cost item form screen",
+    "context": "N/A"
+  },
+  "manuallyModeSemanticLabel": "Switch to manual mode",
+  "@manuallyModeSemanticLabel": {
+    "description": "Accessibility label for the 'manually' toggle button on the cost item form screen",
+    "context": "N/A"
+  },
+  "globalSearchHint": "Search for Calculation and cost",
+  "@globalSearchHint": {
+    "description": "Hint text displayed in the global search input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchRecentSearchesTitle": "Recent searches",
+  "@globalSearchRecentSearchesTitle": {
+    "description": "Section title for the recent searches list on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchRecentSearchesTitle": "Recent searches",
+  "@projectSearchRecentSearchesTitle": {
+    "description": "Section title for the recent searches list on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterTags": "Tags",
+  "@globalSearchFilterTags": {
+    "description": "Label for the Tags filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterModified": "Modified",
+  "@globalSearchFilterModified": {
+    "description": "Label for the Modified filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterType": "Type",
+  "@globalSearchFilterType": {
+    "description": "Label for the Type filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchSuggestionsTitle": "Search suggestions",
+  "@globalSearchSuggestionsTitle": {
+    "description": "Section title shown above the suggestions list on the global search screen when the user has typed a query",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchSuggestionFillSemanticLabel": "Fill search field with {term}",
+  "@globalSearchSuggestionFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a suggestion row — fills the search field with the suggested term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchEmptyRecentMessage": "No recent searches available",
+  "@globalSearchEmptyRecentMessage": {
+    "description": "Message shown when there are no recent searches on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchFilterTags": "Tags",
+  "@projectSearchFilterTags": {
+    "description": "Label for the Tags filter chip on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchFilterModified": "Modified",
+  "@projectSearchFilterModified": {
+    "description": "Label for the Modified filter chip on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchEmptyRecentMessage": "No recent searches available",
+  "@projectSearchEmptyRecentMessage": {
+    "description": "Message shown when there are no recent searches on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "dashboardTitle": "Construculator",
+  "@dashboardTitle": {
+    "description": "Title text displayed in the dashboard app bar",
+    "context": "N/A"
+  },
+  "dashboardSearchSemanticLabel": "Search",
+  "@dashboardSearchSemanticLabel": {
+    "description": "Accessibility label for the search icon button on the dashboard app bar",
+    "context": "N/A"
+  },
+  "globalSearchBackSemanticLabel": "Back",
+  "@globalSearchBackSemanticLabel": {
+    "description": "Accessibility label for the back button on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearSearchSemanticLabel": "Clear search",
+  "@globalSearchClearSearchSemanticLabel": {
+    "description": "Accessibility label for the clear search button on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchBackSemanticLabel": "Back",
+  "@projectSearchBackSemanticLabel": {
+    "description": "Accessibility label for the back button on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchClearSearchSemanticLabel": "Clear search",
+  "@projectSearchClearSearchSemanticLabel": {
+    "description": "Accessibility label for the clear search button on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchSuggestionsTitle": "Search suggestions",
+  "@projectSearchSuggestionsTitle": {
+    "description": "Section title shown above the suggestions list on the project search screen when the user has typed a query",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchSuggestionFillSemanticLabel": "Fill search field with {term}",
+  "@projectSearchSuggestionFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a project search suggestion row — fills the search field with the suggested term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchLoadErrorMessage": "Failed to load recent searches. Please try again.",
+  "@globalSearchLoadErrorMessage": {
+    "description": "Error toast shown when loading recent searches fails",
+    "context": "N/A"
+  },
+  "searchPerformErrorMessage": "Search failed. Please try again.",
+  "@searchPerformErrorMessage": {
+    "description": "Error toast shown on the search pages when performing a search fails",
+    "context": "N/A"
+  },
+  "searchFailureBodyMessage": "Something went wrong while searching.",
+  "@searchFailureBodyMessage": {
+    "description": "Message shown in the persistent failure state of the search results body when a search fails",
+    "context": "N/A"
+  },
+  "searchFailureRetryLabel": "Retry",
+  "@searchFailureRetryLabel": {
+    "description": "Label for the retry button on the search failure state that re-runs the failed search",
+    "context": "N/A"
+  },
+  "recentSearchFillSemanticLabel": "Fill search field with {term}",
+  "@recentSearchFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a recent search row (global and project search) — fills the search field with the term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "recentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
+  "@recentSearchDeleteSemanticLabel": {
+    "description": "Label of the custom accessibility action on a recent search row (global and project search) that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
+    "context": "N/A",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
+  "@globalSearchDeleteErrorMessage": {
+    "description": "Error toast shown when deleting a recent search fails",
+    "context": "N/A"
+  },
+  "globalSearchSuggestionsErrorMessage": "Could not load suggestions.",
+  "@globalSearchSuggestionsErrorMessage": {
+    "description": "Warning toast shown when loading search suggestions fails",
+    "context": "N/A"
+  },
+  "searchNavigationError": "Failed to open search. Please try again.",
+  "@searchNavigationError": {
+    "description": "Error toast shown when navigation to the search screen fails",
+    "context": "N/A"
+  },
+  "closeButton": "Close",
+  "@closeButton": {
+    "description": "Label for close/dismiss action buttons and toasts",
+    "context": "N/A"
+  },
+  "projectDropdownSemanticLabel": "Select project",
+  "@projectDropdownSemanticLabel": {
+    "description": "Accessibility label for the project selector dropdown in the header"
+  },
+  "notificationSemanticLabel": "Notifications",
+  "@notificationSemanticLabel": {
+    "description": "Accessibility label for the notification icon button in the header"
+  },
+  "profileSemanticLabel": "Profile",
+  "@profileSemanticLabel": {
+    "description": "Accessibility label for the profile avatar button in the header"
+  },
+  "searchResultsMostRelevant": "Most relevant",
+  "@searchResultsMostRelevant": {
+    "description": "Section header shown above the list of most relevant search results",
+    "context": "N/A"
+  },
+  "searchResultsLoadMoreFailed": "Couldn't load more results",
+  "@searchResultsLoadMoreFailed": {
+    "description": "Message shown in the results list footer when fetching the next page of search results fails",
+    "context": "N/A"
+  },
+  "searchResultsLoadMoreLoading": "Loading more results",
+  "@searchResultsLoadMoreLoading": {
+    "description": "Label shown under the spinner in the results list footer while the next page of search results is being fetched",
+    "context": "N/A"
+  },
+  "searchResultsEndOfResults": "No more results",
+  "@searchResultsEndOfResults": {
+    "description": "Label shown in the results list footer once every page of search results has been loaded",
+    "context": "N/A"
+  },
+  "searchResultsEmpty": "No results found for \"{query}\"",
+  "@searchResultsEmpty": {
+    "description": "Message shown when a search returns no results",
+    "context": "N/A",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardLoadProfileError": "Failed to load profile. Please try again.",
+  "@dashboardLoadProfileError": {
+    "description": "Error toast shown when loading the user profile on the dashboard fails",
+    "context": "N/A"
+  },
+  "projectSelectorSemanticLabel": "Select project",
+  "@projectSelectorSemanticLabel": {
+    "description": "Accessibility label for the project selector button in the project header app bar",
+    "context": "N/A"
+  },
+  "numberOfCostEstimations": "No. of cost estimation",
+  "@numberOfCostEstimations": {
+    "description": "Label for the cost estimations count stat card on the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "peopleInvited": "People invited",
+  "@peopleInvited": {
+    "description": "Label for the members count stat card on the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchEmptyQueryMessage": "Please enter a search term.",
+  "@globalSearchEmptyQueryMessage": {
+    "description": "Warning toast shown when the user submits an empty or whitespace-only search query",
+    "context": "N/A"
+  },
+  "globalSearchFilterTagsSemanticLabel": "Filter by tags",
+  "@globalSearchFilterTagsSemanticLabel": {
+    "description": "Accessibility label for the Tags filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterTagsSemanticLabel": "Filter by tags",
+  "@projectSearchFilterTagsSemanticLabel": {
+    "description": "Accessibility label for the Tags filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearTagFilterSemanticLabel": "Clear tag filter {tag}",
+  "@globalSearchClearTagFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active tag filter chip",
+    "context": "N/A",
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchFilterModifiedSemanticLabel": "Filter by modification date",
+  "@globalSearchFilterModifiedSemanticLabel": {
+    "description": "Accessibility label for the Modified date filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterModifiedSemanticLabel": "Filter by modification date",
+  "@projectSearchFilterModifiedSemanticLabel": {
+    "description": "Accessibility label for the Modified date filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterOwner": "Owner",
+  "@projectSearchFilterOwner": {
+    "description": "Label for the Owner filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterOwnerSemanticLabel": "Filter by owner",
+  "@projectSearchFilterOwnerSemanticLabel": {
+    "description": "Accessibility label for the Owner filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchClearTagFilterSemanticLabel": "Clear tag filter {tag}",
+  "@projectSearchClearTagFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active tag filter chip on the project search screen",
+    "context": "N/A",
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchClearOwnerFilterSemanticLabel": "Clear owner filter {owner}",
+  "@projectSearchClearOwnerFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active owner filter chip on the project search screen",
+    "context": "N/A",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchClearDateFilterSemanticLabel": "Clear modification date filter",
+  "@projectSearchClearDateFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes the active modification-date filter on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetTitle": "Tags",
+  "@projectSearchTagsSheetTitle": {
+    "description": "Title of the Tags filter bottom sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetSearchHint": "Search by tag name",
+  "@projectSearchTagsSheetSearchHint": {
+    "description": "Hint text for the tag search field inside the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetClearAll": "Clear all",
+  "@projectSearchTagsSheetClearAll": {
+    "description": "Label for the button that deselects all tags in the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetApply": "Apply",
+  "@projectSearchTagsSheetApply": {
+    "description": "Label for the button that applies the selected tag filters on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetEmpty": "No tags found.",
+  "@projectSearchTagsSheetEmpty": {
+    "description": "Message shown when no tags match the search query in the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetTitle": "Owner",
+  "@projectSearchOwnerSheetTitle": {
+    "description": "Title of the Owner filter bottom sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetSearchHint": "Search by owner name",
+  "@projectSearchOwnerSheetSearchHint": {
+    "description": "Hint text for the owner search field inside the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetClearAll": "Clear all",
+  "@projectSearchOwnerSheetClearAll": {
+    "description": "Label for the button that deselects all owners in the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetApply": "Apply",
+  "@projectSearchOwnerSheetApply": {
+    "description": "Label for the button that applies the selected owner filters on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetEmpty": "No owners found.",
+  "@projectSearchOwnerSheetEmpty": {
+    "description": "Message shown when no owners match the search query in the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearDateFilterSemanticLabel": "Clear modification date filter",
+  "@globalSearchClearDateFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes the active modification-date filter",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetTitle": "Tags",
+  "@globalSearchTagsSheetTitle": {
+    "description": "Title of the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetSearchHint": "Search by tag name",
+  "@globalSearchTagsSheetSearchHint": {
+    "description": "Placeholder text in the search field inside the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetClearAll": "Clear all",
+  "@globalSearchTagsSheetClearAll": {
+    "description": "Label for the Clear all button in the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetApply": "Apply",
+  "@globalSearchTagsSheetApply": {
+    "description": "Label for the Apply button in the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetEmpty": "No tags found.",
+  "@globalSearchTagsSheetEmpty": {
+    "description": "Message shown in the Tags filter bottom sheet when no tags match the search or none exist",
+    "context": "N/A"
+  },
+  "globalSearchTagsLoadErrorMessage": "Could not load tags.",
+  "@globalSearchTagsLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available tags for the filter sheet fails",
+    "context": "N/A"
+  },
+  "globalSearchFilterTypeSemanticLabel": "Filter by type",
+  "@globalSearchFilterTypeSemanticLabel": {
+    "description": "Semantic label of the Type filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearTypeFilterSemanticLabel": "Clear type filter {type}",
+  "@globalSearchClearTypeFilterSemanticLabel": {
+    "description": "Semantic label of the active type filter pill that resets the search scope when tapped",
+    "context": "N/A",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchTypeSheetTitle": "Select Filter by cost or calculation",
+  "@globalSearchTypeSheetTitle": {
+    "description": "Title of the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchTypeCostLabel": "Cost",
+  "@globalSearchTypeCostLabel": {
+    "description": "Type filter option that limits the search to cost estimations",
+    "context": "N/A"
+  },
+  "globalSearchTypeCalculationLabel": "Calculation",
+  "@globalSearchTypeCalculationLabel": {
+    "description": "Type filter option for calculations; disabled until the global_search RPC supports the calculation scope",
+    "context": "N/A"
+  },
+  "globalSearchTypeSheetClearAll": "Clear all",
+  "@globalSearchTypeSheetClearAll": {
+    "description": "Label for the Clear all button in the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchTypeSheetApply": "Apply",
+  "@globalSearchTypeSheetApply": {
+    "description": "Label for the Apply button in the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsLoadErrorMessage": "Could not load tags.",
+  "@projectSearchTagsLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available tags for the project search filter sheet fails",
+    "context": "N/A"
+  },
+  "projectSearchOwnersLoadErrorMessage": "Could not load owners.",
+  "@projectSearchOwnersLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available owners for the project search filter sheet fails",
+    "context": "N/A"
+  },
+  "projectSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
+  "@projectSearchDeleteErrorMessage": {
+    "description": "Error toast shown when deleting a recent project search term from history fails",
+    "context": "N/A"
+  },
+  "projectNameLabel": "Project name*",
+  "@projectNameLabel": {
+    "description": "Label for the project name text field"
+  },
+  "projectNameHintText": "Enter project name",
+  "@projectNameHintText": {
+    "description": "Hint text shown inside the project name text field"
+  },
+  "projectNameRequiredError": "Project name is required",
+  "@projectNameRequiredError": {
+    "description": "Error shown when the project name field is empty"
+  },
+  "projectNameTooLongError": "Project name must be 100 characters or less",
+  "@projectNameTooLongError": {
+    "description": "Error shown when the project name exceeds 100 characters"
+  },
+  "projectDescriptionLabel": "Project description",
+  "@projectDescriptionLabel": {
+    "description": "Label for the project description text area"
+  },
+  "projectDescriptionHintText": "Project description",
+  "@projectDescriptionHintText": {
+    "description": "Hint text shown inside the project description text area"
+  },
+  "projectDescriptionTooLongError": "Description must be 100 characters or less",
+  "@projectDescriptionTooLongError": {
+    "description": "Error shown when the project description exceeds 100 characters"
+  },
+  "dateRangeSheetTitle": "Date range",
+  "@dateRangeSheetTitle": {
+    "description": "Title of the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetToday": "Today",
+  "@dateRangeSheetToday": {
+    "description": "Predefined range option for today in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetLast7Days": "Last 7 days",
+  "@dateRangeSheetLast7Days": {
+    "description": "Predefined range option for the last 7 days in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetLast30Days": "Last 30 days",
+  "@dateRangeSheetLast30Days": {
+    "description": "Predefined range option for the last 30 days in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetThisMonth": "This month",
+  "@dateRangeSheetThisMonth": {
+    "description": "Predefined range option for the current calendar month in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetCustomRange": "Custom range",
+  "@dateRangeSheetCustomRange": {
+    "description": "Option in the Date range filter bottom sheet that opens the start/end date pickers",
+    "context": "N/A"
+  },
+  "dateRangeSheetStartDateLabel": "Start date",
+  "@dateRangeSheetStartDateLabel": {
+    "description": "Label shown in the date picker when selecting the start of a custom date range",
+    "context": "N/A"
+  },
+  "dateRangeSheetEndDateLabel": "End date",
+  "@dateRangeSheetEndDateLabel": {
+    "description": "Label shown in the date picker when selecting the end of a custom date range",
+    "context": "N/A"
+  },
+  "dateRangeSheetApply": "Apply",
+  "@dateRangeSheetApply": {
+    "description": "Label for the Apply button in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetCancel": "Cancel",
+  "@dateRangeSheetCancel": {
+    "description": "Label for the Cancel button in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetConfirm": "OK",
+  "@dateRangeSheetConfirm": {
+    "description": "Confirm (OK) button label of the custom-range date pickers opened from the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "addDescriptionButton": "Add description",
+  "@addDescriptionButton": {
+    "description": "Label for the button that toggles the project description text area",
+    "context": "Project creation screen"
+  },
+  "inviteMemberButton": "Invite member",
+  "@inviteMemberButton": {
+    "description": "Label for the button that opens the invite member flow",
+    "context": "Project creation screen"
+  },
+  "exportSettingsTitle": "Folder link for export",
+  "@exportSettingsTitle": {
+    "description": "Section heading for the export settings display"
+  },
+  "exportGoogleDriveLabel": "Google Drive link:",
+  "@exportGoogleDriveLabel": {
+    "description": "Label for the Google Drive export row in ExportSettingsDisplay"
+  },
+  "exportDropboxLabel": "Dropbox link:",
+  "@exportDropboxLabel": {
+    "description": "Label for the Dropbox export row in ExportSettingsDisplay"
+  },
+  "exportOneDriveLabel": "OneDrive link:",
+  "@exportOneDriveLabel": {
+    "description": "Label for the OneDrive export row in ExportSettingsDisplay"
+  },
+  "createProjectScreenTitle": "Create a project",
+  "@createProjectScreenTitle": {
+    "description": "Title for the project creation screen app bar",
+    "context": "Project creation screen"
+  },
+  "addLabourCostButton": "Add labour cost",
+  "@addLabourCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the labours tab is active",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
+  },
+  "addEquipmentCostButton": "Add equipment cost",
+  "@addEquipmentCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the equipments tab is active",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
+  },
+  "costFilePlaceholder": "Select cost file",
+  "@costFilePlaceholder": {
+    "description": "Placeholder text for the cost file dropdown on cost item form screens"
+  },
+  "materialTypeLabel": "Material type*",
+  "@materialTypeLabel": {
+    "description": "Hint label for the material type field on the material cost form"
+  },
+  "quantityLabel": "Quantity*",
+  "@quantityLabel": {
+    "description": "Hint label for the quantity field on material and equipment cost forms"
+  },
+  "perUnitCostLabel": "Per unit cost*",
+  "@perUnitCostLabel": {
+    "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
+  },
+  "unitOfMeasurementHint": "UOM",
+  "@unitOfMeasurementHint": {
+    "description": "Hint text shown inside the unit of measurement selector when no unit is selected"
+  },
+  "selectUnitTitle": "Select unit",
+  "@selectUnitTitle": {
+    "description": "Title of the bottom sheet modal for selecting a unit of measurement"
+  },
+  "unitPieces": "Pieces",
+  "@unitPieces": {
+    "description": "Unit of measurement: pieces"
+  },
+  "unitMeters": "Meters",
+  "@unitMeters": {
+    "description": "Unit of measurement: meters"
+  },
+  "unitSquareMeters": "Square meters",
+  "@unitSquareMeters": {
+    "description": "Unit of measurement: square meters"
+  },
+  "unitCubicMeters": "Cubic meters",
+  "@unitCubicMeters": {
+    "description": "Unit of measurement: cubic meters"
+  },
+  "unitKilograms": "Kilograms",
+  "@unitKilograms": {
+    "description": "Unit of measurement: kilograms"
+  },
+  "unitTons": "Tons",
+  "@unitTons": {
+    "description": "Unit of measurement: tons"
+  },
+  "unitLiters": "Liters",
+  "@unitLiters": {
+    "description": "Unit of measurement: liters"
+  },
+  "unitHours": "Hours",
+  "@unitHours": {
+    "description": "Unit of measurement: hours"
+  },
+  "unitDays": "Days",
+  "@unitDays": {
+    "description": "Unit of measurement: days"
+  },
+  "unitBoxes": "Boxes",
+  "@unitBoxes": {
+    "description": "Unit of measurement: boxes"
+  },
+  "unitBags": "Bags",
+  "@unitBags": {
+    "description": "Unit of measurement: bags"
+  },
+  "unitRolls": "Rolls",
+  "@unitRolls": {
+    "description": "Unit of measurement: rolls"
+  },
+  "unitSheets": "Sheets",
+  "@unitSheets": {
+    "description": "Unit of measurement: sheets"
+  },
+  "otherMaterialDetailsButton": "Other material details",
+  "@otherMaterialDetailsButton": {
+    "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
+  },
+  "brandLabel": "Brand",
+  "@brandLabel": {
+    "description": "Hint label for the brand dropdown in the other material details section"
+  },
+  "productLinkLabel": "Product link",
+  "@productLinkLabel": {
+    "description": "Hint label for the product link text field in the other material details section"
+  },
+  "labourTypeLabel": "Labour type*",
+  "@labourTypeLabel": {
+    "description": "Hint label for the labour type field on the labour cost form"
+  },
+  "calcMethodTitle": "Calculation method",
+  "@calcMethodTitle": {
+    "description": "Section title for the calculation method card on the labour cost form"
+  },
+  "perDayOption": "Per day",
+  "@perDayOption": {
+    "description": "Radio option label for the per-day calculation method on the labour cost form"
+  },
+  "perHoursOption": "Per hour",
+  "@perHoursOption": {
+    "description": "Radio option label for the per-hours calculation method on the labour cost form"
+  },
+  "noOfDaysLabel": "No. of days*",
+  "@noOfDaysLabel": {
+    "description": "Hint label for the number-of-days field when the per-day method is selected on the labour cost form"
+  },
+  "noOfHoursLabel": "No. of hours*",
+  "@noOfHoursLabel": {
+    "description": "Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form"
+  },
+  "crewRateLabel": "Crew rate ($)*",
+  "@crewRateLabel": {
+    "description": "Hint label for the crew rate field on the labour cost form (manually mode)"
+  },
+  "crewSizeLabel": "Crew size*",
+  "@crewSizeLabel": {
+    "description": "Hint label for the crew size field on the labour cost form"
+  },
+  "equipmentTypeLabel": "Equipment type*",
+  "@equipmentTypeLabel": {
+    "description": "Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)"
+  },
+  "equipmentNameLabel": "Equipment name*",
+  "@equipmentNameLabel": {
+    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
+  },
+  "unitPriceLabel": "Unit price*",
+  "@unitPriceLabel": {
+    "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
+  },
+  "rateDayLabel": "Rate/Day:",
+  "@rateDayLabel": {
+    "description": "Rate label inside the calculation method card when per-day method is selected (from cost file mode)"
+  },
+  "rateHourLabel": "Rate/Hour:",
+  "@rateHourLabel": {
+    "description": "Rate label inside the calculation method card when per-hours method is selected (from cost file mode)"
+  },
+  "materialTypeRequiredError": "Material type is required",
+  "@materialTypeRequiredError": {
+    "description": "Validation error shown below the material type field when it is submitted empty"
+  },
+  "labourTypeRequiredError": "Labour type is required",
+  "@labourTypeRequiredError": {
+    "description": "Validation error shown below the labour type field when it is submitted empty"
+  },
+  "equipmentNameRequiredError": "Equipment name is required",
+  "@equipmentNameRequiredError": {
+    "description": "Validation error shown below the equipment name field when it is submitted empty"
+  },
+  "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
+  "@projectSettingsNavigationError": {
+    "description": "Toast shown when navigation to project settings fails",
+    "context": "Dashboard projects sheet"
+  },
+  "projectSettingsPermissionError": "You don't have permission to view this project.",
+  "@projectSettingsPermissionError": {
+    "description": "Toast shown when the user lacks the view_project permission for a project",
+    "context": "Dashboard projects sheet"
+  },
+  "calculatorOcLabel": "O.C",
+  "@calculatorOcLabel": {
+    "description": "Label for the on-centre spacing dependent key shown alongside the fence posts result"
+  },
+  "calculatorGroupBasicGeometry": "Basic Geometry",
+  "@calculatorGroupBasicGeometry": {
+    "description": "Label for the Basic Geometry function group tab in the calculator"
+  },
+  "calculatorGroupMaterials": "Materials",
+  "@calculatorGroupMaterials": {
+    "description": "Label for the Materials function group tab in the calculator"
+  },
+  "calculatorGroupTrigonometry": "Trigonometry",
+  "@calculatorGroupTrigonometry": {
+    "description": "Label for the Trigonometry function group tab in the calculator"
+  },
+  "calculatorHistoryPlaceholder": "Here will show what you type",
+  "@calculatorHistoryPlaceholder": {
+    "description": "Placeholder shown in the calculator history panel before the user types anything"
+  },
+  "calculatorKeyWidth": "Width",
+  "@calculatorKeyWidth": {
+    "description": "Calculator key label for the width dimension"
+  },
+  "calculatorKeyLength": "Length",
+  "@calculatorKeyLength": {
+    "description": "Calculator key label for the length dimension"
+  },
+  "calculatorKeyHeight": "Height",
+  "@calculatorKeyHeight": {
+    "description": "Calculator key label for the height dimension"
+  },
+  "calculatorKeyPitch": "Pitch",
+  "@calculatorKeyPitch": {
+    "description": "Calculator key label for roof pitch"
+  },
+  "calculatorKeyCircle": "Circle",
+  "@calculatorKeyCircle": {
+    "description": "Calculator key label for the circle function"
+  },
+  "calculatorKeyRise": "Rise",
+  "@calculatorKeyRise": {
+    "description": "Calculator key label for the vertical rise of a slope"
+  },
+  "calculatorKeyRun": "Run",
+  "@calculatorKeyRun": {
+    "description": "Calculator key label for the horizontal run of a slope"
+  },
+  "calculatorKeyRadius": "Radius",
+  "@calculatorKeyRadius": {
+    "description": "Calculator key label for the radius dimension"
+  },
+  "calculatorKeyLbs": "Lbs",
+  "@calculatorKeyLbs": {
+    "description": "Calculator key label for pounds, a unit of weight"
+  },
+  "calculatorKeyKg": "Kg",
+  "@calculatorKeyKg": {
+    "description": "Calculator key label for kilograms, a unit of weight"
+  },
+  "calculatorKeyTons": "Tons",
+  "@calculatorKeyTons": {
+    "description": "Calculator key label for tons, a unit of weight"
+  },
+  "calculatorKeyDrywall": "Drywall",
+  "@calculatorKeyDrywall": {
+    "description": "Calculator key label for the drywall material function"
+  },
+  "calculatorKeyFence": "Fence",
+  "@calculatorKeyFence": {
+    "description": "Calculator key label for the fence material function"
+  },
+  "calculatorKeySin": "SIN",
+  "@calculatorKeySin": {
+    "description": "Calculator key label for the sine trigonometric function"
+  },
+  "calculatorKeyCos": "COS",
+  "@calculatorKeyCos": {
+    "description": "Calculator key label for the cosine trigonometric function"
+  },
+  "calculatorKeyTan": "TAN",
+  "@calculatorKeyTan": {
+    "description": "Calculator key label for the tangent trigonometric function"
+  },
+  "calculatorResultPosts": "Posts",
+  "@calculatorResultPosts": {
+    "description": "Result label for the number of fence posts computed by the fence function"
   }
 }
+

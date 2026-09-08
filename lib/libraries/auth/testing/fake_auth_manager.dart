@@ -52,14 +52,11 @@ class FakeAuthManager implements AuthManager {
 
   /// Creates a new [FakeAuthManager]
   FakeAuthManager({
-    required AuthNotifierController authNotifier,
-    required AuthRepository authRepository,
-    required SupabaseWrapper wrapper,
-    required Clock clock,
-  }) : _authNotifier = authNotifier,
-       _authRepository = authRepository,
-       _wrapper = wrapper,
-       _clock = clock {
+    required this._authNotifier,
+    required this._authRepository,
+    required this._wrapper,
+    required this._clock,
+  }) {
     // Initialize with unauthenticated state
     _authNotifier.emitAuthStateChanged(
       AuthState(status: AuthStatus.unauthenticated, user: null),

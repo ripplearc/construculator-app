@@ -1,9 +1,9 @@
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_results_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -18,8 +18,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteGlobalSearchDataSource');
 
-  const RemoteGlobalSearchDataSource({required SupabaseWrapper supabaseWrapper})
-    : _supabaseWrapper = supabaseWrapper;
+  const RemoteGlobalSearchDataSource({required this._supabaseWrapper});
 
   @override
   Future<SearchResultsDto> search(SearchParamsDto params) async {
@@ -186,10 +185,16 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
     return {
       'query': params.query,
       'filter_by_tag': params.filterByTag,
-      'filter_by_date': params.filterByDate?.toIso8601String(),
-      'filter_by_owner': params.filterByOwner,
+      'filter_by_date_from': params.filterByDateFrom?.toIso8601String(),
+      'filter_by_date_to': params.filterByDateTo?.toIso8601String(),
+      'filter_by_owners': params.filterByOwners,
       'scope': params.scope?.name,
-      'offset': params.pagination.offset,
+      // The RPC paginates each result domain independently; the app-side
+      // pagination offset applies to all three until CA-979 splits them
+      // per domain. https://ripplearc.youtrack.cloud/issue/CA-979
+      'projects_offset': params.pagination.offset,
+      'estimations_offset': params.pagination.offset,
+      'members_offset': params.pagination.offset,
       'limit': params.pagination.limit,
     };
   }

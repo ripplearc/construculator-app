@@ -2,8 +2,12 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
+import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -21,6 +25,10 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+          analyticsRepository: const NoOpAnalyticsRepository(),
+          powerSyncDatabase: FakePowerSyncDatabase(),
+          featureFlagRepository: FakeFeatureFlagRepository(),
+          currentScreenTracker: CurrentScreenTracker(),
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -32,28 +40,23 @@ void main() {
 
       group('ensureTabModuleLoaded', () {
         test('loads each tab only once', () async {
-          await manager.ensureTabModuleLoaded(ShellTab.home);
-          expect(manager.isLoaded(ShellTab.home), isTrue);
-          await manager.ensureTabModuleLoaded(ShellTab.home);
-          expect(manager.isLoaded(ShellTab.home), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.calculations);
+          expect(manager.isLoaded(ShellTab.calculations), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.calculations);
+          expect(manager.isLoaded(ShellTab.calculations), isTrue);
         });
       });
 
       group('isLoaded', () {
         test('returns false for unaccessed tabs', () {
-          expect(manager.isLoaded(ShellTab.calculations), isFalse);
-          expect(manager.isLoaded(ShellTab.estimation), isFalse);
-          expect(manager.isLoaded(ShellTab.members), isFalse);
+          expect(manager.isLoaded(ShellTab.estimates), isFalse);
         });
         test('returns true after loading each tab', () async {
           await manager.ensureTabModuleLoaded(ShellTab.calculations);
           expect(manager.isLoaded(ShellTab.calculations), isTrue);
 
-          await manager.ensureTabModuleLoaded(ShellTab.estimation);
-          expect(manager.isLoaded(ShellTab.estimation), isTrue);
-
-          await manager.ensureTabModuleLoaded(ShellTab.members);
-          expect(manager.isLoaded(ShellTab.members), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.estimates);
+          expect(manager.isLoaded(ShellTab.estimates), isTrue);
         });
       });
     });
@@ -68,6 +71,10 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+          analyticsRepository: const NoOpAnalyticsRepository(),
+          powerSyncDatabase: FakePowerSyncDatabase(),
+          featureFlagRepository: FakeFeatureFlagRepository(),
+          currentScreenTracker: CurrentScreenTracker(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();
@@ -79,8 +86,8 @@ void main() {
       });
 
       test('calls provider.load() exactly once per tab', () async {
-        await customManager.ensureTabModuleLoaded(ShellTab.home);
-        await customManager.ensureTabModuleLoaded(ShellTab.home);
+        await customManager.ensureTabModuleLoaded(ShellTab.calculations);
+        await customManager.ensureTabModuleLoaded(ShellTab.calculations);
         expect(fakeProvider.loadCallCount, 1);
       });
     });
@@ -104,7 +111,7 @@ class _TestShellModule extends Module {
     i.addSingleton<TabModuleManager>(
       () => TabModuleManager(
         appBootstrap,
-        providers: {ShellTab.home: i.get<_FakeTabModuleProvider>()},
+        providers: {ShellTab.calculations: i.get<_FakeTabModuleProvider>()},
       ),
     );
   }

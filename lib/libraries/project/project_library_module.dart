@@ -2,14 +2,23 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_search_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_search_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
+import 'package:construculator/libraries/project/data/repositories/project_search_repository_impl.dart';
+import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_search_repository.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectLibraryModule extends Module {
@@ -28,9 +37,7 @@ class ProjectLibraryModule extends Module {
 
 void _registerDependencies(Injector i) {
   i.addLazySingleton<CurrentProjectNotifier>(
-    () => CurrentProjectNotifierImpl(
-      initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
-    ),
+    () => CurrentProjectNotifierImpl(),
   );
 
   i.addLazySingleton<ProjectDataSource>(
@@ -49,7 +56,35 @@ void _registerDependencies(Injector i) {
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+      currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+      clock: Modular.get<Clock>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
+  );
+
+  i.addLazySingleton<ProjectSearchDataSource>(
+    () => RemoteProjectSearchDataSource(
+      supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
+  i.addLazySingleton<ProjectSettingDataSource>(
+    () => RemoteProjectSettingDataSource(
+      supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
+  i.addLazySingleton<ProjectSettingRepository>(
+    () => ProjectSettingRepositoryImpl(
+      dataSource: Modular.get<ProjectSettingDataSource>(),
+      permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+    ),
+    config: BindConfig(onDispose: (repository) => repository.dispose()),
+  );
+
+  i.addLazySingleton<ProjectSearchRepository>(
+    () => ProjectSearchRepositoryImpl(
+      dataSource: Modular.get<ProjectSearchDataSource>(),
+    ),
   );
 }

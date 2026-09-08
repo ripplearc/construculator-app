@@ -9,7 +9,6 @@ void main() {
 
     const testUser = UserProfile(
       id: 'user-123',
-      credentialId: 'cred-456',
       firstName: 'John',
       lastName: 'Doe',
       professionalRole: 'Project Manager',

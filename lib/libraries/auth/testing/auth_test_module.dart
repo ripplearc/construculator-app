@@ -1,4 +1,5 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -33,6 +34,7 @@ class AuthTestModule extends Module {
         authRepository: i(),
         authNotifier: i(),
         sentryWrapper: FakeSentryWrapper(),
+        analyticsRepository: FakeAnalyticsRepository(),
       ),
       key: 'authManagerWithFakeDep',
     );

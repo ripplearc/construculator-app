@@ -1,23 +1,40 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+// TODO(CA-983): Promote a selection contract to libraries/ so global_search
+// doesn't import dashboard's concrete bloc directly.
+// https://ripplearc.youtrack.cloud/issue/CA-983
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/owner/owner_library_module.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/tag/tag_library_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Module for the global search feature.
 ///
 /// Provides [GlobalSearchDataSource] and [GlobalSearchRepository] bindings
-/// for dependency injection.
+/// for dependency injection, and registers the [GlobalSearchPage] route.
 class GlobalSearchModule extends Module {
   final AppBootstrap appBootstrap;
 
   GlobalSearchModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [SupabaseModule(appBootstrap)];
+  List<Module> get imports => [
+    SupabaseModule(appBootstrap),
+    TagLibraryModule(appBootstrap),
+    OwnerLibraryModule(appBootstrap),
+  ];
 
   @override
   void binds(Injector i) {
@@ -30,7 +47,30 @@ class GlobalSearchModule extends Module {
       () => GlobalSearchRepositoryImpl(dataSource: i()),
     );
     i.add<GlobalSearchBloc>(
-      () => GlobalSearchBloc(repository: i()),
+      () => GlobalSearchBloc(
+        repository: i(),
+        tagRepository: i(),
+        ownerRepository: i(),
+      ),
+    );
+    i.addSingleton<EstimationTileProvider>(
+      () => const EstimationTileProviderImpl(),
+    );
+  }
+
+  @override
+  void routes(RouteManager r) {
+    r.child(
+      globalSearchPageRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (_) => GlobalSearchPage(
+        router: Modular.get<AppRouter>(),
+        blocFactory: () => Modular.get<GlobalSearchBloc>(),
+        estimationTileProvider: Modular.get<EstimationTileProvider>(),
+        // Bound in ShellModule, which stays active beneath this pushed
+        // route; resolved at construction time (never inside build).
+        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
+      ),
     );
   }
 }

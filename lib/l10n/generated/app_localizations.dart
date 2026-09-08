@@ -160,6 +160,96 @@ abstract class AppLocalizations {
   /// **'Connection error'**
   String get connectionError;
 
+  /// Label for the button that records acceptance on the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'Agree and continue'**
+  String get consentGateAcceptButton;
+
+  /// Body text explaining why the consent gate is blocking the app. Neutral wording: this page also serves ConsentNeverGiven, a user with no prior acceptance, for whom 'updated' would be false -- see #548 B1.
+  ///
+  /// In en, this message translates to:
+  /// **'Please review and accept our terms of service and privacy policy to continue.'**
+  String get consentGateBody;
+
+  /// Link text opening the privacy policy from the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'privacy policy'**
+  String get consentGatePrivacyLink;
+
+  /// Label for the retry action shown when recording acceptance failed. Matches consentUnavailableRetryButton's wording -- see #548 N2.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get consentGateRetryButton;
+
+  /// Inline error shown under the accept button when the acceptance write failed
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save your response. Please try again.'**
+  String get consentGateSubmitErrorMessage;
+
+  /// Link text opening the terms of service from the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'terms of service'**
+  String get consentGateTermsLink;
+
+  /// Title of the consent gate page. Shown for both ConsentOutdated (a republished version) and ConsentNeverGiven (no prior acceptance at all) -- ConsentGateBloc collapses both to ConsentGateBlocked, so one string pair must be true for both audiences. Kept neutral rather than 'We've updated our terms', which asserted a prior agreement ConsentNeverGiven users never made -- see #548 B1. A returning-user-specific 'updated' framing would need ConsentGateBlocked to carry which status produced it, tracked as a follow-up alongside #546 N3.
+  ///
+  /// In en, this message translates to:
+  /// **'Review our terms'**
+  String get consentGateTitle;
+
+  /// Body text shown when the published terms could not be established and there is no prior acceptance
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again. You\'ll be able to continue once we can confirm the current terms.'**
+  String get consentUnavailableBody;
+
+  /// Label for the retry action on the consent unavailable screen
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get consentUnavailableRetryButton;
+
+  /// Title shown when the consent requirement could not be established at all
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the terms'**
+  String get consentUnavailableTitle;
+
+  /// Label dismissing the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get consentWithdrawalCancelButton;
+
+  /// Label confirming consent withdrawal. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, withdraw'**
+  String get consentWithdrawalConfirmButton;
+
+  /// Body of the consent withdrawal confirmation explaining the consequence. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be signed out and asked to accept the terms again next time you open the app.'**
+  String get consentWithdrawalDialogBody;
+
+  /// Title of the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw your consent?'**
+  String get consentWithdrawalDialogTitle;
+
+  /// Label of the settings row that opens the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw consent'**
+  String get consentWithdrawalTileLabel;
+
   /// Label for login button
   ///
   /// In en, this message translates to:
@@ -351,6 +441,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
+
+  /// Section title for the dashboard favourites widget
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get favouritesSectionTitle;
+
+  /// Empty state message shown when there are no favourited items
+  ///
+  /// In en, this message translates to:
+  /// **'No favourites yet.'**
+  String get favouritesEmptyState;
+
+  /// Accessibility label for the sort/filter dropdown button in the Favourites header
+  ///
+  /// In en, this message translates to:
+  /// **'Sort favourites'**
+  String get sortFavouriteSemanticLabel;
+
+  /// Title of the bottom sheet for sorting/filtering favourites
+  ///
+  /// In en, this message translates to:
+  /// **'Sort favourite'**
+  String get sortFavouriteTitle;
+
+  /// Filter option showing all favourites
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get sortFavouriteAll;
+
+  /// Filter option showing only favourited cost estimations
+  ///
+  /// In en, this message translates to:
+  /// **'Cost estimations'**
+  String get sortFavouriteCostEstimations;
+
+  /// Filter option showing only favourited calculations
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get sortFavouriteCalculations;
+
+  /// Label for the button that navigates to the edit project screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit project'**
+  String get editProjectButton;
+
+  /// AppBar title of the edit project screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Project'**
+  String get editProjectScreenTitle;
+
+  /// Accessibility label for the per-project settings icon button in the projects list
+  ///
+  /// In en, this message translates to:
+  /// **'Project settings'**
+  String get projectSettingsSemanticLabel;
+
+  /// Title of the bottom sheet that lists the user's projects
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectsSheetTitle;
+
+  /// Hint text for the search field used to filter the projects list
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get searchProjectsHint;
+
+  /// Label for the button that starts creating a new project
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project'**
+  String get createProjectButton;
+
+  /// Success message shown after a new project has been created
+  ///
+  /// In en, this message translates to:
+  /// **'You have successfully created a new project'**
+  String get projectCreationSuccessMessage;
+
+  /// Label for the CTA button on the project creation success sheet that navigates to the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to Dashboard'**
+  String get continueToDashboardButton;
+
+  /// Empty state message shown when the user has no projects
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet.'**
+  String get projectsEmptyState;
+
+  /// Error message shown when the projects list cannot be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load projects.'**
+  String get projectsLoadError;
+
+  /// App bar title for the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Project details'**
+  String get projectDetailScreenTitle;
+
+  /// Error message shown when the project details screen cannot load the project
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load project details.'**
+  String get projectDetailsLoadError;
+
+  /// Label for the retry button on the project details error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get projectDetailsRetryButton;
 
   /// Text for hey enter your details to register with us
   ///
@@ -790,12 +1000,6 @@ abstract class AppLocalizations {
   /// **'Add estimation'**
   String get addEstimation;
 
-  /// Label for cost estimation button on dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'Cost Estimation'**
-  String get costEstimation;
-
   /// Label for calculations tab or header
   ///
   /// In en, this message translates to:
@@ -807,6 +1011,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Members'**
   String get members;
+
+  /// Title for the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Invite team members'**
+  String get invitePeopleTitle;
+
+  /// Subtitle for the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'You can invite other people by email'**
+  String get invitePeopleSubtitle;
+
+  /// Hint text for the email input in the invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Assign by email'**
+  String get assignByEmailHint;
+
+  /// Label for the Invite action button in the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get inviteButton;
+
+  /// Static role label shown in the invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Contributor'**
+  String get contributorRole;
 
   /// Empty state message shown when no cost estimations exist
   ///
@@ -849,6 +1083,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get removeAction;
+
+  /// Screen-reader label for the remove button on an email chip in the member invitation sheet; includes the email so each chip announces distinctly
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {email}'**
+  String removeChipLabel(String email);
 
   /// Label for copy estimation action item
   ///
@@ -909,6 +1149,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No, Keep'**
   String get noKeepButton;
+
+  /// Title for delete project confirmation bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove \"{projectName}\" project?'**
+  String deleteProjectConfirmTitle(String projectName);
+
+  /// Warning body text for delete project confirmation bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'By removing this project you will lose all calculations, costs, and images attached to your calculations'**
+  String get deleteProjectWarningMessage;
+
+  /// Label for the Delete Project button shown to admin users on the project settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get deleteProjectButton;
 
   /// Success message shown when an estimation is deleted
   ///
@@ -1107,6 +1365,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cost File Deleted'**
   String get activityCostFileDeletedSimple;
+
+  /// Label shown before the upload date of a cost file
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded on'**
+  String get uploadedOnLabel;
+
+  /// Section title for the list of attached cost files on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Cost files'**
+  String get costFilesSectionTitle;
+
+  /// Empty state message when no cost files are attached to a project
+  ///
+  /// In en, this message translates to:
+  /// **'No cost files attached.'**
+  String get costFilesEmptyState;
+
+  /// Last-updated line on the project header card, showing the formatted date
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String projectLastUpdatedLabel(String date);
 
   /// Activity log message for attachment added with file name
   ///
@@ -1336,29 +1618,1175 @@ abstract class AppLocalizations {
   /// **'Construculator'**
   String get appTitle;
 
-  /// Label for home tab in bottom navigation
-  ///
-  /// In en, this message translates to:
-  /// **'Home'**
-  String get homeTab;
-
   /// Label for calculations tab in bottom navigation
   ///
   /// In en, this message translates to:
   /// **'Calculations'**
   String get calculationsTab;
 
-  /// Label for members tab in bottom navigation
+  /// Bottom nav tab label for the cost estimates feature
   ///
   /// In en, this message translates to:
-  /// **'Members'**
-  String get membersTab;
+  /// **'Estimates'**
+  String get estimatesTab;
 
   /// Error message shown when user lacks permission for an operation
   ///
   /// In en, this message translates to:
   /// **'You don\'t have permission to perform this action'**
   String get permissionDenied;
+
+  /// Label for materials tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get materialsTab;
+
+  /// Label for labours tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Labours'**
+  String get laboursTab;
+
+  /// Label for equipments tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Equipments'**
+  String get equipmentsTab;
+
+  /// Empty state message shown when no material costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No material cost added. For adding cost please click on add button'**
+  String get noMaterialCostMessage;
+
+  /// Empty state message shown when no labour costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No labour cost added. For adding cost please click on add button'**
+  String get noLabourCostMessage;
+
+  /// Empty state message shown when no equipment costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment cost added. For adding cost please click on add button'**
+  String get noEquipmentCostMessage;
+
+  /// Label for the add material cost floating action button on the cost estimation details page
+  ///
+  /// In en, this message translates to:
+  /// **'Add material cost'**
+  String get addMaterialCostButton;
+
+  /// Label for the preview button in the cost estimation details bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewButton;
+
+  /// Accessibility label for the back navigation icon
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backLabel;
+
+  /// Accessibility label for the edit icon shown next to the estimation title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit estimation name'**
+  String get editEstimationNameLabel;
+
+  /// Accessibility label for the edit icon shown next to the cost item title in the form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cost item name'**
+  String get editCostItemNameLabel;
+
+  /// Accessibility label for the more-options (overflow) icon in the app bar
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptionsLabel;
+
+  /// Accessibility label for the comment icon in the cost estimation details tab view
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get commentLabel;
+
+  /// App bar title for the add material cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Material cost entry'**
+  String get addMaterialCostsScreenTitle;
+
+  /// App bar title for the add labour cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Labour cost entry'**
+  String get addLabourCostsScreenTitle;
+
+  /// App bar title for the add equipment cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment cost entry'**
+  String get addEquipmentCostsScreenTitle;
+
+  /// Label above the manual/cost-file mode toggle on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'How you want to calculate cost?'**
+  String get howToCalculateCostLabel;
+
+  /// Label for the 'from cost file' mode toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'From cost file'**
+  String get fromCostFileMode;
+
+  /// Label for the 'manually' mode toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Manually'**
+  String get manuallyMode;
+
+  /// Label shown before the running total amount in the cost item form bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Total:'**
+  String get costItemTotalLabel;
+
+  /// Label for the submit button in the cost item form screen bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cost'**
+  String get addToCostButton;
+
+  /// Accessibility label for the 'from cost file' toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to cost file mode'**
+  String get fromCostFileModeSemanticLabel;
+
+  /// Accessibility label for the 'manually' toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to manual mode'**
+  String get manuallyModeSemanticLabel;
+
+  /// Hint text displayed in the global search input field
+  ///
+  /// In en, this message translates to:
+  /// **'Search for Calculation and cost'**
+  String get globalSearchHint;
+
+  /// Section title for the recent searches list on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get globalSearchRecentSearchesTitle;
+
+  /// Section title for the recent searches list on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get projectSearchRecentSearchesTitle;
+
+  /// Label for the Tags filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get globalSearchFilterTags;
+
+  /// Label for the Modified filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get globalSearchFilterModified;
+
+  /// Label for the Type filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get globalSearchFilterType;
+
+  /// Section title shown above the suggestions list on the global search screen when the user has typed a query
+  ///
+  /// In en, this message translates to:
+  /// **'Search suggestions'**
+  String get globalSearchSuggestionsTitle;
+
+  /// Accessibility label for the trailing icon on a suggestion row — fills the search field with the suggested term
+  ///
+  /// In en, this message translates to:
+  /// **'Fill search field with {term}'**
+  String globalSearchSuggestionFillSemanticLabel(String term);
+
+  /// Message shown when there are no recent searches on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches available'**
+  String get globalSearchEmptyRecentMessage;
+
+  /// Label for the Tags filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get projectSearchFilterTags;
+
+  /// Label for the Modified filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get projectSearchFilterModified;
+
+  /// Message shown when there are no recent searches on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches available'**
+  String get projectSearchEmptyRecentMessage;
+
+  /// Title text displayed in the dashboard app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Construculator'**
+  String get dashboardTitle;
+
+  /// Accessibility label for the search icon button on the dashboard app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get dashboardSearchSemanticLabel;
+
+  /// Accessibility label for the back button on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get globalSearchBackSemanticLabel;
+
+  /// Accessibility label for the clear search button on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get globalSearchClearSearchSemanticLabel;
+
+  /// Accessibility label for the back button on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get projectSearchBackSemanticLabel;
+
+  /// Accessibility label for the clear search button on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get projectSearchClearSearchSemanticLabel;
+
+  /// Section title shown above the suggestions list on the project search screen when the user has typed a query
+  ///
+  /// In en, this message translates to:
+  /// **'Search suggestions'**
+  String get projectSearchSuggestionsTitle;
+
+  /// Accessibility label for the trailing icon on a project search suggestion row — fills the search field with the suggested term
+  ///
+  /// In en, this message translates to:
+  /// **'Fill search field with {term}'**
+  String projectSearchSuggestionFillSemanticLabel(String term);
+
+  /// Error toast shown when loading recent searches fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load recent searches. Please try again.'**
+  String get globalSearchLoadErrorMessage;
+
+  /// Error toast shown on the search pages when performing a search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please try again.'**
+  String get searchPerformErrorMessage;
+
+  /// Message shown in the persistent failure state of the search results body when a search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while searching.'**
+  String get searchFailureBodyMessage;
+
+  /// Label for the retry button on the search failure state that re-runs the failed search
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get searchFailureRetryLabel;
+
+  /// Accessibility label for the trailing icon on a recent search row (global and project search) — fills the search field with the term
+  ///
+  /// In en, this message translates to:
+  /// **'Fill search field with {term}'**
+  String recentSearchFillSemanticLabel(String term);
+
+  /// Label of the custom accessibility action on a recent search row (global and project search) that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {term} from recent searches'**
+  String recentSearchDeleteSemanticLabel(String term);
+
+  /// Error toast shown when deleting a recent search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove recent search. Please try again.'**
+  String get globalSearchDeleteErrorMessage;
+
+  /// Warning toast shown when loading search suggestions fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load suggestions.'**
+  String get globalSearchSuggestionsErrorMessage;
+
+  /// Error toast shown when navigation to the search screen fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open search. Please try again.'**
+  String get searchNavigationError;
+
+  /// Label for close/dismiss action buttons and toasts
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
+  /// Accessibility label for the project selector dropdown in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get projectDropdownSemanticLabel;
+
+  /// Accessibility label for the notification icon button in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationSemanticLabel;
+
+  /// Accessibility label for the profile avatar button in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileSemanticLabel;
+
+  /// Section header shown above the list of most relevant search results
+  ///
+  /// In en, this message translates to:
+  /// **'Most relevant'**
+  String get searchResultsMostRelevant;
+
+  /// Message shown in the results list footer when fetching the next page of search results fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more results'**
+  String get searchResultsLoadMoreFailed;
+
+  /// Label shown under the spinner in the results list footer while the next page of search results is being fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more results'**
+  String get searchResultsLoadMoreLoading;
+
+  /// Label shown in the results list footer once every page of search results has been loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No more results'**
+  String get searchResultsEndOfResults;
+
+  /// Message shown when a search returns no results
+  ///
+  /// In en, this message translates to:
+  /// **'No results found for \"{query}\"'**
+  String searchResultsEmpty(String query);
+
+  /// Error toast shown when loading the user profile on the dashboard fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile. Please try again.'**
+  String get dashboardLoadProfileError;
+
+  /// Accessibility label for the project selector button in the project header app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get projectSelectorSemanticLabel;
+
+  /// Label for the cost estimations count stat card on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'No. of cost estimation'**
+  String get numberOfCostEstimations;
+
+  /// Label for the members count stat card on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'People invited'**
+  String get peopleInvited;
+
+  /// Warning toast shown when the user submits an empty or whitespace-only search query
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a search term.'**
+  String get globalSearchEmptyQueryMessage;
+
+  /// Accessibility label for the Tags filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tags'**
+  String get globalSearchFilterTagsSemanticLabel;
+
+  /// Accessibility label for the Tags filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tags'**
+  String get projectSearchFilterTagsSemanticLabel;
+
+  /// Accessibility label for the × button that removes a single active tag filter chip
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filter {tag}'**
+  String globalSearchClearTagFilterSemanticLabel(String tag);
+
+  /// Accessibility label for the Modified date filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by modification date'**
+  String get globalSearchFilterModifiedSemanticLabel;
+
+  /// Accessibility label for the Modified date filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by modification date'**
+  String get projectSearchFilterModifiedSemanticLabel;
+
+  /// Label for the Owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get projectSearchFilterOwner;
+
+  /// Accessibility label for the Owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by owner'**
+  String get projectSearchFilterOwnerSemanticLabel;
+
+  /// Accessibility label for the × button that removes a single active tag filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filter {tag}'**
+  String projectSearchClearTagFilterSemanticLabel(String tag);
+
+  /// Accessibility label for the × button that removes a single active owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear owner filter {owner}'**
+  String projectSearchClearOwnerFilterSemanticLabel(String owner);
+
+  /// Accessibility label for the × button that removes the active modification-date filter on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear modification date filter'**
+  String get projectSearchClearDateFilterSemanticLabel;
+
+  /// Title of the Tags filter bottom sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get projectSearchTagsSheetTitle;
+
+  /// Hint text for the tag search field inside the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tag name'**
+  String get projectSearchTagsSheetSearchHint;
+
+  /// Label for the button that deselects all tags in the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get projectSearchTagsSheetClearAll;
+
+  /// Label for the button that applies the selected tag filters on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get projectSearchTagsSheetApply;
+
+  /// Message shown when no tags match the search query in the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No tags found.'**
+  String get projectSearchTagsSheetEmpty;
+
+  /// Title of the Owner filter bottom sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get projectSearchOwnerSheetTitle;
+
+  /// Hint text for the owner search field inside the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search by owner name'**
+  String get projectSearchOwnerSheetSearchHint;
+
+  /// Label for the button that deselects all owners in the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get projectSearchOwnerSheetClearAll;
+
+  /// Label for the button that applies the selected owner filters on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get projectSearchOwnerSheetApply;
+
+  /// Message shown when no owners match the search query in the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No owners found.'**
+  String get projectSearchOwnerSheetEmpty;
+
+  /// Accessibility label for the × button that removes the active modification-date filter
+  ///
+  /// In en, this message translates to:
+  /// **'Clear modification date filter'**
+  String get globalSearchClearDateFilterSemanticLabel;
+
+  /// Title of the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get globalSearchTagsSheetTitle;
+
+  /// Placeholder text in the search field inside the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tag name'**
+  String get globalSearchTagsSheetSearchHint;
+
+  /// Label for the Clear all button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get globalSearchTagsSheetClearAll;
+
+  /// Label for the Apply button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get globalSearchTagsSheetApply;
+
+  /// Message shown in the Tags filter bottom sheet when no tags match the search or none exist
+  ///
+  /// In en, this message translates to:
+  /// **'No tags found.'**
+  String get globalSearchTagsSheetEmpty;
+
+  /// Warning toast shown when fetching the available tags for the filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load tags.'**
+  String get globalSearchTagsLoadErrorMessage;
+
+  /// Semantic label of the Type filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by type'**
+  String get globalSearchFilterTypeSemanticLabel;
+
+  /// Semantic label of the active type filter pill that resets the search scope when tapped
+  ///
+  /// In en, this message translates to:
+  /// **'Clear type filter {type}'**
+  String globalSearchClearTypeFilterSemanticLabel(String type);
+
+  /// Title of the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select Filter by cost or calculation'**
+  String get globalSearchTypeSheetTitle;
+
+  /// Type filter option that limits the search to cost estimations
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get globalSearchTypeCostLabel;
+
+  /// Type filter option for calculations; disabled until the global_search RPC supports the calculation scope
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation'**
+  String get globalSearchTypeCalculationLabel;
+
+  /// Label for the Clear all button in the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get globalSearchTypeSheetClearAll;
+
+  /// Label for the Apply button in the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get globalSearchTypeSheetApply;
+
+  /// Warning toast shown when fetching the available tags for the project search filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load tags.'**
+  String get projectSearchTagsLoadErrorMessage;
+
+  /// Warning toast shown when fetching the available owners for the project search filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load owners.'**
+  String get projectSearchOwnersLoadErrorMessage;
+
+  /// Error toast shown when deleting a recent project search term from history fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove recent search. Please try again.'**
+  String get projectSearchDeleteErrorMessage;
+
+  /// Label for the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Project name*'**
+  String get projectNameLabel;
+
+  /// Hint text shown inside the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter project name'**
+  String get projectNameHintText;
+
+  /// Error shown when the project name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Project name is required'**
+  String get projectNameRequiredError;
+
+  /// Error shown when the project name exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Project name must be 100 characters or less'**
+  String get projectNameTooLongError;
+
+  /// Label for the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionLabel;
+
+  /// Hint text shown inside the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionHintText;
+
+  /// Error shown when the project description exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be 100 characters or less'**
+  String get projectDescriptionTooLongError;
+
+  /// Title of the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get dateRangeSheetTitle;
+
+  /// Predefined range option for today in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dateRangeSheetToday;
+
+  /// Predefined range option for the last 7 days in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get dateRangeSheetLast7Days;
+
+  /// Predefined range option for the last 30 days in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get dateRangeSheetLast30Days;
+
+  /// Predefined range option for the current calendar month in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get dateRangeSheetThisMonth;
+
+  /// Option in the Date range filter bottom sheet that opens the start/end date pickers
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get dateRangeSheetCustomRange;
+
+  /// Label shown in the date picker when selecting the start of a custom date range
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get dateRangeSheetStartDateLabel;
+
+  /// Label shown in the date picker when selecting the end of a custom date range
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get dateRangeSheetEndDateLabel;
+
+  /// Label for the Apply button in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get dateRangeSheetApply;
+
+  /// Label for the Cancel button in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dateRangeSheetCancel;
+
+  /// Confirm (OK) button label of the custom-range date pickers opened from the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get dateRangeSheetConfirm;
+
+  /// Label for the button that toggles the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Add description'**
+  String get addDescriptionButton;
+
+  /// Label for the button that opens the invite member flow
+  ///
+  /// In en, this message translates to:
+  /// **'Invite member'**
+  String get inviteMemberButton;
+
+  /// Section heading for the export settings display
+  ///
+  /// In en, this message translates to:
+  /// **'Folder link for export'**
+  String get exportSettingsTitle;
+
+  /// Label for the Google Drive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive link:'**
+  String get exportGoogleDriveLabel;
+
+  /// Label for the Dropbox export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Dropbox link:'**
+  String get exportDropboxLabel;
+
+  /// Label for the OneDrive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'OneDrive link:'**
+  String get exportOneDriveLabel;
+
+  /// Title for the project creation screen app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project'**
+  String get createProjectScreenTitle;
+
+  /// Label for the FAB on the cost estimation details page when the labours tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add labour cost'**
+  String get addLabourCostButton;
+
+  /// Label for the FAB on the cost estimation details page when the equipments tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment cost'**
+  String get addEquipmentCostButton;
+
+  /// Placeholder text for the cost file dropdown on cost item form screens
+  ///
+  /// In en, this message translates to:
+  /// **'Select cost file'**
+  String get costFilePlaceholder;
+
+  /// Hint label for the material type field on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Material type*'**
+  String get materialTypeLabel;
+
+  /// Hint label for the quantity field on material and equipment cost forms
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity*'**
+  String get quantityLabel;
+
+  /// Hint label for the per-unit cost field on the material cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Per unit cost*'**
+  String get perUnitCostLabel;
+
+  /// Hint text shown inside the unit of measurement selector when no unit is selected
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get unitOfMeasurementHint;
+
+  /// Title of the bottom sheet modal for selecting a unit of measurement
+  ///
+  /// In en, this message translates to:
+  /// **'Select unit'**
+  String get selectUnitTitle;
+
+  /// Unit of measurement: pieces
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces'**
+  String get unitPieces;
+
+  /// Unit of measurement: meters
+  ///
+  /// In en, this message translates to:
+  /// **'Meters'**
+  String get unitMeters;
+
+  /// Unit of measurement: square meters
+  ///
+  /// In en, this message translates to:
+  /// **'Square meters'**
+  String get unitSquareMeters;
+
+  /// Unit of measurement: cubic meters
+  ///
+  /// In en, this message translates to:
+  /// **'Cubic meters'**
+  String get unitCubicMeters;
+
+  /// Unit of measurement: kilograms
+  ///
+  /// In en, this message translates to:
+  /// **'Kilograms'**
+  String get unitKilograms;
+
+  /// Unit of measurement: tons
+  ///
+  /// In en, this message translates to:
+  /// **'Tons'**
+  String get unitTons;
+
+  /// Unit of measurement: liters
+  ///
+  /// In en, this message translates to:
+  /// **'Liters'**
+  String get unitLiters;
+
+  /// Unit of measurement: hours
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get unitHours;
+
+  /// Unit of measurement: days
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get unitDays;
+
+  /// Unit of measurement: boxes
+  ///
+  /// In en, this message translates to:
+  /// **'Boxes'**
+  String get unitBoxes;
+
+  /// Unit of measurement: bags
+  ///
+  /// In en, this message translates to:
+  /// **'Bags'**
+  String get unitBags;
+
+  /// Unit of measurement: rolls
+  ///
+  /// In en, this message translates to:
+  /// **'Rolls'**
+  String get unitRolls;
+
+  /// Unit of measurement: sheets
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets'**
+  String get unitSheets;
+
+  /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Other material details'**
+  String get otherMaterialDetailsButton;
+
+  /// Hint label for the brand dropdown in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// Hint label for the product link text field in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Product link'**
+  String get productLinkLabel;
+
+  /// Hint label for the labour type field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Labour type*'**
+  String get labourTypeLabel;
+
+  /// Section title for the calculation method card on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation method'**
+  String get calcMethodTitle;
+
+  /// Radio option label for the per-day calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get perDayOption;
+
+  /// Radio option label for the per-hours calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per hour'**
+  String get perHoursOption;
+
+  /// Hint label for the number-of-days field when the per-day method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of days*'**
+  String get noOfDaysLabel;
+
+  /// Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of hours*'**
+  String get noOfHoursLabel;
+
+  /// Hint label for the crew rate field on the labour cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Crew rate (\$)*'**
+  String get crewRateLabel;
+
+  /// Hint label for the crew size field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Crew size*'**
+  String get crewSizeLabel;
+
+  /// Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment type*'**
+  String get equipmentTypeLabel;
+
+  /// Hint label for the equipment name field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name*'**
+  String get equipmentNameLabel;
+
+  /// Hint label for the unit price field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price*'**
+  String get unitPriceLabel;
+
+  /// Rate label inside the calculation method card when per-day method is selected (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/Day:'**
+  String get rateDayLabel;
+
+  /// Rate label inside the calculation method card when per-hours method is selected (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/Hour:'**
+  String get rateHourLabel;
+
+  /// Validation error shown below the material type field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Material type is required'**
+  String get materialTypeRequiredError;
+
+  /// Validation error shown below the labour type field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Labour type is required'**
+  String get labourTypeRequiredError;
+
+  /// Validation error shown below the equipment name field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name is required'**
+  String get equipmentNameRequiredError;
+
+  /// Toast shown when navigation to project settings fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open project settings. Please try again.'**
+  String get projectSettingsNavigationError;
+
+  /// Toast shown when the user lacks the view_project permission for a project
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to view this project.'**
+  String get projectSettingsPermissionError;
+
+  /// Label for the on-centre spacing dependent key shown alongside the fence posts result
+  ///
+  /// In en, this message translates to:
+  /// **'O.C'**
+  String get calculatorOcLabel;
+
+  /// Label for the Basic Geometry function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Geometry'**
+  String get calculatorGroupBasicGeometry;
+
+  /// Label for the Materials function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get calculatorGroupMaterials;
+
+  /// Label for the Trigonometry function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Trigonometry'**
+  String get calculatorGroupTrigonometry;
+
+  /// Placeholder shown in the calculator history panel before the user types anything
+  ///
+  /// In en, this message translates to:
+  /// **'Here will show what you type'**
+  String get calculatorHistoryPlaceholder;
+
+  /// Calculator key label for the width dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get calculatorKeyWidth;
+
+  /// Calculator key label for the length dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get calculatorKeyLength;
+
+  /// Calculator key label for the height dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get calculatorKeyHeight;
+
+  /// Calculator key label for roof pitch
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch'**
+  String get calculatorKeyPitch;
+
+  /// Calculator key label for the circle function
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get calculatorKeyCircle;
+
+  /// Calculator key label for the vertical rise of a slope
+  ///
+  /// In en, this message translates to:
+  /// **'Rise'**
+  String get calculatorKeyRise;
+
+  /// Calculator key label for the horizontal run of a slope
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get calculatorKeyRun;
+
+  /// Calculator key label for the radius dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get calculatorKeyRadius;
+
+  /// Calculator key label for pounds, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Lbs'**
+  String get calculatorKeyLbs;
+
+  /// Calculator key label for kilograms, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Kg'**
+  String get calculatorKeyKg;
+
+  /// Calculator key label for tons, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Tons'**
+  String get calculatorKeyTons;
+
+  /// Calculator key label for the drywall material function
+  ///
+  /// In en, this message translates to:
+  /// **'Drywall'**
+  String get calculatorKeyDrywall;
+
+  /// Calculator key label for the fence material function
+  ///
+  /// In en, this message translates to:
+  /// **'Fence'**
+  String get calculatorKeyFence;
+
+  /// Calculator key label for the sine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'SIN'**
+  String get calculatorKeySin;
+
+  /// Calculator key label for the cosine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'COS'**
+  String get calculatorKeyCos;
+
+  /// Calculator key label for the tangent trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'TAN'**
+  String get calculatorKeyTan;
+
+  /// Result label for the number of fence posts computed by the fence function
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get calculatorResultPosts;
 }
 
 class _AppLocalizationsDelegate

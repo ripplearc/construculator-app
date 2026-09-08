@@ -45,6 +45,14 @@ class ServerException extends AppException {
   ServerException(super.stackTrace, super.exception);
 }
 
+/// Exception thrown when a requested resource does not exist.
+///
+/// Use this exception for expected not-found outcomes so callers can map it to
+/// a not-found failure without treating it as a Sentry-level error.
+class NotFoundException extends AppException {
+  NotFoundException(super.stackTrace, super.exception);
+}
+
 /// Exception thrown when a client error occurs.
 ///
 /// Throw this exception when status of an upstream request
@@ -53,7 +61,7 @@ class ServerException extends AppException {
 /// [message] is the user friendly message that will be displayed to the user.
 class ClientException extends AppException {
   final String message;
-  ClientException(stackTrace, this.message)
+  ClientException(trace.Trace stackTrace, this.message)
     : super(stackTrace, Exception(message));
   @override
   String toString() {
@@ -66,7 +74,7 @@ class ClientException extends AppException {
 /// [message] is the error message containing the details of the configuration error.
 class ConfigException extends AppException {
   final String message;
-  ConfigException(stackTrace, this.message)
+  ConfigException(trace.Trace stackTrace, this.message)
     : super(stackTrace, Exception(message));
   @override
   String toString() {

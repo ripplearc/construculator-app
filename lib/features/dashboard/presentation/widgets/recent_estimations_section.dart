@@ -1,36 +1,26 @@
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Displays the recent cost estimations section on the dashboard,
 /// including a horizontally scrollable list of [EstimationCard]s
 /// and navigation to the full estimations list.
-class RecentEstimationsSection extends StatefulWidget {
-  const RecentEstimationsSection({super.key});
+class RecentEstimationsSection extends StatelessWidget {
+  /// The router used for navigation (e.g., to the full estimations list or estimation details).
+  final AppRouter router;
 
-  @override
-  State<RecentEstimationsSection> createState() =>
-      _RecentEstimationsSectionState();
-}
-
-class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
-  late RecentEstimationsBloc _bloc;
-  final AppRouter _router = Modular.get<AppRouter>();
-
-  @override
-  void initState() {
-    super.initState();
-    _bloc = Modular.get<RecentEstimationsBloc>();
-    _bloc.add(const RecentEstimationsWatchStarted());
-  }
+  const RecentEstimationsSection({
+    super.key,
+    required this.router,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +40,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
               ),
             ),
             TextButton(
-              onPressed: _openAllEstimations,
+              onPressed: () => _openAllEstimations(context),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
@@ -69,7 +59,6 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
         SizedBox(
           height: CoreSpacing.space32 - CoreSpacing.space2,
           child: BlocBuilder<RecentEstimationsBloc, RecentEstimationsState>(
-            bloc: _bloc,
             builder: (context, state) {
               if (state is RecentEstimationsLoading &&
                   state.lastKnownEstimations == null) {
@@ -134,18 +123,17 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
     );
   }
 
-  void _openAllEstimations() {
-    final projectId = _bloc.currentProjectId;
+  void _openAllEstimations(BuildContext context) {
+    final projectId =
+        context.read<RecentEstimationsBloc>().currentProjectId;
     if (projectId == null || projectId.isEmpty) {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => EstimationModule.landingPage()),
-    );
+    context.read<AppShellBloc>().add(const AppShellTabSelected(ShellTab.estimates));
   }
 
   void _openEstimationDetails(String estimationId) {
-    _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
+    router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 }

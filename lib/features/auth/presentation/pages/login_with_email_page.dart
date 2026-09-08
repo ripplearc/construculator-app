@@ -10,12 +10,16 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class LoginWithEmailPage extends StatefulWidget {
+  final AppRouter router;
   final String email;
-  const LoginWithEmailPage({super.key, required this.email});
+  const LoginWithEmailPage({
+    super.key,
+    required this.router,
+    required this.email,
+  });
 
   @override
   State<LoginWithEmailPage> createState() => _LoginWithEmailPageState();
@@ -26,9 +30,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   bool _canPressContinue = false;
   List<String>? _emailErrorList;
   List<Widget>? _emailErrorWidgetList;
-  final AppRouter _router = Modular.get<AppRouter>();
 
-  _getContinueButtonText(LoginWithEmailState state) {
+  String _getContinueButtonText(LoginWithEmailState state) {
     final l10n = context.l10n;
     if (state is LoginWithEmailLoading) {
       return l10n.loggingInButton;
@@ -39,7 +42,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
     return l10n.continueButton;
   }
 
-  _handleFailure(Failure failure) {
+  void _handleFailure(Failure failure) {
     final l10n = context.l10n;
     if (failure is AuthFailure) {
       CoreToast.showError(
@@ -129,7 +132,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     errorText: l10n.emailNotRegistered,
                     linkText: l10n.register,
                     onPressed: () {
-                      _router.navigate(
+                      widget.router.navigate(
                         fullRegisterRoute,
                         arguments: _emailController.text,
                       );
@@ -155,7 +158,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             text: l10n.dontHaveAndAccountText,
             actionText: l10n.register,
             onPressed: () {
-              _router.navigate(fullRegisterRoute);
+              widget.router.navigate(fullRegisterRoute);
             },
           ),
         ],
@@ -181,6 +184,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             ),
             const SizedBox(height: CoreSpacing.space10),
             CoreTextField(
+              key: const Key('login_email_field'),
               controller: _emailController,
               label: l10n.emailLabel,
               hintText: l10n.emailHint,
@@ -190,11 +194,12 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             ),
             const SizedBox(height: CoreSpacing.space6),
             CoreButton(
+              key: const Key('login_email_continue_button'),
               isDisabled:
                   !_canPressContinue ||
                   state is LoginWithEmailAvailabilityLoading,
               onPressed: () {
-                _router.pushNamed(
+                widget.router.pushNamed(
                   fullEnterPasswordRoute,
                   arguments: _emailController.text,
                 );

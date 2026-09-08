@@ -6,7 +6,15 @@ sealed class GetProjectEvent extends Equatable {
   const GetProjectEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
+}
+
+/// Starts observing [CurrentProjectNotifier] and loads the current project.
+///
+/// Dispatched once by the presentation layer when the header app bar mounts.
+/// Subsequent project switches are handled internally via [_GetProjectCurrentProjectChanged].
+class GetProjectWatchStarted extends GetProjectEvent {
+  const GetProjectWatchStarted();
 }
 
 /// Requests loading a project by its id (initial fetch).
@@ -28,10 +36,20 @@ class GetProjectByIdLoadRequested extends GetProjectEvent {
 /// Unlike [GetProjectByIdLoadRequested], this event does not check the current
 /// state before firing, allowing multiple consecutive refresh requests to be processed.
 class GetProjectByIdRefreshRequested extends GetProjectEvent {
-  const GetProjectByIdRefreshRequested(this.projectId);
-
   final String projectId;
+
+  const GetProjectByIdRefreshRequested(this.projectId);
 
   @override
   List<Object> get props => [projectId];
+}
+
+/// Internal event emitted when [CurrentProjectNotifier] signals a project switch.
+class _GetProjectCurrentProjectChanged extends GetProjectEvent {
+  const _GetProjectCurrentProjectChanged(this.projectId);
+
+  final String? projectId;
+
+  @override
+  List<Object?> get props => [projectId];
 }

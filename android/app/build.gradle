@@ -21,7 +21,7 @@ if (flutterVersionName == null) {
 android {
     namespace "com.cms.cm_sample"
     compileSdk flutter.compileSdkVersion
-    ndkVersion "27.0.12077973"
+    ndkVersion "28.2.13676358"
     
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -42,6 +42,11 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        testInstrumentationRunner "pl.leancode.patrol.PatrolJUnitRunner"
+        testInstrumentationRunnerArguments clearPackageData: "true"
+    }
+    testOptions {
+        execution "ANDROIDX_TEST_ORCHESTRATOR"
     }
     buildTypes {
         release {
@@ -68,4 +73,6 @@ android {
 flutter {
     source '../..'
 }
-dependencies {}
+dependencies {
+    androidTestUtil "androidx.test:orchestrator:1.5.1"
+}

@@ -6,12 +6,16 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class SetNewPasswordPage extends StatefulWidget {
+  final AppRouter router;
   final String email;
-  const SetNewPasswordPage({super.key, required this.email});
+  const SetNewPasswordPage({
+    super.key,
+    required this.router,
+    required this.email,
+  });
 
   @override
   State<SetNewPasswordPage> createState() => _SetNewPasswordPageState();
@@ -26,7 +30,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   void _togglePasswordVisibility() {
     setState(() {
@@ -137,7 +140,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
             SuccessModal.show(
               context,
               message: l10n.passwordResetSuccessMessage,
-              onPressed: () => _router.navigate(shellRoute),
+              onPressed: () => widget.router.navigate(shellRoute),
               buttonLabel: l10n.continueButton,
             );
           }

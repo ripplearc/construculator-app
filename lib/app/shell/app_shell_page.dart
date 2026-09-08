@@ -1,16 +1,20 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
+import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
-import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/calculator_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
@@ -19,30 +23,47 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  const AppShellPage({super.key});
+  final ProjectUIProvider projectUIProvider;
+  final CurrentProjectNotifier currentProjectNotifier;
+  final AppRouter router;
+
+  const AppShellPage({
+    super.key,
+    required this.projectUIProvider,
+    required this.currentProjectNotifier,
+    required this.router,
+  });
 
   @override
   State<AppShellPage> createState() => _AppShellPageState();
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final AppShellBloc _bloc = Modular.get<AppShellBloc>();
-
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
   );
 
   @override
-  void dispose() {
-    _bloc.close();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // Start the projects watch at shell mount (not first sheet opening) so
+    // the first project auto-selects on login; without a selection,
+    // CurrentProjectNotifier stays null and every project-scoped surface
+    // (e.g. recent estimations) never loads (CA-900). Guarded like the
+    // projects sheet: a remount must not restart a loaded watch, which
+    // would reset the user's selection to the first project.
+    final projectDropdownBloc = context.read<ProjectDropdownBloc>();
+    if (projectDropdownBloc.state is! ProjectDropdownLoadSuccess) {
+      projectDropdownBloc.add(const ProjectDropdownStarted());
+    }
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = _bloc.state;
+    final bloc = context.read<AppShellBloc>();
+    final state = bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -52,7 +73,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      _bloc.add(const AppShellTabSelected(0));
+      bloc.add(const AppShellTabSelected(ShellTab.calculations));
       return;
     }
 
@@ -60,67 +81,53 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
-    _bloc.add(AppShellTabSelected(index));
+    assert(index < ShellTab.values.length, 'Tab index $index out of range');
+    context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
-      case ShellTab.home:
-        return const DashboardPage();
       case ShellTab.calculations:
         return const CalculationsPage();
-      case ShellTab.estimation:
+      case ShellTab.estimates:
         return EstimationModule.landingPage();
-      case ShellTab.members:
-        return const MembersPage();
     }
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    // TODO: [CA-621] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
-    // https://ripplearc.youtrack.cloud/issue/CA-621
-    const projectId = '';
-    final coreColors = Theme.of(context).coreColors;
-    if (projectId.isEmpty) {
-      return PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            color: coreColors.pageBackground,
-            boxShadow: CoreShadows.medium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          child: AppBar(
-            backgroundColor: coreColors.pageBackground,
-            elevation: 0,
-            centerTitle: true,
-            titleSpacing: 0,
-            title: Text(context.l10n.appTitle),
-          ),
-        ),
-      );
-    }
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-        projectId: projectId,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: _bloc,
-      builder: (context, state) {
+    return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
+      listener: (context, dropdownState) {
+        if (dropdownState is ProjectDropdownLoadSuccess) {
+          final newId = dropdownState.selectedProject?.id;
+          if (widget.currentProjectNotifier.currentProjectId != newId) {
+            widget.currentProjectNotifier.setCurrentProjectId(newId);
+          }
+        } else if (dropdownState is ProjectDropdownLoadFailure) {
+          // Nothing is ever going to select a project after a load failure:
+          // tell project-scoped surfaces so they exit their loading hold
+          // instead of skeletoning forever (CA-900).
+          context.read<RecentEstimationsBloc>().add(
+                const RecentEstimationsProjectLoadFailed(),
+              );
+        }
+      },
+      child: BlocBuilder<AppShellBloc, AppShellState>(
+        builder: (context, state) {
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: _buildAppBar(context),
+            appBar: AppHeaderModule.buildHeader(
+              currentProjectNotifier: widget.currentProjectNotifier,
+              router: widget.router,
+              projectUIProvider: widget.projectUIProvider,
+              onProjectTap: () => ProjectsBottomSheet.show(
+                context,
+                context.read<ProjectDropdownBloc>(),
+                widget.router,
+              ),
+            ),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];
@@ -144,31 +151,28 @@ class _AppShellPageState extends State<AppShellPage> {
             bottomNavigationBar: SafeArea(
               minimum: const EdgeInsets.all(CoreSpacing.space4),
               child: CoreBottomNavBar(
+                key: const Key('app_shell_bottom_nav_bar'),
                 tabs: [
                   BottomNavTab(
-                    icon: CoreIcons.home,
-                    label: context.l10n.homeTab,
-                  ),
-                  BottomNavTab(
-                    icon: CoreIcons.calculate,
+                    icon: CoreIcons.calculation,
                     label: context.l10n.calculationsTab,
                   ),
                   BottomNavTab(
                     icon: CoreIcons.cost,
-                    label: context.l10n.costEstimation,
-                  ),
-                  BottomNavTab(
-                    icon: CoreIcons.members,
-                    label: context.l10n.membersTab,
+                    label: context.l10n.estimatesTab,
                   ),
                 ],
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
+                onActionButtonPressed: state.calculatorEnabled
+                    ? () => widget.router.pushNamed(calculatorBaseRoute)
+                    : null,
               ),
             ),
           ),
         );
-      },
+        },
+      ),
     );
   }
 }

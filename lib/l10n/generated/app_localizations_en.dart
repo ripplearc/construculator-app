@@ -42,6 +42,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionError => 'Connection error';
 
   @override
+  String get consentGateAcceptButton => 'Agree and continue';
+
+  @override
+  String get consentGateBody =>
+      'Please review and accept our terms of service and privacy policy to continue.';
+
+  @override
+  String get consentGatePrivacyLink => 'privacy policy';
+
+  @override
+  String get consentGateRetryButton => 'Retry';
+
+  @override
+  String get consentGateSubmitErrorMessage =>
+      'We couldn\'t save your response. Please try again.';
+
+  @override
+  String get consentGateTermsLink => 'terms of service';
+
+  @override
+  String get consentGateTitle => 'Review our terms';
+
+  @override
+  String get consentUnavailableBody =>
+      'Check your connection and try again. You\'ll be able to continue once we can confirm the current terms.';
+
+  @override
+  String get consentUnavailableRetryButton => 'Retry';
+
+  @override
+  String get consentUnavailableTitle => 'We couldn\'t load the terms';
+
+  @override
+  String get consentWithdrawalCancelButton => 'Cancel';
+
+  @override
+  String get consentWithdrawalConfirmButton => 'Yes, withdraw';
+
+  @override
+  String get consentWithdrawalDialogBody =>
+      'You\'ll be signed out and asked to accept the terms again next time you open the app.';
+
+  @override
+  String get consentWithdrawalDialogTitle => 'Withdraw your consent?';
+
+  @override
+  String get consentWithdrawalTileLabel => 'Withdraw consent';
+
+  @override
   String get continueButton => 'Continue';
 
   @override
@@ -142,6 +191,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recentEstimationsEmptyState => 'No recent estimations found.';
+
+  @override
+  String get favouritesSectionTitle => 'Favourites';
+
+  @override
+  String get favouritesEmptyState => 'No favourites yet.';
+
+  @override
+  String get sortFavouriteSemanticLabel => 'Sort favourites';
+
+  @override
+  String get sortFavouriteTitle => 'Sort favourite';
+
+  @override
+  String get sortFavouriteAll => 'All';
+
+  @override
+  String get sortFavouriteCostEstimations => 'Cost estimations';
+
+  @override
+  String get sortFavouriteCalculations => 'Calculations';
+
+  @override
+  String get editProjectButton => 'Edit project';
+
+  @override
+  String get editProjectScreenTitle => 'Edit Project';
+
+  @override
+  String get projectSettingsSemanticLabel => 'Project settings';
+
+  @override
+  String get projectsSheetTitle => 'Projects';
+
+  @override
+  String get searchProjectsHint => 'Search projects';
+
+  @override
+  String get createProjectButton => 'Create a project';
+
+  @override
+  String get projectCreationSuccessMessage =>
+      'You have successfully created a new project';
+
+  @override
+  String get continueToDashboardButton => 'Continue to Dashboard';
+
+  @override
+  String get projectsEmptyState => 'No projects yet.';
+
+  @override
+  String get projectsLoadError => 'Failed to load projects.';
+
+  @override
+  String get projectDetailScreenTitle => 'Project details';
+
+  @override
+  String get projectDetailsLoadError => 'Failed to load project details.';
+
+  @override
+  String get projectDetailsRetryButton => 'Retry';
 
   @override
   String get heyEnterYourDetailsToRegisterWithUs =>
@@ -382,13 +492,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEstimation => 'Add estimation';
 
   @override
-  String get costEstimation => 'Cost Estimation';
-
-  @override
   String get calculations => 'Calculations';
 
   @override
   String get members => 'Members';
+
+  @override
+  String get invitePeopleTitle => 'Invite team members';
+
+  @override
+  String get invitePeopleSubtitle => 'You can invite other people by email';
+
+  @override
+  String get assignByEmailHint => 'Assign by email';
+
+  @override
+  String get inviteButton => 'Invite';
+
+  @override
+  String get contributorRole => 'Contributor';
 
   @override
   String get costEstimationEmptyMessage =>
@@ -411,6 +533,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeAction => 'Remove';
+
+  @override
+  String removeChipLabel(String email) {
+    return 'Remove $email';
+  }
 
   @override
   String get copyEstimationAction => 'Copy cost estimation';
@@ -448,6 +575,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noKeepButton => 'No, Keep';
+
+  @override
+  String deleteProjectConfirmTitle(String projectName) {
+    return 'Are you sure you want to remove \"$projectName\" project?';
+  }
+
+  @override
+  String get deleteProjectWarningMessage =>
+      'By removing this project you will lose all calculations, costs, and images attached to your calculations';
+
+  @override
+  String get deleteProjectButton => 'Delete project';
 
   @override
   String get estimationDeletedSuccess => 'Estimation deleted successfully';
@@ -568,6 +707,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityCostFileDeletedSimple => 'Cost File Deleted';
+
+  @override
+  String get uploadedOnLabel => 'Uploaded on';
+
+  @override
+  String get costFilesSectionTitle => 'Cost files';
+
+  @override
+  String get costFilesEmptyState => 'No cost files attached.';
+
+  @override
+  String projectLastUpdatedLabel(String date) {
+    return 'Last updated: $date';
+  }
 
   @override
   String activityAttachmentAdded(String fileName) {
@@ -699,15 +852,625 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Construculator';
 
   @override
-  String get homeTab => 'Home';
-
-  @override
   String get calculationsTab => 'Calculations';
 
   @override
-  String get membersTab => 'Members';
+  String get estimatesTab => 'Estimates';
 
   @override
   String get permissionDenied =>
       'You don\'t have permission to perform this action';
+
+  @override
+  String get materialsTab => 'Materials';
+
+  @override
+  String get laboursTab => 'Labours';
+
+  @override
+  String get equipmentsTab => 'Equipments';
+
+  @override
+  String get noMaterialCostMessage =>
+      'No material cost added. For adding cost please click on add button';
+
+  @override
+  String get noLabourCostMessage =>
+      'No labour cost added. For adding cost please click on add button';
+
+  @override
+  String get noEquipmentCostMessage =>
+      'No equipment cost added. For adding cost please click on add button';
+
+  @override
+  String get addMaterialCostButton => 'Add material cost';
+
+  @override
+  String get previewButton => 'Preview';
+
+  @override
+  String get backLabel => 'Back';
+
+  @override
+  String get editEstimationNameLabel => 'Edit estimation name';
+
+  @override
+  String get editCostItemNameLabel => 'Edit cost item name';
+
+  @override
+  String get moreOptionsLabel => 'More options';
+
+  @override
+  String get commentLabel => 'Comment';
+
+  @override
+  String get addMaterialCostsScreenTitle => 'Material cost entry';
+
+  @override
+  String get addLabourCostsScreenTitle => 'Labour cost entry';
+
+  @override
+  String get addEquipmentCostsScreenTitle => 'Equipment cost entry';
+
+  @override
+  String get howToCalculateCostLabel => 'How you want to calculate cost?';
+
+  @override
+  String get fromCostFileMode => 'From cost file';
+
+  @override
+  String get manuallyMode => 'Manually';
+
+  @override
+  String get costItemTotalLabel => 'Total:';
+
+  @override
+  String get addToCostButton => 'Add to cost';
+
+  @override
+  String get fromCostFileModeSemanticLabel => 'Switch to cost file mode';
+
+  @override
+  String get manuallyModeSemanticLabel => 'Switch to manual mode';
+
+  @override
+  String get globalSearchHint => 'Search for Calculation and cost';
+
+  @override
+  String get globalSearchRecentSearchesTitle => 'Recent searches';
+
+  @override
+  String get projectSearchRecentSearchesTitle => 'Recent searches';
+
+  @override
+  String get globalSearchFilterTags => 'Tags';
+
+  @override
+  String get globalSearchFilterModified => 'Modified';
+
+  @override
+  String get globalSearchFilterType => 'Type';
+
+  @override
+  String get globalSearchSuggestionsTitle => 'Search suggestions';
+
+  @override
+  String globalSearchSuggestionFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String get globalSearchEmptyRecentMessage => 'No recent searches available';
+
+  @override
+  String get projectSearchFilterTags => 'Tags';
+
+  @override
+  String get projectSearchFilterModified => 'Modified';
+
+  @override
+  String get projectSearchEmptyRecentMessage => 'No recent searches available';
+
+  @override
+  String get dashboardTitle => 'Construculator';
+
+  @override
+  String get dashboardSearchSemanticLabel => 'Search';
+
+  @override
+  String get globalSearchBackSemanticLabel => 'Back';
+
+  @override
+  String get globalSearchClearSearchSemanticLabel => 'Clear search';
+
+  @override
+  String get projectSearchBackSemanticLabel => 'Back';
+
+  @override
+  String get projectSearchClearSearchSemanticLabel => 'Clear search';
+
+  @override
+  String get projectSearchSuggestionsTitle => 'Search suggestions';
+
+  @override
+  String projectSearchSuggestionFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String get globalSearchLoadErrorMessage =>
+      'Failed to load recent searches. Please try again.';
+
+  @override
+  String get searchPerformErrorMessage => 'Search failed. Please try again.';
+
+  @override
+  String get searchFailureBodyMessage =>
+      'Something went wrong while searching.';
+
+  @override
+  String get searchFailureRetryLabel => 'Retry';
+
+  @override
+  String recentSearchFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String recentSearchDeleteSemanticLabel(String term) {
+    return 'Delete $term from recent searches';
+  }
+
+  @override
+  String get globalSearchDeleteErrorMessage =>
+      'Failed to remove recent search. Please try again.';
+
+  @override
+  String get globalSearchSuggestionsErrorMessage =>
+      'Could not load suggestions.';
+
+  @override
+  String get searchNavigationError =>
+      'Failed to open search. Please try again.';
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get projectDropdownSemanticLabel => 'Select project';
+
+  @override
+  String get notificationSemanticLabel => 'Notifications';
+
+  @override
+  String get profileSemanticLabel => 'Profile';
+
+  @override
+  String get searchResultsMostRelevant => 'Most relevant';
+
+  @override
+  String get searchResultsLoadMoreFailed => 'Couldn\'t load more results';
+
+  @override
+  String get searchResultsLoadMoreLoading => 'Loading more results';
+
+  @override
+  String get searchResultsEndOfResults => 'No more results';
+
+  @override
+  String searchResultsEmpty(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get dashboardLoadProfileError =>
+      'Failed to load profile. Please try again.';
+
+  @override
+  String get projectSelectorSemanticLabel => 'Select project';
+
+  @override
+  String get numberOfCostEstimations => 'No. of cost estimation';
+
+  @override
+  String get peopleInvited => 'People invited';
+
+  @override
+  String get globalSearchEmptyQueryMessage => 'Please enter a search term.';
+
+  @override
+  String get globalSearchFilterTagsSemanticLabel => 'Filter by tags';
+
+  @override
+  String get projectSearchFilterTagsSemanticLabel => 'Filter by tags';
+
+  @override
+  String globalSearchClearTagFilterSemanticLabel(String tag) {
+    return 'Clear tag filter $tag';
+  }
+
+  @override
+  String get globalSearchFilterModifiedSemanticLabel =>
+      'Filter by modification date';
+
+  @override
+  String get projectSearchFilterModifiedSemanticLabel =>
+      'Filter by modification date';
+
+  @override
+  String get projectSearchFilterOwner => 'Owner';
+
+  @override
+  String get projectSearchFilterOwnerSemanticLabel => 'Filter by owner';
+
+  @override
+  String projectSearchClearTagFilterSemanticLabel(String tag) {
+    return 'Clear tag filter $tag';
+  }
+
+  @override
+  String projectSearchClearOwnerFilterSemanticLabel(String owner) {
+    return 'Clear owner filter $owner';
+  }
+
+  @override
+  String get projectSearchClearDateFilterSemanticLabel =>
+      'Clear modification date filter';
+
+  @override
+  String get projectSearchTagsSheetTitle => 'Tags';
+
+  @override
+  String get projectSearchTagsSheetSearchHint => 'Search by tag name';
+
+  @override
+  String get projectSearchTagsSheetClearAll => 'Clear all';
+
+  @override
+  String get projectSearchTagsSheetApply => 'Apply';
+
+  @override
+  String get projectSearchTagsSheetEmpty => 'No tags found.';
+
+  @override
+  String get projectSearchOwnerSheetTitle => 'Owner';
+
+  @override
+  String get projectSearchOwnerSheetSearchHint => 'Search by owner name';
+
+  @override
+  String get projectSearchOwnerSheetClearAll => 'Clear all';
+
+  @override
+  String get projectSearchOwnerSheetApply => 'Apply';
+
+  @override
+  String get projectSearchOwnerSheetEmpty => 'No owners found.';
+
+  @override
+  String get globalSearchClearDateFilterSemanticLabel =>
+      'Clear modification date filter';
+
+  @override
+  String get globalSearchTagsSheetTitle => 'Tags';
+
+  @override
+  String get globalSearchTagsSheetSearchHint => 'Search by tag name';
+
+  @override
+  String get globalSearchTagsSheetClearAll => 'Clear all';
+
+  @override
+  String get globalSearchTagsSheetApply => 'Apply';
+
+  @override
+  String get globalSearchTagsSheetEmpty => 'No tags found.';
+
+  @override
+  String get globalSearchTagsLoadErrorMessage => 'Could not load tags.';
+
+  @override
+  String get globalSearchFilterTypeSemanticLabel => 'Filter by type';
+
+  @override
+  String globalSearchClearTypeFilterSemanticLabel(String type) {
+    return 'Clear type filter $type';
+  }
+
+  @override
+  String get globalSearchTypeSheetTitle =>
+      'Select Filter by cost or calculation';
+
+  @override
+  String get globalSearchTypeCostLabel => 'Cost';
+
+  @override
+  String get globalSearchTypeCalculationLabel => 'Calculation';
+
+  @override
+  String get globalSearchTypeSheetClearAll => 'Clear all';
+
+  @override
+  String get globalSearchTypeSheetApply => 'Apply';
+
+  @override
+  String get projectSearchTagsLoadErrorMessage => 'Could not load tags.';
+
+  @override
+  String get projectSearchOwnersLoadErrorMessage => 'Could not load owners.';
+
+  @override
+  String get projectSearchDeleteErrorMessage =>
+      'Failed to remove recent search. Please try again.';
+
+  @override
+  String get projectNameLabel => 'Project name*';
+
+  @override
+  String get projectNameHintText => 'Enter project name';
+
+  @override
+  String get projectNameRequiredError => 'Project name is required';
+
+  @override
+  String get projectNameTooLongError =>
+      'Project name must be 100 characters or less';
+
+  @override
+  String get projectDescriptionLabel => 'Project description';
+
+  @override
+  String get projectDescriptionHintText => 'Project description';
+
+  @override
+  String get projectDescriptionTooLongError =>
+      'Description must be 100 characters or less';
+
+  @override
+  String get dateRangeSheetTitle => 'Date range';
+
+  @override
+  String get dateRangeSheetToday => 'Today';
+
+  @override
+  String get dateRangeSheetLast7Days => 'Last 7 days';
+
+  @override
+  String get dateRangeSheetLast30Days => 'Last 30 days';
+
+  @override
+  String get dateRangeSheetThisMonth => 'This month';
+
+  @override
+  String get dateRangeSheetCustomRange => 'Custom range';
+
+  @override
+  String get dateRangeSheetStartDateLabel => 'Start date';
+
+  @override
+  String get dateRangeSheetEndDateLabel => 'End date';
+
+  @override
+  String get dateRangeSheetApply => 'Apply';
+
+  @override
+  String get dateRangeSheetCancel => 'Cancel';
+
+  @override
+  String get dateRangeSheetConfirm => 'OK';
+
+  @override
+  String get addDescriptionButton => 'Add description';
+
+  @override
+  String get inviteMemberButton => 'Invite member';
+
+  @override
+  String get exportSettingsTitle => 'Folder link for export';
+
+  @override
+  String get exportGoogleDriveLabel => 'Google Drive link:';
+
+  @override
+  String get exportDropboxLabel => 'Dropbox link:';
+
+  @override
+  String get exportOneDriveLabel => 'OneDrive link:';
+
+  @override
+  String get createProjectScreenTitle => 'Create a project';
+
+  @override
+  String get addLabourCostButton => 'Add labour cost';
+
+  @override
+  String get addEquipmentCostButton => 'Add equipment cost';
+
+  @override
+  String get costFilePlaceholder => 'Select cost file';
+
+  @override
+  String get materialTypeLabel => 'Material type*';
+
+  @override
+  String get quantityLabel => 'Quantity*';
+
+  @override
+  String get perUnitCostLabel => 'Per unit cost*';
+
+  @override
+  String get unitOfMeasurementHint => 'UOM';
+
+  @override
+  String get selectUnitTitle => 'Select unit';
+
+  @override
+  String get unitPieces => 'Pieces';
+
+  @override
+  String get unitMeters => 'Meters';
+
+  @override
+  String get unitSquareMeters => 'Square meters';
+
+  @override
+  String get unitCubicMeters => 'Cubic meters';
+
+  @override
+  String get unitKilograms => 'Kilograms';
+
+  @override
+  String get unitTons => 'Tons';
+
+  @override
+  String get unitLiters => 'Liters';
+
+  @override
+  String get unitHours => 'Hours';
+
+  @override
+  String get unitDays => 'Days';
+
+  @override
+  String get unitBoxes => 'Boxes';
+
+  @override
+  String get unitBags => 'Bags';
+
+  @override
+  String get unitRolls => 'Rolls';
+
+  @override
+  String get unitSheets => 'Sheets';
+
+  @override
+  String get otherMaterialDetailsButton => 'Other material details';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String get productLinkLabel => 'Product link';
+
+  @override
+  String get labourTypeLabel => 'Labour type*';
+
+  @override
+  String get calcMethodTitle => 'Calculation method';
+
+  @override
+  String get perDayOption => 'Per day';
+
+  @override
+  String get perHoursOption => 'Per hour';
+
+  @override
+  String get noOfDaysLabel => 'No. of days*';
+
+  @override
+  String get noOfHoursLabel => 'No. of hours*';
+
+  @override
+  String get crewRateLabel => 'Crew rate (\$)*';
+
+  @override
+  String get crewSizeLabel => 'Crew size*';
+
+  @override
+  String get equipmentTypeLabel => 'Equipment type*';
+
+  @override
+  String get equipmentNameLabel => 'Equipment name*';
+
+  @override
+  String get unitPriceLabel => 'Unit price*';
+
+  @override
+  String get rateDayLabel => 'Rate/Day:';
+
+  @override
+  String get rateHourLabel => 'Rate/Hour:';
+
+  @override
+  String get materialTypeRequiredError => 'Material type is required';
+
+  @override
+  String get labourTypeRequiredError => 'Labour type is required';
+
+  @override
+  String get equipmentNameRequiredError => 'Equipment name is required';
+
+  @override
+  String get projectSettingsNavigationError =>
+      'Unable to open project settings. Please try again.';
+
+  @override
+  String get projectSettingsPermissionError =>
+      'You don\'t have permission to view this project.';
+
+  @override
+  String get calculatorOcLabel => 'O.C';
+
+  @override
+  String get calculatorGroupBasicGeometry => 'Basic Geometry';
+
+  @override
+  String get calculatorGroupMaterials => 'Materials';
+
+  @override
+  String get calculatorGroupTrigonometry => 'Trigonometry';
+
+  @override
+  String get calculatorHistoryPlaceholder => 'Here will show what you type';
+
+  @override
+  String get calculatorKeyWidth => 'Width';
+
+  @override
+  String get calculatorKeyLength => 'Length';
+
+  @override
+  String get calculatorKeyHeight => 'Height';
+
+  @override
+  String get calculatorKeyPitch => 'Pitch';
+
+  @override
+  String get calculatorKeyCircle => 'Circle';
+
+  @override
+  String get calculatorKeyRise => 'Rise';
+
+  @override
+  String get calculatorKeyRun => 'Run';
+
+  @override
+  String get calculatorKeyRadius => 'Radius';
+
+  @override
+  String get calculatorKeyLbs => 'Lbs';
+
+  @override
+  String get calculatorKeyKg => 'Kg';
+
+  @override
+  String get calculatorKeyTons => 'Tons';
+
+  @override
+  String get calculatorKeyDrywall => 'Drywall';
+
+  @override
+  String get calculatorKeyFence => 'Fence';
+
+  @override
+  String get calculatorKeySin => 'SIN';
+
+  @override
+  String get calculatorKeyCos => 'COS';
+
+  @override
+  String get calculatorKeyTan => 'TAN';
+
+  @override
+  String get calculatorResultPosts => 'Posts';
 }

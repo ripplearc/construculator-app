@@ -1,0 +1,337 @@
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/project_search_routes.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+const int _kProjectsSkeletonItemCount = 4;
+const double _kProjectsSkeletonItemHeight = CoreSpacing.space20;
+const double _kProjectsListMaxHeight = CoreSpacing.space64 * 2;
+const double _kProjectsSearchIconSize = CoreSpacing.space5;
+
+/// A bottom sheet that lists the user's accessible projects, allowing them to
+/// select a project, search, or start creating a project.
+///
+/// The list is driven by [ProjectDropdownBloc]; selecting a project dispatches
+/// [ProjectDropdownSelected] and dismisses the sheet. Loading, error (with a
+/// cached fallback), and empty states are all rendered inline. Tapping the
+/// search field dismisses the sheet and navigates to `ProjectSearchPage`.
+class ProjectsBottomSheet extends StatefulWidget {
+  /// The bloc that manages project selection and loading state.
+  final ProjectDropdownBloc bloc;
+
+  /// Handles navigation away from the sheet.
+  final AppRouter router;
+
+  const ProjectsBottomSheet({
+    super.key,
+    required this.bloc,
+    required this.router,
+  });
+
+  /// Shows the projects bottom sheet using [CoreQuickSheet].
+  static Future<void> show(
+    BuildContext context,
+    ProjectDropdownBloc bloc,
+    AppRouter router,
+  ) {
+    return CoreQuickSheet.show<void>(
+      context: context,
+      useSafeArea: true,
+      child: ProjectsBottomSheet(bloc: bloc, router: router),
+    );
+  }
+
+  @override
+  State<ProjectsBottomSheet> createState() => _ProjectsBottomSheetState();
+}
+
+class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
+  static final _logger = AppLogger().tag('ProjectsBottomSheet');
+
+  late final ProjectDropdownBloc _bloc;
+  final TextEditingController _searchController = TextEditingController();
+
+  final Set<String> _navigatingSettingsProjectIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = widget.bloc;
+    if (_bloc.state is! ProjectDropdownLoadSuccess) {
+      _bloc.add(const ProjectDropdownStarted());
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchTap() {
+    Navigator.of(context).pop();
+    widget.router.pushNamed(projectSearchRoute);
+  }
+
+  Future<void> _onRefresh() async {
+    _bloc.add(const ProjectDropdownStarted());
+    await _bloc.stream
+        .firstWhere(
+          (state) =>
+              state is ProjectDropdownLoadSuccess ||
+              state is ProjectDropdownLoadFailure,
+        )
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => _bloc.state,
+        )
+        .catchError((_) => _bloc.state);
+  }
+
+  void _onProjectSelected(Project project) {
+    _bloc.add(ProjectDropdownSelected(project.id));
+    Navigator.of(context).pop();
+  }
+
+  void _onCreateProject() {
+    Navigator.of(context).pop();
+    Modular.to.pushNamed(createProjectRoute);
+  }
+
+  Future<void> _onProjectSettings(
+    Project project, {
+    required bool canView,
+  }) async {
+    if (!canView) {
+      CoreToast.showError(
+        context,
+        context.l10n.projectSettingsPermissionError,
+        context.l10n.closeButton,
+      );
+      return;
+    }
+
+    setState(() => _navigatingSettingsProjectIds.add(project.id));
+    try {
+      await widget.router.pushNamed(fullViewProjectRoute, arguments: project.id);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to navigate to project settings',
+        error,
+        stackTrace,
+      );
+      if (mounted) {
+        CoreToast.showError(
+          context,
+          context.l10n.projectSettingsNavigationError,
+          context.l10n.closeButton,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _navigatingSettingsProjectIds.remove(project.id));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.all(CoreSpacing.space6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.projectsSheetTitle,
+            style: typography.titleLargeSemiBold.copyWith(
+              color: colors.textHeadline,
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space4),
+          GestureDetector(
+            key: const Key('projects_search_field'),
+            onTap: _onSearchTap,
+            child: AbsorbPointer(
+              child: CoreTextField(
+                controller: _searchController,
+                hintText: l10n.searchProjectsHint,
+                readOnly: true,
+                prefix: CoreIconWidget(
+                  icon: CoreIcons.search,
+                  size: _kProjectsSearchIconSize,
+                  color: colors.iconGrayMid,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space4),
+          BlocBuilder<ProjectDropdownBloc, ProjectDropdownState>(
+            bloc: _bloc,
+            builder: (context, state) => _buildBody(context, state),
+          ),
+          const SizedBox(height: CoreSpacing.space4),
+          CoreButton(
+            label: l10n.createProjectButton,
+            onPressed: _onCreateProject,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ProjectDropdownState state) {
+    if (state is ProjectDropdownLoadInProgress) {
+      return _buildSkeleton(context);
+    }
+
+    if (state is ProjectDropdownLoadSuccess) {
+      return _buildList(
+        context,
+        projects: state.visibleProjects,
+        selectedProjectId: state.selectedProject?.id,
+        settingsAccessibleProjectIds: state.settingsAccessibleProjectIds,
+      );
+    }
+
+    if (state is ProjectDropdownLoadFailure) {
+      if (state.cachedProjects.isNotEmpty) {
+        return _buildList(
+          context,
+          projects: state.visibleProjects,
+          selectedProjectId: null,
+          settingsAccessibleProjectIds: state.settingsAccessibleProjectIds,
+          errorBanner: true,
+        );
+      }
+      return _buildError(context);
+    }
+
+    return _buildSkeleton(context);
+  }
+
+  Widget _buildSkeleton(BuildContext context) {
+    final colors = context.colorTheme;
+    return Column(
+      children: List.generate(
+        _kProjectsSkeletonItemCount,
+        (_) => Container(
+          height: _kProjectsSkeletonItemHeight,
+          margin: const EdgeInsets.only(bottom: CoreSpacing.space3),
+          decoration: BoxDecoration(
+            color: colors.backgroundGrayLight,
+            borderRadius: BorderRadius.circular(CoreSpacing.space3),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space8),
+      child: Center(
+        child: Text(
+          context.l10n.projectsLoadError,
+          textAlign: TextAlign.center,
+          style: typography.bodyMediumRegular.copyWith(
+            color: colors.statusError,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space8),
+      child: Center(
+        child: Text(
+          context.l10n.projectsEmptyState,
+          textAlign: TextAlign.center,
+          style: typography.bodyMediumRegular.copyWith(color: colors.textBody),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildList(
+    BuildContext context, {
+    required List<Project> projects,
+    required String? selectedProjectId,
+    required Set<String> settingsAccessibleProjectIds,
+    bool errorBanner = false,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: _kProjectsListMaxHeight),
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: CustomScrollView(
+          shrinkWrap: true,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            if (errorBanner)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: CoreSpacing.space3),
+                  child: Text(
+                    context.l10n.projectsLoadError,
+                    style: context.textTheme.bodySmallRegular.copyWith(
+                      color: context.colorTheme.statusError,
+                    ),
+                  ),
+                ),
+              ),
+            if (projects.isEmpty)
+              SliverToBoxAdapter(child: _buildEmpty(context))
+            else
+              SliverList.builder(
+                itemCount: projects.length,
+                itemBuilder: (context, index) {
+                  final project = projects[index];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == projects.length - 1
+                          ? 0
+                          : CoreSpacing.space3,
+                    ),
+                    child: ProjectListItem(
+                      key: ValueKey<String>(project.id),
+                      project: project,
+                      isSelected: project.id == selectedProjectId,
+                      onTap: () => _onProjectSelected(project),
+                      onSettingsTap:
+                          _navigatingSettingsProjectIds.contains(project.id)
+                          ? null
+                          : () => _onProjectSettings(
+                              project,
+                              canView: settingsAccessibleProjectIds.contains(
+                                project.id,
+                              ),
+                            ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

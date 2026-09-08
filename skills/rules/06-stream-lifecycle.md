@@ -1,7 +1,7 @@
 # RULE 6: Stream Lifecycle & Performance
 
-## Rule ID
-RULE_6
+## Name
+Stream Lifecycle
 
 ## Category
 Performance & Memory Management
@@ -96,6 +96,6 @@ Do I need to expose a stream of data?
 
 ## References
 
-- [RULE_6 Gist: Stream Performance](https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5)
+- [Stream Lifecycle Gist: Stream Performance](https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5)
 - [Dart Streams Documentation](https://dart.dev/tutorials/language/streams)
 - [RxDart Documentation](https://pub.dev/packages/rxdart)

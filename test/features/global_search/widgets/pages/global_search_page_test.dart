@@ -1,0 +1,1301 @@
+import 'dart:async';
+
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
+    as estimation_factory;
+import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_project_dropdown_bloc_factory.dart';
+import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/toast_test_utils.dart';
+
+const String _testUserId = 'user-page-test';
+const String _testUserEmail = 'page@test.com';
+
+Map<String, dynamic> _fakeHistoryRow(String term) => {
+  DatabaseConstants.idColumn: term,
+  DatabaseConstants.userIdColumn: _testUserId,
+  DatabaseConstants.searchTermColumn: term,
+  DatabaseConstants.scopeColumn: 'dashboard',
+  DatabaseConstants.searchCountColumn: 1,
+  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+};
+
+class _GlobalSearchPageTestModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _GlobalSearchPageTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    GlobalSearchModule(appBootstrap),
+  ];
+}
+
+void main() {
+  late FakeSupabaseWrapper fakeSupabase;
+  late FakeAppRouter router;
+  BuildContext? buildContext;
+
+  setUpAll(() {
+    final clock = FakeClockImpl();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+    );
+    Modular.init(_GlobalSearchPageTestModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    expect(supabase, isA<FakeSupabaseWrapper>());
+    fakeSupabase = supabase as FakeSupabaseWrapper;
+
+    final appRouter = Modular.get<AppRouter>();
+    expect(appRouter, isA<FakeAppRouter>());
+    router = appRouter as FakeAppRouter;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+    router.reset();
+  });
+
+  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
+    return MaterialApp(
+      theme: theme ?? createTestTheme(),
+      home: Builder(
+        builder: (context) {
+          buildContext = context;
+          return child;
+        },
+      ),
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+    );
+  }
+
+  void seedRecentSearches() {
+    fakeSupabase.setCurrentUser(
+      FakeUser(
+        id: _testUserId,
+        email: _testUserEmail,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      ),
+    );
+    fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+      _fakeHistoryRow('Material of building'),
+      _fakeHistoryRow('MD bungalow'),
+    ]);
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.searchSuggestionsRpcFunction,
+      <String>[],
+    );
+  }
+
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
+
+  Future<void> renderPage(
+    WidgetTester tester, {
+    ProjectDropdownBloc? projectDropdownBloc,
+  }) async {
+    // Closing an already-closed bloc is a no-op, so tests that pass their
+    // own bloc (and tear it down themselves) are unaffected.
+    final dropdownBloc =
+        projectDropdownBloc ?? FakeProjectDropdownBlocFactory.create();
+    addTearDown(dropdownBloc.close);
+    await tester.pumpWidget(
+      makeTestableWidget(
+        child: GlobalSearchPage(
+          router: router,
+          blocFactory: () => Modular.get<GlobalSearchBloc>(),
+          estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: dropdownBloc,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  group('User on GlobalSearchPage', () {
+    testWidgets('sees search field with hint text', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().globalSearchHint), findsOneWidget);
+    });
+
+    testWidgets('sees back button', (tester) async {
+      await renderPage(tester);
+
+      expect(find.bySemanticsLabel(l10n().globalSearchBackSemanticLabel), findsOneWidget);
+    });
+
+    testWidgets('sees Tags filter chip', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().globalSearchFilterTags), findsOneWidget);
+    });
+
+    testWidgets('sees Modified filter chip', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().globalSearchFilterModified), findsOneWidget);
+    });
+
+    testWidgets('sees Type filter chip', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().globalSearchFilterType), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping the Modified chip opens the date range sheet and applying shows the active pill',
+      (tester) async {
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n().dateRangeSheetTitle), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('date_range_apply_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('active_date_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('global_search_date_filter_chip')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'choosing Custom range opens the start and end date pickers with the '
+      'localized confirm label',
+      (tester) async {
+        await renderPage(tester);
+
+        await tester.tap(
+          find.byKey(const Key('global_search_date_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('date_range_option_custom')));
+        await tester.pumpAndSettle();
+
+        // Start-date picker: the confirm button must carry the app's l10n
+        // value, not CoreDatePicker's built-in default.
+        expect(find.text(l10n().dateRangeSheetStartDateLabel), findsOneWidget);
+        expect(find.text(l10n().dateRangeSheetConfirm), findsOneWidget);
+
+        await tester.tap(find.text(l10n().dateRangeSheetConfirm));
+        await tester.pumpAndSettle();
+
+        // End-date picker renders the same localized confirm label.
+        expect(find.text(l10n().dateRangeSheetEndDateLabel), findsOneWidget);
+        expect(find.text(l10n().dateRangeSheetConfirm), findsOneWidget);
+      },
+    );
+
+    testWidgets('clearing the active date filter restores the inactive chip', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('active_date_filter_chip')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('active_date_filter_chip')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('global_search_date_filter_chip')), findsOneWidget);
+      expect(find.byKey(const Key('active_date_filter_chip')), findsNothing);
+    });
+
+    testWidgets('sees Recent searches section title', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().globalSearchRecentSearchesTitle), findsOneWidget);
+    });
+
+    testWidgets('sees empty state message when no recent searches', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      expect(find.byType(GlobalSearchEmptyRecentWidget), findsOneWidget);
+    });
+
+    testWidgets('clear button is not visible when search field is empty', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsNothing);
+    });
+
+    testWidgets(
+      'clear button is visible after entering text and clears field on tap',
+      (tester) async {
+        await renderPage(tester);
+
+        await tester.enterText(
+          find.ancestor(
+            of: find.text(l10n().globalSearchHint),
+            matching: find.byType(TextFormField),
+          ),
+          'concrete',
+        );
+        await tester.pump();
+
+        expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('core_search_box_clear_button')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsNothing);
+      },
+    );
+
+    testWidgets('back button pops the route', (tester) async {
+      await renderPage(tester);
+
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+
+      expect(router.popCalls, greaterThan(0));
+    });
+
+    testWidgets('submitting an empty search shows the empty-query toast', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      // Explicitly enter an empty string rather than relying on the field's
+      // default state, so the test's intent survives setup changes.
+      await tester.enterText(searchField, '');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+
+      expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
+
+      await tester.pump(kToastDismissDuration);
+    });
+
+    testWidgets(
+      'submitting a whitespace-only search shows the empty-query toast',
+      (tester) async {
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, '   ');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+
+        expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
+
+        await tester.pump(kToastDismissDuration);
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage with recent searches', () {
+    testWidgets('sees recent search items', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      expect(find.byType(GlobalSearchRecentSearchesList), findsOneWidget);
+      expect(find.text('Material of building'), findsOneWidget);
+      expect(find.text('MD bungalow'), findsOneWidget);
+    });
+
+    testWidgets('swiping a recent search away deletes it from history and '
+        'removes the row', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        findsNothing,
+      );
+      expect(find.text('Material of building'), findsOneWidget);
+      final deleteCalls = fakeSupabase
+          .getMethodCallsFor('deleteMatch')
+          .where(
+            (call) => call['table'] == DatabaseConstants.searchHistoryTable,
+          )
+          .toList();
+      expect(
+        deleteCalls,
+        hasLength(1),
+        reason: 'the swipe must delete the term from the backend history',
+      );
+    });
+
+    testWidgets('sees a toast and the restored row when deleting a recent '
+        'search fails', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      fakeSupabase.shouldThrowOnDeleteMatch = true;
+      fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().globalSearchDeleteErrorMessage), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        findsOneWidget,
+        reason: 'a failed delete must restore the dismissed row',
+      );
+
+      // Flush the toast's auto-dismiss timer before the test ends.
+      await tester.pump(kToastDismissDuration);
+    });
+
+    testWidgets('tapping trailing icon fills search field', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      final trailingIcon = find.descendant(
+        of: find.byKey(const ValueKey('recent_search_item_Material of building')),
+        matching: find.byKey(const Key('trailing_icon')),
+      );
+      expect(trailingIcon, findsOneWidget);
+
+      await tester.tap(trailingIcon);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Material of building'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping row body fills search field', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.tap(find.byKey(const ValueKey('recent_search_item_Material of building')));
+      await tester.pump();
+      // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+      // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+      // a pending timer at teardown and fail the !timersPending invariant.
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Material of building'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+  });
+
+  void seedSuggestions(List<String> terms) {
+    fakeSupabase.setCurrentUser(
+      FakeUser(
+        id: _testUserId,
+        email: _testUserEmail,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      ),
+    );
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.searchSuggestionsRpcFunction,
+      terms,
+    );
+  }
+
+  group('User on GlobalSearchPage with suggestions', () {
+    testWidgets(
+      'typing a non-empty query shows the suggestions title and list',
+      (tester) async {
+        seedSuggestions(['Carpentry', 'Carparking cost', 'Plumbing']);
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+        expect(find.byType(GlobalSearchSuggestionsList), findsOneWidget);
+        expect(find.text('Carpentry'), findsOneWidget);
+        expect(find.text('Carparking cost'), findsOneWidget);
+        expect(find.text('Plumbing'), findsNothing);
+
+        // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+        // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+        // a pending timer at teardown and fail the !timersPending invariant.
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets(
+      'clearing the query restores the recent searches title',
+      (tester) async {
+        seedRecentSearches();
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>['Carpentry'],
+        );
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        await tester.enterText(searchField, '');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsOneWidget,
+        );
+
+        // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+        // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+        // a pending timer at teardown and fail the !timersPending invariant.
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets('tapping a suggestion fills the search field', (tester) async {
+      seedSuggestions(['Carpentry', 'Carparking cost']);
+      await renderPage(tester);
+
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, 'Car');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const ValueKey('suggestion_item_Carpentry')),
+      );
+      await tester.pump();
+      // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+      // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+      // a pending timer at teardown and fail the !timersPending invariant.
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Carpentry'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'clears the loading spinner and restores the title after a '
+      'suggestions-fetch failure',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.shouldThrowOnRpc = true;
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
+
+        await tester.pump(kToastDismissDuration);
+      },
+    );
+
+    testWidgets(
+      'shows the loading spinner while the suggestions fetch is in flight',
+      (tester) async {
+        seedSuggestions(['Carpentry']);
+        await renderPage(tester);
+
+        // Hold the RPC open so the suggestionsLoading frame is observable.
+        final completer = Completer<void>();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = completer;
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        completer.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(find.text('Carpentry'), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets(
+      'renders an empty body and hides the title when no suggestions match '
+      'the query',
+      (tester) async {
+        seedSuggestions(['Plumbing']);
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(find.byType(GlobalSearchSuggestionsList), findsNothing);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage with a failed search', () {
+    void seedUser() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      // Suggestions succeed; global_search stays unconfigured so only the
+      // performed search fails (the fake throws for unconfigured RPCs).
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'sees the search-failure toast and the persistent failure body with '
+      'a retry button',
+      (tester) async {
+        seedUser();
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+
+        expect(find.text(l10n().searchPerformErrorMessage), findsOneWidget);
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        expect(
+          find.byKey(const Key('searchFailureRetryButton')),
+          findsOneWidget,
+        );
+
+        await tester.pump(kToastDismissDuration);
+        // The toast dismisses; the failure body stays.
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not float a stale Suggestions header above the failure body '
+      'when suggestions were cached before the search failed',
+      (tester) async {
+        seedUser();
+        // Non-empty suggestions prime the page's _lastReady cache before the
+        // performed search fails; the section title must not fall back to it.
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          ['office renovation'],
+        );
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'office');
+        await tester.pump(const Duration(milliseconds: 400));
+        // Sanity check that the cache is genuinely primed: the suggestions
+        // header is visible before the search is submitted.
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        expect(find.text(l10n().globalSearchSuggestionsTitle), findsNothing);
+
+        await tester.pump(kToastDismissDuration);
+      },
+    );
+
+    testWidgets(
+      'tapping retry re-runs the failed search and clears the failure body '
+      'on success',
+      (tester) async {
+        seedUser();
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        await tester.pump(kToastDismissDuration);
+
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await tester.tap(find.byKey(const Key('searchFailureRetryButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage with a failed history fetch', () {
+    testWidgets(
+      'sees the recents-load error toast when fetching recent searches fails',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+        fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+
+        await renderPage(tester);
+
+        expect(find.text(l10n().globalSearchLoadErrorMessage), findsOneWidget);
+        // The history failure keeps the body on the empty-recents surface;
+        // the retryable search-failure body is reserved for failed searches.
+        expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
+
+        await tester.pump(kToastDismissDuration);
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage filtering by type', () {
+    void seedScopedHistory() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+        _fakeHistoryRow('Material of building'),
+        {
+          DatabaseConstants.idColumn: 'estimation-history-row',
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'Roofing estimate',
+          DatabaseConstants.scopeColumn: 'estimation',
+          DatabaseConstants.searchCountColumn: 1,
+          DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+        },
+      ]);
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    Future<void> applyCostFilter(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'tapping the Type chip opens the type sheet; applying Cost shows the '
+      'active pill and reloads the estimation-scope history',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+        expect(find.text('Material of building'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+        expect(find.byType(GlobalSearchTypeFilterSheet), findsOneWidget);
+        expect(find.text(l10n().globalSearchTypeCostLabel), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchTypeCalculationLabel),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('global_search_type_filter_chip_active')),
+          findsOneWidget,
+        );
+        // The history list now shows the estimation scope's terms.
+        expect(find.text('Roofing estimate'), findsOneWidget);
+        expect(find.text('Material of building'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the Calculation option is disabled and cannot be applied',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byKey(const Key('type_filter_option_calculation')),
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        // Applying with only the disabled option tapped keeps the default
+        // scope: no active pill renders.
+        expect(find.byKey(const Key('global_search_type_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('active_type_chip_estimation')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Clear all deselects Cost inside the sheet without dismissing it',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('type_filter_clear_all_button')));
+        await tester.pump();
+        expect(find.byType(GlobalSearchTypeFilterSheet), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        // Cleared selection applies the default scope: no active pill.
+        expect(find.byKey(const Key('global_search_type_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('active_type_chip_estimation')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the active type pill resets the scope and restores the '
+      'inactive chip with the dashboard history',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await applyCostFilter(tester);
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('active_type_chip_estimation')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('global_search_type_filter_chip')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsNothing,
+        );
+        expect(find.text('Material of building'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'performing a search after applying Cost forwards the estimation '
+      'scope to the global_search RPC',
+      (tester) async {
+        seedScopedHistory();
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+        await renderPage(tester);
+
+        await applyCostFilter(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'roof');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+
+        final searchCalls = fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            );
+        expect(searchCalls, hasLength(1));
+        final params = searchCalls.first['params'] as Map<String, dynamic>;
+        expect(params['scope'], 'estimation');
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage viewing search results', () {
+    void seedUser() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    List<Map<String, dynamic>> defaultEstimationRows() => [
+      estimation_factory
+          .EstimationTestDataMapFactory.createFakeEstimationData(),
+    ];
+
+    void seedSearchResults({
+      required List<Map<String, dynamic>> estimations,
+      List<Map<String, dynamic>> projects = const [],
+    }) {
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': projects,
+        'estimations': estimations,
+        'members': <Map<String, dynamic>>[],
+      });
+    }
+
+    Map<String, dynamic> projectRow({
+      required String id,
+      required String projectName,
+    }) {
+      return {
+        DatabaseConstants.idColumn: id,
+        DatabaseConstants.projectNameColumn: projectName,
+        DatabaseConstants.descriptionColumn: null,
+        DatabaseConstants.creatorUserIdColumn: _testUserId,
+        DatabaseConstants.owningCompanyIdColumn: null,
+        DatabaseConstants.exportFolderLinkColumn: null,
+        DatabaseConstants.exportStorageProviderColumn: null,
+        DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+        DatabaseConstants.updatedAtColumn: '2024-01-01T00:00:00.000Z',
+        DatabaseConstants.statusColumn: 'active',
+      };
+    }
+
+    Project projectEntity({
+      required String id,
+      required String projectName,
+    }) {
+      return Project(
+        id: id,
+        projectName: projectName,
+        creatorUserId: _testUserId,
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+        status: ProjectStatus.active,
+      );
+    }
+
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'sees the results list with an estimation card after a successful search',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+        expect(
+          find.text(l10n().searchResultsMostRelevant),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            ValueKey('estimationCard_${estimation_factory.estimateIdDefault}'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees a project result card and tapping it selects the project and '
+      'pops back to the shell',
+      (tester) async {
+        seedUser();
+        seedSearchResults(
+          estimations: const [],
+          projects: [
+            projectRow(id: 'proj-office', projectName: 'Downtown Office'),
+          ],
+        );
+        // Two accessible projects so the dropdown's auto-selection picks
+        // 'proj-other' and the tap observably changes the selection.
+        final projectRepository = FakeProjectRepository()
+          ..setAccessibleProjects([
+            projectEntity(id: 'proj-other', projectName: 'Other Project'),
+            projectEntity(id: 'proj-office', projectName: 'Downtown Office'),
+          ]);
+        final dropdownBloc = FakeProjectDropdownBlocFactory.create(
+          projectRepository: projectRepository,
+          authenticatedUserId: _testUserId,
+        )..add(const ProjectDropdownStarted());
+        await dropdownBloc.stream.firstWhere(
+          (state) => state is ProjectDropdownLoadSuccess,
+        );
+        addTearDown(dropdownBloc.close);
+
+        await renderPage(tester, projectDropdownBloc: dropdownBloc);
+        await submitSearch(tester, 'office');
+
+        expect(
+          find.byKey(const ValueKey('projectCard_proj-office')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('projectCard_proj-office')));
+        await tester.pumpAndSettle();
+
+        expect(
+          dropdownBloc.state,
+          isA<ProjectDropdownLoadSuccess>().having(
+            (state) => state.selectedProject,
+            'selectedProject',
+            isA<Project>().having((project) => project.id, 'id', 'proj-office'),
+          ),
+          reason: 'tapping a project result must select that project',
+        );
+        expect(
+          router.popCalls,
+          1,
+          reason: 'after selecting, the page must pop back to the shell',
+        );
+      },
+    );
+
+    testWidgets(
+      'sees the next page appended after scrolling the results list to its '
+      'end',
+      (tester) async {
+        seedUser();
+        seedSearchResults(
+          estimations: List.generate(
+            20,
+            (i) => estimation_factory
+                .EstimationTestDataMapFactory.createFakeEstimationData(
+              id: 'est-page1-$i',
+              estimateName: 'Estimation $i',
+            ),
+          ),
+        );
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        seedSearchResults(
+          estimations: [
+            estimation_factory
+                .EstimationTestDataMapFactory.createFakeEstimationData(
+              id: 'est-extra',
+              estimateName: 'Appended estimation',
+            ),
+          ],
+        );
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pumpAndSettle();
+
+        final rpcCalls = fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            )
+            .toList();
+        expect(
+          rpcCalls,
+          hasLength(2),
+          reason: 'scrolling to the end must dispatch a page fetch',
+        );
+        expect(
+          (rpcCalls.last['params'] as Map<String, dynamic>)['estimations_offset'],
+          20,
+          reason: 'the page fetch must advance the estimations offset',
+        );
+
+        // Reveal the appended row — it lays out just below the pre-append
+        // scroll extent.
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -1000),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('estimationCard_est-extra')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees the loading indicator while the search request is in flight',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'steel');
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Gate the RPC so the in-flight state stays observable.
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer<void>();
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('searchResultsLoadingView')),
+          findsOneWidget,
+        );
+
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'sees the no-results message when the search matches nothing',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: const []);
+        await renderPage(tester);
+
+        await submitSearch(tester, 'nonexistent');
+
+        expect(find.byKey(const Key('searchResultsEmptyView')), findsOneWidget);
+        expect(
+          find.text(l10n().searchResultsEmpty('nonexistent')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping an estimation card navigates to the estimation details route',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        // The tile's GestureDetector defers to its children, so tap the
+        // estimate name rather than the card's center (which is a layout gap).
+        await tester.tap(find.text(estimation_factory.estimateNameDefault));
+        await tester.pump();
+
+        expect(router.navigationHistory, hasLength(1));
+        expect(
+          router.navigationHistory.single.route,
+          '$fullEstimationDetailsRoute/${estimation_factory.estimateIdDefault}',
+        );
+      },
+    );
+
+    testWidgets(
+      'does not float the stale recents title above the results list',
+      (tester) async {
+        // Non-empty recents prime the page's _lastReady cache before the
+        // search succeeds; the section title must not fall back to it.
+        seedRecentSearches();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsOneWidget,
+        );
+
+        await submitSearch(tester, 'steel');
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
+      },
+    );
+  });
+}

@@ -1,7 +1,7 @@
 # RULE 1: Digestible PR
 
-## Rule ID
-RULE_1
+## Name
+Digestible PR
 
 ## Category
 Code Review & PR Structure

@@ -69,4 +69,14 @@ class DisplayFormatter {
     final formatter = DateFormat(pattern ?? 'h:mm a', locale ?? 'en_US');
     return formatter.format(time);
   }
+
+  /// Formats a file size in bytes to a human-readable string.
+  ///
+  /// Example: 204800 -> "200KB", 1572864 -> "1.5MB", 512 -> "512B"
+  static String formatFileSize(int bytes) {
+    if (bytes < 1024) return '${bytes}B';
+    final kb = (bytes / 1024).round();
+    if (kb < 1024) return '${kb}KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
+  }
 }

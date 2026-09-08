@@ -1,8 +1,12 @@
+import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
@@ -14,19 +18,25 @@ import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 56);
+  final size = const Size(390, 64);
   final ratio = 1.0;
   final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
   late Clock clock;
 
   setUpAll(() async {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+    Modular.replaceInstance<CurrentProjectNotifier>(
+      FakeCurrentProjectNotifier(),
+    );
     fakeProjectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
+    fakeCurrentProjectNotifier =
+        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     clock = Modular.get<Clock>();
     await loadAppFontsAll();
   });
@@ -38,52 +48,62 @@ void main() {
 
   setUp(() {
     fakeProjectRepository.clearAllData();
+    fakeCurrentProjectNotifier.reset();
   });
 
-  group('ProjectHeaderAppBar Screenshot Tests', () {
-    Future<void> pumpProjectHeaderAppBar({
-      required WidgetTester tester,
-      required String projectId,
-      required String projectName,
-      VoidCallback? onProjectTap,
-      VoidCallback? onSearchTap,
-      VoidCallback? onNotificationTap,
-    }) async {
-      final project = Project(
-        id: projectId,
-        projectName: projectName,
-        creatorUserId: 'user-id',
-        createdAt: clock.now(),
-        updatedAt: clock.now(),
-        status: ProjectStatus.active,
-      );
+  Future<void> pumpProjectHeaderAppBar({
+    required WidgetTester tester,
+    required String projectId,
+    required String projectName,
+    required ThemeData theme,
+    VoidCallback? onProjectTap,
+    VoidCallback? onSearchTap,
+    VoidCallback? onNotificationTap,
+  }) async {
+    final project = Project(
+      id: projectId,
+      projectName: projectName,
+      creatorUserId: 'user-id',
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
+      status: ProjectStatus.active,
+    );
 
-      fakeProjectRepository.addProject(projectId, project);
+    fakeProjectRepository.addProject(projectId, project);
+    fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Scaffold(
-            appBar: ProjectHeaderAppBar(
-              projectId: projectId,
-              onProjectTap: onProjectTap,
-              onSearchTap: onSearchTap,
-              onNotificationTap: onNotificationTap,
-            ),
-            body: const SizedBox.shrink(),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          appBar: ProjectHeaderAppBar(
+            getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+            onProjectTap: onProjectTap,
+            onSearchTap: onSearchTap,
+            onNotificationTap: onNotificationTap,
           ),
+          body: const SizedBox.shrink(),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.awaitImages();
-    }
+    await tester.awaitImages();
+  }
 
+  screenshotThemeGroups('ProjectHeaderAppBar Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders project header app bar with normal name correctly', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -92,12 +112,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_normal.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_normal$suffix.png',
         ),
       );
     });
@@ -107,6 +128,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -115,12 +137,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name$suffix.png',
         ),
       );
     });
@@ -130,6 +153,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -138,12 +162,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar$suffix.png',
         ),
       );
     });

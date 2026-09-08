@@ -14,46 +14,52 @@ void main() {
     await loadAppFonts();
   });
 
-  group('DeleteEstimationConfirmationSheet Screenshot Tests', () {
-    Future<void> pumpConfirmationSheet({
-      required WidgetTester tester,
-      required String estimationName,
-      int? imagesAttachedCount,
-      int? documentsAttachedCount,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: DeleteEstimationConfirmationSheet(
-              estimationName: estimationName,
-              onConfirm: () {},
-              onCancel: () {},
-              imagesAttachedCount: imagesAttachedCount,
-              documentsAttachedCount: documentsAttachedCount,
-            ),
+  Future<void> pumpConfirmationSheet({
+    required WidgetTester tester,
+    required String estimationName,
+    required ThemeData theme,
+    int? imagesAttachedCount,
+    int? documentsAttachedCount,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: DeleteEstimationConfirmationSheet(
+            estimationName: estimationName,
+            onConfirm: () {},
+            onCancel: () {},
+            imagesAttachedCount: imagesAttachedCount,
+            documentsAttachedCount: documentsAttachedCount,
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  screenshotThemeGroups('DeleteEstimationConfirmationSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders with default state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpConfirmationSheet(
         tester: tester,
         estimationName: '2nd wall cost',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(DeleteEstimationConfirmationSheet),
         matchesGoldenFile(
-          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_default.png',
+          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_default$suffix.png',
         ),
       );
     });
@@ -61,18 +67,20 @@ void main() {
     testWidgets('renders with attachment counts', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpConfirmationSheet(
         tester: tester,
         estimationName: '2nd wall cost',
         imagesAttachedCount: 25,
         documentsAttachedCount: 5,
+        theme: theme,
       );
 
       await expectLater(
         find.byType(DeleteEstimationConfirmationSheet),
         matchesGoldenFile(
-          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_with_attachments.png',
+          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_with_attachments$suffix.png',
         ),
       );
     });
@@ -80,17 +88,19 @@ void main() {
     testWidgets('renders with long estimation name', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpConfirmationSheet(
         tester: tester,
         estimationName:
             'This is a very long estimation name that should be truncated with ellipsis to prevent layout overflow issues in the UI',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(DeleteEstimationConfirmationSheet),
         matchesGoldenFile(
-          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_long_name.png',
+          'goldens/delete_confirmation_sheet/${size.width}x${size.height}/delete_confirmation_sheet_long_name$suffix.png',
         ),
       );
     });

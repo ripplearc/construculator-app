@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,20 +12,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'project_dropdown_event.dart';
 part 'project_dropdown_state.dart';
 
+/// BLoC that manages the project dropdown list and the currently selected project.
+///
+/// Project selection is broadcast to [CurrentProjectNotifier] by
+/// [AppShellPage]'s BlocListener, keeping this bloc a pure state machine.
 class ProjectDropdownBloc
     extends Bloc<ProjectDropdownEvent, ProjectDropdownState> {
   final ProjectRepository _projectRepository;
   final AuthManager _authManager;
   StreamSubscription<List<Project>>? _projectsSubscription;
 
+  /// Creates a [ProjectDropdownBloc].
+  ///
+  /// [_projectRepository] provides the project list stream.
+  /// [_authManager] supplies the authenticated user identity.
   ProjectDropdownBloc({
-    required ProjectRepository projectRepository,
-    required AuthManager authManager,
-  }) : _projectRepository = projectRepository,
-       _authManager = authManager,
-       super(const ProjectDropdownInitial()) {
+    required this._projectRepository,
+    required this._authManager,
+  }) : super(const ProjectDropdownInitial()) {
     on<ProjectDropdownStarted>(_onStarted);
     on<ProjectDropdownSelected>(_onSelected);
+    on<ProjectDropdownSearchChanged>(_onSearchChanged);
     on<_ProjectDropdownProjectsUpdated>(_onProjectsUpdated);
     on<_ProjectDropdownProjectsLoadFailed>(_onProjectsLoadFailed);
   }
@@ -33,6 +42,16 @@ class ProjectDropdownBloc
     _projectsSubscription?.cancel();
     return super.close();
   }
+
+  Set<String> _settingsAccessibleIds(List<Project> projects) => projects
+      .where(
+        (project) => _projectRepository.hasProjectPermission(
+          project.id,
+          PermissionConstants.viewProject,
+        ),
+      )
+      .map((project) => project.id)
+      .toSet();
 
   Future<void> _onStarted(
     ProjectDropdownStarted event,
@@ -54,7 +73,9 @@ class ProjectDropdownBloc
         .listen(
           (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
           onError: (Object error, StackTrace stackTrace) {
-            add(_ProjectDropdownProjectsLoadFailed(error.toString()));
+            add(_ProjectDropdownProjectsLoadFailed(
+              error is Failure ? error : UnexpectedFailure(),
+            ));
           },
         );
   }
@@ -63,14 +84,23 @@ class ProjectDropdownBloc
     _ProjectDropdownProjectsUpdated event,
     Emitter<ProjectDropdownState> emit,
   ) {
+    final currentState = state;
+    final searchQuery = switch (currentState) {
+      ProjectDropdownLoadSuccess s => s.searchQuery,
+      _ => '',
+    };
+
     if (event.projects.isEmpty) {
       emit(
-        ProjectDropdownLoadSuccess(projects: const [], selectedProject: null),
+        ProjectDropdownLoadSuccess(
+          projects: const [],
+          selectedProject: null,
+          searchQuery: searchQuery,
+        ),
       );
       return;
     }
 
-    final currentState = state;
     Project selectedProject = event.projects.first;
 
     if (currentState is ProjectDropdownLoadSuccess) {
@@ -89,6 +119,8 @@ class ProjectDropdownBloc
       ProjectDropdownLoadSuccess(
         projects: event.projects,
         selectedProject: selectedProject,
+        searchQuery: searchQuery,
+        settingsAccessibleProjectIds: _settingsAccessibleIds(event.projects),
       ),
     );
   }
@@ -97,7 +129,31 @@ class ProjectDropdownBloc
     _ProjectDropdownProjectsLoadFailed event,
     Emitter<ProjectDropdownState> emit,
   ) {
-    emit(ProjectDropdownLoadFailure(event.message));
+    final currentState = state;
+    emit(ProjectDropdownLoadFailure(
+      failure: event.failure,
+      cachedProjects: currentState is ProjectDropdownLoadSuccess
+          ? currentState.projects.toList()
+          : [],
+      searchQuery: currentState is ProjectDropdownLoadSuccess
+          ? currentState.searchQuery
+          : '',
+      settingsAccessibleProjectIds: currentState is ProjectDropdownLoadSuccess
+          ? currentState.settingsAccessibleProjectIds
+          : const {},
+    ));
+  }
+
+  void _onSearchChanged(
+    ProjectDropdownSearchChanged event,
+    Emitter<ProjectDropdownState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is ProjectDropdownLoadSuccess) {
+      if (currentState.searchQuery == event.query) return;
+      emit(currentState.copyWith(searchQuery: event.query));
+      return;
+    }
   }
 
   void _onSelected(

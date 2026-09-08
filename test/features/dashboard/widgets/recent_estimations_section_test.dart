@@ -1,5 +1,5 @@
-import 'package:construculator/features/dashboard/dashboard_module.dart';
-
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
@@ -8,6 +8,7 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 
@@ -18,10 +19,12 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
+import '../../../utils/dashboard_shell_test_module.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -33,6 +36,9 @@ void main() {
   late FakeCostEstimationRepository fakeRepository;
 
   late RecentEstimationsBloc bloc;
+  BuildContext? buildContext;
+
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
   CostEstimate estimationFromMap(Map<String, dynamic> map) {
     return CostEstimateDto.fromJson(map).toDomain();
@@ -49,19 +55,34 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: RecentEstimationsSection()),
+      home: Builder(
+        builder: (context) {
+          buildContext = context;
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<RecentEstimationsBloc>.value(value: bloc),
+              BlocProvider<AppShellBloc>(
+                create: (_) => Modular.get<AppShellBloc>(),
+              ),
+            ],
+            child: Scaffold(
+              body: RecentEstimationsSection(router: router),
+            ),
+          );
+        },
+      ),
     );
   }
 
   Future<void> pumpSection(WidgetTester tester) async {
+    final settled = bloc.stream.firstWhere(
+      (state) =>
+          state is RecentEstimationsLoaded || state is RecentEstimationsError,
+    );
+    bloc.add(const RecentEstimationsWatchStarted());
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
-    await tester.runAsync(() async {
-      await bloc.stream.firstWhere(
-        (state) =>
-            state is RecentEstimationsLoaded || state is RecentEstimationsError,
-      );
-    });
+    await tester.runAsync(() => settled);
     await tester.pump();
   }
 
@@ -83,7 +104,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(DashboardModule(bootstrap));
+    Modular.init(DashboardShellTestModule(bootstrap));
 
     Modular.replaceInstance<AppRouter>(router);
     Modular.replaceInstance<CostEstimationRepository>(fakeRepository);
@@ -95,7 +116,8 @@ void main() {
   });
 
   tearDown(() {
-    bloc.close();
+    // Modular.destroy() closes all registered BLoCs, including
+    // RecentEstimationsBloc and AppShellBloc.
     Modular.destroy();
   });
 
@@ -104,13 +126,14 @@ void main() {
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
 
-    expect(find.text('Recent cost estimations'), findsOneWidget);
-    expect(find.text('View all'), findsOneWidget);
+    expect(find.text(l10n().recentCostEstimationsTitle), findsOneWidget);
+    expect(find.text(l10n().viewAllButton), findsOneWidget);
   });
 
   testWidgets('shows loading placeholders while estimations are loading', (
     tester,
   ) async {
+    bloc.add(const RecentEstimationsWatchStarted());
 
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
@@ -126,17 +149,68 @@ void main() {
 
     await pumpSection(tester);
 
-    expect(find.text('No recent estimations found.'), findsOneWidget);
+    expect(find.text(l10n().recentEstimationsEmptyState), findsOneWidget);
   });
 
   testWidgets('shows error message when estimations fail to load', (
     tester,
   ) async {
-    currentProjectNotifier.setCurrentProjectId(null);
+    // A factory (not a single stream instance) because the watch may be
+    // re-invoked when the project-changed listener fires, and a
+    // single-subscription stream cannot be listened to twice.
+    fakeRepository.streamFactory = () => Stream.value(
+          const Left(
+            EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+          ),
+        );
 
     await pumpSection(tester);
 
-    expect(find.text('Failed to load recent estimations.'), findsOneWidget);
+    expect(find.text(l10n().recentEstimationsLoadError), findsOneWidget);
+  });
+
+  testWidgets('stays on the loading placeholders instead of an error while '
+      'no project is selected yet (CA-900)', (tester) async {
+    currentProjectNotifier.setCurrentProjectId(null);
+
+    bloc.add(const RecentEstimationsWatchStarted());
+    await tester.pumpWidget(buildTestApp());
+    await tester.pump();
+    await tester.pump();
+
+    // The three skeleton placeholders must actually render — a section
+    // that drew nothing at all must not pass this test.
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Container),
+      ),
+      findsNWidgets(3),
+    );
+    expect(find.byType(EstimationCard), findsNothing);
+    expect(find.text(l10n().recentEstimationsLoadError), findsNothing);
+  });
+
+  testWidgets(
+      'shows the load error instead of holding the placeholders once the '
+      'project load fails (CA-900)', (tester) async {
+    currentProjectNotifier.setCurrentProjectId(null);
+
+    // runAsync, like pumpSection: the bloc is created in setUp, outside the
+    // fake-async zone, so its event processing only completes on the real
+    // event loop.
+    final errored = bloc.stream.firstWhere(
+      (state) => state is RecentEstimationsError,
+    );
+    bloc.add(const RecentEstimationsWatchStarted());
+    await tester.pumpWidget(buildTestApp());
+    await tester.pump();
+
+    bloc.add(const RecentEstimationsProjectLoadFailed());
+    await tester.runAsync(() => errored);
+    await tester.pump();
+
+    expect(find.text(l10n().recentEstimationsLoadError), findsOneWidget);
   });
 
   testWidgets('renders estimation cards when data is loaded', (tester) async {
@@ -194,7 +268,7 @@ void main() {
 
     await pumpSection(tester);
 
-    expect(find.text('View all'), findsOneWidget);
+    expect(find.text(l10n().viewAllButton), findsOneWidget);
   });
 
   testWidgets('does not navigate when view all is tapped without a project', (
@@ -207,11 +281,39 @@ void main() {
 
     final navigatorCount = tester.widgetList(find.byType(Navigator)).length;
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(l10n().viewAllButton));
     await tester.pump();
 
     expect(tester.widgetList(find.byType(Navigator)).length, navigatorCount);
     expect(router.navigationHistory, isEmpty);
+  });
+
+  testWidgets('tapping view all selects the estimation tab via AppShellBloc', (
+    tester,
+  ) async {
+    configureRepositoryStream([
+      estimationFromMap(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          projectId: testProjectId,
+        ),
+      ),
+    ]);
+
+    await pumpSection(tester);
+
+    final appShellBloc = Modular.get<AppShellBloc>();
+    final tabSelected = appShellBloc.stream
+        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimates.index);
+
+    await tester.tap(find.text(l10n().viewAllButton));
+    await tester.pump();
+    await tester.runAsync(() => tabSelected);
+    await tester.pump();
+
+    expect(
+      appShellBloc.state.selectedTabIndex,
+      ShellTab.estimates.index,
+    );
   });
 
   testWidgets('keeps showing estimations while reloading', (tester) async {

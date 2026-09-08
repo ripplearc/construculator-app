@@ -1,0 +1,265 @@
+import 'package:construculator/libraries/consent/data/data_source/in_memory_local_consent_data_source.dart';
+import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
+import 'package:construculator/libraries/consent/data/models/user_consent_dto.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+UserConsentDto _draft({
+  String userId = 'user-1',
+  ConsentType type = ConsentType.termsAndPrivacy,
+  int version = 1,
+  ConsentAction action = ConsentAction.accepted,
+  DateTime? recordedAt,
+}) => UserConsentDto.draft(
+  userId: userId,
+  consentType: type,
+  version: version,
+  action: action,
+  recordedAt: recordedAt ?? DateTime.utc(2026, 8, 17),
+);
+
+void main() {
+  group('InMemoryLocalConsentDataSource', () {
+    late InMemoryLocalConsentDataSource dataSource;
+
+    setUp(() {
+      dataSource = InMemoryLocalConsentDataSource();
+    });
+
+    tearDown(() => dataSource.dispose());
+
+    // Seeded rather than empty so the gate resolves to a real requirement. An
+    // empty seed would leave every type unknown, which the repository reads as
+    // ConsentIndeterminate for every user -- the store would be demoable only
+    // in the sense that nothing ever happens.
+    test('seeds a published version for every consent type', () async {
+      for (final type in ConsentType.values) {
+        final published = await dataSource.fetchPublishedVersion(type);
+
+        expect(published, isNotNull, reason: 'no seed for ${type.name}');
+        expect(published!.consentType, type);
+        expect(published.version, 1);
+        expect(Uri.parse(published.documentUrl).isScheme('https'), isTrue);
+      }
+    });
+
+    test('seedVersions replaces the defaults', () async {
+      final seeded = ConsentVersionDto(
+        id: 'version-7',
+        consentType: ConsentType.analytics,
+        version: 7,
+        documentUrl: 'https://consent-seed.invalid/legal/analytics',
+        publishedAt: DateTime.utc(2026, 8, 1),
+      );
+      await dataSource.dispose();
+      dataSource = InMemoryLocalConsentDataSource(
+        seedVersions: {ConsentType.analytics: seeded},
+      );
+
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.analytics),
+        seeded,
+      );
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.termsAndPrivacy),
+        isNull,
+        reason:
+            'an explicit seed replaces the defaults rather than adding to '
+            'them',
+      );
+    });
+
+    // FakeLocalConsentDataSource passes an empty map in and fills it
+    // afterwards, so the store must read through to the caller's map rather
+    // than a defensive copy. Pinned here because a later "harden this"
+    // pass adding Map.of(seedVersions) would look obviously correct and
+    // would silently break every test that seeds a published version.
+    test('seedVersions is aliased, so later mutations are visible', () async {
+      final seedVersions = <ConsentType, ConsentVersionDto>{};
+      await dataSource.dispose();
+      dataSource = InMemoryLocalConsentDataSource(seedVersions: seedVersions);
+
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.termsAndPrivacy),
+        isNull,
+      );
+
+      final added = ConsentVersionDto(
+        id: 'version-2',
+        consentType: ConsentType.termsAndPrivacy,
+        version: 2,
+        documentUrl: 'https://consent-seed.invalid/legal/termsAndPrivacy',
+        publishedAt: DateTime.utc(2026, 8, 1),
+      );
+      seedVersions[ConsentType.termsAndPrivacy] = added;
+
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.termsAndPrivacy),
+        added,
+      );
+    });
+
+    test('insertUserConsent assigns an id and preserves the record', () async {
+      final draft = _draft(version: 3);
+
+      final stored = await dataSource.insertUserConsent(draft);
+
+      expect(stored.id, isNotNull);
+      expect(stored.userId, draft.userId);
+      expect(stored.consentType, draft.consentType);
+      expect(stored.version, draft.version);
+      expect(stored.action, draft.action);
+      expect(stored.recordedAt, draft.recordedAt);
+    });
+
+    test('fetchLatestUserConsent returns the inserted record', () async {
+      final stored = await dataSource.insertUserConsent(_draft());
+
+      expect(
+        await dataSource.fetchLatestUserConsent(
+          'user-1',
+          ConsentType.termsAndPrivacy,
+        ),
+        stored,
+      );
+    });
+
+    // The newest record decides the gate, and a withdrawal must supersede the
+    // acceptance beneath it rather than sitting alongside it.
+    test('fetchLatestUserConsent returns the newest of several', () async {
+      await dataSource.insertUserConsent(_draft());
+      final withdrawal = await dataSource.insertUserConsent(
+        _draft(action: ConsentAction.withdrawn),
+      );
+
+      final latest = await dataSource.fetchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+
+      expect(latest, withdrawal);
+      expect(latest!.action, ConsentAction.withdrawn);
+    });
+
+    test(
+      'fetchLatestUserConsent is null when the user has no record',
+      () async {
+        expect(
+          await dataSource.fetchLatestUserConsent(
+            'user-1',
+            ConsentType.termsAndPrivacy,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    // One user's acceptance must not read as another's, and accepting the
+    // terms must not read as an analytics opt-in.
+    test('records are isolated per user and per type', () async {
+      await dataSource.insertUserConsent(_draft());
+
+      expect(
+        await dataSource.fetchLatestUserConsent(
+          'user-2',
+          ConsentType.termsAndPrivacy,
+        ),
+        isNull,
+      );
+      expect(
+        await dataSource.fetchLatestUserConsent(
+          'user-1',
+          ConsentType.analytics,
+        ),
+        isNull,
+      );
+    });
+
+    test(
+      'watchLatestUserConsent emits the current record on subscribe',
+      () async {
+        await expectLater(
+          dataSource.watchLatestUserConsent(
+            'user-1',
+            ConsentType.termsAndPrivacy,
+          ),
+          emits(isNull),
+        );
+      },
+    );
+
+    test('watchLatestUserConsent emits again on insert', () async {
+      final stream = dataSource.watchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([isNull, isA<UserConsentDto>()]),
+      );
+
+      await dataSource.insertUserConsent(_draft());
+
+      await expectation;
+    });
+
+    // The store notifies on any write and each subscriber re-reads its own
+    // slice, so user-2's write does reach this watcher's controller -- but
+    // `_latest` filters it out and `.distinct()` then drops the resulting
+    // duplicate null, so user-1 must see exactly one emission and no second.
+    // Closing the stream is what makes that assertable: emitsDone directly
+    // after the single isNull fails if a redundant null slips through, where
+    // a bare emitsInOrder([isNull]) would match the first event and ignore
+    // whatever followed. Without `.distinct()` this test fails.
+    test(
+      'watchLatestUserConsent does not leak another user\'s write',
+      () async {
+        final stream = dataSource.watchLatestUserConsent(
+          'user-1',
+          ConsentType.termsAndPrivacy,
+        );
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([isNull, emitsDone]),
+        );
+
+        await dataSource.insertUserConsent(_draft(userId: 'user-2'));
+        await dataSource.dispose();
+
+        await expectation;
+      },
+    );
+
+    test('dispose closes the watch stream', () async {
+      final stream = dataSource.watchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([isNull, emitsDone]),
+      );
+
+      await dataSource.dispose();
+
+      await expectation;
+    });
+
+    // Module teardown disposes the store while a write may still be in
+    // flight; the notification has nowhere to go, but the write must not
+    // throw and the record must still be readable.
+    test('insertUserConsent after dispose stores without throwing', () async {
+      await dataSource.dispose();
+
+      final stored = await dataSource.insertUserConsent(_draft());
+
+      expect(
+        await dataSource.fetchLatestUserConsent(
+          'user-1',
+          ConsentType.termsAndPrivacy,
+        ),
+        stored,
+      );
+    });
+  });
+}

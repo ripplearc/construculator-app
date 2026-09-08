@@ -87,9 +87,9 @@ class OtpQuickSheetBody extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 4),
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 20,
+                          CoreIconWidget(
+                            icon: CoreIcons.edit,
+                            size: CoreIconSize.size20,
                             color: colors.textLink,
                           ),
                         ],
@@ -142,6 +142,7 @@ class OtpQuickSheetBody extends StatelessWidget {
             ),
             const SizedBox(height: CoreSpacing.space6),
             CoreButton(
+              key: const Key('otp_verify_button'),
               onPressed: onVerify,
               label: isVerifying
                   ? context.l10n.verifyingButtonLabel

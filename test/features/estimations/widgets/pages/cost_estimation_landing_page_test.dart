@@ -2,21 +2,20 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
-import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -46,17 +45,16 @@ class _CostEstimationLandingPageTestModule extends Module {
   List<Module> get imports => [
     RouterTestModule(),
     ClockTestModule(),
-    ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
     EstimationModule(appBootstrap),
   ];
 
   @override
   void routes(RouteManager r) {
-    r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
     r.child(
-      '/test-landing/:projectId',
-      guards: [AuthGuard()],
+      '/test-landing',
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (context) {
         return EstimationModule.landingPage();
       },
@@ -70,9 +68,10 @@ void main() {
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
   const debounceWaitTime = Duration(milliseconds: 400);
-  const testEstimationRoute = '/test-landing/$testProjectId';
+  const testEstimationRoute = '/test-landing';
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -88,7 +87,9 @@ void main() {
 
     fakeProjectRepository = FakeProjectRepository();
     Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
-    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
+    fakeCurrentProjectNotifier = FakeCurrentProjectNotifier();
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
+    fakeCurrentProjectNotifier.setCurrentProjectId(testProjectId);
   });
 
   tearDownAll(() {
@@ -118,24 +119,8 @@ void main() {
       builder: (context, child) {
         buildContext = context;
         final theChild = child!;
-        final currentPath = Modular.to.path;
-        if (theChild is SizedBox &&
-            theChild.width == null &&
-            theChild.height == null) {
-          return theChild;
-        }
 
-        if (currentPath.startsWith(testEstimationRoute) &&
-            currentPath.endsWith('/')) {
-          return theChild;
-        }
-
-        return Scaffold(
-          appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-            projectId: testProjectId,
-          ),
-          body: theChild,
-        );
+        return theChild;
       },
     );
   }

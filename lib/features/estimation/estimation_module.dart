@@ -1,22 +1,32 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
-import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
+import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
+import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,14 +38,12 @@ class EstimationModule extends Module {
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
   static Widget landingPage() {
-    final projectId =
-        Modular.get<CurrentProjectNotifier>().currentProjectId ?? '';
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
           create: (context) =>
               Modular.get<CostEstimationListBloc>()
-                ..add(CostEstimationListStartWatching(projectId: projectId)),
+                ..add(const CostEstimationListStartWatching()),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
@@ -50,7 +58,12 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: CostEstimationLandingPage(projectId: projectId),
+      child: CostEstimationLandingPage(
+        projectId: Modular.get<CurrentProjectNotifier>().currentProjectId ?? '',
+        router: Modular.get<AppRouter>(),
+        tileProvider: Modular.get<EstimationTileProvider>(),
+        logBlocBuilder: () => Modular.get<CostEstimationLogBloc>(),
+      ),
     );
   }
 
@@ -63,9 +76,6 @@ class EstimationModule extends Module {
   ];
 
   @override
-  void exportedBinds(Injector i) {}
-
-  @override
   void binds(Injector i) {
     i.addLazySingleton<CostEstimationLogDataSource>(
       () => RemoteCostEstimationLogDataSource(
@@ -73,34 +83,69 @@ class EstimationModule extends Module {
       ),
     );
 
+    i.addLazySingleton<CostItemDataSource>(
+      () => RemoteCostItemDataSource(
+        supabaseWrapper: appBootstrap.supabaseWrapper,
+      ),
+    );
+
+    i.addLazySingleton<CostEstimationRepository>(
+      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+
     i.addLazySingleton<CostEstimationLogRepository>(
       () => CostEstimationLogRepositoryImpl(dataSource: i.get()),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 
+    i.addLazySingleton<CostItemRepository>(
+      () => CostItemRepositoryImpl(dataSource: i.get()),
+    );
+
     i.addLazySingleton<AddCostEstimationUseCase>(
-      () => AddCostEstimationUseCase(i.get(), i.get(), i.get()),
+      () => AddCostEstimationUseCase(
+        repository: i.get(),
+        authRepository: i.get(),
+        clock: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<CostEstimationListBloc>(
-      () => CostEstimationListBloc(repository: i.get()),
+      () => CostEstimationListBloc(
+        repository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<AddCostEstimationBloc>(
       () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
     );
     i.add<DeleteCostEstimationBloc>(
-      () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
+      () => DeleteCostEstimationBloc(
+        costEstimationRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<ChangeLockStatusBloc>(
-      () =>
-          ChangeLockStatusBloc(repository: i.get(), projectRepository: i.get()),
+      () => ChangeLockStatusBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<RenameEstimationBloc>(
-      () =>
-          RenameEstimationBloc(repository: i.get(), projectRepository: i.get()),
+      () => RenameEstimationBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
     );
+    i.add<MaterialCostFormBloc>(() => MaterialCostFormBloc());
+    i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
+    i.add<EquipmentCostFormBloc>(() => EquipmentCostFormBloc());
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );

@@ -32,6 +32,7 @@ class AuthLibraryModule extends Module {
         authRepository: i(),
         authNotifier: i(),
         sentryWrapper: appBootstrap.sentryWrapper,
+        analyticsRepository: appBootstrap.analyticsRepository,
       ),
     );
   }

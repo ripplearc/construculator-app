@@ -4,13 +4,13 @@ import 'dart:io';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -24,8 +24,7 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   final GlobalSearchDataSource _dataSource;
   static final _logger = AppLogger().tag('GlobalSearchRepositoryImpl');
 
-  GlobalSearchRepositoryImpl({required GlobalSearchDataSource dataSource})
-    : _dataSource = dataSource;
+  GlobalSearchRepositoryImpl({required this._dataSource});
 
   SearchScopeDto _toDataScope(SearchScope entity) {
     switch (entity) {
@@ -45,8 +44,9 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
     return SearchParamsDto(
       query: entity.query,
       filterByTag: entity.filterByTag,
-      filterByDate: entity.filterByDate,
-      filterByOwner: entity.filterByOwner,
+      filterByDateFrom: entity.filterByDateFrom,
+      filterByDateTo: entity.filterByDateTo,
+      filterByOwners: entity.filterByOwners,
       scope: entityScope != null ? _toDataScope(entityScope) : null,
       pagination: PaginationParamsDto(
         offset: entity.pagination.offset,

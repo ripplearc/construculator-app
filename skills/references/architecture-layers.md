@@ -1,6 +1,6 @@
 # Architecture Layers Reference
 
-This reference defines the responsibility boundaries and directory conventions for Flutter Clean Architecture. Used by RULE_2 (Naming Conventions) and RULE_5 (UI/Business Separation).
+This reference defines the responsibility boundaries and directory conventions for Flutter Clean Architecture. Used by Naming & Abstraction (Naming Conventions) and UI / Business Separation (UI/Business Separation).
 
 ---
 
@@ -56,14 +56,14 @@ This reference defines the responsibility boundaries and directory conventions f
 - ❌ Direct database or API calls
 - ❌ State derivations (use selectors in BLoC instead)
 
-**Naming:** Abstract, user-facing names (see RULE_2)
+**Naming:** Abstract, user-facing names (see Naming & Abstraction)
 - `LoginPage` (not `SupabaseAuthPage`)
 - `EstimationBloc` (not `PostgresEstimationBloc`)
 
 **Related Rules:**
-- RULE_2: Naming Conventions
-- RULE_5: UI/Business Separation
-- RULE_4: CoreUI Components
+- Naming & Abstraction: Naming Conventions
+- UI / Business Separation: UI/Business Separation
+- CoreUI Components: CoreUI Components
 
 ---
 
@@ -90,14 +90,14 @@ This reference defines the responsibility boundaries and directory conventions f
 - ❌ External library dependencies (HTTP, DB)
 - ❌ Implementation details
 
-**Naming:** Business-focused, technology-agnostic (see RULE_2)
+**Naming:** Business-focused, technology-agnostic (see Naming & Abstraction)
 - `GetEstimationsUseCase` (not `FetchFromSupabaseUseCase`)
 - `Estimation` entity (not `EstimationDto`)
 - `EstimationRepository` interface (implementation is in data/)
 
 **Related Rules:**
-- RULE_2: Naming Conventions
-- RULE_3: Test Double Pattern
+- Naming & Abstraction: Naming Conventions
+- Test Double Pattern: Test Double Pattern
 
 ---
 
@@ -123,16 +123,16 @@ This reference defines the responsibility boundaries and directory conventions f
 - ❌ UI rendering
 - ❌ Direct user interaction
 
-**Naming:** Technology-aware, concrete (see RULE_2)
+**Naming:** Technology-aware, concrete (see Naming & Abstraction)
 - `EstimationRepositoryImpl` (implements `EstimationRepository`)
 - `RemoteEstimationDataSource` (uses Supabase)
 - `LocalEstimationDataSource` (uses SQLite)
 - `EstimationDto` (JSON/database schema)
 
 **Related Rules:**
-- RULE_2: Naming Conventions
-- RULE_3: Test Double Pattern
-- RULE_15: Sentry Logging (log at boundaries)
+- Naming & Abstraction: Naming Conventions
+- Test Double Pattern: Test Double Pattern
+- Sentry Logging: Sentry Logging (log at boundaries)
 
 ---
 
@@ -351,7 +351,7 @@ class SaveEstimationUseCase {
 
 ## References
 
-- RULE_2: Naming Conventions (class naming by layer)
-- RULE_5: UI/Business Separation (what belongs in UI vs Domain)
+- Naming & Abstraction: Naming Conventions (class naming by layer)
+- UI / Business Separation: UI/Business Separation (what belongs in UI vs Domain)
 - [Flutter Clean Architecture](https://resocoder.com/2019/08/27/flutter-tdd-clean-architecture-course-1-explanation-project-structure/)
 - [Uncle Bob's Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)

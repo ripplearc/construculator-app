@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT RECORDER MUTATION TESTING -->
+    <!-- Targets: ConsentRecorder.record — the one path in the consent library
+         that returns a real Failure. Covers the null-userId guard, the
+         timestamp it stamps a write with, the row it hands back to the
+         caller, and the catch block reaching the error mapper rather than
+         swallowing the write failure. -->
+
+    <files>
+        <file>lib/libraries/consent/data/consent_recorder.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: Skip the null-userId guard, so an unauthenticated write
+             is attempted instead of failing fast. -->
+        <regex pattern="if \(userId == null\) \{" dotAll="true" id="consent_recorder.record.skip_null_user_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: Stamp the write with the wall clock instead of the
+             injected clock. -->
+        <regex pattern="recordedAt: _clock\.now\(\)," dotAll="true" id="consent_recorder.record.use_wall_clock">
+            <mutation text="recordedAt: DateTime.now(),"/>
+        </regex>
+
+        <!-- RULE 3: Report every write failure as unexpectedError instead of
+             mapping it, so a permission or auth failure is misreported. -->
+        <regex pattern="return Left\(ConsentErrorMapper\.toFailure\(error\)\);" dotAll="true" id="consent_recorder.record.flatten_error_mapping">
+            <mutation text="return const Left(ConsentFailure(errorType: ConsentErrorType.unexpectedError));"/>
+        </regex>
+
+        <!-- RULE 4: Return an entity rebuilt from the arguments the caller
+             passed rather than the row the store wrote back, so an id the
+             store never assigned would be handed to the caller as a
+             recorded consent. -->
+        <regex pattern="return Right\(stored\.toDomain\(\)\);" dotAll="true" id="consent_recorder.record.echo_the_input">
+            <mutation text="return Right(UserConsent(id: 'unwritten', userId: userId, consentType: consentType, version: version, action: action, recordedAt: _clock.now()));"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_recorder" expected-return="0">flutter test test/libraries/consent/units/data/consent_recorder_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

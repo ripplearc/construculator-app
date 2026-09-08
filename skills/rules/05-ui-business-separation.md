@@ -1,7 +1,7 @@
 # RULE 5: UI Logic Separation & Clean Presentation
 
-## Rule ID
-RULE_5
+## Name
+UI / Business Separation
 
 ## Category
 Architecture & Presentation Layer
@@ -81,6 +81,6 @@ Move all business logic, validation, coordination, and state derivation into the
 
 ## References
 
-- [RULE_5 Gist: UI & Business Logic Separation](https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31)
+- [UI / Business Separation Gist: UI & Business Logic Separation](https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31)
 - [Architecture Layers Reference](../references/architecture-layers.md)
-- Related: RULE_2 (Naming Conventions) - ensures classes in right layer
+- Related: Naming & Abstraction (Naming Conventions) - ensures classes in right layer

@@ -100,7 +100,6 @@ void main() {
       activity: activity,
       user: UserProfile(
         id: 'user-default',
-        credentialId: 'cred-default',
         firstName: firstName,
         lastName: 'Doe',
         professionalRole: 'Engineer',

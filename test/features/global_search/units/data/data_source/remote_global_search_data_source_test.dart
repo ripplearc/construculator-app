@@ -4,8 +4,8 @@ import 'package:construculator/features/global_search/data/data_source/interface
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -164,7 +164,9 @@ void main() {
           final paramsMap =
               methodCalls.first['params'] as Map<String, dynamic>?;
           expect(paramsMap, isNotNull);
-          expect(paramsMap!['offset'], equals(0));
+          expect(paramsMap!['projects_offset'], equals(0));
+          expect(paramsMap['estimations_offset'], equals(0));
+          expect(paramsMap['members_offset'], equals(0));
           expect(paramsMap['limit'], equals(20));
         },
       );
@@ -177,12 +179,14 @@ void main() {
             {'projects': [], 'estimations': [], 'members': []},
           );
 
-          final filterDate = DateTime(2024, 3, 15);
+          final filterDateFrom = DateTime(2024, 3, 15);
+          final filterDateTo = DateTime(2024, 3, 31);
           final params = SearchParamsDto(
             query: 'wall',
             filterByTag: 'construction',
-            filterByDate: filterDate,
-            filterByOwner: 'owner-1',
+            filterByDateFrom: filterDateFrom,
+            filterByDateTo: filterDateTo,
+            filterByOwners: const ['owner-1', 'owner-2'],
             scope: SearchScopeDto.estimation,
             pagination: const PaginationParamsDto(offset: 10, limit: 25),
           );
@@ -203,13 +207,55 @@ void main() {
           expect(paramsMap!['query'], equals('wall'));
           expect(paramsMap['filter_by_tag'], equals('construction'));
           expect(
-            paramsMap['filter_by_date'],
-            equals(filterDate.toIso8601String()),
+            paramsMap['filter_by_date_from'],
+            equals(filterDateFrom.toIso8601String()),
           );
-          expect(paramsMap['filter_by_owner'], equals('owner-1'));
+          expect(
+            paramsMap['filter_by_date_to'],
+            equals(filterDateTo.toIso8601String()),
+          );
+          expect(
+            paramsMap['filter_by_owners'],
+            equals(['owner-1', 'owner-2']),
+          );
           expect(paramsMap['scope'], equals('estimation'));
-          expect(paramsMap['offset'], equals(10));
+          expect(paramsMap['projects_offset'], equals(10));
+          expect(paramsMap['estimations_offset'], equals(10));
+          expect(paramsMap['members_offset'], equals(10));
           expect(paramsMap['limit'], equals(25));
+        },
+      );
+
+      test(
+        'should send exactly the param names declared by the global_search '
+        'RPC — PostgREST resolves functions by named arguments, so an '
+        'undeclared name fails every call with PGRST202 (CA-838)',
+        () async {
+          fakeSupabaseWrapper.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+
+          await dataSource.search(const SearchParamsDto(query: 'test'));
+
+          final paramsMap =
+              fakeSupabaseWrapper.getMethodCallsFor('rpc').first['params']
+                  as Map<String, dynamic>;
+          expect(
+            paramsMap.keys,
+            unorderedEquals(const [
+              'query',
+              'filter_by_tag',
+              'filter_by_date_from',
+              'filter_by_date_to',
+              'filter_by_owners',
+              'scope',
+              'projects_offset',
+              'estimations_offset',
+              'members_offset',
+              'limit',
+            ]),
+          );
         },
       );
 

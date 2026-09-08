@@ -15,6 +15,15 @@ class RecentEstimationsWatchStarted extends RecentEstimationsEvent {
   const RecentEstimationsWatchStarted();
 }
 
+/// Signals that the project load failed, so no selection is ever going to
+/// arrive and the loading hold must resolve to an error instead of
+/// waiting forever. Dispatched by the shell when the project dropdown
+/// load reaches its failure state (CA-900).
+class RecentEstimationsProjectLoadFailed extends RecentEstimationsEvent {
+  /// Creates a [RecentEstimationsProjectLoadFailed] event.
+  const RecentEstimationsProjectLoadFailed();
+}
+
 class _RecentEstimationsProjectChanged extends RecentEstimationsEvent {
   const _RecentEstimationsProjectChanged();
 }
