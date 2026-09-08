@@ -8,15 +8,17 @@
 # its MongoDB bucket storage is discarded afterwards because those buckets still
 # describe the database that was just replaced.
 #
-# This resets whatever Supabase project E2E_BACKEND_DIR's config.toml names
-# (see lib.sh — genuinely the E2E project only if that checkout is dedicated
-# to it, a developer's ordinary dev stack otherwise). Everything in that
-# database is destroyed and only the seeded fixtures come back.
+# This resets whatever Supabase project E2E_BACKEND_DIR's config.toml names.
+# Everything in that database is destroyed and only the seeded fixtures come
+# back, so e2e_confirm_destructive (see lib.sh) refuses to proceed unless
+# that project is the dedicated E2E one, or E2E_ALLOW_SHARED_BACKEND=1
+# explicitly accepts the risk of it being a developer's ordinary dev stack.
 #
 # Usage: scripts/e2e/reset_env.sh [--yes]
 #
 #   --yes  Skip the confirmation prompt. Equivalent to E2E_ASSUME_YES=1, which
-#          is how CI runs it.
+#          is how CI runs it. Does not bypass the dedicated-checkout check
+#          above; that needs E2E_ALLOW_SHARED_BACKEND=1.
 
 set -euo pipefail
 
@@ -30,6 +32,7 @@ for arg in "$@"; do
 done
 
 e2e_require_backend
+e2e_require_dedicated_backend
 e2e_ensure_powersync_env
 
 e2e_confirm_destructive \

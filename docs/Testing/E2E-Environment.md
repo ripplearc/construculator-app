@@ -6,22 +6,22 @@ fixture set and a scripted way back to it. The same definition runs on a
 developer machine and on a CI runner, so a failing E2E test means the same thing
 in both places.
 
-> **This stack is isolated from your normal development stack only if
-> `E2E_BACKEND_DIR` points at a separate checkout.**
+> **`scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge` refuse to
+> run against a checkout that isn't a dedicated E2E stack.**
 > `supabase/config.toml` declares its own `project_id`
 > (`construculator-backend-e2e`), and `powersync/compose.yaml` attaches to
 > that project's Docker network by name, so a *separate* checkout gets its
-> own containers, volumes and network. But `E2E_BACKEND_DIR` defaults to a
-> sibling directory literally named `construculator-backend` — if that's
-> also the checkout you run `npx supabase start` from for ordinary local
-> dev, `scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge`
-> destroy that shared project's data, not some separate E2E-only copy.
-> Both commands still ask for confirmation before proceeding, naming the
-> project they're about to act on. Nothing yet enforces the separate-checkout
-> requirement structurally — tracked in
-> [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007). If you need
-> both a dedicated E2E stack and ordinary local dev, use two checkouts and
-> point `E2E_BACKEND_DIR` at the E2E-only one explicitly.
+> own containers, volumes and network. `E2E_BACKEND_DIR` still defaults to a
+> sibling directory literally named `construculator-backend`, which may or
+> may not be that dedicated checkout — but before either destructive command
+> acts, `e2e_require_dedicated_backend` (in `lib.sh`) checks the resolved
+> checkout's actual `project_id` and stops with an error if it isn't
+> `construculator-backend-e2e`. If you need both a dedicated E2E stack and
+> ordinary local dev, use two checkouts and point `E2E_BACKEND_DIR` at the
+> E2E-only one; if you genuinely want to point it at a shared checkout
+> anyway, set `E2E_ALLOW_SHARED_BACKEND=1` to acknowledge that
+> `reset_env.sh` / `stop_env.sh --purge` will then act on that checkout's own
+> data. See [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007).
 
 ## Why this environment exists
 
@@ -35,7 +35,7 @@ The seeded fixtures and `reset_env.sh` give that known state.
 | Requirement | Notes |
 |-------------|-------|
 | Docker | Must be running. Both stacks are containers. |
-| `construculator-backend` checkout | Owns `supabase/` and `powersync/`. Expected as a sibling of this repository, or point `E2E_BACKEND_DIR` at it. |
+| `construculator-backend` checkout, dedicated to E2E | Owns `supabase/` and `powersync/`. Expected as a sibling of this repository, or point `E2E_BACKEND_DIR` at it — either way it must be a checkout whose `project_id` is `construculator-backend-e2e`, not the one you run `npx supabase start` from for ordinary dev. |
 | Supabase CLI | Taken from `PATH`, else the backend's `node_modules`, else `npx`. |
 
 ## Quick start
@@ -65,7 +65,7 @@ scripts/e2e/stop_env.sh --purge   # also deletes the volumes; prompts first
 
 | Script | Responsibility |
 |--------|----------------|
-| `lib.sh` | Shared paths, ports and helpers, including the confirmation gate. Sourced by the others, not run directly. |
+| `lib.sh` | Shared paths, ports and helpers, including the dedicated-checkout check and the confirmation gate. Sourced by the others, not run directly. |
 | `start_env.sh` | Generates the auth signing key and `powersync/.env` if missing, starts both stacks, waits until each answers. Non-destructive. |
 | `stop_env.sh` | Stops PowerSync first so it releases the Postgres replication slot, then Supabase. Destructive only with `--purge`. |
 | `reset_env.sh` | Destroys the database, restores the seeded state and rebuilds PowerSync's bucket storage. |
@@ -128,7 +128,9 @@ registration journey can therefore be run repeatedly from a known state.
 That same thoroughness is why the reset is gated: it clears the `auth` and
 `public` schemas of the E2E project's database, and only the sample fixtures
 come back. Confirm at the prompt, or pass `--yes` / set `E2E_ASSUME_YES=1` when
-scripting it.
+scripting it — and the target has to actually be the dedicated E2E project
+(or `E2E_ALLOW_SHARED_BACKEND=1` has to be set) before either check runs, per
+the note above.
 
 ## CI
 
