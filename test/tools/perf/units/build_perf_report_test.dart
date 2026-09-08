@@ -152,6 +152,28 @@ void main() {
       expect(memory['sample_count'], 3);
     });
 
+    test('reads the DevTools memory export shape written by --profile-memory', () {
+      writeMeta();
+      writeArtifact('memory/memory_profile.json', <String, Object?>{
+        'samples': <String, Object?>{
+          'version': 1,
+          'dartDevToolsScreen': 'memory',
+          'data': <Object?>[
+            <String, Object?>{'rss': 1024},
+            <String, Object?>{'rss': 4096},
+            <String, Object?>{'rss': 2048},
+          ],
+        },
+      });
+
+      final Map<String, Object?> memory =
+          metricsOf(buildPerfReport(capture))['memory'] as Map<String, Object?>;
+
+      expect(memory['available'], isTrue);
+      expect(memory['peak_rss_kb'], 4.0);
+      expect(memory['sample_count'], 3);
+    });
+
     test('does not invent a number when the memory profile shape is unknown', () {
       writeMeta();
       writeArtifact('memory/memory_profile.json', <String, Object?>{

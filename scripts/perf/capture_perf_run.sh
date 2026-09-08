@@ -57,7 +57,20 @@ if ! fvm flutter devices --machine \
   exit 1
 fi
 
-mkdir -p "$OUTPUT_DIR"/{cold,warm,jank,memory}
+# All capture happens in a staging directory outside the repo tree, and only the
+# finished set is copied to --output-dir at the end.
+#
+# The reason is the two `flutter clean`s below. This script runs two entry-point
+# targets against the same tree: lib/main.dart for the startup legs, then the
+# integration_test journey for the drive legs. flutter's build system does not
+# rebuild when only the --target changes, so it will run whichever program it
+# compiled last unless the tree is cleaned between the phases. A clean deletes
+# build/, which is where --output-dir usually lives, so the artifacts cannot be
+# captured there directly.
+OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$WORK"/{cold,warm,jank,memory}
 
 # Runs the app once with startup tracing, writing start_up_info.json into $1.
 #
@@ -78,6 +91,47 @@ capture_startup() {
     "$@"
 }
 
+# Runs one `flutter drive` leg of the journey, with $1 as PERF_OUTPUT_DIR and the
+# rest passed through. Retries a few times because the drive legs occasionally
+# fail on a transient VM-service race (a rerun clears it).
+#
+# The jank leg passes --no-dds: the integration_test binding's traceAction opens
+# its own VM-service connection to record the timeline, and DDS in front of the
+# service refuses it. The memory leg does the opposite - it keeps DDS (which
+# `--profile-memory` polls through) and passes PERF_TRACE_TIMELINE=false so the
+# journey runs without traceAction.
+#
+# Each leg starts with `flutter clean`: the two legs compile different programs
+# (the jank leg the plain journey, the memory leg the journey with an extra
+# --dart-define), and flutter reuses the last build unless the tree is cleaned.
+# The stale adb forwards from the startup legs are cleared at the same time.
+drive_journey() {
+  local perf_out="$1"
+  shift
+  fvm flutter clean
+  adb -s "$DEVICE_ID" forward --remove-all || true
+  local attempt
+  for attempt in 1 2 3; do
+    if PERF_OUTPUT_DIR="$perf_out" fvm flutter drive \
+      --profile \
+      --flavor "$FLAVOR" \
+      --dart-define=ENVIRONMENT=dev \
+      --driver="$DRIVER" \
+      --target="$JOURNEY_TARGET" \
+      -d "$DEVICE_ID" \
+      "$@"; then
+      return 0
+    fi
+    echo "⚠️  drive leg attempt $attempt/3 failed; resetting forwards and retrying..." >&2
+    adb -s "$DEVICE_ID" forward --remove-all || true
+  done
+  echo "❌ drive leg failed after 3 attempts" >&2
+  return 1
+}
+
+echo "🧽 Cleaning the build tree for the startup phase (lib/main.dart)..."
+fvm flutter clean
+
 echo "🏗️  Building profile APK (flavor: $FLAVOR)..."
 fvm flutter build apk \
   --profile \
@@ -88,43 +142,28 @@ fvm flutter build apk \
 # Impeller shader warm-up) that never recur, so it is captured to a scratch
 # directory and thrown away rather than polluting the medians.
 echo "🔥 Discarding first-launch warm-up..."
-capture_startup "$OUTPUT_DIR/.warmup" --purge-persistent-cache
-rm -rf "$OUTPUT_DIR/.warmup"
+capture_startup "$WORK/.warmup" --purge-persistent-cache
+rm -rf "$WORK/.warmup"
 
 for ((i = 1; i <= ITERATIONS; i++)); do
   echo "❄️  Cold start $i/$ITERATIONS..."
-  capture_startup "$OUTPUT_DIR/cold/run-$i" --purge-persistent-cache
+  capture_startup "$WORK/cold/run-$i" --purge-persistent-cache
 done
 
 for ((i = 1; i <= ITERATIONS; i++)); do
   echo "♨️  Warm start $i/$ITERATIONS..."
-  capture_startup "$OUTPUT_DIR/warm/run-$i"
+  capture_startup "$WORK/warm/run-$i"
 done
 
 echo "📊 Capturing jank timeline for journey '$JOURNEY'..."
-PERF_OUTPUT_DIR="$OUTPUT_DIR/jank" fvm flutter drive \
-  --profile \
-  --flavor "$FLAVOR" \
-  --dart-define=ENVIRONMENT=dev \
-  --driver="$DRIVER" \
-  --target="$JOURNEY_TARGET" \
-  -d "$DEVICE_ID"
+drive_journey "$WORK/jank" --no-dds
 
 echo "🧠 Capturing memory profile..."
-# This leg reuses the jank journey and driver, so perf_driver.dart writes a
-# second timeline summary via responseDataCallback. Scope PERF_OUTPUT_DIR under
-# the run so that throwaway output lands beside the run rather than in the
-# driver's build/perf fallback, where it would accumulate on the perf-lab runner.
-PERF_OUTPUT_DIR="$OUTPUT_DIR/.memory-scratch" fvm flutter drive \
-  --profile \
-  --flavor "$FLAVOR" \
-  --dart-define=ENVIRONMENT=dev \
-  --driver="$DRIVER" \
-  --target="$JOURNEY_TARGET" \
-  --profile-memory="$OUTPUT_DIR/memory/memory_profile.json" \
-  -d "$DEVICE_ID"
+drive_journey "$WORK/memory" \
+  --dart-define=PERF_TRACE_TIMELINE=false \
+  --profile-memory="$WORK/memory/memory_profile.json"
 
-cat > "$OUTPUT_DIR/meta.json" <<EOF
+cat > "$WORK/meta.json" <<EOF
 {
   "journey": "$JOURNEY",
   "device_id": "$DEVICE_ID",
@@ -136,4 +175,6 @@ cat > "$OUTPUT_DIR/meta.json" <<EOF
 }
 EOF
 
+mkdir -p "$OUTPUT_DIR"
+cp -a "$WORK"/. "$OUTPUT_DIR"/
 echo "✅ Raw artifacts written to $OUTPUT_DIR"

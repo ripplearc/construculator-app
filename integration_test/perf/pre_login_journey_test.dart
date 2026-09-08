@@ -23,6 +23,16 @@ const int _gestureFrameBudget = 60;
 // Cadence of a single pumped frame, matching a 60Hz display.
 const Duration _frameInterval = Duration(milliseconds: 16);
 
+// The jank leg wraps the journey in traceAction to record a timeline, which
+// opens its own VM-service connection and therefore needs `flutter drive
+// --no-dds`. The memory leg runs with DDS (which `--profile-memory` polls
+// through) and passes --dart-define=PERF_TRACE_TIMELINE=false so it walks the
+// same journey without the timeline capture. Defaults to the jank behaviour.
+const bool _traceTimeline = bool.fromEnvironment(
+  'PERF_TRACE_TIMELINE',
+  defaultValue: true,
+);
+
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
@@ -30,14 +40,20 @@ void main() {
   testWidgets('pre-login journey reaches the login screen and scrolls it', (
     WidgetTester tester,
   ) async {
-    await binding.traceAction(() async {
+    Future<void> journey() async {
       app.main();
       // Waits on login-screen copy rather than on a layout widget, so the
       // journey confirms it actually reached the login screen instead of
       // merely rendering something scrollable.
       await _pumpUntilPresent(tester, find.text(AppLocalizationsEn().welcomeBack));
       await _scrollLoginForm(tester);
-    }, reportKey: preLoginJourneyId);
+    }
+
+    if (_traceTimeline) {
+      await binding.traceAction(journey, reportKey: preLoginJourneyId);
+    } else {
+      await journey();
+    }
   });
 }
 
