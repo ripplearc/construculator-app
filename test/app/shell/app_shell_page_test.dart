@@ -277,11 +277,10 @@ void main() {
       return systemCalls;
     }
 
+    // Simulates the platform's system back button/gesture, the same
+    // notification PopScope reacts to on a real device.
     Future<void> pressBack(WidgetTester tester) async {
-      final popScope =
-          tester.widget(find.byWidgetPredicate((w) => w is PopScope))
-              as PopScope;
-      popScope.onPopInvokedWithResult!(false, null);
+      await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
     }
 
