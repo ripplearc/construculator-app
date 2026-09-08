@@ -1,12 +1,11 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
-import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -26,12 +25,14 @@ class AppShellPage extends StatefulWidget {
   final ProjectUIProvider projectUIProvider;
   final CurrentProjectNotifier currentProjectNotifier;
   final AppRouter router;
+  final TabModuleManager tabModuleManager;
 
   const AppShellPage({
     super.key,
     required this.projectUIProvider,
     required this.currentProjectNotifier,
     required this.router,
+    required this.tabModuleManager,
   });
 
   @override
@@ -85,15 +86,6 @@ class _AppShellPageState extends State<AppShellPage> {
     context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
   }
 
-  Widget _buildTabRoot(ShellTab tab) {
-    switch (tab) {
-      case ShellTab.calculations:
-        return const CalculationsPage();
-      case ShellTab.estimates:
-        return EstimationModule.landingPage();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
@@ -141,7 +133,9 @@ class _AppShellPageState extends State<AppShellPage> {
                         ? TabNavigator(
                             key: ValueKey(tab.name),
                             navigatorKey: _tabNavigatorKeys[index],
-                            rootBuilder: (_) => _buildTabRoot(tab),
+                            rootBuilder: (context) =>
+                                widget.tabModuleManager.providerFor(tab)?.buildRoot(context) ??
+                                const SizedBox.shrink(),
                           )
                         : const SizedBox.shrink(),
                   ),
