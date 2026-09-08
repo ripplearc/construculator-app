@@ -35,6 +35,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -254,6 +255,71 @@ void main() {
 
       expect(find.byType(CostEstimationLandingPage, skipOffstage: false), findsNothing);
       expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
+    });
+  });
+
+  group('Back Navigation', () {
+    List<MethodCall> interceptSystemNavigatorPop(WidgetTester tester) {
+      final systemCalls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          systemCalls.add(call);
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+      return systemCalls;
+    }
+
+    // Simulates the platform's system back button/gesture, the same
+    // notification PopScope reacts to on a real device.
+    Future<void> pressBack(WidgetTester tester) async {
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'back press on a non-first tab returns to the first tab without '
+      'popping the app',
+      (tester) async {
+        final systemCalls = interceptSystemNavigatorPop(tester);
+
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
+
+        await tapTabByLabel(tester, l10n().estimatesTab);
+        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+
+        await pressBack(tester);
+
+        expect(find.byType(CalculationsPage), findsOneWidget);
+        expect(
+          systemCalls.where((call) => call.method == 'SystemNavigator.pop'),
+          isEmpty,
+        );
+      },
+    );
+
+    testWidgets('back press on the first tab calls SystemNavigator.pop', (
+      tester,
+    ) async {
+      final systemCalls = interceptSystemNavigatorPop(tester);
+
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
+
+      await pressBack(tester);
+
+      expect(
+        systemCalls.where((call) => call.method == 'SystemNavigator.pop'),
+        hasLength(1),
+      );
     });
   });
 
