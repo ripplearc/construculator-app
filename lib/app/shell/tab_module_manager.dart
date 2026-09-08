@@ -14,10 +14,25 @@ class TabModuleManager {
   final Map<ShellTab, TabModuleProvider> _providers;
   final Set<ShellTab> _loadedTabs = {};
 
+  /// [CoreBottomNavBar] (CA-874) only supports 2-4 tabs. This is a real,
+  /// unconditional check (not `assert`, which release/profile builds strip)
+  /// so a registry that would render an unsupported nav fails at DI-bind
+  /// time instead of shipping silently.
+  static const int minSupportedTabs = 2;
+
   TabModuleManager(
     this.appBootstrap, {
     Map<ShellTab, TabModuleProvider>? providers,
-  }) : _providers = providers ?? _defaultProviders();
+  }) : _providers = providers ?? _defaultProviders() {
+    if (_providers.length < minSupportedTabs) {
+      throw StateError(
+        'TabModuleManager requires at least $minSupportedTabs tab '
+        'providers to render a supported CoreBottomNavBar (2-4 tabs), but '
+        'only ${_providers.length} were registered: '
+        '${_providers.keys.map((t) => t.name).join(', ')}.',
+      );
+    }
+  }
 
   static Map<ShellTab, TabModuleProvider> _defaultProviders() => {
     ShellTab.calculations: const CalculationsTabProvider(),
@@ -42,4 +57,13 @@ class TabModuleManager {
   /// provider is registered — a well-defined case a tab with no provider
   /// (i.e. excluded from this build) is expected to hit.
   TabModuleProvider? providerFor(ShellTab tab) => _providers[tab];
+
+  /// The [ShellTab]s to actually render, in [ShellTab.values] order.
+  ///
+  /// [ShellTab] stays a stable identity enum; this is the dynamic subset
+  /// that has a registered provider. Bottom nav, the Offstage tab stack, and
+  /// navigator keys all derive their rendered set from this getter instead
+  /// of iterating [ShellTab.values] directly.
+  List<ShellTab> get activeTabs =>
+      ShellTab.values.where(_providers.containsKey).toList(growable: false);
 }

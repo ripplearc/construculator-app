@@ -40,14 +40,18 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
-    ShellTab.values.length,
-    (_) => GlobalKey<NavigatorState>(),
-  );
+  // Built in initState, not as a field initializer: it needs
+  // widget.tabModuleManager.activeTabs, and widget is not yet attached to
+  // this State during field initialization.
+  late final List<GlobalKey<NavigatorState>> _tabNavigatorKeys;
 
   @override
   void initState() {
     super.initState();
+    _tabNavigatorKeys = List.generate(
+      widget.tabModuleManager.activeTabs.length,
+      (_) => GlobalKey<NavigatorState>(),
+    );
     // Start the projects watch at shell mount (not first sheet opening) so
     // the first project auto-selects on login; without a selection,
     // CurrentProjectNotifier stays null and every project-scoped surface
@@ -82,8 +86,25 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
-    assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
+    final activeTabs = widget.tabModuleManager.activeTabs;
+    assert(index < activeTabs.length, 'Tab index $index out of range');
+    context.read<AppShellBloc>().add(AppShellTabSelected(activeTabs[index]));
+  }
+
+  // Shell-owned bottom nav chrome (icon + label) for tab. This is display
+  // metadata the shell owns, not feature construction — TabModuleProvider
+  // deliberately doesn't carry it.
+  BottomNavTab _bottomNavTabFor(BuildContext context, ShellTab tab) {
+    return switch (tab) {
+      ShellTab.calculations => BottomNavTab(
+          icon: CoreIcons.calculation,
+          label: context.l10n.calculationsTab,
+        ),
+      ShellTab.estimates => BottomNavTab(
+          icon: CoreIcons.cost,
+          label: context.l10n.estimatesTab,
+        ),
+    };
   }
 
   @override
@@ -106,6 +127,7 @@ class _AppShellPageState extends State<AppShellPage> {
       },
       child: BlocBuilder<AppShellBloc, AppShellState>(
         builder: (context, state) {
+        final activeTabs = widget.tabModuleManager.activeTabs;
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
@@ -121,8 +143,8 @@ class _AppShellPageState extends State<AppShellPage> {
               ),
             ),
             body: Stack(
-              children: List.generate(ShellTab.values.length, (index) {
-                final tab = ShellTab.values[index];
+              children: List.generate(activeTabs.length, (index) {
+                final tab = activeTabs[index];
                 final isLoaded = state.loadedTabIndexes.contains(index);
                 final isActive = state.selectedTabIndex == index;
                 return Offstage(
@@ -146,16 +168,9 @@ class _AppShellPageState extends State<AppShellPage> {
               minimum: const EdgeInsets.all(CoreSpacing.space4),
               child: CoreBottomNavBar(
                 key: const Key('app_shell_bottom_nav_bar'),
-                tabs: [
-                  BottomNavTab(
-                    icon: CoreIcons.calculation,
-                    label: context.l10n.calculationsTab,
-                  ),
-                  BottomNavTab(
-                    icon: CoreIcons.cost,
-                    label: context.l10n.estimatesTab,
-                  ),
-                ],
+                tabs: activeTabs
+                    .map((tab) => _bottomNavTabFor(context, tab))
+                    .toList(growable: false),
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
                 onActionButtonPressed: state.calculatorEnabled
