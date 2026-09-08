@@ -157,6 +157,56 @@ void main() {
         );
       });
     });
+
+    group('minimum-tab floor', () {
+      // CoreBottomNavBar (CA-874) only supports 2-4 tabs. This must be a
+      // real, unconditional check — not `assert()`, which is stripped from
+      // release/profile builds — so asserting on the concrete exception
+      // type (StateError, not merely "some error") guards against a
+      // regression to a bare `assert()`: an AssertionError would fail this
+      // `isA<StateError>()` check even though asserts run in test mode.
+      test('throws StateError when constructed with zero providers', () {
+        expect(
+          // ignore: no_direct_instantiation
+          () => TabModuleManager(
+            FakeAppBootstrapFactory.create(),
+            providers: const {},
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('at least 2 tab providers'),
+            ),
+          ),
+        );
+      });
+
+      test('throws StateError when constructed with only one provider', () {
+        expect(
+          // ignore: no_direct_instantiation
+          () => TabModuleManager(
+            FakeAppBootstrapFactory.create(),
+            providers: const {ShellTab.calculations: NoOpTabModuleProvider()},
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('does not throw when constructed with two providers', () {
+        expect(
+          // ignore: no_direct_instantiation
+          () => TabModuleManager(
+            FakeAppBootstrapFactory.create(),
+            providers: const {
+              ShellTab.calculations: NoOpTabModuleProvider(),
+              ShellTab.estimates: NoOpTabModuleProvider(),
+            },
+          ),
+          returnsNormally,
+        );
+      });
+    });
   });
 }
 
