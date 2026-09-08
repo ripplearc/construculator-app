@@ -30,6 +30,19 @@ class DatabaseConstants {
   /// not a decision it should be making.
   static const String currentConsentVersionsView = 'current_consent_versions';
 
+  /// Published consent versions as replicated to the device.
+  ///
+  /// The base table rather than [currentConsentVersionsView], which the sync
+  /// stream cannot carry: a view has no replication identity, and the view's
+  /// `effective_from <= now()` predicate is fired by no row change. The local
+  /// data source applies those rules itself. The remote path still reads the
+  /// view — it goes over PostgREST, where the database can evaluate them.
+  static const String consentVersionsTable = 'consent_versions';
+
+  /// The append-only log of the signed-in user's consent decisions, as
+  /// replicated to the device. Scoped to that one user by the sync stream.
+  static const String userConsentsTable = 'user_consents';
+
   /// Table storing per-user project search history. Fully isolated from
   /// [searchHistoryTable] (which serves Global Search) — neither feature reads
   /// from nor writes to the other's table.
@@ -132,6 +145,16 @@ class DatabaseConstants {
   static const String versionColumn = 'version';
   static const String documentUrlColumn = 'document_url';
   static const String publishedAtColumn = 'published_at';
+
+  /// When a published version starts binding users.
+  ///
+  /// Distinct from [publishedAtColumn], which is audit metadata: a version can
+  /// be inserted ahead of time and go live on schedule, and this is the column
+  /// that decides whether it has. Read only on the local path, where the
+  /// client resolves which version is in force; the remote path gets that
+  /// answer from [currentConsentVersionsView] instead, so no DTO field holds
+  /// it.
+  static const String effectiveFromColumn = 'effective_from';
   static const String actionColumn = 'action';
   static const String recordedAtColumn = 'recorded_at';
   static const String appVersionColumn = 'app_version';
