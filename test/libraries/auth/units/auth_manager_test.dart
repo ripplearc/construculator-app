@@ -106,6 +106,88 @@ void main() {
       );
 
       test(
+        'should call setUser and identify when constructed with an '
+        'already-authenticated (resumed) session',
+        () {
+          // setUp() already constructed `authManager` with no session, so
+          // no identify()/setUser() calls should be recorded yet.
+          sentryWrapper.reset();
+          analyticsRepository.resetFake();
+
+          // Set the session on the shared fake wrapper before asking for a
+          // new AuthManager instance, mirroring a persisted Supabase
+          // session found at cold start. `AuthManager` is bound as a
+          // factory (see `_TestAppModule.binds`), so this Modular.get call
+          // constructs a brand-new AuthManagerImpl and re-runs
+          // `_initAuthListener()` against the now-authenticated wrapper.
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              email: testEmail,
+              id: 'resumed-user-id',
+              createdAt: clock.now().toIso8601String(),
+            ),
+          );
+
+          final resumedManager = Modular.get<AuthManager>();
+
+          expect(resumedManager.isAuthenticated(), true);
+          expect(sentryWrapper.userId, 'resumed-user-id');
+          expect(analyticsRepository.identifyCalls, hasLength(1));
+          expect(
+            analyticsRepository.identifyCalls.single.userId,
+            'resumed-user-id',
+          );
+          expect(
+            analyticsRepository.identifyCalls.single.properties,
+            const AnalyticsUserProperties(),
+          );
+        },
+      );
+
+      test(
+        'should not call setUser or identify again when the auth stream '
+        'later replays a signedIn event for the same resumed session',
+        () {
+          final resumedUser = FakeUser(
+            email: testEmail,
+            id: 'resumed-user-id',
+            createdAt: clock.now().toIso8601String(),
+          );
+
+          // Construct the resumed-session manager first; this is the one
+          // call site that identifies the user (the cold-start branch).
+          supabaseWrapper.setCurrentUser(resumedUser);
+          Modular.get<AuthManager>();
+
+          sentryWrapper.reset();
+          analyticsRepository.resetFake();
+
+          // Simulate Supabase's auth stream redundantly re-emitting
+          // `signedIn` for the same already-authenticated session. The
+          // `.listen()` callback's `signedIn` branch intentionally does not
+          // call setUser()/identify() (only the cold-start `isAuthenticated`
+          // branch does), so this must not produce another call.
+          supabaseWrapper.setCurrentUser(resumedUser);
+
+          expect(sentryWrapper.userId, isNull);
+          expect(analyticsRepository.identifyCalls, isEmpty);
+        },
+      );
+
+      test(
+        'should not call setUser or identify when constructed with no '
+        'authenticated session',
+        () {
+          // `authManager` from setUp() was constructed while
+          // `supabaseWrapper` had no current user, exercising the
+          // unauthenticated cold-start branch.
+          expect(supabaseWrapper.isAuthenticated, false);
+          expect(sentryWrapper.userId, isNull);
+          expect(analyticsRepository.identifyCalls, isEmpty);
+        },
+      );
+
+      test(
         'loginWithEmail should emit authenticated state on success',
         () async {
           final loginEvent = expectLater(

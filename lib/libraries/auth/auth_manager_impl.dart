@@ -72,6 +72,16 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
+        unawaited(_sentryWrapper.setUser(user.id));
+        // TODO: [CA-961] Gate identify() on recorded analytics consent once
+        // the server-driven consent flow lands; currently relies on the
+        // signup terms & privacy acceptance covering analytics consent.
+        unawaited(
+          _analyticsRepository.identify(
+            userId: user.id,
+            properties: const AnalyticsUserProperties(),
+          ),
+        );
         _emitAuthStateChanged(
           AuthStatus.authenticated,
           _mapSupabaseUserToCredential(user),
