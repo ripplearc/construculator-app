@@ -103,6 +103,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      - By dependency: Foundation → Feature → UI
      - By scope: Core feature → Error handling → Polish
    - Output: PR plan with each PR's focus + estimated LOC
+   - Each split PR must independently pass `./scripts/run_check.sh --pre` (fast, run locally) and `./scripts/run_check.sh --comp` (full, run inside Docker) — if a split point would leave either failing, choose a different split
 
 8. **Compile plan**
    - Classes + file paths
@@ -152,6 +153,16 @@ PR2 (Presentation): ~270 LOC
 
 → Next: Resolve CoreCard blocker, then code PR1 with code-domain and code-data skills
 ```
+
+### Saving the plan file
+
+After outputting the plan, **always persist it to a file**:
+
+1. Ensure the output directory exists: `mkdir -p plans`
+2. Write the plan to `plans/{ticket_id}-plan.md` (e.g. `plans/CA-123-plan.md`) using the Write tool, overwriting any existing file for the same ticket
+3. Report the written path to the user: `Plan saved to plans/CA-123-plan.md`
+
+This allows any subsequent coding skill — even in a new session — to restore full context by reading the plan file instead of requiring the user to re-paste it.
 
 ## References
 
