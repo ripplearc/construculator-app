@@ -65,6 +65,12 @@ jobs:
           dart pub global activate patrol_cli
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
+      # ffmpeg isn't on PATH inside android-emulator-runner's script step, even
+      # though it's normally preinstalled on this runner image. run_cuj_suite.sh
+      # uses it to pull a failure screenshot from each CUJ's recorded video.
+      - name: Install ffmpeg
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+
       # Required for reactivecircus/android-emulator-runner on GitHub-hosted
       # ubuntu-latest runners — see its README's "Running hardware accelerated
       # emulators on Linux runners" section.
@@ -87,54 +93,26 @@ jobs:
 
       - name: Run CUJ suite on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # run_cuj_suite.sh resets the seeded DB between attempts via
+          # scripts/e2e/reset_env.sh, which needs the backend checkout path.
+          E2E_BACKEND_DIR: ${{ github.workspace }}/construculator-backend
         with:
           api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_7_pro
           disable-animations: true
-          script: |
-            set -uo pipefail
-            scripts/e2e/adb_reverse.sh
-
-            adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
-            recorder_pid=$!
-
-            # One retry absorbs known GitHub-hosted-emulator flake (see
-            # docs/Testing/E2E-CI.md#retry) — it is not meant to paper over a
-            # genuinely broken CUJ, which is what quarantine is for.
-            max_attempts=2
-            attempt=1
-            success=0
-            results_dir=build/app/outputs/androidTest-results/connected
-            while [ "$attempt" -le "$max_attempts" ]; do
-              if patrol test \
-                --target integration_test/patrol_test.dart \
-                --flavor fishfood \
-                --dart-define=ENVIRONMENT=dev; then
-                success=1
-              fi
-
-              # Gradle rewrites the results directory on every invocation, so a
-              # failed first attempt's XML is gone the moment the retry starts.
-              # Snapshotting each attempt is what makes a retried-and-passed
-              # case distinguishable from a case that simply passed — the only
-              # flake signal this suite produces.
-              mkdir -p "build/e2e-attempts/attempt-$attempt"
-              cp -r "$results_dir/." "build/e2e-attempts/attempt-$attempt/" || true
-
-              [ "$success" -eq 1 ] && break
-              echo "::warning::CUJ suite failed on attempt $attempt of $max_attempts"
-              attempt=$((attempt + 1))
-            done
-
-            kill "$recorder_pid" 2>/dev/null || true
-            sleep 1
-            adb pull /sdcard/e2e.mp4 e2e-recording.mp4 || true
-            adb exec-out screencap -p > e2e-final-state.png || true
-            adb logcat -d > e2e-logcat.txt || true
-
-            [ "$success" -eq 1 ]
+          # A long two-CUJ run on a Skia/SwiftShader emulator OOM-killed the
+          # instrumentation process on a retry — give it more headroom than the
+          # hardware-profile default.
+          cores: 3
+          ram-size: 4096M
+          heap-size: 1024M
+          # android-emulator-runner runs `script:` under /usr/bin/sh (dash), which
+          # has no `set -o pipefail` and no bashisms — keep the body in a bash
+          # script and just invoke it here.
+          script: bash scripts/e2e/run_cuj_suite.sh
 
       - name: Build e2e-run.json
         if: always()
@@ -149,14 +127,18 @@ jobs:
       - name: Publish CUJ results summary
         if: always()
         run: |
-          xml="$(find build/app/outputs/androidTest-results -name '*.xml' 2>/dev/null | head -1)"
-          if [ -z "$xml" ]; then
+          shopt -s nullglob
+          xmls=(build/e2e-results/*.xml)
+          if [ "${#xmls[@]}" -eq 0 ]; then
             echo "### CUJ E2E: no JUnit XML produced — the suite failed before reporting results." >> "$GITHUB_STEP_SUMMARY"
           else
             {
               echo "### CUJ E2E results"
               echo '```'
-              grep -o '<testsuite[^>]*' "$xml"
+              for xml in "${xmls[@]}"; do
+                echo "-- $(basename "$xml" .xml) --"
+                grep -o '<testsuite[^>]*' "$xml"
+              done
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -190,11 +172,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cuj-e2e-junit
-          # Per-attempt snapshots rather than the results directory itself: the
-          # directory only ever holds the last attempt, so uploading it discards
-          # the failed first attempt of every retried run.
+          # run_cuj_suite.sh writes two trees before Gradle's shared results
+          # directory is overwritten by the next `patrol test` invocation:
+          # build/e2e-results/<cuj>.xml is each CUJ's last attempt (what the
+          # summary above reads), and build/e2e-attempts/attempt-<n>/<cuj>.xml is
+          # every attempt, which build_e2e_report.dart reduces to e2e-run.json.
+          # Upload all three so a retried-and-passed CUJ stays distinguishable
+          # from a clean one after the fact.
           path: |
             build/e2e-attempts/**/*.xml
+            build/e2e-results/*.xml
             build/e2e/e2e-run.json
           if-no-files-found: warn
           retention-days: 30
@@ -204,9 +191,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cuj-e2e-failure-artifacts
+          # build/e2e-videos/<cuj-name>/ holds that CUJ's own video (Patrol's
+          # --record-video, scoped to its own execution). run_cuj_suite.sh keeps
+          # the last attempt's video for every CUJ, passed or failed, and adds a
+          # screenshot extracted from the last frame only for a CUJ that failed.
           path: |
-            e2e-recording.mp4
-            e2e-final-state.png
+            build/e2e-videos/**/*.mp4
+            build/e2e-videos/**/*.png
             e2e-logcat.txt
           if-no-files-found: warn
           retention-days: 30
