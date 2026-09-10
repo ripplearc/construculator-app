@@ -91,6 +91,11 @@ void main() {
         await customManager.ensureTabModuleLoaded(ShellTab.calculations);
         expect(fakeProvider.loadCallCount, 1);
       });
+
+      test('providerFor returns null for a tab with no registered provider', () {
+        expect(customManager.providerFor(ShellTab.calculations), isNotNull);
+        expect(customManager.providerFor(ShellTab.estimates), isNull);
+      });
     });
   });
 }
