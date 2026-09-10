@@ -30,4 +30,6 @@
 - [Performance Measurement](Performance-Measurement)
 - [E2E Execution Target](E2E-Execution-Target)
 - [E2E Environment](E2E-Environment)
+- [Performance Harness](Performance-Harness)
+- [Performance Device Register](Performance-Device-Register)
 
