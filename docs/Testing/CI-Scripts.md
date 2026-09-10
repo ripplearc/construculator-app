@@ -138,7 +138,7 @@ dart run mutation_test <changed-configs> --no-builtin
 ### Build behavior
 
 - Android:
-   - Detects product flavors from `android/app/build.gradle`.
+   - Detects product flavors by grepping `productFlavors` in `android/app/build.gradle` and `android/app/flavorizr.gradle` (flutter_flavorizr keeps the block in the latter).
    - When flavors are present: asserts `fishfood`/`dev` via `scripts/ci/assert_flavor_environment.sh` (see below), then builds with `--debug --flavor fishfood`, expects `app-fishfood-debug.apk`.
    - When flavors are absent: builds with no `--flavor` flag at all (CA-620 — passing one fails the build, since there's no flavor for Gradle to select), expects `app-debug.apk`.
    - Verifies expected APK output path based on flavor configuration.

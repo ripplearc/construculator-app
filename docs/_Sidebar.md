@@ -10,6 +10,9 @@
 ## Configuration
 - [Launcher Icons](Launcher-Icons-Configuration)
 
+## Build
+- [Build Flavors](Build-Flavors)
+
 ## Data & Sync
 - [PowerSync Integration](PowerSync-Integration)
 

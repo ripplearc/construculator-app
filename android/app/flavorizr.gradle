@@ -1,0 +1,21 @@
+android {
+    flavorDimensions += "env"
+
+    productFlavors {
+        fishfood {
+            dimension "env"
+            applicationId "com.cms.cm_sample.fishfood"
+            resValue "string", "app_name", "Construculator"
+        }
+        dogfood {
+            dimension "env"
+            applicationId "com.cms.cm_sample.dogfood"
+            resValue "string", "app_name", "Construculator"
+        }
+        prod {
+            dimension "env"
+            applicationId "com.cms.cm_sample"
+            resValue "string", "app_name", "Construculator"
+        }
+    }
+}
