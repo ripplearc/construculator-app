@@ -22,6 +22,9 @@
 # .github/workflows/e2e_cuj.yml. It lives in a script rather than an inline
 # `script:` block because reactivecircus/android-emulator-runner runs that block
 # under /usr/bin/sh (dash), which does not support `set -o pipefail`.
+#
+# Needs bash 4+ (`mapfile`, arrays). CI runners have it; a local run on macOS
+# must use a Homebrew bash on PATH, not the system `/bin/bash` (3.2).
 set -euo pipefail
 
 # Ports the E2E stack publishes. adb_reverse.sh forwards these onto the emulator;
@@ -211,8 +214,12 @@ e2e_log "Discovered ${#cuj_files[@]} CUJ(s): ${cuj_files[*]}"
 
 overall_success=1
 for cuj_file in "${cuj_files[@]}"; do
-  # Subshell: one CUJ's failure — even a fatal, unhandled one — exits only its
-  # own subshell under `set -e`, so the loop still reaches every CUJ after it.
+  # Subshell: `run_cuj` runs as an `if` condition, which turns `set -e` off for
+  # it and everything it calls. Isolation comes from the subshell boundary
+  # instead — an `exit`, `e2e_die`, or `set -u` abort inside `run_cuj` ends only
+  # that subshell, and the CUJ's pass/fail is its own explicit `return`. Either
+  # way the loop still reaches every CUJ after one that fails. A new unguarded
+  # command in `run_cuj` will not abort the CUJ on its own, so guard it.
   if ! ( run_cuj "$cuj_file" ); then
     overall_success=0
   fi

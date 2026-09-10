@@ -192,9 +192,9 @@ jobs:
         with:
           name: cuj-e2e-failure-artifacts
           # build/e2e-videos/<cuj-name>/ holds that CUJ's own video (Patrol's
-          # --record-video, scoped to its own execution) plus a screenshot
-          # extracted from its last frame, for every CUJ that failed — see
-          # run_cuj_suite.sh.
+          # --record-video, scoped to its own execution). run_cuj_suite.sh keeps
+          # the last attempt's video for every CUJ, passed or failed, and adds a
+          # screenshot extracted from the last frame only for a CUJ that failed.
           path: |
             build/e2e-videos/**/*.mp4
             build/e2e-videos/**/*.png

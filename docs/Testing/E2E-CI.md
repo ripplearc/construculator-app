@@ -54,9 +54,10 @@ policy below exists largely to absorb it.
    (read from `build/e2e-results/`) and uploads the per-CUJ XML, the
    per-attempt tree and `e2e-run.json` — always, not only on failure, so a
    green run's numbers are visible too.
-7. For every CUJ that failed, also uploads that CUJ's own screen recording, a
-   screenshot of its last frame, and the device log (`adb logcat`, one shared
-   file covering the whole run) captured during the run.
+7. On any failed run, also uploads every CUJ's screen recording (the last
+   attempt's, kept for passed and failed CUJs alike), a last-frame screenshot
+   for each CUJ that failed, and the device log (`adb logcat`, one shared file
+   covering the whole run) captured during the run.
 
 ## Results and notifications
 
