@@ -89,6 +89,12 @@ pre_check() {
   # Install dependencies
   fvm flutter pub get
 
+  # CA-926: exercise the flavor/environment guard's own failure logic. The
+  # guard script only ever runs with a matching pair at its build call
+  # sites, so its mismatch/unknown branches are otherwise never tested.
+  echo "🔒 Verifying flavor/environment guard..."
+  bash scripts/ci/assert_flavor_environment_test.sh
+
   # Get base commit
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   
