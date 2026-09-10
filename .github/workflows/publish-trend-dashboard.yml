@@ -35,6 +35,10 @@ jobs:
   build:
     name: Build and publish dashboard
     runs-on: ubuntu-latest
+    # A failed or cancelled producer run writes no new data, so rebuilding
+    # off it would just burn a CI run republishing the same page. Schedule
+    # and manual dispatch always run.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: write
     steps:
@@ -56,7 +60,11 @@ jobs:
     name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
+    # A job-level permissions block is exhaustive: contents would otherwise be
+    # none, and "Checkout gh-pages" needs contents: read (works anonymously on
+    # a public repo today, would fail if this repo or workflow ever goes private).
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:

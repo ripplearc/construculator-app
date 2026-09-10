@@ -52,13 +52,23 @@ checkout_store() {
   STORE_DIR="$(mktemp -d)"
   WORKTREES+=("$STORE_DIR")
 
-  git fetch "$REMOTE" "$branch" 2>/dev/null || true
-  if git rev-parse --verify "$REMOTE/$branch" >/dev/null 2>&1; then
-    git worktree add --force --detach "$STORE_DIR" "$REMOTE/$branch" >/dev/null
-    echo "📥 Read $branch"
-  else
+  # Probe existence separately from the fetch so a transient network/auth
+  # failure is not mistaken for "branch does not exist yet". ls-remote exits
+  # 2 when the ref is genuinely absent, non-zero for a real error.
+  local ls_status=0
+  git ls-remote --exit-code "$REMOTE" "refs/heads/$branch" >/dev/null 2>&1 || ls_status=$?
+  if [ "$ls_status" -eq 2 ]; then
     echo "ℹ️  $branch does not exist yet; rendering it as empty"
+    return 0
   fi
+  if [ "$ls_status" -ne 0 ]; then
+    echo "❌ Could not reach $REMOTE to check for $branch" >&2
+    exit 1
+  fi
+
+  git fetch "$REMOTE" "$branch" >/dev/null 2>&1
+  git worktree add --force --detach "$STORE_DIR" "$REMOTE/$branch" >/dev/null
+  echo "📥 Read $branch"
 }
 
 checkout_store "$PERF_BRANCH"
