@@ -2787,6 +2787,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Posts'**
   String get calculatorResultPosts;
+
+  /// Message shown on the defensive fallback page when a deep link points to a feature that this build does not include
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not available in this version of the app.'**
+  String get featureUnavailableMessage;
 }
 
 class _AppLocalizationsDelegate
