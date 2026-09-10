@@ -321,6 +321,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.3"
+  dart_xcodeproj:
+    dependency: transitive
+    description:
+      name: dart_xcodeproj
+      sha256: "538d0e6e94df351a5fa6cec8e8979374023066d782a16058b6889b4a7c6d96c4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   diff_match_patch:
     dependency: transitive
     description:
@@ -411,6 +419,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_flavorizr:
+    dependency: "direct dev"
+    description:
+      name: flutter_flavorizr
+      sha256: eae954ce8f8678b5ae6899ad6b61731a336bc9b93578f277f119ca23c8e1128a
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.0"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -700,6 +716,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.5.1"
+  mason_logger:
+    dependency: transitive
+    description:
+      name: mason_logger
+      sha256: "4f053e4e7e1716002b72cad133d81612be3550d40ed9d43c1878c9b03ba93069"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.4"
   matcher:
     dependency: transitive
     description:
@@ -1012,6 +1036,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.5"
+  propertylistserialization:
+    dependency: transitive
+    description:
+      name: propertylistserialization
+      sha256: "645aaac37e73735286087fc81b27c7eabaa81b6146881bdf84090ba56f4e15ad"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
   provider:
     dependency: transitive
     description:
@@ -1241,6 +1273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
+  sprintf:
+    dependency: transitive
+    description:
+      name: sprintf
+      sha256: "1fc9ffe69d4df602376b52949af107d8f5703b77cda567c4d7d86a0693120f23"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.0"
   sqlite3:
     dependency: transitive
     description:
@@ -1577,6 +1617,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.3"
+  yaml_writer:
+    dependency: transitive
+    description:
+      name: yaml_writer
+      sha256: "69651cd7238411179ac32079937d4aa9a2970150d6b2ae2c6fe6de09402a5dc5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   yet_another_json_isolate:
     dependency: transitive
     description:
