@@ -42,10 +42,11 @@ policy below exists largely to absorb it.
 5. Boots an Android emulator, forwards the stack's ports into it
    (`scripts/e2e/adb_reverse.sh`), and runs
    `patrol test --target integration_test/patrol_test.dart --flavor fishfood`.
-6. Publishes a pass/fail summary to the job summary and uploads the JUnit XML
-   Android's instrumentation runner produces
-   (`build/app/outputs/androidTest-results/connected/**/*.xml`) — always, not
-   only on failure, so a green run's numbers are visible too.
+6. Snapshots each attempt's JUnit XML into `build/e2e-attempts/attempt-<n>/`,
+   reduces the set to one `e2e-run.json` via
+   `scripts/e2e/build_e2e_report.dart`, publishes a pass/fail summary to the job
+   summary, and uploads both — always, not only on failure, so a green run's
+   numbers are visible too.
 7. On failure, also uploads a screen recording, a final-state screenshot and
    the device log (`adb logcat`) captured during the run.
 
@@ -73,6 +74,28 @@ category Patrol's own docs warn about for GitHub-hosted emulators — not
 app-logic flake. A CUJ that still fails on the second attempt is a real
 failure and should be investigated, not re-run again by hand as a first
 response.
+
+### Attempts are the flake signal
+
+Gradle rewrites `build/app/outputs/androidTest-results/connected` on every
+`patrol test` invocation, so before this the first attempt's XML was gone the
+moment the retry started — a retried-and-passed run was indistinguishable from
+a clean one. Each attempt is now snapshotted to
+`build/e2e-attempts/attempt-<n>/` before the next one starts.
+
+`build_e2e_report.dart` reads every snapshot and classifies each case by its
+last attempt:
+
+| Status | Meaning |
+|---|---|
+| `passed` | green on every attempt it ran in |
+| `flaked` | green on the last attempt, red on an earlier one |
+| `failed` | red on the last attempt |
+| `skipped` | never ran; excluded from both rates |
+
+`pass_rate` counts `flaked` cases as passes, because that is what CI reports
+when a retry rescues a run. `flake_rate` is what that number hides, which is
+why the trend dashboard plots both.
 
 ## Quarantine
 
