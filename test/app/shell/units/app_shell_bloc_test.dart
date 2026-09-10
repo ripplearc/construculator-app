@@ -2,6 +2,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
@@ -20,7 +21,16 @@ AppShellBloc _buildBlocWithFlag(bool? calculatorEnabled) {
     featureFlagRepository: featureFlagRepository,
   );
   return AppShellBloc(
-    moduleLoader: TabModuleManager(appBootstrap, providers: const {}),
+    // These tests only exercise flag-driven state emission, not real tab
+    // loading, so NoOpTabModuleProvider stands in for both tabs — just
+    // enough to satisfy TabModuleManager's minimum-tab-floor check.
+    moduleLoader: TabModuleManager(
+      appBootstrap,
+      providers: const {
+        ShellTab.calculations: NoOpTabModuleProvider(),
+        ShellTab.estimates: NoOpTabModuleProvider(),
+      },
+    ),
     featureFlagRepository: featureFlagRepository,
   );
 }
