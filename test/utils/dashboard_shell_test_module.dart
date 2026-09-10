@@ -38,6 +38,13 @@ class DashboardShellTestModule extends Module {
         featureFlagRepository: appBootstrap.featureFlagRepository,
       ),
     );
+    // The imported DashboardModule (CA-828) also binds these three. They are
+    // re-declared here on purpose: a module's own binds shadow an imported
+    // module's (auto_injector resolves the start injector before its import
+    // children), and modular_core caches the DashboardModule-imported
+    // injector for the whole process -- finishApp() does not rebuild it on
+    // Modular.destroy. Relying on the import would hand every test after the
+    // first the first test's stale singletons and bootstrap.
     i.addLazySingleton<ProjectDropdownBloc>(
       () => ProjectDropdownBloc(
         projectRepository: i(),
