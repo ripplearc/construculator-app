@@ -23,9 +23,18 @@ class TestConfig {
 
   /// Password of the seeded account used by CUJ-1 (login).
   ///
-  /// The seeder creates the `public.users` row but not the matching
-  /// Supabase Auth identity, so this password must currently be set by hand
-  /// when linking the account. Tracked as a Phase 1 gap in the strategy doc.
+  /// Two things must agree on this value, or CUJ-1 cannot pass:
+  ///
+  /// 1. `construculator-backend`'s `supabase/seeders/sample_data/100_auth_users.sql`,
+  ///    which sets the password on the GoTrue account backing
+  ///    `seeder@example.com` — the backend rejects the login otherwise.
+  /// 2. `AuthValidation.validatePassword` (8+ chars, upper, lower, number,
+  ///    special char from `!@#$&*~`) — the login form rejects the password
+  ///    client-side, before the backend is ever called, otherwise.
+  ///
+  /// `Mypass@1` satisfies (2); the seeder is set to the same literal so it
+  /// satisfies (1). Override with `--dart-define E2E_LOGIN_PASSWORD=...` to
+  /// point the suite at a differently seeded stack.
   static const String loginPassword = String.fromEnvironment(
     'E2E_LOGIN_PASSWORD',
     defaultValue: 'Mypass@1',
