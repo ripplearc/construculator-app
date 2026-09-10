@@ -177,7 +177,12 @@ the right call, or name someone else.
 
 1. Write the test under `integration_test/features/<domain>/cuj_N_<name>_test.dart`,
    following the [selector convention](E2E-CUJ-Strategy.md#selector-convention)
-   (stable `Key`s, no positional or raw-text finders).
+   (stable `Key`s, no positional or raw-text finders). `run_cuj_suite.sh`
+   discovers a CUJ only if its filename matches the glob `cuj_*_test.dart`
+   (all lowercase, exact `cuj_` prefix and `_test.dart` suffix) somewhere
+   under `integration_test/features/**`. A file that is almost right (missing
+   the prefix or suffix, or with a different case) is skipped silently with
+   no warning.
 2. Call `registerE2ETeardown()` (from `integration_test/utils/e2e_teardown.dart`)
    at the top of the file's `main()`, before `patrolTest(...)` — this is what
    clears session/PowerSync state after the CUJ runs. That's it: `run_cuj_suite.sh`

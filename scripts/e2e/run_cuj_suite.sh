@@ -43,9 +43,10 @@ rm -rf "$VIDEO_DIR"
 mkdir -p "$VIDEO_DIR"
 
 # Gradle overwrites build/app/outputs/androidTest-results/connected on every
-# `patrol test` invocation, so with one invocation per CUJ — and one per retry —
-# the next run would silently erase the previous result. Two trees are
-# snapshotted from it before that happens:
+# `patrol test` invocation that reaches its instrumented-test phase, so with
+# one invocation per CUJ — and one per retry — the next run would silently
+# erase the previous result. Two trees are snapshotted from that directory
+# before it is overwritten:
 #
 #   RESULTS_DIR (build/e2e-results/<cuj>.xml)  -- each CUJ's last attempt only.
 #     The human-facing view: the job-summary step and the cuj-e2e-junit
@@ -57,6 +58,10 @@ mkdir -p "$VIDEO_DIR"
 #     build/e2e/e2e-run.json, classifying a CUJ that was red on attempt <n> and
 #     green on a later attempt as `flaked` — the only flake signal this suite
 #     produces.
+#
+# run_cuj clears that Gradle directory at the start of each CUJ, so a CUJ that
+# never reaches its instrumented-test phase (its build died, or its env reset
+# never came back) cannot snapshot the previous CUJ's XML as its own.
 RESULTS_DIR="build/e2e-results"
 rm -rf "$RESULTS_DIR"
 mkdir -p "$RESULTS_DIR"
@@ -98,6 +103,13 @@ run_cuj() {
 
   cuj_name="$(basename "$cuj_file" .dart)"
   cuj_video_dir="$VIDEO_DIR/$cuj_name"
+
+  # A CUJ whose env reset fails both attempts, or whose build dies before the
+  # connectedAndroidTest task starts, never has `patrol test` reach the point
+  # where Gradle overwrites its shared results directory. Clearing it here
+  # stops such a CUJ from snapshotting a stale JUnit XML left by an earlier
+  # CUJ and uploading it mislabeled as its own.
+  rm -rf build/app/outputs/androidTest-results
 
   attempt=1
   cuj_success=0
@@ -156,9 +168,10 @@ run_cuj() {
   done
 
   # Each CUJ's last attempt, for the job summary and the cuj-e2e-junit
-  # artifact. Copied from the per-attempt snapshot rather than re-read from
-  # Gradle's directory so a CUJ whose retry never built still keeps its earlier
-  # attempt's result here.
+  # artifact. Copied from the per-attempt snapshot taken inside the loop rather
+  # than re-read from Gradle's directory, so a CUJ whose retry never built
+  # still keeps its earlier attempt's result here. Empty only when no attempt
+  # reached its instrumented-test phase at all.
   if [ -n "$last_snapshot" ]; then
     cp "$last_snapshot" "$RESULTS_DIR/$cuj_name.xml"
   else
