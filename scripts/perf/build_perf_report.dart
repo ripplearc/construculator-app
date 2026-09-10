@@ -138,10 +138,18 @@ Map<String, Object?> readMemorySummary(File profile) {
     return <String, Object?>{'available': false};
   }
   final Object? decoded = jsonDecode(profile.readAsStringSync());
+  // `flutter drive --profile-memory` writes the DevTools "memory" export shape:
+  // {"samples": {"version": 1, "dartDevToolsScreen": "memory", "data": [ ... ]}}.
+  // Older/other shapes put the sample list directly under `samples` or at the top
+  // level, so all three are accepted.
   final List<Object?> samples = switch (decoded) {
     final List<Object?> list => list,
     final Map<String, Object?> map => switch (map['samples']) {
       final List<Object?> list => list,
+      final Map<String, Object?> devtools => switch (devtools['data']) {
+        final List<Object?> list => list,
+        _ => const <Object?>[],
+      },
       _ => const <Object?>[],
     },
     _ => const <Object?>[],
