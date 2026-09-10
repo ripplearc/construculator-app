@@ -1473,4 +1473,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorResultPosts => 'Posts';
+
+  @override
+  String get featureUnavailableMessage =>
+      'This feature is not available in this version of the app.';
 }

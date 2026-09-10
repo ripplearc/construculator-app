@@ -17,6 +17,7 @@ import 'package:construculator/libraries/analytics/domain/repositories/feature_f
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/config/feature_availability.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -44,11 +45,14 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/dashboard_shell_test_module.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
+import '../../utils/feature_availability_scope.dart';
 
 void main() {
   late FakeCurrentProjectNotifier fakeProjectNotifier;
   late FakeSupabaseWrapper fakeSupabaseWrapper;
   late AppBootstrap appBootstrap;
+
+  enableAllFeaturesPerTest();
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -403,6 +407,25 @@ void main() {
       Modular.replaceInstance<FeatureFlagRepository>(
         FakeFeatureFlagRepository(),
       );
+
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
+
+      final trailingIcon = find.byType(CoreIconWidget).last;
+      await tester.tap(trailingIcon);
+      await tester.pump();
+
+      expect(fakeRouter.navigationHistory, isEmpty);
+    });
+
+    testWidgets(
+        'tapping the trailing button does nothing when the calculator feature '
+        'is excluded from the build', (tester) async {
+      FeatureAvailability.overrideWith(
+        (feature) => feature != Feature.calculator,
+      );
+      final fakeRouter = FakeAppRouter();
+      Modular.replaceInstance<AppRouter>(fakeRouter);
 
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
