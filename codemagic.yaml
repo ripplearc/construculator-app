@@ -404,7 +404,8 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           fvm flutter build apk \
             --flavor fishfood \
-            --dart-define=ENVIRONMENT=dev
+            --dart-define=ENVIRONMENT=dev \
+            --dart-define-from-file=config/flavors/fishfood.json
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -572,7 +573,8 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           fvm flutter build apk \
             --flavor fishfood \
-            --dart-define=ENVIRONMENT=dev
+            --dart-define=ENVIRONMENT=dev \
+            --dart-define-from-file=config/flavors/fishfood.json
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -706,7 +708,8 @@ workflows:
           fvm flutter build apk \
             --release \
             --flavor dogfood \
-            --dart-define=ENVIRONMENT=qa
+            --dart-define=ENVIRONMENT=qa \
+            --dart-define-from-file=config/flavors/dogfood.json
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
     publishing:

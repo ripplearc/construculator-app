@@ -386,7 +386,7 @@ comprehensive_check() {
   # Check if product flavors are configured
   if grep -q "productFlavors" android/app/build.gradle; then
     echo "📱 Product flavors detected. Building for 'fishfood' flavor..."
-    fvm flutter build apk --debug --flavor fishfood
+    fvm flutter build apk --debug --flavor fishfood --dart-define-from-file=config/flavors/fishfood.json
     
     # Check for APK in flavor-specific location
     APK_PATH="build/app/outputs/flutter-apk/app-fishfood-debug.apk"
