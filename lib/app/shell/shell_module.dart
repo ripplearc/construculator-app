@@ -5,11 +5,8 @@ import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
-import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
@@ -20,7 +17,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/consent_library_module.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
-import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
@@ -52,7 +48,6 @@ class ShellModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
-    EstimationLibraryModule(appBootstrap),
     ConsentLibraryModule(appBootstrap),
     DashboardModule(appBootstrap),
     AppHeaderModule(),
@@ -80,50 +75,20 @@ class ShellModule extends Module {
     i.add<AppShellBloc>(
       () => AppShellBloc(moduleLoader: i.get(), featureFlagRepository: i.get()),
     );
-    i.addLazySingleton<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(
-        projectRepository: i(),
-        authManager: i(),
-      ),
-    );
-    i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
-    );
-    i.add<RecentEstimationsBloc>(
-      () => RecentEstimationsBloc(
-        watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: i(),
-      ),
-    );
   }
 
   @override
   void routes(RouteManager r) {
     r.child(
       '/',
-      child: (_) => MultiBlocProvider(
-        providers: [
-          BlocProvider<DashboardBloc>(
-            create: (_) => Modular.get<DashboardBloc>()..add(const DashboardStarted()),
+      child: (_) => BlocProvider<AppShellBloc>(
+        create: (_) => Modular.get<AppShellBloc>(),
+        child: DashboardModule.buildDashboardScope(
+          child: AppShellPage(
+            projectUIProvider: Modular.get<ProjectUIProvider>(),
+            currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+            router: Modular.get<AppRouter>(),
           ),
-          BlocProvider<AppShellBloc>(
-            create: (_) => Modular.get<AppShellBloc>(),
-          ),
-          // Started once from AppShellPage.initState (not here: this value
-          // expression re-executes on every shell rebuild, and an unguarded
-          // re-dispatch resets the user's project selection).
-          BlocProvider<ProjectDropdownBloc>.value(
-            value: Modular.get<ProjectDropdownBloc>(),
-          ),
-          BlocProvider<RecentEstimationsBloc>(
-            create: (_) => Modular.get<RecentEstimationsBloc>()
-                ..add(const RecentEstimationsWatchStarted()),
-          ),
-        ],
-        child: AppShellPage(
-          projectUIProvider: Modular.get<ProjectUIProvider>(),
-          currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-          router: Modular.get<AppRouter>(),
         ),
       ),
       guards: _shellGuards,
