@@ -11,6 +11,7 @@ import 'package:construculator/libraries/powersync/testing/fake_powersync_databa
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -98,6 +99,10 @@ class _FakeTabModuleProvider implements TabModuleProvider {
   int loadCallCount = 0;
   @override
   Future<void> load(AppBootstrap _) async => loadCallCount++;
+
+  // Unused by these tests, which only exercise load()/isLoaded() bookkeeping.
+  @override
+  Widget buildRoot(BuildContext _) => const SizedBox.shrink();
 }
 
 class _TestShellModule extends Module {

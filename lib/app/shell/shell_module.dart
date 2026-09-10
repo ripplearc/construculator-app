@@ -124,6 +124,7 @@ class ShellModule extends Module {
           projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
           router: Modular.get<AppRouter>(),
+          tabModuleManager: Modular.get<TabModuleManager>(),
         ),
       ),
       guards: _shellGuards,
