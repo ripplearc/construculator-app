@@ -1,5 +1,4 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
