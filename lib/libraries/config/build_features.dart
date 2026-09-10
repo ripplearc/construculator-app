@@ -17,6 +17,7 @@
 /// `lib/libraries/analytics/`) — that system decides behavior at runtime
 /// per user/cohort; this one decides what gets compiled in at all.
 abstract final class BuildFeatures {
+  /// True unless a flavor manifest sets `ENABLE_CALCULATOR: false`.
   static const bool calculator = bool.fromEnvironment(
     'ENABLE_CALCULATOR',
     defaultValue: true,
