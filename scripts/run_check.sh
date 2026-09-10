@@ -89,6 +89,12 @@ pre_check() {
   # Install dependencies
   fvm flutter pub get
 
+  # CA-926: exercise the flavor/environment guard's own failure logic. The
+  # guard script only ever runs with a matching pair at its build call
+  # sites, so its mismatch/unknown branches are otherwise never tested.
+  echo "🔒 Verifying flavor/environment guard..."
+  bash scripts/ci/assert_flavor_environment_test.sh
+
   # Get base commit
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   
@@ -386,8 +392,12 @@ comprehensive_check() {
   # Check if product flavors are configured
   if grep -q "productFlavors" android/app/build.gradle; then
     echo "📱 Product flavors detected. Building for 'fishfood' flavor..."
+    # This local build has no --dart-define=ENVIRONMENT= of its own; it
+    # relies on lib/main.dart's default (devEnv), so we assert against that
+    # default explicitly rather than leaving the pairing unenforced (CA-926).
+    bash scripts/ci/assert_flavor_environment.sh fishfood dev
     fvm flutter build apk --debug --flavor fishfood
-    
+
     # Check for APK in flavor-specific location
     APK_PATH="build/app/outputs/flutter-apk/app-fishfood-debug.apk"
     if [[ -f "$APK_PATH" ]]; then
@@ -399,8 +409,11 @@ comprehensive_check() {
       exit 1
     fi
   else
-    fvm flutter build apk --flavor fishfood
-    
+    # No product flavors configured: build the default (flavorless) variant.
+    # CA-620: passing --flavor here fails the build outright, since there is
+    # no flavor for Gradle to select.
+    fvm flutter build apk
+
     # Check for default APK
     APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
     if [[ -f "$APK_PATH" ]]; then
