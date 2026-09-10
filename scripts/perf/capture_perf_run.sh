@@ -57,20 +57,29 @@ if ! fvm flutter devices --machine \
   exit 1
 fi
 
-# All capture happens in a staging directory outside the repo tree, and only the
-# finished set is copied to --output-dir at the end.
+# All capture happens in a staging directory outside the repo tree. Each phase is
+# copied into --output-dir as soon as it finishes, so a run that fails partway
+# through still leaves the phases that already completed on disk for debugging.
 #
-# The reason is the two `flutter clean`s below. This script runs two entry-point
-# targets against the same tree: lib/main.dart for the startup legs, then the
-# integration_test journey for the drive legs. flutter's build system does not
-# rebuild when only the --target changes, so it will run whichever program it
-# compiled last unless the tree is cleaned between the phases. A clean deletes
-# build/, which is where --output-dir usually lives, so the artifacts cannot be
-# captured there directly.
+# The staging directory is needed because of the two `flutter clean`s below. This
+# script runs two entry-point targets against the same tree: lib/main.dart for
+# the startup legs, then the integration_test journey for the drive legs.
+# flutter's build system does not rebuild when only the --target changes, so it
+# will run whichever program it compiled last unless the tree is cleaned between
+# the phases. A clean deletes build/, which is where --output-dir usually lives,
+# so the artifacts cannot be captured there directly.
 OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK"/{cold,warm,jank,memory}
+
+# Copies one finished phase's staged output into --output-dir. Called right after
+# each phase so a run that fails later still leaves the completed phases behind.
+publish_phase() {
+  local name="$1"
+  mkdir -p "$OUTPUT_DIR/$name"
+  cp -a "$WORK/$name/." "$OUTPUT_DIR/$name/"
+}
 
 # Runs the app once with startup tracing, writing start_up_info.json into $1.
 #
@@ -149,21 +158,25 @@ for ((i = 1; i <= ITERATIONS; i++)); do
   echo "❄️  Cold start $i/$ITERATIONS..."
   capture_startup "$WORK/cold/run-$i" --purge-persistent-cache
 done
+publish_phase cold
 
 for ((i = 1; i <= ITERATIONS; i++)); do
   echo "♨️  Warm start $i/$ITERATIONS..."
   capture_startup "$WORK/warm/run-$i"
 done
+publish_phase warm
 
 echo "📊 Capturing jank timeline for journey '$JOURNEY'..."
 drive_journey "$WORK/jank" --no-dds
+publish_phase jank
 
 echo "🧠 Capturing memory profile..."
 drive_journey "$WORK/memory" \
   --dart-define=PERF_TRACE_TIMELINE=false \
   --profile-memory="$WORK/memory/memory_profile.json"
+publish_phase memory
 
-cat > "$WORK/meta.json" <<EOF
+cat > "$OUTPUT_DIR/meta.json" <<EOF
 {
   "journey": "$JOURNEY",
   "device_id": "$DEVICE_ID",
@@ -175,6 +188,7 @@ cat > "$WORK/meta.json" <<EOF
 }
 EOF
 
-mkdir -p "$OUTPUT_DIR"
+# Backstop for a fully successful run. Every phase above has already been copied
+# to $OUTPUT_DIR by publish_phase, so this normally copies nothing new.
 cp -a "$WORK"/. "$OUTPUT_DIR"/
 echo "✅ Raw artifacts written to $OUTPUT_DIR"
