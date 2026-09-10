@@ -242,8 +242,12 @@ Runs on a schedule against the base branch for ongoing health monitoring:
 CI validates iOS builds separately:
 
 - Installs iOS dependencies (`pod install`).
-- Pre-caches iOS artifacts and builds iOS debug app with `--no-codesign`.
+- Pre-caches iOS artifacts and builds the iOS debug app with `--no-codesign --flavor fishfood --dart-define=ENVIRONMENT=dev`.
 - Exports iOS debug artifact (`.app`).
+
+Building every iOS flavor in CI is tracked separately in CA-934. `--no-codesign`
+means no provisioning profile or certificate is selected, so there is nothing to
+resolve per flavor here; that applies once a signed iOS workflow exists.
 
 MacOS developers should always verify iOS builds pass locally before creating PR changes.
 
