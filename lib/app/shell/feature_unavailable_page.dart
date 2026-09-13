@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Defensive fallback shown when navigation reaches a feature that this build
 /// does not include.
@@ -18,7 +19,7 @@ class FeatureUnavailablePage extends StatelessWidget {
       backgroundColor: context.colorTheme.pageBackground,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(CoreSpacing.space6),
           child: Text(
             context.l10n.featureUnavailableMessage,
             textAlign: TextAlign.center,
