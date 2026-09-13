@@ -7,6 +7,8 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/config/build_features.dart';
+import 'package:construculator/libraries/config/feature_availability.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -164,7 +166,10 @@ class _AppShellPageState extends State<AppShellPage> {
                 ],
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
-                onActionButtonPressed: state.calculatorEnabled
+                onActionButtonPressed:
+                    BuildFeatures.calculator &&
+                        FeatureAvailability.isEnabled(Feature.calculator) &&
+                        state.calculatorEnabled
                     ? () => widget.router.pushNamed(calculatorBaseRoute)
                     : null,
               ),
