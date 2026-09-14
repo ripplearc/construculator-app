@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "suite": "cuj_v1",
+  "captured_at": "2026-09-14T08:46:14Z",
+  "commit": "34c5a4c",
+  "attempt_count": 2,
+  "duration_ms": 11549.0,
+  "total_duration_ms": 42764.0,
+  "totals": {
+    "cases": 2,
+    "ran": 2,
+    "passed": 1,
+    "flaked": 0,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.5,
+    "flake_rate": 0.0
+  },
+  "cases": [
+    {
+      "name": "runDartTest[features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard]",
+      "classname": "com.cms.cm_sample.MainActivityTest",
+      "status": "failed",
+      "duration_ms": 8341.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "duration_ms": 9138.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following TestFailure was thrown running a test:\nExpected the success sheet but got a toast: Invalid credentials /\nContinue\n\nWhen the exception was thrown, this was the stack:\n#0      fail (package:matcher/src/expect/expect.dart:187:31)\n#1      tapSuccessSheetOrFailFast (file:///home/runner/work/const…"
+        },
+        {
+          "attempt": 2,
+          "status": "failed",
+          "duration_ms": 8341.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following TestFailure was thrown running a test:\nExpected the success sheet but got a toast: Invalid credentials /\nContinue\n\nWhen the exception was thrown, this was the stack:\n#0      fail (package:matcher/src/expect/expect.dart:187:31)\n#1      tapSuccessSheetOrFailFast (file:///home/runner/work/const…"
+        }
+      ]
+    },
+    {
+      "name": "runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]",
+      "classname": "com.cms.cm_sample.MainActivityTest",
+      "status": "passed",
+      "duration_ms": 16454.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "passed",
+          "duration_ms": 16454.0
+        }
+      ]
+    }
+  ]
+}
