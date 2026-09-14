@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trend Dashboard</title>
+<style>:root {
+  color-scheme: light;
+  --surface: #fcfcfb; --plane: #f9f9f7;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --series: #2a78d6;
+  --status-good: #0ca30c; --status-warning: #fab219; --status-critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19; --plane: #0d0d0d;
+    --text: #ffffff; --text-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19; --plane: #0d0d0d;
+  --text: #ffffff; --text-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --series: #3987e5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 32px 24px 64px;
+  background: var(--plane); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+header, section, footer { max-width: 1200px; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h2 { font-size: 1.2rem; margin: 40px 0 4px; }
+h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-2); margin: 24px 0 12px; }
+nav { display: flex; gap: 16px; margin-top: 12px; }
+nav a { color: var(--series); text-decoration: none; font-weight: 600; }
+nav a:hover, nav a:focus { text-decoration: underline; }
+.muted { color: var(--muted); }
+.grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.card {
+  margin: 0; padding: 12px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.label { font-weight: 600; font-size: 0.9rem; }
+.latest { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.unit-inline { font-size: 0.75rem; color: var(--muted); }
+.chart { width: 100%; height: auto; display: block; margin-top: 8px; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.line { fill: none; stroke: var(--series); stroke-width: 2; stroke-linejoin: round; }
+.marker { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
+.baseline { stroke: var(--axis); stroke-width: 2; stroke-dasharray: 5 4; }
+.tick { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.unit { fill: var(--muted); font-size: 10px; }
+.empty {
+  margin: 0; padding: 24px; text-align: center; color: var(--muted);
+  background: var(--surface); border: 1px dashed var(--border); border-radius: 8px;
+}
+.scroll { overflow-x: auto; margin-top: 16px; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--surface); }
+caption { text-align: left; color: var(--muted); font-size: 0.85rem; padding: 8px 0; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+th { font-size: 0.8rem; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.03em; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.badge { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dot-good { background: var(--status-good); }
+.dot-warning { background: var(--status-warning); }
+.dot-critical { background: var(--status-critical); }
+.dot-muted { background: var(--muted); }
+.sparkline { display: block; width: 72px; height: 18px; }
+footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--border); }
+footer p { max-width: 70ch; color: var(--text-2); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<header>
+<h1>Trend Dashboard</h1>
+<p class="muted">Lab measurement and CUJ suite results over time. Generated 2026-09-14T10:21:38.602355Z.</p>
+<nav><a href="#system-health">System health</a><a href="#e2e">E2E suite</a></nav>
+</header>
+<section id="system-health">
+<h2>System health</h2>
+<p class="empty">No performance runs have been recorded yet.</p>
+</section>
+<section id="e2e">
+<h2>E2E suite</h2>
+<h3>Suite: cuj_v1</h3><div class="grid"><figure class="card"><figcaption><span class="label">Pass rate</span><span class="latest">50 <span class="unit-inline">%</span></span></figcaption><svg class="chart" viewBox="0 0 360 168" role="img" preserveAspectRatio="xMidYMid meet"><line x1="48" y1="138.0" x2="346" y2="138.0" class="gridline"/><text x="42" y="141.5" class="tick" text-anchor="end">44</text><line x1="48" y1="77.0" x2="346" y2="77.0" class="gridline"/><text x="42" y="80.5" class="tick" text-anchor="end">50</text><line x1="48" y1="16.0" x2="346" y2="16.0" class="gridline"/><text x="42" y="19.5" class="tick" text-anchor="end">56</text><text x="48" y="10" class="unit">%</text><circle cx="197.0" cy="77.0" r="4" class="marker"><title>2026-09-14 · 50 % · 34c5a4c</title></circle><text x="48" y="158" class="tick">2026-09-14</text></svg></figure><figure class="card"><figcaption><span class="label">Flake rate</span><span class="latest">0 <span class="unit-inline">%</span></span></figcaption><svg class="chart" viewBox="0 0 360 168" role="img" preserveAspectRatio="xMidYMid meet"><line x1="48" y1="138.0" x2="346" y2="138.0" class="gridline"/><text x="42" y="141.5" class="tick" text-anchor="end">-1</text><line x1="48" y1="77.0" x2="346" y2="77.0" class="gridline"/><text x="42" y="80.5" class="tick" text-anchor="end">0</text><line x1="48" y1="16.0" x2="346" y2="16.0" class="gridline"/><text x="42" y="19.5" class="tick" text-anchor="end">1</text><text x="48" y="10" class="unit">%</text><circle cx="197.0" cy="77.0" r="4" class="marker"><title>2026-09-14 · 0 % · 34c5a4c</title></circle><text x="48" y="158" class="tick">2026-09-14</text></svg></figure><figure class="card"><figcaption><span class="label">Run duration</span><span class="latest">11.5 <span class="unit-inline">s</span></span></figcaption><svg class="chart" viewBox="0 0 360 168" role="img" preserveAspectRatio="xMidYMid meet"><line x1="48" y1="138.0" x2="346" y2="138.0" class="gridline"/><text x="42" y="141.5" class="tick" text-anchor="end">9.4</text><line x1="48" y1="77.0" x2="346" y2="77.0" class="gridline"/><text x="42" y="80.5" class="tick" text-anchor="end">11.5</text><line x1="48" y1="16.0" x2="346" y2="16.0" class="gridline"/><text x="42" y="19.5" class="tick" text-anchor="end">13.7</text><text x="48" y="10" class="unit">s</text><circle cx="197.0" cy="77.0" r="4" class="marker"><title>2026-09-14 · 11.5 s · 34c5a4c</title></circle><text x="48" y="158" class="tick">2026-09-14</text></svg></figure></div><div class="scroll"><table><caption>Per-CUJ results across every recorded run</caption><thead><tr><th>CUJ</th><th class="num">Runs</th><th class="num">Failures</th><th class="num">Flakes</th><th>Last run</th><th>Failures over time</th></tr></thead><tbody><tr><td>runDartTest[features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard]</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td><span class="badge"><span class="dot dot-critical"></span>failed</span></td><td><svg class="sparkline" viewBox="0 0 72 18" role="img" aria-label="Failures per run, oldest first"><rect x="0.0" y="0.0" width="70.0" height="18.0" rx="1" fill="var(--status-critical)"/></svg></td></tr><tr><td>runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td><span class="badge"><span class="dot dot-good"></span>passed</span></td><td><svg class="sparkline" viewBox="0 0 72 18" role="img" aria-label="Failures per run, oldest first"><rect x="0.0" y="17.0" width="70.0" height="1.0" rx="1" fill="var(--grid)"/></svg></td></tr></tbody></table></div>
+</section>
+<footer>
+<h2>Reading this page</h2>
+<p><strong>Pass rate counts a flaked case as a pass</strong>, because that is what CI reports when a retry rescues a run. Flake rate is what that number hides, so read the two together: a pass rate near 100% with a rising flake rate is a suite losing trustworthiness, not a healthy one.</p>
+<p><strong>Baselines are not recorded yet.</strong> A chart shows a dashed baseline only once one exists in the store for that journey; until then no threshold is drawn, rather than a guessed one.</p>
+<p><strong>TTID has no producer yet.</strong> The performance harness records startup as cold and warm start and emits no separate TTID field, so that chart stays empty until it does.</p>
+<p class="muted">Sources: the perf-data and e2e-data branches. Each run is archived there; this page is a rendering of them, not the record itself.</p>
+</footer>
+</body>
+</html>
