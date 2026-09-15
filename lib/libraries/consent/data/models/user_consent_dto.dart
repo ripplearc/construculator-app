@@ -117,8 +117,21 @@ class UserConsentDto extends Equatable {
     final unreadable = switch (null) {
       _ when consentType == null => DatabaseConstants.consentTypeColumn,
       _ when action == null => DatabaseConstants.actionColumn,
-      // Zero mirrors the backend's check (version > 0); CA-963 §2.
-      _ when version == null || version <= 0 => DatabaseConstants.versionColumn,
+      // Negative, not zero. This table's own check is
+      // `CHECK (version >= 0)`; the `> 0` check belongs to the sibling
+      // consent_versions table, which is what the previous comment here cited
+      // and is a genuinely stricter rule for a genuinely different table.
+      //
+      // Zero is a legitimate value in this one: a withdrawal records the
+      // version it revokes, and `ConsentRepositoryImpl.recordWithdrawal`
+      // writes `_effectiveAcceptedVersion(current) ?? 0` when there is
+      // nothing on file to revoke. Rejecting it here turns revoking consent
+      // into an unreadable row, which the repository resolves to a *status*
+      // rather than an error -- so the gate would go quiet instead of
+      // reporting a problem. See the backend's
+      // `supabase/schemas/consent/user_consents/README.md`, "Why version >= 0
+      // and not > 0".
+      _ when version == null || version < 0 => DatabaseConstants.versionColumn,
       _ when id is! String => DatabaseConstants.idColumn,
       _ when userId is! String => DatabaseConstants.userIdColumn,
       // Not audit metadata, unlike the sibling DTO's publishedAt: this orders

@@ -78,11 +78,18 @@ void main() {
         );
       });
 
-      test('rejects version zero', () {
-        expect(
-          () => UserConsentDto.fromJson(buildJson(version: 0)),
-          throwsA(isA<FormatException>()),
+      // Version zero is what recordWithdrawal writes when there is nothing on
+      // file to revoke, and `user_consents` allows it (CHECK version >= 0).
+      // Rejecting it made revoking consent produce a row this parser could not
+      // read, which the repository resolves to a status rather than an error --
+      // the gate would go quiet instead of reporting a problem.
+      test('reads a withdrawal recorded against version zero', () {
+        final dto = UserConsentDto.fromJson(
+          buildJson(version: 0, action: 'withdrawn'),
         );
+
+        expect(dto.version, 0);
+        expect(dto.action, ConsentAction.withdrawn);
       });
 
       test('rejects a negative version', () {
