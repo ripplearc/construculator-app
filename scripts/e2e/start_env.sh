@@ -3,10 +3,10 @@
 # Starts the E2E backend: Supabase (API, Postgres, auth, Mailpit) plus the
 # self-hosted PowerSync stack that attaches to Supabase's network.
 #
-# This starts whatever Supabase project E2E_BACKEND_DIR's config.toml names
-# (see lib.sh — genuinely the E2E project only if that checkout is dedicated
-# to it). Starting is harmless either way; see reset_env.sh and
-# stop_env.sh --purge for the operations that destroy that project's data.
+# This starts whatever Supabase project E2E_BACKEND_DIR's config.toml names.
+# Starting is non-destructive, so unlike reset_env.sh and
+# stop_env.sh --purge, it does not go through e2e_require_dedicated_backend
+# (see lib.sh) — there is nothing here to guard.
 #
 # Usage: scripts/e2e/start_env.sh
 #
