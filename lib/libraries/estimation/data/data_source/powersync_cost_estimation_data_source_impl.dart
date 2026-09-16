@@ -59,7 +59,7 @@ class PowerSyncCostEstimationDataSourceImpl
   @override
   Stream<CostEstimateDto?> watchEstimationById({required String id}) {
     return _watchWithSyncStream(
-      sql: 'SELECT * FROM $_table WHERE id = ? LIMIT 1',
+      sql: _buildSelectByIdSql(),
       parameters: [id],
       mapRows: (rows) =>
           rows.isEmpty ? null : CostEstimateDto.fromRow(rows.first),
@@ -175,6 +175,9 @@ class PowerSyncCostEstimationDataSourceImpl
     return 'SELECT * FROM $_table WHERE ${DatabaseConstants.projectIdColumn} = ? '
         'ORDER BY $orderColumn $direction$limitClause';
   }
+
+  String _buildSelectByIdSql() =>
+      'SELECT * FROM $_table WHERE ${DatabaseConstants.idColumn} = ? LIMIT 1';
 
   List<Object?> _selectParameters(String projectId, int? limit) => [
     projectId,
