@@ -102,7 +102,7 @@ The backend seeds one account that E2E sign-in flows use:
 | Field | Value |
 |-------|-------|
 | Email | `seeder@example.com` |
-| Password | `e2e-local-only-password` |
+| Password | `Mypass@1` |
 
 Both the `auth.users` credential and the `public.users` profile are seeded, and
 `public.users.credential_id` matches the credential's id. Before this was
