@@ -93,6 +93,8 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 
    Do not prescribe test file layout here; follow the relevant testing skill's conventions for test locations.
 
+   This section is input to `/write-tests`, not a spec it must match line-for-line — `write-tests` owns the final test structure and may add scenarios this plan didn't anticipate.
+
 8. **Apply Digestible PR** (digestible PRs) → Load `.claude/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
 
