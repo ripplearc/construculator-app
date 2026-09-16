@@ -22,6 +22,8 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
+e2e_require_backend
+
 purge=false
 for arg in "$@"; do
   case "$arg" in

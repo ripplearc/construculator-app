@@ -15,6 +15,11 @@
 # which every destructive action runs through CA-1007
 # (https://ripplearc.youtrack.cloud/issue/CA-1007).
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+if [ -n "${E2E_BACKEND_DIR:-}" ]; then
+  E2E_BACKEND_DIR_EXPLICIT=1
+else
+  E2E_BACKEND_DIR_EXPLICIT=0
+fi
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
 # Mirrors the project_id in the backend's supabase/config.toml, kept in sync
@@ -94,23 +99,30 @@ e2e_ensure_powersync_env() {
   }
 }
 
-# Refuses to proceed unless E2E_BACKEND_DIR resolves to a checkout whose own
-# supabase/config.toml declares project_id = "$E2E_DB_PROJECT" — the identity
-# CA-991 gave a genuinely dedicated E2E checkout. E2E_BACKEND_DIR's
-# sibling-directory default has no way to tell a dedicated checkout from a
-# developer's ordinary one; this check does, by reading the one file that
-# actually says which project a checkout is. CA-1007
+# Refuses to proceed unless E2E_BACKEND_DIR was explicitly set by the caller.
+# Since CA-991, project_id = "$E2E_DB_PROJECT" is baked into the tracked
+# supabase/config.toml on the backend repo's master branch, so every clone —
+# including a developer's ordinary checkout — carries it; it cannot tell a
+# dedicated E2E checkout apart from one a developer uses for everyday backend
+# work. E2E_BACKEND_DIR's sibling-directory default lands on exactly that
+# ordinary checkout, so requiring an explicit path is what actually enforces
+# separation. The project_id comparison below still runs as a secondary
+# check, since it catches pre-CA-991 checkouts. CA-1007
 # (https://ripplearc.youtrack.cloud/issue/CA-1007).
 #
 # Set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway against a checkout that
-# fails this check — an explicit, opt-in acknowledgment that the action
+# fails either check — an explicit, opt-in acknowledgment that the action
 # below will act on that checkout's own data, not a dedicated E2E copy.
 e2e_require_dedicated_backend() {
   [ "${E2E_ALLOW_SHARED_BACKEND:-}" = "1" ] && return 0
+  [ "$E2E_BACKEND_DIR_EXPLICIT" = "1" ] ||
+    e2e_die "E2E_BACKEND_DIR was not set, so this fell back to the sibling directory '$E2E_BACKEND_DIR'. Every clone of construculator-backend declares project_id = '$E2E_DB_PROJECT', so that value cannot prove this is a checkout dedicated to the E2E harness rather than your ordinary dev one. Set E2E_BACKEND_DIR explicitly to the checkout you want destroyed, or set E2E_ALLOW_SHARED_BACKEND=1 to accept the risk."
   local config="$E2E_BACKEND_DIR/supabase/config.toml"
-  # A missing checkout or config.toml is e2e_require_backend's error to
-  # raise, with a clearer message; nothing to check here in that case.
-  [ -f "$config" ] || return 0
+  # No config.toml means this function cannot establish what project the
+  # action would hit. stop_env.sh does not run e2e_require_backend, so there
+  # is no earlier check to defer to — refuse rather than guess.
+  [ -r "$config" ] ||
+    e2e_die "E2E_BACKEND_DIR ('$E2E_BACKEND_DIR') has no readable supabase/config.toml, so there is no way to tell which project this would destroy. Point E2E_BACKEND_DIR at a backend checkout, or set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway."
   local project_id
   project_id="$(sed -n 's/^project_id[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$config" | head -n1)"
   [ "$project_id" = "$E2E_DB_PROJECT" ] && return 0
