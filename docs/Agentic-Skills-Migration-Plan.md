@@ -380,7 +380,7 @@ The workflow is only as good as the briefs behind it. Treat skills as living cod
 When you spot the **same rule violated across multiple PRs**, don't just leave a comment — fix the skill so it doesn't happen again:
 
 1. **Create a YouTrack ticket** describing the repeated pattern and which rule it violates
-2. **Tag the relevant skill file** in the ticket (`.claude/skills/rules/XX-rule.md` or the `SKILL.md` that should have caught it)
+2. **Tag the relevant skill file** in the ticket (`.claude/rules/XX-rule.md` or the `SKILL.md` that should have caught it)
 3. **Open a PR** updating the skill with clearer guidance or a concrete example
 4. **Announce it in the group** so everyone knows what changed
 
