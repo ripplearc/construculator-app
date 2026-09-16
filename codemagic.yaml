@@ -398,6 +398,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/generate_env_file.sh
           bash scripts/ci/generate_env_file.sh
+          bash scripts/ci/resolve_build_features.sh fishfood
 
       - name: Build Android Debug
         script: |
@@ -405,7 +406,7 @@ workflows:
           fvm flutter build apk \
             --flavor fishfood \
             --dart-define=ENVIRONMENT=dev \
-            --dart-define-from-file=config/flavors/fishfood.json
+            --dart-define-from-file=build/generated/flavors/fishfood.json
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -567,6 +568,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/generate_env_file.sh
           bash scripts/ci/generate_env_file.sh
+          bash scripts/ci/resolve_build_features.sh fishfood
 
       - name: Build Android Debug
         script: |
@@ -574,7 +576,7 @@ workflows:
           fvm flutter build apk \
             --flavor fishfood \
             --dart-define=ENVIRONMENT=dev \
-            --dart-define-from-file=config/flavors/fishfood.json
+            --dart-define-from-file=build/generated/flavors/fishfood.json
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -702,6 +704,7 @@ workflows:
           sed -i 's/\r//' scripts/ci/generate_env_file.sh
           chmod +x scripts/ci/generate_env_file.sh
           bash -x scripts/ci/generate_env_file.sh
+          bash scripts/ci/resolve_build_features.sh dogfood
       - name: Build Android APK
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
@@ -709,7 +712,7 @@ workflows:
             --release \
             --flavor dogfood \
             --dart-define=ENVIRONMENT=qa \
-            --dart-define-from-file=config/flavors/dogfood.json
+            --dart-define-from-file=build/generated/flavors/dogfood.json
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
     publishing:
