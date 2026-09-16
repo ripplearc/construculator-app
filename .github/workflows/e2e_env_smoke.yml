@@ -38,7 +38,7 @@ jobs:
             -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
             -H "apikey: $ANON_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"email":"seeder@example.com","password":"e2e-local-only-password"}')
+            -d '{"email":"seeder@example.com","password":"Mypass@1"}')
           if [ "$status" != "200" ]; then
             echo "::error::Sign-in as the seeded user returned HTTP $status"
             cat response.json
