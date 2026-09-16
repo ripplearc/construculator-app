@@ -42,7 +42,7 @@ Agent's first action when assigned a story. Output primes `plan-implementation` 
    - Unit tests: always
    - Widget tests: if presentation touched
    - Golden tests: if layout-sensitive UI
-   - Mutation tests: if 4+ conditional branches (per Mutation Testing: `skills/rules/13-mutation-testing.md`)
+   - Mutation tests: if 4+ conditional branches (per Mutation Testing: `.claude/rules/13-mutation-testing.md`)
    - Accessibility tests: if critical flow
 
 5. **Flag ambiguities**
@@ -76,4 +76,4 @@ Tests: Unit + Widget + Golden
 
 ## References
 
-- Next skill: `skills/plan-implementation/SKILL.md`
+- Next skill: `.claude/skills/plan-implementation/SKILL.md`

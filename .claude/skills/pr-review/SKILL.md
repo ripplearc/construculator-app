@@ -2,17 +2,17 @@
 name: pr-review
 description: |
   Modular PR review for Flutter/Dart changes. Auto-detects which rules apply to
-  each changed file, applies the full rule set in skills/rules/ (referenced by
+  each changed file, applies the full rule set in .claude/rules/ (referenced by
   name), and returns a copy-paste-ready markdown PR description + review table.
 
   Use when a user asks to review a PR, review a branch, compare branches, or
   check naming, CoreUI, testing, streams, localization, accessibility, logging,
   or UI/business separation.
 
-  Trigger phrases: "review my PR", "review branch/X to branch/Y",
+  Trigger phrases: "review this PR", "review my PR", "review feat/X to main",
   "check my branch", "code review", "analyze my changes".
 disable-model-invocation: false
-allowed-tools: Bash Read Grep Write
+allowed-tools: Bash, Read, Grep, Write
 ---
 
 # PR Review Skill
@@ -23,7 +23,7 @@ paste into a PR (see [Output](#output)).
 
 ## Rules
 
-The full rule set lives in `skills/rules/`. Each rule file owns its detection
+The full rule set lives in `.claude/rules/`. Each rule file owns its detection
 patterns (its `Detective` section), severity levels, and fix guidance — load a
 rule only when it's routed to a changed file.
 
@@ -83,12 +83,12 @@ On missing/invalid input, return an error object (see [Errors](#errors)).
    `Naming & Abstraction` / `State Derivation`→`UI / Business Separation` mapping);
    record the rest in `rules_skipped` with reason `"User specified rules: [...]"`.
 
-4. **Apply** each routed rule: `cat` its module from `skills/rules/`, read the
+4. **Apply** each routed rule: `cat` its module from `.claude/rules/`, read the
    file (`git show "$PR_BRANCH:path"`), get diff context via
    `scripts/generate_diff.sh`, and use the rule's own detection patterns. Record
    each violation as an issue: `file`, `line`, `snippet` (3 lines context),
    `severity`, `suggested_fix`, and `references` (the rule module + any relevant
-   `skills/references/*.md`).
+   `.claude/references/*.md`).
 
 5. **Compile** statistics (counts by severity and rule) and build the output
    object below.

@@ -71,8 +71,8 @@ Create `lib/libraries/{sdk}/_{sdk}_module.dart` extending `Module`. In `binds(In
 
 ## References
 
-- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md`
-- **Test Double Pattern:** `skills/rules/03-test-double-pattern.md`
+- **Naming & Abstraction:** `.claude/rules/02-naming-conventions.md`
+- **Test Double Pattern:** `.claude/rules/03-test-double-pattern.md`
 - **Sentry Logging:** Sentry logging at boundaries
 - **Clean Architecture:** Domain depends on wrappers, not SDKs
 - **Example:** `lib/libraries/supabase/supabase_wrapper.dart`
