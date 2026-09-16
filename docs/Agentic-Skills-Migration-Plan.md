@@ -53,7 +53,7 @@ Skills are not advisory tools for humans. They are **construction briefs** presc
 ├── code-presentation/        # Stage 3: Coding — UI layer
 ├── code-domain/              # Stage 3: Coding — Domain layer
 ├── code-data/                # Stage 3: Coding — Data layer (Supabase, non-synced)
-├── code-data-powersync/      # Stage 3: Coding — Data layer (PowerSync, offline-first)
+├── code-data-powersync/      # Stage 3: Coding — Data layer (PowerSync, offline-first, gated)
 ├── code-integration/         # Stage 3: Coding — 3rd party (gated)
 ├── write-tests/              # Stage 4: Testing — unit + widget (always)
 ├── write-tests-golden/       # Stage 4: Testing — screenshot (gated)
@@ -80,11 +80,13 @@ flowchart TD
     P["② /plan-implementation"]
     P --> D & DA & PS & UI & INT
 
-    D["/code-domain"]
-    DA["/code-data"]
-    PS["/code-data-powersync"]
-    UI["/code-presentation"]
-    INT["/code-integration ⚠️"]
+    subgraph S3["③ Coding"]
+        D["/code-domain"]
+        DA["/code-data"]
+        PS["/code-data-powersync ⚠️"]
+        UI["/code-presentation"]
+        INT["/code-integration ⚠️"]
+    end
 
     D & DA & PS & UI & INT --> WT
 
@@ -114,7 +116,7 @@ Run each skill by typing its slash command. Arguments (like a ticket id) go afte
 | `plan-implementation` | `/plan-implementation` | Always |
 | `code-domain` | `/code-domain` | When story touches domain |
 | `code-data` | `/code-data` | Data layer — **non-synced** Supabase tables |
-| `code-data-powersync` | `/code-data-powersync` | Data layer — **PowerSync-synced** (offline-first) tables |
+| `code-data-powersync` ⚠️ | `/code-data-powersync` | Data layer — **PowerSync-synced** (offline-first) tables. ⚠️ Not yet merged into `.claude/skills/` — see Known Gaps |
 | `code-presentation` | `/code-presentation` | When story touches UI |
 | `code-integration` ⚠️ | `/code-integration` | Gated — new external SDK |
 | `write-tests` | `/write-tests` | Always |
@@ -396,6 +398,5 @@ Findings from the last skill audit. Pick one up when you touch that area.
 - **`/code-data-powersync` is not yet in `.claude/skills/` with the others.** The skill exists but lives outside the `.claude/skills/` folder — move it there so it loads and lists alongside the rest of the workflow.
 - **Gate questions live only in prose.** For the three gated skills, consider having the skill's *first step* explicitly restate its gate and refuse (with a one-line reason) when it isn't met — so a mis-fired `/write-tests-mutation` on a 1-branch use case self-aborts instead of running.
 - **No skill owns "wire up DI / Modular registration."** Right now it's split implicitly across `code-data` and `code-integration`. Watch whether DI mistakes recur in review; if so, that's a candidate verb.
-- **`plan-implementation` output path (`plans/CA-XXX-plan.md`) is convention, not enforced.** Confirm the skill actually writes there and that the folder is git-ignored or committed intentionally — a lost plan breaks the new-session recovery story.
 
 When you close one of these, delete its bullet in the same PR so the backlog reflects reality.
