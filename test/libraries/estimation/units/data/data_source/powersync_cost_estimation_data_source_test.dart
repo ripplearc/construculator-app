@@ -107,6 +107,8 @@ void main() {
       });
 
       test('builds sort, direction and limit into the watch query', () async {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
+
         final subscription = dataSource
             .watchEstimations(
               projectId: projectId,
@@ -117,7 +119,7 @@ void main() {
             .listen((_) {});
         addTearDown(subscription.cancel);
 
-        await pumpEventQueue();
+        await fakeWrapper.watchInvokedSignal!.future;
 
         expect(
           fakeWrapper.watchCalls.single.sql,
@@ -130,10 +132,12 @@ void main() {
       test(
         'releases the sync stream when the subscription is cancelled',
         () async {
+          fakeWrapper.watchInvokedSignal = Completer<void>();
+
           final subscription = dataSource
               .watchEstimations(projectId: projectId)
               .listen((_) {});
-          await pumpEventQueue();
+          await fakeWrapper.watchInvokedSignal!.future;
 
           expect(fakeWrapper.syncStreamCalls, [syncStreamName]);
           expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
@@ -148,18 +152,20 @@ void main() {
         'does not start watch when cancelled while syncStream is still pending',
         () async {
           fakeWrapper.syncStreamActivationGate = Completer<void>();
+          fakeWrapper.syncStreamInvokedSignal = Completer<void>();
 
           final subscription = dataSource
               .watchEstimations(projectId: projectId)
               .listen((_) {});
-          await pumpEventQueue();
+          await fakeWrapper.syncStreamInvokedSignal!.future;
 
           expect(fakeWrapper.syncStreamCalls, [syncStreamName]);
           expect(fakeWrapper.watchCalls, isEmpty);
 
+          fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
           await subscription.cancel();
           fakeWrapper.syncStreamActivationGate!.complete();
-          await pumpEventQueue();
+          await fakeWrapper.syncStreamUnsubscribeSignal!.future;
 
           expect(fakeWrapper.watchCalls, isEmpty);
           expect(fakeWrapper.syncStreamUnsubscribes, [syncStreamName]);
@@ -178,13 +184,14 @@ void main() {
 
       test('forwards watch errors to the stream', () async {
         final error = Exception('watch failed');
+        fakeWrapper.watchInvokedSignal = Completer<void>();
 
         final emission = expectLater(
           dataSource.watchEstimations(projectId: projectId),
           emitsError(same(error)),
         );
 
-        await pumpEventQueue();
+        await fakeWrapper.watchInvokedSignal!.future;
         fakeWrapper.emitWatchError(defaultWatchSql, error);
 
         await emission;
