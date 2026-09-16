@@ -169,7 +169,7 @@ class CostEstimateDto extends Equatable {
   factory CostEstimateDto.fromRow(Map<String, dynamic> row) {
     return CostEstimateDto.fromJson({
       ...row,
-      'is_locked': (row['is_locked'] as int? ?? 0) != 0,
+      'is_locked': (row['is_locked'] as int) != 0,
     });
   }
 

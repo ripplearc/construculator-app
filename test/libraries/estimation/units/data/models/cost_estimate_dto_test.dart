@@ -328,14 +328,12 @@ void main() {
         expect(dto.isLocked, isFalse);
       });
 
-      test('defaults missing is_locked to false', () {
+      test('throws when is_locked is missing', () {
         final row = Map<String, dynamic>.from(
           EstimationTestDataMapFactory.createFakeEstimationData(),
         )..remove('is_locked');
 
-        final dto = CostEstimateDto.fromRow(row);
-
-        expect(dto.isLocked, isFalse);
+        expect(() => CostEstimateDto.fromRow(row), throwsA(isA<TypeError>()));
       });
 
       test('maps the remaining columns identically to fromJson', () {
