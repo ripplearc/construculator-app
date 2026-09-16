@@ -42,14 +42,58 @@ class PowerSyncCostEstimationDataSourceImpl
       ascending: ascending,
       limited: limit != null,
     );
-    final parameters = _selectParameters(projectId, limit);
+    return _watchWithSyncStream(
+      sql: sql,
+      parameters: _selectParameters(projectId, limit),
+      mapRows: (rows) => rows.map(CostEstimateDto.fromRow).toList(),
+      // `watch` fires on any change to `cost_estimates`, so an unrelated
+      // project's row would otherwise rebuild an identical list. Lists compare
+      // by identity under plain `==`, so this needs element-wise equality.
+      dedupeWith: listEquals,
+      logMessage:
+          'Activating sync stream "$_syncStreamName" and watching estimates '
+          'for project: $projectId',
+    );
+  }
 
-    // Lazy activation tied to the subscription lifecycle: the on-demand stream
-    // is only synced while someone is actually watching it, and is released on
-    // cancel. The watch() stream remains the single source of truth.
-    return Stream<List<CostEstimateDto>>.multi((controller) async {
+  @override
+  Stream<CostEstimateDto?> watchEstimationById({required String id}) {
+    return _watchWithSyncStream(
+      sql: _buildSelectByIdSql(),
+      parameters: [id],
+      mapRows: (rows) =>
+          rows.isEmpty ? null : CostEstimateDto.fromRow(rows.first),
+      // `watch` fires on any change to `cost_estimates`, so an unrelated
+      // estimate would otherwise rebuild this row into an identical DTO.
+      // CostEstimateDto is Equatable, so plain value equality is enough.
+      dedupeWith: (previous, next) => previous == next,
+      logMessage:
+          'Activating sync stream "$_syncStreamName" and watching estimate: $id',
+    );
+  }
+
+  // Watches [sql] as the single source of truth while keeping the on-demand
+  // `user_cost_estimates` sync stream active only for the subscription's
+  // lifetime.
+  //
+  // Lazy activation tied to the subscription lifecycle: the on-demand stream is
+  // only synced while someone is actually watching it, and is released on
+  // cancel. [mapRows] projects each raw result set into the emitted shape T (a
+  // list for the collection watch, a nullable DTO for the by-id watch).
+  //
+  // [dedupeWith], when given, drops emissions equal to the previous one —
+  // callers supply the right equality for their shape T (a plain `==` isn't
+  // enough for T = List<...>, which compares by identity).
+  Stream<T> _watchWithSyncStream<T>({
+    required String sql,
+    required List<Object?> parameters,
+    required T Function(List<Map<String, dynamic>> rows) mapRows,
+    required String logMessage,
+    bool Function(T previous, T next)? dedupeWith,
+  }) {
+    return Stream<T>.multi((controller) async {
       SyncStreamHandle? handle;
-      StreamSubscription<List<CostEstimateDto>>? subscription;
+      StreamSubscription<T>? subscription;
       var listenerCancelled = false;
 
       void releaseHandle() {
@@ -65,10 +109,7 @@ class PowerSyncCostEstimationDataSourceImpl
         releaseHandle();
       };
 
-      _logger.debug(
-        'Activating sync stream "$_syncStreamName" and watching estimates '
-        'for project: $projectId',
-      );
+      _logger.debug(logMessage);
 
       try {
         handle = await _wrapper.syncStream(_syncStreamName);
@@ -83,11 +124,9 @@ class PowerSyncCostEstimationDataSourceImpl
         return;
       }
 
-      subscription = _wrapper
-          .watch(sql, parameters: parameters)
-          .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
-          .distinct(listEquals)
-          .listen(
+      final mapped = _wrapper.watch(sql, parameters: parameters).map(mapRows);
+      subscription =
+          (dedupeWith != null ? mapped.distinct(dedupeWith) : mapped).listen(
             controller.add,
             onError: controller.addError,
             onDone: controller.close,
@@ -136,6 +175,9 @@ class PowerSyncCostEstimationDataSourceImpl
     return 'SELECT * FROM $_table WHERE ${DatabaseConstants.projectIdColumn} = ? '
         'ORDER BY $orderColumn $direction$limitClause';
   }
+
+  String _buildSelectByIdSql() =>
+      'SELECT * FROM $_table WHERE ${DatabaseConstants.idColumn} = ? LIMIT 1';
 
   List<Object?> _selectParameters(String projectId, int? limit) => [
     projectId,
