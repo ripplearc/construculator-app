@@ -72,6 +72,24 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// (set back to `null`) or [reset] is called.
   Object? syncStreamError;
 
+  /// Optional gate that delays [syncStream] completion until completed by the
+  /// test. Useful for exercising cancellation races while activation is still
+  /// in flight.
+  Completer<void>? syncStreamActivationGate;
+
+  /// Optional deterministic signal, completed the next time [syncStream] is
+  /// invoked — an alternative to `pumpEventQueue()` for tests that need to
+  /// wait for activation without assuming how many queue drains that takes.
+  Completer<void>? syncStreamInvokedSignal;
+
+  /// Optional deterministic signal, completed the next time [watch] is
+  /// invoked — same rationale as [syncStreamInvokedSignal].
+  Completer<void>? watchInvokedSignal;
+
+  /// Optional deterministic signal, completed the next time a [syncStream]
+  /// handle is unsubscribed — same rationale as [syncStreamInvokedSignal].
+  Completer<void>? syncStreamUnsubscribeSignal;
+
   /// Scripts [rows] as the result of [getAll] for [sql].
   void stubGetAll(String sql, List<Map<String, dynamic>> rows) {
     _getAllResults[sql] = rows;
@@ -115,6 +133,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     Duration throttle = kDefaultWatchThrottle,
   }) {
     watchCalls.add((sql: sql, parameters: parameters));
+    final invoked = watchInvokedSignal;
+    if (invoked != null && !invoked.isCompleted) {
+      invoked.complete();
+    }
     final controller = _watchControllers.putIfAbsent(
       sql,
       () => StreamController<List<Map<String, dynamic>>>.broadcast(),
@@ -161,11 +183,22 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   @override
   Future<SyncStreamHandle> syncStream(String name) async {
     syncStreamCalls.add(name);
+    final invoked = syncStreamInvokedSignal;
+    if (invoked != null && !invoked.isCompleted) {
+      invoked.complete();
+    }
     final error = syncStreamError;
     if (error != null) {
       throw error;
     }
-    return _FakeSyncStreamHandle(() => syncStreamUnsubscribes.add(name));
+    await syncStreamActivationGate?.future;
+    return _FakeSyncStreamHandle(() {
+      syncStreamUnsubscribes.add(name);
+      final unsubscribed = syncStreamUnsubscribeSignal;
+      if (unsubscribed != null && !unsubscribed.isCompleted) {
+        unsubscribed.complete();
+      }
+    });
   }
 
   /// Clears recorded calls, scripted results, errors, and watch seeds, and
@@ -184,6 +217,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     executeError = null;
     writeTransactionError = null;
     syncStreamError = null;
+    syncStreamActivationGate = null;
+    syncStreamInvokedSignal = null;
+    watchInvokedSignal = null;
+    syncStreamUnsubscribeSignal = null;
     _closeWatchControllers();
   }
 
