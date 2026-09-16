@@ -19,7 +19,7 @@ Skills are not advisory tools for humans. They are **construction briefs** presc
 ## Skill Architecture
 
 ```
-skills/
+.claude/skills/
 ├── read-ticket/              # Stage 1: Intake
 ├── plan-implementation/      # Stage 2: Planning
 ├── code-presentation/        # Stage 3: Coding — UI layer
@@ -30,7 +30,12 @@ skills/
 ├── write-tests-golden/       # Stage 4: Testing — screenshot (gated)
 ├── write-tests-mutation/     # Stage 4: Testing — mutation (gated)
 └── pr-review/                # Stage 5: Review (existing)
+
+.claude/rules/                # Shared rule modules loaded by pr-review, plan-implementation, etc.
+.claude/references/           # Shared reference docs (e.g. CoreUI API, architecture layers)
 ```
+
+`.claude/skills/` is the directory Claude Code discovers automatically — no install step needed on a fresh clone. `rules/` and `references/` sit next to it rather than inside it: discovery globs `.claude/skills/*/SKILL.md`, and neither directory owns a `SKILL.md` of its own.
 
 ---
 

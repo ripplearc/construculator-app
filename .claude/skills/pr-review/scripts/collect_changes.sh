@@ -37,7 +37,7 @@
 #
 # Example Usage:
 #   echo '{"pr_branch": "feat/auth", "base_branch": "main"}' | \
-#     bash skills/pr-review/scripts/collect_changes.sh
+#     bash .claude/skills/pr-review/scripts/collect_changes.sh
 #
 # Workflow Position: Step 2 (Collect Changed Files)
 #   Used by: PR Review Skill to gather list of files that changed in the PR

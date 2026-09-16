@@ -70,13 +70,13 @@ Each PR should have a **single, clear purpose** and **pass CI checks independent
 # 1. Fast check on changed files (run locally after pushing)
 ./scripts/run_check.sh --pre --target main
 
-# 2. Full validation (run inside Docker — required for golden test consistency)
-docker exec -it construculator-app-flutter-1 bash
+# 2. Full validation (run inside Docker — required for golden test consistency;
+#    container name is <your-directory-name>-flutter-1, see README.md)
+docker exec -it $(docker container ps --format '{{.Names}}' | grep flutter) bash
 ./scripts/run_check.sh --comp --target main
 ```
 
-- `--pre`: analysis + lint + changed tests + coverage threshold
-- `--comp`: full analysis + all tests + goldens + mutation (if XML changed) + Android build
+For a **stacked** PR, pass `--target <parent-branch>` instead of `--target main` — `run_check.sh` rebases the target branch to validate against (`check_rebase_conflicts` → `git rebase --autostash origin/$TARGET_BRANCH`), so `--target main` on a stacked child measures a diff that includes the parent's own changes and detaches the stack. See `docs/Testing/CI-Scripts.md` for the full flag reference (`--pre`, `--comp`, `--all`, iOS build).
 
 Every split PR must pass both before merge — an intermediate PR that breaks CI is not a valid split point.
 
