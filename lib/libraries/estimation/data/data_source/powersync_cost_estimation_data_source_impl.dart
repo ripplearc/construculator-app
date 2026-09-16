@@ -127,8 +127,8 @@ class PowerSyncCostEstimationDataSourceImpl
       }
 
       final mapped = _wrapper.watch(sql, parameters: parameters).map(mapRows);
-      subscription = (dedupeWith != null ? mapped.distinct(dedupeWith) : mapped)
-          .listen(
+      subscription =
+          (dedupeWith != null ? mapped.distinct(dedupeWith) : mapped).listen(
             controller.add,
             onError: controller.addError,
             onDone: controller.close,

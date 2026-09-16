@@ -34,6 +34,9 @@ abstract class PowerSyncCostEstimationDataSource {
   /// on-demand `user_cost_estimates` sync stream on the first subscription and
   /// releases it when that subscription is cancelled, and remains the single
   /// source of truth — callers must not patch the result by hand after a write.
+  ///
+  /// Consecutive emissions that are equal are suppressed, so the stream fires
+  /// only when the row's contents actually change.
   Stream<CostEstimateDto?> watchEstimationById({required String id});
 
   /// Reads a one-shot snapshot of the cost estimates for [projectId] from local
