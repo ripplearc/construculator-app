@@ -30,6 +30,13 @@ abstract class PowerSyncCostEstimationDataSource {
   /// optionally capped to [limit] rows (null means no cap).
   ///
   /// Does not activate the sync stream; use [watchEstimations] for live reads.
+  ///
+  /// `cost_estimates` is an on-demand synced table: rows only exist locally
+  /// while some subscription (e.g. a concurrent [watchEstimations]) holds the
+  /// sync stream active. Calling this with no such subscription active may
+  /// return an empty or stale snapshot rather than an error — emptiness is not
+  /// permission. Valid today only as a read-back alongside an active
+  /// [watchEstimations] subscription.
   Future<List<CostEstimateDto>> getEstimations({
     required String projectId,
     EstimationSortOption sortBy = EstimationSortOption.createdAt,

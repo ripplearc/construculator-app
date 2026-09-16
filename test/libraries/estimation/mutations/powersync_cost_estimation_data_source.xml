@@ -35,9 +35,9 @@
             <mutation text="limited ? '' : ' LIMIT ?'"/>
         </regex>
 
-        <!-- RULE 4: In _selectParameters, invert the limit-binding guard -->
-        <regex pattern="if \(limit != null\) limit" dotAll="true" id="ds.params.invert_limit_guard">
-            <mutation text="if (limit == null) limit"/>
+        <!-- RULE 4: In _selectParameters, drop the limit-binding guard -->
+        <regex pattern="\?limit,\n  \];" dotAll="true" id="ds.params.drop_limit_guard">
+            <mutation text="limit,\n  ];"/>
         </regex>
 
         <!-- RULE 5: In watchEstimations, drop the row->DTO mapping -->

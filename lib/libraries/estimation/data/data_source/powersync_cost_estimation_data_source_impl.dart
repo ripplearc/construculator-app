@@ -5,6 +5,8 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:flutter/foundation.dart';
 
 /// PowerSync-backed [PowerSyncCostEstimationDataSource].
 ///
@@ -20,15 +22,13 @@ class PowerSyncCostEstimationDataSourceImpl
   static final _logger = AppLogger().tag('PowerSyncCostEstimationDataSource');
 
   // Local SQLite table backing cost estimates (see `schema.dart`).
-  static const _table = 'cost_estimates';
+  static const _table = DatabaseConstants.costEstimatesTable;
 
   // On-demand sync stream gating which estimates sync down; membership and the
   // `get_cost_estimations` permission are derived from the JWT server-side.
   static const _syncStreamName = 'user_cost_estimates';
 
-  PowerSyncCostEstimationDataSourceImpl({
-    required PowerSyncDatabaseWrapper wrapper,
-  }) : _wrapper = wrapper;
+  PowerSyncCostEstimationDataSourceImpl({required this._wrapper});
 
   @override
   Stream<List<CostEstimateDto>> watchEstimations({
@@ -52,7 +52,7 @@ class PowerSyncCostEstimationDataSourceImpl
       StreamSubscription<List<CostEstimateDto>>? subscription;
       var listenerCancelled = false;
 
-      Future<void> releaseHandle() async {
+      void releaseHandle() {
         final currentHandle = handle;
         handle = null;
         currentHandle?.unsubscribe();
@@ -62,7 +62,7 @@ class PowerSyncCostEstimationDataSourceImpl
         listenerCancelled = true;
         await subscription?.cancel();
         subscription = null;
-        await releaseHandle();
+        releaseHandle();
       };
 
       _logger.debug(
@@ -79,13 +79,14 @@ class PowerSyncCostEstimationDataSourceImpl
       }
 
       if (listenerCancelled || !controller.hasListener) {
-        await releaseHandle();
+        releaseHandle();
         return;
       }
 
       subscription = _wrapper
           .watch(sql, parameters: parameters)
           .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
+          .distinct(listEquals)
           .listen(
             controller.add,
             onError: controller.addError,
@@ -95,7 +96,7 @@ class PowerSyncCostEstimationDataSourceImpl
       if (listenerCancelled || !controller.hasListener) {
         await subscription?.cancel();
         subscription = null;
-        await releaseHandle();
+        releaseHandle();
       }
     });
   }
@@ -107,6 +108,9 @@ class PowerSyncCostEstimationDataSourceImpl
     bool ascending = false,
     int? limit,
   }) async {
+    _logger.debug(
+      'Reading one-shot snapshot of estimates for project: $projectId',
+    );
     final sql = _buildSelectSql(
       sortBy: sortBy,
       ascending: ascending,
@@ -125,16 +129,16 @@ class PowerSyncCostEstimationDataSourceImpl
     required bool limited,
   }) {
     final orderColumn = sortBy == EstimationSortOption.updatedAt
-        ? 'updated_at'
-        : 'created_at';
+        ? DatabaseConstants.updatedAtColumn
+        : DatabaseConstants.createdAtColumn;
     final direction = ascending ? 'ASC' : 'DESC';
     final limitClause = limited ? ' LIMIT ?' : '';
-    return 'SELECT * FROM $_table WHERE project_id = ? '
+    return 'SELECT * FROM $_table WHERE ${DatabaseConstants.projectIdColumn} = ? '
         'ORDER BY $orderColumn $direction$limitClause';
   }
 
   List<Object?> _selectParameters(String projectId, int? limit) => [
     projectId,
-    if (limit != null) limit,
+    ?limit,
   ];
 }
