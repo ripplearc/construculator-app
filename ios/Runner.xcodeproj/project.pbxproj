@@ -9,23 +9,14 @@
 /* Begin PBXBuildFile section */
 		0AD8A9F80944F847DDD2BDBD /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CF91559FC7136C5770F31145 /* Pods_Runner.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
-		26A94700DC6BE6876B32F7BA /* Flutter/prodProfile.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 405ED73FA485603C984DE8E1 /* Flutter/prodProfile.xcconfig */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		3CDE79164D8C30AFCD15AD83 /* Flutter/prodDebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2046868EFF98804799588751 /* Flutter/prodDebug.xcconfig */; };
-		4668E6378525E8D83F162456 /* Flutter/dogfoodRelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 77C4D27CA627EBBF35B2C60F /* Flutter/dogfoodRelease.xcconfig */; };
-		5438BAA04C79994674FF9E44 /* Flutter/prodRelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = EC2BC940BA716213A0A2B604 /* Flutter/prodRelease.xcconfig */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		89A0C48BDAC7EFC50B373C29 /* Pods_Runner_RunnerUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A7D6089B9B74034EAA44C217 /* Pods_Runner_RunnerUITests.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		A2399B0ACF5915278252D01A /* Flutter/fishfoodProfile.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 5012A730CDC5B169F8BB26C9 /* Flutter/fishfoodProfile.xcconfig */; };
-		C092D41C01979CF36D425CAE /* Flutter/dogfoodDebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 198322364C5C73B31C7A4928 /* Flutter/dogfoodDebug.xcconfig */; };
-		C8E769B63E549D422BEA7498 /* Flutter/fishfoodRelease.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9E392C0FCDEC06B1F8A6F635 /* Flutter/fishfoodRelease.xcconfig */; };
-		CD66ABB635C24A9A36AC5C9D /* Flutter/dogfoodProfile.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = FCF5CE70F4B8205A95DE79CD /* Flutter/dogfoodProfile.xcconfig */; };
 		D460CD73F0AD0A07F2A50BA2 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E34E78AF04F061467E54D4F /* Pods_RunnerTests.framework */; };
-		F8E62B9807F94AC13EFFE94E /* Flutter/fishfoodDebug.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 2159FD33D8035AA49A83FFA7 /* Flutter/fishfoodDebug.xcconfig */; };
 		FEBA1D712FF5F02300861368 /* RunnerUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = FEBA1D702FF5F02300861368 /* RunnerUITests.m */; };
 /* End PBXBuildFile section */
 
@@ -352,15 +343,6 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				F8E62B9807F94AC13EFFE94E /* Flutter/fishfoodDebug.xcconfig in Resources */,
-				A2399B0ACF5915278252D01A /* Flutter/fishfoodProfile.xcconfig in Resources */,
-				C8E769B63E549D422BEA7498 /* Flutter/fishfoodRelease.xcconfig in Resources */,
-				C092D41C01979CF36D425CAE /* Flutter/dogfoodDebug.xcconfig in Resources */,
-				CD66ABB635C24A9A36AC5C9D /* Flutter/dogfoodProfile.xcconfig in Resources */,
-				4668E6378525E8D83F162456 /* Flutter/dogfoodRelease.xcconfig in Resources */,
-				3CDE79164D8C30AFCD15AD83 /* Flutter/prodDebug.xcconfig in Resources */,
-				26A94700DC6BE6876B32F7BA /* Flutter/prodProfile.xcconfig in Resources */,
-				5438BAA04C79994674FF9E44 /* Flutter/prodRelease.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
