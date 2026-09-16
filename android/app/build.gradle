@@ -19,7 +19,7 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 android {
-    namespace "com.cms.cm_sample"
+    namespace "com.ripplearc.construculator"
     compileSdk flutter.compileSdkVersion
     ndkVersion "28.2.13676358"
     
@@ -35,7 +35,7 @@ android {
     }
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.cms.cm_sample"
+        applicationId "com.ripplearc.construculator"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion flutter.minSdkVersion
