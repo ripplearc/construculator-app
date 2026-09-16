@@ -8,15 +8,16 @@ in both places.
 
 > **`scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge` refuse to
 > run against a checkout that isn't a dedicated E2E stack.**
-> `supabase/config.toml` declares its own `project_id`
-> (`construculator-backend-e2e`), and `powersync/compose.yaml` attaches to
-> that project's Docker network by name, so a *separate* checkout gets its
-> own containers, volumes and network. `E2E_BACKEND_DIR` still defaults to a
-> sibling directory literally named `construculator-backend`, which may or
-> may not be that dedicated checkout — but before either destructive command
-> acts, `e2e_require_dedicated_backend` (in `lib.sh`) checks the resolved
-> checkout's actual `project_id` and stops with an error if it isn't
-> `construculator-backend-e2e`. If you need both a dedicated E2E stack and
+> Since every clone of `construculator-backend` declares the same
+> `project_id` (`construculator-backend-e2e`) in its tracked
+> `supabase/config.toml`, that value alone cannot tell a dedicated E2E
+> checkout apart from a developer's ordinary one — so before either
+> destructive command acts, `e2e_require_dedicated_backend` (in `lib.sh`)
+> first requires that `E2E_BACKEND_DIR` was set explicitly, rather than left
+> to default to the sibling directory literally named
+> `construculator-backend`. It then also checks the resolved checkout's
+> `project_id` as a secondary safeguard, which still catches checkouts from
+> before that value existed. If you need both a dedicated E2E stack and
 > ordinary local dev, use two checkouts and point `E2E_BACKEND_DIR` at the
 > E2E-only one; if you genuinely want to point it at a shared checkout
 > anyway, set `E2E_ALLOW_SHARED_BACKEND=1` to acknowledge that
@@ -35,7 +36,7 @@ The seeded fixtures and `reset_env.sh` give that known state.
 | Requirement | Notes |
 |-------------|-------|
 | Docker | Must be running. Both stacks are containers. |
-| `construculator-backend` checkout, dedicated to E2E | Owns `supabase/` and `powersync/`. Expected as a sibling of this repository, or point `E2E_BACKEND_DIR` at it — either way it must be a checkout whose `project_id` is `construculator-backend-e2e`, not the one you run `npx supabase start` from for ordinary dev. |
+| `construculator-backend` checkout, dedicated to E2E | Owns `supabase/` and `powersync/`. For a destructive command, set `E2E_BACKEND_DIR` explicitly to this checkout — not the one you run `npx supabase start` from for ordinary dev; see the note above. |
 | Supabase CLI | Taken from `PATH`, else the backend's `node_modules`, else `npx`. |
 
 ## Quick start
@@ -133,9 +134,9 @@ registration journey can therefore be run repeatedly from a known state.
 That same thoroughness is why the reset is gated: it clears the `auth` and
 `public` schemas of the E2E project's database, and only the sample fixtures
 come back. Confirm at the prompt, or pass `--yes` / set `E2E_ASSUME_YES=1` when
-scripting it — and the target has to actually be the dedicated E2E project
-(or `E2E_ALLOW_SHARED_BACKEND=1` has to be set) before either check runs, per
-the note above.
+scripting it — and `E2E_BACKEND_DIR` has to have been set explicitly to the
+dedicated E2E checkout (or `E2E_ALLOW_SHARED_BACKEND=1` has to be set) before
+either destructive command runs, per the note above.
 
 ## CI
 
@@ -144,10 +145,10 @@ a runner. `.github/workflows/e2e_env_smoke.yml` exercises it and asserts that th
 seeded user can actually sign in.
 
 A runner starts with no Supabase project of its own, so the stack is created
-from nothing and discarded with the runner — on top of the `project_id`
-isolation described above, this gives CI a doubly clean slate. Destructive
-steps need no prompt there; set `E2E_ASSUME_YES=1` if a workflow calls the
-reset script directly.
+from nothing and discarded with the runner — on top of the checks described
+above (CI sets `E2E_BACKEND_DIR` explicitly), this gives CI a doubly clean
+slate. Destructive steps need no prompt there; set `E2E_ASSUME_YES=1` if a
+workflow calls the reset script directly.
 
 ```yaml
 - uses: ./.github/actions/e2e-env
