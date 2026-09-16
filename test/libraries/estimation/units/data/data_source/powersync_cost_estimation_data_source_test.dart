@@ -249,6 +249,7 @@ void main() {
       });
 
       test('re-emits null when the watched row is deleted', () async {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
         fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
 
         final emission = expectLater(
@@ -256,13 +257,14 @@ void main() {
           emitsInOrder([isA<CostEstimateDto>(), isNull]),
         );
 
-        await pumpEventQueue();
+        await fakeWrapper.watchInvokedSignal!.future;
         fakeWrapper.emitWatch(byIdSql, const []);
 
         await emission;
       });
 
       test('emits the row once it syncs down after an empty result', () async {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
         fakeWrapper.emitWatch(byIdSql, const []);
 
         final emission = expectLater(
@@ -270,42 +272,50 @@ void main() {
           emitsInOrder([isNull, isA<CostEstimateDto>()]),
         );
 
-        await pumpEventQueue();
+        await fakeWrapper.watchInvokedSignal!.future;
         fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
 
         await emission;
       });
 
       test('drops emissions that rebuild an identical DTO', () async {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
         fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
 
-        final emitted = <CostEstimateDto?>[];
-        final subscription = dataSource
-            .watchEstimationById(id: estimateIdDefault)
-            .listen(emitted.add);
-        addTearDown(subscription.cancel);
+        final emission = expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emitsInOrder([
+            isA<CostEstimateDto>().having(
+              (dto) => dto.isLocked,
+              'isLocked',
+              isFalse,
+            ),
+            isA<CostEstimateDto>().having(
+              (dto) => dto.isLocked,
+              'isLocked',
+              isTrue,
+            ),
+          ]),
+        );
 
-        await pumpEventQueue();
-        // An unrelated change to `cost_estimates` re-fires the same row.
+        await fakeWrapper.watchInvokedSignal!.future;
+        // An unrelated change to `cost_estimates` re-fires the same row — must
+        // not produce a second, duplicate emission.
         fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
-        await pumpEventQueue();
-
-        expect(emitted, hasLength(1));
-
         fakeWrapper.emitWatch(byIdSql, [sqliteRow(locked: true)]);
-        await pumpEventQueue();
 
-        expect(emitted, hasLength(2));
-        expect(emitted.last!.isLocked, isTrue);
+        await emission;
       });
 
       test(
         'releases the sync stream when the subscription is cancelled',
         () async {
+          fakeWrapper.watchInvokedSignal = Completer<void>();
+
           final subscription = dataSource
               .watchEstimationById(id: estimateIdDefault)
               .listen((_) {});
-          await pumpEventQueue();
+          await fakeWrapper.watchInvokedSignal!.future;
 
           expect(fakeWrapper.syncStreamCalls, [syncStreamName]);
           expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
@@ -328,13 +338,14 @@ void main() {
 
       test('forwards watch errors to the stream', () async {
         final error = Exception('watch failed');
+        fakeWrapper.watchInvokedSignal = Completer<void>();
 
         final emission = expectLater(
           dataSource.watchEstimationById(id: estimateIdDefault),
           emitsError(same(error)),
         );
 
-        await pumpEventQueue();
+        await fakeWrapper.watchInvokedSignal!.future;
         fakeWrapper.emitWatchError(byIdSql, error);
 
         await emission;

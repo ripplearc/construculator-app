@@ -50,12 +50,14 @@
             <mutation text="return &lt;CostEstimateDto&gt;[];"/>
         </regex>
 
-        <!-- RULE 7: In watchEstimations onCancel, fail to release the sync stream -->
+        <!-- RULE 7: In _watchWithSyncStream onCancel, fail to release the sync
+             stream (guards both watchEstimations and watchEstimationById) -->
         <regex pattern="currentHandle\?\.unsubscribe\(\);" dotAll="true" id="ds.watch.skip_stream_release">
             <mutation text="// currentHandle?.unsubscribe();"/>
         </regex>
 
-        <!-- RULE 8: In watchEstimations, swallow the sync-stream activation error -->
+        <!-- RULE 8: In _watchWithSyncStream, swallow the sync-stream activation
+             error (guards both watchEstimations and watchEstimationById) -->
         <regex pattern="controller\.addError\(error, stackTrace\);" dotAll="true" id="ds.watch.swallow_activation_error">
             <mutation text="// controller.addError(error, stackTrace);"/>
         </regex>
@@ -69,6 +71,12 @@
         <!-- RULE 10: In watchEstimationById, drop the row->DTO mapping -->
         <regex pattern=": CostEstimateDto\.fromRow\(rows\.first\)," dotAll="true" id="ds.watchById.skip_row_mapping">
             <mutation text=": null,"/>
+        </regex>
+
+        <!-- RULE 11: In _watchWithSyncStream, always skip dedupe even when
+             dedupeWith is supplied -->
+        <regex pattern="\(dedupeWith != null \? mapped\.distinct\(dedupeWith\) : mapped\)" dotAll="true" id="ds.watch.skip_dedupe">
+            <mutation text="mapped"/>
         </regex>
     </rules>
 
