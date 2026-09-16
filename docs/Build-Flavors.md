@@ -3,11 +3,11 @@
 The app has three Android build flavors on the `env` dimension: `fishfood`,
 `dogfood`, and `prod`. They differ only by `applicationId`:
 
-| Flavor   | applicationId                 |
-|----------|-------------------------------|
-| fishfood | `com.cms.cm_sample.fishfood`  |
-| dogfood  | `com.cms.cm_sample.dogfood`   |
-| prod     | `com.cms.cm_sample`           |
+| Flavor   | applicationId                            |
+|----------|-------------------------------------------|
+| fishfood | `com.ripplearc.construculator.fishfood`  |
+| dogfood  | `com.ripplearc.construculator.dogfood`   |
+| prod     | `com.ripplearc.construculator`           |
 
 ## How the flavors are defined
 

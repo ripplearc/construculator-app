@@ -88,17 +88,17 @@ flavorizr:
       app:
         name: "Construculator"
       android:
-        applicationId: "com.cms.cm_sample.fishfood"
+        applicationId: "com.ripplearc.construculator.fishfood"
     dogfood:
       app:
         name: "Construculator"
       android:
-        applicationId: "com.cms.cm_sample.dogfood"
+        applicationId: "com.ripplearc.construculator.dogfood"
     prod:
       app:
         name: "Construculator"
       android:
-        applicationId: "com.cms.cm_sample"
+        applicationId: "com.ripplearc.construculator"
 
 flutter:
   uses-material-design: true
