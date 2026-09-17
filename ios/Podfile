@@ -11,6 +11,15 @@ project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
   'Release' => :release,
+  'Debug-fishfood' => :debug,
+  'Profile-fishfood' => :release,
+  'Release-fishfood' => :release,
+  'Debug-dogfood' => :debug,
+  'Profile-dogfood' => :release,
+  'Release-dogfood' => :release,
+  'Debug-prod' => :debug,
+  'Profile-prod' => :release,
+  'Release-prod' => :release,
 }
 
 def flutter_root

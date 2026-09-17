@@ -69,13 +69,17 @@ patrol:
   app_name: Construculator
   test_directory: integration_test
   android:
-    package_name: com.cms.cm_sample.fishfood
+    package_name: com.ripplearc.construculator.fishfood
   ios:
-    bundle_id: com.example.construculatorAppArchitecture
+    bundle_id: com.ripplearc.construculator.fishfood
 
-# Android flavor definitions consumed by flutter_flavorizr. iOS and macOS blocks
-# are intentionally absent here and will be added when iOS flavors land (CA-1054).
-# Generated file: android/app/flavorizr.gradle. See docs/Build-Flavors.md.
+# Flavor definitions consumed by flutter_flavorizr. macOS is not a target and has
+# no block. Generated files: android/app/flavorizr.gradle, ios/Flutter/<flavor><Mode>.xcconfig,
+# ios/Runner.xcodeproj build configs and schemes. See docs/Build-Flavors.md.
+#
+# BUNDLE_NAME is pinned to "construculator" per flavor so the generated xcconfig
+# keeps the current CFBundleName. app.name drives CFBundleDisplayName, which stays
+# "Construculator".
 flavorizr:
   app:
     android:
@@ -83,22 +87,41 @@ flavorizr:
   instructions:
     - android:flavorizrGradle
     - android:buildGradle
+    - ios:xcconfig
+    - ios:buildTargets
+    - ios:schema
+    - ios:plist
   flavors:
     fishfood:
       app:
         name: "Construculator"
       android:
         applicationId: "com.ripplearc.construculator.fishfood"
+      ios:
+        bundleId: "com.ripplearc.construculator.fishfood"
+        variables:
+          BUNDLE_NAME:
+            value: "construculator"
     dogfood:
       app:
         name: "Construculator"
       android:
         applicationId: "com.ripplearc.construculator.dogfood"
+      ios:
+        bundleId: "com.ripplearc.construculator.dogfood"
+        variables:
+          BUNDLE_NAME:
+            value: "construculator"
     prod:
       app:
         name: "Construculator"
       android:
         applicationId: "com.ripplearc.construculator"
+      ios:
+        bundleId: "com.ripplearc.construculator"
+        variables:
+          BUNDLE_NAME:
+            value: "construculator"
 
 flutter:
   uses-material-design: true
