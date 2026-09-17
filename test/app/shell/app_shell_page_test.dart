@@ -1,9 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
+import 'package:construculator/features/calculations/calculations_tab_provider.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
@@ -177,6 +179,32 @@ void main() {
 
       expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
     });
+  });
+
+  group('Tab Module Fallback', () {
+    testWidgets(
+      'renders an empty tab instead of crashing when no provider is '
+      'registered for it',
+      (tester) async {
+        Modular.replaceInstance<TabModuleManager>(
+          // ignore: no_direct_instantiation
+          TabModuleManager(
+            appBootstrap,
+            providers: const {ShellTab.calculations: CalculationsTabProvider()},
+          ),
+        );
+
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CalculationsPage), findsOneWidget);
+
+        await tapTabByLabel(tester, l10n().estimatesTab);
+
+        expect(find.byType(CostEstimationLandingPage), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('Tab State Preservation', () {
