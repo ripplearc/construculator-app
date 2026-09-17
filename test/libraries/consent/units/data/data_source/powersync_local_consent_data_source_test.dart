@@ -171,16 +171,22 @@ void main() {
       DateTime? effectiveFrom,
       ConsentType forType = type,
       Object? rawEffectiveFrom,
-    }) => {
-      'id': 'version-$version',
-      'consent_type': forType.toJson(),
-      'version': version,
-      'document_url': 'https://example.com/terms/v$version',
-      'effective_from':
-          rawEffectiveFrom ??
-          (effectiveFrom ?? DateTime.utc(2026, 1, 1)).toIso8601String(),
-      'published_at': '2026-01-01T00:00:00.000Z',
-    };
+    }) {
+      final resolvedEffectiveFrom = effectiveFrom == null
+          ? DateTime.utc(2026, 1, 1)
+          : effectiveFrom;
+      final effectiveFromValue = rawEffectiveFrom == null
+          ? resolvedEffectiveFrom.toIso8601String()
+          : rawEffectiveFrom;
+      return {
+        'id': 'version-$version',
+        'consent_type': forType.toJson(),
+        'version': version,
+        'document_url': 'https://example.com/terms/v$version',
+        'effective_from': effectiveFromValue,
+        'published_at': '2026-01-01T00:00:00.000Z',
+      };
+    }
 
     Map<String, Object?> consentRow({
       required String id,
@@ -190,16 +196,21 @@ void main() {
       int version = 1,
       ConsentAction action = ConsentAction.accepted,
       Object? rawRecordedAt,
-    }) => {
-      'id': id,
-      'user_id': forUserId,
-      'consent_type': forType.toJson(),
-      'version': version,
-      'action': action.toJson(),
-      'recorded_at': rawRecordedAt ?? recordedAt.toIso8601String(),
-      'app_version': null,
-      'platform': null,
-    };
+    }) {
+      final recordedAtValue = rawRecordedAt == null
+          ? recordedAt.toIso8601String()
+          : rawRecordedAt;
+      return {
+        'id': id,
+        'user_id': forUserId,
+        'consent_type': forType.toJson(),
+        'version': version,
+        'action': action.toJson(),
+        'recorded_at': recordedAtValue,
+        'app_version': null,
+        'platform': null,
+      };
+    }
 
     group('fetchPublishedVersion', () {
       test('is null when nothing has synced yet', () async {
