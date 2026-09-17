@@ -139,11 +139,19 @@ dart run mutation_test <changed-configs> --no-builtin
 
 - Android:
    - Detects product flavors from `android/app/build.gradle`.
-   - **TODO (CA-620)**: The script currently uses `--flavor fishfood` even when flavors are absent, which is incorrect. This should be fixed to omit the `--flavor` flag when no product flavors are configured.
-   - Current behavior (needs fix):
-     - When flavors are present: builds with `--debug --flavor fishfood`, expects `app-fishfood-debug.apk`.
-     - When flavors are absent: builds with `--flavor fishfood` (incorrect), expects `app-debug.apk`.
+   - When flavors are present: asserts `fishfood`/`dev` via `scripts/ci/assert_flavor_environment.sh` (see below), then builds with `--debug --flavor fishfood`, expects `app-fishfood-debug.apk`.
+   - When flavors are absent: builds with no `--flavor` flag at all (CA-620 — passing one fails the build, since there's no flavor for Gradle to select), expects `app-debug.apk`.
    - Verifies expected APK output path based on flavor configuration.
+
+### Flavor/environment assertion (CA-926)
+
+`--flavor` and `--dart-define=ENVIRONMENT=` are two independent build inputs that must agree, or the build ships a binary branded for one environment while pointed at another's backend. `scripts/ci/assert_flavor_environment.sh <flavor> <environment>` fails fast with a specific message on a mismatched pair or an unrecognized flavor/environment value.
+
+The expected pairing (`fishfood`↔`dev`, `dogfood`↔`qa`, `prod`↔`prod`) mirrors the display-alias mapping in `lib/libraries/config/env_constants.dart` (`devAlias`/`qaAlias`/`prodAlias`). That mapping is Dart and cannot be imported into a bash script, so this is a deliberate bash-side mirror — keep both in sync if a flavor or environment is ever added or renamed.
+
+Called from:
+- `codemagic.yaml`: `comprehensive-check`, `periodic-check`, and `dogfood-release`, immediately before their `fvm flutter build apk` step.
+- `scripts/run_check.sh`'s `comprehensive_check()`, in the flavors-present branch, asserting `fishfood`/`dev` — that build has no `--dart-define=ENVIRONMENT=` of its own and relies on `lib/main.dart`'s default (`devEnv`), so the assertion checks against that default explicitly rather than leaving it unenforced. The flavors-absent branch has nothing to assert (no flavor is built there).
 - iOS (Darwin only):
    - Pre-caches iOS artifacts.
    - Runs CocoaPods install (`ios/pod install`).
@@ -221,7 +229,7 @@ CI mirrors this full validation:
 - Runs all unit/widget tests with comprehensive coverage validation.
 - Runs screenshot (golden) tests (if present).
 - Runs mutation tests when mutation XML files changed from base.
-- Builds Android debug APK (`--flavor fishfood`) to verify no build regressions.
+- Asserts flavor/environment pairing, then builds Android debug APK (`--flavor fishfood`) to verify no build regressions.
 - Exports APK, coverage, test report, and mutation report artifacts.
 
 This is the heaviest local check and also the most expensive CI run. Always pass it locally before creating PR, especially for high-impact or release-sensitive changes.
@@ -368,7 +376,7 @@ Always verify Flutter version alignment through FVM (`fvm flutter --version`) to
 - Local script iOS build runs only on macOS (`uname == Darwin`).
 - Linux workflows use package managers like `apt-get` (and in one workflow `brew`) for `lcov` installation.
 - iOS build/pod steps require macOS runners (`ios-debug-build`).
-- Android build targets `fishfood` flavor in both local comprehensive checks and CI.
+- Android build targets `fishfood` flavor in both local comprehensive checks and CI (when product flavors are configured); flavor and `ENVIRONMENT` are asserted to agree before each build (CA-926).
 - **Golden/screenshot tests**: Run comprehensive checks inside Docker container to ensure golden files match CI environment exactly. Font rendering and UI differences between host systems can cause false mismatches.
 
 ## Test Discovery Paths (Important)
