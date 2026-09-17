@@ -3,20 +3,29 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 
 /// Whether this build ships the offline-first local consent store.
 ///
-/// False while `InMemoryLocalConsentDataSource` is the bound implementation:
-/// every record is lost on restart, so a user would be re-prompted on every
-/// cold start. CA-971 replaces the binding in
-/// `ConsentLibraryModule._registerDependencies`.
-const bool durableLocalConsentStoreLanded = false;
+/// True since CA-971 bound `PowerSyncLocalConsentDataSource` in
+/// `ConsentLibraryModule._registerDependencies`. It replaced an in-memory
+/// stand-in that lost every record on restart, which would have re-prompted a
+/// user on every cold start.
+const bool durableLocalConsentStoreLanded = true;
 
 /// Whether a consent write reaches the server.
 ///
 /// False because there is nothing to reach: `RemoteConsentDataSource` exposes
 /// only `fetchPublishedVersions()`, so `ConsentRecorder` has no write method
-/// to route to. Flipping this needs all three of a write method on the
-/// interface, a `SupabaseConsentDataSource` implementation of it, and a
-/// backend RPC behind that -- CA-971's scope is wider than the local-store
-/// swap it is usually described as.
+/// to route to. Flipping this needs a write method on the interface, a
+/// `SupabaseConsentDataSource` implementation of it, and a backend RPC behind
+/// that.
+///
+/// CA-971 deliberately did not do that work; its filed scope was the local
+/// read path. What it did change is where the answer is likely to come from.
+/// `PowerSyncLocalConsentDataSource.insertUserConsent` writes through
+/// PowerSync, so the row already enters the CRUD queue, and
+/// `SupabasePowerSyncConnector.uploadData` already upserts a queued `put`
+/// onto the matching table by id. Whether that queue *is* the remote write
+/// path -- and this const can be flipped on it -- or whether an explicit RPC
+/// is still wanted for a table with no update or delete policy, is the open
+/// question, not a settled no.
 const bool remoteConsentWritePathLanded = false;
 
 /// Whether this build can durably record an attributable acceptance.

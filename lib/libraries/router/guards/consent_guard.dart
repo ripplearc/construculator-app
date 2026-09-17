@@ -26,15 +26,17 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// inside [canActivate]. Background verification happens in
 /// `ConsentGateBloc` and never delays route evaluation.
 ///
-/// That "completes fast enough" claim is a property of today's store, not of
-/// this guard: [InMemoryLocalConsentDataSource] answers synchronously, so the
-/// unbounded `await` below cannot stall app start. CA-971 swaps in PowerSync
-/// watched queries, at which point the read becomes genuinely asynchronous
-/// and the assumption stops holding on its own — that change must either keep
-/// the read local and non-blocking or give this call a timeout, since a hang
-/// here hangs route evaluation with no gate and no app.
-/// TODO: https://ripplearc.youtrack.cloud/issue/CA-971 - Revisit this await
-/// when the PowerSync-backed local store lands.
+/// That "completes fast enough" claim is a property of the store, not of this
+/// guard. It used to rest on an in-memory store answering synchronously.
+/// Since CA-971 it rests on `PowerSyncLocalConsentDataSource` issuing two
+/// local SQLite reads against tables holding a handful of rows each, with no
+/// network call on the path — `fetchPublishedVersion` and
+/// `fetchLatestUserConsent` are one indexed `SELECT` apiece, and the sync
+/// stream that fills them runs elsewhere. The `await` below is still
+/// unbounded, so the property to protect is that one: a read here must stay
+/// local, because a hang here hangs route evaluation with no gate and no app.
+/// Giving this call a timeout would make the guard independent of that
+/// property rather than reliant on it.
 class ConsentGuard extends RouteGuard {
   final CheckConsentStatusUseCase Function() _getUseCase;
 
