@@ -441,7 +441,7 @@ comprehensive_check() {
       pod install
       cd ..
     fi
-    fvm flutter build ios --debug --no-codesign
+    fvm flutter build ios --debug --no-codesign --flavor fishfood --dart-define=ENVIRONMENT=dev
   else
     echo "Skipping iOS build because the system is not macOS."
   fi
