@@ -98,6 +98,9 @@ custom_lint:
         # constructed from data, not injected, so the perf driver has no
         # alternative to instantiating them. Covers TimelineSummary too.
         - 'Timeline'
+        # sqlite3's query-result type. A fake PowerSyncDatabase has to build
+        # one to answer getAll/watch, and there is no wrapper to route through.
+        - 'ResultSet'
 
 linter:
   # The lint rules applied to this project can be customized in the
