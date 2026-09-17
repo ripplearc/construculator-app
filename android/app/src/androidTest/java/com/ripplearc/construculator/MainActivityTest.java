@@ -2,7 +2,7 @@
 // (https://patrol.leancode.co/documentation/getting-started). It stays in Java,
 // rather than being ported to Kotlin like the rest of this module, so it can be
 // diffed against upstream when Patrol changes its runner contract.
-package com.cms.cm_sample;
+package com.ripplearc.construculator;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package com.cms.cm_sample
+package com.ripplearc.construculator
 
 import android.os.Build
 import android.os.Bundle

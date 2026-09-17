@@ -383,8 +383,9 @@ comprehensive_check() {
 
   # Build Android
   echo "🤖 Building Android..."
-  # Check if product flavors are configured
-  if grep -q "productFlavors" android/app/build.gradle; then
+  # Check if product flavors are configured. flutter_flavorizr keeps the
+  # productFlavors block in android/app/flavorizr.gradle, applied from build.gradle.
+  if grep -q "productFlavors" android/app/build.gradle android/app/flavorizr.gradle 2>/dev/null; then
     echo "📱 Product flavors detected. Building for 'fishfood' flavor..."
     fvm flutter build apk --debug --flavor fishfood
     
