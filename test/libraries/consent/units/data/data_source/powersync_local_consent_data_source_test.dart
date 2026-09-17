@@ -172,12 +172,18 @@ void main() {
       ConsentType forType = type,
       Object? rawEffectiveFrom,
     }) {
-      final resolvedEffectiveFrom = effectiveFrom == null
-          ? DateTime.utc(2026, 1, 1)
-          : effectiveFrom;
-      final effectiveFromValue = rawEffectiveFrom == null
-          ? resolvedEffectiveFrom.toIso8601String()
-          : rawEffectiveFrom;
+      final DateTime resolvedEffectiveFrom;
+      if (effectiveFrom == null) {
+        resolvedEffectiveFrom = DateTime.utc(2026, 1, 1);
+      } else {
+        resolvedEffectiveFrom = effectiveFrom;
+      }
+      final Object effectiveFromValue;
+      if (rawEffectiveFrom == null) {
+        effectiveFromValue = resolvedEffectiveFrom.toIso8601String();
+      } else {
+        effectiveFromValue = rawEffectiveFrom;
+      }
       return {
         'id': 'version-$version',
         'consent_type': forType.toJson(),
@@ -197,9 +203,12 @@ void main() {
       ConsentAction action = ConsentAction.accepted,
       Object? rawRecordedAt,
     }) {
-      final recordedAtValue = rawRecordedAt == null
-          ? recordedAt.toIso8601String()
-          : rawRecordedAt;
+      final Object recordedAtValue;
+      if (rawRecordedAt == null) {
+        recordedAtValue = recordedAt.toIso8601String();
+      } else {
+        recordedAtValue = rawRecordedAt;
+      }
       return {
         'id': id,
         'user_id': forUserId,
