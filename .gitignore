@@ -70,6 +70,7 @@ app.*.map.json
 /test-results
 review.text
 reviews/
+plans/
 assets/env/.env.*
 !assets/env/.env.template
 mutation_test_rules.xml

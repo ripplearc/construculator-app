@@ -46,7 +46,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - Do not ask for info that is unambiguous from the ticket context
    - If multiple layers are touched, ask for all their inputs together before proceeding
 
-3. **Apply Naming & Abstraction** (naming conventions) → Load `skills/rules/02-naming-conventions.md`
+3. **Apply Naming & Abstraction** (naming conventions) → Load `.claude/rules/02-naming-conventions.md`
    - Use suffix table + decision tree to name all classes
    - Apply abstraction naming: abstract at UI/domain, explicit at data layer
    - Output: precise class names with responsibilities
@@ -64,7 +64,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 
 5. **Check CoreUI availability** (if presentation layer touched) → See CoreUI Components
    - Identify required components from ticket (buttons, inputs, icons, cards, etc.)
-   - Check `skills/references/coreui-api.md` (⚠️ may be outdated - use as quick reference only)
+   - Check `.claude/references/coreui-api.md` (⚠️ may be outdated - use as quick reference only)
    - **Source of truth:** https://github.com/ripplearc/coreui#readme (always check live README)
    - If component missing: flag as blocker with CoreUI-compliant options only:
      1. Use existing CoreUI component with custom layout
@@ -78,7 +78,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - RepositoryImpl depends on DataSource
    - Flag violations if found
 
-7. **Apply Digestible PR** (digestible PRs) → Load `skills/rules/01-digestible-pr.md`
+7. **Apply Digestible PR** (digestible PRs) → Load `.claude/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
 
      | Class Type | Typical LOC |
@@ -103,6 +103,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      - By dependency: Foundation → Feature → UI
      - By scope: Core feature → Error handling → Polish
    - Output: PR plan with each PR's focus + estimated LOC
+   - Each split PR must independently pass CI — see Digestible PR (`.claude/rules/01-digestible-pr.md`) for the required checks
 
 8. **Compile plan**
    - Classes + file paths
@@ -153,11 +154,21 @@ PR2 (Presentation): ~270 LOC
 → Next: Resolve CoreCard blocker, then code PR1 with code-domain and code-data skills
 ```
 
+### Saving the plan file
+
+After outputting the plan, **always persist it to a file**:
+
+1. Ensure the output directory exists: `mkdir -p plans`
+2. Write the plan to `plans/{ticket_id}-plan.md` (e.g. `plans/CA-123-plan.md`), overwriting any existing file for the same ticket
+3. Report the written path to the user: `Plan saved to plans/CA-123-plan.md`
+
+This allows any subsequent coding skill — even in a new session — to restore full context by reading the plan file instead of requiring the user to re-paste it.
+
 ## References
 
-- **Digestible PR:** `skills/rules/01-digestible-pr.md` (PR size + split strategies)
-- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md` (suffix + abstraction naming)
-- **CoreUI Components:** `skills/rules/04-coreui-components.md` (CoreUI usage + missing component handling)
-- **CoreUI API:** `skills/references/coreui-api.md` (quick reference - may be outdated)
+- **Digestible PR:** `.claude/rules/01-digestible-pr.md` (PR size + split strategies)
+- **Naming & Abstraction:** `.claude/rules/02-naming-conventions.md` (suffix + abstraction naming)
+- **CoreUI Components:** `.claude/rules/04-coreui-components.md` (CoreUI usage + missing component handling)
+- **CoreUI API:** `.claude/references/coreui-api.md` (quick reference - may be outdated)
 - **CoreUI Source of Truth:** https://github.com/ripplearc/coreui#readme (always check live)
 - **Next skills:** `code-presentation/`, `code-domain/`, `code-data/` (planned — coming in next PR)

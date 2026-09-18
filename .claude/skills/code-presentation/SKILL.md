@@ -95,12 +95,12 @@ In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>((
 
 ## References
 
-- **CoreUI Components:** `skills/rules/04-coreui-components.md` — CoreUI components
-- **UI / Business Separation:** `skills/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
-- **Self-Documenting Code:** `skills/rules/07-self-documenting-code.md` — Comments explain why
-- **Localization:** `skills/rules/10-localization.md` — All user-facing text
-- **State Derivation:** `skills/rules/12-state-derivation.md` — Derive in BLoC, not widgets
-- **CoreUI API:** `skills/references/coreui-api.md`
+- **CoreUI Components:** `.claude/rules/04-coreui-components.md` — CoreUI components
+- **UI / Business Separation:** `.claude/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
+- **Self-Documenting Code:** `.claude/rules/07-self-documenting-code.md` — Comments explain why
+- **Localization:** `.claude/rules/10-localization.md` — All user-facing text
+- **State Derivation:** `.claude/rules/12-state-derivation.md` — Derive in BLoC, not widgets
+- **CoreUI API:** `.claude/references/coreui-api.md`
 - **Examples:** `lib/features/auth/presentation/`, `lib/features/project/presentation/`
 - `write-tests` skill — Widget tests for pages
 

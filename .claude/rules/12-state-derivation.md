@@ -2,7 +2,7 @@
 
 > **⚠️ This rule has been merged into `UI / Business Separation`**
 >
-> **Location:** `skills/rules/05-ui-business-separation.md`
+> **Location:** `.claude/rules/05-ui-business-separation.md`
 >
 > **Section:** "Core Principle 2: No State Derivation"
 
@@ -19,7 +19,7 @@ State Derivation (Deprecated - use UI / Business Separation)
 ## Where to Find This Content Now
 
 All content from `State Derivation` is now in:
-- **File:** `skills/rules/05-ui-business-separation.md`
+- **File:** `.claude/rules/05-ui-business-separation.md`
 - **Section:** "Core Principle 2: No State Derivation"
 
 Key topics covered:
@@ -61,10 +61,10 @@ If your skill references `State Derivation`, update to reference
 
 ```bash
 # Old reference
-cat skills/rules/12-state-derivation.md
+cat .claude/rules/12-state-derivation.md
 
 # New reference
-cat skills/rules/05-ui-business-separation.md
+cat .claude/rules/05-ui-business-separation.md
 # Look for section: "Core Principle 2: No State Derivation"
 ```
 
@@ -79,4 +79,4 @@ Search for these violations in UI code:
 
 ---
 
-**See:** `skills/rules/05-ui-business-separation.md` for the complete merged rule.
+**See:** `.claude/rules/05-ui-business-separation.md` for the complete merged rule.
