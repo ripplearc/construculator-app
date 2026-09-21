@@ -1,6 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
+import 'package:construculator/app/shell/feature_unavailable_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculator/calculator_module.dart';
@@ -14,6 +15,8 @@ import 'package:construculator/features/project_settings/project_settings_routes
 import 'package:construculator/libraries/analytics/feature_flag_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/config/build_features.dart';
+import 'package:construculator/libraries/config/feature_availability.dart';
 import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/consent_library_module.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
@@ -114,11 +117,37 @@ class ShellModule extends Module {
       module: ProjectSettingsRoutesModule(appBootstrap),
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
     );
-    r.module(
-      calculatorBaseRoute,
-      module: CalculatorModule(),
-      guards: [AuthGuard(() => Modular.get<AuthManager>())],
-    );
+    // Calculator is an optional feature. The bare `BuildFeatures.calculator`
+    // const is tested first so that on a build with `ENABLE_CALCULATOR: false`
+    // the whole condition folds to false and the AOT compiler drops this call
+    // and `CalculatorModule` with it. On every other build the const is true
+    // and `FeatureAvailability.isEnabled` decides, which is the point the
+    // exclusion tests flip.
+    //
+    // When the feature is absent, a route module at the same path renders the
+    // fallback page, so a `/calculator` deep link resolves to a real page
+    // instead of failing route resolution. It has to be a route module, not a
+    // child route, for the same reason the calculator route itself is one:
+    // AppShellPage renders no RouterOutlet, so a child route under `/` is
+    // swallowed with no transition (CA-900).
+    //
+    // A global `WildcardRoute` is not used for this. Its `/**` pattern is
+    // matched before Modular's trailing-slash retry, so it would also swallow
+    // `/calculator` on a build that includes the calculator.
+    if (BuildFeatures.calculator &&
+        FeatureAvailability.isEnabled(Feature.calculator)) {
+      r.module(
+        calculatorBaseRoute,
+        module: CalculatorModule(),
+        guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      );
+    } else {
+      r.module(
+        calculatorBaseRoute,
+        module: FeatureUnavailableModule(),
+        guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      );
+    }
     r.child(
       projectSearchRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],

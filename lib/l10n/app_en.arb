@@ -2291,6 +2291,11 @@
   "calculatorResultPosts": "Posts",
   "@calculatorResultPosts": {
     "description": "Result label for the number of fence posts computed by the fence function"
+  },
+  "featureUnavailableMessage": "This feature is not available in this version of the app.",
+  "@featureUnavailableMessage": {
+    "description": "Message shown on the defensive fallback page when a deep link points to a feature that this build does not include",
+    "context": "N/A"
   }
 }
 
