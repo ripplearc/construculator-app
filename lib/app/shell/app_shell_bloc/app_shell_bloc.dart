@@ -19,7 +19,12 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   AppShellBloc({
     required this._moduleLoader,
     required this._featureFlagRepository,
-  }) : super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {})) {
+  }) : super(
+         const AppShellState(
+           selectedTab: ShellTab.calculations,
+           loadedTabs: {},
+         ),
+       ) {
     on<AppShellInitialized>(_onInitialized);
     on<AppShellTabSelected>(_onTabSelected);
     add(const AppShellInitialized());
@@ -39,8 +44,8 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     );
     emit(
       state.copyWith(
-        loadedTabIndexes: {ShellTab.calculations.index},
-        selectedTabIndex: ShellTab.calculations.index,
+        loadedTabs: {ShellTab.calculations},
+        selectedTab: ShellTab.calculations,
         calculatorEnabled: calculatorEnabled,
       ),
     );
@@ -50,17 +55,15 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     AppShellTabSelected event,
     Emitter<AppShellState> emit,
   ) async {
-    final tabIndex = event.tab.index;
-    if (tabIndex == state.selectedTabIndex) return;
+    if (event.tab == state.selectedTab) return;
 
     await _moduleLoader.ensureTabModuleLoaded(event.tab);
 
     emit(
       state.copyWith(
-        selectedTabIndex: tabIndex,
-        loadedTabIndexes: {...state.loadedTabIndexes, tabIndex},
+        selectedTab: event.tab,
+        loadedTabs: {...state.loadedTabs, event.tab},
       ),
     );
   }
-
 }
