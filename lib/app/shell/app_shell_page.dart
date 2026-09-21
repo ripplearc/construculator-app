@@ -39,9 +39,6 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  // Built in initState, not as a field initializer: it needs
-  // widget.tabModuleManager.activeTabs, and widget is not yet attached to
-  // this State during field initialization.
   late final List<GlobalKey<NavigatorState>> _tabNavigatorKeys;
 
   @override
@@ -90,9 +87,6 @@ class _AppShellPageState extends State<AppShellPage> {
     context.read<AppShellBloc>().add(AppShellTabSelected(activeTabs[index]));
   }
 
-  // Shell-owned bottom nav chrome (icon + label) for tab. This is display
-  // metadata the shell owns, not feature construction — TabModuleProvider
-  // deliberately doesn't carry it.
   BottomNavTab _bottomNavTabFor(BuildContext context, ShellTab tab) {
     return switch (tab) {
       ShellTab.calculations => BottomNavTab(
