@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "suite": "cuj_v1",
+  "captured_at": "2026-09-21T08:50:21Z",
+  "commit": "5dd6f98",
+  "attempt_count": 2,
+  "duration_ms": 33006.0,
+  "total_duration_ms": 102614.0,
+  "totals": {
+    "cases": 2,
+    "ran": 2,
+    "passed": 1,
+    "flaked": 1,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": 1.0,
+    "flake_rate": 0.5
+  },
+  "cases": [
+    {
+      "name": "runDartTest[features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard]",
+      "classname": "com.cms.cm_sample.MainActivityTest",
+      "status": "passed",
+      "duration_ms": 9940.0,
+      "attempts": [
+        {
+          "attempt": 2,
+          "status": "passed",
+          "duration_ms": 9940.0
+        }
+      ]
+    },
+    {
+      "name": "runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]",
+      "classname": "com.cms.cm_sample.MainActivityTest",
+      "status": "flaked",
+      "duration_ms": 16069.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "duration_ms": 66542.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following StateError was thrown running a test:\nBad state: No OTP email arrived for\ncuj2-1789980441417627@example.com within 0:01:00.000000 (saw a\nmessage for this address but no code in it: false). Last polling\nerror: HttpException: Connection closed before full…"
+        },
+        {
+          "attempt": 2,
+          "status": "passed",
+          "duration_ms": 16069.0
+        }
+      ]
+    }
+  ]
+}
