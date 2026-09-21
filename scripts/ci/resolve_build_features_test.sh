@@ -122,6 +122,30 @@ assert_exit 1 "unknown feature fails" "bad-feature"
 assert_output_contains "not-a-real-feature" "error names the bad value" "bad-feature"
 assert_output_contains "calculator" "error names the known set" "bad-feature"
 
+echo "--- A flavor file with no \"features\" list fails loudly ---"
+mkdir -p "${WORK_DIR}/config/flavors"
+: >"${WORK_DIR}/config/flavors/empty-file.json"
+assert_exit 1 "empty file fails" "empty-file"
+assert_output_contains 'no "features" list' "error names the missing list" "empty-file"
+
+echo '{}' >"${WORK_DIR}/config/flavors/empty-object.json"
+assert_exit 1 "empty object fails" "empty-object"
+assert_output_contains 'no "features" list' "error names the missing list" "empty-object"
+
+echo "--- KNOWN_FEATURES stays in sync with the Feature enum ---"
+FEATURE_ENUM_FILE="${SCRIPT_DIR}/../../lib/libraries/config/feature_availability.dart"
+dart_features="$(sed -n '/^enum Feature {/,/^}/p' "$FEATURE_ENUM_FILE" \
+  | grep -oE '^  [a-z][A-Za-z0-9]*' | tr -d ' ' | sort)"
+bash_features="$(sed -n 's/^KNOWN_FEATURES=(\(.*\))$/\1/p' "$TARGET" | tr ' ' '\n' | sort)"
+if [[ "$dart_features" == "$bash_features" ]]; then
+  echo "✅ PASS: KNOWN_FEATURES matches the Feature enum"
+else
+  echo "❌ FAIL: KNOWN_FEATURES has drifted from the Feature enum"
+  echo "   Dart enum cases: $(echo "$dart_features" | tr '\n' ' ')"
+  echo "   Bash KNOWN_FEATURES: $(echo "$bash_features" | tr '\n' ' ')"
+  FAILURES=$((FAILURES + 1))
+fi
+
 echo "--- Missing flavor argument fails loudly ---"
 (cd "$WORK_DIR" && "$TARGET" >/tmp/resolve_build_features_test_noargs.out 2>&1)
 NOARG_EXIT=$?

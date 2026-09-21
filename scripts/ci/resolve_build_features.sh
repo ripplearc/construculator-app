@@ -37,6 +37,16 @@ if [ ! -f "$SOURCE_FILE" ]; then
   exit 1
 fi
 
+# An empty file or `{}` has no "features" key at all, and the sed extraction
+# below prints the whole file back out when it finds no match -- with no
+# other quoted text in that output, the listed-features loop below sees an
+# empty list and every feature silently resolves to false. Fail loudly here
+# instead, before that extraction ever runs.
+if ! grep -q '"features"[[:space:]]*:[[:space:]]*\[' "$SOURCE_FILE"; then
+  echo "❌ ERROR: ${SOURCE_FILE} has no \"features\" list"
+  exit 1
+fi
+
 # Mirrors the Feature enum in lib/libraries/config/feature_availability.dart.
 # This is a manual bash-side mirror -- if a case is added, renamed, or
 # removed on the Dart enum, update this table and the mapping below to match.
