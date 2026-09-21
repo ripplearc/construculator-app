@@ -50,12 +50,24 @@ if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]] || [[ "$ITERATIONS" -lt 1 ]]; then
   exit 1
 fi
 
-if ! fvm flutter devices --machine \
-  | grep -qE "\"id\"[[:space:]]*:[[:space:]]*\"${DEVICE_ID}\""; then
-  echo "❌ Device '$DEVICE_ID' is not attached. Attached devices:" >&2
-  fvm flutter devices >&2
-  exit 1
-fi
+# The device can be mid-reattach (a transient USB/adb hiccup) right as the job
+# starts, so poll briefly instead of failing on the very first miss. The poll
+# itself uses `adb devices`, a fast local query against the adb server, rather
+# than `fvm flutter devices`, which can block for minutes waiting out a stale
+# connection to a device that just dropped off USB.
+command -v adb >/dev/null || { echo "❌ adb not found on PATH" >&2; exit 1; }
+
+attempt=0
+while ! adb devices | grep -qE "^${DEVICE_ID}[[:space:]]+device$"; do
+  attempt=$((attempt + 1))
+  if [[ "$attempt" -gt 6 ]]; then
+    echo "❌ Device '$DEVICE_ID' is not attached. Attached devices:" >&2
+    fvm flutter devices >&2
+    exit 1
+  fi
+  echo "⚠️  Device '$DEVICE_ID' not attached yet (attempt $attempt/6); retrying in 10s..." >&2
+  sleep 10
+done
 
 # All capture happens in a staging directory outside the repo tree. Each phase is
 # copied into --output-dir as soon as it finishes, so a run that fails partway
