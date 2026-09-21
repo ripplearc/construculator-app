@@ -104,6 +104,11 @@ The backend seeds one account that E2E sign-in flows use:
 | Email | `seeder@example.com` |
 | Password | `Mypass@1` |
 
+The password must pass the app's own password rules (8+ characters, upper
+case, lower case, a digit and one of !@#$&*~). The login form checks these
+before it calls the backend. If you seeded your stack before this value
+changed, run `scripts/e2e/reset_env.sh` to pick up the new password.
+
 Both the `auth.users` credential and the `public.users` profile are seeded, and
 `public.users.credential_id` matches the credential's id. Before this was
 seeded, the profile existed without a credential, so the account could be read
