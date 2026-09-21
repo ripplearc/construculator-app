@@ -238,6 +238,19 @@ void main() {
         expect(result!.version, 4);
       });
 
+      test('returns the newest of several inserts', () async {
+        await fake.insertUserConsent(
+          record(userId, type, 1, ConsentAction.accepted),
+        );
+        final withdrawal = await fake.insertUserConsent(
+          record(userId, type, 2, ConsentAction.withdrawn),
+        );
+
+        final latest = await fake.fetchLatestUserConsent(userId, type);
+
+        expect(latest, withdrawal);
+      });
+
       test('throws the configured writeError without recording', () async {
         fake.writeError = Exception('offline');
 
