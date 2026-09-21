@@ -1,4 +1,3 @@
-import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -13,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../utils/dashboard_shell_test_module.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
 import '../../utils/screenshot/font_loader.dart';
 
@@ -76,7 +76,7 @@ class ProjectsBottomSheetTestHarness {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(ShellModule(bootstrap));
+    Modular.init(DashboardShellTestModule(bootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
     Modular.replaceInstance<ProjectRepository>(fakeRepository);
 

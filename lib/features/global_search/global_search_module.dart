@@ -67,8 +67,9 @@ class GlobalSearchModule extends Module {
         router: Modular.get<AppRouter>(),
         blocFactory: () => Modular.get<GlobalSearchBloc>(),
         estimationTileProvider: Modular.get<EstimationTileProvider>(),
-        // Bound in ShellModule, which stays active beneath this pushed
-        // route; resolved at construction time (never inside build).
+        // Bound in DashboardModule (imported by ShellModule), which stays
+        // active beneath this pushed route; resolved at construction time
+        // (never inside build).
         projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
       ),
     );
