@@ -142,7 +142,11 @@ class ShellModule extends Module {
         guards: [AuthGuard(() => Modular.get<AuthManager>())],
       );
     } else {
-      r.module(calculatorBaseRoute, module: FeatureUnavailableModule());
+      r.module(
+        calculatorBaseRoute,
+        module: FeatureUnavailableModule(),
+        guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      );
     }
     r.child(
       projectSearchRoute,
