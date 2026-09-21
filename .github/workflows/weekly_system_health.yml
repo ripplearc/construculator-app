@@ -29,7 +29,9 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  # The "Publish run to trend store" step pushes to the orphan perf-data
+  # branch, so the token needs write, not just checkout access.
+  contents: write
   # Read-only PR lookup for the #RunPerf trigger's branch extraction.
   pull-requests: read
 
