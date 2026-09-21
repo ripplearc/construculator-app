@@ -29,6 +29,10 @@ jobs:
       # The seeded account is what CUJ-1 signs in as. Without a matching
       # auth.users row the stack looks healthy but no test can log in, so this
       # is the assertion that actually proves the environment is usable.
+      #
+      # The password must match the seed in construculator-backend
+      # (supabase/seeders/sample_data/100_auth_users.sql)
+      # and TestConfig.loginPassword in this repo.
       - name: Seeded user can sign in
         env:
           SUPABASE_URL: ${{ steps.env.outputs.supabase-url }}
@@ -38,7 +42,7 @@ jobs:
             -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
             -H "apikey: $ANON_KEY" \
             -H "Content-Type: application/json" \
-            -d '{"email":"seeder@example.com","password":"e2e-local-only-password"}')
+            -d '{"email":"seeder@example.com","password":"Mypass@1"}')
           if [ "$status" != "200" ]; then
             echo "::error::Sign-in as the seeded user returned HTTP $status"
             cat response.json
