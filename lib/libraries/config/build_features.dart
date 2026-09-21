@@ -1,3 +1,8 @@
+// coverage:ignore-file
+// Top-level const bool.fromEnvironment declarations only, so the VM emits no
+// coverable statements and the file never appears in lcov.info -- matching
+// consent_routes.dart. The default value is asserted in build_features_test.dart.
+
 /// Compile-time feature composition, resolved by the AOT compiler.
 ///
 /// Every flag here must stay a top-level/static `const bool` fed by
