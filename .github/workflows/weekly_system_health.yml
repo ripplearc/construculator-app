@@ -95,6 +95,25 @@ jobs:
           ENVIRONMENT: perf
         run: bash scripts/ci/generate_env_file.sh
 
+      - name: Reattach device
+        # This lab machine is WSL2, and the phone's USB bus drops out of the
+        # WSL VM between runs. usbipd re-attaches it and a fresh adb server
+        # picks it back up. Only this one machine uses usbipd; a future
+        # native Linux or macOS lab host would skip this step entirely, so it
+        # stays in the workflow rather than in capture_perf_run.sh.
+        run: |
+          USBIPD="/mnt/c/Program Files/usbipd-win/usbipd.exe"
+          if [ ! -x "$USBIPD" ]; then
+            echo "No usbipd on this runner; skipping reattach."
+          else
+            echo "Reattaching busid 1-1 to WSL..."
+            "$USBIPD" attach --wsl --busid "1-1" || true
+            sleep 2
+          fi
+          adb kill-server
+          adb start-server
+          adb devices -l
+
       - name: Capture performance run
         run: |
           bash scripts/perf/capture_perf_run.sh \
