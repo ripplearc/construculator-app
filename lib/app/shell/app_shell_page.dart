@@ -5,7 +5,6 @@ import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/config/build_features.dart';
 import 'package:construculator/libraries/config/feature_availability.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
