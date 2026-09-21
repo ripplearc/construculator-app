@@ -55,6 +55,8 @@ fi
 # itself uses `adb devices`, a fast local query against the adb server, rather
 # than `fvm flutter devices`, which can block for minutes waiting out a stale
 # connection to a device that just dropped off USB.
+command -v adb >/dev/null || { echo "❌ adb not found on PATH" >&2; exit 1; }
+
 attempt=0
 while ! adb devices | grep -qE "^${DEVICE_ID}[[:space:]]+device$"; do
   attempt=$((attempt + 1))
