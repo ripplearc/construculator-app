@@ -1,6 +1,7 @@
 // coverage:ignore-file
 
 export 'chain_arithmetic.dart';
+export 'chain_evaluator.dart';
 export 'entry_buffer.dart';
 export 'models/calculator_preferences.dart';
 export 'models/chip.dart';
