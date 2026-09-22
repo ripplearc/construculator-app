@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR PREFERENCES DTO MUTATION TESTING -->
+    <!-- Targets: CalculatorPreferencesDto, the one reader and writer of the
+         `calculator` key under user_preferences. Critical path: it is the
+         migration of the prototype's JSON as well as the round trip of
+         every save, so a weakened guard silently resets a user's settings
+         on every device, and a key written in the wrong spelling is never
+         read back. -->
+
+    <files>
+        <file>lib/features/calculator/data/models/calculator_preferences_dto.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a non-map value is read as a map -->
+        <regex pattern="if \(json is! Map\) \{" dotAll="true" id="calculator_preferences_dto.from_json.skip_map_guard">
+            <mutation text="if (json == null) {"/>
+        </regex>
+
+        <!-- RULE 2: the legacy key is no longer read -->
+        <regex pattern="json\.containsKey\(key\) \? json\[key\] : json\[legacyKey\];" dotAll="true" id="calculator_preferences_dto.read.drop_legacy_key">
+            <mutation text="json[key];"/>
+        </regex>
+
+        <!-- RULE 3: the legacy key wins over the new one -->
+        <regex pattern="json\.containsKey\(key\) \? json\[key\] : json\[legacyKey\];" dotAll="true" id="calculator_preferences_dto.read.legacy_wins">
+            <mutation text="json.containsKey(legacyKey) ? json[legacyKey] : json[key];"/>
+        </regex>
+
+        <!-- RULE 4: a metric profile with no density key renders in lbs/yd³ -->
+        <regex pattern="_legacyDensityUnits\[legacyDensity\] \?\? DensityUnit\.defaultFor\(system\)," dotAll="true" id="calculator_preferences_dto.from_json.density_ignores_system">
+            <mutation text="_legacyDensityUnits[legacyDensity] ?? DensityUnit.poundsPerCubicYard,"/>
+        </regex>
+
+        <!-- RULE 5: the legacy density spelling is no longer read -->
+        <regex pattern="_legacyDensityUnits\[legacyDensity\] \?\? DensityUnit\.defaultFor\(system\)," dotAll="true" id="calculator_preferences_dto.from_json.drop_legacy_density">
+            <mutation text="DensityUnit.defaultFor(system),"/>
+        </regex>
+
+        <!-- RULE 6: an unreadable number matches the first value instead of
+             the default -->
+        <regex pattern="if \(numberOf\(value\) == number\) return value;\s*\}\s*return fallback;" dotAll="true" id="calculator_preferences_dto.enum_by_number.first_not_default">
+            <mutation text="if (numberOf(value) == number) return value; } return values.first;"/>
+        </regex>
+
+        <!-- RULE 7: the fraction step is written under the legacy key -->
+        <regex pattern="fractionResolutionKey: preferences\.fractionResolution\.denominator," dotAll="true" id="calculator_preferences_dto.to_json.legacy_fraction_key">
+            <mutation text="_legacyFractionResolutionKey: preferences.fractionResolution.denominator,"/>
+        </regex>
+
+        <!-- RULE 8: a name matches every value but the one spelled -->
+        <regex pattern="if \(value\.name == name\) return value;" dotAll="true" id="calculator_preferences_dto.enum_by_name.negated">
+            <mutation text="if (value.name != name) return value;"/>
+        </regex>
+
+        <!-- RULE 9: a number matches every value but the one written -->
+        <regex pattern="if \(numberOf\(value\) == number\) return value;" dotAll="true" id="calculator_preferences_dto.enum_by_number.negated">
+            <mutation text="if (numberOf(value) != number) return value;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="calculator_preferences_dto" expected-return="0">flutter test test/features/calculator/units/data/models/calculator_preferences_dto_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
