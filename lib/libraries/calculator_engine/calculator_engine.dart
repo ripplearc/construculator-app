@@ -3,4 +3,6 @@ export 'models/quantity.dart';
 export 'models/token.dart';
 export 'models/unit.dart';
 export 'quantity_parser.dart';
+export 'quantity_speller.dart';
 export 'unit_converter.dart';
+export 'unit_ladder.dart';
