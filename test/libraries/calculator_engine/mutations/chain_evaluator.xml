@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE CHAIN EVALUATOR AND TAPE CHAIN MUTATION TESTING -->
+    <!-- Targets: ChainEvaluator, which folds the tape left to right, and the
+         operator and equals handlers of Tape. Critical path: the fold is
+         the running total on the strip and the answer = lands; a wrong
+         restart makes 2 + 3 × 4 answer 14 or 20 for the wrong reason, and
+         a wrong route lands a result where a toast belongs. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a chip with no operator continues the chain instead of
+             restarting it -->
+        <regex pattern="if \(total == null \|\| operator == null\) \{" dotAll="true" id="chain_evaluator.fold.no_restart">
+            <mutation text="if (total == null) {"/>
+        </regex>
+
+        <!-- RULE 2: a result chip does not restart the count of steps -->
+        <regex pattern="total = value;\s*steps = 0;\s*case InputChip\(\):" dotAll="true" id="chain_evaluator.fold.result_keeps_steps">
+            <mutation text="total = value; case InputChip():"/>
+        </regex>
+
+        <!-- RULE 3: a landed error is folded again -->
+        <regex pattern="if \(chips\.any\(\(chip\) =&gt; chip is ErrorChip\)\) \{" dotAll="true" id="chain_evaluator.fold.refold_error">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 4: an unreadable chip is skipped instead of stopping the
+             fold -->
+        <regex pattern="if \(value == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
+            <mutation text="if (value == null) continue;"/>
+        </regex>
+
+        <!-- RULE 5: steps are never counted, so no Calc is ever offered -->
+        <regex pattern="total = next;\s*steps \+= 1;" dotAll="true" id="chain_evaluator.fold.no_steps">
+            <mutation text="total = next;"/>
+        </regex>
+
+        <!-- RULE 6: a second operator stacks a chip instead of changing the
+             pending one -->
+        <regex pattern="if \(chip\.operator != null &amp;&amp; chip\.entry\.isEmpty\) \{" dotAll="true" id="tape.press_operator.stack_operators">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 7: an operator after an error chip chains off nothing -->
+        <regex pattern="ErrorChip\(\) \|\| null =&gt; false," dotAll="true" id="tape.press_operator.chain_off_error">
+            <mutation text="ErrorChip() || null =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 8: = lands a value that is not a calculation -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; TapeChanged\(" dotAll="true" id="tape.press_equals.land_plain_value">
+            <mutation text="ChainValue(:final value) =&gt; TapeChanged("/>
+        </regex>
+
+        <!-- RULE 9: = leaves the active chip active after landing -->
+        <regex pattern="_sealed\(\)\.append\(ResultChip\(key: calcKey, value: value\)\)," dotAll="true" id="tape.press_equals.no_seal">
+            <mutation text="append(ResultChip(key: calcKey, value: value)),"/>
+        </regex>
+
+        <!-- RULE 10: a lone value counts as a calculation -->
+        <regex pattern="bool get isCalculation =&gt; steps &gt; 0;" dotAll="true" id="chain_evaluator.is_calculation.boundary">
+            <mutation text="bool get isCalculation =&gt; steps &gt;= 0;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_chain" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_chain_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
