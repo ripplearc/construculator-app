@@ -97,8 +97,8 @@ class ChainEvaluator extends Equatable {
           running = _nothing;
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
-        case ValueChip(:final operator):
-          final value = chip.value(parser);
+        case ValueChip(:final operator) || BracketChip(:final operator):
+          final value = _valueOf(chip);
           if (value == null) return const ChainEmpty();
           running = _joined(running, operator, value);
       }
@@ -140,6 +140,18 @@ class ChainEvaluator extends Equatable {
       ),
     };
   }
+
+  // A closed bracket is worth what its inside folds to, at full precision
+  // and with its dimension (Section 7, "Brackets with units"); an open one
+  // is worth nothing yet, which is why no Calc is offered while it is open.
+  Quantity? _valueOf(TapeChip chip) => switch (chip) {
+    ValueChip() => chip.value(parser),
+    BracketChip(isOpen: false, :final inner) => switch (fold(inner)) {
+      ChainValue(:final value) => value,
+      ChainFailed() || ChainEmpty() => null,
+    },
+    BracketChip() || ResultChip() || ErrorChip() => null,
+  };
 
   @override
   List<Object?> get props => [parser, arithmetic];
