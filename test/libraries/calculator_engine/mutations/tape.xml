@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE TAPE MUTATION TESTING -->
+    <!-- Targets: Tape, which routes every entry key to the active chip and
+         unwinds the tape on backspace, and InputChip, which decides what a
+         chip is worth. Critical path: a wrong route makes a digit land in a
+         finished value or a unit key skip the ladder, and a wrong unwind
+         deletes a value instead of reopening it after an error. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a function key opens a second chip instead of renaming
+             the empty one -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{" dotAll="true" id="tape.function_key.no_rename">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: an unfinished value can be left by a function key -->
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{" dotAll="true" id="tape.function_key.leave_unfinished">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 3: a unit after a result is answered like an empty tape -->
+        <regex pattern="_hasResult\s*\? TapeRefusal\.unitsApplyWhileTyping\s*: TapeRefusal\.typeANumberFirst," dotAll="true" id="tape.press_unit.same_refusal">
+            <mutation text="TapeRefusal.typeANumberFirst,"/>
+        </regex>
+
+        <!-- RULE 4: a unit key on a finished value is routed to the entry
+             buffer instead of the ladder -->
+        <regex pattern="if \(chip\.entry\.isOpen\) \{" dotAll="true" id="tape.press_unit.always_close">
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 5: editing a converted value keeps its stale exact
+             quantity -->
+        <regex pattern="chip\.copyWith\(entry: buffer, exact: \(\) =&gt; null\)," dotAll="true" id="tape.entry.keep_exact">
+            <mutation text="chip.copyWith(entry: buffer),"/>
+        </regex>
+
+        <!-- RULE 6: a split leaves the finished chip active -->
+        <regex pattern="chip\.copyWith\(entry: finished, exact: \(\) =&gt; null, isActive: false\)," dotAll="true" id="tape.entry.split_keeps_active">
+            <mutation text="chip.copyWith(entry: finished, exact: () =&gt; null),"/>
+        </regex>
+
+        <!-- RULE 7: backspace drops the last chip without reopening the value
+             before it -->
+        <regex pattern="previous\.copyWith\(isActive: true\)," dotAll="true" id="tape.backspace.no_reopen">
+            <mutation text="previous,"/>
+        </regex>
+
+        <!-- RULE 8: backspace unwinds the tape even while the active chip has
+             tokens -->
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.entry\.isEmpty\) \{" dotAll="true" id="tape.backspace.skip_entry">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 9: a fraction without a unit counts as a bare number -->
+        <regex pattern="entry\.tokens\.first\.denominator == null &amp;&amp;" dotAll="true" id="chip.bare_number.fraction">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 10: a converted chip is re-read from its rounded digits -->
+        <regex pattern="if \(exact case final exact\?\) return exact;" dotAll="true" id="chip.value.ignore_exact">
+            <mutation text="if (false) return exact;"/>
+        </regex>
+
+        <!-- RULE 11: an unfinished value under a function key is refused for
+             the wrong reason -->
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(InputChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.wrong_refusal">
+            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(InputChip(key: key)));"/>
+        </regex>
+
+        <!-- RULE 12: an error chip counts as a result -->
+        <regex pattern="bool get endsWithResult =&gt; chips\.isNotEmpty &amp;&amp; chips\.last is ResultChip;" dotAll="true" id="tape.ends_with_result.error_counts">
+            <mutation text="bool get endsWithResult =&gt; chips.isNotEmpty &amp;&amp; chips.last is ErrorChip;"/>
+        </regex>
+
+        <!-- RULE 13: backspace with nothing typed keeps the last chip -->
+        <regex pattern="final remaining = chips\.sublist\(0, chips\.length - 1\);" dotAll="true" id="tape.backspace.keep_last_chip">
+            <mutation text="final remaining = chips.sublist(0, chips.length);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
