@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
@@ -31,6 +32,16 @@ enum TapeRefusal {
 
   /// ⌫ on an empty tape.
   nothingToDelete,
+
+  /// An operator with no value before it ("Type a value first").
+  typeAValueFirst,
+
+  /// = with no operator to apply and no value waiting for one ("Nothing to
+  /// compute yet"); the strip's top suggestion, if any, is the caller's to
+  /// land instead. After a result or an error chip the prototype stays
+  /// quiet (rule 4.12): [Tape.endsWithResult] and [Tape.endsWithError] tell
+  /// the caller when to.
+  nothingToCompute,
 }
 
 /// What a key did to the tape.
@@ -93,10 +104,18 @@ final class TapeUnitRefused extends TapeOutcome {
 /// conversion's spelling, so 6.222yd stays 14,336 ticks through that split,
 /// or through a digit typed and deleted again (rule 4.15).
 ///
-/// The tape is a value; every key returns a new tape or a refusal. Chain
-/// arithmetic, brackets and the strip's answers are not the tape's: they
-/// read it and add result chips to it (A3).
+/// Operators chain left to right (rule 4.6): an operator seals the active
+/// chip and opens the next one under it, the running total is offered as
+/// Calc after every operator with values on both sides, and = lands it as a
+/// result chip or, when the dimension table refuses the step, as an error
+/// chip (Section 5.3).
+///
+/// The tape is a value; every key returns a new tape or a refusal. Brackets
+/// and the strip's other answers are not the tape's yet.
 class Tape extends Equatable {
+  /// The label of the result = lands.
+  static const String calcKey = 'Calc';
+
   /// The chips, left to right, in the order they were made; only the last
   /// one can be active.
   final List<TapeChip> chips;
@@ -116,6 +135,9 @@ class Tape extends Equatable {
 
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
+
+  /// Folds the chips into the running total.
+  ChainEvaluator get evaluator => ChainEvaluator(parser: parser);
 
   /// Whether nothing has been typed.
   bool get isEmpty => chips.isEmpty;
@@ -214,6 +236,62 @@ class Tape extends Equatable {
         :final tokens,
       ) => _replaceLast(_respelled(chip, value, tokens)),
       UnitKeyRefused() => TapeUnitRefused(outcome),
+    };
+  }
+
+  /// The running total of the tape as far as it can be computed: the Calc
+  /// the strip offers when it is a calculation, the error the strip goes
+  /// silent for, or nothing.
+  ChainOutcome get runningTotal => evaluator.fold(chips);
+
+  /// An operator seals the active chip and opens the next one under it; on
+  /// an operator chip still waiting for its number it changes the operator.
+  /// After a result, or a sealed value, the operator chains off it. With
+  /// nothing before it the press explains itself ("Type a value first").
+  TapeOutcome pressOperator(Operator operator) {
+    final chip = active;
+    if (chip != null) {
+      if (chip.operator != null && chip.entry.isEmpty) {
+        return _replaceLast(chip.copyWith(operator: () => operator));
+      }
+      if (chip.entry.isEmpty) {
+        return const TapeRefused(TapeRefusal.typeAValueFirst);
+      }
+      if (!chip.isReadable) {
+        return const TapeRefused(TapeRefusal.finishThisValueFirst);
+      }
+      return TapeChanged(_sealed().append(InputChip(operator: operator)));
+    }
+    final last = chips.isEmpty ? null : chips.last;
+    final hasLeftHandSide = switch (last) {
+      ResultChip() => true,
+      InputChip() => last.isReadable,
+      ErrorChip() || null => false,
+    };
+    if (!hasLeftHandSide) {
+      return const TapeRefused(TapeRefusal.typeAValueFirst);
+    }
+    return TapeChanged(append(InputChip(operator: operator)));
+  }
+
+  /// = lands the running total as a Calc result chip, or a Dimension Error
+  /// (or Division by zero) chip when a step is refused. With no operator
+  /// applied, or an operator still waiting for its number, it says what it
+  /// needs; a number with no unit cannot be left.
+  TapeOutcome pressEquals() {
+    final chip = active;
+    if (chip != null && !chip.entry.isEmpty && !chip.isReadable) {
+      return const TapeRefused(TapeRefusal.finishThisValueFirst);
+    }
+    return switch (runningTotal) {
+      ChainValue(:final value, isCalculation: true) => TapeChanged(
+        _sealed().append(ResultChip(key: calcKey, value: value)),
+      ),
+      ChainFailed(:final error) => TapeChanged(
+        _sealed().append(ErrorChip(error)),
+      ),
+      ChainValue() ||
+      ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
   }
 
