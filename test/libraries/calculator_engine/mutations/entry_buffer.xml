@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE ENTRY BUFFER MUTATION TESTING -->
+    <!-- Targets: EntryBuffer, the entry grammar of the active chip. Critical
+         path: every value on the tape is typed through it, and a weakened
+         guard here lets a number be read as something it is not — a
+         compound of two systems, a fraction under a decimal, inches glued
+         to a cubic value — while the tape still shows a plausible chip. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a leading point is not read as 0. -->
+        <regex pattern="Token\(digits: digit == '\.' \? '0\.' : digit\)" dotAll="true" id="entry_buffer.type_digit.no_leading_zero">
+            <mutation text="Token(digits: digit)"/>
+        </regex>
+
+        <!-- RULE 2: a second decimal point is accepted -->
+        <regex pattern="if \(digit == '\.' &amp;&amp; last\.digits\.contains\('\.'\)\) \{" dotAll="true" id="entry_buffer.type_digit.second_point">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 3: a digit after a finished token is appended to it instead
+             of starting a new one -->
+        <regex pattern="if \(last == null \|\| last\.unit != null\) \{\s*return _changed\(\[\.\.\.tokens, Token" dotAll="true" id="entry_buffer.type_digit.append_to_finished">
+            <mutation text="if (last == null) { return _changed([...tokens, Token"/>
+        </regex>
+
+        <!-- RULE 4: [/] is accepted on a decimal -->
+        <regex pattern="if \(last\.digits\.contains\('\.'\)\) \{\s*return const EntryRefused\(EntryRefusal\.decimalCannotTakeFraction\);" dotAll="true" id="entry_buffer.type_fraction.on_decimal">
+            <mutation text="if (false) { return const EntryRefused(EntryRefusal.decimalCannotTakeFraction);"/>
+        </regex>
+
+        <!-- RULE 5: a unit closes a fraction that has no denominator yet -->
+        <regex pattern="if \(last\.denominator == ''\) \{" dotAll="true" id="entry_buffer.close_with.open_fraction">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 6: a compound may step up as well as down -->
+        <regex pattern="previousUnit\.compoundRank &gt; unit\.compoundRank &amp;&amp;" dotAll="true" id="entry_buffer.compound.step_up">
+            <mutation text="previousUnit.compoundRank != unit.compoundRank &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 7: a compound may cross systems -->
+        <regex pattern="return previousUnit\.isMetric == unit\.isMetric &amp;&amp;" dotAll="true" id="entry_buffer.compound.cross_system">
+            <mutation text="return true &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 8: a cubic value continues as a compound -->
+        <regex pattern="if \(previousUnit == null \|\| previous\.power &gt; 1\) return false;" dotAll="true" id="entry_buffer.compound.after_power">
+            <mutation text="if (previousUnit == null) return false;"/>
+        </regex>
+
+        <!-- RULE 9: while editing, a broken compound splits instead of
+             refusing in place -->
+        <regex pattern="if \(editing\) return const EntryRefused\(EntryRefusal\.cannotAppendUnit\);" dotAll="true" id="entry_buffer.close_with.ignore_editing">
+            <mutation text="if (false) return const EntryRefused(EntryRefusal.cannotAppendUnit);"/>
+        </regex>
+
+        <!-- RULE 10: a key that takes lengths accepts a weight -->
+        <regex pattern="if \(holdsLengthOnly &amp;&amp; unit\.dimension != Dimension\.length\) \{" dotAll="true" id="entry_buffer.close_with.ignore_length_only">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 11: backspace drops the whole raised unit instead of one
+             power -->
+        <regex pattern="return _replaceLast\(last\.copyWith\(power: last\.power - 1\)\);" dotAll="true" id="entry_buffer.backspace.drop_power">
+            <mutation text="return _replaceLast(last.copyWith(power: 1));"/>
+        </regex>
+
+        <!-- RULE 12: backspace on the last digit leaves an empty token -->
+        <regex pattern="if \(last\.digits\.length &lt;= 1\) \{" dotAll="true" id="entry_buffer.backspace.keep_empty_token">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 13: a compound may step sideways, 18ft then feet again -->
+        <regex pattern="previousUnit\.compoundRank &gt; unit\.compoundRank &amp;&amp;" dotAll="true" id="entry_buffer.compound.step_sideways">
+            <mutation text="previousUnit.compoundRank &gt;= unit.compoundRank &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 14: backspace on the last digit keeps an empty token -->
+        <regex pattern="if \(last\.digits\.length &lt;= 1\) \{" dotAll="true" id="entry_buffer.backspace.keep_empty_token">
+            <mutation text="if (last.digits.length &lt; 1) {"/>
+        </regex>
+
+        <!-- RULE 15: backspace raises the power instead of lowering it -->
+        <regex pattern="return _replaceLast\(last\.copyWith\(power: last\.power - 1\)\);" dotAll="true" id="entry_buffer.backspace.raise_power">
+            <mutation text="return _replaceLast(last.copyWith(power: last.power + 1));"/>
+        </regex>
+
+        <!-- RULE 16: a second decimal point is refused for the wrong reason -->
+        <regex pattern="return const EntryRefused\(EntryRefusal\.secondDecimalPoint\);" dotAll="true" id="entry_buffer.digit.wrong_point_reason">
+            <mutation text="return const EntryRefused(EntryRefusal.decimalInDenominator);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="entry_buffer" expected-return="0">flutter test test/libraries/calculator_engine/units/entry_buffer_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

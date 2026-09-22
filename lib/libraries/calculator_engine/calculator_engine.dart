@@ -1,5 +1,6 @@
 // coverage:ignore-file
 
+export 'entry_buffer.dart';
 export 'models/calculator_preferences.dart';
 export 'models/dimension.dart';
 export 'models/quantity.dart';
