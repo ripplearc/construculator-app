@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE CHAIN ARITHMETIC MUTATION TESTING -->
+    <!-- Targets: ChainArithmetic, the dimension table every operator step
+         goes through. Critical path: a wrong row here answers a question
+         with a number of the wrong kind (pounds ÷ feet as a scalar, an
+         area + a length as an area) or in the wrong unit, and the tape
+         renders it as confidently as a right answer. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/chain_arithmetic.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: ÷ 0 reports as a dimension error -->
+        <regex pattern="if \(operator == Operator\.divide &amp;&amp; _magnitude\(right\) == 0\) \{" dotAll="true" id="chain_arithmetic.combine.no_division_by_zero">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: length × length loses the second length's system vote -->
+        <regex pattern="unit: _systemUnit\(\[a\.unit, b\.unit\]\),\s*\),\s*\(final Area area, final Length length\) =&gt; _volumeOf" dotAll="true" id="chain_arithmetic.multiply.area_unit_first_only">
+            <mutation text="unit: _systemUnit([a.unit]), ), (final Area area, final Length length) =&gt; _volumeOf"/>
+        </regex>
+
+        <!-- RULE 3: area ÷ length is no longer a length -->
+        <regex pattern="\(final Area area, final Length length\) =&gt; Length\(" dotAll="true" id="chain_arithmetic.divide.area_by_length">
+            <mutation text="(final Area area, final Length length) when false =&gt; Length("/>
+        </regex>
+
+        <!-- RULE 4: volume ÷ area is no longer a length -->
+        <regex pattern="\(final Volume volume, final Area area\) =&gt; Length\(" dotAll="true" id="chain_arithmetic.divide.volume_by_area">
+            <mutation text="(final Volume volume, final Area area) when false =&gt; Length("/>
+        </regex>
+
+        <!-- RULE 5: dividing by zero is computed, so a scalar ÷ 0 becomes
+             infinity instead of its own error -->
+        <regex pattern="if \(_magnitude\(right\) == 0\) return null;" dotAll="true" id="chain_arithmetic.divide.skip_zero_guard">
+            <mutation text="if (false) return null;"/>
+        </regex>
+
+        <!-- RULE 6: subtraction adds -->
+        <regex pattern="sign: operator == Operator\.add \? 1 : -1," dotAll="true" id="chain_arithmetic.combine.subtract_adds">
+            <mutation text="sign: 1,"/>
+        </regex>
+
+        <!-- RULE 7: a bare number no longer joins an angle -->
+        <regex pattern="\(final Angle angle, final Scalar degrees\) =&gt; Angle\(" dotAll="true" id="chain_arithmetic.add.no_angle_plus_scalar">
+            <mutation text="(final Angle angle, final Scalar degrees) when false =&gt; Angle("/>
+        </regex>
+
+        <!-- RULE 8: any two dimensions add -->
+        <regex pattern="if \(left\.dimension != right\.dimension\) \{" dotAll="true" id="chain_arithmetic.add.mixed_dimensions">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 9: a length answer is truncated instead of rounded -->
+        <regex pattern="int _wholeTicks\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="chain_arithmetic.whole_ticks.truncate">
+            <mutation text="int _wholeTicks(double ticks) =&gt; ticks.floor();"/>
+        </regex>
+
+        <!-- RULE 10: a metric chain answers in the trade compound -->
+        <regex pattern="_allMetric\(units\) \? Unit\.metre : Unit\.footInch;" dotAll="true" id="chain_arithmetic.length_unit.always_imperial">
+            <mutation text="Unit.footInch;"/>
+        </regex>
+
+        <!-- RULE 11: one metric operand is enough for a metric answer -->
+        <regex pattern="return lengths\.isNotEmpty &amp;&amp; lengths\.every\(\(unit\) =&gt; unit\.isMetric\);" dotAll="true" id="chain_arithmetic.all_metric.any">
+            <mutation text="return lengths.any((unit) =&gt; unit.isMetric);"/>
+        </regex>
+
+        <!-- RULE 12: acres and board feet join the vote on the system -->
+        <regex pattern="units\.where\(\(unit\) =&gt; unit\.compoundRank &gt; 0\);" dotAll="true" id="chain_arithmetic.all_metric.unitless_vote">
+            <mutation text="units.where((unit) =&gt; unit.compoundRank &gt;= 0);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="chain_arithmetic" expected-return="0">flutter test test/libraries/calculator_engine/units/chain_arithmetic_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
