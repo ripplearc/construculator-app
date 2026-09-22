@@ -159,6 +159,57 @@ final class ResultChip extends TapeChip {
   List<Object?> get props => [key, value, operator];
 }
 
+/// One chip that holds a whole bracket (term 2.22): the operator before it
+/// and everything typed inside it, "+(3×4)". Open while the keypad types
+/// inside it; closed once [( )] folds the inside to one value.
+///
+/// The inside is a tape of its own, so every key works inside a bracket
+/// exactly as it works outside one. One level only: while a bracket is
+/// open the [( )] key closes it and a second opening is refused before any
+/// key is routed inside, so the inner tape never sees a bracket.
+final class BracketChip extends Chip {
+  /// The operator that leads into the bracket in a chain, or `null` when
+  /// the bracket starts one.
+  final Operator? operator;
+
+  /// The chips typed inside the bracket.
+  final List<Chip> inner;
+
+  /// Whether the keypad still types inside the bracket.
+  final bool isOpen;
+
+  const BracketChip({this.operator, this.inner = const [], this.isOpen = true});
+
+  /// The bracket as the tape spells it, "+(3×4" while open and "+(3×4)"
+  /// once closed.
+  String get expression {
+    final inside = [
+      for (final chip in inner)
+        if (chip case InputChip(:final operator, :final entry))
+          '${operator?.symbol ?? ''}${entry.text}',
+    ].join();
+    return '${operator?.symbol ?? ''}($inside${isOpen ? '' : ')'}';
+  }
+
+  /// Returns a copy with the given fields replaced. [operator] takes a
+  /// `Function()?` wrapper so that clearing it to `null` can be told apart
+  /// from leaving it as it is.
+  BracketChip copyWith({
+    Operator? Function()? operator,
+    List<Chip>? inner,
+    bool? isOpen,
+  }) {
+    return BracketChip(
+      operator: operator != null ? operator() : this.operator,
+      inner: inner ?? this.inner,
+      isOpen: isOpen ?? this.isOpen,
+    );
+  }
+
+  @override
+  List<Object?> get props => [operator, inner, isOpen];
+}
+
 /// The place a step could not be computed (term 2.4). The strip goes
 /// silent; ⌫ removes the chip and reopens the value before it.
 final class ErrorChip extends TapeChip {
