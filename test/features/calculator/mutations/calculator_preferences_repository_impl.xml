@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR PREFERENCES REPOSITORY MUTATION TESTING -->
+    <!-- Targets: CalculatorPreferencesRepositoryImpl, the one path between
+         the signed-in profile and the calculator's settings. A weakened
+         guard here saves to nobody, drops every other key under
+         user_preferences, or leaves a fresh repository on the defaults for
+         a user who is already signed in. -->
+
+    <files>
+        <file>lib/features/calculator/data/repositories/calculator_preferences_repository_impl.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a save with no profile goes ahead anyway -->
+        <regex pattern="if \(user == null\) \{" dotAll="true" id="calculator_preferences_repository.save.skip_no_profile_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: the other keys under user_preferences are dropped -->
+        <regex pattern="\.\.\.user\.userPreferences,\s*CalculatorPreferencesDto\.preferencesKey:" dotAll="true" id="calculator_preferences_repository.save.drop_other_keys">
+            <mutation text="CalculatorPreferencesDto.preferencesKey:"/>
+        </regex>
+
+        <!-- RULE 3: a failed update is answered as a success -->
+        <regex pattern="if \(!result\.isSuccess\) \{" dotAll="true" id="calculator_preferences_repository.save.ignore_failure">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 4: the auth library's error type is replaced by a constant -->
+        <regex pattern="result\.errorType \?\? AuthErrorType\.serverError;" dotAll="true" id="calculator_preferences_repository.save.constant_error_type">
+            <mutation text="AuthErrorType.serverError;"/>
+        </regex>
+
+        <!-- RULE 5: a missing profile row is answered as a success -->
+        <regex pattern="if \(result\.data == null\) \{" dotAll="true" id="calculator_preferences_repository.save.ignore_missing_row">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 6: the profile signed in before the first watcher is never
+             fetched -->
+        <regex pattern="unawaited\(_loadSignedInProfile\(\)\);" dotAll="true" id="calculator_preferences_repository.follow.skip_signed_in_profile">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 7: a disposed repository follows the profile again -->
+        <regex pattern="if \(_isDisposed \|\| _profileSubscription != null\) return;" dotAll="true" id="calculator_preferences_repository.follow.ignore_disposed">
+            <mutation text="if (_profileSubscription != null) return;"/>
+        </regex>
+
+        <!-- RULE 8: a profile change leaves the settings where they were -->
+        <regex pattern="_user = user;\s*_current = CalculatorPreferencesDto\.fromJson\(" dotAll="true" id="calculator_preferences_repository.change.keep_current">
+            <mutation text="_user = user; final _ = CalculatorPreferencesDto.fromJson("/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="calculator_preferences_repository_impl" expected-return="0">flutter test test/features/calculator/units/data/repositories/calculator_preferences_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

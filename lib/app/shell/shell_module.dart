@@ -138,7 +138,7 @@ class ShellModule extends Module {
         FeatureAvailability.isEnabled(Feature.calculator)) {
       r.module(
         calculatorBaseRoute,
-        module: CalculatorModule(),
+        module: CalculatorModule(appBootstrap),
         guards: [AuthGuard(() => Modular.get<AuthManager>())],
       );
     } else {
