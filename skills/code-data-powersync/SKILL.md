@@ -24,17 +24,18 @@ disable-model-invocation: false
 
 **Input:** Plan + domain interfaces (`code-domain`) — repository interface, entities, failures.
 
-Same layering and error boundary as `code-data` (DataSource rethrows; RepositoryImpl
-logs+maps once). What changes: reads are reactive `Stream`s, writes are optimistic local
-mutations. Table not in `schema.dart` → use `code-data` instead.
+This skill uses the same layering and error boundary as `code-data`. The DataSource
+rethrows errors. The RepositoryImpl logs and maps each error once. Two things differ
+from `code-data`: reads are reactive `Stream`s, and writes are optimistic local
+mutations. If the table is not in `schema.dart`, use `code-data` instead.
 
 ## 1. The seam
 
-Features never touch `PowerSyncDatabase`. Depend on
-[`PowerSyncDatabaseWrapper`](../../lib/libraries/powersync/interfaces/powersync_database_wrapper.dart),
-which returns plain `List<Map<String, dynamic>>` rows. Already bound in
-[`powersync_module.dart`](../../lib/libraries/powersync/powersync_module.dart) — inject it;
-never open the DB or touch the connector.
+Features never touch `PowerSyncDatabase` directly. Depend on
+[`PowerSyncDatabaseWrapper`](../../lib/libraries/powersync/interfaces/powersync_database_wrapper.dart)
+instead. It returns plain `List<Map<String, dynamic>>` rows. It is already bound in
+[`powersync_module.dart`](../../lib/libraries/powersync/powersync_module.dart), so inject
+it. Never open the database or touch the connector yourself.
 
 | Method | Use it for |
 |--------|-----------|
@@ -44,157 +45,202 @@ never open the DB or touch the connector.
 | `Future<T> writeTransaction<T>((WriteContext tx) → Future<T>)` | **Atomic write.** Use only when 2+ rows must land as a unit. `tx` exposes `execute` only. |
 | `Future<SyncStreamHandle> syncStream(name)` | **On-demand sync.** Handle's `unsubscribe()` must be called on cancel. Not idempotent. |
 
-Seam lacks what you need? Add it to the interface, `PowerSyncDatabaseWrapperImpl`, and
-`FakePowerSyncDatabaseWrapper` in one change with a test. Never reach around it.
+If the seam is missing something you need, add it in one change: to the interface, to
+`PowerSyncDatabaseWrapperImpl`, and to `FakePowerSyncDatabaseWrapper`, with a test. Never
+work around the seam.
 
 ## 2. The two rules
 
-1. **Read reactively.** Anything on screen reads through `watch()`. `getAll()` only when
-   genuinely one-shot.
-2. **`watch()` is the source of truth, including after a write.** Never re-fetch or patch
-   UI state by hand — the local write makes every relevant stream re-emit.
-   *Exception:* a write whose contract returns the mutated entity needs a `getAll()`
-   read-back (local read, not a round-trip). Throw if it comes up empty.
+1. **Read reactively.** Anything shown on screen reads through `watch()`. Use `getAll()`
+   only when the read is genuinely one-shot.
+2. **`watch()` stays the source of truth, even right after a write.** Never re-fetch data
+   or patch UI state by hand — a local write makes every relevant stream re-emit on its own.
+   *Exception:* if a write's contract must return the mutated entity, read it back with
+   `getAll()` (a local read, not a round-trip to the server). Throw if that read-back comes
+   back empty.
 
 ## 3. Class shapes
 
 | Class | Naming | Returns | Notes |
 |-------|--------|---------|-------|
-| **DataSource** (interface) | `PowerSync{Noun}DataSource` | `Stream`/`Future` of DTOs | Prefix is on the *interface* — the request/response `{Noun}DataSource` may coexist during migration. **No `Either`.** Always rethrows. |
-| **DataSource** (impl) | `PowerSync{Noun}DataSourceImpl` | same | Owns on-demand activation (§5). `_logger.debug()` on success is fine; never log errors here. |
-| **RepositoryImpl** | `{Noun}RepositoryImpl` | `Stream<Either<Failure, T>>` / `Future<Either<Failure, void>>` | **Error boundary.** Maps to `Failure`, logs once. |
-| **DTO** | `{Noun}Dto` | — | `fromRow` for SQLite; `fromJson` stays Supabase-shaped (§6). |
+| **DataSource** (interface) | `PowerSync{Noun}DataSource` | `Stream`/`Future` of DTOs | The `PowerSync` prefix goes on the *interface*. The request/response `{Noun}DataSource` may still exist at the same time during a migration. Never return `Either` here — always rethrow. |
+| **DataSource** (impl) | `PowerSync{Noun}DataSourceImpl` | same | Owns on-demand activation (see §5). `_logger.debug()` on success is fine. Never log errors at this layer. |
+| **RepositoryImpl** | `{Noun}RepositoryImpl` | `Stream<Either<Failure, T>>` / `Future<Either<Failure, void>>` | **This is the error boundary.** It maps exceptions to `Failure` and logs each one exactly once. |
+| **DTO** | `{Noun}Dto` | — | Use `fromRow` for SQLite rows. `fromJson` keeps the Supabase JSON shape (see §7). |
 
-Stateless — two UIs over one table share the `addLazySingleton` instance and differ only
-by query (`watchRecent(projectId, {limit})` vs `watchAll(projectId)`), not by instance.
+Each of these classes is stateless. When two UIs read the same table, they share one
+`addLazySingleton` instance and differ only by which query they call — for example
+`watchRecent(projectId, {limit})` versus `watchAll(projectId)` — never by having separate
+instances.
 
 ## 4. Writes — optimistic, local-first
 
-- **Success means "persisted locally + queued" — NOT "server accepted."** The returned
-  `Either` can only carry a *local* failure.
-- **Server rejection is asynchronous.** The connector treats an RLS denial (`42501`) as
-  permanent and completes the transaction to unblock the queue; the optimistic row stays.
-  User-facing surfacing is the conflict channel (`CA-660`), not this return value.
-- **Write ids/timestamps explicitly.** Id from the injected
-  [`UuidGenerator`](../../lib/libraries/uuid/interfaces/uuid_generator.dart) seam, times
-  from `Clock` — never `Uuid().v4()` inline, or the insert's params can't be asserted.
-- **`writeTransaction` for atomic multi-table writes** — commits together, rolls back on
-  throw. Bare `execute()` for single rows.
+- **A successful write means "persisted locally and queued for upload" — not "the server
+  accepted it."** The returned `Either` can only ever carry a *local* failure.
+- **Server rejection happens later, asynchronously.** If the connector sees a permanent
+  RLS denial (`42501`), it completes the transaction anyway so the upload queue isn't
+  blocked, and the optimistic row stays in place. Surfacing that rejection to the user goes
+  through the conflict channel (`CA-660`), not through this write's return value.
+- **Write ids and timestamps explicitly.** Get the id from the injected
+  [`UuidGenerator`](../../lib/libraries/uuid/interfaces/uuid_generator.dart) seam, and get
+  the time from `Clock`. Never call `Uuid().v4()` inline — tests need to assert the exact
+  insert parameters, and an inline call makes that impossible.
+- **Use `writeTransaction` only for an atomic multi-table write.** It commits every row
+  together and rolls back all of them if the callback throws. For a single row, use bare
+  `execute()`.
 
-> 🛑 **Decision gate.** When *server acceptance* matters to the UX (locking an estimate,
-> anything where showing "saved" before the server agrees is wrong), **stop and ask the
-> user** how confirmation/conflict should work. The optimistic default is not universal.
+> 🛑 **Decision gate.** Sometimes the UX genuinely needs to know the server accepted the
+> write — for example, locking an estimate, where showing "saved" before the server agrees
+> would be wrong. When that's the case, **stop and ask the user** how confirmation and
+> conflicts should work instead of assuming the optimistic default fits.
 
 ## 5. Backend invariants (separate repo)
 
-Sync rules live in the backend repo — **you cannot read it from here.**
+The rules for what syncs and to whom live in the backend repo. You cannot read that repo
+from here.
 
-> 🛑 **Ask first.** Before writing the data layer, ask the user to paste this feature's
-> stream block (and the table's column list) from the backend repo's `sync-config.yaml` /
-> `sync-streams.yaml`. Do not guess the stream name or the SELECTed columns — a wrong guess
-> fails silently, not loudly. If the user can't produce it, say the feature is blocked on it
-> and write only what doesn't depend on it.
+> 🛑 **Ask first.** Before writing the data layer, ask the user to paste two things from
+> the backend repo: this feature's stream block from `sync-config.yaml` /
+> `sync-streams.yaml`, and the table's column list. Do not guess the stream name or which
+> columns are selected — a wrong guess fails silently, with no error to warn you. If the
+> user can't produce this, tell them the feature is blocked on it, and write only the parts
+> of the data layer that don't depend on it.
 
-Reconcile against that pasted config:
+Once you have that pasted config, check each of these against it:
 
-- [ ] **Schema ↔ stream-SELECT parity.** Every `schema.dart` column must be SELECTed by the
-      matching `sync-streams.yaml` stream. **Mismatch = silent data loss**, no error.
-- [ ] **RLS mirrors the connector** (`upsert`/`update`/`delete` keyed on `id`).
-- [ ] **Table is in the Postgres publication.** Absent = never syncs down.
-- [ ] **Permissions are JWT-derived server-side** — the client passes no parameters.
-- [ ] **On-demand streams registered.** **The stream name is not the table name** — pass the
-      `sync-streams.yaml` name (`user_cost_estimates` for table `cost_estimates`). Wrong
-      name silently activates nothing.
+- [ ] **Every column in `schema.dart` must also be selected by the matching stream in
+      `sync-streams.yaml`.** If a column is missing from the stream's `SELECT`, rows lose
+      that data silently — no error is raised.
+- [ ] **The RLS policy must mirror what the connector does** — it should allow `upsert`,
+      `update`, and `delete`, each keyed on `id`.
+- [ ] **The table must be in the Postgres publication.** If it isn't, the table never
+      syncs down at all.
+- [ ] **Permissions must be derived from the JWT on the server side.** The client should
+      pass no permission parameters itself.
+- [ ] **Register on-demand streams by their sync-stream name, not the table name.** For
+      example, the stream for table `cost_estimates` is named `user_cost_estimates`. Using
+      the wrong name activates nothing, with no error.
 
 ## 6. Wiring an on-demand synced table
 
-An always-on synced table is the same minus activation.
+An always-on synced table follows the same pattern, just without the activation step.
 
 ### 6.1 DataSource owns lazy activation
 
-Activation binds to the **subscription lifecycle**, not to construction — the table is
-synced only while something watches. Write it once per data source as a private
-`Stream<T> _watchWithSyncStream<T>({sql, parameters, mapRows, dedupe})`; each public method
-supplies only its query and row projection. Build it with `Stream.multi` so activation runs
-per-listener, and hold these invariants:
+Activation is tied to the subscription's lifecycle, not to when the object is constructed:
+the table only syncs while something is actively watching it. Write this once per data
+source, as a private method:
+`Stream<T> _watchWithSyncStream<T>({sql, parameters, mapRows, dedupe})`. Each public method
+then only needs to supply its own query and how to turn rows into its return type. Build
+this with `Stream.multi` so that activation runs separately for each listener.
 
-- **Set `controller.onCancel` before the first `await`.** Dart does not replay a cancel that
-  fires before the callback is assigned, so a cancel racing activation would leak the handle.
-- **Release through a helper that nulls the field before calling `unsubscribe()`** —
-  `unsubscribe()` is not idempotent, and both `onCancel` and the post-await checks can reach it.
-- **Re-check `listenerCancelled || !controller.hasListener` after every await** — after
-  `syncStream()` returns, and again after wiring the inner subscription. Cancelled → release
-  and return.
-- **A `syncStream()` throw is terminal.** Catch it, `controller.addError(...)`, then
-  `controller.close()`. Never leave a live stream that can never emit.
-- **`onCancel` cancels the inner `watch()` subscription first, then releases the handle**,
-  and nulls both fields.
+Hold these five rules when you write it:
 
-**`dedupe`:** `watch()` re-fires on *any* change to a queried table, so a single-row watch
-rebuilds an identical value when an unrelated row changes. Pass `true` for shapes with
-value equality (one DTO, a scalar). Leave it off for `List<Dto>` — Dart compares lists by
-identity, so it is a no-op that reads as protection.
+- **Set `controller.onCancel` before the first `await`.** Dart will not replay a cancel
+  that happens before the callback is assigned. If you set it after an `await`, a cancel
+  that races your activation code can leak the sync-stream handle.
+- **Release the handle through one helper that nulls the field before calling
+  `unsubscribe()`.** `unsubscribe()` is not idempotent — calling it twice is a bug — and
+  both `onCancel` and the post-await checks below can reach this same code path.
+- **After every `await`, re-check `listenerCancelled || !controller.hasListener`.** Do
+  this after `syncStream()` returns, and again after the inner subscription is wired up.
+  If the listener is gone, release the handle and return immediately.
+- **Treat a `syncStream()` throw as terminal.** Catch it, call
+  `controller.addError(...)`, then call `controller.close()`. Never leave a stream open
+  that can no longer emit anything.
+- **On cancel, cancel the inner `watch()` subscription first, then release the sync-stream
+  handle, then null both fields.**
 
-> ⚠️ **Emptiness is not permission.** A server-side permission denial syncs no rows and
-> `watch()` emits `[]` — indistinguishable from "none yet". Gate on the permission
-> upstream, never on an empty stream.
+**On `dedupe`:** `watch()` re-fires whenever *any* row in the queried table changes — even
+one unrelated to what you're watching. That means a single-row watch can rebuild an
+identical value just because some other row changed. Pass `true` for shapes that support
+value equality, such as a single DTO or a scalar. Leave it off for `List<Dto>` — Dart
+compares lists by identity, not by value, so passing `true` there does nothing and can be
+mistaken for real protection.
+
+> ⚠️ **An empty stream does not mean "no permission."** If the server denies permission,
+> no rows sync down and `watch()` emits `[]` — the same thing you'd see if there simply
+> were no rows yet. Check permission upstream of the stream. Never infer it from an empty
+> result.
 
 ### 6.2 RepositoryImpl — the error boundary
 
-`Either` lives here and nowhere below. Reads: `.map` to entities in `Right`;
-`.handleError` logs once (`AppLogger().tag(...)`) and maps to a domain `Failure`.
-A `watch()` error is recoverable — map to `Left`, keep the stream alive. A `syncStream()`
-activation failure is terminal — the DataSource already closed the stream, so that `Left`
-is the last event and the UI must offer re-subscribe.
-Writes: `try/catch`, `Right(null)` on success (= local+queued, §4), `Left` on a local error.
+`Either` exists only at this layer, never below it. For reads: map the successful case to
+entities inside `Right`; in the error case, log once (via `AppLogger().tag(...)`) and map
+to a domain `Failure`. A `watch()` error is recoverable — map it to `Left` and keep the
+stream alive. A `syncStream()` activation failure is not recoverable — the DataSource has
+already closed the stream, so that `Left` is the final event, and the UI must offer a way
+to re-subscribe.
 
-Reuse `code-data`'s exception→Failure mapping (timeout/socket/Postgrest → warning vs error;
-unknown → `UnexpectedFailure`). **Reuse an existing `{Feature}Failure` — never invent one inline.**
+For writes: use `try`/`catch`. On success, return `Right(null)` — meaning "saved locally
+and queued," as described in §4. On a local error, return `Left`.
+
+Reuse `code-data`'s existing exception-to-`Failure` mapping (timeout and socket errors map
+to a warning; Postgrest errors and unknown errors map to an error; unknown cases become
+`UnexpectedFailure`). **Always reuse an existing `{Feature}Failure` type. Never invent a
+new one inline.**
 
 ### 6.3 Presentation & DI
 
-- **Cubit/Bloc:** subscribe on init, emit per `Either`, **cancel on `close()`**. Never patch
-  the list after a write.
-- **DI:** `addLazySingleton` in the owning Modular module — `{feature}_module.dart`, or
-  `{name}_library_module.dart` when shared across features (cost estimation lives in
-  `lib/libraries/estimation/`).
-- **Migrating an existing Supabase feature:** register the PowerSync DataSource alongside
-  the request/response one; leave the repository bound to the old impl until the cutover PR.
+- **Cubit/Bloc:** Subscribe when the Cubit/Bloc is created. Emit a new state for each
+  `Either` the stream produces. Cancel the subscription in `close()`. Never patch the list
+  by hand after a write — let the stream do it.
+- **DI:** Register with `addLazySingleton`, in the module that owns the feature —
+  `{feature}_module.dart`, or `{name}_library_module.dart` when the code is shared across
+  features (cost estimation, for example, lives in `lib/libraries/estimation/`).
+- **Migrating an existing Supabase feature:** Register the new PowerSync DataSource
+  alongside the existing request/response one. Keep the repository bound to the old
+  implementation until the actual cutover PR.
 
 ## 7. SQLite encodings
 
-Per [`schema.dart`](../../lib/libraries/powersync/models/schema.dart):
+These encoding rules come from [`schema.dart`](../../lib/libraries/powersync/models/schema.dart):
 
-- **Booleans are integers.** Convert on both sides, in different places: reads in
-  `Dto.fromRow` (`(row['is_locked'] as int? ?? 0) != 0`), writes at the insert
-  (`e.isLocked ? 1 : 0`) — because `toJson`/`fromJson` stay the Supabase bool shape.
-- **Timestamps are `text`.** Parse/format ISO strings yourself.
-- **Numerics:** `Column.real` → `double`, `Column.integer` → `int`.
-- **`id`** is added by PowerSync — don't redeclare it; do set it on insert.
+- **Booleans are stored as integers.** Convert in two separate places: on read, in
+  `Dto.fromRow` (`(row['is_locked'] as int? ?? 0) != 0`); on write, at the insert
+  (`e.isLocked ? 1 : 0`). This is because `toJson`/`fromJson` keep using the Supabase
+  boolean shape, not the SQLite integer shape.
+- **Timestamps are stored as `text`.** Parse and format ISO strings yourself.
+- **Numeric columns:** a `Column.real` maps to `double`; a `Column.integer` maps to `int`.
+- **`id` is added by PowerSync automatically.** Don't redeclare it in your schema, but do
+  set its value yourself on insert.
 
 ## 8. Testing (see `write-tests`, `write-tests-mutation`)
 
-Against [`FakePowerSyncDatabaseWrapper`](../../lib/libraries/powersync/testing/fake_powersync_database_wrapper.dart),
-never the real DB:
+Test against
+[`FakePowerSyncDatabaseWrapper`](../../lib/libraries/powersync/testing/fake_powersync_database_wrapper.dart).
+Never test against the real database.
 
-- **Reads:** `fake.stubGetAll(sql, rows)`; `fake.emitWatch(sql, rows)` (seeds replay to late subscribers).
-- **Errors:** `fake.emitWatchError(sql, err)` / `getAllError` / `executeError` / `syncStreamError`.
-- **Writes:** assert `fake.executeCalls` holds the expected `(sql, parameters)` — verify bound params, not just the call.
-- **Transactions:** `fake.writeTransactionCallCount`; inner `tx.execute()` calls still land in `executeCalls` in order. `writeTransactionError` fails before the callback runs.
-- **Activation:** `fake.syncStreamCalls` contains the stream name after the first subscription.
-- **Release:** after cancel, `fake.syncStreamUnsubscribes` contains it — exactly once.
-- **Cancel-during-activation:** `listen()` then `cancel()` synchronously, then
-  `await pumpEventQueue()` — asserts the handle acquired after the subscriber left is still released.
-- `fake.reset()` between tests, `fake.dispose()` in teardown.
+- **Reads:** Use `fake.stubGetAll(sql, rows)` for one-shot reads. Use
+  `fake.emitWatch(sql, rows)` for streamed reads — seeded values replay to subscribers that
+  join later.
+- **Errors:** Use `fake.emitWatchError(sql, err)`, `getAllError`, `executeError`, or
+  `syncStreamError` to simulate each kind of failure.
+- **Writes:** Assert that `fake.executeCalls` contains the expected `(sql, parameters)`
+  pair. Check the actual bound parameters, not just that the call happened.
+- **Transactions:** Check `fake.writeTransactionCallCount`. Inner `tx.execute()` calls
+  still show up in `executeCalls`, in order. `writeTransactionError` makes the transaction
+  fail before the callback runs at all.
+- **Activation:** After the first subscription, `fake.syncStreamCalls` contains the stream
+  name.
+- **Release:** After cancel, `fake.syncStreamUnsubscribes` contains the stream name exactly
+  once.
+- **Cancel during activation:** Call `listen()`, then `cancel()` synchronously, then
+  `await pumpEventQueue()`. This asserts that a handle acquired after the subscriber left
+  is still released.
+- Call `fake.reset()` between tests, and `fake.dispose()` in teardown.
 
 ## Checklist
 
-- [ ] Reads go through `watch()`; `getAll()` one-shots justified.
-- [ ] DataSource returns DTOs and rethrows; no `Either` below the repository.
-- [ ] RepositoryImpl maps to a reused `Failure`, logs once.
-- [ ] Writes optimistic; server-acceptance-critical ones confirmed with the user (§4 gate).
-- [ ] `syncStream` activates on first watch, releases once on cancel, survives a cancel racing activation.
-- [ ] No permission inferred from an empty stream.
-- [ ] Backend sync config asked for and reconciled (§5) — stream name and SELECTed columns confirmed, not guessed.
-- [ ] DTO handles bool-as-int and text timestamps.
-- [ ] Tests cover reactive + error + activation + release paths.
+- [ ] Reads go through `watch()`; any `getAll()` one-shot is justified.
+- [ ] DataSource returns DTOs and rethrows; no `Either` appears below the repository.
+- [ ] RepositoryImpl maps to a reused `Failure` and logs each error once.
+- [ ] Writes are optimistic; any write where server acceptance matters was confirmed with
+      the user (the §4 gate).
+- [ ] `syncStream` activates on the first watch, releases exactly once on cancel, and
+      survives a cancel that races activation.
+- [ ] No permission is inferred from an empty stream.
+- [ ] The backend sync config was asked for and reconciled (§5) — stream name and selected
+      columns were confirmed, not guessed.
+- [ ] The DTO handles bool-as-int and text timestamps.
+- [ ] Tests cover the reactive, error, activation, and release paths.
