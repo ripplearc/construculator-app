@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -131,6 +133,24 @@ void main() {
         await fakeWrapper.syncStream('user_cost_estimates');
 
         expect(fakeWrapper.syncStreamCalls, ['user_cost_estimates']);
+      });
+
+      test('can delay activation until the gate completes', () async {
+        fakeWrapper.syncStreamActivationGate = Completer<void>();
+
+        // syncStreamCalls is recorded synchronously at the top of syncStream(),
+        // before the internal gate await — no async wait needed to observe it.
+        final future = fakeWrapper.syncStream('user_cost_estimates');
+
+        expect(fakeWrapper.syncStreamCalls, ['user_cost_estimates']);
+        expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
+
+        fakeWrapper.syncStreamActivationGate!.complete();
+        final handle = await future;
+
+        handle.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribes, ['user_cost_estimates']);
       });
 
       test('returned handle records its release on unsubscribe', () async {
