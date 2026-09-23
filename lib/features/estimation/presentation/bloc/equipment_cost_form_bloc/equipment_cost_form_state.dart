@@ -59,37 +59,34 @@ class EquipmentCostFormWithData extends Equatable {
   /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
 
-  /// Returns a copy with the given fields replaced. Pass [clearField] to
-  /// explicitly null a nullable field; omit a parameter to keep its value.
+  /// Returns a copy with the given fields replaced. For a nullable field, an
+  /// explicit value sets it, `null` clears it, and omitting the parameter
+  /// keeps its current value.
   EquipmentCostFormWithData copyWith({
     EquipmentPricingMethod? method,
     String? equipmentType,
-    Object? duration = clearField,
-    Object? dailyRate = clearField,
-    Object? jobAmount = clearField,
-    Object? deliveryFee = clearField,
+    Object? duration = _unset,
+    Object? dailyRate = _unset,
+    Object? jobAmount = _unset,
+    Object? deliveryFee = _unset,
     DeliveryFeeStatus? deliveryFeeStatus,
     RateStatus? rateStatus,
-    Object? description = clearField,
+    Object? description = _unset,
     bool? isValid,
     Map<String, String>? fieldErrors,
   }) {
     return EquipmentCostFormWithData(
       method: method ?? this.method,
       equipmentType: equipmentType ?? this.equipmentType,
-      duration: duration == clearField ? this.duration : duration as double?,
-      dailyRate: dailyRate == clearField
-          ? this.dailyRate
-          : dailyRate as double?,
-      jobAmount: jobAmount == clearField
-          ? this.jobAmount
-          : jobAmount as double?,
-      deliveryFee: deliveryFee == clearField
+      duration: duration == _unset ? this.duration : duration as double?,
+      dailyRate: dailyRate == _unset ? this.dailyRate : dailyRate as double?,
+      jobAmount: jobAmount == _unset ? this.jobAmount : jobAmount as double?,
+      deliveryFee: deliveryFee == _unset
           ? this.deliveryFee
           : deliveryFee as double?,
       deliveryFeeStatus: deliveryFeeStatus ?? this.deliveryFeeStatus,
       rateStatus: rateStatus ?? this.rateStatus,
-      description: description == clearField
+      description: description == _unset
           ? this.description
           : description as String?,
       isValid: isValid ?? this.isValid,
@@ -157,3 +154,10 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
   /// The failure returned by [CostItemRepository.createCostItem].
   final Failure failure;
 }
+
+/// Sentinel distinguishing "omit this parameter" (keep the current value)
+/// from an explicit `null` (clear the field) in
+/// [EquipmentCostFormWithData.copyWith]. Deliberately local to this file and
+/// not shared with [EquipmentCostItem.copyWith]'s `clearField`, since that
+/// sentinel means the opposite: pass it explicitly to clear, omit to keep.
+const Object _unset = Object();
