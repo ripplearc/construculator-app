@@ -12,7 +12,7 @@
 # separate stack if that sibling checkout isn't also the one a developer
 # uses for ordinary local backend work. That default is still just a guess;
 # what actually enforces separation is e2e_require_dedicated_backend below,
-# which every destructive action runs through CA-1007
+# which every destructive action runs through. CA-1007
 # (https://ripplearc.youtrack.cloud/issue/CA-1007).
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 if [ -n "${E2E_BACKEND_DIR:-}" ]; then

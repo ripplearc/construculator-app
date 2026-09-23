@@ -22,7 +22,11 @@ in both places.
 > E2E-only one; if you genuinely want to point it at a shared checkout
 > anyway, set `E2E_ALLOW_SHARED_BACKEND=1` to acknowledge that
 > `reset_env.sh` / `stop_env.sh --purge` will then act on that checkout's own
-> data. See [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007).
+> data. Do not export `E2E_BACKEND_DIR` permanently (e.g. in your shell
+> profile) if it points at your daily checkout — the guard only checks that
+> the variable was set explicitly, not that you meant this specific run, so a
+> standing export defeats it silently. See
+> [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007).
 
 ## Why this environment exists
 

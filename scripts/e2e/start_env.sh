@@ -6,7 +6,8 @@
 # This starts whatever Supabase project E2E_BACKEND_DIR's config.toml names.
 # Starting is non-destructive, so unlike reset_env.sh and
 # stop_env.sh --purge, it does not go through e2e_require_dedicated_backend
-# (see lib.sh) — there is nothing here to guard.
+# (see lib.sh). It still writes signing_key.json and powersync/.env into the
+# resolved checkout if they are missing, but it destroys no data.
 #
 # Usage: scripts/e2e/start_env.sh
 #
