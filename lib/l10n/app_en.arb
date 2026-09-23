@@ -2170,9 +2170,29 @@
   "@equipmentNameLabel": {
     "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
   },
-  "unitPriceLabel": "Unit price*",
-  "@unitPriceLabel": {
-    "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
+  "equipmentDayMethodLabel": "Day",
+  "@equipmentDayMethodLabel": {
+    "description": "Label for the Day choice chip in the equipment pricing method toggle (manually mode)"
+  },
+  "equipmentJobMethodLabel": "Job",
+  "@equipmentJobMethodLabel": {
+    "description": "Label for the Job choice chip in the equipment pricing method toggle (manually mode)"
+  },
+  "equipmentDurationLabel": "Duration*",
+  "@equipmentDurationLabel": {
+    "description": "Hint label for the duration field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentDurationSuffix": "days",
+  "@equipmentDurationSuffix": {
+    "description": "Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentRateLabel": "Rate*",
+  "@equipmentRateLabel": {
+    "description": "Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentAmountLabel": "Amount*",
+  "@equipmentAmountLabel": {
+    "description": "Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)"
   },
   "rateDayLabel": "Rate/Day:",
   "@rateDayLabel": {
@@ -2193,6 +2213,26 @@
   "equipmentNameRequiredError": "Equipment name is required",
   "@equipmentNameRequiredError": {
     "description": "Validation error shown below the equipment name field when it is submitted empty"
+  },
+  "equipmentDurationRequiredError": "Duration must be more than zero",
+  "@equipmentDurationRequiredError": {
+    "description": "Validation error shown below the duration field when it is zero, negative, or empty (Day pricing, manually mode)"
+  },
+  "equipmentRateRequiredError": "Rate is required",
+  "@equipmentRateRequiredError": {
+    "description": "Validation error shown below the rate field when it is submitted empty (Day pricing, manually mode)"
+  },
+  "equipmentRateOutOfRangeError": "Rate must be between $0.01 and $999,999.99",
+  "@equipmentRateOutOfRangeError": {
+    "description": "Validation error shown below the rate field when it is outside the accepted bound (Day pricing, manually mode)"
+  },
+  "equipmentAmountRequiredError": "Amount is required",
+  "@equipmentAmountRequiredError": {
+    "description": "Validation error shown below the amount field when it is submitted empty (Job pricing, manually mode)"
+  },
+  "equipmentAmountOutOfRangeError": "Amount must be between $0.01 and $999,999.99",
+  "@equipmentAmountOutOfRangeError": {
+    "description": "Validation error shown below the amount field when it is outside the accepted bound (Job pricing, manually mode)"
   },
   "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
   "@projectSettingsNavigationError": {

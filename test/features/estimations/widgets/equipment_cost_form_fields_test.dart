@@ -56,6 +56,18 @@ void main() {
     );
   }
 
+  Future<void> fillValidDayFields(WidgetTester tester) async {
+    await tester.enterText(
+      find.byKey(const Key('equipment_name_field')),
+      'Backhoe',
+    );
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('duration_field')), '2');
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('rate_field')), '150');
+    await tester.pump();
+  }
+
   group('EquipmentCostFormFields — manually mode', () {
     testWidgets('shows equipment name field', (tester) async {
       await tester.pumpWidget(makeWidget());
@@ -64,18 +76,25 @@ void main() {
       expect(find.byKey(const Key('equipment_name_field')), findsOneWidget);
     });
 
-    testWidgets('shows unit price field with dollar suffix', (tester) async {
+    testWidgets('shows Day/Job toggle with Day selected by default', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('unit_price_field')), findsOneWidget);
+      expect(find.byKey(const Key('day_method_chip')), findsOneWidget);
+      expect(find.byKey(const Key('job_method_chip')), findsOneWidget);
+      expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      expect(find.byKey(const Key('rate_field')), findsOneWidget);
+      expect(find.byKey(const Key('amount_field')), findsNothing);
     });
 
-    testWidgets('shows quantity field', (tester) async {
+    testWidgets('hides unit price and quantity fields', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('quantity_field')), findsOneWidget);
+      expect(find.byKey(const Key('unit_price_field')), findsNothing);
+      expect(find.byKey(const Key('quantity_field')), findsNothing);
     });
 
     testWidgets('hides cost file field', (tester) async {
@@ -93,137 +112,87 @@ void main() {
     });
   });
 
-  group('EquipmentCostFormFields — from cost file mode', () {
-    testWidgets('shows cost file dropdown placeholder', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('cost_file_field')), findsOneWidget);
-    });
-
-    testWidgets('shows equipment type dropdown placeholder', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('equipment_type_field')), findsOneWidget);
-    });
-
-    testWidgets('shows quantity field', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('quantity_field')), findsOneWidget);
-    });
-
-    testWidgets('hides equipment name field', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('equipment_name_field')), findsNothing);
-    });
-
-    testWidgets('hides unit price field', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('unit_price_field')), findsNothing);
-    });
-  });
-
-  group('EquipmentCostFormFields — save enabled', () {
-    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pumpAndSettle();
-
-      expect(captured, isNull);
-    });
-
-    testWidgets(
-      'calls onSaveEnabledChanged(true) when equipment name has text',
-      (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
-
-        expect(captured, isTrue);
-      },
-    );
-
-    testWidgets(
-      'calls onSaveEnabledChanged(false) when equipment name is cleared',
-      (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          '',
-        );
-        await tester.pump();
-
-        expect(captured, isFalse);
-      },
-    );
-
-    testWidgets('does not call onSaveEnabledChanged in from cost file mode', (
+  group('EquipmentCostFormFields — Day/Job toggle', () {
+    testWidgets('tapping Job swaps duration+rate for a single amount field', (
       tester,
     ) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(
-          fromCostFile: true,
-          onSaveEnabledChanged: (v) => captured = v,
-        ),
-      );
+      await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
-      expect(captured, isNull);
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('duration_field')), findsNothing);
+      expect(find.byKey(const Key('rate_field')), findsNothing);
+      expect(find.byKey(const Key('amount_field')), findsOneWidget);
+    });
+
+    testWidgets('tapping Day after Job restores duration+rate fields', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('day_method_chip')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      expect(find.byKey(const Key('rate_field')), findsOneWidget);
+      expect(find.byKey(const Key('amount_field')), findsNothing);
+    });
+
+    testWidgets('switching method preserves the equipment name field value', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+
+      expect(find.text('Backhoe'), findsOneWidget);
+    });
+
+    testWidgets('re-tapping the already-active Day chip is a no-op', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('day_method_chip')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      expect(find.byKey(const Key('rate_field')), findsOneWidget);
+      expect(find.byKey(const Key('amount_field')), findsNothing);
     });
 
     testWidgets(
-      'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing',
+      'switching to Job and back to Day preserves the previously entered duration/rate',
       (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
+        await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
         await tester.pump();
-        expect(captured, isTrue);
-
-        await tester.pumpWidget(
-          makeWidget(
-            fromCostFile: true,
-            onSaveEnabledChanged: (v) => captured = v,
-          ),
-        );
+        await tester.enterText(find.byKey(const Key('rate_field')), '75');
         await tester.pump();
 
-        expect(captured, isFalse);
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('day_method_chip')));
+        await tester.pump();
+
+        expect(find.text('3'), findsOneWidget);
+        expect(find.text('75'), findsOneWidget);
       },
     );
   });
@@ -267,8 +236,245 @@ void main() {
     });
   });
 
+  group('EquipmentCostFormFields — Day validation errors', () {
+    testWidgets('shows duration error when duration is entered then cleared', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '0');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentDurationRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides duration error once duration is positive', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '0');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('duration_field')), '2');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentDurationRequiredError), findsNothing);
+    });
+
+    testWidgets('shows rate out-of-range error above the accepted bound', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '1000000');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentRateOutOfRangeError), findsOneWidget);
+    });
+  });
+
+  group('EquipmentCostFormFields — Job validation errors', () {
+    testWidgets('shows amount out-of-range error above the accepted bound', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+
+      await tester.enterText(find.byKey(const Key('amount_field')), '1000000');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentAmountOutOfRangeError), findsOneWidget);
+    });
+
+    testWidgets('hides amount error once a valid amount is entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+
+      await tester.enterText(find.byKey(const Key('amount_field')), '1000000');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
+    });
+  });
+
+  group('EquipmentCostFormFields — from cost file mode', () {
+    testWidgets('shows cost file dropdown placeholder', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('cost_file_field')), findsOneWidget);
+    });
+
+    testWidgets('shows equipment type dropdown placeholder', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('equipment_type_field')), findsOneWidget);
+    });
+
+    testWidgets('shows quantity field', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('quantity_field')), findsOneWidget);
+    });
+
+    testWidgets('hides equipment name field', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+    });
+
+    testWidgets('hides Day/Job toggle', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('day_method_chip')), findsNothing);
+      expect(find.byKey(const Key('job_method_chip')), findsNothing);
+    });
+  });
+
+  group('EquipmentCostFormFields — save enabled', () {
+    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets('stays disabled when only the equipment name is filled (Day)', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+      'becomes enabled once name, duration, and rate are all valid (Day)',
+      (tester) async {
+        bool? captured;
+        await tester.pumpWidget(
+          makeWidget(onSaveEnabledChanged: (v) => captured = v),
+        );
+        await tester.pumpAndSettle();
+
+        await fillValidDayFields(tester);
+
+        expect(captured, isTrue);
+      },
+    );
+
+    testWidgets('becomes enabled once name and amount are valid (Job)', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      expect(captured, isTrue);
+    });
+
+    testWidgets(
+      'becomes disabled again after switching from a valid Day form to Job with no amount',
+      (tester) async {
+        bool? captured;
+        await tester.pumpWidget(
+          makeWidget(onSaveEnabledChanged: (v) => captured = v),
+        );
+        await tester.pumpAndSettle();
+
+        await fillValidDayFields(tester);
+        expect(captured, isTrue);
+
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+
+        expect(captured, isFalse);
+      },
+    );
+
+    testWidgets('does not call onSaveEnabledChanged in from cost file mode', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onSaveEnabledChanged: (v) => captured = v,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets(
+      'calls onSaveEnabledChanged(false) when switching to from cost file mode after filling a valid Day form',
+      (tester) async {
+        bool? captured;
+        await tester.pumpWidget(
+          makeWidget(onSaveEnabledChanged: (v) => captured = v),
+        );
+        await tester.pumpAndSettle();
+
+        await fillValidDayFields(tester);
+        expect(captured, isTrue);
+
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: true,
+            onSaveEnabledChanged: (v) => captured = v,
+          ),
+        );
+        await tester.pump();
+
+        expect(captured, isFalse);
+      },
+    );
+  });
+
   group('EquipmentCostFormFields — real-time total', () {
-    testWidgets('calls onTotalChanged with unitPrice × quantity', (
+    testWidgets('calls onTotalChanged with duration × rate under Day', (
       tester,
     ) async {
       double? capturedTotal;
@@ -277,30 +483,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('unit_price_field')), '200');
+      await tester.enterText(find.byKey(const Key('duration_field')), '3');
       await tester.pump();
-      await tester.enterText(find.byKey(const Key('quantity_field')), '3');
+      await tester.enterText(find.byKey(const Key('rate_field')), '200');
       await tester.pump();
 
       expect(capturedTotal, 600.0);
     });
 
-    testWidgets('total updates when quantity changes', (tester) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('unit_price_field')), '50');
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('quantity_field')), '10');
-      await tester.pump();
-
-      expect(capturedTotal, 500.0);
-    });
-
-    testWidgets('calls onTotalChanged with 0 when price field is empty', (
+    testWidgets('calls onTotalChanged with the amount under Job', (
       tester,
     ) async {
       double? capturedTotal;
@@ -309,7 +500,46 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '750');
+      await tester.pump();
+
+      expect(capturedTotal, 750.0);
+    });
+
+    testWidgets(
+      'resets total to 0 immediately when switching from Day to Job',
+      (tester) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
+        await tester.pump();
+        expect(capturedTotal, 600.0);
+
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+
+        expect(capturedTotal, 0.0);
+      },
+    );
+
+    testWidgets('calls onTotalChanged with 0 when duration is empty', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '200');
       await tester.pump();
 
       expect(capturedTotal, 0.0);
@@ -342,12 +572,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('unit_price_field')),
-          '200',
-        );
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
         await tester.pump();
-        await tester.enterText(find.byKey(const Key('quantity_field')), '3');
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
         await tester.pump();
 
         await tester.pumpWidget(
