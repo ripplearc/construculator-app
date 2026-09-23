@@ -28,20 +28,37 @@ class EquipmentCostFormBloc
     on<EquipmentCostItemTypeChanged>(
       (e, emit) => _emit(emit, (d) => d.copyWith(equipmentType: e.value)),
     );
-    on<EquipmentMethodSwitchedEvent>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(method: e.method)),
-    );
+    on<EquipmentMethodSwitchedEvent>((e, emit) {
+      _emit(emit, (d) {
+        final rate = e.method == EquipmentPricingMethod.day
+            ? d.dailyRate
+            : d.jobAmount;
+        return d.copyWith(
+          method: e.method,
+          rateStatus: rate == null
+              ? RateStatus.missing
+              : RateStatus.ownRateConfirmed,
+        );
+      });
+    });
     on<EquipmentDurationUpdatedEvent>(
       (e, emit) =>
           _emit(emit, (d) => d.copyWith(duration: double.tryParse(e.value))),
     );
     on<EquipmentRateUpdatedEvent>((e, emit) {
       final rate = double.tryParse(e.value);
+      // A manually typed rate is the user's own, not a sampled catalog rate,
+      // so it's confirmed as soon as it parses. There is no lookup-a-rate
+      // flow wired yet (CA-1145/CA-1151); a future catalog selection path
+      // will need to set sampleRateUnverified instead before landing here.
+      final rateStatus = rate == null
+          ? RateStatus.missing
+          : RateStatus.ownRateConfirmed;
       _emit(
         emit,
         (d) => d.method == EquipmentPricingMethod.day
-            ? d.copyWith(dailyRate: rate)
-            : d.copyWith(jobAmount: rate),
+            ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
+            : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
       );
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
