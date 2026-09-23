@@ -176,6 +176,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final baseCost = isDay
         ? (data.duration ?? 0) * (data.dailyRate ?? 0)
         : (data.jobAmount ?? 0);
+    // A base cost of 0 means duration/rate (or the job amount) hasn't been
+    // entered yet, not that the fee is genuinely outsized — without a real
+    // base cost there's nothing meaningful to compare against.
+    if (baseCost <= 0) return;
     if (fee <= baseCost) return;
 
     final accepted = await showDialog<bool>(

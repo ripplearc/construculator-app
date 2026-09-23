@@ -849,6 +849,29 @@ void main() {
       expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
     });
 
+    testWidgets(
+      'does not open when duration/rate are not entered yet (base cost is 0)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        // Duration/rate are left empty; entering the delivery fee first
+        // must not compare it against an unset $0 base cost.
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '5',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('"Go back" dismisses the dialog and leaves the fee unset', (
       tester,
     ) async {
