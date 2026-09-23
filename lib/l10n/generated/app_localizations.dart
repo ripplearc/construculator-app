@@ -1636,6 +1636,12 @@ abstract class AppLocalizations {
   /// **'You don\'t have permission to perform this action'**
   String get permissionDenied;
 
+  /// Error message shown when saving a Your Rates entry without a label collides with an existing entry for the same item name
+  ///
+  /// In en, this message translates to:
+  /// **'This name already has a saved rate. Add a label to save it as a new entry.'**
+  String get yourRatesDuplicateEntryError;
+
   /// Label for materials tab in cost estimation details
   ///
   /// In en, this message translates to:
