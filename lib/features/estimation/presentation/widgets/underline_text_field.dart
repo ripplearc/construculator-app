@@ -20,11 +20,20 @@ class UnderlineTextField extends StatefulWidget {
   /// Controls and reads the value text.
   final TextEditingController controller;
 
-  /// Placeholder text shown in the value row while the field is empty.
+  /// Placeholder text shown in the value row, in the value's own text
+  /// color/weight, while the controller is empty (e.g. the equipment name
+  /// field's "Name the equipment", or the Note field's "Add a note
+  /// (optional)"). Fields that don't pass this simply render nothing while
+  /// empty.
   final String? hintText;
 
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
+
+  /// Leading content at the start of the value row (e.g. the delivery-fee
+  /// field's "$" icon, which sits before the digits rather than after them)
+  /// — stays inline in the row, not inside a box.
+  final Widget? prefix;
 
   /// Trailing content at the end of the value row (e.g. the "days" suffix
   /// text or the "$" icon) — stays inline in the row, not inside a box.
@@ -33,6 +42,20 @@ class UnderlineTextField extends StatefulWidget {
   /// Hides [suffix] while the field is empty, so a unit word such as "days"
   /// does not repeat the placeholder text.
   final bool hideSuffixWhenEmpty;
+
+  /// Content shown at the end of the label row, beside [label] (e.g. the
+  /// Rate field's "Sample rate"/"✓ Your rate" status badge).
+  final Widget? labelTrailing;
+
+  /// Content right-aligned at the end of the value row, after [suffix]
+  /// (e.g. the Rate field's "Save as my rate" link).
+  final Widget? trailingAction;
+
+  /// External focus node, for callers that need to observe or drive focus
+  /// from outside (e.g. the delivery-fee editor folds back to its collapsed
+  /// summary row when this loses focus). Defaults to an internally owned
+  /// node when omitted.
+  final FocusNode? focusNode;
 
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
@@ -49,8 +72,12 @@ class UnderlineTextField extends StatefulWidget {
     required this.controller,
     this.hintText,
     this.keyboardType,
+    this.prefix,
     this.suffix,
     this.hideSuffixWhenEmpty = false,
+    this.labelTrailing,
+    this.trailingAction,
+    this.focusNode,
     this.errorTextList,
   });
 
@@ -58,17 +85,17 @@ class UnderlineTextField extends StatefulWidget {
   State<UnderlineTextField> createState() => _UnderlineTextFieldState();
 }
 
-const double _labelToValueGap = 3;
-const double _valueToRuleGap = 10;
-
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
   bool _wasFocused = false;
   bool _touched = false;
+
+  bool get _ownsFocusNode => widget.focusNode == null;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
   }
@@ -95,7 +122,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
-    _focusNode.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -127,8 +156,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
           : textTheme.bodyLargeRegular.copyWith(color: colorTheme.textHeadline),
       decoration: InputDecoration(
         border: InputBorder.none,
-        isDense: true,
-        contentPadding: EdgeInsets.zero,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: CoreSpacing.space3,
+        ),
         hintText: suffix != null && !isEmpty ? null : widget.hintText,
         hintStyle: textTheme.bodyLargeRegular.copyWith(
           color: colorTheme.textDisable,
@@ -137,63 +167,91 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     );
 
     return MergeSemantics(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _focusNode.requestFocus,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.label,
-              style: textTheme.bodySmallRegular.copyWith(
-                color: hasError ? colorTheme.statusError : colorTheme.textBody,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                widget.label,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: hasError
+                      ? colorTheme.statusError
+                      : colorTheme.textBody,
+                ),
               ),
-            ),
-            const SizedBox(height: _labelToValueGap),
-            Row(
+              if (widget.labelTrailing != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                widget.labelTrailing!,
+              ],
+            ],
+          ),
+          const SizedBox(height: CoreSpacing.space1),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _focusNode.requestFocus,
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (widget.prefix != null) ...[
+                  widget.prefix!,
+                  const SizedBox(width: CoreSpacing.space2),
+                ],
                 if (suffix != null)
-                  Flexible(child: IntrinsicWidth(child: textField))
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: IntrinsicWidth(child: textField)),
+                          if (!(widget.hideSuffixWhenEmpty && isEmpty)) ...[
+                            const SizedBox(width: CoreSpacing.space1),
+                            suffix,
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
                 else
                   Expanded(child: textField),
-                if (suffix != null &&
-                    !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
-                  const SizedBox(width: CoreSpacing.space1),
-                  suffix,
+                if (trailingAction != null) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  trailingAction,
                 ],
               ],
             ),
-            const SizedBox(height: _valueToRuleGap),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              height: ruleHeight,
-              color: ruleColor,
-            ),
-            if (hasError) ...[
-              const SizedBox(height: CoreSpacing.space1),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  CoreIconWidget(
-                    icon: CoreIcons.error,
-                    size: 16,
-                    color: colorTheme.iconRed,
-                  ),
-                  const SizedBox(width: CoreSpacing.space1),
-                  Expanded(
-                    child: Text(
-                      visibleErrorText,
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textError,
-                      ),
+          ),
+          const SizedBox(height: CoreSpacing.space1),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: ruleHeight,
+            color: ruleColor,
+          ),
+          if (hasError) ...[
+            const SizedBox(height: CoreSpacing.space1),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CoreIconWidget(
+                  icon: CoreIcons.error,
+                  size: 16,
+                  color: colorTheme.iconRed,
+                ),
+                const SizedBox(width: CoreSpacing.space1),
+                Expanded(
+                  child: Text(
+                    visibleErrorText,
+                    style: textTheme.bodySmallRegular.copyWith(
+                      color: colorTheme.textError,
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
