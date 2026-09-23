@@ -862,6 +862,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have permission to perform this action';
 
   @override
+  String get yourRatesDuplicateEntryError =>
+      'This name already has a saved rate. Add a label to save it as a new entry.';
+
+  @override
   String get materialsTab => 'Materials';
 
   @override
