@@ -482,42 +482,46 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             keyboardType: const TextInputType.numberWithOptions(
               decimal: true,
             ),
-            prefix: Text(
-              '\$',
-              style: textTheme.bodyLargeRegular.copyWith(
-                color: colorTheme.textHeadline,
-              ),
+            prefix: CoreIconWidget(
+              icon: CoreIcons.dollar,
+              color: colorTheme.textHeadline,
+              size: 24,
             ),
             errorTextList: _errorList(_deliveryFeeErrorText(context)),
           )
         else
-          GestureDetector(
-            key: const Key('delivery_fee_row'),
-            onTap: _toggleDeliveryExpanded,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: CoreSpacing.space4,
-                vertical: CoreSpacing.space3,
-              ),
-              decoration: BoxDecoration(
-                color: colorTheme.backgroundGrayLight,
-                borderRadius: BorderRadius.circular(CoreSpacing.space2),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _deliveryRowText(context, data.deliveryFee),
-                    style: textTheme.bodyLargeRegular.copyWith(
-                      color: colorTheme.textHeadline,
+          Semantics(
+            button: true,
+            label: _deliveryRowText(context, data.deliveryFee),
+            excludeSemantics: true,
+            child: GestureDetector(
+              key: const Key('delivery_fee_row'),
+              onTap: _toggleDeliveryExpanded,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space4,
+                  vertical: CoreSpacing.space3,
+                ),
+                decoration: BoxDecoration(
+                  color: colorTheme.backgroundGrayLight,
+                  borderRadius: BorderRadius.circular(CoreSpacing.space2),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _deliveryRowText(context, data.deliveryFee),
+                      style: textTheme.bodyLargeRegular.copyWith(
+                        color: colorTheme.textHeadline,
+                      ),
                     ),
-                  ),
-                  CoreIconWidget(
-                    icon: CoreIcons.arrowDropDown,
-                    color: colorTheme.iconGrayMid,
-                    size: 24,
-                  ),
-                ],
+                    CoreIconWidget(
+                      icon: CoreIcons.arrowDropDown,
+                      color: colorTheme.iconGrayMid,
+                      size: 24,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -552,19 +556,34 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
             child: Text(
               l10n.equipmentDeliveryFeeEstimatedBadge,
+              // textWarning-on-backgroundOrangeLight falls short of the 4.5:1
+              // WCAG AA ratio at this text size; textHeadline clears it while
+              // the amber fill still carries the "estimated" cue.
               style: textTheme.bodySmallMedium.copyWith(
-                color: colorTheme.textWarning,
+                color: colorTheme.textHeadline,
               ),
             ),
           ),
           const SizedBox(width: CoreSpacing.space3),
-          GestureDetector(
-            key: const Key('delivery_fee_confirm_link'),
-            onTap: _onConfirmDeliveryFee,
-            child: Text(
-              l10n.equipmentDeliveryFeeConfirmLink,
-              style: textTheme.bodySmallSemiBold.copyWith(
-                color: colorTheme.textLink,
+          Semantics(
+            button: true,
+            label: l10n.equipmentDeliveryFeeConfirmLink,
+            excludeSemantics: true,
+            child: GestureDetector(
+              key: const Key('delivery_fee_confirm_link'),
+              behavior: HitTestBehavior.opaque,
+              onTap: _onConfirmDeliveryFee,
+              // Padded to a >=48x48 tap target per accessibility guidelines
+              // without inflating the link's visible size.
+              child: Container(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.equipmentDeliveryFeeConfirmLink,
+                  style: textTheme.bodySmallSemiBold.copyWith(
+                    color: colorTheme.textLink,
+                  ),
+                ),
               ),
             ),
           ),
@@ -615,7 +634,12 @@ class _OutsizedFeeDialog extends StatelessWidget {
     final textTheme = context.textTheme;
     return Dialog(
       backgroundColor: colorTheme.pageBackground,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CoreSpacing.space5),
+      ),
+      // 22px padding and the 340/52 dimensions below come directly from the
+      // Figma spec (node 65354:146175) and don't land on a named CoreSpacing
+      // step, so they're literal rather than tokenized.
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: SizedBox(
