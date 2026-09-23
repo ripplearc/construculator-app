@@ -208,6 +208,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,
           onSaveEnabledChanged: onSaveEnabledChanged,
+          estimateId: widget.estimationId,
         ),
     };
   }
