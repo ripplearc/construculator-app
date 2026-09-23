@@ -328,9 +328,10 @@ table, use `/code-data` instead.
 This skill uses the same Clean Architecture layering and the same error
 boundary (RULE_15) as `/code-data`. What differs is how the data moves: a
 read is a reactive stream, and a write is an optimistic local change, all
-behind the `PowerSyncDatabaseWrapper` seam (the interface a feature depends
-on instead of the PowerSync SDK directly). This skill also tells the agent
-how to set up the PowerSync configuration and sync streams for the feature.
+behind the `PowerSyncDatabaseWrapper` interface (a feature depends on this
+interface instead of the PowerSync SDK directly). This skill also tells the
+agent how to set up the PowerSync configuration and sync streams for the
+feature.
 
 **What the agent does:**
 - Reads go through a `watch()` stream, so the UI stays live as data syncs
