@@ -77,8 +77,8 @@ void _registerDependencies(Injector i) {
 
 ## References
 
-- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md`
-- **UI / Business Separation:** `skills/rules/05-ui-business-separation.md`
+- **Naming & Abstraction:** `.claude/rules/02-naming-conventions.md`
+- **UI / Business Separation:** `.claude/rules/05-ui-business-separation.md`
 - **Examples:** `lib/features/auth/domain/usecases/login_usecase.dart`, `lib/features/estimation/domain/repositories/cost_estimation_log_repository.dart`
 - **Next:** `code-data` (implements repository interfaces)
 - `write-tests` skill — Unit tests for domain layer

@@ -42,7 +42,7 @@
 #     "base_branch": "main",
 #     "file": "lib/features/auth/login_screen.dart",
 #     "context_lines": 5
-#   }' | bash skills/pr-review/scripts/generate_diff.sh
+#   }' | bash .claude/skills/pr-review/scripts/generate_diff.sh
 #
 # Workflow Position: Step 6 (Apply Rules to Filtered Files)
 #   Used by: PR Review Skill agents to see what changed in each file before applying rules

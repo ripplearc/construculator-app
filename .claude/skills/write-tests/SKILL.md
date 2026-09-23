@@ -15,7 +15,7 @@ disable-model-invocation: false
 
 **Input:** Context from coding skills — classes created, file paths, business logic.
 
-> If any pattern below is unclear or you need a concrete Dart implementation, read `skills/write-tests/REFERENCE.md`.
+> If any pattern below is unclear or you need a concrete Dart implementation, read `.claude/skills/write-tests/REFERENCE.md`.
 
 ## 1. Implementation Rules
 
@@ -105,13 +105,13 @@ Write a11y tests for pages/widgets with interactive elements. Use `setupA11yTest
 
 ## 8. Common Patterns
 
-See `skills/write-tests/REFERENCE.md` for Dart examples: invalid inputs, error states, authentication, and loading states.
+See `.claude/skills/write-tests/REFERENCE.md` for Dart examples: invalid inputs, error states, authentication, and loading states.
 
 ## References
 
-- **Test Double Pattern:** `skills/rules/03-test-double-pattern.md` — Use fakes, never mocks
-- **Widget Test Finders:** `skills/rules/08-widget-test-finders.md` — Semantic finders
-- **Unit Test Behavior:** `skills/rules/09-unit-test-behavior.md` — Test behavior, not implementation
+- **Test Double Pattern:** `.claude/rules/03-test-double-pattern.md` — Use fakes, never mocks
+- **Widget Test Finders:** `.claude/rules/08-widget-test-finders.md` — Semantic finders
+- **Unit Test Behavior:** `.claude/rules/09-unit-test-behavior.md` — Test behavior, not implementation
 - **Testing Docs:** `docs/Testing/Fakes.md`, `docs/Testing/Directories.md`, `docs/Testing/Accessibility-Testing.md`
 - **Examples:** `test/features/auth/units/blocs/`, `test/features/auth/widgets/pages/`
 - **Next:** `write-tests-golden` (gated — screenshot tests for UI changes)

@@ -2,7 +2,7 @@
 
 > **⚠️ This rule has been merged into `Naming & Abstraction`**
 >
-> **Location:** `skills/rules/02-naming-conventions.md`
+> **Location:** `.claude/rules/02-naming-conventions.md`
 >
 > **Section:** "Part 2: Abstraction-Level Naming"
 
@@ -19,7 +19,7 @@ Abstraction Naming (Deprecated - use Naming & Abstraction)
 ## Where to Find This Content Now
 
 All content from `Abstraction Naming` is now in:
-- **File:** `skills/rules/02-naming-conventions.md`
+- **File:** `.claude/rules/02-naming-conventions.md`
 - **Section:** "Part 2: Abstraction-Level Naming"
 
 Key topics covered:
@@ -43,13 +43,13 @@ If your skill references `Abstraction Naming`, update to reference
 
 ```bash
 # Old reference
-cat skills/rules/11-abstraction-naming.md
+cat .claude/rules/11-abstraction-naming.md
 
 # New reference
-cat skills/rules/02-naming-conventions.md
+cat .claude/rules/02-naming-conventions.md
 # Look for section: "Part 2: Abstraction-Level Naming"
 ```
 
 ---
 
-**See:** `skills/rules/02-naming-conventions.md` for the complete merged rule.
+**See:** `.claude/rules/02-naming-conventions.md` for the complete merged rule.
