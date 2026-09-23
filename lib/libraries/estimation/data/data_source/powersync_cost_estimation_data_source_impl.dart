@@ -16,16 +16,18 @@ import 'package:flutter/foundation.dart';
 /// Rows come back as `Map<String, dynamic>` and are mapped to DTOs via
 /// [CostEstimateDto.fromRow], which handles SQLite encodings (e.g. `is_locked`
 /// as `0`/`1`). Write operations are added in later PRs.
+///
+/// `_table` backs onto the local SQLite table defined in `schema.dart`.
+/// `_syncStreamName` names the on-demand sync stream gating which estimates
+/// sync down; membership and the `get_cost_estimations` permission are
+/// derived from the JWT server-side.
 class PowerSyncCostEstimationDataSourceImpl
     implements PowerSyncCostEstimationDataSource {
   final PowerSyncDatabaseWrapper _wrapper;
   static final _logger = AppLogger().tag('PowerSyncCostEstimationDataSource');
 
-  // Local SQLite table backing cost estimates (see `schema.dart`).
   static const _table = DatabaseConstants.costEstimatesTable;
 
-  // On-demand sync stream gating which estimates sync down; membership and the
-  // `get_cost_estimations` permission are derived from the JWT server-side.
   static const _syncStreamName = 'user_cost_estimates';
 
   PowerSyncCostEstimationDataSourceImpl({required this._wrapper});
