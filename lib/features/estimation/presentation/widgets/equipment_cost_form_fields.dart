@@ -103,24 +103,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
-  /// Tapping a chip re-drives both notifiers to `false`: [CoreChip] toggles
-  /// its own `selected` notifier right after this callback returns (unless
-  /// it's a smart chip), so the tapped chip's notifier flips back to `true`
-  /// on its own, while the untapped sibling — never auto-toggled — is left
-  /// `false`. This holds regardless of which chip was active beforehand, so
-  /// re-tapping the already-active chip is a no-op and exclusivity always
-  /// holds.
-  void _selectMethod(
-    EquipmentPricingMethod tapped,
-    EquipmentPricingMethod current,
-  ) {
+  // Tapping a chip re-drives both notifiers to `false`: CoreChip toggles its
+  // own `selected` notifier right after this callback returns (unless it's a
+  // smart chip), so the tapped chip's notifier flips back to `true` on its
+  // own, while the untapped sibling — never auto-toggled — is left `false`.
+  // This holds regardless of which chip was active beforehand, so re-tapping
+  // the already-active chip leaves the same chip selected.
+  void _selectMethod(EquipmentPricingMethod tapped) {
     _daySelected.value = false;
     _jobSelected.value = false;
-    if (tapped != current) {
-      context.read<EquipmentCostFormBloc>().add(
-        EquipmentMethodSwitchedEvent(tapped),
-      );
-    }
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentMethodSwitchedEvent(tapped),
+    );
     _notifyTotal(tapped);
   }
 
@@ -273,16 +267,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     key: const Key('day_method_chip'),
                     label: l10n.equipmentDayMethodLabel,
                     selected: _daySelected,
-                    onTap: () =>
-                        _selectMethod(EquipmentPricingMethod.day, data.method),
+                    onTap: () => _selectMethod(EquipmentPricingMethod.day),
                   ),
                   const SizedBox(width: CoreSpacing.space2),
                   CoreChip(
                     key: const Key('job_method_chip'),
                     label: l10n.equipmentJobMethodLabel,
                     selected: _jobSelected,
-                    onTap: () =>
-                        _selectMethod(EquipmentPricingMethod.job, data.method),
+                    onTap: () => _selectMethod(EquipmentPricingMethod.job),
                   ),
                 ],
               ),
