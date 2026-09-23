@@ -146,6 +146,8 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     }
   }
 
+  /// Runs [action] inside a fake atomic transaction, recording the call in
+  /// [writeTransactionCallCount].
   @override
   Future<T> writeTransaction<T>(
     Future<T> Function(WriteContext tx) action,
