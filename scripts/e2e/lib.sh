@@ -114,19 +114,23 @@ e2e_ensure_powersync_env() {
 # fails either check — an explicit, opt-in acknowledgment that the action
 # below will act on that checkout's own data, not a dedicated E2E copy.
 e2e_require_dedicated_backend() {
+  local config="$E2E_BACKEND_DIR/supabase/config.toml"
+  # Read the real project_id whenever we can, even on paths that end up
+  # returning early below, so e2e_confirm_destructive can warn with the
+  # actual target instead of always naming the dedicated-checkout constant.
+  E2E_RESOLVED_PROJECT=""
+  [ -r "$config" ] &&
+    E2E_RESOLVED_PROJECT="$(sed -n 's/^project_id[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$config" | head -n1)"
   [ "${E2E_ALLOW_SHARED_BACKEND:-}" = "1" ] && return 0
   [ "$E2E_BACKEND_DIR_EXPLICIT" = "1" ] ||
     e2e_die "E2E_BACKEND_DIR was not set, so this fell back to the sibling directory '$E2E_BACKEND_DIR'. Every clone of construculator-backend declares project_id = '$E2E_DB_PROJECT', so that value cannot prove this is a checkout dedicated to the E2E harness rather than your ordinary dev one. Set E2E_BACKEND_DIR explicitly to the checkout you want destroyed, or set E2E_ALLOW_SHARED_BACKEND=1 to accept the risk."
-  local config="$E2E_BACKEND_DIR/supabase/config.toml"
   # No config.toml means this function cannot establish what project the
   # action would hit. stop_env.sh does not run e2e_require_backend, so there
   # is no earlier check to defer to — refuse rather than guess.
   [ -r "$config" ] ||
     e2e_die "E2E_BACKEND_DIR ('$E2E_BACKEND_DIR') has no readable supabase/config.toml, so there is no way to tell which project this would destroy. Point E2E_BACKEND_DIR at a backend checkout, or set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway."
-  local project_id
-  project_id="$(sed -n 's/^project_id[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$config" | head -n1)"
-  [ "$project_id" = "$E2E_DB_PROJECT" ] && return 0
-  e2e_die "E2E_BACKEND_DIR ('$E2E_BACKEND_DIR') has project_id '${project_id:-<none found>}', not '$E2E_DB_PROJECT'. This looks like an ordinary dev checkout, not one dedicated to the E2E harness — proceeding would act on it instead of a separate E2E-only copy. Point E2E_BACKEND_DIR at a checkout dedicated to the E2E harness, or set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway and accept that risk."
+  [ "$E2E_RESOLVED_PROJECT" = "$E2E_DB_PROJECT" ] && return 0
+  e2e_die "E2E_BACKEND_DIR ('$E2E_BACKEND_DIR') has project_id '${E2E_RESOLVED_PROJECT:-<none found>}', not '$E2E_DB_PROJECT'. This looks like an ordinary dev checkout, not one dedicated to the E2E harness — proceeding would act on it instead of a separate E2E-only copy. Point E2E_BACKEND_DIR at a checkout dedicated to the E2E harness, or set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway and accept that risk."
 }
 
 # Gates an action that destroys data. The target is whatever project
@@ -138,6 +142,7 @@ e2e_require_dedicated_backend() {
 e2e_confirm_destructive() {
   local action="$1"
   e2e_require_dedicated_backend
+  action="${action//__E2E_PROJECT__/${E2E_RESOLVED_PROJECT:-$E2E_DB_PROJECT}}"
   [ "${E2E_ASSUME_YES:-}" = "1" ] && return 0
   [ -t 0 ] ||
     e2e_die "$action This is not an interactive terminal; pass --yes or set E2E_ASSUME_YES=1 to proceed."

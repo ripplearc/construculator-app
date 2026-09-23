@@ -36,7 +36,7 @@ e2e_require_dedicated_backend
 e2e_ensure_powersync_env
 
 e2e_confirm_destructive \
-  "This will destroy every row in the local '$E2E_DB_PROJECT' database and restore only the seeded fixtures."
+  "This will destroy every row in the local '__E2E_PROJECT__' database and restore only the seeded fixtures."
 
 e2e_log "Stopping PowerSync"
 e2e_powersync_compose down --volumes

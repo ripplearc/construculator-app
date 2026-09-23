@@ -35,7 +35,7 @@ done
 
 if [ "$purge" = true ]; then
   e2e_confirm_destructive \
-    "This will delete the local '$E2E_DB_PROJECT' database volume and PowerSync's bucket storage."
+    "This will delete the local '__E2E_PROJECT__' database volume and PowerSync's bucket storage."
 fi
 
 if [ -f "$E2E_BACKEND_DIR/powersync/.env" ]; then
