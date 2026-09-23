@@ -56,6 +56,7 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
     await _database.execute(sql, parameters);
   }
 
+  /// Runs [action] inside a single atomic transaction against the local database.
   @override
   Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action) {
     return _database.writeTransaction(
