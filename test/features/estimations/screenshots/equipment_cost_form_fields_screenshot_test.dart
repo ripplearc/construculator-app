@@ -61,14 +61,44 @@ void main() {
     theme,
     suffix,
   ) {
-    testWidgets('renders manually mode', (tester) async {
+    testWidgets('renders manually mode with Day selected by default', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester, theme: theme);
       await expectLater(
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
-          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually$suffix.png',
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_day$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders manually mode with Job selected', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_job$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders manually mode with duration error', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(find.byKey(const Key('duration_field')), '0');
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_duration_error$suffix.png',
         ),
       );
     });
@@ -94,10 +124,7 @@ void main() {
         'x',
       );
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        '',
-      );
+      await tester.enterText(find.byKey(const Key('equipment_name_field')), '');
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),

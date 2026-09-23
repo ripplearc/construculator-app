@@ -2608,11 +2608,41 @@ abstract class AppLocalizations {
   /// **'Equipment name*'**
   String get equipmentNameLabel;
 
-  /// Hint label for the unit price field on the equipment cost form (manually mode)
+  /// Label for the Day choice chip in the equipment pricing method toggle (manually mode)
   ///
   /// In en, this message translates to:
-  /// **'Unit price*'**
-  String get unitPriceLabel;
+  /// **'Day'**
+  String get equipmentDayMethodLabel;
+
+  /// Label for the Job choice chip in the equipment pricing method toggle (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Job'**
+  String get equipmentJobMethodLabel;
+
+  /// Hint label for the duration field on the equipment cost form (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Duration*'**
+  String get equipmentDurationLabel;
+
+  /// Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get equipmentDurationSuffix;
+
+  /// Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate*'**
+  String get equipmentRateLabel;
+
+  /// Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Amount*'**
+  String get equipmentAmountLabel;
 
   /// Rate label inside the calculation method card when per-day method is selected (from cost file mode)
   ///
@@ -2643,6 +2673,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Equipment name is required'**
   String get equipmentNameRequiredError;
+
+  /// Validation error shown below the duration field when it is zero, negative, or empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Duration must be more than zero'**
+  String get equipmentDurationRequiredError;
+
+  /// Validation error shown below the rate field when it is submitted empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate is required'**
+  String get equipmentRateRequiredError;
+
+  /// Validation error shown below the rate field when it is outside the accepted bound (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate must be between \$0.01 and \$999,999.99'**
+  String get equipmentRateOutOfRangeError;
+
+  /// Validation error shown below the amount field when it is submitted empty (Job pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Amount is required'**
+  String get equipmentAmountRequiredError;
+
+  /// Validation error shown below the amount field when it is outside the accepted bound (Job pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Amount must be between \$0.01 and \$999,999.99'**
+  String get equipmentAmountOutOfRangeError;
 
   /// Toast shown when navigation to project settings fails
   ///
