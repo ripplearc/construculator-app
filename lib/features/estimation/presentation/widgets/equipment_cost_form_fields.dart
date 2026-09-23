@@ -158,6 +158,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         },
       ),
       const SizedBox(height: CoreSpacing.space5),
+      // TODO(CA-1143): replace with the Day/Job pricing toggle (duration+rate
+      // vs. flat job amount) backed by EquipmentCostItem.pricingMethod.
       CoreTextField(
         key: const Key('unit_price_field'),
         label: l10n.unitPriceLabel,
