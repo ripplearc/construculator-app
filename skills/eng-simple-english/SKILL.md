@@ -152,16 +152,23 @@ thing.
   in Dart. Examples: `PowerSyncDatabaseWrapper`, cascade notation, a gate (the
   consent gate feature), a hook (a callback registration point), a guardrail,
   a spine, plumbing (a real construction term, since this app estimates
-  building costs). **`seam`** is the case to watch. This repo's own skills use
-  it constantly (the `PowerSyncDatabaseWrapper` seam, the `SupabaseWrapper`
-  seam) to mean "the interface a feature depends on instead of the real SDK."
-  That is a real, defined term in this repo now, not an unexplained metaphor,
-  so keep using it. The first time any one document uses it, say what it
-  means in one clause: "behind the `PowerSyncDatabaseWrapper` seam (the
-  interface features depend on instead of the SDK directly)." After that
-  first sentence, use the bare word freely in that document. Do not coin a
-  *new* metaphor to stand in for "a place code plugs into." A new metaphor is
-  exactly what turns one team's shorthand into another reader's confusion.
+  building costs). The first time a document uses one of these, say what it
+  means in one clause, for example "the `PowerSyncDatabaseWrapper` interface
+  (the interface a feature depends on instead of the SDK directly)." After
+  that first sentence, use the bare word freely in that document.
+
+- **`seam` is banned, even though this repo's own skills use it.** Several
+  existing `SKILL.md` files use `seam` to mean "the interface a feature
+  depends on instead of the real SDK" (the `PowerSyncDatabaseWrapper` seam,
+  the `SupabaseWrapper` seam). Do not carry that word into a rewrite. Replace
+  it with the literal phrase: "the `PowerSyncDatabaseWrapper` interface," or
+  "a test override point," or "the wrapper." This is a personal rule, not a
+  general one. `seam` also names a real, literal thing in construction:
+  roofing, flooring, and drywall trades all seal seams. A sentence about a
+  cost item or a trade can still use the word literally. Only the
+  design/testing sense is banned. Do not coin a *new* metaphor to stand in
+  for "a place code plugs into" either. A new metaphor is exactly what turns
+  one team's shorthand into another reader's confusion.
 
 ### Sentences
 
@@ -324,8 +331,9 @@ what you changed.
 - [ ] No sentence uses "should," "would," "may," "might," or "could" outside
       a direct quote.
 - [ ] Every condition ("if," "when") opens its sentence.
-- [ ] Every real technical or domain term (like `seam`) is defined once, on
-      first use, then used freely.
+- [ ] Every real technical or domain term (like `PowerSyncDatabaseWrapper`)
+      is defined once, on first use, then used freely.
+- [ ] `seam` does not appear in its design/testing sense (see section 4).
 - [ ] Code, commands, file paths, quoted errors, product names, and numbers
       with units are left exactly as they were.
 - [ ] The self-check in section 5 ran, and its findings are fixed.
