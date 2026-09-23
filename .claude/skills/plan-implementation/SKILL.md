@@ -78,7 +78,24 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - RepositoryImpl depends on DataSource
    - Flag violations if found
 
-7. **Apply Digestible PR** (digestible PRs) → Load `.claude/rules/01-digestible-pr.md`
+7. **Testing strategy.** For each PR, list:
+
+   **Domain/Data PR:**
+   - UseCase: the working case, plus each failure type the repository can return
+   - RepositoryImpl: delegates correctly, maps DTO to entity, wraps each error type
+   - DataSource: calls the right Supabase method with correct args, maps response, handles null/empty
+
+   **Presentation PR:**
+   - BLoC unit tests: every state transition (the working case, each error, guard conditions on events that arrive before load)
+   - Widget tests: each state renders the correct UI. `BlocListener` fires a toast or snackbar on the right state. Fallback content shows correctly on error.
+
+   Output: a "Testing strategy" section in the plan, listing these scenarios grouped by class.
+
+   Do not set the test file layout here. Follow the relevant testing skill's conventions for test locations instead.
+
+   The write-tests skill treats this section as a starting list, not a spec it must match line for line. It owns the final test structure, and it can add a scenario this plan did not anticipate.
+
+8. **Apply Digestible PR** (digestible PRs) → Load `.claude/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
 
      | Class Type | Typical LOC |
@@ -105,10 +122,11 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - Output: PR plan with each PR's focus + estimated LOC
    - Each split PR must independently pass CI — see Digestible PR (`.claude/rules/01-digestible-pr.md`) for the required checks
 
-8. **Compile plan**
+9. **Compile plan**
    - Classes + file paths
    - CoreUI check results + blockers
    - Dependencies + violations
+   - Testing strategy (grouped by PR)
    - PR split strategy
    - Next skills to invoke
 
@@ -138,17 +156,25 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 - GetEstimationsUseCase → EstimationRepository ✅
 - EstimationRepositoryImpl → RemoteEstimationDataSource ✅
 
+## Testing strategy
+PR1:
+- GetEstimationsUseCase: happy path, repository failure passthrough
+- EstimationRepositoryImpl: delegates to DataSource, maps DTO→entity, wraps TimeoutException/SocketException
+- RemoteEstimationDataSource: calls correct Supabase method with right args, maps response
+
+PR2:
+- EstimationBloc: FetchRequested → Loading → Loaded; FetchRequested → Failure; guards on events before load
+- EstimationPage: Loaded state renders correctly; Failure shows toast + fallback content
+
 ## PR Strategy (Digestible PR)
 Estimated: ~420 LOC production code → Split into 2 PRs
 
 PR1 (Domain + Data): ~150 LOC
 - GetEstimationsUseCase + EstimationRepository
 - EstimationRepositoryImpl + RemoteEstimationDataSource + EstimationDto
-- Unit tests for UseCase + Repository
 
 PR2 (Presentation): ~270 LOC
 - EstimationPage + EstimationBloc/Event/State
-- Widget tests + Golden tests
 - Depends on: PR1 merged
 
 → Next: Resolve CoreCard blocker, then code PR1 with code-domain and code-data skills
