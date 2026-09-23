@@ -109,7 +109,12 @@ void main() {
               )
               .having((s) => s.data.duration, 'duration', 5)
               .having((s) => s.data.dailyRate, 'dailyRate', 100)
-              .having((s) => s.data.deliveryFee, 'deliveryFee', 20),
+              .having((s) => s.data.deliveryFee, 'deliveryFee', 20)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.missing,
+              ),
         ],
       );
 
@@ -134,7 +139,67 @@ void main() {
                 'method',
                 EquipmentPricingMethod.day,
               )
-              .having((s) => s.data.jobAmount, 'jobAmount', 500),
+              .having((s) => s.data.jobAmount, 'jobAmount', 500)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.missing,
+              ),
+        ],
+      );
+    });
+
+    group('EquipmentRateUpdatedEvent — rateStatus', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sets rateStatus to ownRateConfirmed once a manually typed rate parses',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentRateUpdatedEvent('100')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', 100)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sets rateStatus back to missing when the rate is cleared',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(const EquipmentRateUpdatedEvent('')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', isNull)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.missing,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sets rateStatus to ownRateConfirmed for a manually typed job amount',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+          )
+          ..add(const EquipmentRateUpdatedEvent('500')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.jobAmount, 'jobAmount', 500)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              ),
         ],
       );
     });
