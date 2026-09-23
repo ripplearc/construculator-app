@@ -628,7 +628,7 @@ class LaborCostItem extends CostItem {
 /// Unlike [MaterialCostItem], equipment has no unit of measurement: it is
 /// either priced for a [duration] of days at a [dailyRate], or as a single
 /// flat [jobAmount] for the whole job. [pricingMethod] determines which pair
-/// of fields is meaningful and is fixed for the lifetime of the item — see
+/// of fields is meaningful and is fixed for the lifetime of the item. See
 /// [pricingMethod] for why.
 ///
 /// Kept as a separate class from [MaterialCostItem] to maintain type safety
@@ -714,7 +714,7 @@ class EquipmentCostItem extends CostItem {
 
   /// Creates a copy of this [EquipmentCostItem] with the given fields replaced.
   ///
-  /// [pricingMethod] cannot be changed via this method — see its doc comment.
+  /// [pricingMethod] cannot be changed via this method. See its doc comment.
   /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
