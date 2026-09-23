@@ -43,14 +43,36 @@ class CostItemDto extends Equatable {
   /// Optional description of the cost item.
   final String? description;
 
-  /// Unit price for material or equipment items.
+  /// Unit price for material items.
   final double? unitPrice;
 
-  /// Quantity value for material or equipment items.
+  /// Quantity value for material items.
   final double? quantity;
 
-  /// Unit of measurement for material or equipment items.
+  /// Unit of measurement for material items.
   final String? unitMeasurement;
+
+  /// Pricing strategy for equipment items: 'day' or 'job'.
+  final String? pricingMethod;
+
+  /// Number of days for day-priced equipment items.
+  final double? duration;
+
+  /// Rate per day for day-priced equipment items.
+  final double? dailyRate;
+
+  /// Flat amount for job-priced equipment items.
+  final double? jobAmount;
+
+  /// Delivery fee for equipment items; null means unquoted.
+  final double? deliveryFee;
+
+  /// Confirmation state of [deliveryFee]: 'unset', 'estimated', or 'confirmed'.
+  final String? deliveryFeeStatus;
+
+  /// Confidence level of the equipment rate: 'sampleRateUnverified',
+  /// 'ownRateConfirmed', or 'missing'.
+  final String? rateStatus;
 
   /// Labor calculation method: 'per_hour', 'per_day', or 'per_unit'.
   final String? laborCalcMethod;
@@ -92,6 +114,13 @@ class CostItemDto extends Equatable {
     this.unitPrice,
     this.quantity,
     this.unitMeasurement,
+    this.pricingMethod,
+    this.duration,
+    this.dailyRate,
+    this.jobAmount,
+    this.deliveryFee,
+    this.deliveryFeeStatus,
+    this.rateStatus,
     this.laborCalcMethod,
     this.laborDays,
     this.laborHours,
@@ -125,6 +154,21 @@ class CostItemDto extends Equatable {
           ? (json['quantity'] as num).toDouble()
           : null,
       unitMeasurement: json['unit_measurement'] as String?,
+      pricingMethod: json['pricing_method'] as String?,
+      duration: json['duration'] != null
+          ? (json['duration'] as num).toDouble()
+          : null,
+      dailyRate: json['daily_rate'] != null
+          ? (json['daily_rate'] as num).toDouble()
+          : null,
+      jobAmount: json['job_amount'] != null
+          ? (json['job_amount'] as num).toDouble()
+          : null,
+      deliveryFee: json['delivery_fee'] != null
+          ? (json['delivery_fee'] as num).toDouble()
+          : null,
+      deliveryFeeStatus: json['delivery_fee_status'] as String?,
+      rateStatus: json['rate_status'] as String?,
       laborCalcMethod: json['labor_calc_method'] as String?,
       laborDays: json['labor_days'] != null
           ? (json['labor_days'] as num).toDouble()
@@ -160,6 +204,13 @@ class CostItemDto extends Equatable {
     'unit_price': unitPrice,
     'quantity': quantity,
     'unit_measurement': unitMeasurement,
+    'pricing_method': pricingMethod,
+    'duration': duration,
+    'daily_rate': dailyRate,
+    'job_amount': jobAmount,
+    'delivery_fee': deliveryFee,
+    'delivery_fee_status': deliveryFeeStatus,
+    'rate_status': rateStatus,
     'labor_calc_method': laborCalcMethod,
     'labor_days': laborDays,
     'labor_hours': laborHours,
@@ -236,7 +287,7 @@ class CostItemDto extends Equatable {
         );
 
       case CostItemType.equipment:
-        final unit = Unit.fromJson(unitMeasurement ?? 'pieces');
+        final method = EquipmentPricingMethod.fromJson(pricingMethod ?? 'day');
         return EquipmentCostItem(
           id: id,
           estimateId: estimateId,
@@ -246,13 +297,27 @@ class CostItemDto extends Equatable {
           createdAt: DateTime.parse(createdAt),
           updatedAt: DateTime.parse(updatedAt),
           currency: currency,
-          unitPrice: Money(amount: unitPrice ?? 0.0, currency: currency),
-          quantity: Quantity(value: quantity ?? 0.0, unit: unit),
+          pricingMethod: method,
+          duration: duration,
+          dailyRate: _moneyOrNull(dailyRate, currency),
+          jobAmount: _moneyOrNull(jobAmount, currency),
+          deliveryFee: _moneyOrNull(deliveryFee, currency),
+          deliveryFeeStatus: DeliveryFeeStatus.fromJson(
+            deliveryFeeStatus ?? 'unset',
+          ),
+          rateStatus: RateStatus.fromJson(rateStatus ?? 'missing'),
           brand: brand,
           productLink: productLink,
           description: description,
         );
     }
+  }
+
+  static Money? _moneyOrNull(double? amount, String currency) {
+    if (amount == null) {
+      return null;
+    }
+    return Money(amount: amount, currency: currency);
   }
 
   /// Creates a [CostItemDto] from a domain [CostItem] entity.
@@ -275,18 +340,43 @@ class CostItemDto extends Equatable {
       description: item.description,
       unitPrice: switch (item) {
         MaterialCostItem() => item.unitPrice.amount,
-        EquipmentCostItem() => item.unitPrice.amount,
-        LaborCostItem() => null,
+        EquipmentCostItem() || LaborCostItem() => null,
       },
       quantity: switch (item) {
         MaterialCostItem() => item.quantity.value,
-        EquipmentCostItem() => item.quantity.value,
-        LaborCostItem() => null,
+        EquipmentCostItem() || LaborCostItem() => null,
       },
       unitMeasurement: switch (item) {
         MaterialCostItem() => item.quantity.unit.toJson(),
-        EquipmentCostItem() => item.quantity.unit.toJson(),
-        LaborCostItem() => null,
+        EquipmentCostItem() || LaborCostItem() => null,
+      },
+      pricingMethod: switch (item) {
+        EquipmentCostItem() => item.pricingMethod.toJson(),
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      duration: switch (item) {
+        EquipmentCostItem() => item.duration,
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      dailyRate: switch (item) {
+        EquipmentCostItem() => item.dailyRate?.amount,
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      jobAmount: switch (item) {
+        EquipmentCostItem() => item.jobAmount?.amount,
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      deliveryFee: switch (item) {
+        EquipmentCostItem() => item.deliveryFee?.amount,
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      deliveryFeeStatus: switch (item) {
+        EquipmentCostItem() => item.deliveryFeeStatus.toJson(),
+        MaterialCostItem() || LaborCostItem() => null,
+      },
+      rateStatus: switch (item) {
+        EquipmentCostItem() => item.rateStatus.toJson(),
+        MaterialCostItem() || LaborCostItem() => null,
       },
       laborCalcMethod: switch (item) {
         LaborCostItem() => item.laborCalcMethod.toJson(),
@@ -330,6 +420,13 @@ class CostItemDto extends Equatable {
     unitPrice,
     quantity,
     unitMeasurement,
+    pricingMethod,
+    duration,
+    dailyRate,
+    jobAmount,
+    deliveryFee,
+    deliveryFeeStatus,
+    rateStatus,
     laborCalcMethod,
     laborDays,
     laborHours,
