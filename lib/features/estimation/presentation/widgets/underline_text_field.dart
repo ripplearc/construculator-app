@@ -20,15 +20,38 @@ class UnderlineTextField extends StatefulWidget {
   /// Controls and reads the value text.
   final TextEditingController controller;
 
-  /// Placeholder text shown in the value row while the field is empty.
+  /// Placeholder text shown in the value row, in the value's own text
+  /// color/weight, while the controller is empty (e.g. the equipment name
+  /// field's "Name the equipment", or the Note field's "Add a note
+  /// (optional)"). Fields that don't pass this simply render nothing while
+  /// empty.
   final String? hintText;
 
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
 
+  /// Leading content at the start of the value row (e.g. the delivery-fee
+  /// field's "$" icon, which sits before the digits rather than after them)
+  /// — stays inline in the row, not inside a box.
+  final Widget? prefix;
+
   /// Trailing content at the end of the value row (e.g. the "days" suffix
   /// text or the "$" icon) — stays inline in the row, not inside a box.
   final Widget? suffix;
+
+  /// Content shown at the end of the label row, beside [label] (e.g. the
+  /// Rate field's "Sample rate"/"✓ Your rate" status badge).
+  final Widget? labelTrailing;
+
+  /// Content right-aligned at the end of the value row, after [suffix]
+  /// (e.g. the Rate field's "Save as my rate" link).
+  final Widget? trailingAction;
+
+  /// External focus node, for callers that need to observe or drive focus
+  /// from outside (e.g. the delivery-fee editor folds back to its collapsed
+  /// summary row when this loses focus). Defaults to an internally owned
+  /// node when omitted.
+  final FocusNode? focusNode;
 
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
@@ -40,7 +63,11 @@ class UnderlineTextField extends StatefulWidget {
     required this.controller,
     this.hintText,
     this.keyboardType,
+    this.prefix,
     this.suffix,
+    this.labelTrailing,
+    this.trailingAction,
+    this.focusNode,
     this.errorTextList,
   });
 
@@ -49,11 +76,17 @@ class UnderlineTextField extends StatefulWidget {
 }
 
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
+
+  /// Whether this state created [_focusNode] itself (true) or a caller
+  /// passed one in via [UnderlineTextField.focusNode] (false) — only an
+  /// internally created node is this state's to dispose.
+  bool get _ownsFocusNode => widget.focusNode == null;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
   }
@@ -75,7 +108,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
-    _focusNode.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -116,15 +151,15 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
             ),
       decoration: InputDecoration(
         border: InputBorder.none,
+        hintText: widget.hintText,
+        hintStyle: textTheme.bodyLargeRegular.copyWith(
+          color: colorTheme.textDisable,
+        ),
         // Vertical padding, not zero: without it the field's own
         // interactive area is only as tall as its text line (~24px), short
         // of Android's 48dp minimum tap target.
         contentPadding: const EdgeInsets.symmetric(
           vertical: CoreSpacing.space3,
-        ),
-        hintText: widget.hintText,
-        hintStyle: textTheme.bodyLargeRegular.copyWith(
-          color: colorTheme.textDisable,
         ),
       ),
     );
@@ -139,16 +174,29 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            widget.label,
-            style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textBody,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                widget.label,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              if (widget.labelTrailing != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                widget.labelTrailing!,
+              ],
+            ],
           ),
           const SizedBox(height: CoreSpacing.space1),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (widget.prefix != null) ...[
+                widget.prefix!,
+                const SizedBox(width: CoreSpacing.space2),
+              ],
               // With a suffix (e.g. "days", "$"), the value field must size
               // to its own content so the suffix sits right beside the typed
               // number, matching Figma — an Expanded field would claim the
@@ -167,6 +215,10 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               if (suffix != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
                 suffix,
+              ],
+              if (widget.trailingAction != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                widget.trailingAction!,
               ],
             ],
           ),

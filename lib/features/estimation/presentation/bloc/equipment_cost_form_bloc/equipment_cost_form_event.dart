@@ -43,6 +43,13 @@ class EquipmentDeliveryFeeConfirmedEvent extends EquipmentCostFormEvent {
   const EquipmentDeliveryFeeConfirmedEvent();
 }
 
+/// Fired when the user edits the optional note field inside the expanded
+/// delivery-fee editor.
+class EquipmentDescriptionUpdatedEvent extends EquipmentCostFormEvent {
+  const EquipmentDescriptionUpdatedEvent(this.value);
+  final String value;
+}
+
 /// Fired when the user submits the equipment cost form.
 class EquipmentCostSubmittedEvent extends EquipmentCostFormEvent {
   const EquipmentCostSubmittedEvent({required this.estimateId});
