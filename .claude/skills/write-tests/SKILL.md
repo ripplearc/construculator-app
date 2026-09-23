@@ -13,10 +13,10 @@ disable-model-invocation: false
 
 **Verb:** Write unit and widget tests using real implementations.
 
-**Input:** Context from coding skills — classes created, file paths, business logic. If the
+**Input:** Context from coding skills: classes created, file paths, business logic. If the
 plan under `plans/` has a "Testing strategy" section (see `plan-implementation`), read it
-for the scenarios it expects covered — it is a starting list, not a spec to match
-line-for-line; add scenarios it didn't anticipate.
+for the scenarios it expects covered. Treat that list as a starting point, not a spec to
+match line for line, and add a scenario it did not anticipate.
 
 > If any pattern below is unclear or you need a concrete Dart implementation, read `.claude/skills/write-tests/REFERENCE.md`.
 

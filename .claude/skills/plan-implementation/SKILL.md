@@ -78,22 +78,22 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - RepositoryImpl depends on DataSource
    - Flag violations if found
 
-7. **Testing strategy** — for each PR, specify:
+7. **Testing strategy.** For each PR, list:
 
    **Domain/Data PR:**
-   - UseCase: happy path + each failure type the repository can return
-   - RepositoryImpl: delegates correctly, maps DTO → entity, wraps each error type
+   - UseCase: the working case, plus each failure type the repository can return
+   - RepositoryImpl: delegates correctly, maps DTO to entity, wraps each error type
    - DataSource: calls the right Supabase method with correct args, maps response, handles null/empty
 
    **Presentation PR:**
-   - BLoC unit tests: every state transition (happy path, each error, guard conditions on events that arrive before load)
-   - Widget tests: each state renders the correct UI; `BlocListener` fires toast/snackbar on the right state; fallback content shows correctly on error
+   - BLoC unit tests: every state transition (the working case, each error, guard conditions on events that arrive before load)
+   - Widget tests: each state renders the correct UI. `BlocListener` fires a toast or snackbar on the right state. Fallback content shows correctly on error.
 
-   Output: a "Testing strategy" section in the plan listing these scenarios grouped by class.
+   Output: a "Testing strategy" section in the plan, listing these scenarios grouped by class.
 
-   Do not prescribe test file layout here; follow the relevant testing skill's conventions for test locations.
+   Do not set the test file layout here. Follow the relevant testing skill's conventions for test locations instead.
 
-   This section is input to `/write-tests`, not a spec it must match line-for-line — `write-tests` owns the final test structure and may add scenarios this plan didn't anticipate.
+   The write-tests skill treats this section as a starting list, not a spec it must match line for line. It owns the final test structure, and it can add a scenario this plan did not anticipate.
 
 8. **Apply Digestible PR** (digestible PRs) → Load `.claude/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
