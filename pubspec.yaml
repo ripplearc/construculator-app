@@ -73,7 +73,7 @@ patrol:
   app_name: Construculator
   test_directory: integration_test
   android:
-    package_name: com.cms.cm_sample.fishfood
+    package_name: com.ripplearc.construculator.fishfood
   ios:
     bundle_id: com.example.construculatorAppArchitecture
 
