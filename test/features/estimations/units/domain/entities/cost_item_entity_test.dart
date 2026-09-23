@@ -890,4 +890,63 @@ void main() {
       expect(laborItems.length, 1);
     });
   });
+
+  group('YourRateEntry', () {
+    final testEntry = YourRateEntry(
+      id: 'rate-1',
+      companyId: 'company-1',
+      itemName: 'Excavator',
+      category: CostItemType.equipment,
+      rate: const Money(amount: 250.0),
+      savedAt: DateTime(2024, 1, 1),
+      unit: Unit.days,
+      equipmentMethod: EquipmentPricingMethod.day,
+      entryLabel: 'Supplier A',
+    );
+
+    test('two entries with the same values are equal', () {
+      final other = YourRateEntry(
+        id: 'rate-1',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0),
+        savedAt: DateTime(2024, 1, 1),
+        unit: Unit.days,
+        equipmentMethod: EquipmentPricingMethod.day,
+        entryLabel: 'Supplier A',
+      );
+
+      expect(testEntry, other);
+    });
+
+    test('copyWith creates new instance with updated values', () {
+      final updated = testEntry.copyWith(itemName: 'Bulldozer', entryLabel: 'Supplier B');
+
+      expect(updated.itemName, 'Bulldozer');
+      expect(updated.entryLabel, 'Supplier B');
+      expect(updated.id, testEntry.id);
+      expect(updated.rate, testEntry.rate);
+    });
+
+    test('copyWith preserves original values when not specified', () {
+      final updated = testEntry.copyWith(itemName: 'Bulldozer');
+
+      expect(updated.unit, testEntry.unit);
+      expect(updated.equipmentMethod, testEntry.equipmentMethod);
+      expect(updated.entryLabel, testEntry.entryLabel);
+    });
+
+    test('copyWith can clear nullable fields using clearField', () {
+      final updated = testEntry.copyWith(
+        unit: clearField,
+        equipmentMethod: clearField,
+        entryLabel: clearField,
+      );
+
+      expect(updated.unit, isNull);
+      expect(updated.equipmentMethod, isNull);
+      expect(updated.entryLabel, isNull);
+    });
+  });
 }

@@ -1361,6 +1361,11 @@
     "description": "Error message shown when user lacks permission for an operation",
     "context": "N/A"
   },
+  "yourRatesDuplicateEntryError": "This name already has a saved rate. Add a label to save it as a new entry.",
+  "@yourRatesDuplicateEntryError": {
+    "description": "Error message shown when saving a Your Rates entry without a label collides with an existing entry for the same item name",
+    "context": "CA-1151 (Your rates save flow)"
+  },
   "materialsTab": "Materials",
   "@materialsTab": {
     "description": "Label for materials tab in cost estimation details",
