@@ -72,18 +72,7 @@ class PowerSyncCostEstimationDataSourceImpl
     );
   }
 
-  // Watches [sql] as the single source of truth while keeping the on-demand
-  // `user_cost_estimates` sync stream active only for the subscription's
-  // lifetime.
-  //
-  // Lazy activation tied to the subscription lifecycle: the on-demand stream is
-  // only synced while someone is actually watching it, and is released on
-  // cancel. [mapRows] projects each raw result set into the emitted shape T (a
-  // list for the collection watch, a nullable DTO for the by-id watch).
-  //
-  // [dedupeWith], when given, drops emissions equal to the previous one —
-  // callers supply the right equality for their shape T (a plain `==` isn't
-  // enough for T = List<...>, which compares by identity).
+  // The on-demand sync stream is activated only for the subscription's lifetime.
   Stream<T> _watchWithSyncStream<T>({
     required String sql,
     required List<Object?> parameters,
