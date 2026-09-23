@@ -327,8 +327,9 @@ void main() {
           id: 'item-1',
           estimateId: testEstimateId,
           itemName: 'Bulldozer',
-          unitPrice: 500.0,
-          quantity: 2.0,
+          pricingMethod: 'day',
+          duration: 2.0,
+          dailyRate: 500.0,
         );
         final itemDto = CostItemDto.fromJson(testItem);
         seedItemTable([testItem]);

@@ -210,81 +210,180 @@ void main() {
     });
 
     group('EquipmentCostItem', () {
-      final testJson = CostItemTestDataMapFactory.createEquipmentItemData(
-        id: 'item-999',
-        estimateId: 'estimate-456',
-        itemName: 'Excavator Rental',
-        description: 'Heavy equipment rental',
-        unitPrice: 500.0,
-        quantity: 5.0,
-        unit: 'days',
-        productLink: 'https://example.com/excavator',
-        calculation: {'days': 5.0, 'rate': 500.0},
-        itemTotalCost: 2500.0,
-        createdAt: '2025-02-25T16:00:00.000Z',
-        updatedAt: '2025-02-25T16:00:00.000Z',
-      );
+      group('day pricing', () {
+        final testJson = CostItemTestDataMapFactory.createEquipmentItemData(
+          id: 'item-999',
+          estimateId: 'estimate-456',
+          itemName: 'Excavator Rental',
+          description: 'Heavy equipment rental',
+          pricingMethod: 'day',
+          duration: 5.0,
+          dailyRate: 500.0,
+          deliveryFee: 50.0,
+          deliveryFeeStatus: 'confirmed',
+          rateStatus: 'ownRateConfirmed',
+          productLink: 'https://example.com/excavator',
+          calculation: {'daily_rate': 500.0, 'duration': 5.0},
+          itemTotalCost: 2500.0,
+          createdAt: '2025-02-25T16:00:00.000Z',
+          updatedAt: '2025-02-25T16:00:00.000Z',
+        );
 
-      final testDto = CostItemDto(
-        id: 'item-999',
-        estimateId: 'estimate-456',
-        itemName: 'Excavator Rental',
-        itemType: 'equipment',
-        calculation: {'days': 5.0, 'rate': 500.0},
-        itemTotalCost: 2500.0,
-        createdAt: '2025-02-25T16:00:00.000Z',
-        updatedAt: '2025-02-25T16:00:00.000Z',
-        currency: 'USD',
-        unitPrice: 500.0,
-        quantity: 5.0,
-        unitMeasurement: 'days',
-        productLink: 'https://example.com/excavator',
-        description: 'Heavy equipment rental',
-      );
+        final testDto = CostItemDto(
+          id: 'item-999',
+          estimateId: 'estimate-456',
+          itemName: 'Excavator Rental',
+          itemType: 'equipment',
+          calculation: {'daily_rate': 500.0, 'duration': 5.0},
+          itemTotalCost: 2500.0,
+          createdAt: '2025-02-25T16:00:00.000Z',
+          updatedAt: '2025-02-25T16:00:00.000Z',
+          currency: 'USD',
+          pricingMethod: 'day',
+          duration: 5.0,
+          dailyRate: 500.0,
+          deliveryFee: 50.0,
+          deliveryFeeStatus: 'confirmed',
+          rateStatus: 'ownRateConfirmed',
+          productLink: 'https://example.com/excavator',
+          description: 'Heavy equipment rental',
+        );
 
-      final testEntity = EquipmentCostItem(
-        id: 'item-999',
-        estimateId: 'estimate-456',
-        itemName: 'Excavator Rental',
-        calculation: const {'days': 5.0, 'rate': 500.0},
-        itemTotalCost: 2500.0,
-        createdAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
-        updatedAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
-        currency: 'USD',
-        unitPrice: const Money(amount: 500.0, currency: 'USD'),
-        quantity: const Quantity(value: 5.0, unit: Unit.days),
-        productLink: 'https://example.com/excavator',
-        description: 'Heavy equipment rental',
-      );
+        final testEntity = EquipmentCostItem(
+          id: 'item-999',
+          estimateId: 'estimate-456',
+          itemName: 'Excavator Rental',
+          calculation: const {'daily_rate': 500.0, 'duration': 5.0},
+          itemTotalCost: 2500.0,
+          createdAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
+          updatedAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
+          currency: 'USD',
+          pricingMethod: EquipmentPricingMethod.day,
+          duration: 5.0,
+          dailyRate: const Money(amount: 500.0, currency: 'USD'),
+          deliveryFee: const Money(amount: 50.0, currency: 'USD'),
+          deliveryFeeStatus: DeliveryFeeStatus.confirmed,
+          rateStatus: RateStatus.ownRateConfirmed,
+          productLink: 'https://example.com/excavator',
+          description: 'Heavy equipment rental',
+        );
 
-      group('fromJson', () {
-        test('creates EquipmentCostItem DTO from complete JSON', () {
+        group('fromJson', () {
+          test('creates EquipmentCostItem DTO from complete JSON', () {
+            final dto = CostItemDto.fromJson(testJson);
+
+            expect(dto, testDto);
+          });
+        });
+
+        group('toEntity', () {
+          test('converts DTO to EquipmentCostItem domain entity', () {
+            final entity = testDto.toEntity();
+
+            expect(entity, testEntity);
+          });
+
+          test(
+            'correctly instantiates EquipmentCostItem based on item_type',
+            () {
+              final entity = testDto.toEntity();
+
+              expect(entity, isA<EquipmentCostItem>());
+              expect(entity, testEntity);
+            },
+          );
+        });
+
+        group('fromEntity', () {
+          test('converts EquipmentCostItem entity to DTO', () {
+            final dto = CostItemDto.fromEntity(testEntity);
+
+            expect(dto, testDto);
+          });
+        });
+      });
+
+      group('job pricing', () {
+        final testJson = CostItemTestDataMapFactory.createEquipmentItemData(
+          id: 'item-1000',
+          estimateId: 'estimate-456',
+          itemName: 'Crane Rental',
+          description: 'Flat-rate crane job',
+          pricingMethod: 'job',
+          jobAmount: 3000.0,
+          deliveryFeeStatus: 'unset',
+          rateStatus: 'sampleRateUnverified',
+          calculation: {'job_amount': 3000.0},
+          itemTotalCost: 3000.0,
+          createdAt: '2025-02-25T16:00:00.000Z',
+          updatedAt: '2025-02-25T16:00:00.000Z',
+        );
+
+        final testDto = CostItemDto(
+          id: 'item-1000',
+          estimateId: 'estimate-456',
+          itemName: 'Crane Rental',
+          itemType: 'equipment',
+          calculation: {'job_amount': 3000.0},
+          itemTotalCost: 3000.0,
+          createdAt: '2025-02-25T16:00:00.000Z',
+          updatedAt: '2025-02-25T16:00:00.000Z',
+          currency: 'USD',
+          pricingMethod: 'job',
+          jobAmount: 3000.0,
+          deliveryFeeStatus: 'unset',
+          rateStatus: 'sampleRateUnverified',
+          description: 'Flat-rate crane job',
+        );
+
+        final testEntity = EquipmentCostItem(
+          id: 'item-1000',
+          estimateId: 'estimate-456',
+          itemName: 'Crane Rental',
+          calculation: const {'job_amount': 3000.0},
+          itemTotalCost: 3000.0,
+          createdAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
+          updatedAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
+          currency: 'USD',
+          pricingMethod: EquipmentPricingMethod.job,
+          jobAmount: const Money(amount: 3000.0, currency: 'USD'),
+          deliveryFeeStatus: DeliveryFeeStatus.unset,
+          rateStatus: RateStatus.sampleRateUnverified,
+          description: 'Flat-rate crane job',
+        );
+
+        group('fromJson', () {
+          test('creates EquipmentCostItem DTO from complete JSON', () {
+            final dto = CostItemDto.fromJson(testJson);
+
+            expect(dto, testDto);
+          });
+        });
+
+        group('toEntity', () {
+          test('converts DTO to EquipmentCostItem domain entity', () {
+            final entity = testDto.toEntity();
+
+            expect(entity, testEntity);
+          });
+        });
+
+        group('fromEntity', () {
+          test('converts EquipmentCostItem entity to DTO', () {
+            final dto = CostItemDto.fromEntity(testEntity);
+
+            expect(dto, testDto);
+          });
+        });
+
+        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
           final dto = CostItemDto.fromJson(testJson);
+          final entity = dto.toEntity();
+          final dtoAgain = CostItemDto.fromEntity(entity);
+          final jsonAgain = dtoAgain.toJson();
 
-          expect(dto, testDto);
-        });
-      });
-
-      group('toEntity', () {
-        test('converts DTO to EquipmentCostItem domain entity', () {
-          final entity = testDto.toEntity();
-
-          expect(entity, testEntity);
-        });
-
-        test('correctly instantiates EquipmentCostItem based on item_type', () {
-          final entity = testDto.toEntity();
-
-          expect(entity, isA<EquipmentCostItem>());
-          expect(entity, testEntity);
-        });
-      });
-
-      group('fromEntity', () {
-        test('converts EquipmentCostItem entity to DTO', () {
-          final dto = CostItemDto.fromEntity(testEntity);
-
-          expect(dto, testDto);
+          expect(dtoAgain, dto);
+          expect(jsonAgain, testJson);
         });
       });
     });
@@ -345,10 +444,10 @@ void main() {
           id: 'item-999',
           estimateId: 'estimate-456',
           itemName: 'Excavator Rental',
-          unitPrice: 500.0,
-          quantity: 5.0,
-          unit: 'days',
-          calculation: {'days': 5.0},
+          pricingMethod: 'day',
+          duration: 5.0,
+          dailyRate: 500.0,
+          calculation: {'daily_rate': 500.0, 'duration': 5.0},
           itemTotalCost: 2500.0,
           description: null,
           createdAt: '2025-02-25T16:00:00.000Z',
