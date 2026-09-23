@@ -80,6 +80,13 @@ class EquipmentCostFormBloc
         (d) => d.copyWith(deliveryFeeStatus: DeliveryFeeStatus.confirmed),
       );
     });
+    on<EquipmentDescriptionUpdatedEvent>((e, emit) {
+      // Trimmed-empty is treated the same as "never typed" — description is
+      // an optional free-text note, not a value with its own required/unset
+      // distinction the way deliveryFee has (0 vs null).
+      final description = e.value.trim().isEmpty ? null : e.value;
+      _emit(emit, (d) => d.copyWith(description: description));
+    });
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
   }

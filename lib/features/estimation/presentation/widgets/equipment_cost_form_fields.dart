@@ -1,11 +1,20 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// Inclusive bounds for a manually entered delivery fee, mirroring the daily
+/// rate/job amount bounds enforced by [EquipmentCostFormBloc]. Zero is a
+/// separate, always-valid value (confirmed-free) outside this range.
+const double _minDeliveryFee = 0.01;
+const double _maxDeliveryFee = 999999.99;
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -14,11 +23,17 @@ class EquipmentCostFormFields extends StatefulWidget {
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
+  /// The estimate this item is being added to. Forwarded to
+  /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
+  /// delivery fee. May be null wherever the caller doesn't have one yet.
+  final String? estimateId;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
+    this.estimateId,
   });
 
   @override
@@ -32,6 +47,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _durationController = TextEditingController();
   final _dailyRateController = TextEditingController();
   final _jobAmountController = TextEditingController();
+  final _deliveryFeeController = TextEditingController();
+  final _deliveryFocusNode = FocusNode();
 
   /// Owns the Day/Job choice-chip selection. Exactly one of these is true at
   /// all times; kept as persistent notifiers (rather than derived fresh from
@@ -39,6 +56,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   /// corrected deterministically — see [_selectMethod].
   final _daySelected = ValueNotifier<bool>(true);
   final _jobSelected = ValueNotifier<bool>(false);
+
+  /// Whether the delivery-fee row is showing its editable field (true) or its
+  /// collapsed grey summary (false). Driven by tapping the collapsed row and
+  /// by the field losing focus; see [_toggleDeliveryExpanded] and
+  /// [_onDeliveryFocusChanged].
+  bool _deliveryExpanded = false;
 
   @override
   void initState() {
@@ -48,6 +71,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.addListener(_onDurationChanged);
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
+    _deliveryFeeController.addListener(_onDeliveryFeeChanged);
+    _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
   }
 
   @override
@@ -73,6 +98,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.dispose();
     _dailyRateController.dispose();
     _jobAmountController.dispose();
+    _deliveryFeeController.dispose();
+    _deliveryFocusNode.dispose();
     _daySelected.dispose();
     _jobSelected.dispose();
     super.dispose();
@@ -103,6 +130,76 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       EquipmentRateUpdatedEvent(_jobAmountController.text),
     );
     _notifyTotal();
+  }
+
+  void _onDeliveryFeeChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentDeliveryFeeUpdatedEvent(_deliveryFeeController.text),
+    );
+    _notifyTotal();
+  }
+
+  void _toggleDeliveryExpanded() {
+    if (_deliveryExpanded) {
+      _deliveryFocusNode.unfocus();
+      return;
+    }
+    setState(() => _deliveryExpanded = true);
+    // CoreTextField has no autofocus param, so the field must exist in the
+    // tree (post-frame) before it can accept focus.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _deliveryFocusNode.requestFocus();
+    });
+  }
+
+  void _onConfirmDeliveryFee() {
+    context.read<EquipmentCostFormBloc>().add(
+      const EquipmentDeliveryFeeConfirmedEvent(),
+    );
+  }
+
+  // Fires when the delivery-fee field folds (loses focus), which this widget
+  // treats as "the user is done entering this value" — see the outsized-fee
+  // check below.
+  void _onDeliveryFocusChanged() {
+    if (_deliveryFocusNode.hasFocus) return;
+    if (!mounted) return;
+    setState(() => _deliveryExpanded = false);
+    unawaited(_maybeConfirmOutsizedFee());
+  }
+
+  Future<void> _maybeConfirmOutsizedFee() async {
+    final data = _dataOf(context.read<EquipmentCostFormBloc>().state);
+    final fee = data.deliveryFee;
+    if (fee == null) return;
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final baseCost = isDay
+        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
+        : (data.jobAmount ?? 0);
+    if (fee <= baseCost) return;
+
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _OutsizedFeeDialog(fee: fee, baseCost: baseCost),
+    );
+    if (!mounted) return;
+
+    if (accepted == true) {
+      // Real submission is still gated behind CA-355, so this currently
+      // no-ops (the bloc only reacts to it from
+      // EquipmentCostFormOutsizedFeeConfirm, a state this widget doesn't
+      // drive the bloc into — see the class doc comment). Dispatched anyway
+      // for forward compatibility once CA-355 wires up submission.
+      context.read<EquipmentCostFormBloc>().add(
+        EquipmentOutsizedFeeAcceptedEvent(estimateId: widget.estimateId ?? ''),
+      );
+    } else {
+      // .clear() notifies _deliveryFeeController's listener, which already
+      // dispatches EquipmentDeliveryFeeUpdatedEvent('') and calls
+      // _notifyTotal() — see _onDeliveryFeeChanged.
+      _deliveryFeeController.clear();
+    }
   }
 
   // Tapping a chip re-drives both notifiers to `false`: ChoiceChipToggle
@@ -136,7 +233,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         ? (double.tryParse(_durationController.text) ?? 0) *
               (double.tryParse(_dailyRateController.text) ?? 0)
         : double.tryParse(_jobAmountController.text) ?? 0;
-    widget.onTotalChanged?.call(rawTotal.isFinite ? rawTotal : 0.0);
+    final base = rawTotal.isFinite ? rawTotal : 0.0;
+    final rawDelivery = double.tryParse(_deliveryFeeController.text) ?? 0;
+    final delivery = rawDelivery.isFinite ? rawDelivery : 0.0;
+    // Delivery is added after the rate math, never inside it.
+    widget.onTotalChanged?.call(base + delivery);
   }
 
   EquipmentCostFormWithData _dataOf(EquipmentCostFormState state) =>
@@ -179,6 +280,30 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       'rateOutOfRange' => l10n.equipmentAmountOutOfRangeError,
       _ => null,
     };
+  }
+
+  // EquipmentCostFormBloc doesn't validate the delivery-fee bound (only item
+  // type, duration, and dailyRate/jobAmount feed into its isValid/fieldErrors
+  // — see the bloc's _validated). This check is done locally so it stays
+  // purely advisory: it never blocks a keystroke or Save. Empty (unset) and
+  // exactly 0 (confirmed-free) are both valid and never show this error.
+  String? _deliveryFeeErrorText(BuildContext context) {
+    final raw = _deliveryFeeController.text.trim();
+    if (raw.isEmpty) return null;
+    final value = double.tryParse(raw);
+    if (value == null || value == 0) return null;
+    if (value < _minDeliveryFee || value > _maxDeliveryFee) {
+      return context.l10n.equipmentDeliveryFeeOutOfRangeError;
+    }
+    return null;
+  }
+
+  String _deliveryRowText(BuildContext context, double? fee) {
+    final l10n = context.l10n;
+    final value = fee == null
+        ? l10n.equipmentDeliveryFeeUnsetText
+        : DisplayFormatter.currency.format(fee);
+    return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
   @override
@@ -327,10 +452,240 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
+              const SizedBox(height: CoreSpacing.space5),
+              _buildDeliveryFeeSection(context, data),
             ],
           );
         },
       ),
     ];
+  }
+
+  // Delivery applies the same way under Day and Job pricing, so this row
+  // sits below the if/else above rather than inside either branch.
+  Widget _buildDeliveryFeeSection(
+    BuildContext context,
+    EquipmentCostFormWithData data,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_deliveryExpanded)
+          CoreTextField(
+            key: const Key('delivery_fee_field'),
+            label: l10n.equipmentDeliveryRowLabel,
+            controller: _deliveryFeeController,
+            focusNode: _deliveryFocusNode,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+            ),
+            prefix: Text(
+              '\$',
+              style: textTheme.bodyLargeRegular.copyWith(
+                color: colorTheme.textHeadline,
+              ),
+            ),
+            errorTextList: _errorList(_deliveryFeeErrorText(context)),
+          )
+        else
+          GestureDetector(
+            key: const Key('delivery_fee_row'),
+            onTap: _toggleDeliveryExpanded,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space3,
+              ),
+              decoration: BoxDecoration(
+                color: colorTheme.backgroundGrayLight,
+                borderRadius: BorderRadius.circular(CoreSpacing.space2),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _deliveryRowText(context, data.deliveryFee),
+                    style: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textHeadline,
+                    ),
+                  ),
+                  CoreIconWidget(
+                    icon: CoreIcons.arrowDropDown,
+                    color: colorTheme.iconGrayMid,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (!_deliveryExpanded &&
+            data.deliveryFeeStatus == DeliveryFeeStatus.estimated)
+          _buildDeliveryEstimatedRow(context),
+        if (!_deliveryExpanded &&
+            data.deliveryFeeStatus == DeliveryFeeStatus.confirmed)
+          _buildDeliveryConfirmedHelperText(context),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryEstimatedRow(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            key: const Key('delivery_fee_estimated_badge'),
+            padding: const EdgeInsets.symmetric(
+              horizontal: CoreSpacing.space2,
+              vertical: CoreSpacing.space1,
+            ),
+            decoration: BoxDecoration(
+              color: colorTheme.backgroundOrangeLight,
+              borderRadius: BorderRadius.circular(CoreSpacing.space1),
+            ),
+            child: Text(
+              l10n.equipmentDeliveryFeeEstimatedBadge,
+              style: textTheme.bodySmallMedium.copyWith(
+                color: colorTheme.textWarning,
+              ),
+            ),
+          ),
+          const SizedBox(width: CoreSpacing.space3),
+          GestureDetector(
+            key: const Key('delivery_fee_confirm_link'),
+            onTap: _onConfirmDeliveryFee,
+            child: Text(
+              l10n.equipmentDeliveryFeeConfirmLink,
+              style: textTheme.bodySmallSemiBold.copyWith(
+                color: colorTheme.textLink,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeliveryConfirmedHelperText(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Text(
+        l10n.equipmentDeliveryFeeConfirmedHelperText,
+        key: const Key('delivery_fee_confirmed_helper_text'),
+        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
+      ),
+    );
+  }
+}
+
+/// Confirmation dialog shown when a just-entered delivery fee exceeds this
+/// line's own computed base cost (duration × dailyRate under Day pricing, or
+/// jobAmount under Job pricing).
+///
+/// Modeled on Figma's generic "Confirmation Dialog" component (node
+/// 65354:146175), also used elsewhere for an unrelated archive-confirmation
+/// flow: 340×262, 20px corner radius, 22px padding, 12px gap, a 52×52 light
+/// blue icon circle, an 18px semibold title, a 14px regular body, and a
+/// secondary/primary [CoreButton] pair.
+///
+/// The title/body copy below is PLACEHOLDER TEXT pending design sign-off:
+/// neither the design doc nor the storyboard specifies exact strings for
+/// this dialog (CA-1144). Swap the equipmentDeliveryFeeOutsizedDialogTitle/
+/// Body ARB entries once real copy is approved.
+class _OutsizedFeeDialog extends StatelessWidget {
+  const _OutsizedFeeDialog({required this.fee, required this.baseCost});
+
+  final double fee;
+  final double baseCost;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Dialog(
+      backgroundColor: colorTheme.pageBackground,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: colorTheme.backgroundBlueLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: CoreIconWidget(
+                    icon: CoreIcons.info,
+                    color: colorTheme.iconBlue,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Text(
+                l10n.equipmentDeliveryFeeOutsizedDialogTitle,
+                key: const Key('outsized_fee_dialog_title'),
+                style: textTheme.titleMediumSemiBold.copyWith(
+                  color: colorTheme.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Text(
+                l10n.equipmentDeliveryFeeOutsizedDialogBody(
+                  DisplayFormatter.currency.format(fee),
+                  DisplayFormatter.currency.format(baseCost),
+                ),
+                key: const Key('outsized_fee_dialog_body'),
+                style: textTheme.bodyMediumRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Row(
+                children: [
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('outsized_fee_dialog_go_back_button'),
+                      label: l10n.equipmentDeliveryFeeOutsizedDialogGoBack,
+                      variant: CoreButtonVariant.secondary,
+                      size: CoreButtonSize.medium,
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: CoreSpacing.space3),
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('outsized_fee_dialog_add_it_button'),
+                      label: l10n.equipmentDeliveryFeeOutsizedDialogAddIt,
+                      variant: CoreButtonVariant.primary,
+                      size: CoreButtonSize.medium,
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

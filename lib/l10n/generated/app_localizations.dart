@@ -2704,6 +2704,69 @@ abstract class AppLocalizations {
   /// **'Amount must be between \$0.01 and \$999,999.99'**
   String get equipmentAmountOutOfRangeError;
 
+  /// Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get equipmentDeliveryRowLabel;
+
+  /// Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get equipmentDeliveryFeeUnsetText;
+
+  /// Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed with the supplier (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated'**
+  String get equipmentDeliveryFeeEstimatedBadge;
+
+  /// Link/button next to the delivery-fee row that confirms the entered fee with the supplier for this estimate only (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get equipmentDeliveryFeeConfirmLink;
+
+  /// Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed with supplier — quote for this trip'**
+  String get equipmentDeliveryFeeConfirmedHelperText;
+
+  /// Validation error shown below the delivery-fee field when a non-zero entry is outside the accepted bound (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery fee must be between \$0.01 and \$999,999.99'**
+  String get equipmentDeliveryFeeOutOfRangeError;
+
+  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm this delivery fee?'**
+  String get equipmentDeliveryFeeOutsizedDialogTitle;
+
+  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
+  ///
+  /// In en, this message translates to:
+  /// **'The delivery fee ({feeAmount}) is more than the equipment\'s own cost ({baseCostAmount}). Do you want to add it as entered?'**
+  String equipmentDeliveryFeeOutsizedDialogBody(
+    String feeAmount,
+    String baseCostAmount,
+  );
+
+  /// Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and leaves the fee unset
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get equipmentDeliveryFeeOutsizedDialogGoBack;
+
+  /// Primary button on the outsized delivery-fee confirmation dialog; proceeds and saves the fee as entered
+  ///
+  /// In en, this message translates to:
+  /// **'Add it'**
+  String get equipmentDeliveryFeeOutsizedDialogAddIt;
+
   /// Toast shown when navigation to project settings fails
   ///
   /// In en, this message translates to:
