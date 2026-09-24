@@ -2734,6 +2734,18 @@ abstract class AppLocalizations {
   /// **'Confirmed with supplier — quote for this trip'**
   String get equipmentDeliveryFeeConfirmedHelperText;
 
+  /// Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed with the supplier (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated — confirm the supplier\'s actual delivery quote'**
+  String get equipmentDeliveryFeeEstimatedHelperText;
+
+  /// Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get equipmentDeliveryAddNoteLink;
+
   /// Validation error shown below the delivery-fee field when a non-zero entry is outside the accepted bound (manually mode)
   ///
   /// In en, this message translates to:
@@ -2766,6 +2778,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add it'**
   String get equipmentDeliveryFeeOutsizedDialogAddIt;
+
+  /// Status badge next to the Rate/Amount field label when the value came from a generic sample/reference rate, not yet confirmed as the user's own (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Sample rate'**
+  String get equipmentRateStatusSampleRateBadge;
+
+  /// Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Your rate'**
+  String get equipmentRateStatusYourRateBadge;
+
+  /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)
+  ///
+  /// In en, this message translates to:
+  /// **'Save as my rate'**
+  String get equipmentSaveAsMyRateLink;
+
+  /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get equipmentNoteLabel;
+
+  /// Placeholder text for the optional note field inside the expanded delivery-fee editor (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get equipmentNotePlaceholder;
 
   /// Toast shown when navigation to project settings fails
   ///

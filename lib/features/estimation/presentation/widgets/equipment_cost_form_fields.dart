@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -49,6 +50,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _jobAmountController = TextEditingController();
   final _deliveryFeeController = TextEditingController();
   final _deliveryFocusNode = FocusNode();
+  final _noteController = TextEditingController();
+  final _noteFocusNode = FocusNode();
 
   /// Owns the Day/Job choice-chip selection. Exactly one of these is true at
   /// all times; kept as persistent notifiers (rather than derived fresh from
@@ -57,10 +60,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _daySelected = ValueNotifier<bool>(true);
   final _jobSelected = ValueNotifier<bool>(false);
 
-  /// Whether the delivery-fee row is showing its editable field (true) or its
-  /// collapsed grey summary (false). Driven by tapping the collapsed row and
-  /// by the field losing focus; see [_toggleDeliveryExpanded] and
-  /// [_onDeliveryFocusChanged].
+  /// Whether the delivery-fee panel (value field, status chrome, Note field)
+  /// is open below its always-visible summary header. Toggled only by
+  /// tapping the header or its chevron — see [_toggleDeliveryExpanded] —
+  /// and, unlike an ordinary accordion, deliberately does NOT close when the
+  /// value field loses focus: the Figma mock shows the panel staying open
+  /// through typing, folding, and confirming, closing only on an explicit
+  /// header tap.
   bool _deliveryExpanded = false;
 
   @override
@@ -73,6 +79,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _jobAmountController.addListener(_onJobAmountChanged);
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
+    _noteController.addListener(_onDescriptionChanged);
   }
 
   @override
@@ -100,6 +107,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _jobAmountController.dispose();
     _deliveryFeeController.dispose();
     _deliveryFocusNode.dispose();
+    _noteController.dispose();
+    _noteFocusNode.dispose();
     _daySelected.dispose();
     _jobSelected.dispose();
     super.dispose();
@@ -139,16 +148,35 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
+  void _onDescriptionChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentDescriptionUpdatedEvent(_noteController.text),
+    );
+  }
+
   void _toggleDeliveryExpanded() {
     if (_deliveryExpanded) {
+      setState(() => _deliveryExpanded = false);
       _deliveryFocusNode.unfocus();
       return;
     }
     setState(() => _deliveryExpanded = true);
-    // CoreTextField has no autofocus param, so the field must exist in the
-    // tree (post-frame) before it can accept focus.
+    // The field has no autofocus param, so it must exist in the tree
+    // (post-frame) before it can accept focus.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _deliveryFocusNode.requestFocus();
+    });
+  }
+
+  // "Add note" opens the panel (if closed) focused directly on the Note
+  // field, rather than the delivery-value field [_toggleDeliveryExpanded]
+  // focuses.
+  void _openNoteField() {
+    if (!_deliveryExpanded) {
+      setState(() => _deliveryExpanded = true);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _noteFocusNode.requestFocus();
     });
   }
 
@@ -159,13 +187,16 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   // Fires when the delivery-fee field folds (loses focus), which this widget
-  // treats as "the user is done entering this value" — see the outsized-fee
-  // check below.
+  // treats as "the user is done entering this value" for the outsized-fee
+  // check below. Unlike the old collapsed/expanded toggle, folding no longer
+  // closes the panel (see [_deliveryExpanded]'s doc comment) — this only
+  // rebuilds so the Estimated/Confirm chrome (hidden while focused) appears.
   void _onDeliveryFocusChanged() {
-    if (_deliveryFocusNode.hasFocus) return;
     if (!mounted) return;
-    setState(() => _deliveryExpanded = false);
-    unawaited(_maybeConfirmOutsizedFee());
+    setState(() {});
+    if (!_deliveryFocusNode.hasFocus) {
+      unawaited(_maybeConfirmOutsizedFee());
+    }
   }
 
   Future<void> _maybeConfirmOutsizedFee() async {
@@ -310,6 +341,74 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
+  String? _deliveryStatusHelperText(
+    BuildContext context,
+    DeliveryFeeStatus status,
+  ) {
+    final l10n = context.l10n;
+    return switch (status) {
+      DeliveryFeeStatus.estimated =>
+        l10n.equipmentDeliveryFeeEstimatedHelperText,
+      DeliveryFeeStatus.confirmed =>
+        l10n.equipmentDeliveryFeeConfirmedHelperText,
+      DeliveryFeeStatus.unset => null,
+    };
+  }
+
+  // Both variants map directly onto RateStatus; `missing` (no rate typed
+  // yet) shows no badge at all — absence of a tag is itself the "no rate
+  // yet" signal, matching the Figma component set (node 65685:147068).
+  Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
+    final l10n = context.l10n;
+    return switch (status) {
+      RateStatus.sampleRateUnverified => RateStatusBadge(
+        key: const Key('rate_status_badge'),
+        label: l10n.equipmentRateStatusSampleRateBadge,
+        variant: RateStatusBadgeVariant.orange,
+      ),
+      RateStatus.ownRateConfirmed => RateStatusBadge(
+        key: const Key('rate_status_badge'),
+        label: l10n.equipmentRateStatusYourRateBadge,
+        variant: RateStatusBadgeVariant.green,
+      ),
+      RateStatus.missing => null,
+    };
+  }
+
+  // Only offered for a sample rate — once a rate is already confirmed as
+  // the user's own (RateStatus.ownRateConfirmed, the only status reachable
+  // today; see EquipmentCostFormBloc's rate-update handler), saving it again
+  // is redundant. No code path sets sampleRateUnverified yet (that's the
+  // lookup-a-rate flow, CA-1151), so this link renders correctly for that
+  // future state without being exercisable today.
+  Widget? _saveAsMyRateLink(BuildContext context, RateStatus status) {
+    if (status != RateStatus.sampleRateUnverified) return null;
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Semantics(
+      button: true,
+      label: l10n.equipmentSaveAsMyRateLink,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('save_as_my_rate_link'),
+        behavior: HitTestBehavior.opaque,
+        // TODO: CA-1151 — wire to YourRatesRepository.save() once it exists.
+        onTap: () {},
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          alignment: Alignment.centerRight,
+          child: Text(
+            l10n.equipmentSaveAsMyRateLink,
+            style: textTheme.bodySmallSemiBold.copyWith(
+              color: colorTheme.textLink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -439,6 +538,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     color: colorTheme.textHeadline,
                     size: 24,
                   ),
+                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -454,6 +555,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     color: colorTheme.textHeadline,
                     size: 24,
                   ),
+                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
               const SizedBox(height: CoreSpacing.space5),
@@ -467,6 +570,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   // Delivery applies the same way under Day and Job pricing, so this row
   // sits below the if/else above rather than inside either branch.
+  //
+  // One persistent grey panel, not a collapsed-row/expanded-field swap: the
+  // Figma mock (cuj6-equip-5c/5d/5h/5i) shows the "Delivery <value> · Add
+  // note" header staying visible with its chevron pointed up through
+  // typing, folding, and confirming — only an explicit tap on the header
+  // closes it. See [_deliveryExpanded]'s doc comment.
   Widget _buildDeliveryFeeSection(
     BuildContext context,
     EquipmentCostFormWithData data,
@@ -474,138 +583,200 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_deliveryExpanded)
-          CoreTextField(
-            key: const Key('delivery_fee_field'),
-            label: l10n.equipmentDeliveryRowLabel,
-            controller: _deliveryFeeController,
-            focusNode: _deliveryFocusNode,
-            keyboardType: const TextInputType.numberWithOptions(
-              decimal: true,
-            ),
-            prefix: CoreIconWidget(
-              icon: CoreIcons.dollar,
-              color: colorTheme.textHeadline,
-              size: 24,
-            ),
-            errorTextList: _errorList(_deliveryFeeErrorText(context)),
-          )
-        else
-          Semantics(
-            button: true,
-            label: _deliveryRowText(context, data.deliveryFee),
-            excludeSemantics: true,
-            child: GestureDetector(
-              key: const Key('delivery_fee_row'),
-              onTap: _toggleDeliveryExpanded,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: CoreSpacing.space4,
-                  vertical: CoreSpacing.space3,
-                ),
-                decoration: BoxDecoration(
-                  color: colorTheme.backgroundGrayLight,
-                  borderRadius: BorderRadius.circular(CoreSpacing.space2),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _deliveryRowText(context, data.deliveryFee),
-                      style: textTheme.bodyLargeRegular.copyWith(
-                        color: colorTheme.textHeadline,
+    // Hidden while the field has focus (mid-keystroke), matching the Figma
+    // mock: the badge/link only appear once the value has folded.
+    final showConfirmChrome =
+        !_deliveryFocusNode.hasFocus &&
+        data.deliveryFeeStatus == DeliveryFeeStatus.estimated;
+    final helperText = _deliveryStatusHelperText(
+      context,
+      data.deliveryFeeStatus,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CoreSpacing.space4,
+        vertical: CoreSpacing.space3,
+      ),
+      decoration: BoxDecoration(
+        color: colorTheme.backgroundGrayLight,
+        borderRadius: BorderRadius.circular(CoreSpacing.space2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  label: _deliveryRowText(context, data.deliveryFee),
+                  excludeSemantics: true,
+                  child: GestureDetector(
+                    key: const Key('delivery_fee_row'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _toggleDeliveryExpanded,
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _deliveryRowText(context, data.deliveryFee),
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodyLargeRegular.copyWith(
+                                color: colorTheme.textHeadline,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '  ·  ',
+                            style: textTheme.bodyLargeRegular.copyWith(
+                              color: colorTheme.textHeadline,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    CoreIconWidget(
-                      icon: CoreIcons.arrowDropDown,
-                      color: colorTheme.iconGrayMid,
-                      size: 24,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        if (!_deliveryExpanded &&
-            data.deliveryFeeStatus == DeliveryFeeStatus.estimated)
-          _buildDeliveryEstimatedRow(context),
-        if (!_deliveryExpanded &&
-            data.deliveryFeeStatus == DeliveryFeeStatus.confirmed)
-          _buildDeliveryConfirmedHelperText(context),
-      ],
-    );
-  }
-
-  Widget _buildDeliveryEstimatedRow(BuildContext context) {
-    final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: CoreSpacing.space2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            key: const Key('delivery_fee_estimated_badge'),
-            padding: const EdgeInsets.symmetric(
-              horizontal: CoreSpacing.space2,
-              vertical: CoreSpacing.space1,
-            ),
-            decoration: BoxDecoration(
-              color: colorTheme.backgroundOrangeLight,
-              borderRadius: BorderRadius.circular(CoreSpacing.space1),
-            ),
-            child: Text(
-              l10n.equipmentDeliveryFeeEstimatedBadge,
-              // textWarning-on-backgroundOrangeLight falls short of the 4.5:1
-              // WCAG AA ratio at this text size; textHeadline clears it while
-              // the amber fill still carries the "estimated" cue.
-              style: textTheme.bodySmallMedium.copyWith(
-                color: colorTheme.textHeadline,
-              ),
-            ),
-          ),
-          const SizedBox(width: CoreSpacing.space3),
-          Semantics(
-            button: true,
-            label: l10n.equipmentDeliveryFeeConfirmLink,
-            excludeSemantics: true,
-            child: GestureDetector(
-              key: const Key('delivery_fee_confirm_link'),
-              behavior: HitTestBehavior.opaque,
-              onTap: _onConfirmDeliveryFee,
-              // Padded to a >=48x48 tap target per accessibility guidelines
-              // without inflating the link's visible size.
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  l10n.equipmentDeliveryFeeConfirmLink,
-                  style: textTheme.bodySmallSemiBold.copyWith(
-                    color: colorTheme.textLink,
                   ),
                 ),
               ),
-            ),
+              Semantics(
+                button: true,
+                label: l10n.equipmentDeliveryAddNoteLink,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  key: const Key('delivery_fee_add_note_link'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _openNoteField,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      l10n.equipmentDeliveryAddNoteLink,
+                      style: textTheme.bodyLargeRegular.copyWith(
+                        color: colorTheme.textLink,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Purely decorative: the labeled header zone to its left
+              // already exposes the same expand/collapse action to a11y
+              // tools, so this icon is excluded rather than adding a second,
+              // unlabeled tappable node to the semantics tree.
+              ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleDeliveryExpanded,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    alignment: Alignment.center,
+                    child: AnimatedRotation(
+                      turns: _deliveryExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 150),
+                      child: CoreIconWidget(
+                        icon: CoreIcons.arrowDropDown,
+                        color: colorTheme.iconGrayMid,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (_deliveryExpanded) ...[
+            const SizedBox(height: CoreSpacing.space3),
+            UnderlineTextField(
+              key: const Key('delivery_fee_field'),
+              label: l10n.equipmentDeliveryRowLabel,
+              controller: _deliveryFeeController,
+              focusNode: _deliveryFocusNode,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              prefix: CoreIconWidget(
+                icon: CoreIcons.dollar,
+                color: colorTheme.textHeadline,
+                size: 24,
+              ),
+              labelTrailing: showConfirmChrome
+                  ? RateStatusBadge(
+                      key: const Key('delivery_fee_estimated_badge'),
+                      label: l10n.equipmentDeliveryFeeEstimatedBadge,
+                      variant: RateStatusBadgeVariant.orange,
+                    )
+                  : null,
+              trailingAction: showConfirmChrome
+                  ? Semantics(
+                      button: true,
+                      label: l10n.equipmentDeliveryFeeConfirmLink,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        key: const Key('delivery_fee_confirm_link'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _onConfirmDeliveryFee,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            l10n.equipmentDeliveryFeeConfirmLink,
+                            style: textTheme.bodySmallSemiBold.copyWith(
+                              color: colorTheme.textLink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+              errorTextList: _errorList(_deliveryFeeErrorText(context)),
+            ),
+            if (helperText != null) ...[
+              const SizedBox(height: CoreSpacing.space2),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CoreIconWidget(
+                    icon: CoreIcons.info,
+                    color: colorTheme.iconGrayMid,
+                    size: 16,
+                  ),
+                  const SizedBox(width: CoreSpacing.space1),
+                  Expanded(
+                    child: Text(
+                      helperText,
+                      key: data.deliveryFeeStatus == DeliveryFeeStatus.confirmed
+                          ? const Key('delivery_fee_confirmed_helper_text')
+                          : const Key('delivery_fee_estimated_helper_text'),
+                      style: textTheme.bodySmallRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: CoreSpacing.space3),
+            UnderlineTextField(
+              key: const Key('delivery_note_field'),
+              label: l10n.equipmentNoteLabel,
+              controller: _noteController,
+              focusNode: _noteFocusNode,
+              hintText: l10n.equipmentNotePlaceholder,
+            ),
+          ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildDeliveryConfirmedHelperText(BuildContext context) {
-    final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: CoreSpacing.space2),
-      child: Text(
-        l10n.equipmentDeliveryFeeConfirmedHelperText,
-        key: const Key('delivery_fee_confirmed_helper_text'),
-        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
       ),
     );
   }

@@ -624,7 +624,9 @@ void main() {
     testWidgets('formats to two decimals once folded', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-      await fillValidDayFields(tester); // base cost 300, well above the fee below
+      await fillValidDayFields(
+        tester,
+      ); // base cost 300, well above the fee below
 
       await expandDeliveryField(tester);
       await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
@@ -661,7 +663,10 @@ void main() {
 
       expect(find.text('85'), findsOneWidget);
       expect(find.text('\$85.00'), findsNothing);
-      expect(find.text(deliveryRowText(85)), findsNothing);
+      // The header stays visible (and already formatted) alongside the
+      // still-open field per the Figma mock — only the field itself shows
+      // raw digits while typing.
+      expect(find.text(deliveryRowText(85)), findsOneWidget);
     });
   });
 
@@ -688,7 +693,9 @@ void main() {
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
-        await fillValidDayFields(tester); // base cost 300, well above the fee below
+        await fillValidDayFields(
+          tester,
+        ); // base cost 300, well above the fee below
 
         await expandDeliveryField(tester);
         await tester.enterText(
@@ -714,7 +721,9 @@ void main() {
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
-        await fillValidDayFields(tester); // base cost 300, well above the fee below
+        await fillValidDayFields(
+          tester,
+        ); // base cost 300, well above the fee below
 
         await expandDeliveryField(tester);
         await tester.enterText(
@@ -731,7 +740,10 @@ void main() {
           find.byKey(const Key('delivery_fee_estimated_badge')),
           findsNothing,
         );
-        expect(find.byKey(const Key('delivery_fee_confirm_link')), findsNothing);
+        expect(
+          find.byKey(const Key('delivery_fee_confirm_link')),
+          findsNothing,
+        );
         expect(
           find.text(l10n.equipmentDeliveryFeeConfirmedHelperText),
           findsOneWidget,
@@ -746,7 +758,10 @@ void main() {
         await tester.pumpAndSettle();
 
         await expandDeliveryField(tester);
-        await tester.enterText(find.byKey(const Key('delivery_fee_field')), '0');
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '0',
+        );
         await tester.pump();
         await foldDeliveryField(tester);
 
@@ -817,7 +832,10 @@ void main() {
       await tester.pump();
 
       await expandDeliveryField(tester);
-      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '600');
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '600',
+      );
       await tester.pump();
       await foldDeliveryField(tester);
 
@@ -985,6 +1003,135 @@ void main() {
       await tester.pump();
 
       expect(capturedTotal, 400.0);
+    });
+  });
+
+  group('EquipmentCostFormFields — delivery panel open/close', () {
+    testWidgets(
+      'stays open across a fold, unlike the old collapse-on-blur behavior',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(find.byKey(const Key('delivery_fee_field')), findsOneWidget);
+        expect(find.byKey(const Key('delivery_note_field')), findsOneWidget);
+      },
+    );
+
+    testWidgets('closes only when the header is tapped again', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      expect(find.byKey(const Key('delivery_fee_field')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
+      expect(find.byKey(const Key('delivery_note_field')), findsNothing);
+    });
+
+    testWidgets(
+      'shows the Estimated helper sentence once folded with a fee entered',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.text(l10n.equipmentDeliveryFeeEstimatedHelperText),
+          findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('EquipmentCostFormFields — Note field', () {
+    testWidgets('"Add note" opens the panel focused on the Note field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('delivery_note_field')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('delivery_fee_add_note_link')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('delivery_note_field')), findsOneWidget);
+    });
+
+    testWidgets('typed note text is retained in the field', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_note_field')),
+        'Leave at the gate',
+      );
+      await tester.pump();
+
+      expect(find.text('Leave at the gate'), findsOneWidget);
+    });
+  });
+
+  group('EquipmentCostFormFields — Rate/Amount status badge', () {
+    testWidgets('shows no badge before a rate is entered (Day)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+    });
+
+    testWidgets('shows "✓ Your rate" once a daily rate is typed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsOneWidget);
+      expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsOneWidget);
+      // Only offered for an unverified sample rate; typing a rate confirms
+      // it as the user's own immediately (see EquipmentCostFormBloc's
+      // rate-update handler), so this link never shows in that flow.
+      expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+    });
+
+    testWidgets('shows "✓ Your rate" once a job amount is typed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsOneWidget);
+      expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsOneWidget);
     });
   });
 }
