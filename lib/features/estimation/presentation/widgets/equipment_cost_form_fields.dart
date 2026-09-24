@@ -1,5 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -103,12 +105,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
-  // Tapping a chip re-drives both notifiers to `false`: CoreChip toggles its
-  // own `selected` notifier right after this callback returns (unless it's a
-  // smart chip), so the tapped chip's notifier flips back to `true` on its
-  // own, while the untapped sibling — never auto-toggled — is left `false`.
-  // This holds regardless of which chip was active beforehand, so re-tapping
-  // the already-active chip leaves the same chip selected.
+  // Tapping a chip re-drives both notifiers to `false`: ChoiceChipToggle
+  // toggles its own `selected` notifier right after this callback returns,
+  // so the tapped chip's notifier flips back to `true` on its own, while the
+  // untapped sibling — never auto-toggled — is left `false`. This holds
+  // regardless of which chip was active beforehand, so re-tapping the
+  // already-active chip leaves the same chip selected.
   void _selectMethod(EquipmentPricingMethod tapped) {
     _daySelected.value = false;
     _jobSelected.value = false;
@@ -252,7 +254,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CoreTextField(
+              UnderlineTextField(
                 key: const Key('equipment_name_field'),
                 label: l10n.equipmentNameLabel,
                 controller: _equipmentNameController,
@@ -263,14 +265,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               const SizedBox(height: CoreSpacing.space5),
               Row(
                 children: [
-                  CoreChip(
+                  ChoiceChipToggle(
                     key: const Key('day_method_chip'),
                     label: l10n.equipmentDayMethodLabel,
                     selected: _daySelected,
                     onTap: () => _selectMethod(EquipmentPricingMethod.day),
                   ),
                   const SizedBox(width: CoreSpacing.space2),
-                  CoreChip(
+                  ChoiceChipToggle(
                     key: const Key('job_method_chip'),
                     label: l10n.equipmentJobMethodLabel,
                     selected: _jobSelected,
@@ -280,7 +282,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               ),
               const SizedBox(height: CoreSpacing.space5),
               if (isDay) ...[
-                CoreTextField(
+                UnderlineTextField(
                   key: const Key('duration_field'),
                   label: l10n.equipmentDurationLabel,
                   controller: _durationController,
@@ -296,7 +298,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   errorTextList: _errorList(_durationErrorText(context, data)),
                 ),
                 const SizedBox(height: CoreSpacing.space5),
-                CoreTextField(
+                UnderlineTextField(
                   key: const Key('rate_field'),
                   label: l10n.equipmentRateLabel,
                   controller: _dailyRateController,
@@ -311,7 +313,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
-                CoreTextField(
+                UnderlineTextField(
                   key: const Key('amount_field'),
                   label: l10n.equipmentAmountLabel,
                   controller: _jobAmountController,
