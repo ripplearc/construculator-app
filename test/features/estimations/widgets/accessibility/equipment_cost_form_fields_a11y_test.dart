@@ -116,6 +116,19 @@ void main() {
     );
 
     testWidgets(
+      'a11y: look-up-a-rate button meets tap target and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('lookup_rate_button')),
+        );
+      },
+    );
+
+    testWidgets(
       'a11y: delivery-fee Confirm link meets tap target and label guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);

@@ -494,8 +494,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Figma node 65814:173685/173689: the "Set your rate" empty state has no
-  // $ icon, only the search button below.
   Widget? _rateSuffixIcon(BuildContext context, RateStatus status) {
     if (status == RateStatus.missing) return null;
     final colorTheme = context.colorTheme;
