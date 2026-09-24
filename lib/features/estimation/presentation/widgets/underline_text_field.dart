@@ -119,6 +119,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
+    final prefix = widget.prefix;
+    final labelTrailing = widget.labelTrailing;
+    final trailingAction = widget.trailingAction;
     final errorTextList = widget.errorTextList;
     // An error for a genuinely invalid value (e.g. a typed duration of 0)
     // is only surfaced once the user leaves the field, not on every
@@ -183,9 +186,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                   color: colorTheme.textBody,
                 ),
               ),
-              if (widget.labelTrailing != null) ...[
+              if (labelTrailing != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
-                widget.labelTrailing!,
+                labelTrailing,
               ],
             ],
           ),
@@ -193,8 +196,8 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (widget.prefix != null) ...[
-                widget.prefix!,
+              if (prefix != null) ...[
+                prefix,
                 const SizedBox(width: CoreSpacing.space2),
               ],
               // With a suffix (e.g. "days", "$"), the value field must size
@@ -216,9 +219,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 const SizedBox(width: CoreSpacing.space2),
                 suffix,
               ],
-              if (widget.trailingAction != null) ...[
+              if (trailingAction != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
-                widget.trailingAction!,
+                trailingAction,
               ],
             ],
           ),
