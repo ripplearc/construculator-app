@@ -391,39 +391,25 @@ void main() {
     });
   });
 
-  group('CostEstimationLogsList error mapping', () {
-    testWidgets('shows initial fetch timeout error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+  group('CostEstimationLogsList failure messages', () {
+    for (final exceptionType in [
+      SupabaseExceptionType.timeout,
+      SupabaseExceptionType.socket,
+      SupabaseExceptionType.unknown,
+    ]) {
+      testWidgets(
+        'says the first load failed and the estimate is safe on $exceptionType',
+        (tester) async {
+          fakeSupabase.shouldThrowOnSelectPaginated = true;
+          fakeSupabase.selectPaginatedExceptionType = exceptionType;
 
-      await pumpLogsList(tester);
+          await pumpLogsList(tester);
 
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().timeoutError}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
-
-    testWidgets('shows initial fetch connection error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.socket;
-
-      await pumpLogsList(tester);
-
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().connectionError}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
-
-    testWidgets('shows initial fetch generic error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.unknown;
-
-      await pumpLogsList(tester);
-
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().unexpectedErrorMessage}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
+          expect(find.text(l10n().errorLoadingLogs), findsOneWidget);
+          expect(find.text(l10n().logsLoadErrorReassurance), findsOneWidget);
+        },
+      );
+    }
 
     testWidgets('shows load more timeout error message in toast', (
       tester,
@@ -450,6 +436,54 @@ void main() {
       final expectedMessage =
           '${l10n().loadMoreLogsError}: ${l10n().timeoutError}';
       expect(find.text(expectedMessage), findsOneWidget);
+    });
+  });
+
+  group('CostEstimationLogsList first-load failure', () {
+    testWidgets('shows a try-again view in the body instead of only a toast', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester);
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsOneWidget);
+      expect(
+        find.byKey(CostEstimationLogsList.errorRetryButtonKey),
+        findsOneWidget,
+      );
+      expect(find.text(l10n().errorLoadingLogs), findsOneWidget);
+      expect(
+        find.text(l10n().closeLabel),
+        findsNothing,
+        reason: 'the failure is shown in the body, not in a dismissible toast',
+      );
+    });
+
+    testWidgets('try again re-fetches and renders the logs on success', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester);
+
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Liam',
+        ),
+      ]);
+      fakeSupabase.shouldThrowOnSelectPaginated = false;
+
+      await tester.tap(find.byKey(CostEstimationLogsList.errorRetryButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsNothing);
+      expect(find.byType(CostEstimationLogTile), findsOneWidget);
     });
   });
 }

@@ -1594,16 +1594,22 @@ abstract class AppLocalizations {
   /// **'Activity logs will appear here when changes are made to this estimation.'**
   String get noActivityLogsDescription;
 
-  /// Title shown when there is an error loading activity logs
+  /// Message shown in place of the list when the first page of activity logs fails to load
   ///
   /// In en, this message translates to:
-  /// **'Unable to Load Activity'**
+  /// **'Couldn\'t load Logs.'**
   String get errorLoadingLogs;
 
-  /// Button label to retry loading more activity logs
+  /// Line under a failed activity logs load, telling the contractor what to check and that nothing was changed
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Check your connection. Your estimate is not affected.'**
+  String get logsLoadErrorReassurance;
+
+  /// Button label to retry a failed load of activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
   String get retryLoadLogsButton;
 
   /// Error message shown when loading more logs fails

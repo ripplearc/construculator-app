@@ -1329,13 +1329,17 @@
   "@noActivityLogsDescription": {
     "description": "Description shown when there are no activity logs for an estimation"
   },
-  "errorLoadingLogs": "Unable to Load Activity",
+  "errorLoadingLogs": "Couldn't load Logs.",
   "@errorLoadingLogs": {
-    "description": "Title shown when there is an error loading activity logs"
+    "description": "Message shown in place of the list when the first page of activity logs fails to load"
   },
-  "retryLoadLogsButton": "Retry",
+  "logsLoadErrorReassurance": "Check your connection. Your estimate is not affected.",
+  "@logsLoadErrorReassurance": {
+    "description": "Line under a failed activity logs load, telling the contractor what to check and that nothing was changed"
+  },
+  "retryLoadLogsButton": "Try again",
   "@retryLoadLogsButton": {
-    "description": "Button label to retry loading more activity logs"
+    "description": "Button label to retry a failed load of activity logs"
   },
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {

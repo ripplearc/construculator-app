@@ -138,6 +138,25 @@ void main() {
       );
     });
 
+    testWidgets('first-load error with try again', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_first_load_error$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('load-more error with retry', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -164,7 +183,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.text('Retry'),
+        find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey),
         300,
         scrollable: find.byType(Scrollable).first,
       );

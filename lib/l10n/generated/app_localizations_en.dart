@@ -840,10 +840,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activity logs will appear here when changes are made to this estimation.';
 
   @override
-  String get errorLoadingLogs => 'Unable to Load Activity';
+  String get errorLoadingLogs => 'Couldn\'t load Logs.';
 
   @override
-  String get retryLoadLogsButton => 'Retry';
+  String get logsLoadErrorReassurance =>
+      'Check your connection. Your estimate is not affected.';
+
+  @override
+  String get retryLoadLogsButton => 'Try again';
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';
