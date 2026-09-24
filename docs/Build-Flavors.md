@@ -42,10 +42,21 @@ it: `android/app/src/main/AndroidManifest.xml` still uses the literal
 
 ## Building a flavor
 
+Each flavor also has a `config/flavors/<flavor>.json` feature manifest (see
+CA-925). Resolve it before building, so `flutter build` gets the
+`--dart-define-from-file` it needs to set each `ENABLE_X` flag; skipping this
+step falls back to that flag's default, which can ship a feature (or leave
+one out) that the flavor's manifest says otherwise:
+
 ```
-fvm flutter build apk --flavor fishfood --dart-define=ENVIRONMENT=dev
-fvm flutter build apk --flavor dogfood  --dart-define=ENVIRONMENT=qa
-fvm flutter build apk --flavor prod     --dart-define=ENVIRONMENT=prod
+bash scripts/ci/resolve_build_features.sh fishfood
+fvm flutter build apk --flavor fishfood --dart-define=ENVIRONMENT=dev  --dart-define-from-file=build/generated/flavors/fishfood.json
+
+bash scripts/ci/resolve_build_features.sh dogfood
+fvm flutter build apk --flavor dogfood  --dart-define=ENVIRONMENT=qa   --dart-define-from-file=build/generated/flavors/dogfood.json
+
+bash scripts/ci/resolve_build_features.sh prod
+fvm flutter build apk --flavor prod     --dart-define=ENVIRONMENT=prod --dart-define-from-file=build/generated/flavors/prod.json
 ```
 
 iOS flavors are not set up yet. That work is tracked in CA-1054 and CA-1055.
