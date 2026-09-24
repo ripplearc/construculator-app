@@ -126,6 +126,11 @@ class EstimationActionsSheet extends StatelessWidget {
                 Column(
                   children: [
                     _ActionListItem(
+                      icon: CoreIcons.calendar,
+                      label: l10n.logsAction,
+                      onTap: onLogs,
+                    ),
+                    _ActionListItem(
                       icon: CoreIcons.copy,
                       label: l10n.copyEstimationAction,
                       onTap: onCopy,
@@ -134,11 +139,6 @@ class EstimationActionsSheet extends StatelessWidget {
                       icon: CoreIcons.share,
                       label: l10n.shareExportAction,
                       onTap: onShare,
-                    ),
-                    _ActionListItem(
-                      icon: CoreIcons.calendar,
-                      label: l10n.logsAction,
-                      onTap: onLogs,
                     ),
                     ValueListenableBuilder<bool>(
                       valueListenable: lockStatusNotifier,

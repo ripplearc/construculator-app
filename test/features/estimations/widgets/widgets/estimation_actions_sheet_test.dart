@@ -178,6 +178,22 @@ void main() {
       expect(find.text(l10n().lockEstimationAction), findsOneWidget);
     });
 
+    testWidgets('should render logs as the first action list item', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidget());
+
+      final logsTop = tester.getTopLeft(find.text(l10n().logsAction));
+
+      for (final label in [
+        l10n().copyEstimationAction,
+        l10n().shareExportAction,
+        l10n().lockEstimationAction,
+      ]) {
+        expect(logsTop.dy, lessThan(tester.getTopLeft(find.text(label)).dy));
+      }
+    });
+
     testWidgets('should call onCopy when copy action is tapped', (
       WidgetTester tester,
     ) async {
