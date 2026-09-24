@@ -25,6 +25,13 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
 
   static const int defaultPageSize = 20;
 
+  /// Maximum time a single page request may take before it is abandoned.
+  ///
+  /// Without this cutoff a stalled request leaves the caller waiting forever;
+  /// the resulting [TimeoutException] maps to
+  /// [EstimationErrorType.timeoutError] so the UI can offer a retry.
+  static const Duration logLoadTimeout = Duration(seconds: 15);
+
   CostEstimationLogRepositoryImpl({required this.dataSource});
 
   @override
@@ -38,11 +45,13 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
     _paginationStates.remove(estimateId);
 
     try {
-      final dtos = await dataSource.getEstimationLogs(
-        estimateId: estimateId,
-        rangeFrom: 0,
-        rangeTo: defaultPageSize - 1,
-      );
+      final dtos = await dataSource
+          .getEstimationLogs(
+            estimateId: estimateId,
+            rangeFrom: 0,
+            rangeTo: defaultPageSize - 1,
+          )
+          .timeout(logLoadTimeout);
 
       final hasMore = dtos.length == defaultPageSize;
 
@@ -83,11 +92,13 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
     );
 
     try {
-      final dtos = await dataSource.getEstimationLogs(
-        estimateId: estimateId,
-        rangeFrom: state.currentOffset,
-        rangeTo: state.currentOffset + state.pageSize - 1,
-      );
+      final dtos = await dataSource
+          .getEstimationLogs(
+            estimateId: estimateId,
+            rangeFrom: state.currentOffset,
+            rangeTo: state.currentOffset + state.pageSize - 1,
+          )
+          .timeout(logLoadTimeout);
 
       _paginationStates[estimateId] = state.copyWith(
         currentOffset: state.currentOffset + state.pageSize,
@@ -124,7 +135,7 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
     String estimateId,
   ) {
     if (error is TimeoutException) {
-      _logger.error(
+      _logger.warning(
         'Timeout error $operation for estimate: $estimateId, '
         'message=${error.message}, duration=${error.duration}',
       );

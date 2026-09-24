@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/models/cost_estimation_log_dto.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -10,6 +14,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -513,6 +518,98 @@ void main() {
 
         expect(repository.hasMoreLogs(testEstimateId), false);
         expect(repository.hasMoreLogs('estimate-456'), false);
+      });
+    });
+
+    group('load timeout', () {
+      // Elapsed with literal durations rather than logLoadTimeout so the
+      // 15-second cutoff the ticket specifies is pinned by the test, not
+      // re-derived from whatever the constant happens to say.
+      const justBeforeCutoff = Duration(seconds: 14);
+      const restOfCutoff = Duration(seconds: 1);
+
+      test('gives up on a stalled initial load once the timeout elapses', () {
+        fakeAsync((async) {
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer<void>();
+
+          Either<Failure, List<CostEstimationLog>>? result;
+          unawaited(
+            repository
+                .fetchInitialLogs(testEstimateId)
+                .then((value) => result = value),
+          );
+
+          async.elapse(justBeforeCutoff);
+          expect(
+            result,
+            isNull,
+            reason: 'the request must still be given its full 15 seconds',
+          );
+
+          async.elapse(restOfCutoff);
+
+          expect(
+            result,
+            isA<Left<Failure, List<CostEstimationLog>>>().having(
+              (left) => left.value,
+              'value',
+              isA<EstimationFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                EstimationErrorType.timeoutError,
+              ),
+            ),
+          );
+        });
+      });
+
+      test('gives up on a stalled load more once the timeout elapses', () {
+        fakeAsync((async) {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 1,
+              estimateId: testEstimateId,
+            ),
+          );
+
+          Either<Failure, List<CostEstimationLog>>? initial;
+          unawaited(
+            repository
+                .fetchInitialLogs(testEstimateId)
+                .then((value) => initial = value),
+          );
+          async.flushMicrotasks();
+          expect(initial, isA<Right<Failure, List<CostEstimationLog>>>());
+
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer<void>();
+
+          Either<Failure, List<CostEstimationLog>>? result;
+          unawaited(
+            repository
+                .loadMoreLogs(testEstimateId)
+                .then((value) => result = value),
+          );
+
+          async.elapse(justBeforeCutoff);
+          expect(result, isNull);
+
+          async.elapse(restOfCutoff);
+
+          expect(
+            result,
+            isA<Left<Failure, List<CostEstimationLog>>>().having(
+              (left) => left.value,
+              'value',
+              isA<EstimationFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                EstimationErrorType.timeoutError,
+              ),
+            ),
+          );
+        });
       });
     });
 
