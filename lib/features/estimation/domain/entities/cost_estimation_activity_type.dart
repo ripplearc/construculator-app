@@ -63,21 +63,43 @@ enum CostEstimationActivityType {
   attachmentRemoved,
 
   /// The estimation was sent to a recipient
+  ///
+  /// `activityDetails` carries the recipient's `recipientName`, a string,
+  /// which the title names. A send to several people logs one row each.
   costEstimationSent,
 
-  /// A sent estimation was opened by its recipient
+  /// A send to a recipient failed: the server confirmed it did not go out
+  ///
+  /// `activityDetails` carries `recipientName`, as [costEstimationSent] does.
+  /// A send that works on a later try logs its own [costEstimationSent].
+  costEstimationSendFailed,
+
+  /// A sent estimation's link was opened for the first time
+  ///
+  /// Logged once per link. The row says whose link it was, never who
+  /// opened it.
   costEstimationOpened,
 
   /// A sent estimation was revoked by the sender
   costEstimationRevoked,
 
-  /// A sent estimation was approved by its recipient
+  /// The sender recorded the recipient's approval of a sent estimation
+  ///
+  /// The recipient replies by phone or text, and the sender records it on
+  /// the Send screen, so the row's user is the sender.
   costEstimationApproved,
 
-  /// Changes were requested on a sent estimation
+  /// The sender recorded that the recipient asked for changes
   ///
+  /// Recorded by the sender, as [costEstimationApproved] is.
   /// `activityDetails` carries the recipient's `reason`, a string.
   costEstimationChangesRequested,
+
+  /// The estimation's PDF was handed to another app from the share sheet
+  ///
+  /// Logged only once the sender picks an app, and it cannot tell whether
+  /// the PDF arrived.
+  costEstimationPdfShared,
 
   /// Unknown activity type
   ///

@@ -362,15 +362,64 @@ void main() {
         },
       );
 
-      test('returns sent message for costEstimationSent activity', () {
+      test('names the recipient for costEstimationSent activity', () {
         final log = _createLog(
           id: '28',
+          activity: CostEstimationActivityType.costEstimationSent,
+          activityDetails: {'recipientName': 'Judy Smith'},
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSent('Judy Smith')));
+      });
+
+      test('returns simple sent message when the recipient is missing', () {
+        final log = _createLog(
+          id: '33',
           activity: CostEstimationActivityType.costEstimationSent,
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);
 
-        expect(result, equals(l10n.activityCostEstimationSent));
+        expect(result, equals(l10n.activityCostEstimationSentSimple));
+      });
+
+      test('names the recipient for costEstimationSendFailed activity', () {
+        final log = _createLog(
+          id: '34',
+          activity: CostEstimationActivityType.costEstimationSendFailed,
+          activityDetails: {'recipientName': 'Judy Smith'},
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(
+          result,
+          equals(l10n.activityCostEstimationSendFailed('Judy Smith')),
+        );
+      });
+
+      test('returns simple send failed message without a recipient', () {
+        final log = _createLog(
+          id: '35',
+          activity: CostEstimationActivityType.costEstimationSendFailed,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSendFailedSimple));
+      });
+
+      test('returns pdf shared message for costEstimationPdfShared', () {
+        final log = _createLog(
+          id: '36',
+          activity: CostEstimationActivityType.costEstimationPdfShared,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationPdfShared));
       });
 
       test('returns opened message for costEstimationOpened activity', () {

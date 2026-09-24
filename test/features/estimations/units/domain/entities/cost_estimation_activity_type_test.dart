@@ -7,8 +7,8 @@ void main() {
       test('has all expected activity types', () {
         expect(
           CostEstimationActivityType.values.length,
-          22,
-          reason: 'Should have exactly 22 activity types',
+          24,
+          reason: 'Should have exactly 24 activity types',
         );
 
         expect(
@@ -31,10 +31,12 @@ void main() {
             CostEstimationActivityType.attachmentAdded,
             CostEstimationActivityType.attachmentRemoved,
             CostEstimationActivityType.costEstimationSent,
+            CostEstimationActivityType.costEstimationSendFailed,
             CostEstimationActivityType.costEstimationOpened,
             CostEstimationActivityType.costEstimationRevoked,
             CostEstimationActivityType.costEstimationApproved,
             CostEstimationActivityType.costEstimationChangesRequested,
+            CostEstimationActivityType.costEstimationPdfShared,
             CostEstimationActivityType.unknown,
           ]),
         );
@@ -82,6 +84,20 @@ void main() {
           expect(
             CostEstimationActivityType.costEstimationSent.toJson(),
             'cost_estimation_sent',
+          );
+        });
+
+        test('converts costEstimationSendFailed to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationSendFailed.toJson(),
+            'cost_estimation_send_failed',
+          );
+        });
+
+        test('converts costEstimationPdfShared to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationPdfShared.toJson(),
+            'cost_estimation_pdf_shared',
           );
         });
 
@@ -165,6 +181,22 @@ void main() {
           );
 
           expect(result, CostEstimationActivityType.costEstimationSent);
+        });
+
+        test('converts string to costEstimationSendFailed', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_send_failed',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationSendFailed);
+        });
+
+        test('converts string to costEstimationPdfShared', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_pdf_shared',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationPdfShared);
         });
 
         test('converts string to costEstimationOpened', () {

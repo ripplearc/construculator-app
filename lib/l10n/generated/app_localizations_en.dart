@@ -739,19 +739,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityAttachmentRemovedSimple => 'Attachment Removed';
 
   @override
-  String get activityCostEstimationSent => 'Cost Estimation Sent';
+  String activityCostEstimationSent(String recipientName) {
+    return 'Sent to $recipientName';
+  }
 
   @override
-  String get activityCostEstimationOpened => 'Cost Estimation Opened';
+  String get activityCostEstimationSentSimple => 'Estimate sent';
 
   @override
-  String get activityCostEstimationRevoked => 'Cost Estimation Revoked';
+  String activityCostEstimationSendFailed(String recipientName) {
+    return 'Send to $recipientName failed';
+  }
 
   @override
-  String get activityCostEstimationApproved => 'Cost Estimation Approved';
+  String get activityCostEstimationSendFailedSimple => 'Send failed';
 
   @override
-  String get activityCostEstimationChangesRequested => 'Changes Requested';
+  String get activityCostEstimationOpened => 'Link opened';
+
+  @override
+  String get activityCostEstimationRevoked => 'Link revoked';
+
+  @override
+  String get activityCostEstimationApproved => 'Approval recorded';
+
+  @override
+  String get activityCostEstimationChangesRequested => 'Changes requested';
+
+  @override
+  String get activityCostEstimationPdfShared => 'PDF shared';
 
   @override
   String get activityUnknown => 'Unknown Activity';

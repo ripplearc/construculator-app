@@ -266,7 +266,7 @@ void main() {
         final localization = l10n();
 
         expect(
-          find.text(localization.activityCostEstimationSent),
+          find.text(localization.activityCostEstimationSentSimple),
           findsOneWidget,
         );
       });
