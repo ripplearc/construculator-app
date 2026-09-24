@@ -470,6 +470,62 @@ void main() {
         },
       );
 
+      test('names the item when a cost file update changed one price', () {
+        final log = _createLog(
+          id: '37',
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [
+              {'itemName': 'Drywall sheets', 'oldRate': 14.0, 'newRate': 14.5},
+            ],
+          },
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostFileUpdated('Drywall sheets')));
+      });
+
+      test('counts the prices when a cost file update changed several', () {
+        final log = _createLog(
+          id: '38',
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [
+              {'itemName': 'Drywall sheets', 'oldRate': 14.0, 'newRate': 14.5},
+              {'itemName': 'Seam tape', 'oldRate': 8.5, 'newRate': 9},
+              {'itemName': 'Joint compound', 'oldRate': 12, 'newRate': 13},
+            ],
+          },
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostFileUpdatedCount(3)));
+      });
+
+      for (final details in <Map<String, dynamic>>[
+        {},
+        {'changedItems': <dynamic>[]},
+        {
+          'changedItems': [
+            {'oldRate': 14.0, 'newRate': 14.5},
+          ],
+        },
+      ]) {
+        test('returns simple cost file updated message for $details', () {
+          final log = _createLog(
+            id: '39',
+            activity: CostEstimationActivityType.costFileUpdated,
+            activityDetails: details,
+          );
+
+          final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+          expect(result, equals(l10n.activityCostFileUpdatedSimple));
+        });
+      }
+
       test('returns localized fallback for unknown activity', () {
         final log = _createLog(
           id: '27',

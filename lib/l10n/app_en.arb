@@ -1234,6 +1234,31 @@
     "description": "Activity log title for the estimate PDF handed to another app from the share sheet",
     "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
   },
+  "activityCostFileUpdated": "Cost file updated: {itemName}",
+  "@activityCostFileUpdated": {
+    "description": "Activity log title for a cost file upload that changed one price in this estimate, naming the item",
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    },
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostFileUpdatedCount": "Cost file updated: {count} prices changed",
+  "@activityCostFileUpdatedCount": {
+    "description": "Activity log title for a cost file upload that changed several prices in this estimate; count is always 2 or more",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostFileUpdatedSimple": "Cost file updated",
+  "@activityCostFileUpdatedSimple": {
+    "description": "Activity log title for a cost file upload that changed prices, when the changed items are not known",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
   "activityUnknown": "Unknown Activity",
   "@activityUnknown": {
     "description": "Fallback activity log message for unknown activity types",
