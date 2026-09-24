@@ -471,7 +471,27 @@ void main() {
       );
     }
 
-    testWidgets('shows load more timeout error message in toast', (
+    testWidgets('tells the contractor when the retried first load also fails', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester);
+      expect(find.text(l10n().errorLoadingLogsRepeat), findsNothing);
+
+      await tester.tap(find.byKey(CostEstimationLogsList.errorRetryButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().errorLoadingLogsRepeat), findsOneWidget);
+      expect(find.text(l10n().errorLoadingLogs), findsNothing);
+      expect(
+        find.byKey(CostEstimationLogsList.errorRetryButtonKey),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows a load-more failure under the list, not in a toast', (
       tester,
     ) async {
       final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
@@ -493,9 +513,65 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final expectedMessage =
-          '${l10n().loadMoreLogsError}: ${l10n().timeoutError}';
-      expect(find.text(expectedMessage), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(CostEstimationLogsList.loadMoreErrorViewKey),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(CostEstimationLogsList.logsScrollViewKey),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      expect(find.text(l10n().loadMoreLogsError), findsOneWidget);
+      expect(find.text(l10n().logsLoadErrorReassurance), findsOneWidget);
+      expect(
+        find.text(l10n().closeLabel),
+        findsNothing,
+        reason: 'the failure is shown in the list, not in a dismissible toast',
+      );
+    });
+
+    testWidgets('tells the contractor when the retried load also fails', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, -1800),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(CostEstimationLogsList.logsScrollViewKey),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.ensureVisible(
+        find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().loadMoreLogsRepeatError), findsOneWidget);
+      expect(find.text(l10n().loadMoreLogsError), findsNothing);
     });
   });
 

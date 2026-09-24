@@ -1606,6 +1606,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load Logs.'**
   String get errorLoadingLogs;
 
+  /// Message shown when a retried first load of activity logs fails again
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t load Logs.'**
+  String get errorLoadingLogsRepeat;
+
   /// Line under a failed activity logs load, telling the contractor what to check and that nothing was changed
   ///
   /// In en, this message translates to:
@@ -1618,11 +1624,17 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get retryLoadLogsButton;
 
-  /// Error message shown when loading more logs fails
+  /// Message shown under the list when loading older activity logs fails
   ///
   /// In en, this message translates to:
-  /// **'Failed to load more logs'**
+  /// **'Couldn\'t load older events.'**
   String get loadMoreLogsError;
+
+  /// Message shown when a retried load of older activity logs fails again
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t load older events.'**
+  String get loadMoreLogsRepeatError;
 
   /// Application title displayed in app bar
   ///
