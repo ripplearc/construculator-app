@@ -8,6 +8,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLogsList extends StatefulWidget {
+  static const errorViewKey = Key('cost_estimation_logs_error_view');
+  static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
+  static const loadMoreRetryButtonKey = Key(
+    'cost_estimation_logs_load_more_retry',
+  );
+
   final String estimateId;
   final String estimateName;
 
@@ -96,22 +102,12 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
             padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
             child: BlocConsumer<CostEstimationLogBloc, CostEstimationLogState>(
               listener: (context, state) {
-                if (state is CostEstimationLogError) {
-                  CoreToast.showError(
-                    context,
-                    _buildLogsErrorMessage(context, state.failure),
-                    context.l10n.closeLabel,
-                  );
-                }
-
+                // A first-load failure is shown in the body by
+                // _buildErrorState, which stays until the contractor retries.
                 if (state is CostEstimationLogLoadMoreError) {
                   CoreToast.showError(
                     context,
-                    _buildLogsErrorMessage(
-                      context,
-                      state.failure,
-                      isLoadMore: true,
-                    ),
+                    _buildLoadMoreErrorMessage(context, state.failure),
                     context.l10n.closeLabel,
                   );
                 }
@@ -123,6 +119,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
                 if (state is CostEstimationLogEmpty) {
                   return _buildRefreshable(child: _buildEmptyState(context));
+                }
+
+                if (state is CostEstimationLogError) {
+                  return _buildRefreshable(child: _buildErrorState(context));
                 }
 
                 // CostEstimationLogLoadMoreError extends CostEstimationLogWithData,
@@ -163,11 +163,15 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     bloc.add(CostEstimationLogFetchInitial(estimateId: widget.estimateId));
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final appColors = context.colorTheme;
-    final typography = context.textTheme;
-
+  // Full-height shell for the states that show a single centred message in
+  // place of the list. Stays scrollable so pull-to-refresh keeps working.
+  Widget _buildCenteredMessage({
+    required Widget child,
+    Key? key,
+    EdgeInsets padding = const EdgeInsets.all(CoreSpacing.space6),
+  }) {
     return CustomScrollView(
+      key: key,
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -175,31 +179,116 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           hasScrollBody: false,
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(CoreSpacing.space6),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CoreIconWidget(icon: CoreIcons.emptyEstimation, size: 48),
-                  const SizedBox(height: CoreSpacing.space4),
-                  Text(
-                    context.l10n.noActivityLogs,
-                    style: typography.titleMediumSemiBold.copyWith(
-                      color: appColors.textDark,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: CoreSpacing.space2),
-                  Text(
-                    context.l10n.noActivityLogsDescription,
-                    style: typography.bodyMediumRegular.copyWith(
-                      color: appColors.textBody,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+              padding: padding,
+              child: child,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+
+    return _buildCenteredMessage(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CoreIconWidget(icon: CoreIcons.emptyEstimation, size: 48),
+          const SizedBox(height: CoreSpacing.space4),
+          Text(
+            context.l10n.noActivityLogs,
+            style: typography.titleMediumSemiBold.copyWith(
+              color: appColors.textDark,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: CoreSpacing.space2),
+          Text(
+            context.l10n.noActivityLogsDescription,
+            style: typography.bodyMediumRegular.copyWith(
+              color: appColors.textBody,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    return _buildCenteredMessage(
+      key: CostEstimationLogsList.errorViewKey,
+      // The list is already inset from the sheet's edges; a second inset
+      // would wrap the reassurance line, which the design keeps on one line.
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space6),
+      child: _buildFailureNotice(
+        context,
+        message: context.l10n.errorLoadingLogs,
+        retryButtonKey: CostEstimationLogsList.errorRetryButtonKey,
+        onRetry: () {
+          context.read<CostEstimationLogBloc>().add(
+            CostEstimationLogFetchInitial(estimateId: widget.estimateId),
+          );
+        },
+      ),
+    );
+  }
+
+  // What failed, that the estimate is safe, and a way to try again.
+  Widget _buildFailureNotice(
+    BuildContext context, {
+    required String message,
+    required Key retryButtonKey,
+    required VoidCallback onRetry,
+  }) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CoreIconWidget(
+              icon: CoreIcons.error,
+              size: CoreIconSize.size20,
+              color: appColors.textError,
+            ),
+            const SizedBox(width: CoreSpacing.space2),
+            Flexible(
+              // Announced when it appears: the toast this view replaced was,
+              // and focus stays on Try again while the result swaps in.
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  message,
+                  style: typography.bodyMediumRegular.copyWith(
+                    color: appColors.textError,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: CoreSpacing.space3),
+        Text(
+          context.l10n.logsLoadErrorReassurance,
+          style: typography.bodyMediumRegular.copyWith(
+            color: appColors.textBody,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: CoreSpacing.space4),
+        CoreButton(
+          key: retryButtonKey,
+          label: context.l10n.retryLoadLogsButton,
+          onPressed: onRetry,
+          variant: CoreButtonVariant.secondary,
+          fullWidth: false,
         ),
       ],
     );
@@ -250,6 +339,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ),
       child: Center(
         child: CoreButton(
+          key: CostEstimationLogsList.loadMoreRetryButtonKey,
           label: context.l10n.retryLoadLogsButton,
           onPressed: () {
             context.read<CostEstimationLogBloc>().add(
@@ -281,14 +371,8 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     }
   }
 
-  String _buildLogsErrorMessage(
-    BuildContext context,
-    Failure failure, {
-    bool isLoadMore = false,
-  }) {
-    final l10n = context.l10n;
+  String _buildLoadMoreErrorMessage(BuildContext context, Failure failure) {
     final details = _mapFailureToMessage(context, failure);
-    final prefix = isLoadMore ? l10n.loadMoreLogsError : l10n.errorLoadingLogs;
-    return '$prefix: $details';
+    return '${context.l10n.loadMoreLogsError}: $details';
   }
 }

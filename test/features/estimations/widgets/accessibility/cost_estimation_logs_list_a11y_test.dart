@@ -58,7 +58,13 @@ void main() {
     WidgetTester tester, {
     ThemeData? theme,
     bool shouldTriggerError = false,
+    bool shouldFailInitialLoad = false,
   }) async {
+    if (shouldFailInitialLoad) {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+    }
+
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
 
@@ -102,6 +108,62 @@ void main() {
   }
 
   group('CostEstimationLogsList accessibility', () {
+    testWidgets(
+      'a11y: first-load try again meets tap and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        for (final theme in [createTestTheme(), createTestThemeDark()]) {
+          // Unmount so the next pass re-runs initState against a fresh bloc.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await pumpWidget(tester, theme: theme, shouldFailInitialLoad: true);
+
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CostEstimationLogsList.errorRetryButtonKey),
+          );
+        }
+      },
+    );
+
+    testWidgets('a11y: first-load failure message is readable in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      for (final theme in [createTestTheme(), createTestThemeDark()]) {
+        // Unmount so the next pass re-runs initState against a fresh bloc.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await pumpWidget(tester, theme: theme, shouldFailInitialLoad: true);
+
+        for (final text in [
+          l10n().errorLoadingLogs,
+          l10n().logsLoadErrorReassurance,
+        ]) {
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.text(text),
+            checkTapTargetSize: false,
+            checkLabeledTapTarget: false,
+          );
+        }
+      }
+    });
+
+    testWidgets('a11y: first-load failure is announced to screen readers', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await pumpWidget(tester, shouldFailInitialLoad: true);
+
+      expect(
+        tester.getSemantics(find.text(l10n().errorLoadingLogs)),
+        isSemantics(label: l10n().errorLoadingLogs, isLiveRegion: true),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('a11y: empty state text remains readable in both themes', (
       tester,
     ) async {
