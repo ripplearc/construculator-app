@@ -109,6 +109,19 @@ enum CostEstimationActivityType {
   /// string, which the second line names.
   costEstimationPdfShared,
 
+  /// A cost file upload changed prices used in this estimation
+  ///
+  /// One row per upload, logged only when the upload changed a price this
+  /// estimation uses. `activityDetails` carries `changedItems`, a list with
+  /// one map per changed price: `itemName` (a string), `oldRate` and
+  /// `newRate` (JSON numbers, as [costItemEdited]'s price values are, so
+  /// read them as `num?`). The title names the item when one price changed
+  /// and counts them when several did.
+  ///
+  /// Note: distinct from [costFileUploaded] — this is a price change from
+  /// a file, not a new file being attached.
+  costFileUpdated,
+
   /// Unknown activity type
   ///
   /// Used when the client receives an activity type from the server that

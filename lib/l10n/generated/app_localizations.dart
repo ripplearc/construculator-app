@@ -1468,6 +1468,24 @@ abstract class AppLocalizations {
   /// **'PDF shared'**
   String get activityCostEstimationPdfShared;
 
+  /// Activity log title for a cost file upload that changed one price in this estimate, naming the item
+  ///
+  /// In en, this message translates to:
+  /// **'Cost file updated: {itemName}'**
+  String activityCostFileUpdated(String itemName);
+
+  /// Activity log title for a cost file upload that changed several prices in this estimate; count is always 2 or more
+  ///
+  /// In en, this message translates to:
+  /// **'Cost file updated: {count} prices changed'**
+  String activityCostFileUpdatedCount(int count);
+
+  /// Activity log title for a cost file upload that changed prices, when the changed items are not known
+  ///
+  /// In en, this message translates to:
+  /// **'Cost file updated'**
+  String get activityCostFileUpdatedSimple;
+
   /// Fallback activity log message for unknown activity types
   ///
   /// In en, this message translates to:

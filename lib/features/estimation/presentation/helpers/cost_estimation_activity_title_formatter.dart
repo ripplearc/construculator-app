@@ -125,6 +125,19 @@ class CostEstimationActivityTitleFormatter {
         return l10n.activityCostEstimationChangesRequested;
       case CostEstimationActivityType.costEstimationPdfShared:
         return l10n.activityCostEstimationPdfShared;
+      case CostEstimationActivityType.costFileUpdated:
+        final changedItems = details['changedItems'] as List<dynamic>?;
+        if (changedItems == null || changedItems.isEmpty) {
+          return l10n.activityCostFileUpdatedSimple;
+        }
+        if (changedItems.length > 1) {
+          return l10n.activityCostFileUpdatedCount(changedItems.length);
+        }
+        final itemName = (changedItems.single as Map?)?['itemName'] as String?;
+        if (itemName != null) {
+          return l10n.activityCostFileUpdated(itemName);
+        }
+        return l10n.activityCostFileUpdatedSimple;
       case CostEstimationActivityType.unknown:
         // Unknown activity types should not appear in production but are handled
         // gracefully to prevent crashes when new server-side activity types are

@@ -81,7 +81,8 @@ class CostEstimationLogTile extends StatelessWidget {
         return _buildTaskAssignedSubtitle(context);
       // TODO: [CA-1140] Give the Send kinds their second line (version,
       // recipient, state) from the storyboard's CUJ 11 screen 5 once CUJ 8
-      // (Send) produces it, and PDF shared its "Shared with {appName}" line.
+      // (Send) produces it, PDF shared its "Shared with {appName}" line,
+      // and costFileUpdated its old and new rate when one price changed.
       // https://ripplearc.youtrack.cloud/issue/CA-1140
       default:
         return const SizedBox.shrink();
