@@ -13,11 +13,20 @@ class CostItemFormScreen extends StatefulWidget {
   final String estimationId;
   final AppRouter router;
 
+  /// When true, renders as plain content for a [CoreQuickSheet] (a back
+  /// arrow + title header row instead of a [Scaffold]/[CoreAppBar]) rather
+  /// than a full-screen route. Equipment only, per the Figma mocks — every
+  /// "New equipment cost" screen renders as a bottom sheet over the
+  /// estimate details screen. Material and Labor keep the full-screen
+  /// [Scaffold] presentation (this defaults to false).
+  final bool presentAsSheet;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
     required this.estimationId,
     required this.router,
+    this.presentAsSheet = false,
   });
 
   @override
@@ -32,12 +41,65 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    if (widget.presentAsSheet) {
+      return ColoredBox(
+        key: const Key('cost_item_form_screen'),
+        color: colorTheme.pageBackground,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSheetHeader(context),
+            Flexible(child: _buildBody(context)),
+            _buildBottomBar(context),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       key: const Key('cost_item_form_screen'),
       backgroundColor: colorTheme.pageBackground,
       appBar: _buildAppBar(context),
       body: _buildBody(context),
       bottomNavigationBar: _buildBottomBar(context),
+    );
+  }
+
+  // Header row used in place of a CoreAppBar when presentAsSheet is true,
+  // matching the Figma "Sheet Header" spec: a teal back arrow (the drag
+  // handle itself comes from CoreQuickSheet, which already wraps this
+  // content) + title, SF Pro 590/18px, colorTheme.textHeadline.
+  Widget _buildSheetHeader(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: CoreSpacing.space2,
+        right: CoreSpacing.space4,
+        bottom: CoreSpacing.space2,
+      ),
+      child: Row(
+        children: [
+          CoreIconWidget(
+            key: const Key('sheet_back_button'),
+            icon: CoreIcons.arrowLeft,
+            color: colorTheme.textLink,
+            padding: const EdgeInsets.all(CoreSpacing.space3),
+            size: 24,
+            semanticLabel: l10n.backLabel,
+            onTap: () => Navigator.of(context).pop(),
+          ),
+          Expanded(
+            child: Text(
+              _screenTitle(context),
+              style: textTheme.titleMediumSemiBold.copyWith(
+                color: colorTheme.textHeadline,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

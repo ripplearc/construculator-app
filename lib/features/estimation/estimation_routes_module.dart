@@ -46,6 +46,8 @@ class EstimationRoutesModule extends Module {
         return CostEstimationDetailsPage(
           estimationId: estimationId,
           router: Modular.get<AppRouter>(),
+          equipmentCostFormBlocFactory: () =>
+              Modular.get<EquipmentCostFormBloc>(),
         );
       },
     );
