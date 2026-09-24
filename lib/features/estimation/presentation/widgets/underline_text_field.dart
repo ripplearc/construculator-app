@@ -39,10 +39,6 @@ class UnderlineTextField extends StatefulWidget {
   /// text or the "$" icon) — stays inline in the row, not inside a box.
   final Widget? suffix;
 
-  /// Hides [suffix] while the field is empty, so a unit word such as "days"
-  /// does not repeat the placeholder text.
-  final bool hideSuffixWhenEmpty;
-
   /// Content shown at the end of the label row, beside [label] (e.g. the
   /// Rate field's "Sample rate"/"✓ Your rate" status badge).
   final Widget? labelTrailing;
@@ -74,7 +70,6 @@ class UnderlineTextField extends StatefulWidget {
     this.keyboardType,
     this.prefix,
     this.suffix,
-    this.hideSuffixWhenEmpty = false,
     this.labelTrailing,
     this.trailingAction,
     this.focusNode,
@@ -133,6 +128,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
+    final prefix = widget.prefix;
+    final labelTrailing = widget.labelTrailing;
+    final trailingAction = widget.trailingAction;
     final errorTextList = widget.errorTextList;
     final visibleErrorText =
         _touched && errorTextList != null && errorTextList.isNotEmpty
@@ -176,52 +174,41 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               Text(
                 widget.label,
                 style: textTheme.bodySmallRegular.copyWith(
-                  color: hasError
-                      ? colorTheme.statusError
-                      : colorTheme.textBody,
+                  color: colorTheme.textBody,
                 ),
               ),
-              if (widget.labelTrailing != null) ...[
+              if (labelTrailing != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
-                widget.labelTrailing!,
+                labelTrailing,
               ],
             ],
           ),
           const SizedBox(height: CoreSpacing.space1),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _focusNode.requestFocus,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (widget.prefix != null) ...[
-                  widget.prefix!,
-                  const SizedBox(width: CoreSpacing.space2),
-                ],
-                if (suffix != null)
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(child: IntrinsicWidth(child: textField)),
-                          if (!(widget.hideSuffixWhenEmpty && isEmpty)) ...[
-                            const SizedBox(width: CoreSpacing.space1),
-                            suffix,
-                          ],
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  Expanded(child: textField),
-                if (trailingAction != null) ...[
-                  const SizedBox(width: CoreSpacing.space2),
-                  trailingAction,
-                ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (prefix != null) ...[
+                prefix,
+                const SizedBox(width: CoreSpacing.space2),
               ],
-            ),
+              if (suffix != null)
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 24),
+                    child: IntrinsicWidth(child: textField),
+                  ),
+                )
+              else
+                Expanded(child: textField),
+              if (suffix != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                suffix,
+              ],
+              if (trailingAction != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                trailingAction,
+              ],
+            ],
           ),
           const SizedBox(height: CoreSpacing.space1),
           AnimatedContainer(

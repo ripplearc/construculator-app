@@ -70,7 +70,8 @@ class RateStatusBadge extends StatelessWidget {
                 // #F7B999 (the Figma component's orange stroke) has no
                 // matching named token in ripplearc_coreui 0.15.0 — every
                 // other color in this widget maps to an exact theme token;
-                // this is the sole literal.
+                // this is the sole literal, gone once CA-1159 lands.
+                // ignore: avoid_static_colors
                 color: const Color(0xFFF7B999),
               )
             : null,
