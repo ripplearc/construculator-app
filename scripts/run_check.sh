@@ -392,8 +392,9 @@ comprehensive_check() {
 
   # Build Android
   echo "🤖 Building Android..."
-  # Check if product flavors are configured
-  if grep -q "productFlavors" android/app/build.gradle; then
+  # Check if product flavors are configured. flutter_flavorizr keeps the
+  # productFlavors block in android/app/flavorizr.gradle, applied from build.gradle.
+  if grep -q "productFlavors" android/app/build.gradle android/app/flavorizr.gradle 2>/dev/null; then
     echo "📱 Product flavors detected. Building for 'fishfood' flavor..."
     # This local build has no --dart-define=ENVIRONMENT= of its own; it
     # relies on lib/main.dart's default (devEnv), so we assert against that
