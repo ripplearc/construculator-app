@@ -1456,6 +1456,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Confirmed with supplier — quote for this trip';
 
   @override
+  String get equipmentDeliveryFeeEstimatedHelperText =>
+      'Estimated — confirm the supplier\'s actual delivery quote';
+
+  @override
+  String get equipmentDeliveryAddNoteLink => 'Add note';
+
+  @override
   String get equipmentDeliveryFeeOutOfRangeError =>
       'Delivery fee must be between \$0.01 and \$999,999.99';
 
@@ -1476,6 +1483,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get equipmentDeliveryFeeOutsizedDialogAddIt => 'Add it';
+
+  @override
+  String get equipmentRateStatusSampleRateBadge => 'Sample rate';
+
+  @override
+  String get equipmentRateStatusYourRateBadge => '✓ Your rate';
+
+  @override
+  String get equipmentSaveAsMyRateLink => 'Save as my rate';
+
+  @override
+  String get equipmentNoteLabel => 'Note';
+
+  @override
+  String get equipmentNotePlaceholder => 'Add a note (optional)';
 
   @override
   String get projectSettingsNavigationError =>

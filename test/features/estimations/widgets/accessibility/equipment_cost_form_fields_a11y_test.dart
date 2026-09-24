@@ -128,8 +128,25 @@ void main() {
             await tester.pump();
             await tester.enterText(find.byKey(const Key('rate_field')), '150');
             await tester.pump();
-            await tester.tap(find.byKey(const Key('delivery_fee_row')));
-            await tester.pump();
+            // The Rate field's "✓ Your rate" badge (shown as soon as a rate
+            // parses) pushes the delivery row further down than the small
+            // a11y test viewport shows — scroll it into view before tapping.
+            await tester.ensureVisible(
+              find.byKey(const Key('delivery_fee_row')),
+            );
+            // The delivery panel stays open across a fold (see
+            // EquipmentCostFormFields._deliveryExpanded's doc comment), and
+            // this helper reuses the same widget State across the
+            // light/dark theme loop — so on the second theme, the field may
+            // already be open from the first theme's run. Only tap to open
+            // it if it isn't already.
+            if (find
+                .byKey(const Key('delivery_fee_field'))
+                .evaluate()
+                .isEmpty) {
+              await tester.tap(find.byKey(const Key('delivery_fee_row')));
+              await tester.pump();
+            }
             await tester.enterText(
               find.byKey(const Key('delivery_fee_field')),
               '85',
