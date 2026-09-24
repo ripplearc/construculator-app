@@ -138,7 +138,7 @@ class CostItemTestDataMapFactory {
       'job_amount': method == 'job' ? jobAmount ?? 600.0 : null,
       'delivery_fee': deliveryFee,
       'delivery_fee_status': deliveryFeeStatus ?? 'unset',
-      'rate_status': rateStatus ?? 'sampleRateUnverified',
+      'rate_status': rateStatus ?? 'sample_rate_unverified',
       'product_link': productLink,
       'labor_calc_method': null,
       'labor_days': null,

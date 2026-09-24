@@ -221,7 +221,7 @@ void main() {
           dailyRate: 500.0,
           deliveryFee: 50.0,
           deliveryFeeStatus: 'confirmed',
-          rateStatus: 'ownRateConfirmed',
+          rateStatus: 'own_rate_confirmed',
           productLink: 'https://example.com/excavator',
           calculation: {'daily_rate': 500.0, 'duration': 5.0},
           itemTotalCost: 2500.0,
@@ -244,7 +244,7 @@ void main() {
           dailyRate: 500.0,
           deliveryFee: 50.0,
           deliveryFeeStatus: 'confirmed',
-          rateStatus: 'ownRateConfirmed',
+          rateStatus: 'own_rate_confirmed',
           productLink: 'https://example.com/excavator',
           description: 'Heavy equipment rental',
         );
@@ -312,7 +312,7 @@ void main() {
           pricingMethod: 'job',
           jobAmount: 3000.0,
           deliveryFeeStatus: 'unset',
-          rateStatus: 'sampleRateUnverified',
+          rateStatus: 'sample_rate_unverified',
           calculation: {'job_amount': 3000.0},
           itemTotalCost: 3000.0,
           createdAt: '2025-02-25T16:00:00.000Z',
@@ -332,7 +332,7 @@ void main() {
           pricingMethod: 'job',
           jobAmount: 3000.0,
           deliveryFeeStatus: 'unset',
-          rateStatus: 'sampleRateUnverified',
+          rateStatus: 'sample_rate_unverified',
           description: 'Flat-rate crane job',
         );
 

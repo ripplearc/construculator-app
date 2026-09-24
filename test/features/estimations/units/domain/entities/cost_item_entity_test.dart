@@ -574,11 +574,11 @@ void main() {
   group('RateStatus enum', () {
     test('fromJson creates correct enum from string', () {
       expect(
-        RateStatus.fromJson('sampleRateUnverified'),
+        RateStatus.fromJson('sample_rate_unverified'),
         RateStatus.sampleRateUnverified,
       );
       expect(
-        RateStatus.fromJson('ownRateConfirmed'),
+        RateStatus.fromJson('own_rate_confirmed'),
         RateStatus.ownRateConfirmed,
       );
       expect(RateStatus.fromJson('missing'), RateStatus.missing);
