@@ -8,6 +8,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
+  static const endOfListMarkerKey = Key('cost_estimation_logs_end_marker');
   static const loadMoreErrorViewKey = Key(
     'cost_estimation_logs_load_more_error_view',
   );
@@ -89,7 +90,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
             child: BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
               builder: (context, state) {
                 if (state is CostEstimationLogLoading) {
-                  return _buildLoadingState();
+                  return _buildLoadingState(context);
                 }
 
                 if (state is CostEstimationLogEmpty) {
@@ -169,8 +170,24 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(child: CoreLoadingIndicator());
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The text below names what is loading; the indicator's own
+          // "Loading" label would make screen readers announce it twice.
+          ExcludeSemantics(child: CoreLoadingIndicator(size: 24)),
+          const SizedBox(height: CoreSpacing.space3),
+          Text(
+            context.l10n.loadingLogs,
+            style: context.textTheme.bodyMediumRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildRefreshable({required Widget child}) {
@@ -340,14 +357,43 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           SliverToBoxAdapter(child: _buildLoadMoreIndicator(context)),
         if (state is CostEstimationLogLoadMoreError)
           SliverToBoxAdapter(child: _buildLoadMoreFailure(context, state)),
+        if (state.hasReachedEnd)
+          SliverToBoxAdapter(child: _buildEndOfListMarker(context)),
       ],
+    );
+  }
+
+  Widget _buildEndOfListMarker(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
+      child: Center(
+        child: Text(
+          context.l10n.noOlderLogEvents,
+          key: CostEstimationLogsList.endOfListMarkerKey,
+          style: context.textTheme.bodySmallRegular.copyWith(
+            color: context.colorTheme.textBody,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
-      child: Center(child: CoreLoadingIndicator(size: 24)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ExcludeSemantics(child: CoreLoadingIndicator(size: 24)),
+          const SizedBox(width: CoreSpacing.space3),
+          Text(
+            context.l10n.loadingOlderLogEvents,
+            style: context.textTheme.bodyMediumRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

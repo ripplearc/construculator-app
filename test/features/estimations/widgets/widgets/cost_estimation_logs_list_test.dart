@@ -693,4 +693,151 @@ void main() {
       );
     });
   });
+
+  group('CostEstimationLogsList loading labels', () {
+    testWidgets('says Logs are loading while the first page is on its way', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+
+      final bloc = Modular.get<CostEstimationLogBloc>();
+      addTearDown(bloc.close);
+      // Tear-downs run last-first: release the held load before the bloc
+      // closes, or a failed expectation leaves close() waiting on it forever.
+      addTearDown(() => pending.isCompleted ? null : pending.complete());
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(buildTestApp(bloc));
+      await tester.pump();
+
+      expect(find.text(l10n().loadingLogs), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Loading'),
+        findsNothing,
+        reason: 'the spinner must not be announced on top of its label',
+      );
+      semantics.dispose();
+
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().loadingLogs), findsNothing);
+    });
+
+    testWidgets('says older events are loading while the next page loads', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+      addTearDown(() => pending.isCompleted ? null : pending.complete());
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, -1800),
+      );
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+
+      expect(find.text(l10n().loadingOlderLogEvents), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Loading'),
+        findsNothing,
+        reason: 'the spinner must not be announced on top of its label',
+      );
+      semantics.dispose();
+
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().loadingOlderLogEvents), findsNothing);
+    });
+  });
+
+  group('CostEstimationLogsList end-of-list marker', () {
+    testWidgets('shows no-older-events once the whole list is loaded', (
+      tester,
+    ) async {
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Liam',
+        ),
+      ]);
+
+      await pumpLogsList(tester);
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsOneWidget,
+      );
+      expect(find.text(l10n().noOlderLogEvents), findsOneWidget);
+    });
+
+    testWidgets('hides the marker while older pages remain', (tester) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows the marker after the final page is paginated in', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, -1800),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(CostEstimationLogsList.logsScrollViewKey),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsOneWidget,
+      );
+    });
+  });
 }

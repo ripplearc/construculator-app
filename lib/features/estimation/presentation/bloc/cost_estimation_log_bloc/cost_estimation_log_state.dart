@@ -45,6 +45,9 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
          List<CostEstimationLog>.from(logs),
        );
 
+  /// Whether every page has been loaded, so the list has an end to mark.
+  bool get hasReachedEnd => !hasMore && logs.isNotEmpty;
+
   @override
   List<Object?> get props => [logs, hasMore, isLoadingMore];
 }
