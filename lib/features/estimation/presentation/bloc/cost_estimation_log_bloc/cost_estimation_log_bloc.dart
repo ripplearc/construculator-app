@@ -39,20 +39,27 @@ class CostEstimationLogBloc
     await _inFlightLoadMore?.cancel();
     _inFlightLoadMore = null;
 
+    final isRetryAfterFailure = state is CostEstimationLogError;
     emit(const CostEstimationLogLoading());
 
     final result = await _repository.fetchInitialLogs(event.estimateId);
 
-    result.fold((failure) => emit(CostEstimationLogError(failure: failure)), (
-      logs,
-    ) {
-      if (logs.isEmpty) {
-        emit(const CostEstimationLogEmpty());
-      } else {
-        final hasMore = _repository.hasMoreLogs(event.estimateId);
-        emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
-      }
-    });
+    result.fold(
+      (failure) => emit(
+        CostEstimationLogError(
+          failure: failure,
+          isRepeatFailure: isRetryAfterFailure,
+        ),
+      ),
+      (logs) {
+        if (logs.isEmpty) {
+          emit(const CostEstimationLogEmpty());
+        } else {
+          final hasMore = _repository.hasMoreLogs(event.estimateId);
+          emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
+        }
+      },
+    );
   }
 
   Future<void> _onLoadMore(
@@ -100,6 +107,7 @@ class CostEstimationLogBloc
         CostEstimationLogLoadMoreError(
           failure: failure,
           logs: currentState.logs.toList(),
+          isRepeatFailure: currentState is CostEstimationLogLoadMoreError,
           hasMore: currentState.hasMore,
         ),
       ),

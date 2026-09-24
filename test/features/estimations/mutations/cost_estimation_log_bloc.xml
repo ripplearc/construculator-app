@@ -68,6 +68,26 @@
         <regex pattern="emit\(\s*CostEstimationLogLoaded\(" dotAll="true" id="log_bloc.loadmore.skip_success_emit">
             <mutation text="// emit(CostEstimationLogLoaded("/>
         </regex>
+
+        <!-- RULE 12: Never mark a load more failure as a repeat -->
+        <regex pattern="isRepeatFailure: currentState is CostEstimationLogLoadMoreError," dotAll="true" id="log_bloc.loadmore.never_repeat">
+            <mutation text="isRepeatFailure: false,"/>
+        </regex>
+
+        <!-- RULE 13: Always mark a load more failure as a repeat -->
+        <regex pattern="isRepeatFailure: currentState is CostEstimationLogLoadMoreError," dotAll="true" id="log_bloc.loadmore.always_repeat">
+            <mutation text="isRepeatFailure: true,"/>
+        </regex>
+
+        <!-- RULE 14: Never mark a first-load failure as a repeat -->
+        <regex pattern="isRepeatFailure: isRetryAfterFailure," dotAll="true" id="log_bloc.fetch.never_repeat">
+            <mutation text="isRepeatFailure: false,"/>
+        </regex>
+
+        <!-- RULE 15: Always mark a first-load failure as a repeat -->
+        <regex pattern="isRepeatFailure: isRetryAfterFailure," dotAll="true" id="log_bloc.fetch.always_repeat">
+            <mutation text="isRepeatFailure: true,"/>
+        </regex>
     </rules>
 
     <commands>

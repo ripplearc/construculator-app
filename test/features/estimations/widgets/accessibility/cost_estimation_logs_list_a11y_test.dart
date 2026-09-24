@@ -194,6 +194,33 @@ void main() {
       }
     });
 
+    testWidgets('a11y: load-more failure message is readable in both themes', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await setupA11yTest(tester);
+
+      for (final theme in [createTestTheme(), createTestThemeDark()]) {
+        await tester.pumpWidget(const SizedBox.shrink());
+        fakeSupabase.shouldThrowOnSelectPaginated = false;
+        await pumpWidget(tester, theme: theme, shouldTriggerError: true);
+
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          find.text(l10n().loadMoreLogsError),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      }
+    });
+
     testWidgets('a11y: empty state text remains readable in both themes', (
       tester,
     ) async {
