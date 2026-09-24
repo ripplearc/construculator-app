@@ -213,13 +213,18 @@ enum DeliveryFeeStatus {
 /// can express the same three-way rate confidence.
 enum RateStatus {
   /// Rate comes from a generic sample/reference rate, not yet verified by the user.
-  sampleRateUnverified,
+  sampleRateUnverified('sample_rate_unverified'),
 
   /// Rate has been confirmed as the user's own known rate.
-  ownRateConfirmed,
+  ownRateConfirmed('own_rate_confirmed'),
 
   /// No rate value is available.
-  missing;
+  missing('missing');
+
+  final String value;
+  const RateStatus(this.value);
+
+  String toJson() => value;
 
   /// Deserializes a [RateStatus] from JSON string.
   ///
@@ -232,13 +237,10 @@ enum RateStatus {
   /// Consider logging unknown values if strict validation is required.
   static RateStatus fromJson(String value) {
     return RateStatus.values.firstWhere(
-      (e) => e.name.toLowerCase() == value.toLowerCase(),
+      (e) => e.value == value,
       orElse: () => RateStatus.missing,
     );
   }
-
-  /// Serializes this [RateStatus] to its JSON string representation.
-  String toJson() => name;
 }
 
 /// Value object representing a monetary amount
