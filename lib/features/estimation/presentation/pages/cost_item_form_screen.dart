@@ -1,5 +1,4 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
@@ -19,7 +18,6 @@ class CostItemFormScreen extends StatefulWidget {
   /// features. Only exercised when [type] is equipment, but taken uniformly
   /// across all three item types to match [router]'s existing pattern
   /// rather than special-casing this one type at every call site.
-  final YourRatesRepository yourRatesRepository;
   final YourRatesBloc Function() yourRatesBlocFactory;
 
   /// When true, renders as plain content for a [CoreQuickSheet] (a back
@@ -35,7 +33,6 @@ class CostItemFormScreen extends StatefulWidget {
     required this.type,
     required this.estimationId,
     required this.router,
-    required this.yourRatesRepository,
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
   });
@@ -224,7 +221,6 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         onTotalChanged: onTotalChanged,
         onSaveEnabledChanged: onSaveEnabledChanged,
         estimateId: widget.estimationId,
-        yourRatesRepository: widget.yourRatesRepository,
         yourRatesBlocFactory: widget.yourRatesBlocFactory,
       ),
     };

@@ -19,3 +19,11 @@ class YourRatesSearched extends YourRatesEvent {
   final String query;
   final CostItemType? category;
 }
+
+/// Fired to save [entry] via [YourRatesRepository.save]. Resolves to
+/// [YourRatesSaveSucceeded], [YourRatesSaveCollision] (a label is needed —
+/// see [YourRatesRepository.save]'s collision rule), or [YourRatesSaveFailed].
+class YourRatesSaveRequested extends YourRatesEvent {
+  const YourRatesSaveRequested(this.entry);
+  final YourRateEntry entry;
+}

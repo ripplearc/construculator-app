@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -36,19 +37,19 @@ EventTransformer<E> _debounceRestartable<E>(Duration duration) =>
 /// Deliberately has no usecase layer, matching `EquipmentCostFormBloc`'s
 /// precedent for straightforward repository CRUD in this feature. Also has
 /// no "current company"/"current project" dependency: every event carries
-/// the category it operates within explicitly, and `save` (not wired to any
-/// event here — see CA-1151) takes a fully-formed [YourRateEntry] whose
-/// [YourRateEntry.companyId] the caller is responsible for supplying.
+/// the category it operates within explicitly, and [YourRatesSaveRequested]
+/// takes a fully-formed [YourRateEntry] whose [YourRateEntry.companyId] the
+/// caller is responsible for supplying.
 class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
 
-  YourRatesBloc({required this._repository})
-    : super(const YourRatesLoading()) {
+  YourRatesBloc({required this._repository}) : super(const YourRatesLoading()) {
     on<YourRatesRefreshRecents>(_onRefreshRecents, transformer: _restartable());
     on<YourRatesSearched>(
       _onSearched,
       transformer: _debounceRestartable(_kQueryDebounceDuration),
     );
+    on<YourRatesSaveRequested>(_onSaveRequested);
   }
 
   Future<void> _onRefreshRecents(
@@ -76,5 +77,20 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       (failure) => emit(YourRatesError(failure)),
       (entries) => emit(YourRatesSearchResults(entries)),
     );
+  }
+
+  Future<void> _onSaveRequested(
+    YourRatesSaveRequested event,
+    Emitter<YourRatesState> emit,
+  ) async {
+    final result = await _repository.save(event.entry);
+    result.fold((failure) {
+      if (failure is EstimationFailure &&
+          failure.errorType == EstimationErrorType.duplicateEntry) {
+        emit(YourRatesSaveCollision(event.entry));
+      } else {
+        emit(YourRatesSaveFailed(failure));
+      }
+    }, (_) => emit(const YourRatesSaveSucceeded()));
   }
 }

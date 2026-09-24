@@ -1,6 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
@@ -50,7 +49,6 @@ class EstimationRoutesModule extends Module {
           router: Modular.get<AppRouter>(),
           equipmentCostFormBlocFactory: () =>
               Modular.get<EquipmentCostFormBloc>(),
-          yourRatesRepository: Modular.get<YourRatesRepository>(),
           yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
         );
       },
@@ -73,7 +71,6 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.material,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
-            yourRatesRepository: Modular.get<YourRatesRepository>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );
@@ -97,7 +94,6 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.labor,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
-            yourRatesRepository: Modular.get<YourRatesRepository>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );
@@ -121,7 +117,6 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.equipment,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
-            yourRatesRepository: Modular.get<YourRatesRepository>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );

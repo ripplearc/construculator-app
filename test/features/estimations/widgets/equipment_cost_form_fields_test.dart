@@ -56,7 +56,6 @@ void main() {
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
             estimateId: estimateId,
-            yourRatesRepository: Modular.get<YourRatesRepository>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         ),

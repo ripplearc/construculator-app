@@ -23,6 +23,7 @@ void main() {
       String category = 'equipment',
       String itemName = 'Excavator',
       String savedAt = '2026-01-01T00:00:00.000Z',
+      String? entryLabel,
     }) {
       return {
         'id': id,
@@ -33,7 +34,7 @@ void main() {
         'rate_currency': 'USD',
         'unit': 'days',
         'equipment_method': 'day',
-        'entry_label': null,
+        'entry_label': entryLabel,
         'saved_at': savedAt,
         'created_at': savedAt,
         'updated_at': savedAt,
@@ -172,6 +173,55 @@ void main() {
             ['Bulldozer'],
           ),
         ],
+      );
+    });
+
+    group('YourRatesSaveRequested', () {
+      YourRateEntry entry({String? entryLabel}) => YourRateEntry(
+        id: '',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0),
+        savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
+        equipmentMethod: EquipmentPricingMethod.day,
+        entryLabel: entryLabel,
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveSucceeded when there is no collision',
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveSucceeded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveCollision carrying the submitted entry when the grouping '
+        'already has a labeled row',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(id: 'existing', itemName: 'Excavator', entryLabel: 'Supplier A'),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [
+          isA<YourRatesSaveCollision>().having(
+            (s) => s.entry.itemName,
+            'entry.itemName',
+            'Excavator',
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveFailed for a non-collision failure',
+        setUp: () {
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveFailed>()],
       );
     });
   });

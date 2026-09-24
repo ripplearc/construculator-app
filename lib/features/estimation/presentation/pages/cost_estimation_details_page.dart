@@ -1,5 +1,4 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
@@ -31,7 +30,6 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// Backs the equipment form's "Save as my rate" and look-up-a-rate
   /// features. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
-  final YourRatesRepository yourRatesRepository;
   final YourRatesBloc Function() yourRatesBlocFactory;
 
   const CostEstimationDetailsPage({
@@ -39,7 +37,6 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
-    required this.yourRatesRepository,
     required this.yourRatesBlocFactory,
   });
 
@@ -191,7 +188,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
               estimationId: widget.estimationId,
               router: widget.router,
               presentAsSheet: true,
-              yourRatesRepository: widget.yourRatesRepository,
               yourRatesBlocFactory: widget.yourRatesBlocFactory,
             ),
           ),

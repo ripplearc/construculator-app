@@ -1,5 +1,4 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
@@ -69,7 +68,6 @@ void main() {
             type: type,
             estimationId: 'test-estimation-id',
             router: FakeAppRouter(),
-            yourRatesRepository: Modular.get<YourRatesRepository>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         ),
