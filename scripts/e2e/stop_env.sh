@@ -7,9 +7,13 @@
 #
 #   --purge  Also delete the PowerSync bucket storage volume and the Supabase
 #            database volume of whatever project E2E_BACKEND_DIR's config.toml
-#            names (see lib.sh), so the next start begins from empty. It
-#            still asks for confirmation first.
-#   --yes    Skip that confirmation. Equivalent to E2E_ASSUME_YES=1.
+#            names, so the next start begins from empty. It still asks for
+#            confirmation first, and — like reset_env.sh — refuses outright
+#            unless that project is the dedicated E2E one, or
+#            E2E_ALLOW_SHARED_BACKEND=1 explicitly accepts the risk (see
+#            e2e_require_dedicated_backend in lib.sh).
+#   --yes    Skip the confirmation prompt. Equivalent to E2E_ASSUME_YES=1.
+#            Does not bypass the dedicated-checkout check above.
 #
 # Without --purge this is non-destructive: the containers stop and the data
 # volumes are left alone.
@@ -17,6 +21,8 @@
 set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
+e2e_require_backend
 
 purge=false
 for arg in "$@"; do
@@ -29,7 +35,7 @@ done
 
 if [ "$purge" = true ]; then
   e2e_confirm_destructive \
-    "This will delete the local '$E2E_DB_PROJECT' database volume and PowerSync's bucket storage."
+    "This will delete the local '__E2E_PROJECT__' database volume and PowerSync's bucket storage."
 fi
 
 if [ -f "$E2E_BACKEND_DIR/powersync/.env" ]; then
