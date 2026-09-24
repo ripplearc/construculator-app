@@ -256,6 +256,34 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('displays sent activity', (tester) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costEstimationSent,
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostEstimationSent),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('displays changes requested activity', (tester) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costEstimationChangesRequested,
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostEstimationChangesRequested),
+          findsOneWidget,
+        );
+      });
     });
 
     group('Subtitle Rendering', () {

@@ -739,6 +739,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityAttachmentRemovedSimple => 'Attachment Removed';
 
   @override
+  String get activityCostEstimationSent => 'Cost Estimation Sent';
+
+  @override
+  String get activityCostEstimationOpened => 'Cost Estimation Opened';
+
+  @override
+  String get activityCostEstimationRevoked => 'Cost Estimation Revoked';
+
+  @override
+  String get activityCostEstimationApproved => 'Cost Estimation Approved';
+
+  @override
+  String get activityCostEstimationChangesRequested => 'Changes Requested';
+
+  @override
   String get activityUnknown => 'Unknown Activity';
 
   @override

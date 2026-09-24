@@ -2,6 +2,17 @@
 ///
 /// Each activity type corresponds to a specific action that can be
 /// tracked in the estimation's activity log.
+///
+/// Wire counterpart: `cost_estimation_activity_type_enum` in
+/// construculator-backend (`supabase/schemas/_types/enums.sql`), the type of
+/// the `NOT NULL` `cost_estimate_logs.activity` column.
+///
+/// [CostEstimationActivityTypeExtension.toJson] is snake_case of the member
+/// name, so the names below *are* the wire contract — renaming one is a
+/// breaking change that needs a matching `ALTER TYPE` migration. The
+/// Estimation-v2 kinds are not in the backend enum yet; they follow its
+/// `<entity>_<verb>` convention so the migration that adds them can use these
+/// values verbatim.
 enum CostEstimationActivityType {
   /// Estimation was created
   costEstimationCreated,
@@ -50,6 +61,23 @@ enum CostEstimationActivityType {
 
   /// An attachment was removed
   attachmentRemoved,
+
+  /// The estimation was sent to a recipient
+  costEstimationSent,
+
+  /// A sent estimation was opened by its recipient
+  costEstimationOpened,
+
+  /// A sent estimation was revoked by the sender
+  costEstimationRevoked,
+
+  /// A sent estimation was approved by its recipient
+  costEstimationApproved,
+
+  /// Changes were requested on a sent estimation
+  ///
+  /// `activityDetails` carries the recipient's `reason`, a string.
+  costEstimationChangesRequested,
 
   /// Unknown activity type
   ///

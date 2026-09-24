@@ -79,6 +79,9 @@ class CostEstimationLogTile extends StatelessWidget {
         return _buildEditedFieldsSubtitle(context);
       case CostEstimationActivityType.taskAssigned:
         return _buildTaskAssignedSubtitle(context);
+      // TODO: [CA-1140] Give costEstimationChangesRequested a `reason`
+      // subtitle once CUJ 8 (Send) produces it; the other Send kinds are
+      // title-only. https://ripplearc.youtrack.cloud/issue/CA-1140
       default:
         return const SizedBox.shrink();
     }

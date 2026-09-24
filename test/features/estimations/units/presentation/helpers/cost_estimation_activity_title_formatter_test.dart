@@ -362,6 +362,65 @@ void main() {
         },
       );
 
+      test('returns sent message for costEstimationSent activity', () {
+        final log = _createLog(
+          id: '28',
+          activity: CostEstimationActivityType.costEstimationSent,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSent));
+      });
+
+      test('returns opened message for costEstimationOpened activity', () {
+        final log = _createLog(
+          id: '29',
+          activity: CostEstimationActivityType.costEstimationOpened,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationOpened));
+      });
+
+      test('returns revoked message for costEstimationRevoked activity', () {
+        final log = _createLog(
+          id: '30',
+          activity: CostEstimationActivityType.costEstimationRevoked,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationRevoked));
+      });
+
+      test('returns approved message for costEstimationApproved activity', () {
+        final log = _createLog(
+          id: '31',
+          activity: CostEstimationActivityType.costEstimationApproved,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationApproved));
+      });
+
+      test(
+        'returns changes requested message for '
+        'costEstimationChangesRequested activity',
+        () {
+          final log = _createLog(
+            id: '32',
+            activity: CostEstimationActivityType.costEstimationChangesRequested,
+          );
+
+          final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+          expect(result, equals(l10n.activityCostEstimationChangesRequested));
+        },
+      );
+
       test('returns localized fallback for unknown activity', () {
         final log = _createLog(
           id: '27',

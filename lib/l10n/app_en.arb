@@ -1179,6 +1179,31 @@
     "description": "Activity log message for attachment removed without details",
     "context": "N/A"
   },
+  "activityCostEstimationSent": "Cost Estimation Sent",
+  "@activityCostEstimationSent": {
+    "description": "Activity log message for estimation sent",
+    "context": "N/A"
+  },
+  "activityCostEstimationOpened": "Cost Estimation Opened",
+  "@activityCostEstimationOpened": {
+    "description": "Activity log message for sent estimation opened by recipient",
+    "context": "N/A"
+  },
+  "activityCostEstimationRevoked": "Cost Estimation Revoked",
+  "@activityCostEstimationRevoked": {
+    "description": "Activity log message for sent estimation revoked by sender",
+    "context": "N/A"
+  },
+  "activityCostEstimationApproved": "Cost Estimation Approved",
+  "@activityCostEstimationApproved": {
+    "description": "Activity log message for sent estimation approved by recipient",
+    "context": "N/A"
+  },
+  "activityCostEstimationChangesRequested": "Changes Requested",
+  "@activityCostEstimationChangesRequested": {
+    "description": "Activity log message for changes requested on a sent estimation",
+    "context": "N/A"
+  },
   "activityUnknown": "Unknown Activity",
   "@activityUnknown": {
     "description": "Fallback activity log message for unknown activity types",

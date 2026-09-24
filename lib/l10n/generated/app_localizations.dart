@@ -1414,6 +1414,36 @@ abstract class AppLocalizations {
   /// **'Attachment Removed'**
   String get activityAttachmentRemovedSimple;
 
+  /// Activity log message for estimation sent
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Sent'**
+  String get activityCostEstimationSent;
+
+  /// Activity log message for sent estimation opened by recipient
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Opened'**
+  String get activityCostEstimationOpened;
+
+  /// Activity log message for sent estimation revoked by sender
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Revoked'**
+  String get activityCostEstimationRevoked;
+
+  /// Activity log message for sent estimation approved by recipient
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Approved'**
+  String get activityCostEstimationApproved;
+
+  /// Activity log message for changes requested on a sent estimation
+  ///
+  /// In en, this message translates to:
+  /// **'Changes Requested'**
+  String get activityCostEstimationChangesRequested;
+
   /// Fallback activity log message for unknown activity types
   ///
   /// In en, this message translates to:
