@@ -28,16 +28,14 @@ enum RateStatusBadgeVariant {
 ///
 /// One widget, not two: the orange variant is visually identical between
 /// the Rate/Amount field's "Sample rate" badge and the delivery row's
-/// "Estimated" badge (fix 6a/1 of the CA-1144 retrofit) — only the label
-/// text differs, so callers pass their own [label].
+/// "Estimated" badge — only the label text differs, so callers pass their
+/// own [label].
 ///
 /// a11y note: `#CD5000` text on `#FFF0E9` fill measures ~3.98:1 contrast,
 /// short of WCAG AA's 4.5:1 minimum for 12px text (it would only need 3:1
 /// if this counted as "large text", which 12px does not, bold or not). This
-/// is the exact pairing the live Figma component specifies, confirmed
-/// directly rather than inferred — see this pass's PR description for the
-/// full account of why the Figma spec was kept as-is despite the failure.
-/// The green variant passes AA at ~4.54:1.
+/// is the exact pairing the live Figma component specifies. The green
+/// variant passes AA at ~4.54:1.
 ///
 // TODO: CA-1159 — replace with CoreUI's status badge once it exists
 class RateStatusBadge extends StatelessWidget {

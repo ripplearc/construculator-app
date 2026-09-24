@@ -393,14 +393,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   YourRatesRepository get _yourRatesRepository => widget.yourRatesRepository;
 
-  // No mechanism anywhere in this app currently resolves the caller's real
-  // company id (checked ProjectRepository/Project — no companyId field;
-  // no CurrentCompanyRepository exists). Safe to ship regardless: per
-  // YourRatesRepository.save's own doc comment, companyId "matters only for
-  // writes, where the backend checks it against the caller's actual company
-  // membership" — an empty id fails that check server-side (a clean
-  // rejection) rather than writing to the wrong company. Flagged to Ayana
-  // to file a real ticket for; not filed here for lack of time.
+  // No mechanism anywhere in this app resolves the caller's real company id
+  // (no companyId on ProjectRepository/Project, no CurrentCompanyRepository).
+  // Per YourRatesRepository.save's own doc comment, companyId only matters
+  // for writes, which the backend validates against the caller's actual
+  // company membership — an empty id fails that check server-side instead
+  // of writing to the wrong company.
   // TODO: replace with a real company id once that resolution exists.
   String get _currentCompanyId => '';
 
@@ -496,6 +494,19 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  // Figma node 65814:173685/173689: the "Set your rate" empty state has no
+  // $ icon, only the search button below.
+  Widget? _rateSuffixIcon(BuildContext context, RateStatus status) {
+    if (status == RateStatus.missing) return null;
+    final colorTheme = context.colorTheme;
+    return CoreIconWidget(
+      key: const Key('rate_dollar_icon'),
+      icon: CoreIcons.dollar,
+      color: colorTheme.textHeadline,
+      size: 24,
+    );
+  }
+
   // Shown only while the field is empty — once a rate exists (typed or
   // picked), [_saveAsMyRateLink] takes this slot instead.
   Widget? _lookupRateButton(
@@ -513,12 +524,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         behavior: HitTestBehavior.opaque,
         onTap: () => unawaited(_openRateLookup(context, data.method)),
         child: Container(
-          width: 40,
-          height: 40,
+          width: CoreSpacing.space10,
+          height: CoreSpacing.space10,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            border: Border.all(color: colorTheme.lineMid),
-            borderRadius: BorderRadius.circular(CoreSpacing.space1),
+            border: Border.all(color: colorTheme.textLink),
+            borderRadius: BorderRadius.circular(CoreSpacing.space2),
           ),
           child: CoreIconWidget(
             icon: CoreIcons.search,
@@ -672,11 +683,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
-                  ),
+                  suffix: _rateSuffixIcon(context, data.rateStatus),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data) ??
@@ -691,11 +698,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
-                  ),
+                  suffix: _rateSuffixIcon(context, data.rateStatus),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data) ??

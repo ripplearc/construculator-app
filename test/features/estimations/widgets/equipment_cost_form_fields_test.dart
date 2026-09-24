@@ -1176,6 +1176,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
+      expect(find.byKey(const Key('rate_dollar_icon')), findsNothing);
+    });
+
+    testWidgets('shows the \$ icon once a rate is typed, alongside the badge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+
+      expect(find.byKey(const Key('rate_dollar_icon')), findsOneWidget);
+      expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
     });
 
     testWidgets('hides the search button once a rate is typed', (tester) async {
