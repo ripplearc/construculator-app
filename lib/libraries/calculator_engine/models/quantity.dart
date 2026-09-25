@@ -148,7 +148,7 @@ final class Weight extends Quantity {
   /// The weight unit the value is written in.
   final Unit unit;
 
-  const Weight(this.hundredthsOfPound, {required this.unit})
+  const Weight(this.hundredthsOfPound, {this.unit = Unit.pound})
     : assert(
         unit == Unit.pound ||
             unit == Unit.kilogram ||
