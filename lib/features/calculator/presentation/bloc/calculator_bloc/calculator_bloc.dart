@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
+part 'dependent_key_id.dart';
 part 'calculator_math.dart';
 part 'calculator_state.dart';
 

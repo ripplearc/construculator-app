@@ -30,9 +30,9 @@ class CalculatorState extends Equatable {
   /// A standalone chip representing the final computed result.
   final CoreCalculatorChip? resultChip;
 
-  /// Label for the dependent key shown in the display area value section.
+  /// Which dependent key is shown in the display area value section.
   /// `null` means no dependent key is displayed.
-  final String? dependentKeyLabel;
+  final DependentKeyId? dependentKeyId;
 
   /// Value for the dependent key shown in the display area value section.
   /// `null` means no dependent key is displayed.
@@ -55,7 +55,7 @@ class CalculatorState extends Equatable {
     this.resultLabel,
     this.resultValue,
     this.resultChip,
-    this.dependentKeyLabel,
+    this.dependentKeyId,
     this.dependentKeyValue,
     this.currentGroupIndex = 0,
     this.currentUnitSystem = UnitSystem.imperial,
@@ -67,7 +67,7 @@ class CalculatorState extends Equatable {
   /// Returns a copy of this state with the specified fields replaced.
   ///
   /// Nullable fields ([activeInputLabel], [resultLabel], [resultValue],
-  /// [resultChip], [dependentKeyLabel], [dependentKeyValue]) use a
+  /// [resultChip], [dependentKeyId], [dependentKeyValue]) use a
   /// `Function()?` wrapper to distinguish `null` (clear the field) from
   /// absent (keep the current value).
   CalculatorState copyWith({
@@ -80,7 +80,7 @@ class CalculatorState extends Equatable {
     String? Function()? resultLabel,
     String? Function()? resultValue,
     CoreCalculatorChip? Function()? resultChip,
-    String? Function()? dependentKeyLabel,
+    DependentKeyId? Function()? dependentKeyId,
     String? Function()? dependentKeyValue,
     int? currentGroupIndex,
     UnitSystem? currentUnitSystem,
@@ -96,9 +96,9 @@ class CalculatorState extends Equatable {
       resultLabel: resultLabel != null ? resultLabel() : this.resultLabel,
       resultValue: resultValue != null ? resultValue() : this.resultValue,
       resultChip: resultChip != null ? resultChip() : this.resultChip,
-      dependentKeyLabel: dependentKeyLabel != null
-          ? dependentKeyLabel()
-          : this.dependentKeyLabel,
+      dependentKeyId: dependentKeyId != null
+          ? dependentKeyId()
+          : this.dependentKeyId,
       dependentKeyValue: dependentKeyValue != null
           ? dependentKeyValue()
           : this.dependentKeyValue,
@@ -111,7 +111,7 @@ class CalculatorState extends Equatable {
   /// then an in-progress active chip while typing, then [resultChip].
   /// The active chip is built here (not stored) from [activeInputLabel] and
   /// [currentInputValue] so it always reflects the latest keystroke.
-  /// [dependentKeyLabel] and [dependentKeyValue] are excluded because they
+  /// [dependentKeyId] and [dependentKeyValue] are excluded because they
   /// render in a separate value section, not as chips.
   List<CoreCalculatorChip> get chipsList => [
         ...completedChips,
@@ -136,7 +136,7 @@ class CalculatorState extends Equatable {
         resultLabel,
         resultValue,
         resultChip,
-        dependentKeyLabel,
+        dependentKeyId,
         dependentKeyValue,
         currentGroupIndex,
         currentUnitSystem,

@@ -171,7 +171,7 @@ void main() {
           expect(bloc.state.finalizedValues['Length'], 24.0);
           expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
-          expect(bloc.state.dependentKeyLabel, 'oc');
+          expect(bloc.state.dependentKeyId, DependentKeyId.onCentre);
           expect(bloc.state.dependentKeyValue, '6ft');
         },
       );
@@ -186,7 +186,7 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
-          expect(bloc.state.dependentKeyLabel, 'oc');
+          expect(bloc.state.dependentKeyId, DependentKeyId.onCentre);
           expect(bloc.state.dependentKeyValue, '6ft');
         },
       );

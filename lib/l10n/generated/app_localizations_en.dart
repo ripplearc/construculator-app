@@ -1409,7 +1409,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have permission to view this project.';
 
   @override
-  String get calculatorOcLabel => 'O.C';
+  String get calculatorPillOnCentre => 'O.C';
+
+  @override
+  String get calculatorPillSheetSize => 'Sheet size';
+
+  @override
+  String get calculatorPillPieceSize => 'Piece size';
+
+  @override
+  String get calculatorPillCrossSection => 'Cross-section';
+
+  @override
+  String get calculatorPillRailsPerSection => 'Rails/section';
+
+  @override
+  String get calculatorPillRate => 'Rate';
+
+  @override
+  String get calculatorPillWaste => 'Waste';
+
+  @override
+  String get calculatorPillDensity => 'Density';
+
+  @override
+  String get calculatorPillShownAs => 'Shown as';
+
+  @override
+  String get calculatorPillAcross => 'Across';
 
   @override
   String get calculatorGroupBasicGeometry => 'Basic Geometry';
