@@ -2,6 +2,7 @@ import 'package:construculator/libraries/analytics/domain/types/analytics_error_
 import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
+import 'package:construculator/libraries/errors/calculator_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
@@ -128,6 +129,18 @@ class ConsentFailure extends Failure {
 
   /// Creates a [ConsentFailure] with the given [errorType].
   const ConsentFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure returned when a calculator trade store cannot be read or written.
+class CalculatorFailure extends Failure {
+  /// The type of calculator error that occurred.
+  final CalculatorErrorType errorType;
+
+  /// Creates a [CalculatorFailure] with the given [errorType].
+  const CalculatorFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];
