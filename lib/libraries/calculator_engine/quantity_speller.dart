@@ -14,6 +14,12 @@ import 'package:equatable/equatable.dart';
 /// The tokens are how the value is *read*, never what it *is*: the caller
 /// keeps the exact quantity beside them (rule 4.15), so 18ft 8in shown as
 /// 6.222yd is still 14,336 ticks when the area is recomputed.
+///
+/// A ft-in compound is written as whole feet, then the leftover inches to
+/// two decimals: 224in reads 18ft 8in and 1ft 1/16in re-spelled reads
+/// 1ft 0.06in. Every number is rounded the way the prototype rounds,
+/// `Math.round(v * 1000) / 1000`, and written without trailing zeros or a
+/// trailing point, so 264 not 264.000 and 6.222 not 6.2220.
 class QuantitySpeller extends Equatable {
   /// Decimals kept when a length, an area or a weight is re-spelled; an
   /// angle or a scalar, which no key converts, is spelled the same way
@@ -39,16 +45,19 @@ class QuantitySpeller extends Equatable {
 
   /// The tokens that show [value] in the unit it wears.
   List<Token> spell(Quantity value) => switch (value) {
-    Length(unit: Unit.footInch) => _compound(value.ticks),
+    Length(unit: Unit.footInch) => _wholeFeetAndDecimalInches(value.ticks),
     Length() => [
       Token(
-        digits: _digits(value.ticks / value.unit.ticksPerUnit, lengthDecimals),
+        digits: _digitsWithoutTrailingZeros(
+          value.ticks / value.unit.ticksPerUnit,
+          lengthDecimals,
+        ),
         unit: value.unit,
       ),
     ],
     Area(unit: Unit.acre) => [
       Token(
-        digits: _digits(
+        digits: _digitsWithoutTrailingZeros(
           value.squareFeet / Area.squareFeetPerAcre,
           acreDecimals,
         ),
@@ -57,7 +66,7 @@ class QuantitySpeller extends Equatable {
     ],
     Area() => [
       Token(
-        digits: _digits(
+        digits: _digitsWithoutTrailingZeros(
           value.squareTicks / value.unit.ticksPerUnit / value.unit.ticksPerUnit,
           lengthDecimals,
         ),
@@ -67,13 +76,13 @@ class QuantitySpeller extends Equatable {
     ],
     Volume(unit: Unit.boardFoot) => [
       Token(
-        digits: _digits(value.boardFeet, volumeDecimals),
+        digits: _digitsWithoutTrailingZeros(value.boardFeet, volumeDecimals),
         unit: Unit.boardFoot,
       ),
     ],
     Volume() => [
       Token(
-        digits: _digits(
+        digits: _digitsWithoutTrailingZeros(
           value.cubicFeet * _cubicUnitsPerCubicFoot(value.unit),
           volumeDecimals,
         ),
@@ -83,7 +92,7 @@ class QuantitySpeller extends Equatable {
     ],
     Weight() => [
       Token(
-        digits: _digits(
+        digits: _digitsWithoutTrailingZeros(
           value.hundredthsOfPound /
               value.unit.hundredthsOfPoundPer(poundsPerTon: poundsPerTon),
           lengthDecimals,
@@ -91,18 +100,23 @@ class QuantitySpeller extends Equatable {
         unit: value.unit,
       ),
     ],
-    Angle() => [Token(digits: _digits(value.degrees, lengthDecimals))],
-    Scalar() => [Token(digits: _digits(value.value, lengthDecimals))],
+    Angle() => [
+      Token(digits: _digitsWithoutTrailingZeros(value.degrees, lengthDecimals)),
+    ],
+    Scalar() => [
+      Token(digits: _digitsWithoutTrailingZeros(value.value, lengthDecimals)),
+    ],
   };
 
-  // Whole feet, then the leftover inches to two decimals: 224in reads
-  // 18ft 8in and 1ft 1/16in re-spelled reads 1ft 0.06in.
-  List<Token> _compound(int ticks) {
+  List<Token> _wholeFeetAndDecimalInches(int ticks) {
     final feet = ticks ~/ Length.ticksPerFoot;
     final inches = (ticks - feet * Length.ticksPerFoot) / Length.ticksPerInch;
     return [
       Token(digits: '$feet', unit: Unit.foot),
-      Token(digits: _digits(inches, compoundInchDecimals), unit: Unit.inch),
+      Token(
+        digits: _digitsWithoutTrailingZeros(inches, compoundInchDecimals),
+        unit: Unit.inch,
+      ),
     ];
   }
 
@@ -111,10 +125,7 @@ class QuantitySpeller extends Equatable {
     return feetPerUnit * feetPerUnit * feetPerUnit;
   }
 
-  // Rounded the way the prototype rounds, Math.round(v * 1000) / 1000, and
-  // written without trailing zeros or a trailing point, so 264 not 264.000
-  // and 6.222 not 6.2220.
-  String _digits(double value, int decimals) {
+  String _digitsWithoutTrailingZeros(double value, int decimals) {
     final scale = math.pow(10, decimals);
     final rounded = (value * scale).round() / scale;
     final text = rounded.toStringAsFixed(decimals);

@@ -226,6 +226,17 @@ void main() {
         );
       });
 
+      test('a fourth press of any other length key points at feet', () {
+        final outcome = press(const [
+          Token(digits: '1728', unit: Unit.inch, power: 3),
+        ], Unit.inch);
+        final refused = outcome as UnitKeyRefused;
+        expect(refused.reason, UnitKeyRefusal.stopsAtCubic);
+        final alternative = refused.alternative as Volume;
+        expect(alternative.unit, Unit.foot);
+        expect(alternative.cubicFeet, closeTo(1, 1e-9));
+      });
+
       test('a key that can only hold a length refuses the raise', () {
         expect(
           press(
