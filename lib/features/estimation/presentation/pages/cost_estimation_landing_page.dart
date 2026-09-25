@@ -484,6 +484,11 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return l10n.userIdNotAvailable;
       case EstimationErrorType.permissionDenied:
         return l10n.permissionDenied;
+      case EstimationErrorType.duplicateEntry:
+        // Not reachable from this page today — no UI calls YourRatesBloc yet
+        // (CA-1151). Mapped here so the l10n string already exists for that
+        // screen to reuse rather than being wired for the first time there.
+        return l10n.yourRatesDuplicateEntryError;
       default:
         return l10n.unexpectedErrorMessage;
     }
