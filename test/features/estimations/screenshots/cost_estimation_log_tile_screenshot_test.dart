@@ -37,7 +37,7 @@ void main() {
               color: context.colorTheme.pageBackground,
               child: Align(
                 alignment: Alignment.topCenter,
-                child: CostEstimationLogTile(log: log),
+                child: CostEstimationLogTile(log: log, onSendTap: () {}),
               ),
             );
           },
@@ -106,6 +106,31 @@ void main() {
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
           'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_created$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders sent activity with the arrow correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final user = createTestUser(firstName: 'Mahesh', lastName: 'Kumar');
+      final log = createTestLog(
+        activity: CostEstimationActivityType.costEstimationSent,
+        user: user,
+        loggedAt: DateTime(2025, 4, 22, 12, 3),
+        activityDetails: {'recipientName': 'Judy Smith'},
+      );
+
+      await pumpLogTile(tester: tester, log: log, theme: theme);
+
+      await expectLater(
+        find.byType(CostEstimationLogTile),
+        matchesGoldenFile(
+          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_sent$suffix.png',
         ),
       );
     });
