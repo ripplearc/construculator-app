@@ -305,12 +305,59 @@ void main() {
         .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
         .dependentKeys;
     expect(pills, hasLength(1));
-    expect(pills.single.label, equals(l10n.calculatorOcLabel));
+    expect(pills.single.label, equals(l10n.calculatorPillOnCentre));
     expect(pills.single.value, equals('6ft'));
     expect(pills.single.kind, equals(CoreDependentKeyKind.editable));
     expect(
-      find.textContaining(l10n.calculatorOcLabel, findRichText: true),
+      find.textContaining(l10n.calculatorPillOnCentre, findRichText: true),
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'every dependent-key pill has a name from the localization layer',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const CalculatorPage(),
+        ),
+      );
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(CoreDisplayArea)),
+      )!;
+      final expectedLabelById = <DependentKeyId, String>{
+        DependentKeyId.onCentre: l10n.calculatorPillOnCentre,
+        DependentKeyId.sheetSize: l10n.calculatorPillSheetSize,
+        DependentKeyId.pieceSize: l10n.calculatorPillPieceSize,
+        DependentKeyId.crossSection: l10n.calculatorPillCrossSection,
+        DependentKeyId.railsPerSection: l10n.calculatorPillRailsPerSection,
+        DependentKeyId.rate: l10n.calculatorPillRate,
+        DependentKeyId.waste: l10n.calculatorPillWaste,
+        DependentKeyId.density: l10n.calculatorPillDensity,
+        DependentKeyId.shownAs: l10n.calculatorPillShownAs,
+        DependentKeyId.across: l10n.calculatorPillAcross,
+      };
+
+      expect(
+        expectedLabelById.keys.toSet(),
+        equals(DependentKeyId.values.toSet()),
+      );
+      for (final entry in expectedLabelById.entries) {
+        expect(
+          CalculatorPage.pillLabelFor(l10n, entry.key),
+          equals(entry.value),
+          reason: 'pill ${entry.key.name} mapped to wrong label',
+        );
+        expect(entry.value, isNotEmpty);
+      }
+      expect(
+        expectedLabelById.values.toSet(),
+        hasLength(DependentKeyId.values.length),
+      );
+    },
+  );
 }

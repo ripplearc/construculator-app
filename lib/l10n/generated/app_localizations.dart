@@ -2656,11 +2656,65 @@ abstract class AppLocalizations {
   /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
 
-  /// Label for the on-centre spacing dependent key shown alongside the fence posts result
+  /// Dependent-key pill: the on-centre spacing behind a fence or framing count
   ///
   /// In en, this message translates to:
   /// **'O.C'**
-  String get calculatorOcLabel;
+  String get calculatorPillOnCentre;
+
+  /// Dependent-key pill: the sheet size behind a drywall count
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet size'**
+  String get calculatorPillSheetSize;
+
+  /// Dependent-key pill: the piece size behind a masonry count
+  ///
+  /// In en, this message translates to:
+  /// **'Piece size'**
+  String get calculatorPillPieceSize;
+
+  /// Dependent-key pill: the cross-section behind a footing volume
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-section'**
+  String get calculatorPillCrossSection;
+
+  /// Dependent-key pill: the rails per section behind a fence rail count
+  ///
+  /// In en, this message translates to:
+  /// **'Rails/section'**
+  String get calculatorPillRailsPerSection;
+
+  /// Dependent-key pill: the unit rate behind a cost
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get calculatorPillRate;
+
+  /// Dependent-key pill: the waste allowance behind a cost
+  ///
+  /// In en, this message translates to:
+  /// **'Waste'**
+  String get calculatorPillWaste;
+
+  /// Dependent-key pill: the material density behind a weight
+  ///
+  /// In en, this message translates to:
+  /// **'Density'**
+  String get calculatorPillDensity;
+
+  /// Dependent-key pill that respells a pitch as in/12in, degrees or grade
+  ///
+  /// In en, this message translates to:
+  /// **'Shown as'**
+  String get calculatorPillShownAs;
+
+  /// Dependent-key pill that flips which way a spacing runs across a span
+  ///
+  /// In en, this message translates to:
+  /// **'Across'**
+  String get calculatorPillAcross;
 
   /// Label for the Basic Geometry function group tab in the calculator
   ///

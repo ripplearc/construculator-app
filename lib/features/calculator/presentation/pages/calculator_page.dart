@@ -10,6 +10,22 @@ class CalculatorPage extends StatefulWidget {
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
+
+  /// The visible name of a dependent-key pill, from i18n.
+  @visibleForTesting
+  static String pillLabelFor(AppLocalizations l10n, DependentKeyId id) =>
+      switch (id) {
+        DependentKeyId.onCentre => l10n.calculatorPillOnCentre,
+        DependentKeyId.sheetSize => l10n.calculatorPillSheetSize,
+        DependentKeyId.pieceSize => l10n.calculatorPillPieceSize,
+        DependentKeyId.crossSection => l10n.calculatorPillCrossSection,
+        DependentKeyId.railsPerSection => l10n.calculatorPillRailsPerSection,
+        DependentKeyId.rate => l10n.calculatorPillRate,
+        DependentKeyId.waste => l10n.calculatorPillWaste,
+        DependentKeyId.density => l10n.calculatorPillDensity,
+        DependentKeyId.shownAs => l10n.calculatorPillShownAs,
+        DependentKeyId.across => l10n.calculatorPillAcross,
+      };
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
@@ -200,13 +216,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
     AppLocalizations l10n,
     CalculatorState state,
   ) {
-    final label = state.dependentKeyLabel;
-    if (label == null) return const [];
+    final id = state.dependentKeyId;
+    if (id == null) return const [];
     return [
       CoreDependentKeyData(
-        label: label == 'oc' ? l10n.calculatorOcLabel : label,
+        label: CalculatorPage.pillLabelFor(l10n, id),
         value: state.dependentKeyValue ?? '',
-        kind: CoreDependentKeyKind.editable,
+        kind: id.kind,
         onPressed: () {},
       ),
     ];
