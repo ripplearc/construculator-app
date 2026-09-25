@@ -122,7 +122,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                 }
 
                 if (state is CostEstimationLogError) {
-                  return _buildRefreshable(child: _buildErrorState(context));
+                  return _buildErrorState(context);
                 }
 
                 // CostEstimationLogLoadMoreError extends CostEstimationLogWithData,
@@ -163,15 +163,11 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     bloc.add(CostEstimationLogFetchInitial(estimateId: widget.estimateId));
   }
 
-  // Full-height shell for the states that show a single centred message in
-  // place of the list. Stays scrollable so pull-to-refresh keeps working.
-  Widget _buildCenteredMessage({
-    required Widget child,
-    Key? key,
-    EdgeInsets padding = const EdgeInsets.all(CoreSpacing.space6),
-  }) {
+  Widget _buildEmptyState(BuildContext context) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+
     return CustomScrollView(
-      key: key,
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -179,8 +175,29 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           hasScrollBody: false,
           child: Center(
             child: Padding(
-              padding: padding,
-              child: child,
+              padding: const EdgeInsets.all(CoreSpacing.space6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CoreIconWidget(icon: CoreIcons.emptyEstimation, size: 48),
+                  const SizedBox(height: CoreSpacing.space4),
+                  Text(
+                    context.l10n.noActivityLogs,
+                    style: typography.titleMediumSemiBold.copyWith(
+                      color: appColors.textDark,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: CoreSpacing.space2),
+                  Text(
+                    context.l10n.noActivityLogsDescription,
+                    style: typography.bodyMediumRegular.copyWith(
+                      color: appColors.textBody,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -188,51 +205,24 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final appColors = context.colorTheme;
-    final typography = context.textTheme;
-
-    return _buildCenteredMessage(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CoreIconWidget(icon: CoreIcons.emptyEstimation, size: 48),
-          const SizedBox(height: CoreSpacing.space4),
-          Text(
-            context.l10n.noActivityLogs,
-            style: typography.titleMediumSemiBold.copyWith(
-              color: appColors.textDark,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: CoreSpacing.space2),
-          Text(
-            context.l10n.noActivityLogsDescription,
-            style: typography.bodyMediumRegular.copyWith(
-              color: appColors.textBody,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
+  // Sized to its content, so the sheet grows to fit the message (CUJ 11
+  // screen 3) instead of filling to its height cap.
   Widget _buildErrorState(BuildContext context) {
-    return _buildCenteredMessage(
+    return Center(
       key: CostEstimationLogsList.errorViewKey,
-      // The list is already inset from the sheet's edges; a second inset
-      // would wrap the reassurance line, which the design keeps on one line.
-      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space6),
-      child: _buildFailureNotice(
-        context,
-        message: context.l10n.errorLoadingLogs,
-        retryButtonKey: CostEstimationLogsList.errorRetryButtonKey,
-        onRetry: () {
-          context.read<CostEstimationLogBloc>().add(
-            CostEstimationLogFetchInitial(estimateId: widget.estimateId),
-          );
-        },
+      heightFactor: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space10),
+        child: _buildFailureNotice(
+          context,
+          message: context.l10n.errorLoadingLogs,
+          retryButtonKey: CostEstimationLogsList.errorRetryButtonKey,
+          onRetry: () {
+            context.read<CostEstimationLogBloc>().add(
+              CostEstimationLogFetchInitial(estimateId: widget.estimateId),
+            );
+          },
+        ),
       ),
     );
   }
