@@ -284,6 +284,20 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('displays cost file updated activity', (tester) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostFileUpdatedSimple),
+          findsOneWidget,
+        );
+      });
     });
 
     group('Subtitle Rendering', () {

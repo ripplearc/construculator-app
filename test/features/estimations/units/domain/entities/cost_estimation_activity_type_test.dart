@@ -7,8 +7,8 @@ void main() {
       test('has all expected activity types', () {
         expect(
           CostEstimationActivityType.values.length,
-          24,
-          reason: 'Should have exactly 24 activity types',
+          25,
+          reason: 'Should have exactly 25 activity types',
         );
 
         expect(
@@ -37,6 +37,7 @@ void main() {
             CostEstimationActivityType.costEstimationApproved,
             CostEstimationActivityType.costEstimationChangesRequested,
             CostEstimationActivityType.costEstimationPdfShared,
+            CostEstimationActivityType.costFileUpdated,
             CostEstimationActivityType.unknown,
           ]),
         );
@@ -84,6 +85,13 @@ void main() {
           expect(
             CostEstimationActivityType.costEstimationSent.toJson(),
             'cost_estimation_sent',
+          );
+        });
+
+        test('converts costFileUpdated to proper string format', () {
+          expect(
+            CostEstimationActivityType.costFileUpdated.toJson(),
+            'cost_file_updated',
           );
         });
 
@@ -181,6 +189,14 @@ void main() {
           );
 
           expect(result, CostEstimationActivityType.costEstimationSent);
+        });
+
+        test('converts string to costFileUpdated', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_file_updated',
+          );
+
+          expect(result, CostEstimationActivityType.costFileUpdated);
         });
 
         test('converts string to costEstimationSendFailed', () {
