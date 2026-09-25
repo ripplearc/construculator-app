@@ -481,5 +481,53 @@ void main() {
         expect(result, equals(l10n.activityUnknown));
       });
     });
+
+    group('storyboard copy (CUJ 11, screen 5)', () {
+      const judy = {'recipientName': 'Judy Smith'};
+
+      for (final (activity, details, title) in [
+        (
+          CostEstimationActivityType.costEstimationSent,
+          judy,
+          'Sent to Judy Smith',
+        ),
+        (
+          CostEstimationActivityType.costEstimationSendFailed,
+          judy,
+          'Send to Judy Smith failed',
+        ),
+        (CostEstimationActivityType.costEstimationOpened, judy, 'Link opened'),
+        (
+          CostEstimationActivityType.costEstimationRevoked,
+          judy,
+          'Link revoked',
+        ),
+        (
+          CostEstimationActivityType.costEstimationApproved,
+          judy,
+          'Approval recorded',
+        ),
+        (
+          CostEstimationActivityType.costEstimationChangesRequested,
+          judy,
+          'Changes requested',
+        ),
+        (
+          CostEstimationActivityType.costEstimationPdfShared,
+          {'appName': 'Messages'},
+          'PDF shared',
+        ),
+      ]) {
+        test('titles ${activity.name} "$title"', () {
+          final log = _createLog(
+            id: activity.name,
+            activity: activity,
+            activityDetails: details,
+          );
+
+          expect(CostEstimationActivityTitleFormatter.format(l10n, log), title);
+        });
+      }
+    });
   });
 }
