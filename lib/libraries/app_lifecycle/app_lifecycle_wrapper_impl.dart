@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 
 /// [AppLifecycleWrapper] backed by Flutter's [AppLifecycleListener].
 ///
-/// Create it once the Flutter binding is initialised. The app keeps one for
+/// Create it once the Flutter binding is initialized. The app keeps one for
 /// its whole run; [dispose] releases it.
 class AppLifecycleWrapperImpl implements AppLifecycleWrapper {
   late final AppLifecycleListener _listener;

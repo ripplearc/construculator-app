@@ -30,8 +30,6 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
 
   /// Maximum time a single page request may take before it is abandoned.
   ///
-  /// Only time in the foreground counts (CUJ 11 screen 2), so a load left
-  /// running while the contractor is in another app is not failed on return.
   /// Without this cutoff a stalled request leaves the caller waiting forever;
   /// the resulting [TimeoutException] maps to
   /// [EstimationErrorType.timeoutError] so the UI can offer a retry.
@@ -39,6 +37,9 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
   /// [Future.timeout] only stops waiting; it does not cancel the underlying
   /// request. A retry may therefore run beside the abandoned one, which is
   /// harmless because both are reads.
+  ///
+  /// Only time in the foreground counts (CUJ 11 screen 2), so a load left
+  /// running while the contractor is in another app is not failed on return.
   static const Duration logLoadTimeout = Duration(seconds: 15);
 
   CostEstimationLogRepositoryImpl({
