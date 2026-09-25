@@ -85,6 +85,22 @@ class _CalculatorPageState extends State<CalculatorPage> {
     required AppLocalizations l10n,
   }) => KeyType(id: id, groupName: groupId, label: _displayLabelFor(l10n, id));
 
+  List<CoreDependentKeyData> _dependentKeys(
+    AppLocalizations l10n,
+    CalculatorState state,
+  ) {
+    final label = state.dependentKeyLabel;
+    if (label == null) return const [];
+    return [
+      CoreDependentKeyData(
+        label: label == 'oc' ? l10n.calculatorOcLabel : label,
+        value: state.dependentKeyValue ?? '',
+        kind: CoreDependentKeyKind.editable,
+        onPressed: () {},
+      ),
+    ];
+  }
+
   List<FunctionGroup> _buildGroups(AppLocalizations l10n) {
     final basicGeometryGroup = GroupNameType(
       id: _basicGeometryId,
@@ -174,11 +190,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         // TODO(CA-965): previousSessions is unwired pending
                         // research into archiving trigger, data model, and
                         // persistence approach for calculation history.
-                        dependentKeyLabel: state.dependentKeyLabel == 'oc'
-                            ? l10n.calculatorOcLabel
-                            : state.dependentKeyLabel,
-                        dependentKeyValue: state.dependentKeyValue,
-                        onPressedDependentKey: () {},
+                        dependentKeys: _dependentKeys(l10n, state),
                         onClose: () =>
                             bloc.add(const CalculatorResetRequested()),
                         onStageChanged: (stage) {
