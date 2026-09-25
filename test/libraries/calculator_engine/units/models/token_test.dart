@@ -46,6 +46,13 @@ void main() {
       test('ignores a denominator that is still empty', () {
         expect(const Token(digits: '7', denominator: '').value, 7);
       });
+
+      test('has no finite value for a zero denominator', () {
+        const token = Token(digits: '7', denominator: '0', unit: Unit.inch);
+        expect(token.isComplete, isTrue);
+        expect(token.value, double.infinity);
+        expect(token.value.isFinite, isFalse);
+      });
     });
 
     group('copyWith', () {

@@ -41,6 +41,12 @@ class Token extends Equatable {
   /// The typed number: the digits divided by the denominator when there is
   /// one. Exact only in the sense the user typed it; a length becomes exact
   /// once it is turned into ticks.
+  ///
+  /// A zero denominator has no finite value: 7/0 reads as infinity and 0/0
+  /// as NaN. The token does not guard this, because the digits must stay
+  /// exactly as typed while the number is open. `QuantityParser.parse`
+  /// answers `null` for a token whose value is not finite, so nothing
+  /// downstream ever turns such a token into a quantity.
   double get value {
     final numerator = double.tryParse(digits) ?? 0;
     final denominatorValue = double.tryParse(denominator ?? '');

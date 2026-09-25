@@ -121,6 +121,10 @@ void main() {
           throwsA(isA<AssertionError>()),
         );
       });
+
+      test('is written in pounds unless told otherwise', () {
+        expect(const Weight(7800).unit, Unit.pound);
+      });
     });
 
     group('Angle', () {

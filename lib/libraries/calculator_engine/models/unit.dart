@@ -68,6 +68,8 @@ enum Unit {
     inch => 64,
     foot || footInch => 768,
     yard => 2304,
+    // The design doc's rounded value on purpose, not 100 × the centimetre
+    // constant: the gap is about 0.00004 of a tick and changes no stored value.
     metre => 2519.685,
     centimetre => 25.196850394,
     millimetre => 2.5196850394,
