@@ -46,7 +46,9 @@ class QuantityParser extends Equatable {
   /// A single token pressed twice or three times is an area or a volume in
   /// that unit; a single board-foot token is a volume; weight tokens add up
   /// in hundredths of a pound; length tokens add up in ticks and a compound
-  /// of imperial tokens is spelled as the trade's ft-in.
+  /// of imperial tokens is spelled as the trade's ft-in, while a metric
+  /// compound (1m 20cm) has no trade spelling of its own and keeps the unit
+  /// it was typed in.
   Quantity? parse(List<Token> tokens) {
     if (tokens.isEmpty ||
         tokens.any((token) => !token.isComplete || !token.value.isFinite)) {
@@ -86,7 +88,7 @@ class QuantityParser extends Equatable {
     if (unit.dimension == Dimension.weight) {
       return Weight(hundredthsOfPound, unit: unit);
     }
-    return Length(ticks, unit: _compoundSpelling(tokens, unit));
+    return Length(ticks, unit: _footInchForImperialCompound(tokens, unit));
   }
 
   Quantity? _raised(Token token, Unit unit) {
@@ -102,9 +104,7 @@ class QuantityParser extends Equatable {
     );
   }
 
-  // A metric compound (1m 20cm) has no trade spelling of its own, so it keeps
-  // the unit it was typed in; only an imperial compound reads as ft-in.
-  Unit _compoundSpelling(List<Token> tokens, Unit first) {
+  Unit _footInchForImperialCompound(List<Token> tokens, Unit first) {
     if (tokens.length == 1 || first.isMetric) return first;
     return Unit.footInch;
   }

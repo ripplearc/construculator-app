@@ -90,7 +90,7 @@
         </regex>
 
         <!-- RULE 15: a length is always answered in inches -->
-        <regex pattern="return Length\(ticks, unit: _compoundSpelling\(tokens, unit\)\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
+        <regex pattern="return Length\(ticks, unit: _footInchForImperialCompound\(tokens, unit\)\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
             <mutation text="return Length(ticks, unit: Unit.inch);"/>
         </regex>
 

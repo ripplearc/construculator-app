@@ -20,9 +20,17 @@ class UnitConverter {
 
   /// The value re-spelled in each unit the strip should offer, in the order
   /// the strip lists them. Empty when nothing is offered.
+  ///
+  /// The typed unit is left out and at most three readings are offered; from
+  /// inches the compound leads because 264in is easier to picture as
+  /// 22ft 0in. A length in centimetres or millimetres offers nothing
+  /// (Appendix A). That rule is for lengths only: an area or a volume is
+  /// offered the same square or cubic units whatever unit it was raised in,
+  /// as the prototype's `areaConversions` does, so 100cm² still reads as
+  /// 0.11ft² on the strip.
   List<Quantity> offersFor(Quantity value) => switch (value) {
     Length() =>
-      (_lengthTargets[value.unit] ?? const [])
+      (_lengthOffersByTypedUnit[value.unit] ?? const [])
           .map(value.spelledIn)
           .toList(growable: false),
     Area() => [
@@ -42,16 +50,13 @@ class UnitConverter {
         if (unit != value.unit) value.spelledIn(unit),
     ],
     Weight() =>
-      (_weightTargets[value.unit] ?? const [])
+      (_weightOffersByTypedUnit[value.unit] ?? const [])
           .map(value.spelledIn)
           .toList(growable: false),
     Angle() || Scalar() => const [],
   };
 
-  // The typed unit is left out and at most three readings are offered; from
-  // inches the compound leads because 264in is easier to picture as 22ft 0in.
-  // Centimetres and millimetres offer nothing, as in Appendix A.
-  static const Map<Unit, List<Unit>> _lengthTargets = {
+  static const Map<Unit, List<Unit>> _lengthOffersByTypedUnit = {
     Unit.foot: [Unit.inch, Unit.yard, Unit.metre],
     Unit.footInch: [Unit.inch, Unit.metre],
     Unit.inch: [Unit.footInch, Unit.millimetre],
@@ -59,7 +64,7 @@ class UnitConverter {
     Unit.metre: [Unit.footInch, Unit.inch],
   };
 
-  static const Map<Unit, List<Unit>> _weightTargets = {
+  static const Map<Unit, List<Unit>> _weightOffersByTypedUnit = {
     Unit.pound: [Unit.kilogram, Unit.ton],
     Unit.kilogram: [Unit.pound, Unit.metricTon],
     Unit.ton: [Unit.pound, Unit.kilogram, Unit.metricTon],
