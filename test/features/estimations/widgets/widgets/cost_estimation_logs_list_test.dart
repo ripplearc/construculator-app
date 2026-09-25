@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
@@ -484,6 +486,64 @@ void main() {
 
       expect(find.byKey(CostEstimationLogsList.errorViewKey), findsNothing);
       expect(find.byType(CostEstimationLogTile), findsOneWidget);
+    });
+  });
+
+  group('CostEstimationLogsList in its bottom sheet', () {
+    // Opens the list the way the app does, in a CoreQuickSheet, on a phone-
+    // sized screen, and returns that screen's height.
+    Future<double> pumpLogsListInSheet(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final bloc = Modular.get<CostEstimationLogBloc>();
+      addTearDown(bloc.close);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              buildContext = context;
+              return const Scaffold();
+            },
+          ),
+        ),
+      );
+      unawaited(
+        CoreQuickSheet.show<void>(
+          context: buildContext!,
+          child: BlocProvider<CostEstimationLogBloc>.value(
+            value: bloc,
+            child: const CostEstimationLogsList(
+              estimateId: estimateId,
+              estimateName: estimateName,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    }
+
+    testWidgets('grows to fit a first-load failure instead of its cap', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      final screenHeight = await pumpLogsListInSheet(tester);
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CostEstimationLogsList)).height,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the message, as in CUJ 11 screen 3',
+      );
     });
   });
 }
