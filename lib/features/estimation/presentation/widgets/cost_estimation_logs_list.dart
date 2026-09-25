@@ -250,8 +250,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
             ),
             const SizedBox(width: CoreSpacing.space2),
             Flexible(
-              // Announced when it appears: the toast this view replaced was,
-              // and focus stays on Try again while the result swaps in.
+              // Announced when it appears. Focus stays on Try again while the
+              // result swaps in, so a screen reader would not otherwise hear
+              // that the load failed.
               child: Semantics(
                 liveRegion: true,
                 child: Text(
