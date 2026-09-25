@@ -36,6 +36,7 @@ void main() {
         ValueChip(:final key, :final entry) => '${key ?? ''}${entry.text}',
         ResultChip(:final key) => key,
         ErrorChip(:final error) => error.name,
+        BracketChip(:final expression) => expression,
       },
   ];
 
