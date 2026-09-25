@@ -31,6 +31,15 @@ void main() {
         expect(type('.5').text, '0.5');
       });
 
+      test('the tokens of a changed buffer cannot be altered from outside', () {
+        final buffer = type('5');
+        expect(
+          () => buffer.tokens.add(const Token(digits: '9')),
+          throwsUnsupportedError,
+        );
+        expect(buffer.text, '5');
+      });
+
       test('a second point is refused', () {
         expect(
           type('30.4').typeDigit('.'),
@@ -190,6 +199,40 @@ void main() {
         expect(type('5').closeWith(Unit.pound), isA<EntryChanged>());
       });
 
+      test('while re-editing, Width 18ft 8 [Lbs] needs a length', () {
+        final feet = changed(type('18').closeWith(Unit.foot));
+        expect(
+          type(
+            '8',
+            feet,
+          ).closeWith(Unit.pound, editing: true, holdsLengthOnly: true),
+          const EntryRefused(EntryRefusal.needsLength),
+        );
+      });
+
+      test(
+        'on fresh entry, Width 18ft 8 [Lbs] starts 8lbs as its own value',
+        () {
+          final feet = changed(type('18').closeWith(Unit.foot));
+          expect(
+            type('8', feet).closeWith(Unit.pound, holdsLengthOnly: true),
+            EntrySplit(
+              finished: feet,
+              started: const EntryBuffer([
+                Token(digits: '8', unit: Unit.pound),
+              ]),
+            ),
+          );
+        },
+      );
+
+      test('a fraction over zero closes but is never complete', () {
+        final buffer = changed(type('7/0').closeWith(Unit.inch));
+        expect(buffer.text, '7/0in');
+        expect(buffer.isOpen, isFalse);
+        expect(buffer.isComplete, isFalse);
+      });
+
       test('a unit before the denominator must finish the fraction', () {
         expect(
           type('7/').closeWith(Unit.inch),
@@ -242,6 +285,14 @@ void main() {
           steps.add(buffer.text);
         }
         expect(steps, ['7/1', '7/', '7', '']);
+      });
+
+      test('leaves the 0 of a leading point, as the prototype does', () {
+        var buffer = type('.');
+        buffer = changed(buffer.backspace());
+        expect(buffer.text, '0');
+        buffer = changed(buffer.backspace());
+        expect(buffer.isEmpty, isTrue);
       });
 
       test('has nothing to delete on an empty buffer', () {

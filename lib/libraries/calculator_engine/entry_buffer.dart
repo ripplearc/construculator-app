@@ -106,10 +106,12 @@ class EntryBuffer extends Equatable {
   /// Whether nothing has been typed.
   bool get isEmpty => tokens.isEmpty;
 
-  /// Whether every token has its digits and its unit, so the buffer can be
-  /// read as a value.
+  /// Whether every token has its digits, its unit and a finite value, so
+  /// the buffer can be read as a value; a fraction over zero (7/0in) is
+  /// closed but never complete.
   bool get isComplete =>
-      tokens.isNotEmpty && tokens.every((token) => token.isComplete);
+      tokens.isNotEmpty &&
+      tokens.every((token) => token.isComplete && token.value.isFinite);
 
   /// Whether the last token still waits for a unit.
   bool get isOpen => tokens.isNotEmpty && tokens.last.unit == null;
@@ -172,10 +174,13 @@ class EntryBuffer extends Equatable {
   /// A unit key on the open number closes it.
   ///
   /// A second unit may only continue a compound by stepping down within one
-  /// system (18ft 8in, 1m 20cm) and never after a squared or cubed value;
-  /// anything else starts a new value on fresh entry ([EntrySplit]) and is
-  /// refused while [editing] a tapped chip. [holdsLengthOnly] is true under
-  /// a key that takes lengths, which refuses a weight unit.
+  /// system (yd → ft → in, m → cm → mm: 18ft 8in, 1m 20cm) and never after a
+  /// squared or cubed value, since there is no "2511ft³ 45in"; anything else
+  /// starts a new value on fresh entry ([EntrySplit]) and is refused while
+  /// [editing] a tapped chip. [holdsLengthOnly] is true under a key that
+  /// takes lengths, which refuses a weight unit: while editing, Width 18ft 8
+  /// [Lbs] needs a length (Section 5.2); on fresh entry the same keys leave
+  /// Width 18ft and start 8lbs as its own chip (rule 4.5).
   EntryOutcome closeWith(
     Unit unit, {
     bool editing = false,
@@ -188,23 +193,31 @@ class EntryBuffer extends Equatable {
     if (last.denominator == '') {
       return const EntryRefused(EntryRefusal.finishTheFraction);
     }
-    if (tokens.length > 1 &&
-        !_canContinueCompound(tokens[tokens.length - 2], unit)) {
-      if (editing) return const EntryRefused(EntryRefusal.cannotAppendUnit);
-      return EntrySplit(
-        finished: EntryBuffer(tokens.sublist(0, tokens.length - 1)),
-        started: EntryBuffer([last.copyWith(unit: () => unit)]),
-      );
-    }
-    if (holdsLengthOnly && unit.dimension != Dimension.length) {
+    final needsLength = holdsLengthOnly && unit.dimension != Dimension.length;
+    if (editing && needsLength) {
       return const EntryRefused(EntryRefusal.needsLength);
     }
+    if (tokens.length > 1 &&
+        !_stepsDownWithinOneSystem(tokens[tokens.length - 2], unit)) {
+      if (editing) return const EntryRefused(EntryRefusal.cannotAppendUnit);
+      return EntrySplit(
+        finished: EntryBuffer(
+          List.unmodifiable(tokens.take(tokens.length - 1)),
+        ),
+        started: EntryBuffer(
+          List.unmodifiable([last.copyWith(unit: () => unit)]),
+        ),
+      );
+    }
+    if (needsLength) return const EntryRefused(EntryRefusal.needsLength);
     return _replaceLast(last.copyWith(unit: () => unit));
   }
 
   /// ⌫: removes one token step, in the order it was typed — the power
   /// (in³ → in² → in), the unit, a denominator digit, the [/], a digit —
-  /// and drops the token when its last digit goes.
+  /// and drops the token when its last digit goes. A leading point was
+  /// typed as 0., so one ⌫ leaves the 0 the prototype leaves and a second
+  /// clears it.
   EntryOutcome backspace() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null) return const EntryRefused(EntryRefusal.nothingToDelete);
@@ -232,10 +245,7 @@ class EntryBuffer extends Equatable {
     );
   }
 
-  // A compound steps down within one system: yd → ft → in, m → cm → mm. A
-  // squared or cubed value never compounds — there is no "2511ft³ 45in" the
-  // way there is 18ft 8in.
-  bool _canContinueCompound(Token previous, Unit unit) {
+  bool _stepsDownWithinOneSystem(Token previous, Unit unit) {
     final previousUnit = previous.unit;
     if (previousUnit == null || previous.power > 1) return false;
     return previousUnit.isMetric == unit.isMetric &&
@@ -247,7 +257,7 @@ class EntryBuffer extends Equatable {
       _changed([...tokens.sublist(0, tokens.length - 1), token]);
 
   EntryOutcome _changed(List<Token> tokens) =>
-      EntryChanged(EntryBuffer(tokens));
+      EntryChanged(EntryBuffer(List.unmodifiable(tokens)));
 
   String _exponent(int power) => switch (power) {
     2 => '²',
