@@ -37,8 +37,8 @@
 
         <!-- RULE 5: a ratio below 0.1 is shown to two decimals, so 1 ÷ 78
              reads 0.01 -->
-        <regex pattern="if \(value\.abs\(\) &gt;= 0\.1\) return _fixed\(value, resultDecimals, group\);" dotAll="true" id="quantity_formatter.scalar.two_decimals_below_point_one">
-            <mutation text="if (true) return _fixed(value, resultDecimals, group);"/>
+        <regex pattern="if \(value\.abs\(\) &gt;= 0\.1\) \{" dotAll="true" id="quantity_formatter.scalar.two_decimals_below_point_one">
+            <mutation text="if (true) {"/>
         </regex>
 
         <!-- RULE 6: three significant digits instead of two -->
@@ -47,8 +47,8 @@
         </regex>
 
         <!-- RULE 7: Math.round becomes truncation -->
-        <regex pattern="int _jsRound\(double value\) =&gt; \(value \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity_formatter.js_round.truncate">
-            <mutation text="int _jsRound(double value) =&gt; value.floor();"/>
+        <regex pattern="int _jsMathRound\(double value\) =&gt; \(value \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity_formatter.js_round.truncate">
+            <mutation text="int _jsMathRound(double value) =&gt; value.floor();"/>
         </regex>
 
         <!-- RULE 8: half no longer rounds up -->
@@ -72,8 +72,8 @@
         </regex>
 
         <!-- RULE 12: a stored size under Metric is shown in inches -->
-        <regex pattern="'\$\{_fixed\(inches \* millimetresPerInch, 0, false\)\}'" dotAll="true" id="quantity_formatter.stored_length.metric_in_inches">
-            <mutation text="'${_number(inches, 0, false)}'"/>
+        <regex pattern="'\$\{_jsRoundedNumber\(inches \* millimetresPerInch, 0, false\)\}'" dotAll="true" id="quantity_formatter.stored_length.metric_in_inches">
+            <mutation text="'${_localeNumber(inches, 0, false)}'"/>
         </regex>
 
         <!-- RULE 13: results stop grouping their thousands -->
