@@ -744,6 +744,23 @@ void main() {
   });
 
   group('CostEstimationLogsList loading labels', () {
+    // The semantics label CoreLoadingIndicator gives itself. The tests below
+    // assert it is excluded; the first test keeps them honest if CoreUI
+    // renames it.
+    const spinnerSemanticsLabel = 'Loading';
+
+    testWidgets('a bare spinner still announces $spinnerSemanticsLabel', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(home: CoreLoadingIndicator(size: 24)),
+      );
+
+      expect(find.bySemanticsLabel(spinnerSemanticsLabel), findsOneWidget);
+      semantics.dispose();
+    });
+
     testWidgets('says Logs are loading while the first page is on its way', (
       tester,
     ) async {
@@ -763,7 +780,7 @@ void main() {
 
       expect(find.text(l10n().loadingLogs), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Loading'),
+        find.bySemanticsLabel(spinnerSemanticsLabel),
         findsNothing,
         reason: 'the spinner must not be announced on top of its label',
       );
@@ -803,7 +820,7 @@ void main() {
 
       expect(find.text(l10n().loadingOlderLogEvents), findsOneWidget);
       expect(
-        find.bySemanticsLabel('Loading'),
+        find.bySemanticsLabel(spinnerSemanticsLabel),
         findsNothing,
         reason: 'the spinner must not be announced on top of its label',
       );
