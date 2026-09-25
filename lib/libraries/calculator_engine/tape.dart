@@ -1,5 +1,7 @@
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
+import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
@@ -13,9 +15,10 @@ enum TapeRefusal {
   /// number first").
   typeANumberFirst,
 
-  /// A unit key with nothing typed while a result is on the tape ("Units
-  /// apply while typing"; the result's conversions are already on the
-  /// strip).
+  /// A unit key with nothing typed while a result with no unit (Calc 156)
+  /// ends the tape, or a result sits earlier on it ("Units apply while
+  /// typing"; the result's conversions are already on the strip). A result
+  /// with a unit converts in place instead (Appendix D).
   unitsApplyWhileTyping,
 
   /// Any key that would leave the active chip while it holds a compound
@@ -84,12 +87,19 @@ final class TapeUnitRefused extends TapeOutcome {
 /// the active one, and ⌫ steps back through what was typed and then through
 /// the chips themselves.
 ///
+/// A new number typed straight after a finished value seals the chip on
+/// its typed value and starts the new one beside it (rule 4.5). A converted
+/// chip keeps its exact quantity for as long as its digits are still the
+/// conversion's spelling, so 6.222yd stays 14,336 ticks through that split,
+/// or through a digit typed and deleted again (rule 4.15).
+///
 /// The tape is a value; every key returns a new tape or a refusal. Chain
 /// arithmetic, brackets and the strip's answers are not the tape's: they
 /// read it and add result chips to it (A3).
 class Tape extends Equatable {
-  /// The chips, left to right, in the order they were made.
-  final List<Chip> chips;
+  /// The chips, left to right, in the order they were made; only the last
+  /// one can be active.
+  final List<TapeChip> chips;
 
   /// How many pounds make a ton: the one setting the tape's reading and
   /// writing of values share, so a "78 ton" typed at 2,240 lb is never
@@ -112,9 +122,9 @@ class Tape extends Equatable {
 
   /// The chip the keyboard writes into, or `null` when the last chip is a
   /// result, an error, or a sealed value.
-  InputChip? get active {
+  ValueChip? get active {
     if (chips.isEmpty) return null;
-    if (chips.last case final InputChip chip when chip.isActive) return chip;
+    if (chips.last case final ValueChip chip when chip.isActive) return chip;
     return null;
   }
 
@@ -132,9 +142,10 @@ class Tape extends Equatable {
 
   /// A function key opens a new active chip with that name (rule 4.1); on
   /// an empty active chip it renames it instead. A chip holding a compound
-  /// left open (18ft 8) or a fraction without a unit (7/16) cannot be left
-  /// (Section 5.1, "Finish this value first"): the guard runs on fresh
-  /// entry too. A single bare number seals as a scalar.
+  /// left open (18ft 8), a fraction without a unit (7/16) or a bare number
+  /// under a function key (Length 18) cannot be left (Section 5.1, "Finish
+  /// this value first"; Appendix D): the guard runs on fresh entry too. A
+  /// single bare number with no key seals as a scalar.
   TapeOutcome pressFunctionKey(String key) {
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
@@ -143,13 +154,13 @@ class Tape extends Equatable {
     if (chip != null && !chip.isReadable) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
     }
-    return TapeChanged(_sealed().append(InputChip(key: key)));
+    return TapeChanged(_sealed().append(ValueChip(key: key)));
   }
 
   /// A digit or a decimal point goes into the active chip, or starts a bare
   /// one when nothing is active.
   TapeOutcome typeDigit(String digit) {
-    final chip = active ?? const InputChip();
+    final chip = active ?? const ValueChip();
     return _entry(chip, chip.entry.typeDigit(digit));
   }
 
@@ -161,11 +172,17 @@ class Tape extends Equatable {
   }
 
   /// A unit key closes the number being typed, or converts and raises a
-  /// finished value (rule 4.3). [holdsLengthOnly] is true under a key that
-  /// can only hold a length.
+  /// finished value (rule 4.3). Straight after a result with a unit it
+  /// converts the result in place, and keeps its dimension: Calc 10ft then
+  /// [Feet] is refused rather than raised. [holdsLengthOnly] is true under
+  /// a key that can only hold a length.
   TapeOutcome pressUnit(Unit unit, {bool holdsLengthOnly = false}) {
     final chip = active;
     if (chip == null || chip.entry.isEmpty) {
+      final last = chips.isEmpty ? null : chips.last;
+      if (chip == null && last is ResultChip && last.value is! Scalar) {
+        return _convertResult(last, unit);
+      }
       return TapeRefused(
         _hasResult
             ? TapeRefusal.unitsApplyWhileTyping
@@ -192,9 +209,10 @@ class Tape extends Equatable {
     );
     return switch (outcome) {
       UnitKeyConverted(:final value, :final tokens) ||
-      UnitKeyRaised(:final value, :final tokens) => _replaceLast(
-        chip.copyWith(entry: EntryBuffer(tokens), exact: () => value),
-      ),
+      UnitKeyRaised(
+        :final value,
+        :final tokens,
+      ) => _replaceLast(_respelled(chip, value, tokens)),
       UnitKeyRefused() => TapeUnitRefused(outcome),
     };
   }
@@ -211,7 +229,7 @@ class Tape extends Equatable {
     if (chips.isEmpty) return const TapeRefused(TapeRefusal.nothingToDelete);
     final remaining = chips.sublist(0, chips.length - 1);
     if (remaining.isEmpty) return TapeChanged(_with(remaining));
-    if (remaining.last case final InputChip previous) {
+    if (remaining.last case final ValueChip previous) {
       return TapeChanged(
         _with([
           ...remaining.sublist(0, remaining.length - 1),
@@ -222,41 +240,65 @@ class Tape extends Equatable {
     return TapeChanged(_with(remaining));
   }
 
-  /// The tape with a chip added at the end.
-  Tape append(Chip chip) => _with([...chips, chip]);
+  /// The tape with a chip added at the end. The active chip, if any, is
+  /// sealed first, so that only the last chip can ever be active.
+  Tape append(TapeChip chip) {
+    final sealed = _sealed();
+    return sealed._with([...sealed.chips, chip]);
+  }
 
-  // Applies an entry outcome to the active chip. A split seals the chip on
-  // its typed value and starts the new one beside it (rule 4.5). Editing a
-  // typed entry drops the exact quantity a conversion kept, because the
-  // digits are the value again.
-  TapeOutcome _entry(InputChip chip, EntryOutcome outcome) => switch (outcome) {
-    EntryChanged(:final buffer) => _replaceLast(
-      chip.copyWith(entry: buffer, exact: () => null),
-    ),
+  TapeOutcome _entry(ValueChip chip, EntryOutcome outcome) => switch (outcome) {
+    EntryChanged(:final buffer) => _replaceLast(chip.copyWith(entry: buffer)),
     EntrySplit(:final finished, :final started) => TapeChanged(
       _replaceActive(
-        chip.copyWith(entry: finished, exact: () => null, isActive: false),
-      ).append(InputChip(entry: started)),
+        chip.copyWith(entry: finished),
+      ).append(ValueChip(entry: started)),
     ),
     EntryRefused(:final reason) => TapeEntryRefused(reason),
   };
 
-  // Marks the active chip editable; an incomplete one has already been
-  // refused by the caller.
+  ValueChip _respelled(ValueChip chip, Quantity value, List<Token> tokens) {
+    final spelled = EntryBuffer(List.unmodifiable(tokens));
+    return chip.copyWith(
+      entry: spelled,
+      exact: () => (value: value, spelled: spelled),
+    );
+  }
+
+  TapeOutcome _convertResult(ResultChip result, Unit unit) {
+    final outcome = ladder.press(
+      tokens: ladder.speller.spell(result.value),
+      value: result.value,
+      key: unit,
+    );
+    return switch (outcome) {
+      UnitKeyConverted(:final value) => TapeChanged(
+        _with([
+          ...chips.sublist(0, chips.length - 1),
+          ResultChip(key: result.key, value: value, operator: result.operator),
+        ]),
+      ),
+      UnitKeyRaised() => const TapeUnitRefused(
+        UnitKeyRefused(UnitKeyRefusal.keepsLength),
+      ),
+      UnitKeyRefused() => TapeUnitRefused(outcome),
+    };
+  }
+
   Tape _sealed() {
     final chip = active;
     if (chip == null) return this;
     return _replaceActive(chip.copyWith(isActive: false));
   }
 
-  TapeOutcome _replaceLast(InputChip chip) => TapeChanged(_replaceActive(chip));
+  TapeOutcome _replaceLast(ValueChip chip) => TapeChanged(_replaceActive(chip));
 
-  Tape _replaceActive(InputChip chip) {
+  Tape _replaceActive(ValueChip chip) {
     if (active == null) return append(chip);
     return _with([...chips.sublist(0, chips.length - 1), chip]);
   }
 
-  Tape _with(List<Chip> chips) =>
+  Tape _with(List<TapeChip> chips) =>
       Tape(chips: chips, poundsPerTon: poundsPerTon);
 
   @override
