@@ -179,4 +179,45 @@ void main() {
 
     expect(displayArea.label, equals(l10n.calculatorResultPosts));
   });
+
+  testWidgets('the on-centre dependent key reaches the display as one pill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final context = tester.element(find.byType(CoreDisplayArea));
+    final l10n = AppLocalizations.of(context)!;
+    expect(
+      tester
+          .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
+          .dependentKeys,
+      isEmpty,
+    );
+
+    BlocProvider.of<CalculatorBloc>(context)
+      ..add(const CalculatorKeySelected('Length'))
+      ..add(const CalculatorDigitPressed('2'))
+      ..add(const CalculatorDigitPressed('4'))
+      ..add(const CalculatorKeySelected('Fence'));
+    await tester.pump();
+
+    final pills = tester
+        .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
+        .dependentKeys;
+    expect(pills, hasLength(1));
+    expect(pills.single.label, equals(l10n.calculatorOcLabel));
+    expect(pills.single.value, equals('6ft'));
+    expect(pills.single.kind, equals(CoreDependentKeyKind.editable));
+    expect(
+      find.textContaining(l10n.calculatorOcLabel, findRichText: true),
+      findsOneWidget,
+    );
+  });
 }
