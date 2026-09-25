@@ -178,6 +178,25 @@ void main() {
       expect(find.text(l10n().lockEstimationAction), findsOneWidget);
     });
 
+    testWidgets('should render logs as the first action list item', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidget());
+
+      final logsTop = tester.getTopLeft(
+        find.byKey(const Key('logs_action_row')),
+      );
+
+      for (final rowKey in [
+        'copy_estimation_action_row',
+        'share_export_action_row',
+        'lock_estimation_action_row',
+      ]) {
+        final rowTop = tester.getTopLeft(find.byKey(Key(rowKey)));
+        expect(logsTop.dy, lessThan(rowTop.dy));
+      }
+    });
+
     testWidgets('should call onCopy when copy action is tapped', (
       WidgetTester tester,
     ) async {
@@ -185,7 +204,7 @@ void main() {
 
       await tester.pumpWidget(createWidget(onCopy: () => onCopyCalled = true));
 
-      await tester.tap(find.text(l10n().copyEstimationAction));
+      await tester.tap(find.byKey(const Key('copy_estimation_action_row')));
       await tester.pump();
 
       expect(onCopyCalled, isTrue);
@@ -200,7 +219,7 @@ void main() {
         createWidget(onShare: () => onShareCalled = true),
       );
 
-      await tester.tap(find.text(l10n().shareExportAction));
+      await tester.tap(find.byKey(const Key('share_export_action_row')));
       await tester.pump();
 
       expect(onShareCalled, isTrue);
@@ -213,7 +232,7 @@ void main() {
 
       await tester.pumpWidget(createWidget(onLogs: () => onLogsCalled = true));
 
-      await tester.tap(find.text(l10n().logsAction));
+      await tester.tap(find.byKey(const Key('logs_action_row')));
       await tester.pump();
 
       expect(onLogsCalled, isTrue);
