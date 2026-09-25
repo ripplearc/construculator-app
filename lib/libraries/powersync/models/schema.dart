@@ -138,4 +138,51 @@ const Schema schema = Schema([
       Index('by_project', [IndexedColumn('project_id')]),
     ],
   ),
+
+  // The calculator's trade stores (UX Design Doc term 2.16, Appendix B):
+  // the editable lists the material keys read. Local-only in version one --
+  // no sync stream, no upload queue, never cleared by a sync -- which is
+  // what `Table.localOnly` means to PowerSync; CA-1113 (Phase 2) syncs them.
+  // Lengths are whole ticks of 1/64 inch, the calculator engine's canonical
+  // unit, so a stored 47.24in and a computed area agree to the tick.
+  //
+  // Three stores of one shape share one table: drywall sheets, masonry
+  // pieces and footing cross-sections are all a width and a height, told
+  // apart by `store`. `system` keeps both seed sets (Appendix B seeds sheet
+  // sizes per unit system) so switching the System of units shows the other
+  // set without a reseed. `position` is the user's order, kept in Dart.
+  Table.localOnly('calculator_sizes', [
+    Column.text('store'),
+    Column.text('system'),
+    Column.integer('width_ticks'),
+    Column.integer('height_ticks'),
+    Column.integer('position'),
+  ]),
+
+  // On-centre spacings the Qty@OC key offers (16in, 24in).
+  Table.localOnly('calculator_spacings', [
+    Column.integer('ticks'),
+    Column.integer('position'),
+  ]),
+
+  // One row: the fence's post spacing and rails per section.
+  Table.localOnly('calculator_fence', [
+    Column.integer('on_centre_ticks'),
+    Column.integer('rails_per_section'),
+  ]),
+
+  // One row per rate unit (ft², yd³, sheet, 1,000 bf…), with the waste
+  // factor the Waste pill sets for that unit; waste starts at 0%.
+  Table.localOnly('calculator_rates', [
+    Column.text('unit'),
+    Column.real('rate'),
+    Column.real('waste_percent'),
+  ]),
+
+  // Named densities in lbs/yd³, user-extendable with "+ Add material".
+  Table.localOnly('calculator_densities', [
+    Column.text('name'),
+    Column.real('pounds_per_cubic_yard'),
+    Column.integer('position'),
+  ]),
 ]);
