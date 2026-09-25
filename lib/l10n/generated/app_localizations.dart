@@ -1414,6 +1414,60 @@ abstract class AppLocalizations {
   /// **'Attachment Removed'**
   String get activityAttachmentRemovedSimple;
 
+  /// Activity log title for an estimate sent to a recipient, naming them
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {recipientName}'**
+  String activityCostEstimationSent(String recipientName);
+
+  /// Activity log title for an estimate sent, when the recipient is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate sent'**
+  String get activityCostEstimationSentSimple;
+
+  /// Activity log title for a send the server confirmed did not go out, naming the recipient
+  ///
+  /// In en, this message translates to:
+  /// **'Send to {recipientName} failed'**
+  String activityCostEstimationSendFailed(String recipientName);
+
+  /// Activity log title for a failed send, when the recipient is not known
+  ///
+  /// In en, this message translates to:
+  /// **'Send failed'**
+  String get activityCostEstimationSendFailedSimple;
+
+  /// Activity log title for the first open of a sent estimate link
+  ///
+  /// In en, this message translates to:
+  /// **'Link opened'**
+  String get activityCostEstimationOpened;
+
+  /// Activity log title for a sent estimate link revoked by the sender
+  ///
+  /// In en, this message translates to:
+  /// **'Link revoked'**
+  String get activityCostEstimationRevoked;
+
+  /// Activity log title for a recipient approval, which the sender records
+  ///
+  /// In en, this message translates to:
+  /// **'Approval recorded'**
+  String get activityCostEstimationApproved;
+
+  /// Activity log title for changes requested on a sent estimate
+  ///
+  /// In en, this message translates to:
+  /// **'Changes requested'**
+  String get activityCostEstimationChangesRequested;
+
+  /// Activity log title for the estimate PDF handed to another app from the share sheet
+  ///
+  /// In en, this message translates to:
+  /// **'PDF shared'**
+  String get activityCostEstimationPdfShared;
+
   /// Fallback activity log message for unknown activity types
   ///
   /// In en, this message translates to:

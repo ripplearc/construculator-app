@@ -7,8 +7,8 @@ void main() {
       test('has all expected activity types', () {
         expect(
           CostEstimationActivityType.values.length,
-          17,
-          reason: 'Should have exactly 17 activity types',
+          24,
+          reason: 'Should have exactly 24 activity types',
         );
 
         expect(
@@ -30,6 +30,13 @@ void main() {
             CostEstimationActivityType.costFileDeleted,
             CostEstimationActivityType.attachmentAdded,
             CostEstimationActivityType.attachmentRemoved,
+            CostEstimationActivityType.costEstimationSent,
+            CostEstimationActivityType.costEstimationSendFailed,
+            CostEstimationActivityType.costEstimationOpened,
+            CostEstimationActivityType.costEstimationRevoked,
+            CostEstimationActivityType.costEstimationApproved,
+            CostEstimationActivityType.costEstimationChangesRequested,
+            CostEstimationActivityType.costEstimationPdfShared,
             CostEstimationActivityType.unknown,
           ]),
         );
@@ -38,40 +45,93 @@ void main() {
 
     group('CostEstimationActivityTypeExtension', () {
       group('toJson', () {
-        test('converts costEstimationCreated to to proper string format', () {
+        test('converts costEstimationCreated to proper string format', () {
           expect(
             CostEstimationActivityType.costEstimationCreated.toJson(),
             'cost_estimation_created',
           );
         });
 
-        test('converts costEstimationRenamed to to proper string format', () {
+        test('converts costEstimationRenamed to proper string format', () {
           expect(
             CostEstimationActivityType.costEstimationRenamed.toJson(),
             'cost_estimation_renamed',
           );
         });
 
-        test('converts costItemAdded to to proper string format', () {
+        test('converts costItemAdded to proper string format', () {
           expect(
             CostEstimationActivityType.costItemAdded.toJson(),
             'cost_item_added',
           );
         });
 
-        test('converts taskAssigned to to proper string format', () {
+        test('converts taskAssigned to proper string format', () {
           expect(
             CostEstimationActivityType.taskAssigned.toJson(),
             'task_assigned',
           );
         });
 
-        test('converts attachmentRemoved to to proper string format', () {
+        test('converts attachmentRemoved to proper string format', () {
           expect(
             CostEstimationActivityType.attachmentRemoved.toJson(),
             'attachment_removed',
           );
         });
+
+        test('converts costEstimationSent to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationSent.toJson(),
+            'cost_estimation_sent',
+          );
+        });
+
+        test('converts costEstimationSendFailed to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationSendFailed.toJson(),
+            'cost_estimation_send_failed',
+          );
+        });
+
+        test('converts costEstimationPdfShared to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationPdfShared.toJson(),
+            'cost_estimation_pdf_shared',
+          );
+        });
+
+        test('converts costEstimationOpened to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationOpened.toJson(),
+            'cost_estimation_opened',
+          );
+        });
+
+        test('converts costEstimationRevoked to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationRevoked.toJson(),
+            'cost_estimation_revoked',
+          );
+        });
+
+        test('converts costEstimationApproved to proper string format', () {
+          expect(
+            CostEstimationActivityType.costEstimationApproved.toJson(),
+            'cost_estimation_approved',
+          );
+        });
+
+        test(
+          'converts costEstimationChangesRequested to proper string format',
+          () {
+            expect(
+              CostEstimationActivityType.costEstimationChangesRequested
+                  .toJson(),
+              'cost_estimation_changes_requested',
+            );
+          },
+        );
       });
 
       group('fromJson', () {
@@ -113,6 +173,65 @@ void main() {
           );
 
           expect(result, CostEstimationActivityType.attachmentAdded);
+        });
+
+        test('converts string to costEstimationSent', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_sent',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationSent);
+        });
+
+        test('converts string to costEstimationSendFailed', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_send_failed',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationSendFailed);
+        });
+
+        test('converts string to costEstimationPdfShared', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_pdf_shared',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationPdfShared);
+        });
+
+        test('converts string to costEstimationOpened', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_opened',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationOpened);
+        });
+
+        test('converts string to costEstimationRevoked', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_revoked',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationRevoked);
+        });
+
+        test('converts string to costEstimationApproved', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_approved',
+          );
+
+          expect(result, CostEstimationActivityType.costEstimationApproved);
+        });
+
+        test('converts string to costEstimationChangesRequested', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'cost_estimation_changes_requested',
+          );
+
+          expect(
+            result,
+            CostEstimationActivityType.costEstimationChangesRequested,
+          );
         });
 
         test('also accepts camelCase string (backward compatibility)', () {

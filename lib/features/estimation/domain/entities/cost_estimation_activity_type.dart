@@ -2,6 +2,21 @@
 ///
 /// Each activity type corresponds to a specific action that can be
 /// tracked in the estimation's activity log.
+///
+/// Wire counterpart: `cost_estimation_activity_type_enum` in
+/// construculator-backend (`supabase/schemas/_types/enums.sql`), the type of
+/// the `NOT NULL` `cost_estimate_logs.activity` column.
+///
+/// [CostEstimationActivityTypeExtension.toJson] is snake_case of the member
+/// name, so the names below *are* the wire contract — renaming one is a
+/// breaking change that needs a matching `ALTER TYPE` migration. The
+/// Estimation-v2 kinds are not in the backend enum yet; they follow its
+/// `<entity>_<verb>` convention so the migration that adds them can use these
+/// values verbatim.
+///
+/// The Send kinds document only the details their titles or second lines
+/// name. The rest of a Send entry's second line (version, detail level,
+/// photo count) is saved on the entry by CUJ 8, which defines those keys.
 enum CostEstimationActivityType {
   /// Estimation was created
   costEstimationCreated,
@@ -50,6 +65,49 @@ enum CostEstimationActivityType {
 
   /// An attachment was removed
   attachmentRemoved,
+
+  /// The estimation was sent to a recipient
+  ///
+  /// `activityDetails` carries the recipient's `recipientName`, a string,
+  /// which the title names. A send to several people logs one row each.
+  costEstimationSent,
+
+  /// A send to a recipient failed: the server confirmed it did not go out
+  ///
+  /// `activityDetails` carries `recipientName`, as [costEstimationSent] does.
+  /// A send that works on a later try logs its own [costEstimationSent].
+  costEstimationSendFailed,
+
+  /// A sent estimation's link was opened for the first time
+  ///
+  /// Logged once per link. The row says whose link it was, never who
+  /// opened it: `activityDetails` carries that link's `recipientName`.
+  costEstimationOpened,
+
+  /// A sent estimation was revoked by the sender
+  ///
+  /// `activityDetails` carries the revoked link's `recipientName`.
+  costEstimationRevoked,
+
+  /// The sender recorded the recipient's approval of a sent estimation
+  ///
+  /// The recipient replies by phone or text, and the sender records it on
+  /// the Send screen, so the row's user is the sender. `activityDetails`
+  /// carries the recipient's `recipientName`.
+  costEstimationApproved,
+
+  /// The sender recorded that the recipient asked for changes
+  ///
+  /// Recorded by the sender, as [costEstimationApproved] is, with the same
+  /// `recipientName`.
+  costEstimationChangesRequested,
+
+  /// The estimation's PDF was handed to another app from the share sheet
+  ///
+  /// Logged only once the sender picks an app, and it cannot tell whether
+  /// the PDF arrived. `activityDetails` carries that app's `appName`, a
+  /// string, which the second line names.
+  costEstimationPdfShared,
 
   /// Unknown activity type
   ///
