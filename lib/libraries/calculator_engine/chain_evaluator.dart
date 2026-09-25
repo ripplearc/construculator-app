@@ -53,8 +53,8 @@ final class ChainFailed extends ChainOutcome {
   List<Object?> get props => [error, left, operator, right];
 }
 
-/// The tape holds nothing that can be folded: no chips, an error chip, or
-/// a value still being typed.
+/// The tape holds nothing that can be folded: no chips, nothing after its
+/// last error chip, or a value still being typed.
 final class ChainEmpty extends ChainOutcome {
   const ChainEmpty();
 
@@ -68,10 +68,14 @@ final class ChainEmpty extends ChainOutcome {
 /// `operandBefore`.
 ///
 /// A chip with no operator starts a chain; a result chip is already the
-/// fold of everything before it, so the chain restarts there; a value that
-/// cannot be read yet leaves nothing to fold. So does an error chip, wherever
-/// it sits: once the failed step has landed on the tape the strip goes
-/// silent (rule 4.12), and a second = must not land it again.
+/// fold of everything before it, so the chain restarts there unless it
+/// carries the operator that leads into it; a value that cannot be read yet
+/// leaves nothing to fold. A step that fails ends its own chain: the
+/// failure is what the tape folds to until a chip with no operator starts
+/// a new chain, so 5lbs + 12ft then Width 5ft × 3 still lands Calc 15ft 0in.
+/// An error chip ends its chain the same way, wherever it sits: once the
+/// failed step has landed on the tape the strip goes silent (rule 4.12), a
+/// second = has nothing to land, and 4 + 3 after the chip folds again.
 class ChainEvaluator extends Equatable {
   /// Reads each chip's value.
   final QuantityParser parser;
@@ -85,46 +89,62 @@ class ChainEvaluator extends Equatable {
   });
 
   /// The running total of [chips], as far as it can be computed.
-  ChainOutcome fold(List<Chip> chips) {
-    Quantity? total;
-    var steps = 0;
+  ChainOutcome fold(List<TapeChip> chips) {
+    var running = _nothing;
     for (final chip in chips) {
       switch (chip) {
         case ErrorChip():
-          return const ChainEmpty();
-        case ResultChip(:final value):
-          total = value;
-          steps = 0;
-        case InputChip():
+          running = _nothing;
+        case ResultChip(:final value, :final operator):
+          running = _joined(running, operator, value);
+        case ValueChip(:final operator):
           final value = chip.value(parser);
           if (value == null) return const ChainEmpty();
-          final operator = chip.operator;
-          if (total == null || operator == null) {
-            total = value;
-            steps = 0;
-            continue;
-          }
-          switch (arithmetic.combine(total, operator, value)) {
-            case ArithmeticValue(value: final next):
-              total = next;
-              steps += 1;
-            case ArithmeticFailed(:final error):
-              if (chips.any((chip) => chip is ErrorChip)) {
-                return const ChainEmpty();
-              }
-              return ChainFailed(
-                error,
-                left: total,
-                operator: operator,
-                right: value,
-              );
-          }
+          running = _joined(running, operator, value);
       }
     }
-    if (total case final total?) return ChainValue(total, steps: steps);
+    if (running.failure case final failure?) return failure;
+    if (running.total case final total?) {
+      return ChainValue(total, steps: running.steps);
+    }
     return const ChainEmpty();
+  }
+
+  static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
+
+  _RunningChain _joined(
+    _RunningChain running,
+    Operator? operator,
+    Quantity value,
+  ) {
+    final total = running.total;
+    if (total == null || operator == null) {
+      return (total: value, steps: 0, failure: null);
+    }
+    if (running.failure != null) return running;
+    return switch (arithmetic.combine(total, operator, value)) {
+      ArithmeticValue(value: final next) => (
+        total: next,
+        steps: running.steps + 1,
+        failure: null,
+      ),
+      ArithmeticFailed(:final error) => (
+        total: total,
+        steps: running.steps,
+        failure: ChainFailed(
+          error,
+          left: total,
+          operator: operator,
+          right: value,
+        ),
+      ),
+    };
   }
 
   @override
   List<Object?> get props => [parser, arithmetic];
 }
+
+/// The chain being folded: its total so far, the operators applied to reach
+/// it, and the step that failed, which stays until a new chain starts.
+typedef _RunningChain = ({Quantity? total, int steps, ChainFailed? failure});
