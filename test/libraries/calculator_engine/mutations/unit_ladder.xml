@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE UNIT LADDER AND QUANTITY SPELLER MUTATION TESTING -->
+    <!-- Targets: UnitLadder, which decides whether a unit key converts,
+         raises or refuses, and QuantitySpeller, which writes the converted
+         value back onto the tape. Critical path: a wrong branch here turns
+         "convert 22ft to inches" into "make it 22ft²", or spells a value
+         with the wrong digits while the exact quantity behind it is right,
+         so the screen and the arithmetic disagree in silence. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/unit_ladder.dart</file>
+        <file>lib/libraries/calculator_engine/quantity_speller.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a fraction is raised instead of re-spelled -->
+        <regex pattern="if \(token\.unit != key \|\| token\.denominator != null\) return false;" dotAll="true" id="unit_ladder.is_raise_press.raise_fraction">
+            <mutation text="if (token.unit != key) return false;"/>
+        </regex>
+
+        <!-- RULE 2: decimal feet are raised instead of shown as a compound -->
+        <regex pattern="if \(key == Unit\.foot &amp;&amp; token\.digits\.contains\('\.'\) &amp;&amp; token\.power == 1\) \{" dotAll="true" id="unit_ladder.is_raise_press.raise_decimal_feet">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 3: the ladder no longer stops at cubic -->
+        <regex pattern="if \(token\.power == 3\) \{" dotAll="true" id="unit_ladder.raise.no_cubic_stop">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 4: a length-only key is raised anyway -->
+        <regex pattern="if \(holdsLengthOnly\) \{" dotAll="true" id="unit_ladder.raise.ignore_length_only">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 5: [Feet] on a compound shows a compound again instead of
+             toggling to decimal feet -->
+        <regex pattern="final wasCompound = tokens\.length &gt; 1;" dotAll="true" id="unit_ladder.length_spelling.ignore_was_compound">
+            <mutation text="final wasCompound = false;"/>
+        </regex>
+
+        <!-- RULE 6: a value under a foot is shown as 0ft 4in -->
+        <regex pattern="value\.ticks &gt;= Length\.ticksPerFoot &amp;&amp;" dotAll="true" id="unit_ladder.length_spelling.compound_under_a_foot">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 7: a whole number of feet is shown as a compound -->
+        <regex pattern="final hasLeftoverInches = value\.ticks % Length\.ticksPerFoot != 0;" dotAll="true" id="unit_ladder.length_spelling.compound_whole_feet">
+            <mutation text="final hasLeftoverInches = true;"/>
+        </regex>
+
+        <!-- RULE 8: board feet stop being a volume key -->
+        <regex pattern="key == Unit\.metre \|\|\s*key == Unit\.boardFoot;" dotAll="true" id="unit_ladder.is_volume_key.drop_board_foot">
+            <mutation text="key == Unit.metre;"/>
+        </regex>
+
+        <!-- RULE 9: the same weight key converts instead of saying "already
+             in" -->
+        <regex pattern="key\.dimension == Dimension\.weight &amp;&amp;\s*key != value\.unit\) \{" dotAll="true" id="unit_ladder.press.weight_same_unit_converts">
+            <mutation text="key.dimension == Dimension.weight) {"/>
+        </regex>
+
+        <!-- RULE 10: the ft-in compound loses its inches -->
+        <regex pattern="digits: _digitsWithoutTrailingZeros\(inches, compoundInchDecimals\),\s*unit: Unit\.inch," dotAll="true" id="quantity_speller.compound.drop_inches">
+            <mutation text="digits: '0', unit: Unit.inch,"/>
+        </regex>
+
+        <!-- RULE 11: board feet are spelled as cubic feet -->
+        <regex pattern="digits: _digitsWithoutTrailingZeros\(value\.boardFeet, volumeDecimals\)," dotAll="true" id="quantity_speller.volume.board_feet_as_cubic_feet">
+            <mutation text="digits: _digitsWithoutTrailingZeros(value.cubicFeet, volumeDecimals),"/>
+        </regex>
+
+        <!-- RULE 12: a length keeps only two decimals -->
+        <regex pattern="static const int lengthDecimals = 3;" dotAll="true" id="quantity_speller.length_decimals.two">
+            <mutation text="static const int lengthDecimals = 2;"/>
+        </regex>
+
+        <!-- RULE 13: trailing zeros are kept, so 264in reads 264.000in -->
+        <regex pattern="return text\.replaceFirst\(RegExp\(r'\\\.\?0\+\$'\), ''\);" dotAll="true" id="quantity_speller.digits.keep_trailing_zeros">
+            <mutation text="return text;"/>
+        </regex>
+
+        <!-- RULE 14: a second press raises straight to cubic -->
+        <regex pattern="final raised = token\.copyWith\(power: token\.power \+ 1\);" dotAll="true" id="unit_ladder.raise.skip_a_power">
+            <mutation text="final raised = token.copyWith(power: token.power + 2);"/>
+        </regex>
+
+        <!-- RULE 15: the ladder stops at square instead of cubic -->
+        <regex pattern="if \(token\.power == 3\) \{" dotAll="true" id="unit_ladder.raise.stop_at_square">
+            <mutation text="if (token.power &gt;= 2) {"/>
+        </regex>
+
+        <!-- RULE 16: a cubed unit is converted with a squared factor -->
+        <regex pattern="return feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="quantity_speller.cubic.squared_factor">
+            <mutation text="return feetPerUnit * feetPerUnit;"/>
+        </regex>
+
+        <!-- RULE 17: the compound's inches are the whole length -->
+        <regex pattern="final inches = \(ticks - feet \* Length\.ticksPerFoot\) / Length\.ticksPerInch;" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
+            <mutation text="final inches = ticks / Length.ticksPerInch;"/>
+        </regex>
+
+        <!-- RULE 18: the cubic stop points every key at yards, so [Inch] a
+             fourth time suggests yd³ instead of ft³ -->
+        <regex pattern="final alternative = key == Unit\.foot \? Unit\.yard : Unit\.foot;" dotAll="true" id="unit_ladder.raise.cubic_stop_alternative_always_yard">
+            <mutation text="final alternative = key == Unit.foot ? Unit.yard : Unit.yard;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="unit_ladder" expected-return="0">flutter test test/libraries/calculator_engine/units/unit_ladder_test.dart</command>
+        <command group="quantity_speller" expected-return="0">flutter test test/libraries/calculator_engine/units/quantity_speller_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
