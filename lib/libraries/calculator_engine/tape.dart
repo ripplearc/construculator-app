@@ -260,18 +260,18 @@ class Tape extends Equatable {
       if (!chip.isReadable) {
         return const TapeRefused(TapeRefusal.finishThisValueFirst);
       }
-      return TapeChanged(_sealed().append(InputChip(operator: operator)));
+      return TapeChanged(_sealed().append(ValueChip(operator: operator)));
     }
     final last = chips.isEmpty ? null : chips.last;
     final hasLeftHandSide = switch (last) {
       ResultChip() => true,
-      InputChip() => last.isReadable,
+      ValueChip() => last.isReadable,
       ErrorChip() || null => false,
     };
     if (!hasLeftHandSide) {
       return const TapeRefused(TapeRefusal.typeAValueFirst);
     }
-    return TapeChanged(append(InputChip(operator: operator)));
+    return TapeChanged(append(ValueChip(operator: operator)));
   }
 
   /// = lands the running total as a Calc result chip, or a Dimension Error
@@ -285,11 +285,9 @@ class Tape extends Equatable {
     }
     return switch (runningTotal) {
       ChainValue(:final value, isCalculation: true) => TapeChanged(
-        _sealed().append(ResultChip(key: calcKey, value: value)),
+        append(ResultChip(key: calcKey, value: value)),
       ),
-      ChainFailed(:final error) => TapeChanged(
-        _sealed().append(ErrorChip(error)),
-      ),
+      ChainFailed(:final error) => TapeChanged(append(ErrorChip(error))),
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
