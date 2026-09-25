@@ -174,24 +174,30 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
+  // Sized to its content, as the failure view is, so the sheet opens at the
+  // height of its title and spinner (CUJ 11 screen 2).
   Widget _buildLoadingState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // The text below names what is loading; the indicator's own
-          // "Loading" label would make screen readers announce it twice.
-          ExcludeSemantics(
-            child: CoreLoadingIndicator(size: _inlineSpinnerSize),
-          ),
-          const SizedBox(height: CoreSpacing.space3),
-          Text(
-            context.l10n.loadingLogs,
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
+      heightFactor: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The text below names what is loading; the indicator's own
+            // "Loading" label would make screen readers announce it twice.
+            ExcludeSemantics(
+              child: CoreLoadingIndicator(size: _inlineSpinnerSize),
             ),
-          ),
-        ],
+            const SizedBox(height: CoreSpacing.space3),
+            Text(
+              context.l10n.loadingLogs,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

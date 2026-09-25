@@ -626,7 +626,10 @@ void main() {
   group('CostEstimationLogsList in its bottom sheet', () {
     // Opens the list the way the app does, in a CoreQuickSheet, on a phone-
     // sized screen, and returns that screen's height.
-    Future<double> pumpLogsListInSheet(WidgetTester tester) async {
+    Future<double> pumpLogsListInSheet(
+      WidgetTester tester, {
+      bool settle = true,
+    }) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -660,7 +663,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        // The spinner animates forever, so wait out the sheet's slide-in.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+      }
       return tester.view.physicalSize.height / tester.view.devicePixelRatio;
     }
 
@@ -690,6 +699,33 @@ void main() {
         tester.getSize(find.byType(CostEstimationLogsList)).height,
         lessThan(screenHeight / 2),
         reason: 'the sheet sizes to the message, as in CUJ 11 screen 14',
+      );
+    });
+
+    testWidgets('grows to fit the first-load spinner instead of its cap', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+
+      final screenHeight = await pumpLogsListInSheet(tester, settle: false);
+      final loadingLabels = find.text(l10n().loadingLogs).evaluate().length;
+      final sheetHeight = tester
+          .getSize(find.byType(CostEstimationLogsList))
+          .height;
+
+      // Land the held load before asserting, so its 15s timeout timer is
+      // cancelled whether or not the expectations below pass.
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(loadingLabels, 1, reason: 'measured while the first page loads');
+      expect(
+        sheetHeight,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the spinner, as in CUJ 11 screen 2',
       );
     });
   });
