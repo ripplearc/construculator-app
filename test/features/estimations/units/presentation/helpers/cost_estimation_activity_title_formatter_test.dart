@@ -512,6 +512,10 @@ void main() {
             {'oldRate': 14.0, 'newRate': 14.5},
           ],
         },
+        {'changedItems': 'Drywall sheets'},
+        {
+          'changedItems': ['Drywall sheets'],
+        },
       ]) {
         test('returns simple cost file updated message for $details', () {
           final log = _createLog(
