@@ -53,6 +53,16 @@ void main() {
         expect(quantity, const Length(756 + 76, unit: Unit.metre));
       });
 
+      test('adds a metric token to an imperial one in ticks', () {
+        // The entry buffer keeps a compound in one system, so this only pins
+        // that the sum is over ticks: 768 for the foot, 504 for the 20cm.
+        final quantity = parser.parse(const [
+          Token(digits: '1', unit: Unit.foot),
+          Token(digits: '20', unit: Unit.centimetre),
+        ]);
+        expect(quantity, const Length(1272, unit: Unit.footInch));
+      });
+
       test('reads a fraction over zero as no value at all', () {
         expect(
           parser.parse(const [
