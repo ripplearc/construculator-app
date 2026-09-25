@@ -2307,7 +2307,7 @@
   },
   "equipmentSaveAsMyRateLink": "Save as my rate",
   "@equipmentSaveAsMyRateLink": {
-    "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)"
+    "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)"
   },
   "yourRatesLookupTitle": "Look up a rate",
   "@yourRatesLookupTitle": {
@@ -2332,6 +2332,34 @@
   "yourRatesLookupButton": "Search saved rates",
   "@yourRatesLookupButton": {
     "description": "Accessible label for the search-icon button on the Rate/Amount field that opens the Look-up-a-rate sheet"
+  },
+  "yourRatesEntryLabelDialogTitle": "Name this rate",
+  "@yourRatesEntryLabelDialogTitle": {
+    "description": "Title of the dialog prompting for a distinguishing label when saving a rate collides with an existing entry for the same equipment"
+  },
+  "yourRatesEntryLabelDialogBody": "You already have a saved rate for this equipment. Give this one a name so you can tell them apart.",
+  "@yourRatesEntryLabelDialogBody": {
+    "description": "Body copy of the entry-label collision dialog"
+  },
+  "yourRatesEntryLabelHint": "e.g. Supplier A",
+  "@yourRatesEntryLabelHint": {
+    "description": "Placeholder text for the entry-label text field in the collision dialog"
+  },
+  "yourRatesEntryLabelRequiredError": "A name is required to save this rate",
+  "@yourRatesEntryLabelRequiredError": {
+    "description": "Validation error shown when the contractor tries to save an entry label that is empty or whitespace-only"
+  },
+  "yourRatesEntryLabelCancel": "Cancel",
+  "@yourRatesEntryLabelCancel": {
+    "description": "Secondary button on the entry-label collision dialog; dismisses without saving"
+  },
+  "yourRatesEntryLabelSave": "Save",
+  "@yourRatesEntryLabelSave": {
+    "description": "Primary button on the entry-label collision dialog; retries the save with the typed label"
+  },
+  "yourRatesSaveFailedError": "Couldn't save this rate. Please try again.",
+  "@yourRatesSaveFailedError": {
+    "description": "Toast/snackbar shown when saving to Your rates fails for a reason other than a label collision"
   },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {
