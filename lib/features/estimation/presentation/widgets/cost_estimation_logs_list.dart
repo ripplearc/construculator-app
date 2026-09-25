@@ -136,41 +136,44 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       color: appColors.textBody,
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: CoreSpacing.space4,
-        children: [
-          Text(
-            context.l10n.logsAction,
-            style: typography.titleMediumSemiBold.copyWith(
-              color: appColors.textHeadline,
+    return BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
+      builder: (context, state) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: CoreSpacing.space4,
+          children: [
+            Text(
+              context.l10n.logsAction,
+              style: typography.titleMediumSemiBold.copyWith(
+                color: appColors.textHeadline,
+              ),
             ),
-          ),
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  widget.estimateName,
-                  overflow: TextOverflow.ellipsis,
-                  style: orderStyle,
+            Row(
+              spacing: CoreSpacing.space2,
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.estimateName,
+                    overflow: TextOverflow.ellipsis,
+                    style: orderStyle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: CoreSpacing.space2),
-              Container(
-                width: CoreSpacing.space1,
-                height: CoreSpacing.space1,
-                decoration: BoxDecoration(
-                  color: appColors.lineDarkOutline,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: CoreSpacing.space2),
-              Text(context.l10n.logsNewestFirst, style: orderStyle),
-            ],
-          ),
-        ],
+                if (state is! CostEstimationLogEmpty) ...[
+                  Container(
+                    width: CoreSpacing.space1,
+                    height: CoreSpacing.space1,
+                    decoration: BoxDecoration(
+                      color: appColors.lineDarkOutline,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Text(context.l10n.logsNewestFirst, style: orderStyle),
+                ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -203,11 +206,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
+        SliverToBoxAdapter(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(CoreSpacing.space6),
+              padding: const EdgeInsets.all(CoreSpacing.space8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -216,7 +218,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                   Text(
                     context.l10n.noActivityLogs,
                     style: typography.titleMediumSemiBold.copyWith(
-                      color: appColors.textDark,
+                      color: appColors.textHeadline,
                     ),
                     textAlign: TextAlign.center,
                   ),

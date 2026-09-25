@@ -1321,11 +1321,11 @@
       }
     }
   },
-  "noActivityLogs": "No Activity Yet",
+  "noActivityLogs": "History not available",
   "@noActivityLogs": {
     "description": "Title shown when there are no activity logs for an estimation"
   },
-  "noActivityLogsDescription": "Activity logs will appear here when changes are made to this estimation.",
+  "noActivityLogsDescription": "Earlier events for this estimate were not recorded. New events will show here.",
   "@noActivityLogsDescription": {
     "description": "Description shown when there are no activity logs for an estimation"
   },

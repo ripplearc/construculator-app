@@ -167,6 +167,13 @@ void main() {
     testWidgets('a11y: sheet header text is readable in both themes', (
       tester,
     ) async {
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+        ),
+      ]);
       await setupA11yTest(tester);
 
       for (final theme in [createTestTheme(), createTestThemeDark()]) {

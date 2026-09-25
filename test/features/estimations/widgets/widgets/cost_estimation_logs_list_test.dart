@@ -95,6 +95,17 @@ void main() {
     fakeSupabase.addTableData(DatabaseConstants.costEstimationLogsTable, rows);
   }
 
+  // One entry, so the list has an order to show under the title.
+  void seedOneLog() {
+    seedLogs([
+      LogTestDataFactory.createLogData(
+        id: 'log-1',
+        estimateId: estimateId,
+        activity: 'costEstimationCreated',
+      ),
+    ]);
+  }
+
   CostEstimationLog createExpectedLog({
     required String id,
     required CostEstimationActivityType activity,
@@ -129,6 +140,7 @@ void main() {
     testWidgets('shows the Logs title, the estimate name and the order', (
       tester,
     ) async {
+      seedOneLog();
       await pumpLogsList(tester);
 
       expect(find.text(l10n().logsAction), findsOneWidget);
@@ -140,6 +152,7 @@ void main() {
       tester,
     ) async {
       final longName = 'Kitchen Remodel ' * 20;
+      seedOneLog();
 
       await pumpLogsList(tester, name: longName);
 
@@ -154,6 +167,20 @@ void main() {
         tester.getSize(find.text(longName)).height,
         order.height,
         reason: 'the name is cut to one line, not wrapped',
+      );
+    });
+
+    testWidgets('leaves out newest first when there are no entries', (
+      tester,
+    ) async {
+      await pumpLogsList(tester);
+
+      expect(find.text(l10n().logsAction), findsOneWidget);
+      expect(find.text(estimateName), findsOneWidget);
+      expect(
+        find.text(l10n().logsNewestFirst),
+        findsNothing,
+        reason: 'an empty list has no order to state (CUJ 11 screen 14)',
       );
     });
 
@@ -574,6 +601,19 @@ void main() {
         tester.getSize(find.byType(CostEstimationLogsList)).height,
         lessThan(screenHeight / 2),
         reason: 'the sheet sizes to the message, as in CUJ 11 screen 3',
+      );
+    });
+
+    testWidgets('grows to fit the empty state instead of its cap', (
+      tester,
+    ) async {
+      final screenHeight = await pumpLogsListInSheet(tester);
+
+      expect(find.text(l10n().noActivityLogs), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CostEstimationLogsList)).height,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the message, as in CUJ 11 screen 14',
       );
     });
   });

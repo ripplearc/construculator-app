@@ -833,11 +833,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noActivityLogs => 'No Activity Yet';
+  String get noActivityLogs => 'History not available';
 
   @override
   String get noActivityLogsDescription =>
-      'Activity logs will appear here when changes are made to this estimation.';
+      'Earlier events for this estimate were not recorded. New events will show here.';
 
   @override
   String get logsNewestFirst => 'newest first';

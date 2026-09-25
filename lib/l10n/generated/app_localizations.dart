@@ -1585,13 +1585,13 @@ abstract class AppLocalizations {
   /// Title shown when there are no activity logs for an estimation
   ///
   /// In en, this message translates to:
-  /// **'No Activity Yet'**
+  /// **'History not available'**
   String get noActivityLogs;
 
   /// Description shown when there are no activity logs for an estimation
   ///
   /// In en, this message translates to:
-  /// **'Activity logs will appear here when changes are made to this estimation.'**
+  /// **'Earlier events for this estimate were not recorded. New events will show here.'**
   String get noActivityLogsDescription;
 
   /// Shown after the estimate name under the Logs sheet title, saying the list starts with the newest event
