@@ -400,10 +400,13 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
             child: CoreLoadingIndicator(size: _inlineSpinnerSize),
           ),
           const SizedBox(width: CoreSpacing.space3),
-          Text(
-            context.l10n.loadingOlderLogEvents,
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
+          Flexible(
+            child: Text(
+              context.l10n.loadingOlderLogEvents,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
