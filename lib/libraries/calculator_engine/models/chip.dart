@@ -167,47 +167,60 @@ final class ResultChip extends TapeChip {
 /// exactly as it works outside one. One level only: while a bracket is
 /// open the [( )] key closes it and a second opening is refused before any
 /// key is routed inside, so the inner tape never sees a bracket.
-final class BracketChip extends Chip {
+final class BracketChip extends TapeChip {
   /// The operator that leads into the bracket in a chain, or `null` when
   /// the bracket starts one.
   final Operator? operator;
 
   /// The chips typed inside the bracket.
-  final List<Chip> inner;
+  final List<TapeChip> inner;
 
   /// Whether the keypad still types inside the bracket.
   final bool isOpen;
 
-  const BracketChip({this.operator, this.inner = const [], this.isOpen = true});
+  /// The inside the bracket had before ⌫ reopened it, kept while the edit
+  /// lasts so that emptying the bracket cancels the edit and brings the
+  /// group back as it was (Section 7, "Editing a bracket"); `null` for a
+  /// bracket opened by the key, or once the edit closes.
+  final List<TapeChip>? original;
+
+  const BracketChip({
+    this.operator,
+    this.inner = const [],
+    this.isOpen = true,
+    this.original,
+  });
 
   /// The bracket as the tape spells it, "+(3×4" while open and "+(3×4)"
   /// once closed.
   String get expression {
     final inside = [
       for (final chip in inner)
-        if (chip case InputChip(:final operator, :final entry))
+        if (chip case ValueChip(:final operator, :final entry))
           '${operator?.symbol ?? ''}${entry.text}',
     ].join();
     return '${operator?.symbol ?? ''}($inside${isOpen ? '' : ')'}';
   }
 
-  /// Returns a copy with the given fields replaced. [operator] takes a
-  /// `Function()?` wrapper so that clearing it to `null` can be told apart
-  /// from leaving it as it is.
+  /// Returns a copy with the given fields replaced. [operator] and
+  /// [original] take a `Function()?` wrapper so that clearing them to
+  /// `null` can be told apart from leaving them as they are.
   BracketChip copyWith({
     Operator? Function()? operator,
-    List<Chip>? inner,
+    List<TapeChip>? inner,
     bool? isOpen,
+    List<TapeChip>? Function()? original,
   }) {
     return BracketChip(
       operator: operator != null ? operator() : this.operator,
       inner: inner ?? this.inner,
       isOpen: isOpen ?? this.isOpen,
+      original: original != null ? original() : this.original,
     );
   }
 
   @override
-  List<Object?> get props => [operator, inner, isOpen];
+  List<Object?> get props => [operator, inner, isOpen, original];
 }
 
 /// The place a step could not be computed (term 2.4). The strip goes

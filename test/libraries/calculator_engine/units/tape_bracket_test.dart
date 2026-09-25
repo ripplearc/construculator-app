@@ -16,6 +16,7 @@ void main() {
       current = changed(switch (key) {
         'ft' => current.pressUnit(Unit.foot),
         'in' => current.pressUnit(Unit.inch),
+        'lbs' => current.pressUnit(Unit.pound),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
         '+' => current.pressOperator(Operator.add),
@@ -93,6 +94,23 @@ void main() {
         expect(lastResult(press(tape, '× 4 =')), 'Calc 20');
       });
 
+      test('a bracket that holds the whole calculation: ( 2 + 3 =', () {
+        expect(lastResult(press(const Tape(), '( 2 + 3 =')), 'Calc 5');
+        expect(lastResult(press(const Tape(), '( 2 + 3 ( =')), 'Calc 5');
+        expect(
+          lastResult(press(const Tape(), '( 1 + 2 ( ( 3 + 4 ( =')),
+          'Calc 7',
+        );
+      });
+
+      test('= closes the bracket even when nothing lands', () {
+        final outcome = press(const Tape(), '( 3').pressEquals();
+        final closed = outcome as TapeChanged;
+        expect(closed.notice, TapeNotice.bracketClosedNothingToCompute);
+        expect(closed.tape.openBracket, isNull);
+        expect(bracketText(closed.tape), '(3)');
+      });
+
       test('a bracket keeps its exact value: (1 ÷ 3) × 3,000,000', () {
         expect(
           lastResult(press(const Tape(), '( 1 ÷ 3 ( × 3 0 0 0 0 0 0 =')),
@@ -128,7 +146,7 @@ void main() {
         final open = press(const Tape(), '2 + ( 3 × 4');
         expect(open.runningTotal, const ChainEmpty());
         final closed = press(open, '(');
-        expect(closed.runningTotal, const ChainValue(Scalar(14), steps: 1));
+        expect(closed.runningTotal, const ChainValue(Scalar(14), steps: 2));
       });
 
       test('= with a bracket open closes it first and lands the Calc', () {
@@ -234,6 +252,17 @@ void main() {
         );
       });
 
+      test('[( )] under a name is refused: brackets hold plain arithmetic', () {
+        expect(
+          press(const Tape(), '[Length]').pressBracket(),
+          const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+        );
+        expect(
+          press(const Tape(), '2 + [Area]').pressBracket(),
+          const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+        );
+      });
+
       test('a bracket cannot open on a number with no unit', () {
         expect(
           press(const Tape(), '1 8 ft 8').pressBracket(),
@@ -253,7 +282,7 @@ void main() {
           chips: [
             BracketChip(
               inner: [
-                InputChip(
+                ValueChip(
                   entry: EntryBuffer([
                     Token(digits: '5', unit: Unit.pound),
                     Token(digits: '3', unit: Unit.foot),
@@ -322,6 +351,40 @@ void main() {
         final reopened = changed(closed.backspace());
         expect(reopened.openBracket, isNotNull);
       });
+
+      test('emptying a reopened bracket and closing it brings it back', () {
+        final tape = press(const Tape(), '2 + ( 3 × 4 ( ⌫ ⌫ ⌫ ⌫');
+        expect(bracketText(tape), '+(');
+        final outcome = tape.pressBracket() as TapeChanged;
+        expect(outcome.notice, TapeNotice.bracketEditCancelled);
+        expect(bracketText(outcome.tape), '+(3×4)');
+        expect(outcome.tape.openBracket, isNull);
+        expect(lastResult(press(outcome.tape, '=')), 'Calc 14');
+      });
+
+      test('emptying a reopened bracket and ⌫ once more brings it back', () {
+        final tape = press(const Tape(), '2 + ( 3 ( ⌫ ⌫');
+        expect(bracketText(tape), '+(');
+        final outcome = tape.backspace() as TapeChanged;
+        expect(outcome.notice, TapeNotice.bracketEditCancelled);
+        expect(bracketText(outcome.tape), '+(3)');
+        expect(lastResult(press(outcome.tape, '=')), 'Calc 5');
+      });
+
+      test('a reopened bracket closed with a new inside forgets the old', () {
+        final tape = press(const Tape(), '2 + ( 3 × 4 ( ⌫ ⌫ 5 (');
+        expect(bracketText(tape), '+(3×5)');
+        expect((tape.chips.last as BracketChip).original, isNull);
+      });
+
+      test('⌫ on an error chip reopens the bracket before it', () {
+        final failed = press(const Tape(), '2 lbs + ( 3 ft ( =');
+        expect(failed.endsWithError, isTrue);
+        final reopened = press(failed, '⌫');
+        expect(reopened.endsWithError, isFalse);
+        expect(reopened.openBracket, isNotNull);
+        expect(bracketText(reopened), '+(3ft');
+      });
     });
 
     group('brackets and other values', () {
@@ -344,10 +407,15 @@ void main() {
         );
       });
 
-      test('a bracket replaces an empty named chip', () {
-        final tape = press(const Tape(), '[Length] (');
-        expect(tape.chips.length, 1);
-        expect(tape.openBracket, isNotNull);
+      test('a bracket after an error chip folds on its own', () {
+        expect(
+          lastResult(press(const Tape(), '5 ÷ 0 = ( 2 + 3 ( × 4 =')),
+          'Calc 20',
+        );
+        expect(
+          lastResult(press(const Tape(), '2 + 3 = ( 4 + 1 ( =')),
+          'Calc 5',
+        );
       });
     });
 
@@ -357,7 +425,7 @@ void main() {
           BracketChip(
             isOpen: false,
             inner: [
-              InputChip(
+              ValueChip(
                 entry: EntryBuffer([
                   Token(digits: '5', unit: Unit.pound),
                   Token(digits: '3', unit: Unit.foot),
@@ -375,7 +443,7 @@ void main() {
       const chip = BracketChip(
         operator: Operator.add,
         inner: [
-          InputChip(entry: EntryBuffer([Token(digits: '3')])),
+          ValueChip(entry: EntryBuffer([Token(digits: '3')])),
         ],
         isOpen: false,
       );
@@ -388,21 +456,27 @@ void main() {
     });
 
     test('outcomes compare by what they carry', () {
-      final notice = TapeNotice.values[int.parse('0')];
+      // ignore: prefer_const_constructors
+      final removed = TapeChanged(
+        const Tape(),
+        notice: TapeNotice.emptyBracketsRemoved,
+      );
       expect(
-        TapeChanged(const Tape(), notice: notice),
+        removed,
         const TapeChanged(Tape(), notice: TapeNotice.emptyBracketsRemoved),
       );
-      final error = CalculationError.values[int.parse('0')];
-      expect(
-        TapeBracketFailed(
-          ChainFailed(
-            error,
-            left: const Scalar(1),
-            operator: Operator.add,
-            right: const Scalar(2),
-          ),
+      // ignore: prefer_const_constructors
+      final failed = TapeBracketFailed(
+        // ignore: prefer_const_constructors
+        ChainFailed(
+          CalculationError.dimensionError,
+          left: const Scalar(1),
+          operator: Operator.add,
+          right: const Scalar(2),
         ),
+      );
+      expect(
+        failed,
         const TapeBracketFailed(
           ChainFailed(
             CalculationError.dimensionError,
