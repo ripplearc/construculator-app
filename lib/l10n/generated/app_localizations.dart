@@ -1594,6 +1594,12 @@ abstract class AppLocalizations {
   /// **'Activity logs will appear here when changes are made to this estimation.'**
   String get noActivityLogsDescription;
 
+  /// Shown after the estimate name under the Logs sheet title, saying the list starts with the newest event
+  ///
+  /// In en, this message translates to:
+  /// **'newest first'**
+  String get logsNewestFirst;
+
   /// Message shown in place of the list when the first page of activity logs fails to load
   ///
   /// In en, this message translates to:

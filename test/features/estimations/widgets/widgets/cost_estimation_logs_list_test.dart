@@ -52,7 +52,10 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget buildTestApp(CostEstimationLogBloc bloc) {
+  Widget buildTestApp(
+    CostEstimationLogBloc bloc, {
+    String name = estimateName,
+  }) {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
@@ -64,9 +67,9 @@ void main() {
           return Scaffold(
             body: BlocProvider<CostEstimationLogBloc>.value(
               value: bloc,
-              child: const CostEstimationLogsList(
+              child: CostEstimationLogsList(
                 estimateId: estimateId,
-                estimateName: estimateName,
+                estimateName: name,
               ),
             ),
           );
@@ -77,10 +80,13 @@ void main() {
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-  Future<CostEstimationLogBloc> pumpLogsList(WidgetTester tester) async {
+  Future<CostEstimationLogBloc> pumpLogsList(
+    WidgetTester tester, {
+    String name = estimateName,
+  }) async {
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
-    await tester.pumpWidget(buildTestApp(bloc));
+    await tester.pumpWidget(buildTestApp(bloc, name: name));
     await tester.pumpAndSettle();
     return bloc;
   }
@@ -120,10 +126,35 @@ void main() {
   }
 
   group('CostEstimationLogsList behavior', () {
-    testWidgets('shows estimation name', (tester) async {
+    testWidgets('shows the Logs title, the estimate name and the order', (
+      tester,
+    ) async {
       await pumpLogsList(tester);
 
+      expect(find.text(l10n().logsAction), findsOneWidget);
       expect(find.text(estimateName), findsOneWidget);
+      expect(find.text(l10n().logsNewestFirst), findsOneWidget);
+    });
+
+    testWidgets('cuts a long estimate name and keeps newest first whole', (
+      tester,
+    ) async {
+      final longName = 'Kitchen Remodel ' * 20;
+
+      await pumpLogsList(tester, name: longName);
+
+      final order = tester.getRect(find.text(l10n().logsNewestFirst));
+      expect(
+        order.right,
+        lessThanOrEqualTo(
+          tester.getSize(find.byType(CostEstimationLogsList)).width,
+        ),
+      );
+      expect(
+        tester.getSize(find.text(longName)).height,
+        order.height,
+        reason: 'the name is cut to one line, not wrapped',
+      );
     });
 
     testWidgets('shows empty-state message when no logs exist', (tester) async {

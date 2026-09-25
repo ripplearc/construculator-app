@@ -1329,6 +1329,10 @@
   "@noActivityLogsDescription": {
     "description": "Description shown when there are no activity logs for an estimation"
   },
+  "logsNewestFirst": "newest first",
+  "@logsNewestFirst": {
+    "description": "Shown after the estimate name under the Logs sheet title, saying the list starts with the newest event"
+  },
   "errorLoadingLogs": "Couldn't load Logs.",
   "@errorLoadingLogs": {
     "description": "Message shown in place of the list when the first page of activity logs fails to load"

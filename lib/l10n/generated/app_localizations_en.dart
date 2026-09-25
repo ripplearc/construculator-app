@@ -840,6 +840,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Activity logs will appear here when changes are made to this estimation.';
 
   @override
+  String get logsNewestFirst => 'newest first';
+
+  @override
   String get errorLoadingLogs => 'Couldn\'t load Logs.';
 
   @override
