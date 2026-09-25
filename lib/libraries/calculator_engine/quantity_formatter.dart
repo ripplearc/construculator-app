@@ -15,6 +15,25 @@ import 'package:equatable/equatable.dart';
 /// stored sizes do not, so [format] takes a `groupThousands` switch and
 /// [formatStoredLength] never groups.
 ///
+/// Rounding follows the prototype, so a value on a boundary lands where the
+/// prototype lands: a number is pre-rounded with JavaScript's
+/// `Math.round(v * 100) / 100`, whose half rounds toward +∞ (-2.5 is -2),
+/// then written as en-US `toLocaleString` writes it: at most the allowed
+/// decimals, no trailing zeros, rounded half away from zero on the shortest
+/// decimal spelling of the double (which is what ICU rounds, and why 1.005
+/// reads 1.01 there while `toStringAsFixed` would say 1.00). A scalar below
+/// 0.1 keeps two significant digits instead of two decimals, because two
+/// decimals there hide up to a third of the value (0.0129 → 0.01) or erase a
+/// nonzero answer (rule 4.15: 1 ÷ 78 reads 0.013).
+///
+/// An inch remainder is rounded to the nearest step of the fractional
+/// resolution and reduced (8/16 reads 1/2); a remainder that rounds up to a
+/// whole inch carries instead of reading 16/16, and the sign is written once,
+/// in front (-8-3/4in). The feet of a compound are never grouped, as the
+/// prototype writes them raw ("4368ft 0in"). A volume speaks the unit the
+/// question was asked in (500bf ÷ 4 reads 125bf, not 10.42ft³), and tons take
+/// a space before the word ("0.04 ton") where lbs and kg do not.
+///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
 /// quantity alike.
@@ -46,7 +65,8 @@ class QuantityFormatter extends Equatable {
         Area() => _area(value, groupThousands),
         Volume() => _volume(value, groupThousands),
         Weight() => _weight(value, groupThousands),
-        Angle() => '${_fixed(value.degrees, resultDecimals, groupThousands)}°',
+        Angle() =>
+          '${_jsRoundedNumber(value.degrees, resultDecimals, groupThousands)}°',
         Scalar() => _scalar(value.value, groupThousands),
       };
 
@@ -58,9 +78,9 @@ class QuantityFormatter extends Equatable {
     final inches = value.ticks / Length.ticksPerInch;
     return switch (preferences.system) {
       MeasurementSystem.imperial =>
-        '${_fixed(inches, storedInchDecimals, false)}${Unit.inch.suffix}',
+        '${_jsRoundedNumber(inches, storedInchDecimals, false)}${Unit.inch.suffix}',
       MeasurementSystem.metric =>
-        '${_fixed(inches * millimetresPerInch, 0, false)}'
+        '${_jsRoundedNumber(inches * millimetresPerInch, 0, false)}'
             '${Unit.millimetre.suffix}',
     };
   }
@@ -77,11 +97,11 @@ class QuantityFormatter extends Equatable {
       ),
       DensityUnit.kilogramsPerCubicMetre => (0.593276421, 0, 'kg/m³'),
     };
-    return '${_number(poundsPerCubicYard * factor, decimals, true)}$suffix';
+    return '${_localeNumber(poundsPerCubicYard * factor, decimals, true)}$suffix';
   }
 
   String _length(Length value, bool group) => switch (value.unit) {
-    Unit.inch => _inches(value.ticks, group),
+    Unit.inch => _wholeInchesAndFraction(value.ticks, group),
     Unit.footInch => _feetAndInches(value.ticks),
     Unit.metre => _decimalLength(
       value,
@@ -93,28 +113,24 @@ class QuantityFormatter extends Equatable {
   };
 
   String _decimalLength(Length value, int decimals, bool group) =>
-      '${_number(value.ticks / value.unit.ticksPerUnit, decimals, group)}'
+      '${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'
       '${value.unit.suffix}';
 
-  // Whole inches and the remainder as a fraction at the chosen resolution:
-  // 8-3/4in. The sign is written once, in front, whatever the remainder.
-  String _inches(int ticks, bool group) {
+  String _wholeInchesAndFraction(int ticks, bool group) {
     final magnitude = ticks.abs();
     var whole = magnitude ~/ Length.ticksPerInch;
-    final fraction = _fraction(magnitude % Length.ticksPerInch);
+    final fraction = _fractionOfInch(magnitude % Length.ticksPerInch);
     whole += fraction.carry;
-    return '${ticks < 0 ? '-' : ''}${_number(whole.toDouble(), 0, group)}'
+    return '${ticks < 0 ? '-' : ''}${_localeNumber(whole.toDouble(), 0, group)}'
         '${fraction.text}${Unit.inch.suffix}';
   }
 
-  // The trade compound, 18ft 8-1/2in. The feet are never grouped: the
-  // prototype writes them raw and the scenarios pin "4368ft 0in".
   String _feetAndInches(int ticks) {
     final magnitude = ticks.abs();
     var feet = magnitude ~/ Length.ticksPerFoot;
     final remainder = magnitude % Length.ticksPerFoot;
     var inches = remainder ~/ Length.ticksPerInch;
-    final fraction = _fraction(remainder % Length.ticksPerInch);
+    final fraction = _fractionOfInch(remainder % Length.ticksPerInch);
     inches += fraction.carry;
     if (inches == 12) {
       feet += 1;
@@ -123,12 +139,11 @@ class QuantityFormatter extends Equatable {
     return '${ticks < 0 ? '-' : ''}${feet}ft $inches${fraction.text}in';
   }
 
-  // The remainder of an inch, in ticks, rounded to the nearest step of the
-  // fractional resolution and reduced (8/16 reads 1/2). A remainder that
-  // rounds up to a whole inch carries instead of reading 16/16.
-  ({String text, int carry}) _fraction(int remainderTicks) {
+  ({String text, int carry}) _fractionOfInch(int remainderTicks) {
     final steps = preferences.fractionResolution.denominator;
-    var numerator = _jsRound(remainderTicks / (Length.ticksPerInch / steps));
+    var numerator = _jsMathRound(
+      remainderTicks / (Length.ticksPerInch / steps),
+    );
     if (numerator == 0) return (text: '', carry: 0);
     if (numerator == steps) return (text: '', carry: 1);
     var denominator = steps;
@@ -142,32 +157,28 @@ class QuantityFormatter extends Equatable {
   String _area(Area value, bool group) {
     if (value.unit == Unit.acre) {
       final acres = value.squareFeet / Area.squareFeetPerAcre;
-      return '${_fixed(acres, acreDecimals, group)}${Unit.acre.suffix}';
+      return '${_jsRoundedNumber(acres, acreDecimals, group)}${Unit.acre.suffix}';
     }
     final ticksPerUnit = value.unit.ticksPerUnit;
     final inUnit = value.squareTicks / ticksPerUnit / ticksPerUnit;
-    return '${_number(inUnit, resultDecimals, group)}${value.unit.suffix}²';
+    return '${_localeNumber(inUnit, resultDecimals, group)}${value.unit.suffix}²';
   }
 
-  // The answer speaks the unit the question was asked in: 500bf ÷ 4 reads
-  // 125bf, not 10.42ft³.
   String _volume(Volume value, bool group) {
     if (value.unit == Unit.boardFoot) {
-      return '${_fixed(value.boardFeet, resultDecimals, group)}'
+      return '${_jsRoundedNumber(value.boardFeet, resultDecimals, group)}'
           '${Unit.boardFoot.suffix}';
     }
     final feetPerUnit = Length.ticksPerFoot / value.unit.ticksPerUnit;
     final inUnit = value.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
-    return '${_fixed(inUnit, resultDecimals, group)}${value.unit.suffix}³';
+    return '${_jsRoundedNumber(inUnit, resultDecimals, group)}${value.unit.suffix}³';
   }
 
-  // Tons and metric tons take a space before the word, as the prototype
-  // writes results ("0.04 ton", "12 m tons"); lbs and kg do not.
   String _weight(Weight value, bool group) {
     final perUnit = value.unit.hundredthsOfPoundPer(
       poundsPerTon: preferences.poundsPerTon,
     );
-    final number = _number(
+    final number = _localeNumber(
       value.hundredthsOfPound / perUnit,
       resultDecimals,
       group,
@@ -178,27 +189,20 @@ class QuantityFormatter extends Equatable {
     };
   }
 
-  // Two decimals for everyday magnitudes; below 0.1 two significant digits,
-  // because 2dp there hides up to a third of the value (0.0129 → 0.01) or
-  // erases a nonzero answer entirely (rule 4.15: 1 ÷ 78 reads 0.013).
   String _scalar(double value, bool group) {
     if (value == 0) return '0';
-    if (value.abs() >= 0.1) return _fixed(value, resultDecimals, group);
+    if (value.abs() >= 0.1) {
+      return _jsRoundedNumber(value, resultDecimals, group);
+    }
     return double.parse(value.toStringAsPrecision(2)).toString();
   }
 
-  // The prototype's Math.round(v * 100) / 100 before formatting, kept so
-  // that a value on a rounding boundary lands where the prototype lands.
-  String _fixed(double value, int decimals, bool group) {
+  String _jsRoundedNumber(double value, int decimals, bool group) {
     final scale = math.pow(10, decimals).toDouble();
-    return _number(_jsRound(value * scale) / scale, decimals, group);
+    return _localeNumber(_jsMathRound(value * scale) / scale, decimals, group);
   }
 
-  // en-US toLocaleString with maximumFractionDigits: at most [decimals]
-  // digits, no trailing zeros, rounded half away from zero on the shortest
-  // decimal spelling of the double (which is what ICU rounds, and why 1.005
-  // reads 1.01 there while toStringAsFixed would say 1.00).
-  String _number(double value, int decimals, bool group) {
+  String _localeNumber(double value, int decimals, bool group) {
     final negative = value < 0;
     var text = _roundDecimalText(value.abs(), decimals);
     if (group) text = _grouped(text);
@@ -255,8 +259,7 @@ class QuantityFormatter extends Equatable {
     return '$buffer$rest';
   }
 
-  // JavaScript's Math.round: half rounds toward +∞, so -2.5 is -2.
-  int _jsRound(double value) => (value + 0.5).floor();
+  int _jsMathRound(double value) => (value + 0.5).floor();
 
   @override
   List<Object?> get props => [preferences];
