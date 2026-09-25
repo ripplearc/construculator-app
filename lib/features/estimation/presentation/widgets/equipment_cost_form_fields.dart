@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
@@ -29,12 +31,19 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// delivery fee. May be null wherever the caller doesn't have one yet.
   final String? estimateId;
 
+  /// Builds a [YourRatesBloc] for the Rate/Amount field's look-up-a-rate
+  /// search button. Injected rather than resolved with `Modular.get` here,
+  /// since this widget isn't a module file. Called once per look-up-a-rate
+  /// sheet open, matching [YourRatesBloc]'s factory registration.
+  final YourRatesBloc Function() yourRatesBlocFactory;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
     this.estimateId,
+    required this.yourRatesBlocFactory,
   });
 
   @override
@@ -409,6 +418,69 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  Widget? _rateSuffixIcon(BuildContext context, RateStatus status) {
+    if (status == RateStatus.missing) return null;
+    final colorTheme = context.colorTheme;
+    return CoreIconWidget(
+      key: const Key('rate_dollar_icon'),
+      icon: CoreIcons.dollar,
+      color: colorTheme.textHeadline,
+      size: 24,
+    );
+  }
+
+  // Shown only while the field is empty — once a rate exists (typed or
+  // picked), [_saveAsMyRateLink] takes this slot instead.
+  Widget? _lookupRateButton(
+    BuildContext context,
+    EquipmentCostFormWithData data,
+  ) {
+    if (data.rateStatus != RateStatus.missing) return null;
+    final colorTheme = context.colorTheme;
+    return Semantics(
+      button: true,
+      label: context.l10n.yourRatesLookupButton,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('lookup_rate_button'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => unawaited(_openRateLookup(context, data.method)),
+        child: Container(
+          width: CoreSpacing.space10,
+          height: CoreSpacing.space10,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: colorTheme.textLink),
+            borderRadius: BorderRadius.circular(CoreSpacing.space2),
+          ),
+          child: CoreIconWidget(
+            icon: CoreIcons.search,
+            color: colorTheme.iconGrayMid,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openRateLookup(
+    BuildContext context,
+    EquipmentPricingMethod method,
+  ) async {
+    final entry = await YourRatesLookupSheet.show(
+      context: context,
+      method: method,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (entry == null || !mounted) return;
+    _equipmentNameController.text = entry.itemName;
+    (method == EquipmentPricingMethod.day
+            ? _dailyRateController
+            : _jobAmountController)
+        .text = entry.rate.amount
+        .toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -533,13 +605,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
-                  ),
+                  suffix: _rateSuffixIcon(context, data.rateStatus),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButton(context, data),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -550,13 +620,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
-                  ),
+                  suffix: _rateSuffixIcon(context, data.rateStatus),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButton(context, data),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
               const SizedBox(height: CoreSpacing.space5),

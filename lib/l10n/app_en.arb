@@ -2309,6 +2309,30 @@
   "@equipmentSaveAsMyRateLink": {
     "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)"
   },
+  "yourRatesLookupTitle": "Look up a rate",
+  "@yourRatesLookupTitle": {
+    "description": "Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button"
+  },
+  "yourRatesSearchHint": "Search or type equipment",
+  "@yourRatesSearchHint": {
+    "description": "Placeholder text for the search field in the Look-up-a-rate sheet"
+  },
+  "yourRatesEmptyState": "No saved rates yet for this pricing method.",
+  "@yourRatesEmptyState": {
+    "description": "Shown in the Look-up-a-rate sheet when no saved entry matches the current search/pricing method"
+  },
+  "yourRatesDaySuffix": "/day",
+  "@yourRatesDaySuffix": {
+    "description": "Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows"
+  },
+  "yourRatesJobSuffix": "job",
+  "@yourRatesJobSuffix": {
+    "description": "Suffix after a job-priced rate amount in the Look-up-a-rate sheet's result rows"
+  },
+  "yourRatesLookupButton": "Search saved rates",
+  "@yourRatesLookupButton": {
+    "description": "Accessible label for the search-icon button on the Rate/Amount field that opens the Look-up-a-rate sheet"
+  },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {
     "description": "Label for the optional note field inside the expanded delivery-fee editor (manually mode)"

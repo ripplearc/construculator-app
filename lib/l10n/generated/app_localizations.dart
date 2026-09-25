@@ -2803,6 +2803,42 @@ abstract class AppLocalizations {
   /// **'Save as my rate'**
   String get equipmentSaveAsMyRateLink;
 
+  /// Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button
+  ///
+  /// In en, this message translates to:
+  /// **'Look up a rate'**
+  String get yourRatesLookupTitle;
+
+  /// Placeholder text for the search field in the Look-up-a-rate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search or type equipment'**
+  String get yourRatesSearchHint;
+
+  /// Shown in the Look-up-a-rate sheet when no saved entry matches the current search/pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'No saved rates yet for this pricing method.'**
+  String get yourRatesEmptyState;
+
+  /// Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows
+  ///
+  /// In en, this message translates to:
+  /// **'/day'**
+  String get yourRatesDaySuffix;
+
+  /// Suffix after a job-priced rate amount in the Look-up-a-rate sheet's result rows
+  ///
+  /// In en, this message translates to:
+  /// **'job'**
+  String get yourRatesJobSuffix;
+
+  /// Accessible label for the search-icon button on the Rate/Amount field that opens the Look-up-a-rate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search saved rates'**
+  String get yourRatesLookupButton;
+
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
   /// In en, this message translates to:
