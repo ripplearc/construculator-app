@@ -41,6 +41,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   /// a smooth user experience by preloading content before reaching the end.
   static const double _loadMoreScrollThreshold = 200.0;
 
+  /// Size of the spinners that sit beside a text label, on the first load
+  /// and on the load of older events, so the two states match.
+  static const double _inlineSpinnerSize = 24.0;
+
   @override
   void initState() {
     super.initState();
@@ -177,7 +181,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         children: [
           // The text below names what is loading; the indicator's own
           // "Loading" label would make screen readers announce it twice.
-          ExcludeSemantics(child: CoreLoadingIndicator(size: 24)),
+          ExcludeSemantics(
+            child: CoreLoadingIndicator(size: _inlineSpinnerSize),
+          ),
           const SizedBox(height: CoreSpacing.space3),
           Text(
             context.l10n.loadingLogs,
@@ -384,7 +390,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ExcludeSemantics(child: CoreLoadingIndicator(size: 24)),
+          ExcludeSemantics(
+            child: CoreLoadingIndicator(size: _inlineSpinnerSize),
+          ),
           const SizedBox(width: CoreSpacing.space3),
           Text(
             context.l10n.loadingOlderLogEvents,
