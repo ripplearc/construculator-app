@@ -42,9 +42,14 @@ void main() {
     });
 
     test('is equal to another with the same five settings', () {
-      final resolution = FractionResolution.values[int.parse('0')];
+      // Built through copyWith so the instance is not a compile-time
+      // constant: two equal const values are one object and Equatable would
+      // answer on identical() without ever comparing the fields.
+      final halves = CalculatorPreferences.defaults.copyWith(
+        fractionResolution: FractionResolution.half,
+      );
       expect(
-        CalculatorPreferences(fractionResolution: resolution),
+        halves,
         const CalculatorPreferences(
           fractionResolution: FractionResolution.half,
         ),
