@@ -126,15 +126,16 @@ class CostEstimationActivityTitleFormatter {
       case CostEstimationActivityType.costEstimationPdfShared:
         return l10n.activityCostEstimationPdfShared;
       case CostEstimationActivityType.costFileUpdated:
-        final changedItems = details['changedItems'] as List<dynamic>?;
-        if (changedItems == null || changedItems.isEmpty) {
+        final changedItems = details['changedItems'];
+        if (changedItems is! List || changedItems.isEmpty) {
           return l10n.activityCostFileUpdatedSimple;
         }
         if (changedItems.length > 1) {
           return l10n.activityCostFileUpdatedCount(changedItems.length);
         }
-        final itemName = (changedItems.single as Map?)?['itemName'] as String?;
-        if (itemName != null) {
+        final changedItem = changedItems.single;
+        final itemName = changedItem is Map ? changedItem['itemName'] : null;
+        if (itemName is String) {
           return l10n.activityCostFileUpdated(itemName);
         }
         return l10n.activityCostFileUpdatedSimple;
