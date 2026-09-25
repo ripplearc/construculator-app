@@ -221,6 +221,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
               child: CostEstimationLogTile(
                 key: ValueKey(state.logs[index].id),
                 log: state.logs[index],
+                onSendTap: _openSendScreen,
               ),
             );
           }, childCount: state.logs.length),
@@ -232,6 +233,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ],
     );
   }
+
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-1177 - Open the Send
+  // screen for this entry's send once CUJ 8 builds it.
+  void _openSendScreen() {}
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
     return Padding(

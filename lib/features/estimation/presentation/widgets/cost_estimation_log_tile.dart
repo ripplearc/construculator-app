@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_link.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_mapper.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -10,13 +11,22 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class CostEstimationLogTile extends StatelessWidget {
   final CostEstimationLog log;
 
-  const CostEstimationLogTile({super.key, required this.log});
+  /// Called when an entry that opens the Send screen is tapped. Other
+  /// entries ignore taps.
+  final VoidCallback onSendTap;
+
+  const CostEstimationLogTile({
+    super.key,
+    required this.log,
+    required this.onSendTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final appColors = context.colorTheme;
     final typography = context.textTheme;
-    return Container(
+    final opensSendScreen = log.activity.opensSendScreen;
+    final tile = Container(
       constraints: const BoxConstraints(minHeight: 100),
       padding: EdgeInsets.only(
         top: CoreSpacing.space2,
@@ -49,12 +59,13 @@ class CostEstimationLogTile extends StatelessWidget {
                   ),
                 ),
               ),
-              CoreIconWidget(
-                key: const Key('activityIcon'),
-                icon: CoreIcons.arrowRight,
-                color: appColors.iconGrayMid,
-                size: 14,
-              ),
+              if (opensSendScreen)
+                CoreIconWidget(
+                  key: const Key('activityIcon'),
+                  icon: CoreIcons.arrowRight,
+                  color: appColors.iconGrayMid,
+                  size: 14,
+                ),
             ],
           ),
           const SizedBox(height: CoreSpacing.space2),
@@ -62,6 +73,15 @@ class CostEstimationLogTile extends StatelessWidget {
           const SizedBox(height: CoreSpacing.space2),
           _buildBottomInfo(context),
         ],
+      ),
+    );
+    if (!opensSendScreen) return tile;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        onTap: onSendTap,
+        behavior: HitTestBehavior.opaque,
+        child: tile,
       ),
     );
   }
