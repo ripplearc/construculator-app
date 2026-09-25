@@ -132,6 +132,27 @@ void main() {
         },
       );
 
+      test('an all-metric answer keeps the first metric unit: 2cm × 3cm', () {
+        const centimetres = Length(50, unit: Unit.centimetre);
+        const millimetres = Length(8, unit: Unit.millimetre);
+        expect(
+          arithmetic.combine(
+            centimetres,
+            Operator.multiply,
+            const Length(76, unit: Unit.centimetre),
+          ),
+          const ArithmeticValue(Area(3800, unit: Unit.centimetre)),
+        );
+        expect(
+          arithmetic.combine(millimetres, Operator.multiply, const Scalar(2)),
+          const ArithmeticValue(Length(16, unit: Unit.millimetre)),
+        );
+        expect(
+          arithmetic.combine(centimetres, Operator.multiply, millimetres),
+          const ArithmeticValue(Area(400, unit: Unit.centimetre)),
+        );
+      });
+
       test('metric lengths answer in metres', () {
         const metre = Length(2520, unit: Unit.metre);
         expect(
@@ -242,7 +263,7 @@ void main() {
         );
       });
 
-      test('÷ 0 is its own error, whatever the dimensions', () {
+      test('÷ 0 is its own error for a pair the table can divide', () {
         const error = ArithmeticFailed(CalculationError.divisionByZero);
         expect(
           arithmetic.combine(const Scalar(5), Operator.divide, const Scalar(0)),
@@ -252,6 +273,23 @@ void main() {
           arithmetic.combine(feet(12), Operator.divide, const Scalar(0)),
           error,
         );
+        expect(arithmetic.combine(feet(12), Operator.divide, feet(0)), error);
+        expect(
+          arithmetic.combine(squareFeet(12), Operator.divide, feet(0)),
+          error,
+        );
+      });
+
+      test('the dimensions are checked before the zero: 12lbs ÷ 0ft', () {
+        const error = ArithmeticFailed(CalculationError.dimensionError);
+        expect(
+          arithmetic.combine(
+            const Weight(1200, unit: Unit.pound),
+            Operator.divide,
+            feet(0),
+          ),
+          error,
+        );
         expect(
           arithmetic.combine(
             feet(12),
@@ -259,6 +297,52 @@ void main() {
             const Weight(0, unit: Unit.pound),
           ),
           error,
+        );
+        expect(
+          arithmetic.combine(const Scalar(5), Operator.divide, feet(0)),
+          error,
+        );
+      });
+
+      test(
+        'a length that overflows the tick range is refused, not clamped',
+        () {
+          const error = ArithmeticFailed(CalculationError.outOfRange);
+          expect(
+            arithmetic.combine(feet(1), Operator.multiply, const Scalar(1e20)),
+            error,
+          );
+          expect(
+            arithmetic.combine(feet(1), Operator.divide, const Scalar(1e-320)),
+            error,
+          );
+          expect(
+            arithmetic.combine(
+              Length(ChainArithmetic.maxTicks, unit: Unit.foot),
+              Operator.add,
+              feet(1),
+            ),
+            error,
+          );
+          expect(
+            arithmetic.combine(
+              Length(ChainArithmetic.maxTicks, unit: Unit.foot),
+              Operator.subtract,
+              feet(1),
+            ),
+            isA<ArithmeticValue>(),
+          );
+        },
+      );
+
+      test('a number that overflows to infinity is refused too', () {
+        expect(
+          arithmetic.combine(
+            const Scalar(1e308),
+            Operator.multiply,
+            const Scalar(10),
+          ),
+          const ArithmeticFailed(CalculationError.outOfRange),
         );
       });
 
@@ -359,6 +443,14 @@ void main() {
             const Weight(1, unit: Unit.pound),
           ),
           error,
+        );
+      });
+
+      test('millimetres add in millimetres: 1mm + 1mm = 2mm', () {
+        const millimetre = Length(3, unit: Unit.millimetre);
+        expect(
+          arithmetic.combine(millimetre, Operator.add, millimetre),
+          const ArithmeticValue(Length(6, unit: Unit.millimetre)),
         );
       });
 
