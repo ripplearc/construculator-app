@@ -6,7 +6,6 @@ const String _pitchLabel = 'Pitch';
 const String _lengthLabel = 'Length';
 const String _fenceLabel = 'Fence';
 const String _postsLabel = 'Posts';
-const String _ocKey = 'oc';
 const double _fenceOcSpacing = 6.0;
 
 CalculatorState _computePitch(CalculatorState currentState) {
@@ -50,7 +49,7 @@ CalculatorState _computeFence(CalculatorState currentState) {
       value: postsString,
       type: CoreCalculatorChipType.disabled,
     ),
-    dependentKeyLabel: () => _ocKey,
+    dependentKeyId: () => DependentKeyId.onCentre,
     dependentKeyValue: () => ocValueString,
   );
 }
