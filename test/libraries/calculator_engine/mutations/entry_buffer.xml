@@ -60,8 +60,8 @@
         </regex>
 
         <!-- RULE 10: a key that takes lengths accepts a weight -->
-        <regex pattern="if \(holdsLengthOnly &amp;&amp; unit\.dimension != Dimension\.length\) \{" dotAll="true" id="entry_buffer.close_with.ignore_length_only">
-            <mutation text="if (false) {"/>
+        <regex pattern="final needsLength = holdsLengthOnly &amp;&amp; unit\.dimension != Dimension\.length;" dotAll="true" id="entry_buffer.close_with.ignore_length_only">
+            <mutation text="final needsLength = false;"/>
         </regex>
 
         <!-- RULE 11: backspace drops the whole raised unit instead of one
@@ -81,7 +81,7 @@
         </regex>
 
         <!-- RULE 14: backspace on the last digit keeps an empty token -->
-        <regex pattern="if \(last\.digits\.length &lt;= 1\) \{" dotAll="true" id="entry_buffer.backspace.keep_empty_token">
+        <regex pattern="if \(last\.digits\.length &lt;= 1\) \{" dotAll="true" id="entry_buffer.backspace.keep_last_digit">
             <mutation text="if (last.digits.length &lt; 1) {"/>
         </regex>
 
