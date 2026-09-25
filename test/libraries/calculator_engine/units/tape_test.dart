@@ -17,6 +17,7 @@ void main() {
         'ft' => current.pressUnit(Unit.foot),
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
+        'cm' => current.pressUnit(Unit.centimetre),
         'lbs' => current.pressUnit(Unit.pound),
         '/' => current.typeFraction(),
         '⌫' => current.backspace(),
@@ -32,7 +33,7 @@ void main() {
   List<String> texts(Tape tape) => [
     for (final chip in tape.chips)
       switch (chip) {
-        InputChip(:final key, :final entry) => '${key ?? ''}${entry.text}',
+        ValueChip(:final key, :final entry) => '${key ?? ''}${entry.text}',
         ResultChip(:final key) => key,
         ErrorChip(:final error) => error.name,
       },
@@ -62,7 +63,7 @@ void main() {
       test('a function key seals the active chip and opens the next', () {
         final tape = press(const Tape(), '[Length] 2 2 ft [Width] 1 8 ft 8 in');
         expect(texts(tape), ['Length22ft', 'Width18ft 8in']);
-        final first = tape.chips.first as InputChip;
+        final first = tape.chips.first as ValueChip;
         expect(first.isActive, isFalse);
         expect(tape.active!.key, 'Width');
       });
@@ -75,7 +76,7 @@ void main() {
       test('a bare number seals as a value when a function key follows', () {
         final tape = press(const Tape(), '7 8 [Length]');
         expect(texts(tape), ['78', 'Length']);
-        final bare = tape.chips.first as InputChip;
+        final bare = tape.chips.first as ValueChip;
         expect(bare.value(parser), const Scalar(78));
       });
 
@@ -91,6 +92,16 @@ void main() {
         );
       });
 
+      test('Length 18 then [Width] is refused the same way (Appendix D)', () {
+        final tape = press(const Tape(), '[Length] 1 8');
+        expect(
+          tape.pressFunctionKey('Width'),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+        expect(tape.active!.isReadable, isFalse);
+        expect(tape.active!.value(parser), isNull);
+      });
+
       test('a new number after a finished value is its own chip', () {
         final tape = press(const Tape(), '[Length] 1 2 ft [Width] 1 0 ft');
         final sealed = changed(tape.pressFunctionKey('Height'));
@@ -101,7 +112,7 @@ void main() {
       test('a digit after a sealed chip starts a bare chip', () {
         const sealed = Tape(
           chips: [
-            InputChip(
+            ValueChip(
               entry: EntryBuffer([Token(digits: '22', unit: Unit.foot)]),
               isActive: false,
             ),
@@ -115,7 +126,7 @@ void main() {
       test('close the open number and convert the finished one', () {
         final tape = press(const Tape(), '[Length] 2 2 ft in');
         expect(texts(tape), ['Length264in']);
-        expect(tape.active!.exact, const Length(16896, unit: Unit.inch));
+        expect(tape.active!.exactValue, const Length(16896, unit: Unit.inch));
       });
 
       test('walkthrough 14.3: 18ft 8in → in → ft → yd keeps the ticks', () {
@@ -151,7 +162,7 @@ void main() {
         () {
           final tape = press(const Tape(), '2 5 1 1 ft ft ft 4 5 in');
           expect(texts(tape), ['2511ft³', '45in']);
-          expect((tape.chips.first as InputChip).isActive, isFalse);
+          expect((tape.chips.first as ValueChip).isActive, isFalse);
           expect(tape.active!.entry.text, '45in');
         },
       );
@@ -172,7 +183,7 @@ void main() {
         () {
           final tape = const Tape()
               .append(const ResultChip(key: 'Calc', value: Scalar(1)))
-              .append(const InputChip(key: 'Width'));
+              .append(const ValueChip(key: 'Width'));
           expect(
             tape.pressUnit(Unit.foot),
             const TapeRefused(TapeRefusal.unitsApplyWhileTyping),
@@ -189,6 +200,47 @@ void main() {
           const TapeRefused(TapeRefusal.unitsApplyWhileTyping),
         );
       });
+
+      test('a unit straight after a result with a unit converts it', () {
+        const squareTicks = 72.0 * Length.ticksPerFoot * Length.ticksPerFoot;
+        final tape = const Tape().append(
+          const ResultChip(
+            key: 'Calc',
+            value: Area(squareTicks),
+            operator: Operator.add,
+          ),
+        );
+        final converted = changed(tape.pressUnit(Unit.yard));
+        expect(
+          converted.chips.single,
+          const ResultChip(
+            key: 'Calc',
+            value: Area(squareTicks, unit: Unit.yard),
+            operator: Operator.add,
+          ),
+        );
+        expect(converted.active, isNull);
+      });
+
+      test(
+        'a result keeps its dimension: Calc 10ft then [Feet] is refused',
+        () {
+          final tape = const Tape().append(
+            const ResultChip(
+              key: 'Calc',
+              value: Length(7680, unit: Unit.foot),
+            ),
+          );
+          expect(
+            tape.pressUnit(Unit.foot),
+            const TapeUnitRefused(UnitKeyRefused(UnitKeyRefusal.keepsLength)),
+          );
+          expect(
+            (tape.pressUnit(Unit.kilogram) as TapeUnitRefused).refusal.reason,
+            UnitKeyRefusal.cannotConvert,
+          );
+        },
+      );
 
       test('a refusal from the number being typed is passed through', () {
         expect(
@@ -213,7 +265,7 @@ void main() {
       test('an entry the parser cannot read cannot be converted', () {
         const mixed = Tape(
           chips: [
-            InputChip(
+            ValueChip(
               entry: EntryBuffer([
                 Token(digits: '5', unit: Unit.pound),
                 Token(digits: '3', unit: Unit.foot),
@@ -234,12 +286,32 @@ void main() {
     });
 
     group('digits and fractions', () {
-      test('typing after a converted value drops the exact quantity', () {
+      test('editing a converted value reads the digits again', () {
         final converted = press(const Tape(), '2 2 ft in');
-        expect(converted.active!.exact, isNotNull);
+        expect(converted.active!.exactValue, isNotNull);
         final edited = press(converted, '⌫ 5');
         expect(edited.active!.entry.text, '2645');
-        expect(edited.active!.exact, isNull);
+        expect(edited.active!.exactValue, isNull);
+        expect(edited.active!.value(parser), const Scalar(2645));
+      });
+
+      test('a digit typed and deleted leaves the exact quantity in place', () {
+        final converted = press(const Tape(), '[Width] 1 8 ft 8 in yd');
+        expect(converted.active!.entry.text, '6.222yd');
+        final restored = press(converted, '5 ⌫');
+        expect(restored.active!.entry.text, '6.222yd');
+        expect(
+          restored.active!.value(parser),
+          const Length(14336, unit: Unit.yard),
+        );
+      });
+
+      test('rule 4.15: the next value typed never changes a converted one', () {
+        final tape = press(const Tape(), '[Length] 1 8 ft 8 in yd 3 cm');
+        expect(texts(tape), ['Length6.222yd', '3cm']);
+        final converted = tape.chips.first as ValueChip;
+        expect(converted.isActive, isFalse);
+        expect(converted.value(parser), const Length(14336, unit: Unit.yard));
       });
 
       test('[/] with nothing being typed is refused', () {
@@ -267,13 +339,13 @@ void main() {
         () {
           final tape = const Tape()
               .append(
-                const InputChip(
+                const ValueChip(
                   entry: EntryBuffer([Token(digits: '78', unit: Unit.pound)]),
                   isActive: false,
                 ),
               )
               .append(
-                const InputChip(
+                const ValueChip(
                   operator: Operator.divide,
                   entry: EntryBuffer([Token(digits: '12', unit: Unit.foot)]),
                   isActive: false,
@@ -290,6 +362,15 @@ void main() {
           expect(repaired.active!.value(parser), const Scalar(12));
         },
       );
+
+      test('append seals the active chip, so only the last chip is active', () {
+        final tape = press(
+          const Tape(),
+          '[Length] 2 2 ft',
+        ).append(const ResultChip(key: 'Calc', value: Scalar(1)));
+        expect((tape.chips.first as ValueChip).isActive, isFalse);
+        expect(tape.active, isNull);
+      });
 
       test('removes a result chip and reactivates the input before it', () {
         final tape = press(
@@ -359,24 +440,29 @@ void main() {
         const TapeChanged(
           Tape(
             chips: [
-              InputChip(entry: EntryBuffer([Token(digits: '5')])),
+              ValueChip(entry: EntryBuffer([Token(digits: '5')])),
             ],
           ),
         ),
       );
-      final reason = TapeRefusal.values[int.parse('0')];
-      expect(
-        TapeRefused(reason),
-        const TapeRefused(TapeRefusal.typeANumberFirst),
+      // ignore: prefer_const_constructors
+      final refused = TapeRefused(TapeRefusal.typeANumberFirst);
+      expect(refused, const TapeRefused(TapeRefusal.typeANumberFirst));
+      // ignore: prefer_const_constructors
+      final entryRefused = TapeEntryRefused(
+        EntryRefusal.fractionNeedsNumerator,
       );
-      final entryReason = EntryRefusal.values[int.parse('0')];
       expect(
-        TapeEntryRefused(entryReason),
+        entryRefused,
         const TapeEntryRefused(EntryRefusal.fractionNeedsNumerator),
       );
-      final unitReason = UnitKeyRefusal.values[int.parse('0')];
+      // ignore: prefer_const_constructors
+      final unitRefused = TapeUnitRefused(
+        // ignore: prefer_const_constructors
+        UnitKeyRefused(UnitKeyRefusal.stopsAtCubic),
+      );
       expect(
-        TapeUnitRefused(UnitKeyRefused(unitReason)),
+        unitRefused,
         const TapeUnitRefused(UnitKeyRefused(UnitKeyRefusal.stopsAtCubic)),
       );
     });
@@ -384,11 +470,14 @@ void main() {
 
   group('Chip', () {
     test('an input chip copies with fields cleared or kept', () {
-      const chip = InputChip(
+      const chip = ValueChip(
         key: 'Length',
         operator: Operator.add,
         entry: EntryBuffer([Token(digits: '22', unit: Unit.foot)]),
-        exact: Length(16896, unit: Unit.foot),
+        exact: (
+          value: Length(16896, unit: Unit.foot),
+          spelled: EntryBuffer([Token(digits: '22', unit: Unit.foot)]),
+        ),
       );
       final cleared = chip.copyWith(
         key: () => null,
@@ -398,7 +487,7 @@ void main() {
       );
       expect(
         cleared,
-        const InputChip(
+        const ValueChip(
           entry: EntryBuffer([Token(digits: '22', unit: Unit.foot)]),
           isActive: false,
         ),
@@ -416,11 +505,9 @@ void main() {
           operator: Operator.add,
         ),
       );
-      final error = CalculationError.values[int.parse('1')];
-      expect(
-        ErrorChip(error),
-        const ErrorChip(CalculationError.divisionByZero),
-      );
+      // ignore: prefer_const_constructors
+      final error = ErrorChip(CalculationError.divisionByZero);
+      expect(error, const ErrorChip(CalculationError.divisionByZero));
     });
 
     test('operators spell the four glyphs', () {

@@ -2,7 +2,7 @@
 <mutations version="1.0">
     <!-- CALCULATOR ENGINE TAPE MUTATION TESTING -->
     <!-- Targets: Tape, which routes every entry key to the active chip and
-         unwinds the tape on backspace, and InputChip, which decides what a
+         unwinds the tape on backspace, and ValueChip, which decides what a
          chip is worth. Critical path: a wrong route makes a digit land in a
          finished value or a unit key skip the ladder, and a wrong unwind
          deletes a value instead of reopening it after an error. -->
@@ -35,15 +35,16 @@
             <mutation text="if (true) {"/>
         </regex>
 
-        <!-- RULE 5: editing a converted value keeps its stale exact
+        <!-- RULE 5: an edited converted value still reads as its stale exact
              quantity -->
-        <regex pattern="chip\.copyWith\(entry: buffer, exact: \(\) =&gt; null\)," dotAll="true" id="tape.entry.keep_exact">
-            <mutation text="chip.copyWith(entry: buffer),"/>
+        <regex pattern="if \(exact case \(:final value, :final spelled\) when spelled == entry\) \{" dotAll="true" id="chip.exact_value.ignore_edit">
+            <mutation text="if (exact case (:final value, spelled: _)) {"/>
         </regex>
 
-        <!-- RULE 6: a split leaves the finished chip active -->
-        <regex pattern="chip\.copyWith\(entry: finished, exact: \(\) =&gt; null, isActive: false\)," dotAll="true" id="tape.entry.split_keeps_active">
-            <mutation text="chip.copyWith(entry: finished, exact: () =&gt; null),"/>
+        <!-- RULE 6: a split finishes the value but never starts the new one
+             beside it -->
+        <regex pattern="\)\.append\(ValueChip\(entry: started\)\)," dotAll="true" id="tape.entry.split_drops_started">
+            <mutation text="),"/>
         </regex>
 
         <!-- RULE 7: backspace drops the last chip without reopening the value
@@ -64,14 +65,14 @@
         </regex>
 
         <!-- RULE 10: a converted chip is re-read from its rounded digits -->
-        <regex pattern="if \(exact case final exact\?\) return exact;" dotAll="true" id="chip.value.ignore_exact">
-            <mutation text="if (false) return exact;"/>
+        <regex pattern="if \(exactValue case final value\?\) return value;" dotAll="true" id="chip.value.ignore_exact">
+            <mutation text="if (false) return exactValue;"/>
         </regex>
 
         <!-- RULE 11: an unfinished value under a function key is refused for
              the wrong reason -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(InputChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.wrong_refusal">
-            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(InputChip(key: key)));"/>
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(ValueChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.wrong_refusal">
+            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(ValueChip(key: key)));"/>
         </regex>
 
         <!-- RULE 12: an error chip counts as a result -->
@@ -82,6 +83,27 @@
         <!-- RULE 13: backspace with nothing typed keeps the last chip -->
         <regex pattern="final remaining = chips\.sublist\(0, chips\.length - 1\);" dotAll="true" id="tape.backspace.keep_last_chip">
             <mutation text="final remaining = chips.sublist(0, chips.length);"/>
+        </regex>
+
+        <!-- RULE 14: a result chip counts as an error -->
+        <regex pattern="bool get endsWithError =&gt; chips\.isNotEmpty &amp;&amp; chips\.last is ErrorChip;" dotAll="true" id="tape.ends_with_error.result_counts">
+            <mutation text="bool get endsWithError =&gt; chips.isNotEmpty &amp;&amp; chips.last is ResultChip;"/>
+        </regex>
+
+        <!-- RULE 15: append leaves the active chip active behind the new
+             one -->
+        <regex pattern="final sealed = _sealed\(\);\s*return sealed\._with\(\[\.\.\.sealed\.chips, chip\]\);" dotAll="true" id="tape.append.no_seal">
+            <mutation text="return _with([...chips, chip]);"/>
+        </regex>
+
+        <!-- RULE 16: a result with a unit is refused like a bare Calc -->
+        <regex pattern="if \(chip == null &amp;&amp; last is ResultChip &amp;&amp; last\.value is! Scalar\) \{" dotAll="true" id="tape.press_unit.never_convert_result">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 17: a bare number under a function key can be left -->
+        <regex pattern="bool get _isUnnamedBareNumber =&gt; key == null &amp;&amp; _isBareNumber;" dotAll="true" id="chip.bare_number.named_is_readable">
+            <mutation text="bool get _isUnnamedBareNumber =&gt; _isBareNumber;"/>
         </regex>
     </rules>
 
