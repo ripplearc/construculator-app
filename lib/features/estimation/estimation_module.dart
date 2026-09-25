@@ -95,7 +95,10 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<CostEstimationLogRepository>(
-      () => CostEstimationLogRepositoryImpl(dataSource: i.get()),
+      () => CostEstimationLogRepositoryImpl(
+        dataSource: i.get(),
+        appLifecycleWrapper: appBootstrap.appLifecycleWrapper,
+      ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 

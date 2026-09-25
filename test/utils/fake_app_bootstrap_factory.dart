@@ -4,6 +4,7 @@ import 'package:construculator/libraries/analytics/data/repositories/no_op_analy
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
+import 'package:construculator/libraries/app_lifecycle/testing/fake_app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -32,6 +33,8 @@ class FakeAppBootstrapFactory {
   ///   sync lifecycle calls
   /// - [featureFlagRepository]: Provide a specific FeatureFlagRepository
   ///   (e.g. FakeFeatureFlagRepository with overrides) to control flag state
+  /// - [appLifecycleWrapper]: Provide a specific fake to move the app between
+  ///   foreground and background
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -53,6 +56,7 @@ class FakeAppBootstrapFactory {
     AnalyticsRepository? analyticsRepository,
     PowerSyncDatabase? powerSyncDatabase,
     FeatureFlagRepository? featureFlagRepository,
+    FakeAppLifecycleWrapper? appLifecycleWrapper,
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -66,6 +70,7 @@ class FakeAppBootstrapFactory {
       featureFlagRepository:
           featureFlagRepository ?? FakeFeatureFlagRepository(),
       currentScreenTracker: CurrentScreenTracker(),
+      appLifecycleWrapper: appLifecycleWrapper ?? FakeAppLifecycleWrapper(),
     );
   }
 }

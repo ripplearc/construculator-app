@@ -121,7 +121,7 @@
         </regex>
 
         <!-- RULE 21: Drop the load cutoff so a stalled request hangs forever -->
-        <regex pattern="\.timeout\(logLoadTimeout\)" dotAll="true" id="log_repo.timeout.skip_cutoff">
+        <regex pattern="\.timeoutInForeground\(logLoadTimeout, appLifecycleWrapper\)" dotAll="true" id="log_repo.timeout.skip_cutoff">
             <mutation text=""/>
         </regex>
 
