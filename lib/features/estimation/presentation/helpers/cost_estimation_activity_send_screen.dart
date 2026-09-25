@@ -1,7 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 
 /// Decides which Logs entries lead to the Send screen.
-extension CostEstimationActivitySendLink on CostEstimationActivityType {
+extension CostEstimationActivitySendScreen on CostEstimationActivityType {
   /// Whether a Logs entry of this kind shows an arrow and opens the Send
   /// screen when tapped.
   ///

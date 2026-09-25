@@ -1,9 +1,9 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
-import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_link.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('CostEstimationActivitySendLink.opensSendScreen', () {
+  group('CostEstimationActivitySendScreen.opensSendScreen', () {
     const sendScreenKinds = {
       CostEstimationActivityType.costEstimationSent,
       CostEstimationActivityType.costEstimationOpened,
