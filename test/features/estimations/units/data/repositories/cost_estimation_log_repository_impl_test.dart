@@ -569,7 +569,7 @@ void main() {
         });
       });
 
-      test('does not count time the app spends in the background', () {
+      test('does not count background time on the initial load', () {
         fakeAsync((async) {
           fakeSupabaseWrapper.shouldDelayOperations = true;
           fakeSupabaseWrapper.completer = Completer<void>();
@@ -643,6 +643,51 @@ void main() {
               ),
             ),
           );
+        });
+      });
+
+      test('does not count background time on a load more', () {
+        fakeAsync((async) {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 1,
+              estimateId: testEstimateId,
+            ),
+          );
+
+          Either<Failure, List<CostEstimationLog>>? initial;
+          unawaited(
+            repository
+                .fetchInitialLogs(testEstimateId)
+                .then((value) => initial = value),
+          );
+          async.flushMicrotasks();
+          expect(initial, isA<Right<Failure, List<CostEstimationLog>>>());
+
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer<void>();
+
+          Either<Failure, List<CostEstimationLog>>? result;
+          unawaited(
+            repository
+                .loadMoreLogs(testEstimateId)
+                .then((value) => result = value),
+          );
+
+          async.elapse(const Duration(seconds: 10));
+          fakeAppLifecycle.setInForeground(false);
+          async.elapse(const Duration(minutes: 1));
+          fakeAppLifecycle.setInForeground(true);
+          async.elapse(const Duration(seconds: 4));
+          expect(
+            result,
+            isNull,
+            reason: 'only 14 of the 15 seconds were spent in the foreground',
+          );
+
+          async.elapse(restOfCutoff);
+
+          expect(result, isA<Left<Failure, List<CostEstimationLog>>>());
         });
       });
     });
