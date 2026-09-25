@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/screenshot/font_loader.dart';
 
+void _ignoreSendTap() {}
+
 void main() {
   group('CostEstimationLogTile', () {
     late CostEstimationLog testLog;
@@ -33,7 +35,10 @@ void main() {
       );
     });
 
-    Widget createWidget(CostEstimationLog log) {
+    Widget createWidget(
+      CostEstimationLog log, {
+      VoidCallback onSendTap = _ignoreSendTap,
+    }) {
       return MaterialApp(
         theme: createTestTheme(),
         locale: const Locale('en'),
@@ -43,7 +48,10 @@ void main() {
           body: Builder(
             builder: (context) {
               buildContext = context;
-              return CostEstimationLogTile(log: log);
+              return CostEstimationLogTile(
+                log: log,
+                onSendTap: onSendTap,
+              );
             },
           ),
         ),
@@ -91,12 +99,6 @@ void main() {
 
         expect(find.byKey(const Key('userName')), findsOneWidget);
         expect(find.text('John'), findsOneWidget);
-      });
-
-      testWidgets('renders activity icon', (tester) async {
-        await tester.pumpWidget(createWidget(testLog));
-
-        expect(find.byKey(const Key('activityIcon')), findsOneWidget);
       });
 
       testWidgets('renders calendar icon', (tester) async {
@@ -466,6 +468,55 @@ void main() {
           findsNothing,
         );
       });
+    });
+
+    group('Send arrow and tap', () {
+      for (final kind in [
+        CostEstimationActivityType.costEstimationSent,
+        CostEstimationActivityType.costEstimationOpened,
+        CostEstimationActivityType.costEstimationApproved,
+        CostEstimationActivityType.costEstimationChangesRequested,
+      ]) {
+        testWidgets('${kind.name} shows the arrow and opens Send on tap', (
+          tester,
+        ) async {
+          var sendTaps = 0;
+          await tester.pumpWidget(
+            createWidget(
+              testLog.copyWith(
+                activity: kind,
+                activityDetails: {'recipientName': 'Judy Smith'},
+              ),
+              onSendTap: () => sendTaps++,
+            ),
+          );
+
+          expect(find.byKey(const Key('activityIcon')), findsOneWidget);
+
+          await tester.tap(find.byKey(const Key('sendTapTarget')));
+
+          expect(sendTaps, 1);
+        });
+      }
+
+      for (final kind in [
+        CostEstimationActivityType.costItemAdded,
+        CostEstimationActivityType.costEstimationCreated,
+        CostEstimationActivityType.costEstimationSendFailed,
+        CostEstimationActivityType.costEstimationRevoked,
+        CostEstimationActivityType.costEstimationPdfShared,
+      ]) {
+        testWidgets('${kind.name} shows no arrow and has no tap target', (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            createWidget(testLog.copyWith(activity: kind)),
+          );
+
+          expect(find.byKey(const Key('activityIcon')), findsNothing);
+          expect(find.byKey(const Key('sendTapTarget')), findsNothing);
+        });
+      }
     });
   });
 }

@@ -221,6 +221,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
               child: CostEstimationLogTile(
                 key: ValueKey(state.logs[index].id),
                 log: state.logs[index],
+                onSendTap: _openSendScreen,
               ),
             );
           }, childCount: state.logs.length),
@@ -232,6 +233,11 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ],
     );
   }
+
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-1177 - Open the Send
+  // screen once CUJ 8 builds it. onSendTap passes nothing yet, so it will
+  // need to pass the tapped entry to open that entry's send.
+  void _openSendScreen() {}
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
     return Padding(
