@@ -859,7 +859,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMoreLogsError => 'Couldn\'t load older events.';
 
   @override
-  String get loadMoreLogsRepeatError => 'Still couldn\'t load older events.';
+  String get loadMoreLogsErrorRepeat => 'Still couldn\'t load older events.';
 
   @override
   String get appTitle => 'Construculator';

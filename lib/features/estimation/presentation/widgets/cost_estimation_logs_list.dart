@@ -366,7 +366,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       child: _buildFailureNotice(
         context,
         message: state.isRepeatFailure
-            ? l10n.loadMoreLogsRepeatError
+            ? l10n.loadMoreLogsErrorRepeat
             : l10n.loadMoreLogsError,
         retryButtonKey: CostEstimationLogsList.loadMoreRetryButtonKey,
         onRetry: () {

@@ -1353,8 +1353,8 @@
   "@loadMoreLogsError": {
     "description": "Message shown under the list when loading older activity logs fails"
   },
-  "loadMoreLogsRepeatError": "Still couldn't load older events.",
-  "@loadMoreLogsRepeatError": {
+  "loadMoreLogsErrorRepeat": "Still couldn't load older events.",
+  "@loadMoreLogsErrorRepeat": {
     "description": "Message shown when a retried load of older activity logs fails again"
   },
   "appTitle": "Construculator",

@@ -508,7 +508,7 @@ void main() {
       fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
 
       await tester.drag(
-        find.byType(CustomScrollView).first,
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
         const Offset(0, -1800),
       );
       await tester.pumpAndSettle();
@@ -570,7 +570,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().loadMoreLogsRepeatError), findsOneWidget);
+      expect(find.text(l10n().loadMoreLogsErrorRepeat), findsOneWidget);
       expect(find.text(l10n().loadMoreLogsError), findsNothing);
     });
   });

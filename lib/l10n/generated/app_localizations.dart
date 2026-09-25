@@ -1634,7 +1634,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Still couldn\'t load older events.'**
-  String get loadMoreLogsRepeatError;
+  String get loadMoreLogsErrorRepeat;
 
   /// Application title displayed in app bar
   ///
