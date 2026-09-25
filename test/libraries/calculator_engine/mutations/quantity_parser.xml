@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE QUANTITY PARSER AND UNIT CONVERTER MUTATION TESTING -->
+    <!-- Targets: QuantityParser, where a typed value becomes the exact ticks,
+         cubic feet or hundredths of a pound every later answer is computed
+         from, and UnitConverter, which chooses the readings the strip offers.
+         Critical path: a length off by one tick, a ton weighed at the wrong
+         definition or a compound read as the wrong unit changes every area,
+         volume, cost and weight downstream while still looking plausible on
+         screen. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/quantity_parser.dart</file>
+        <file>lib/libraries/calculator_engine/unit_converter.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: ticks are truncated instead of rounded, so 1m reads 2519
+             ticks instead of 2520 -->
+        <regex pattern="return \(token\.value \* unit\.ticksPerUnit\)\.round\(\);" dotAll="true" id="quantity_parser.ticks_of.truncate">
+            <mutation text="return (token.value * unit.ticksPerUnit).truncate();"/>
+        </regex>
+
+        <!-- RULE 2: an open token is read as if it were finished -->
+        <regex pattern="if \(tokens\.isEmpty \|\|\s*tokens\.any\(\(token\) =&gt; !token\.isComplete \|\| !token\.value\.isFinite\)\) \{" dotAll="true" id="quantity_parser.parse.skip_completeness_guard">
+            <mutation text="if (tokens.isEmpty) {"/>
+        </regex>
+
+        <!-- RULE 3: a raised unit is read as a plain length whatever its
+             power -->
+        <regex pattern="if \(tokens\.length == 1 &amp;&amp; first\.power &gt; 1\) return _raised\(first, unit\);" dotAll="true" id="quantity_parser.parse.ignore_power">
+            <mutation text="if (false) return _raised(first, unit);"/>
+        </regex>
+
+        <!-- RULE 4: board feet are read as cubic feet -->
+        <regex pattern="first\.value / Volume\.boardFeetPerCubicFoot," dotAll="true" id="quantity_parser.parse.board_foot_is_cubic_foot">
+            <mutation text="first.value,"/>
+        </regex>
+
+        <!-- RULE 5: a length beside a weight, or a raised unit inside a
+             compound, is summed anyway -->
+        <regex pattern="tokenUnit\.dimension != unit\.dimension \|\|\s*token\.power &gt; 1\) \{" dotAll="true" id="quantity_parser.parse.skip_compound_guards">
+            <mutation text="false) {"/>
+        </regex>
+
+        <!-- RULE 6: the ton setting is ignored -->
+        <regex pattern="tokenUnit\.hundredthsOfPoundPer\(poundsPerTon: poundsPerTon\);" dotAll="true" id="quantity_parser.parse.ignore_ton_setting">
+            <mutation text="tokenUnit.hundredthsOfPoundPer(poundsPerTon: defaultPoundsPerTon);"/>
+        </regex>
+
+        <!-- RULE 7: a unit pressed twice makes a volume, not an area -->
+        <regex pattern="if \(token\.power == 2\) \{" dotAll="true" id="quantity_parser.raised.square_is_cube">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 8: the cube loses one factor of the unit -->
+        <regex pattern="token\.value \* feetPerUnit \* feetPerUnit \* feetPerUnit," dotAll="true" id="quantity_parser.raised.drop_cubic_factor">
+            <mutation text="token.value * feetPerUnit * feetPerUnit,"/>
+        </regex>
+
+        <!-- RULE 9: a metric compound is spelled as ft-in -->
+        <regex pattern="if \(tokens\.length == 1 \|\| first\.isMetric\) return first;" dotAll="true" id="quantity_parser.compound_spelling.metric_reads_ft_in">
+            <mutation text="if (tokens.length == 1) return first;"/>
+        </regex>
+
+        <!-- RULE 10: the acre threshold becomes strict, so exactly 0.005 acre
+             is no longer offered -->
+        <regex pattern="if \(value\.squareFeet / Area\.squareFeetPerAcre &gt;= smallestAcreOffer &amp;&amp;" dotAll="true" id="unit_converter.area.acre_threshold_strict">
+            <mutation text="if (value.squareFeet / Area.squareFeetPerAcre &gt; smallestAcreOffer &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE 11: an area is offered in the unit it already wears -->
+        <regex pattern="for \(final unit in const \[Unit\.foot, Unit\.yard, Unit\.inch, Unit\.metre\]\)\s*if \(unit != value\.unit\) value\.spelledIn\(unit\)," dotAll="true" id="unit_converter.area.offer_current_unit">
+            <mutation text="for (final unit in const [Unit.foot, Unit.yard, Unit.inch, Unit.metre]) value.spelledIn(unit),"/>
+        </regex>
+
+        <!-- RULE 12: acres are offered to a value already in acres -->
+        <regex pattern="value\.unit != Unit\.acre\)" dotAll="true" id="unit_converter.area.offer_acre_to_acre">
+            <mutation text="true)"/>
+        </regex>
+
+        <!-- RULE 13: a fraction over zero is read as a value -->
+        <regex pattern="!token\.isComplete \|\| !token\.value\.isFinite\)" dotAll="true" id="quantity_parser.parse.skip_finite_guard">
+            <mutation text="!token.isComplete)"/>
+        </regex>
+
+        <!-- RULE 14: a weight is always answered in pounds -->
+        <regex pattern="return Weight\(hundredthsOfPound, unit: unit\);" dotAll="true" id="quantity_parser.parse.weight_in_pounds">
+            <mutation text="return Weight(hundredthsOfPound, unit: Unit.pound);"/>
+        </regex>
+
+        <!-- RULE 15: a length is always answered in inches -->
+        <regex pattern="return Length\(ticks, unit: _footInchForImperialCompound\(tokens, unit\)\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
+            <mutation text="return Length(ticks, unit: Unit.inch);"/>
+        </regex>
+
+        <!-- RULE 16: tokens of two dimensions are read as a zero -->
+        <regex pattern="unit\.dimension != Dimension\.weight\) \{\s*return null;" dotAll="true" id="quantity_parser.parse.other_dimension_zero">
+            <mutation text="unit.dimension != Dimension.weight) { return const Scalar(0);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="quantity_parser" expected-return="0">flutter test test/libraries/calculator_engine/units/quantity_parser_test.dart</command>
+        <command group="unit_converter" expected-return="0">flutter test test/libraries/calculator_engine/units/unit_converter_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
