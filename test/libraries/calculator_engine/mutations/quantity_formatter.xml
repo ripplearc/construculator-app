@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE QUANTITY FORMATTER MUTATION TESTING -->
+    <!-- Targets: QuantityFormatter, the one place a stored value becomes the
+         text on screen. Critical path: rounding is part of the behaviour
+         (UX Design Doc rule 4.15) and every result a user copies onto a
+         takeoff sheet passes through here, so a fraction rounded to the
+         wrong step, a carry lost at 12 inches, a tiny ratio shown as 0 or
+         a thousands separator in the wrong place is a wrong answer that
+         still looks like one. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a remainder that rounds to a whole inch reads 16/16
+             instead of carrying -->
+        <regex pattern="if \(numerator == steps\) return \(text: '', carry: 1\);" dotAll="true" id="quantity_formatter.fraction.no_carry">
+            <mutation text="if (false) return (text: '', carry: 1);"/>
+        </regex>
+
+        <!-- RULE 2: fractions are not reduced, so 8/16 stays 8/16 -->
+        <regex pattern="while \(numerator\.isEven\) \{" dotAll="true" id="quantity_formatter.fraction.no_reduce">
+            <mutation text="while (false) {"/>
+        </regex>
+
+        <!-- RULE 3: the resolution setting is ignored -->
+        <regex pattern="final steps = preferences\.fractionResolution\.denominator;" dotAll="true" id="quantity_formatter.fraction.ignore_resolution">
+            <mutation text="final steps = 16;"/>
+        </regex>
+
+        <!-- RULE 4: twelve inches no longer carry into a foot -->
+        <regex pattern="if \(inches == 12\) \{" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 5: a ratio below 0.1 is shown to two decimals, so 1 ÷ 78
+             reads 0.01 -->
+        <regex pattern="if \(value\.abs\(\) &gt;= 0\.1\) \{" dotAll="true" id="quantity_formatter.scalar.two_decimals_below_point_one">
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 6: three significant digits instead of two -->
+        <regex pattern="return double\.parse\(value\.toStringAsPrecision\(2\)\)\.toString\(\);" dotAll="true" id="quantity_formatter.scalar.three_significant">
+            <mutation text="return double.parse(value.toStringAsPrecision(3)).toString();"/>
+        </regex>
+
+        <!-- RULE 7: Math.round becomes truncation -->
+        <regex pattern="int _jsMathRound\(double value\) =&gt; \(value \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity_formatter.js_round.truncate">
+            <mutation text="int _jsMathRound(double value) =&gt; value.floor();"/>
+        </regex>
+
+        <!-- RULE 8: half no longer rounds up -->
+        <regex pattern="final roundUp = fraction\.codeUnitAt\(decimals\) &gt;= '5'\.codeUnitAt\(0\);" dotAll="true" id="quantity_formatter.round_decimal_text.half_down">
+            <mutation text="final roundUp = fraction.codeUnitAt(decimals) &gt; '5'.codeUnitAt(0);"/>
+        </regex>
+
+        <!-- RULE 9: thousands are grouped in fours -->
+        <regex pattern="if \(i &gt; 0 &amp;&amp; \(whole\.length - i\) % 3 == 0\) buffer\.write\(','\);" dotAll="true" id="quantity_formatter.grouped.by_four">
+            <mutation text="if (i &gt; 0 &amp;&amp; (whole.length - i) % 4 == 0) buffer.write(',');"/>
+        </regex>
+
+        <!-- RULE 10: the metre display setting is ignored -->
+        <regex pattern="preferences\.metreDisplay\.decimals," dotAll="true" id="quantity_formatter.length.ignore_metre_display">
+            <mutation text="resultDecimals,"/>
+        </regex>
+
+        <!-- RULE 11: the ton setting is ignored at display -->
+        <regex pattern="poundsPerTon: preferences\.poundsPerTon,\s*\);\s*final number" dotAll="true" id="quantity_formatter.weight.ignore_ton_setting">
+            <mutation text="poundsPerTon: 2000); final number"/>
+        </regex>
+
+        <!-- RULE 12: a stored size under Metric is shown in inches -->
+        <regex pattern="'\$\{_jsRoundedNumber\(inches \* millimetresPerInch, 0, false\)\}'" dotAll="true" id="quantity_formatter.stored_length.metric_in_inches">
+            <mutation text="'${_localeNumber(inches, 0, false)}'"/>
+        </regex>
+
+        <!-- RULE 13: results stop grouping their thousands -->
+        <regex pattern="if \(group\) text = _grouped\(text\);" dotAll="true" id="quantity_formatter.number.never_group">
+            <mutation text="if (false) text = _grouped(text);"/>
+        </regex>
+
+        <!-- RULE 14: a fraction that rounds up to a whole inch is taken off
+             instead of carried -->
+        <regex pattern="whole \+= fraction\.carry;" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
+            <mutation text="whole -= fraction.carry;"/>
+        </regex>
+
+        <!-- RULE 15: a stored size under Metric divides by the millimetres
+             in an inch -->
+        <regex pattern="inches \* millimetresPerInch, 0, false" dotAll="true" id="quantity_formatter.stored.divide_millimetres">
+            <mutation text="inches / millimetresPerInch, 0, false"/>
+        </regex>
+
+        <!-- RULE 16: a zero remainder carries a whole inch -->
+        <regex pattern="if \(numerator == 0\) return \(text: '', carry: 0\);" dotAll="true" id="quantity_formatter.fraction.zero_carries">
+            <mutation text="if (numerator == 0) return (text: '', carry: 1);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="quantity_formatter" expected-return="0">flutter test test/libraries/calculator_engine/units/quantity_formatter_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
