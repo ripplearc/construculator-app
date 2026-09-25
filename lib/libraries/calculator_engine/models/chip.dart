@@ -32,6 +32,10 @@ enum CalculationError {
 
   /// ÷ 0.
   divisionByZero,
+
+  /// The answer is too large to keep: a length beyond
+  /// [ChainArithmetic.maxTicks], or a number that overflowed to infinity.
+  outOfRange,
 }
 
 /// The exact quantity a conversion re-spelled an entry from, with the entry

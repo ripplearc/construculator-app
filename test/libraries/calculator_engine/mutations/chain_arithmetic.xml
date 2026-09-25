@@ -13,8 +13,9 @@
 
     <rules>
         <!-- RULE 1: ÷ 0 reports as a dimension error -->
-        <regex pattern="if \(operator == Operator\.divide &amp;&amp; _magnitude\(right\) == 0\) \{" dotAll="true" id="chain_arithmetic.combine.no_division_by_zero">
+        <regex pattern="if \(operator == Operator\.divide &amp;&amp;\s*_magnitude\(right\) == 0 &amp;&amp;\s*_canDivide\(left, right\)\) \{" dotAll="true" id="chain_arithmetic.combine.no_division_by_zero">
             <mutation text="if (false) {"/>
+            <mutation text="if (operator == Operator.divide &amp;&amp; _magnitude(right) == 0) {"/>
         </regex>
 
         <!-- RULE 2: length × length loses the second length's system vote -->
@@ -54,23 +55,54 @@
         </regex>
 
         <!-- RULE 9: a length answer is truncated instead of rounded -->
-        <regex pattern="int _wholeTicks\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="chain_arithmetic.whole_ticks.truncate">
-            <mutation text="int _wholeTicks(double ticks) =&gt; ticks.floor();"/>
+        <regex pattern="final rounded = \(ticks \+ 0\.5\)\.floorToDouble\(\);" dotAll="true" id="chain_arithmetic.whole_ticks.truncate">
+            <mutation text="final rounded = ticks.floorToDouble();"/>
         </regex>
 
         <!-- RULE 10: a metric chain answers in the trade compound -->
-        <regex pattern="_allMetric\(units\) \? Unit\.metre : Unit\.footInch;" dotAll="true" id="chain_arithmetic.length_unit.always_imperial">
-            <mutation text="Unit.footInch;"/>
+        <regex pattern="Unit _lengthUnit\(List&lt;Unit&gt; units\) =&gt; _metricUnitOf\(units\) \?\? Unit\.footInch;" dotAll="true" id="chain_arithmetic.length_unit.always_imperial">
+            <mutation text="Unit _lengthUnit(List&lt;Unit&gt; units) =&gt; Unit.footInch;"/>
         </regex>
 
         <!-- RULE 11: one metric operand is enough for a metric answer -->
-        <regex pattern="return lengths\.isNotEmpty &amp;&amp; lengths\.every\(\(unit\) =&gt; unit\.isMetric\);" dotAll="true" id="chain_arithmetic.all_metric.any">
-            <mutation text="return lengths.any((unit) =&gt; unit.isMetric);"/>
+        <regex pattern="if \(lengths\.isEmpty \|\| !lengths\.every\(\(unit\) =&gt; unit\.isMetric\)\) \{" dotAll="true" id="chain_arithmetic.metric_unit.any">
+            <mutation text="if (!lengths.any((unit) =&gt; unit.isMetric)) {"/>
         </regex>
 
         <!-- RULE 12: acres and board feet join the vote on the system -->
-        <regex pattern="units\.where\(\(unit\) =&gt; unit\.compoundRank &gt; 0\);" dotAll="true" id="chain_arithmetic.all_metric.unitless_vote">
+        <regex pattern="units\.where\(\(unit\) =&gt; unit\.compoundRank &gt; 0\);" dotAll="true" id="chain_arithmetic.metric_unit.unitless_vote">
             <mutation text="units.where((unit) =&gt; unit.compoundRank &gt;= 0);"/>
+        </regex>
+
+        <!-- RULE 13: an all-metric answer is always in metres, so 2cm × 3cm
+             reads 0m² -->
+        <regex pattern="return lengths\.first;" dotAll="true" id="chain_arithmetic.metric_unit.always_metres">
+            <mutation text="return Unit.metre;"/>
+        </regex>
+
+        <!-- RULE 14: area × length is no longer a volume -->
+        <regex pattern="\(final Area area, final Length length\) =&gt; _volumeOf\(area, length\)," dotAll="true" id="chain_arithmetic.multiply.area_by_length">
+            <mutation text="(final Area area, final Length length) when false =&gt; _volumeOf(area, length),"/>
+        </regex>
+
+        <!-- RULE 15: a bare number on the left no longer scales -->
+        <regex pattern="\(final Scalar factor, _\) =&gt; _scaled\(right, \(value\) =&gt; value \* factor\.value\)," dotAll="true" id="chain_arithmetic.multiply.scalar_left">
+            <mutation text="(final Scalar factor, _) when false =&gt; _scaled(right, (value) =&gt; value * factor.value),"/>
+        </regex>
+
+        <!-- RULE 16: volume ÷ length is no longer an area -->
+        <regex pattern="\(final Volume volume, final Length length\) =&gt; Area\(" dotAll="true" id="chain_arithmetic.divide.volume_by_length">
+            <mutation text="(final Volume volume, final Length length) when false =&gt; Area("/>
+        </regex>
+
+        <!-- RULE 17: a length beyond the tick range is clamped, not refused -->
+        <regex pattern="if \(!rounded\.isFinite \|\| rounded\.abs\(\) &gt; maxTicks\) \{" dotAll="true" id="chain_arithmetic.whole_ticks.clamp">
+            <mutation text="if (!rounded.isFinite) {"/>
+        </regex>
+
+        <!-- RULE 18: an answer that overflowed to infinity is kept -->
+        <regex pattern="if \(!_magnitude\(value\)\.isFinite\) \{" dotAll="true" id="chain_arithmetic.combine.keep_infinity">
+            <mutation text="if (false) {"/>
         </regex>
     </rules>
 
