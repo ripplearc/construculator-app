@@ -2234,6 +2234,84 @@
   "@equipmentAmountOutOfRangeError": {
     "description": "Validation error shown below the amount field when it is outside the accepted bound (Job pricing, manually mode)"
   },
+  "equipmentDeliveryRowLabel": "Delivery",
+  "@equipmentDeliveryRowLabel": {
+    "description": "Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)"
+  },
+  "equipmentDeliveryFeeUnsetText": "—",
+  "@equipmentDeliveryFeeUnsetText": {
+    "description": "Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value"
+  },
+  "equipmentDeliveryFeeEstimatedBadge": "Estimated",
+  "@equipmentDeliveryFeeEstimatedBadge": {
+    "description": "Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed with the supplier (manually mode)"
+  },
+  "equipmentDeliveryFeeConfirmLink": "Confirm",
+  "@equipmentDeliveryFeeConfirmLink": {
+    "description": "Link/button next to the delivery-fee row that confirms the entered fee with the supplier for this estimate only (manually mode)"
+  },
+  "equipmentDeliveryFeeConfirmedHelperText": "Confirmed with supplier — quote for this trip",
+  "@equipmentDeliveryFeeConfirmedHelperText": {
+    "description": "Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)"
+  },
+  "equipmentDeliveryFeeEstimatedHelperText": "Estimated — confirm the supplier's actual delivery quote",
+  "@equipmentDeliveryFeeEstimatedHelperText": {
+    "description": "Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed with the supplier (manually mode)"
+  },
+  "equipmentDeliveryAddNoteLink": "Add note",
+  "@equipmentDeliveryAddNoteLink": {
+    "description": "Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)"
+  },
+  "equipmentDeliveryFeeOutOfRangeError": "Delivery fee must be between $0.01 and $999,999.99",
+  "@equipmentDeliveryFeeOutOfRangeError": {
+    "description": "Validation error shown below the delivery-fee field when a non-zero entry is outside the accepted bound (manually mode)"
+  },
+  "equipmentDeliveryFeeOutsizedDialogTitle": "Confirm this delivery fee?",
+  "@equipmentDeliveryFeeOutsizedDialogTitle": {
+    "description": "PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost."
+  },
+  "equipmentDeliveryFeeOutsizedDialogBody": "The delivery fee ({feeAmount}) is more than the equipment's own cost ({baseCostAmount}). Do you want to add it as entered?",
+  "@equipmentDeliveryFeeOutsizedDialogBody": {
+    "description": "PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog; feeAmount and baseCostAmount are pre-formatted currency strings for this line.",
+    "placeholders": {
+      "feeAmount": {
+        "type": "String",
+        "example": "$8,500.00"
+      },
+      "baseCostAmount": {
+        "type": "String",
+        "example": "$85.00"
+      }
+    }
+  },
+  "equipmentDeliveryFeeOutsizedDialogGoBack": "Go back",
+  "@equipmentDeliveryFeeOutsizedDialogGoBack": {
+    "description": "Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and leaves the fee unset"
+  },
+  "equipmentDeliveryFeeOutsizedDialogAddIt": "Add it",
+  "@equipmentDeliveryFeeOutsizedDialogAddIt": {
+    "description": "Primary button on the outsized delivery-fee confirmation dialog; proceeds and saves the fee as entered"
+  },
+  "equipmentRateStatusSampleRateBadge": "Sample rate",
+  "@equipmentRateStatusSampleRateBadge": {
+    "description": "Status badge next to the Rate/Amount field label when the value came from a generic sample/reference rate, not yet confirmed as the user's own (manually mode)"
+  },
+  "equipmentRateStatusYourRateBadge": "✓ Your rate",
+  "@equipmentRateStatusYourRateBadge": {
+    "description": "Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon"
+  },
+  "equipmentSaveAsMyRateLink": "Save as my rate",
+  "@equipmentSaveAsMyRateLink": {
+    "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)"
+  },
+  "equipmentNoteLabel": "Note",
+  "@equipmentNoteLabel": {
+    "description": "Label for the optional note field inside the expanded delivery-fee editor (manually mode)"
+  },
+  "equipmentNotePlaceholder": "Add a note (optional)",
+  "@equipmentNotePlaceholder": {
+    "description": "Placeholder text for the optional note field inside the expanded delivery-fee editor (manually mode)"
+  },
   "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
   "@projectSettingsNavigationError": {
     "description": "Toast shown when navigation to project settings fails",

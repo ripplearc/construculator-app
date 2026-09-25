@@ -95,5 +95,68 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'a11y: collapsed delivery-fee row meets tap target and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('delivery_fee_row')),
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: delivery-fee Confirm link meets tap target and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('delivery_fee_confirm_link')),
+          setupAfterPump: (tester) async {
+            // Base cost well above the fee below, so folding it doesn't
+            // trigger the outsized-fee confirmation dialog.
+            await tester.enterText(
+              find.byKey(const Key('duration_field')),
+              '2',
+            );
+            await tester.pump();
+            await tester.enterText(find.byKey(const Key('rate_field')), '150');
+            await tester.pump();
+            // The Rate field's "✓ Your rate" badge (shown as soon as a rate
+            // parses) pushes the delivery row further down than the small
+            // a11y test viewport shows — scroll it into view before tapping.
+            await tester.ensureVisible(
+              find.byKey(const Key('delivery_fee_row')),
+            );
+            // The delivery panel stays open across a fold (see
+            // EquipmentCostFormFields._deliveryExpanded's doc comment), and
+            // this helper reuses the same widget State across the
+            // light/dark theme loop — so on the second theme, the field may
+            // already be open from the first theme's run. Only tap to open
+            // it if it isn't already.
+            if (find
+                .byKey(const Key('delivery_fee_field'))
+                .evaluate()
+                .isEmpty) {
+              await tester.tap(find.byKey(const Key('delivery_fee_row')));
+              await tester.pump();
+            }
+            await tester.enterText(
+              find.byKey(const Key('delivery_fee_field')),
+              '85',
+            );
+            await tester.pump();
+            await tester.tap(find.byKey(const Key('equipment_name_field')));
+            await tester.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }

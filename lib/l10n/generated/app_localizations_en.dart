@@ -1434,6 +1434,66 @@ class AppLocalizationsEn extends AppLocalizations {
       'Amount must be between \$0.01 and \$999,999.99';
 
   @override
+  String get equipmentDeliveryRowLabel => 'Delivery';
+
+  @override
+  String get equipmentDeliveryFeeUnsetText => '—';
+
+  @override
+  String get equipmentDeliveryFeeEstimatedBadge => 'Estimated';
+
+  @override
+  String get equipmentDeliveryFeeConfirmLink => 'Confirm';
+
+  @override
+  String get equipmentDeliveryFeeConfirmedHelperText =>
+      'Confirmed with supplier — quote for this trip';
+
+  @override
+  String get equipmentDeliveryFeeEstimatedHelperText =>
+      'Estimated — confirm the supplier\'s actual delivery quote';
+
+  @override
+  String get equipmentDeliveryAddNoteLink => 'Add note';
+
+  @override
+  String get equipmentDeliveryFeeOutOfRangeError =>
+      'Delivery fee must be between \$0.01 and \$999,999.99';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogTitle =>
+      'Confirm this delivery fee?';
+
+  @override
+  String equipmentDeliveryFeeOutsizedDialogBody(
+    String feeAmount,
+    String baseCostAmount,
+  ) {
+    return 'The delivery fee ($feeAmount) is more than the equipment\'s own cost ($baseCostAmount). Do you want to add it as entered?';
+  }
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogGoBack => 'Go back';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogAddIt => 'Add it';
+
+  @override
+  String get equipmentRateStatusSampleRateBadge => 'Sample rate';
+
+  @override
+  String get equipmentRateStatusYourRateBadge => '✓ Your rate';
+
+  @override
+  String get equipmentSaveAsMyRateLink => 'Save as my rate';
+
+  @override
+  String get equipmentNoteLabel => 'Note';
+
+  @override
+  String get equipmentNotePlaceholder => 'Add a note (optional)';
+
+  @override
   String get projectSettingsNavigationError =>
       'Unable to open project settings. Please try again.';
 

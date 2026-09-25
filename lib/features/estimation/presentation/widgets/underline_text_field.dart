@@ -20,9 +20,34 @@ class UnderlineTextField extends StatefulWidget {
   final TextEditingController controller;
   final TextInputType? keyboardType;
 
+  /// Placeholder shown in the value's own text color/weight while the
+  /// controller is empty (e.g. the Note field's "Add a note (optional)").
+  /// Fields that don't pass this simply render nothing while empty, same as
+  /// before this parameter existed.
+  final String? hintText;
+
+  /// Leading content at the start of the value row (e.g. the delivery-fee
+  /// field's "$" icon, which sits before the digits rather than after them)
+  /// — stays inline in the row, not inside a box.
+  final Widget? prefix;
+
   /// Trailing content at the end of the value row (e.g. the "days" suffix
   /// text or the "$" icon) — stays inline in the row, not inside a box.
   final Widget? suffix;
+
+  /// Content shown at the end of the label row, beside [label] (e.g. the
+  /// Rate field's "Sample rate"/"✓ Your rate" status badge).
+  final Widget? labelTrailing;
+
+  /// Content right-aligned at the end of the value row, after [suffix]
+  /// (e.g. the Rate field's "Save as my rate" link).
+  final Widget? trailingAction;
+
+  /// External focus node, for callers that need to observe or drive focus
+  /// from outside (e.g. the delivery-fee editor folds back to its collapsed
+  /// summary row when this loses focus). Defaults to an internally owned
+  /// node when omitted.
+  final FocusNode? focusNode;
 
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
@@ -33,7 +58,12 @@ class UnderlineTextField extends StatefulWidget {
     required this.label,
     required this.controller,
     this.keyboardType,
+    this.hintText,
+    this.prefix,
     this.suffix,
+    this.labelTrailing,
+    this.trailingAction,
+    this.focusNode,
     this.errorTextList,
   });
 
@@ -42,11 +72,17 @@ class UnderlineTextField extends StatefulWidget {
 }
 
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
+
+  /// Whether this state created [_focusNode] itself (true) or a caller
+  /// passed one in via [UnderlineTextField.focusNode] (false) — only an
+  /// internally created node is this state's to dispose.
+  bool get _ownsFocusNode => widget.focusNode == null;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
   }
@@ -68,7 +104,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
-    _focusNode.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -77,6 +115,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
+    final prefix = widget.prefix;
+    final labelTrailing = widget.labelTrailing;
+    final trailingAction = widget.trailingAction;
     final errorTextList = widget.errorTextList;
     final hasError = errorTextList != null && errorTextList.isNotEmpty;
     final isEmpty = widget.controller.text.isEmpty;
@@ -97,16 +138,29 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            widget.label,
-            style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textBody,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                widget.label,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              if (labelTrailing != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                labelTrailing,
+              ],
+            ],
           ),
           const SizedBox(height: CoreSpacing.space1),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (prefix != null) ...[
+                prefix,
+                const SizedBox(width: CoreSpacing.space2),
+              ],
               Expanded(
                 child: TextField(
                   controller: widget.controller,
@@ -120,12 +174,16 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                       : textTheme.bodyLargeSemiBold.copyWith(
                           color: colorTheme.textHeadline,
                         ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     border: InputBorder.none,
+                    hintText: widget.hintText,
+                    hintStyle: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textDisable,
+                    ),
                     // Vertical padding, not zero: without it the field's own
                     // interactive area is only as tall as its text line
                     // (~24px), short of Android's 48dp minimum tap target.
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       vertical: CoreSpacing.space3,
                     ),
                   ),
@@ -134,6 +192,10 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               if (suffix != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
                 suffix,
+              ],
+              if (trailingAction != null) ...[
+                const SizedBox(width: CoreSpacing.space2),
+                trailingAction,
               ],
             ],
           ),
