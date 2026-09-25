@@ -101,6 +101,19 @@ void main() {
         expect(unitsOf(converter.offersFor(area)), contains(Unit.acre));
       });
 
+      test('offers an area raised in centimetres the four square units', () {
+        const area = Area(
+          100.0 * Area.squareTicksPerSquareInch,
+          unit: Unit.centimetre,
+        );
+        expect(unitsOf(converter.offersFor(area)), [
+          Unit.foot,
+          Unit.yard,
+          Unit.inch,
+          Unit.metre,
+        ]);
+      });
+
       test('leaves the typed unit out: 2in² is offered in ft², yd², m²', () {
         const area = Area(2.0 * Area.squareTicksPerSquareInch, unit: Unit.inch);
         expect(unitsOf(converter.offersFor(area)), [
@@ -135,6 +148,16 @@ void main() {
             isA<Volume>().having((v) => v.cubicFeet, 'cubicFeet', 2106),
           ),
         );
+      });
+
+      test('offers a volume raised in millimetres like any other', () {
+        const volume = Volume(0.5, unit: Unit.millimetre);
+        expect(unitsOf(converter.offersFor(volume)), [
+          Unit.foot,
+          Unit.yard,
+          Unit.metre,
+          Unit.boardFoot,
+        ]);
       });
 
       test('leaves out the spelling the value already wears', () {
