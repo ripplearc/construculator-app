@@ -8,22 +8,6 @@ part 'calculator_state.dart';
 
 /// Manages the state of the calculator display area.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
-  /// Drives the calculator's group-tab UI; each entry names a tab and lists its function keys.
-  static const List<({String name, List<String> keys})> functionGroups = [
-    (
-      name: 'basicGeometry',
-      keys: ['Width', 'Length', 'Height', 'Pitch', 'Circle', 'Rise', 'Run', 'Radius'],
-    ),
-    (
-      name: 'materials',
-      keys: ['Lbs', 'Kg', 'Tons', 'Drywall', 'Fence'],
-    ),
-    (
-      name: 'trigonometry',
-      keys: ['SIN', 'COS', 'TAN'],
-    ),
-  ];
-
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);

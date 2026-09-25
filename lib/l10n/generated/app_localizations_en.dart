@@ -1436,9 +1436,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyPitch => 'Pitch';
 
   @override
-  String get calculatorKeyCircle => 'Circle';
-
-  @override
   String get calculatorKeyRise => 'Rise';
 
   @override
@@ -1457,9 +1454,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyTons => 'Tons';
 
   @override
-  String get calculatorKeyDrywall => 'Drywall';
-
-  @override
   String get calculatorKeyFence => 'Fence';
 
   @override
@@ -1473,6 +1467,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorResultPosts => 'Posts';
+
+  @override
+  String get calculatorGroupShapes => 'Shapes';
+
+  @override
+  String get calculatorGroupUnit => 'Unit';
+
+  @override
+  String get calculatorKeyDiag => 'Diag';
+
+  @override
+  String get calculatorKeySlope => 'Slope';
+
+  @override
+  String get calculatorKeyDiameter => 'Diameter';
+
+  @override
+  String get calculatorKeySides => 'Sides';
+
+  @override
+  String get calculatorKeyChord => 'Chord';
+
+  @override
+  String get calculatorKeyArc => 'Arc';
+
+  @override
+  String get calculatorKeyColCone => 'Col/Cone';
+
+  @override
+  String get calculatorKeyMsnry => 'Msnry';
+
+  @override
+  String get calculatorKeyDrywal => 'Drywal';
+
+  @override
+  String get calculatorKeyFootng => 'Footng';
+
+  @override
+  String get calculatorKeyQtyAtOc => 'Qty@OC';
+
+  @override
+  String get calculatorKeyCost => 'Cost';
+
+  @override
+  String get calculatorKeyWeight => 'Weight';
+
+  @override
+  String get calculatorKeyBdFt => 'Bd Ft';
+
+  @override
+  String get calculatorKeyMetre => 'm';
+
+  @override
+  String get calculatorKeyCentimetre => 'cm';
+
+  @override
+  String get calculatorKeyMillimetre => 'mm';
+
+  @override
+  String get calculatorKeyMetricTons => 'm Tons';
+
+  @override
+  String get calculatorKeyAsin => 'ASIN';
+
+  @override
+  String get calculatorKeyAcos => 'ACOS';
+
+  @override
+  String get calculatorKeyAtan => 'ATAN';
+
+  @override
+  String get calculatorKeyDms => 'D:M:S';
+
+  @override
+  String get calculatorKeyDiagFullName => 'Diagonal';
+
+  @override
+  String get calculatorKeyColConeFullName => 'Column or cone';
+
+  @override
+  String get calculatorKeyMsnryFullName => 'Masonry covered area';
+
+  @override
+  String get calculatorKeyDrywalFullName => 'Drywall covered area';
+
+  @override
+  String get calculatorKeyFootngFullName => 'Footing';
+
+  @override
+  String get calculatorKeyQtyAtOcFullName => 'Quantity at on-centre spacing';
+
+  @override
+  String get calculatorKeyBdFtFullName => 'Board feet';
+
+  @override
+  String get calculatorKeyMetreFullName => 'Metres';
+
+  @override
+  String get calculatorKeyCentimetreFullName => 'Centimetres';
+
+  @override
+  String get calculatorKeyMillimetreFullName => 'Millimetres';
+
+  @override
+  String get calculatorKeyLbsFullName => 'Pounds';
+
+  @override
+  String get calculatorKeyKgFullName => 'Kilograms';
+
+  @override
+  String get calculatorKeyTonsFullName => 'Tons';
+
+  @override
+  String get calculatorKeyMetricTonsFullName => 'Metric tons';
+
+  @override
+  String get calculatorKeySinFullName => 'Sine';
+
+  @override
+  String get calculatorKeyCosFullName => 'Cosine';
+
+  @override
+  String get calculatorKeyTanFullName => 'Tangent';
+
+  @override
+  String get calculatorKeyAsinFullName => 'Arc sine';
+
+  @override
+  String get calculatorKeyAcosFullName => 'Arc cosine';
+
+  @override
+  String get calculatorKeyAtanFullName => 'Arc tangent';
+
+  @override
+  String get calculatorKeyDmsFullName => 'Degrees, minutes and seconds';
 
   @override
   String get featureUnavailableMessage =>

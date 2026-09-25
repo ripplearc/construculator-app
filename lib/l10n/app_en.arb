@@ -2240,10 +2240,6 @@
   "@calculatorKeyPitch": {
     "description": "Calculator key label for roof pitch"
   },
-  "calculatorKeyCircle": "Circle",
-  "@calculatorKeyCircle": {
-    "description": "Calculator key label for the circle function"
-  },
   "calculatorKeyRise": "Rise",
   "@calculatorKeyRise": {
     "description": "Calculator key label for the vertical rise of a slope"
@@ -2268,10 +2264,6 @@
   "@calculatorKeyTons": {
     "description": "Calculator key label for tons, a unit of weight"
   },
-  "calculatorKeyDrywall": "Drywall",
-  "@calculatorKeyDrywall": {
-    "description": "Calculator key label for the drywall material function"
-  },
   "calculatorKeyFence": "Fence",
   "@calculatorKeyFence": {
     "description": "Calculator key label for the fence material function"
@@ -2291,6 +2283,186 @@
   "calculatorResultPosts": "Posts",
   "@calculatorResultPosts": {
     "description": "Result label for the number of fence posts computed by the fence function"
+  },
+  "calculatorGroupShapes": "Shapes",
+  "@calculatorGroupShapes": {
+    "description": "Label for the Shapes function group tab in the calculator"
+  },
+  "calculatorGroupUnit": "Unit",
+  "@calculatorGroupUnit": {
+    "description": "Label for the Unit function group tab in the calculator"
+  },
+  "calculatorKeyDiag": "Diag",
+  "@calculatorKeyDiag": {
+    "description": "Calculator key label for the diagonal dimension"
+  },
+  "calculatorKeySlope": "Slope",
+  "@calculatorKeySlope": {
+    "description": "Calculator key label for the slope, a percent grade"
+  },
+  "calculatorKeyDiameter": "Diameter",
+  "@calculatorKeyDiameter": {
+    "description": "Calculator key label for the diameter of a circle"
+  },
+  "calculatorKeySides": "Sides",
+  "@calculatorKeySides": {
+    "description": "Calculator key label for the number of sides of a polygon"
+  },
+  "calculatorKeyChord": "Chord",
+  "@calculatorKeyChord": {
+    "description": "Calculator key label for the chord of an arc"
+  },
+  "calculatorKeyArc": "Arc",
+  "@calculatorKeyArc": {
+    "description": "Calculator key label for the arc length or angle"
+  },
+  "calculatorKeyColCone": "Col/Cone",
+  "@calculatorKeyColCone": {
+    "description": "Calculator key label for the column or cone volume"
+  },
+  "calculatorKeyMsnry": "Msnry",
+  "@calculatorKeyMsnry": {
+    "description": "Calculator key label for the masonry covered area"
+  },
+  "calculatorKeyDrywal": "Drywal",
+  "@calculatorKeyDrywal": {
+    "description": "Calculator key label for the drywall covered area"
+  },
+  "calculatorKeyFootng": "Footng",
+  "@calculatorKeyFootng": {
+    "description": "Calculator key label for the footing volume"
+  },
+  "calculatorKeyQtyAtOc": "Qty@OC",
+  "@calculatorKeyQtyAtOc": {
+    "description": "Calculator key label for the quantity at an on-centre spacing"
+  },
+  "calculatorKeyCost": "Cost",
+  "@calculatorKeyCost": {
+    "description": "Calculator key label for the cost of the current result"
+  },
+  "calculatorKeyWeight": "Weight",
+  "@calculatorKeyWeight": {
+    "description": "Calculator key label for the weight of the current result"
+  },
+  "calculatorKeyBdFt": "Bd Ft",
+  "@calculatorKeyBdFt": {
+    "description": "Calculator key label for board feet"
+  },
+  "calculatorKeyMetre": "m",
+  "@calculatorKeyMetre": {
+    "description": "Calculator key label for metres"
+  },
+  "calculatorKeyCentimetre": "cm",
+  "@calculatorKeyCentimetre": {
+    "description": "Calculator key label for centimetres"
+  },
+  "calculatorKeyMillimetre": "mm",
+  "@calculatorKeyMillimetre": {
+    "description": "Calculator key label for millimetres"
+  },
+  "calculatorKeyMetricTons": "m Tons",
+  "@calculatorKeyMetricTons": {
+    "description": "Calculator key label for metric tons"
+  },
+  "calculatorKeyAsin": "ASIN",
+  "@calculatorKeyAsin": {
+    "description": "Calculator key label for the arc sine trigonometric function"
+  },
+  "calculatorKeyAcos": "ACOS",
+  "@calculatorKeyAcos": {
+    "description": "Calculator key label for the arc cosine trigonometric function"
+  },
+  "calculatorKeyAtan": "ATAN",
+  "@calculatorKeyAtan": {
+    "description": "Calculator key label for the arc tangent trigonometric function"
+  },
+  "calculatorKeyDms": "D:M:S",
+  "@calculatorKeyDms": {
+    "description": "Calculator key label for the degrees, minutes and seconds angle entry"
+  },
+  "calculatorKeyDiagFullName": "Diagonal",
+  "@calculatorKeyDiagFullName": {
+    "description": "Full name of the abbreviated \"Diag\" calculator key, read by screen readers"
+  },
+  "calculatorKeyColConeFullName": "Column or cone",
+  "@calculatorKeyColConeFullName": {
+    "description": "Full name of the abbreviated \"Col/Cone\" calculator key, read by screen readers"
+  },
+  "calculatorKeyMsnryFullName": "Masonry covered area",
+  "@calculatorKeyMsnryFullName": {
+    "description": "Full name of the abbreviated \"Msnry\" calculator key, read by screen readers"
+  },
+  "calculatorKeyDrywalFullName": "Drywall covered area",
+  "@calculatorKeyDrywalFullName": {
+    "description": "Full name of the abbreviated \"Drywal\" calculator key, read by screen readers"
+  },
+  "calculatorKeyFootngFullName": "Footing",
+  "@calculatorKeyFootngFullName": {
+    "description": "Full name of the abbreviated \"Footng\" calculator key, read by screen readers"
+  },
+  "calculatorKeyQtyAtOcFullName": "Quantity at on-centre spacing",
+  "@calculatorKeyQtyAtOcFullName": {
+    "description": "Full name of the abbreviated \"Qty@OC\" calculator key, read by screen readers"
+  },
+  "calculatorKeyBdFtFullName": "Board feet",
+  "@calculatorKeyBdFtFullName": {
+    "description": "Full name of the abbreviated \"Bd Ft\" calculator key, read by screen readers"
+  },
+  "calculatorKeyMetreFullName": "Metres",
+  "@calculatorKeyMetreFullName": {
+    "description": "Full name of the abbreviated \"m\" calculator key, read by screen readers"
+  },
+  "calculatorKeyCentimetreFullName": "Centimetres",
+  "@calculatorKeyCentimetreFullName": {
+    "description": "Full name of the abbreviated \"cm\" calculator key, read by screen readers"
+  },
+  "calculatorKeyMillimetreFullName": "Millimetres",
+  "@calculatorKeyMillimetreFullName": {
+    "description": "Full name of the abbreviated \"mm\" calculator key, read by screen readers"
+  },
+  "calculatorKeyLbsFullName": "Pounds",
+  "@calculatorKeyLbsFullName": {
+    "description": "Full name of the abbreviated \"Lbs\" calculator key, read by screen readers"
+  },
+  "calculatorKeyKgFullName": "Kilograms",
+  "@calculatorKeyKgFullName": {
+    "description": "Full name of the abbreviated \"Kg\" calculator key, read by screen readers"
+  },
+  "calculatorKeyTonsFullName": "Tons",
+  "@calculatorKeyTonsFullName": {
+    "description": "Full name of the abbreviated \"Tons\" calculator key, read by screen readers"
+  },
+  "calculatorKeyMetricTonsFullName": "Metric tons",
+  "@calculatorKeyMetricTonsFullName": {
+    "description": "Full name of the abbreviated \"m Tons\" calculator key, read by screen readers"
+  },
+  "calculatorKeySinFullName": "Sine",
+  "@calculatorKeySinFullName": {
+    "description": "Full name of the abbreviated \"Sin\" calculator key, read by screen readers"
+  },
+  "calculatorKeyCosFullName": "Cosine",
+  "@calculatorKeyCosFullName": {
+    "description": "Full name of the abbreviated \"Cos\" calculator key, read by screen readers"
+  },
+  "calculatorKeyTanFullName": "Tangent",
+  "@calculatorKeyTanFullName": {
+    "description": "Full name of the abbreviated \"Tan\" calculator key, read by screen readers"
+  },
+  "calculatorKeyAsinFullName": "Arc sine",
+  "@calculatorKeyAsinFullName": {
+    "description": "Full name of the abbreviated \"ASIN\" calculator key, read by screen readers"
+  },
+  "calculatorKeyAcosFullName": "Arc cosine",
+  "@calculatorKeyAcosFullName": {
+    "description": "Full name of the abbreviated \"ACOS\" calculator key, read by screen readers"
+  },
+  "calculatorKeyAtanFullName": "Arc tangent",
+  "@calculatorKeyAtanFullName": {
+    "description": "Full name of the abbreviated \"ATAN\" calculator key, read by screen readers"
+  },
+  "calculatorKeyDmsFullName": "Degrees, minutes and seconds",
+  "@calculatorKeyDmsFullName": {
+    "description": "Full name of the abbreviated \"D:M:S\" calculator key, read by screen readers"
   },
   "featureUnavailableMessage": "This feature is not available in this version of the app.",
   "@featureUnavailableMessage": {

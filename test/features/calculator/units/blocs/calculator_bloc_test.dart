@@ -449,26 +449,5 @@ void main() {
         },
       );
     });
-
-    group('functionGroups', () {
-      test('has three groups', () {
-        expect(CalculatorBloc.functionGroups.length, 3);
-      });
-
-      test('first group is basicGeometry with 8 keys', () {
-        expect(CalculatorBloc.functionGroups[0].name, 'basicGeometry');
-        expect(CalculatorBloc.functionGroups[0].keys.length, 8);
-      });
-
-      test('second group is materials with 5 keys', () {
-        expect(CalculatorBloc.functionGroups[1].name, 'materials');
-        expect(CalculatorBloc.functionGroups[1].keys.length, 5);
-      });
-
-      test('third group is trigonometry with 3 keys', () {
-        expect(CalculatorBloc.functionGroups[2].name, 'trigonometry');
-        expect(CalculatorBloc.functionGroups[2].keys.length, 3);
-      });
-    });
   });
 }
