@@ -126,16 +126,19 @@ class EstimationActionsSheet extends StatelessWidget {
                 Column(
                   children: [
                     _ActionListItem(
+                      key: const Key('logs_action_row'),
                       icon: CoreIcons.calendar,
                       label: l10n.logsAction,
                       onTap: onLogs,
                     ),
                     _ActionListItem(
+                      key: const Key('copy_estimation_action_row'),
                       icon: CoreIcons.copy,
                       label: l10n.copyEstimationAction,
                       onTap: onCopy,
                     ),
                     _ActionListItem(
+                      key: const Key('share_export_action_row'),
                       icon: CoreIcons.share,
                       label: l10n.shareExportAction,
                       onTap: onShare,
@@ -144,6 +147,7 @@ class EstimationActionsSheet extends StatelessWidget {
                       valueListenable: lockStatusNotifier,
                       builder: (context, isLocked, _) {
                         return _ActionListItem(
+                          key: const Key('lock_estimation_action_row'),
                           icon: isLocked ? CoreIcons.lock : CoreIcons.unlock,
                           label: l10n.lockEstimationAction,
                           actionWidget: CoreSwitch(
@@ -218,6 +222,7 @@ class _ActionListItem extends StatelessWidget {
   final Widget? actionWidget;
 
   const _ActionListItem({
+    super.key,
     required this.icon,
     required this.label,
     this.onTap,

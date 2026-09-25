@@ -183,14 +183,17 @@ void main() {
     ) async {
       await tester.pumpWidget(createWidget());
 
-      final logsTop = tester.getTopLeft(find.text(l10n().logsAction));
+      final logsTop = tester.getTopLeft(
+        find.byKey(const Key('logs_action_row')),
+      );
 
-      for (final label in [
-        l10n().copyEstimationAction,
-        l10n().shareExportAction,
-        l10n().lockEstimationAction,
+      for (final rowKey in [
+        'copy_estimation_action_row',
+        'share_export_action_row',
+        'lock_estimation_action_row',
       ]) {
-        expect(logsTop.dy, lessThan(tester.getTopLeft(find.text(label)).dy));
+        final rowTop = tester.getTopLeft(find.byKey(Key(rowKey)));
+        expect(logsTop.dy, lessThan(rowTop.dy));
       }
     });
 
@@ -201,7 +204,7 @@ void main() {
 
       await tester.pumpWidget(createWidget(onCopy: () => onCopyCalled = true));
 
-      await tester.tap(find.text(l10n().copyEstimationAction));
+      await tester.tap(find.byKey(const Key('copy_estimation_action_row')));
       await tester.pump();
 
       expect(onCopyCalled, isTrue);
@@ -216,7 +219,7 @@ void main() {
         createWidget(onShare: () => onShareCalled = true),
       );
 
-      await tester.tap(find.text(l10n().shareExportAction));
+      await tester.tap(find.byKey(const Key('share_export_action_row')));
       await tester.pump();
 
       expect(onShareCalled, isTrue);
@@ -229,7 +232,7 @@ void main() {
 
       await tester.pumpWidget(createWidget(onLogs: () => onLogsCalled = true));
 
-      await tester.tap(find.text(l10n().logsAction));
+      await tester.tap(find.byKey(const Key('logs_action_row')));
       await tester.pump();
 
       expect(onLogsCalled, isTrue);
