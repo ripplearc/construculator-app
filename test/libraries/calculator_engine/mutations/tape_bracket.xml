@@ -37,13 +37,13 @@
 
         <!-- RULE 5: an empty bracket closes to nothing instead of being
              removed -->
-        <regex pattern="if \(inner\.isEmpty\) \{\s*return TapeChanged\(\s*_removeBracket\(bracket\)," dotAll="true" id="tape.close_bracket.keep_empty">
-            <mutation text="if (false) { return TapeChanged( _removeBracket(bracket),"/>
+        <regex pattern="if \(inner\.isEmpty\) \{\s*if \(bracket\.original" dotAll="true" id="tape.close_bracket.keep_empty">
+            <mutation text="if (false) { if (bracket.original"/>
         </regex>
 
         <!-- RULE 6: the inside is sealed but the chip stays open -->
-        <regex pattern="bracket\.copyWith\(inner: inner\._sealed\(\)\.chips, isOpen: false\)," dotAll="true" id="tape.close_bracket.stay_open">
-            <mutation text="bracket.copyWith(inner: inner._sealed().chips),"/>
+        <regex pattern="inner: inner\._sealed\(\)\.chips,\s*isOpen: false," dotAll="true" id="tape.close_bracket.stay_open">
+            <mutation text="inner: inner._sealed().chips,"/>
         </regex>
 
         <!-- RULE 7: a digit after a closed bracket is appended to its value -->
@@ -62,8 +62,8 @@
         </regex>
 
         <!-- RULE 10: = lands the chain without closing the bracket first -->
-        <regex pattern="TapeChanged\(:final tape, notice: null\) =&gt; tape\.pressEquals\(\)," dotAll="true" id="tape.press_equals.no_close_first">
-            <mutation text="TapeChanged(:final tape, notice: null) =&gt; TapeChanged(tape),"/>
+        <regex pattern="TapeChanged\(:final tape, notice: null\) =&gt; switch \(tape\.pressEquals\(\)\) \{" dotAll="true" id="tape.press_equals.no_close_first">
+            <mutation text="TapeChanged(:final tape, notice: null) =&gt; switch (TapeChanged(tape)) {"/>
         </regex>
 
         <!-- RULE 11: a closed bracket is not a left-hand side for an
@@ -78,8 +78,42 @@
         </regex>
 
         <!-- RULE 13: an empty bracket after a value leaves the value sealed -->
-        <regex pattern="if \(before\.isNotEmpty &amp;&amp; before\.last is InputChip\) \{" dotAll="true" id="tape.remove_bracket.keep_value_sealed">
+        <regex pattern="if \(before\.isNotEmpty &amp;&amp; before\.last is ValueChip\) \{" dotAll="true" id="tape.remove_bracket.keep_value_sealed">
             <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 14: the steps inside a closed bracket are not counted, so
+             ( 2 + 3 = has nothing to compute -->
+        <regex pattern="ChainValue\(:final value, :final steps\) =&gt; \(value: value, steps: steps\)," dotAll="true" id="chain_evaluator.reading_of.drop_inner_steps">
+            <mutation text="ChainValue(:final value) =&gt; (value: value, steps: 0),"/>
+        </regex>
+
+        <!-- RULE 15: = drops the closed tape when nothing lands -->
+        <regex pattern="TapeRefused\(\) =&gt; TapeChanged\(\s*tape,\s*notice: TapeNotice\.bracketClosedNothingToCompute,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
+            <mutation text="final TapeRefused refused =&gt; refused,"/>
+        </regex>
+
+        <!-- RULE 16: closing a reopened bracket empty throws the group
+             away -->
+        <regex pattern="if \(bracket\.original != null\) return _restored\(bracket\);\s*return TapeChanged\(\s*_removeBracket\(bracket\),\s*notice: TapeNotice\.emptyBracketsRemoved," dotAll="true" id="tape.close_bracket.forget_original">
+            <mutation text="return TapeChanged( _removeBracket(bracket), notice: TapeNotice.emptyBracketsRemoved,"/>
+        </regex>
+
+        <!-- RULE 17: ⌫ on a reopened bracket emptied by the edit throws the
+             group away -->
+        <regex pattern="if \(bracket\.original != null\) return _restored\(bracket\);\s*return TapeChanged\(_removeBracket\(bracket\)\);" dotAll="true" id="tape.backspace.forget_original">
+            <mutation text="return TapeChanged(_removeBracket(bracket));"/>
+        </regex>
+
+        <!-- RULE 18: [( )] under a name replaces the named chip silently -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty &amp;&amp; chip\.key != null\) \{" dotAll="true" id="tape.open_bracket.drop_name">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 19: ⌫ on an error chip leaves the bracket before it
+             closed -->
+        <regex pattern="final BracketChip closed =&gt; _with\(\[\.\.\.before, _reopened\(closed\)\]\)," dotAll="true" id="tape.backspace.error_keeps_bracket_closed">
+            <mutation text="final BracketChip closed =&gt; _with([...before, closed]),"/>
         </regex>
     </rules>
 
