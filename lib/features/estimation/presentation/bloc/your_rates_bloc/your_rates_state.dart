@@ -28,3 +28,23 @@ class YourRatesError extends YourRatesState {
   const YourRatesError(this.failure);
   final Failure failure;
 }
+
+/// State after [YourRatesSaveRequested] succeeds outright (no collision).
+class YourRatesSaveSucceeded extends YourRatesState {
+  const YourRatesSaveSucceeded();
+}
+
+/// State after [YourRatesSaveRequested] is rejected because it collides
+/// with an existing entry and needs a distinguishing [YourRateEntry.entryLabel]
+/// — see [YourRatesRepository.save]'s collision rule. [entry] is the same
+/// entry the caller submitted, so a retry only needs to add a label to it.
+class YourRatesSaveCollision extends YourRatesState {
+  const YourRatesSaveCollision(this.entry);
+  final YourRateEntry entry;
+}
+
+/// State after [YourRatesSaveRequested] fails for any other reason.
+class YourRatesSaveFailed extends YourRatesState {
+  const YourRatesSaveFailed(this.failure);
+  final Failure failure;
+}
