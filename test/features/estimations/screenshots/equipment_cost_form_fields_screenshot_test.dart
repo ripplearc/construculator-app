@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -49,7 +50,10 @@ void main() {
         home: Scaffold(
           body: BlocProvider<EquipmentCostFormBloc>(
             create: (_) => Modular.get<EquipmentCostFormBloc>(),
-            child: EquipmentCostFormFields(fromCostFile: fromCostFile),
+            child: EquipmentCostFormFields(
+              fromCostFile: fromCostFile,
+              yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            ),
           ),
         ),
       ),

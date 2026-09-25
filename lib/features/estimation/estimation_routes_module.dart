@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -48,6 +49,7 @@ class EstimationRoutesModule extends Module {
           router: Modular.get<AppRouter>(),
           equipmentCostFormBlocFactory: () =>
               Modular.get<EquipmentCostFormBloc>(),
+          yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
         );
       },
     );
@@ -69,6 +71,7 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.material,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
+            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );
       },
@@ -91,6 +94,7 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.labor,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
+            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );
       },
@@ -113,6 +117,7 @@ class EstimationRoutesModule extends Module {
             type: CostItemType.equipment,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
+            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         );
       },

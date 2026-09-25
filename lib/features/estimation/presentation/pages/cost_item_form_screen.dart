@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
@@ -13,6 +14,12 @@ class CostItemFormScreen extends StatefulWidget {
   final String estimationId;
   final AppRouter router;
 
+  /// Backs the equipment form's "Save as my rate" and look-up-a-rate
+  /// features. Only exercised when [type] is equipment, but taken uniformly
+  /// across all three item types to match [router]'s existing pattern
+  /// rather than special-casing this one type at every call site.
+  final YourRatesBloc Function() yourRatesBlocFactory;
+
   /// When true, renders as plain content for a [CoreQuickSheet] (a back
   /// arrow + title header row instead of a [Scaffold]/[CoreAppBar]) rather
   /// than a full-screen route. Equipment only, per the Figma mocks — every
@@ -26,6 +33,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.type,
     required this.estimationId,
     required this.router,
+    required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
   });
 
@@ -199,21 +207,22 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         setState(() => _canSave = enabled);
     return switch (widget.type) {
       CostItemType.material => MaterialCostFormFields(
-          fromCostFile: _fromCostFile,
-          onTotalChanged: onTotalChanged,
-          onSaveEnabledChanged: onSaveEnabledChanged,
-        ),
+        fromCostFile: _fromCostFile,
+        onTotalChanged: onTotalChanged,
+        onSaveEnabledChanged: onSaveEnabledChanged,
+      ),
       CostItemType.labor => LabourCostFormFields(
-          fromCostFile: _fromCostFile,
-          onTotalChanged: onTotalChanged,
-          onSaveEnabledChanged: onSaveEnabledChanged,
-        ),
+        fromCostFile: _fromCostFile,
+        onTotalChanged: onTotalChanged,
+        onSaveEnabledChanged: onSaveEnabledChanged,
+      ),
       CostItemType.equipment => EquipmentCostFormFields(
-          fromCostFile: _fromCostFile,
-          onTotalChanged: onTotalChanged,
-          onSaveEnabledChanged: onSaveEnabledChanged,
-          estimateId: widget.estimationId,
-        ),
+        fromCostFile: _fromCostFile,
+        onTotalChanged: onTotalChanged,
+        onSaveEnabledChanged: onSaveEnabledChanged,
+        estimateId: widget.estimationId,
+        yourRatesBlocFactory: widget.yourRatesBlocFactory,
+      ),
     };
   }
 
