@@ -493,7 +493,7 @@ void main() {
 
           expect(find.byKey(const Key('activityIcon')), findsOneWidget);
 
-          await tester.tap(find.byType(CostEstimationLogTile));
+          await tester.tap(find.byKey(const Key('sendTapTarget')));
 
           expect(sendTaps, 1);
         });
@@ -506,22 +506,15 @@ void main() {
         CostEstimationActivityType.costEstimationRevoked,
         CostEstimationActivityType.costEstimationPdfShared,
       ]) {
-        testWidgets('${kind.name} shows no arrow and ignores taps', (
+        testWidgets('${kind.name} shows no arrow and has no tap target', (
           tester,
         ) async {
-          var sendTaps = 0;
           await tester.pumpWidget(
-            createWidget(
-              testLog.copyWith(activity: kind),
-              onSendTap: () => sendTaps++,
-            ),
+            createWidget(testLog.copyWith(activity: kind)),
           );
 
           expect(find.byKey(const Key('activityIcon')), findsNothing);
-
-          await tester.tap(find.byType(CostEstimationLogTile));
-
-          expect(sendTaps, 0);
+          expect(find.byKey(const Key('sendTapTarget')), findsNothing);
         });
       }
     });

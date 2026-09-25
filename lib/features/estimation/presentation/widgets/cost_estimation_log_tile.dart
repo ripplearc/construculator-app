@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
-import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_link.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_screen.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_mapper.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -79,6 +79,7 @@ class CostEstimationLogTile extends StatelessWidget {
     return Semantics(
       button: true,
       child: GestureDetector(
+        key: const Key('sendTapTarget'),
         onTap: onSendTap,
         behavior: HitTestBehavior.opaque,
         child: tile,
