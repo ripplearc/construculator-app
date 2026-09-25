@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -323,26 +324,35 @@ void main() {
       );
     });
 
-    testWidgets('tapping add equipment cost button navigates to equipment cost form', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'tapping add equipment cost button opens the equipment cost sheet '
+      'instead of navigating to a route',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
-      await tester.pump();
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
 
-      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-      expect(
-        fakeRouter.navigationHistory,
-        contains(RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null)),
-      );
-    });
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(BottomSheet), findsOneWidget);
+
+        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+        expect(
+          fakeRouter.navigationHistory,
+          isNot(
+            contains(
+              RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null),
+            ),
+          ),
+        );
+      },
+    );
   });
 }
