@@ -18,6 +18,7 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'lbs' => current.pressUnit(Unit.pound),
+        'cm' => current.pressUnit(Unit.centimetre),
         'bf' => current.pressUnit(Unit.boardFoot),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -128,7 +129,7 @@ void main() {
         // a sealed value of any kind be the left-hand side.
         const sealed = Tape(
           chips: [
-            InputChip(
+            ValueChip(
               entry: EntryBuffer([Token(digits: '78')]),
               isActive: false,
             ),
@@ -140,7 +141,7 @@ void main() {
       test('an operator picks up a sealed value as its left-hand side', () {
         const sealed = Tape(
           chips: [
-            InputChip(
+            ValueChip(
               entry: EntryBuffer([Token(digits: '18', unit: Unit.foot)]),
               isActive: false,
             ),
@@ -246,7 +247,7 @@ void main() {
       test('seals the active chip when it lands', () {
         final tape = press(const Tape(), '2 + 3 =');
         expect(tape.active, isNull);
-        expect((tape.chips[1] as InputChip).isActive, isFalse);
+        expect((tape.chips[1] as ValueChip).isActive, isFalse);
       });
     });
 
@@ -267,10 +268,40 @@ void main() {
           landed.chips.last,
           const ErrorChip(CalculationError.dimensionError),
         );
+        expect((landed.chips[1] as ValueChip).isActive, isFalse);
+        expect(landed.active, isNull);
         expect(landed.runningTotal, const ChainEmpty());
         expect(
           landed.pressEquals(),
           const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+      });
+
+      test('a failed chain does not break the chain typed after it', () {
+        final tape = press(const Tape(), '5 lbs + 1 2 ft [Width] 5 ft × 3');
+        expect(calc(tape), '15ft 0in');
+        expect(lastResult(press(tape, '=')), 'Calc 15ft 0in');
+      });
+
+      test('rule 4.12: = works again after an error chip', () {
+        final divided = press(const Tape(), '5 ÷ 0 =');
+        expect(
+          divided.chips.last,
+          const ErrorChip(CalculationError.divisionByZero),
+        );
+        expect(lastResult(press(divided, '4 + 3 =')), 'Calc 7');
+        final mismatched = press(const Tape(), '7 8 lbs ÷ 1 2 ft =');
+        expect(lastResult(press(mismatched, '3 ft × 4 ft =')), 'Calc 12ft²');
+      });
+
+      test('a metric chain answers in the unit it was typed in', () {
+        // 2cm and 3cm are whole ticks on the tape (50 and 76), so the area
+        // reads 5.99cm², in centimetres rather than 0m².
+        final landed = press(const Tape(), '2 cm × 3 cm =');
+        expect(lastResult(landed), 'Calc 5.99cm²');
+        expect(
+          (landed.chips.last as ResultChip).value,
+          const Area(3800, unit: Unit.centimetre),
         );
       });
 
@@ -303,18 +334,18 @@ void main() {
     const evaluator = ChainEvaluator();
 
     test('folds nothing on an empty tape', () {
-      final empty = evaluator.fold(List<Chip>.empty());
+      final empty = evaluator.fold(List<TapeChip>.empty());
       expect(empty, const ChainEmpty());
       expect(empty.hashCode, const ChainEmpty().hashCode);
     });
 
     test('stops at a value that cannot be read yet', () {
       const chips = [
-        InputChip(
+        ValueChip(
           entry: EntryBuffer([Token(digits: '2', unit: Unit.foot)]),
           isActive: false,
         ),
-        InputChip(
+        ValueChip(
           operator: Operator.add,
           entry: EntryBuffer([
             Token(digits: '18', unit: Unit.foot),
@@ -328,12 +359,41 @@ void main() {
     test('a result restarts the count of steps', () {
       const chips = [
         ResultChip(key: 'Calc', value: Scalar(3)),
-        InputChip(
+        ValueChip(
           operator: Operator.multiply,
           entry: EntryBuffer([Token(digits: '89')]),
         ),
       ];
       expect(evaluator.fold(chips), const ChainValue(Scalar(267), steps: 1));
+    });
+
+    test('a result chip carrying an operator continues the chain', () {
+      const chips = [
+        ValueChip(entry: EntryBuffer([Token(digits: '2')]), isActive: false),
+        ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
+      ];
+      expect(evaluator.fold(chips), const ChainValue(Scalar(5), steps: 1));
+    });
+
+    test('a failed step is the fold until a chip with no operator', () {
+      const pounds = ValueChip(
+        entry: EntryBuffer([Token(digits: '5', unit: Unit.pound)]),
+        isActive: false,
+      );
+      const feet = ValueChip(
+        operator: Operator.add,
+        entry: EntryBuffer([Token(digits: '12', unit: Unit.foot)]),
+        isActive: false,
+      );
+      const three = ValueChip(
+        operator: Operator.multiply,
+        entry: EntryBuffer([Token(digits: '3')]),
+      );
+      expect(evaluator.fold(const [pounds, feet, three]), isA<ChainFailed>());
+      expect(
+        evaluator.fold(const [pounds, feet, pounds, three]),
+        const ChainValue(Weight(1500, unit: Unit.pound), steps: 1),
+      );
     });
 
     test('outcomes compare by what they carry', () {
@@ -342,14 +402,15 @@ void main() {
         ChainValue(const Scalar(20), steps: steps),
         const ChainValue(Scalar(20), steps: 1),
       );
-      final error = CalculationError.values[int.parse('0')];
+      // ignore: prefer_const_constructors
+      final failed = ChainFailed(
+        CalculationError.dimensionError,
+        left: const Scalar(1),
+        operator: Operator.add,
+        right: const Scalar(2),
+      );
       expect(
-        ChainFailed(
-          error,
-          left: const Scalar(1),
-          operator: Operator.add,
-          right: const Scalar(2),
-        ),
+        failed,
         const ChainFailed(
           CalculationError.dimensionError,
           left: Scalar(1),
