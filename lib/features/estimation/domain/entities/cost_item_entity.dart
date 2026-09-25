@@ -146,6 +146,103 @@ enum LaborCalculationMethodType {
   }
 }
 
+/// Pricing strategy for an [EquipmentCostItem]: by the day or by the job.
+enum EquipmentPricingMethod {
+  /// Priced using [EquipmentCostItem.duration] and [EquipmentCostItem.dailyRate].
+  day,
+
+  /// Priced as a single flat [EquipmentCostItem.jobAmount] for the whole job.
+  job;
+
+  /// Deserializes an [EquipmentPricingMethod] from JSON string.
+  ///
+  /// Falls back to [EquipmentPricingMethod.day] for unknown values to ensure
+  /// forward compatibility with new pricing methods added in future versions.
+  ///
+  /// Note: This fallback behavior means validation errors are silent.
+  /// Consider logging unknown values if strict validation is required.
+  static EquipmentPricingMethod fromJson(String value) {
+    return EquipmentPricingMethod.values.firstWhere(
+      (e) => e.name.toLowerCase() == value.toLowerCase(),
+      orElse: () => EquipmentPricingMethod.day,
+    );
+  }
+
+  /// Serializes this [EquipmentPricingMethod] to its JSON string representation.
+  String toJson() => name;
+}
+
+/// Confirmation state of a quoted delivery fee.
+///
+/// Distinguishes "not yet quoted" from "confirmed zero" so the UI can show a
+/// dash instead of a $0 amount until a real quote exists.
+enum DeliveryFeeStatus {
+  /// No delivery fee has been quoted yet.
+  unset,
+
+  /// Delivery fee is a system estimate, not yet confirmed.
+  estimated,
+
+  /// Delivery fee has been confirmed.
+  confirmed;
+
+  /// Deserializes a [DeliveryFeeStatus] from JSON string.
+  ///
+  /// Falls back to [DeliveryFeeStatus.unset] for unknown values to ensure
+  /// forward compatibility with new statuses added in future versions.
+  /// Unset is the safest default because it never implies a fee was quoted.
+  ///
+  /// Note: This fallback behavior means validation errors are silent.
+  /// Consider logging unknown values if strict validation is required.
+  static DeliveryFeeStatus fromJson(String value) {
+    return DeliveryFeeStatus.values.firstWhere(
+      (e) => e.name.toLowerCase() == value.toLowerCase(),
+      orElse: () => DeliveryFeeStatus.unset,
+    );
+  }
+
+  /// Serializes this [DeliveryFeeStatus] to its JSON string representation.
+  String toJson() => name;
+}
+
+/// Confidence level of a rate value used in a cost item's calculation.
+///
+/// This is intentionally generic and not equipment-specific: it is introduced
+/// for [EquipmentCostItem.rateStatus] but is designed to be adopted by
+/// Material and Labor cost items in future tickets, so all cost item types
+/// can express the same three-way rate confidence.
+enum RateStatus {
+  /// Rate comes from a generic sample/reference rate, not yet verified by the user.
+  sampleRateUnverified('sample_rate_unverified'),
+
+  /// Rate has been confirmed as the user's own known rate.
+  ownRateConfirmed('own_rate_confirmed'),
+
+  /// No rate value is available.
+  missing('missing');
+
+  final String value;
+  const RateStatus(this.value);
+
+  String toJson() => value;
+
+  /// Deserializes a [RateStatus] from JSON string.
+  ///
+  /// Falls back to [RateStatus.missing] for unknown values to ensure forward
+  /// compatibility with new statuses added in future versions. Missing is the
+  /// safest default because it never implies an unverified or confirmed rate
+  /// exists when the value is actually unrecognized.
+  ///
+  /// Note: This fallback behavior means validation errors are silent.
+  /// Consider logging unknown values if strict validation is required.
+  static RateStatus fromJson(String value) {
+    return RateStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => RateStatus.missing,
+    );
+  }
+}
+
 /// Value object representing a monetary amount
 class Money extends Equatable {
   /// The monetary amount in the given [currency].
@@ -353,9 +450,9 @@ sealed class CostItem extends Equatable {
 
 /// Material cost item with unit price and quantity.
 ///
-/// Although structurally identical to [EquipmentCostItem], this class is kept
-/// separate to maintain type safety and domain semantics. Materials and equipment
-/// represent distinct business concepts with different:
+/// Kept as a separate class from [EquipmentCostItem] to maintain type safety
+/// and domain semantics. Materials and equipment represent distinct business
+/// concepts with different:
 /// - Accounting categories and tax treatment
 /// - Procurement workflows and suppliers
 /// - Storage and inventory management requirements
@@ -528,11 +625,17 @@ class LaborCostItem extends CostItem {
   }
 }
 
-/// Equipment cost item with unit price and quantity.
+/// Equipment cost item priced by the day or by the job.
 ///
-/// Although structurally identical to [MaterialCostItem], this class is kept
-/// separate to maintain type safety and domain semantics. Equipment and materials
-/// represent distinct business concepts with different:
+/// Unlike [MaterialCostItem], equipment has no unit of measurement: it is
+/// either priced for a [duration] of days at a [dailyRate], or as a single
+/// flat [jobAmount] for the whole job. [pricingMethod] determines which pair
+/// of fields is meaningful and is fixed for the lifetime of the item. See
+/// [pricingMethod] for why.
+///
+/// Kept as a separate class from [MaterialCostItem] to maintain type safety
+/// and domain semantics. Equipment and materials represent distinct business
+/// concepts with different:
 /// - Depreciation schedules and asset management
 /// - Rental vs. purchase considerations
 /// - Maintenance and operational tracking
@@ -541,11 +644,42 @@ class LaborCostItem extends CostItem {
 /// This separation allows the domain model to evolve independently for each
 /// concept and prevents accidental conflation of semantically different items.
 class EquipmentCostItem extends CostItem {
-  /// Price per single unit of this equipment.
-  final Money unitPrice;
+  /// Pricing strategy for this equipment line: by the day or by the job.
+  ///
+  /// Deliberately not a [copyWith] parameter: once a line is constructed
+  /// (and saved), its pricing method cannot be changed in place. Switching
+  /// between day and job pricing means building a fresh [EquipmentCostItem]
+  /// rather than mutating an existing one, since the two methods populate
+  /// different fields ([duration]/[dailyRate] vs [jobAmount]).
+  final EquipmentPricingMethod pricingMethod;
 
-  /// Total quantity of this equipment with its unit of measurement.
-  final Quantity quantity;
+  /// Number of days this equipment was used, in days.
+  ///
+  /// Only set when [pricingMethod] is [EquipmentPricingMethod.day].
+  final double? duration;
+
+  /// Rate charged per day of use.
+  ///
+  /// Only meaningful when [pricingMethod] is [EquipmentPricingMethod.day].
+  final Money? dailyRate;
+
+  /// Flat amount charged for the whole job.
+  ///
+  /// Only meaningful when [pricingMethod] is [EquipmentPricingMethod.job].
+  final Money? jobAmount;
+
+  /// Delivery fee for this equipment line.
+  ///
+  /// `null` means the fee has not been quoted, shown as a dash in the UI.
+  /// A [Money] with a zero amount means delivery has been confirmed free of
+  /// charge, which is distinct from not having a quote at all.
+  final Money? deliveryFee;
+
+  /// Confirmation state of [deliveryFee].
+  final DeliveryFeeStatus deliveryFeeStatus;
+
+  /// Confidence level of the rate used for this line ([dailyRate] or [jobAmount]).
+  final RateStatus rateStatus;
 
   const EquipmentCostItem({
     required super.id,
@@ -556,18 +690,33 @@ class EquipmentCostItem extends CostItem {
     required super.createdAt,
     required super.updatedAt,
     required super.currency,
-    required this.unitPrice,
-    required this.quantity,
+    required this.pricingMethod,
+    required this.deliveryFeeStatus,
+    required this.rateStatus,
+    this.duration,
+    this.dailyRate,
+    this.jobAmount,
+    this.deliveryFee,
     super.brand,
     super.productLink,
     super.description,
   }) : super(itemType: CostItemType.equipment);
 
   @override
-  List<Object?> get props => [...super.props, unitPrice, quantity];
+  List<Object?> get props => [
+    ...super.props,
+    pricingMethod,
+    duration,
+    dailyRate,
+    jobAmount,
+    deliveryFee,
+    deliveryFeeStatus,
+    rateStatus,
+  ];
 
   /// Creates a copy of this [EquipmentCostItem] with the given fields replaced.
   ///
+  /// [pricingMethod] cannot be changed via this method. See its doc comment.
   /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
@@ -575,7 +724,7 @@ class EquipmentCostItem extends CostItem {
   /// ```dart
   /// final updated = item.copyWith(
   ///   itemName: 'New Name',
-  ///   productLink: clearField, // Clear to null
+  ///   jobAmount: clearField, // Clear to null
   /// );
   /// ```
   EquipmentCostItem copyWith({
@@ -587,8 +736,12 @@ class EquipmentCostItem extends CostItem {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? currency,
-    Money? unitPrice,
-    Quantity? quantity,
+    Object? duration,
+    Object? dailyRate,
+    Object? jobAmount,
+    Object? deliveryFee,
+    DeliveryFeeStatus? deliveryFeeStatus,
+    RateStatus? rateStatus,
     Object? brand,
     Object? productLink,
     Object? description,
@@ -602,8 +755,21 @@ class EquipmentCostItem extends CostItem {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       currency: currency ?? this.currency,
-      unitPrice: unitPrice ?? this.unitPrice,
-      quantity: quantity ?? this.quantity,
+      pricingMethod: pricingMethod,
+      duration: duration == clearField
+          ? null
+          : (duration as double?) ?? this.duration,
+      dailyRate: dailyRate == clearField
+          ? null
+          : (dailyRate as Money?) ?? this.dailyRate,
+      jobAmount: jobAmount == clearField
+          ? null
+          : (jobAmount as Money?) ?? this.jobAmount,
+      deliveryFee: deliveryFee == clearField
+          ? null
+          : (deliveryFee as Money?) ?? this.deliveryFee,
+      deliveryFeeStatus: deliveryFeeStatus ?? this.deliveryFeeStatus,
+      rateStatus: rateStatus ?? this.rateStatus,
       brand: brand == clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == clearField
           ? null
