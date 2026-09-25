@@ -2710,12 +2710,6 @@ abstract class AppLocalizations {
   /// **'Pitch'**
   String get calculatorKeyPitch;
 
-  /// Calculator key label for the circle function
-  ///
-  /// In en, this message translates to:
-  /// **'Circle'**
-  String get calculatorKeyCircle;
-
   /// Calculator key label for the vertical rise of a slope
   ///
   /// In en, this message translates to:
@@ -2752,12 +2746,6 @@ abstract class AppLocalizations {
   /// **'Tons'**
   String get calculatorKeyTons;
 
-  /// Calculator key label for the drywall material function
-  ///
-  /// In en, this message translates to:
-  /// **'Drywall'**
-  String get calculatorKeyDrywall;
-
   /// Calculator key label for the fence material function
   ///
   /// In en, this message translates to:
@@ -2787,6 +2775,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Posts'**
   String get calculatorResultPosts;
+
+  /// Label for the Shapes function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Shapes'**
+  String get calculatorGroupShapes;
+
+  /// Label for the Unit function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get calculatorGroupUnit;
+
+  /// Calculator key label for the diagonal dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Diag'**
+  String get calculatorKeyDiag;
+
+  /// Calculator key label for the slope, a percent grade
+  ///
+  /// In en, this message translates to:
+  /// **'Slope'**
+  String get calculatorKeySlope;
+
+  /// Calculator key label for the diameter of a circle
+  ///
+  /// In en, this message translates to:
+  /// **'Diameter'**
+  String get calculatorKeyDiameter;
+
+  /// Calculator key label for the number of sides of a polygon
+  ///
+  /// In en, this message translates to:
+  /// **'Sides'**
+  String get calculatorKeySides;
+
+  /// Calculator key label for the chord of an arc
+  ///
+  /// In en, this message translates to:
+  /// **'Chord'**
+  String get calculatorKeyChord;
+
+  /// Calculator key label for the arc length or angle
+  ///
+  /// In en, this message translates to:
+  /// **'Arc'**
+  String get calculatorKeyArc;
+
+  /// Calculator key label for the column or cone volume
+  ///
+  /// In en, this message translates to:
+  /// **'Col/Cone'**
+  String get calculatorKeyColCone;
+
+  /// Calculator key label for the masonry covered area
+  ///
+  /// In en, this message translates to:
+  /// **'Msnry'**
+  String get calculatorKeyMsnry;
+
+  /// Calculator key label for the drywall covered area
+  ///
+  /// In en, this message translates to:
+  /// **'Drywal'**
+  String get calculatorKeyDrywal;
+
+  /// Calculator key label for the footing volume
+  ///
+  /// In en, this message translates to:
+  /// **'Footng'**
+  String get calculatorKeyFootng;
+
+  /// Calculator key label for the quantity at an on-centre spacing
+  ///
+  /// In en, this message translates to:
+  /// **'Qty@OC'**
+  String get calculatorKeyQtyAtOc;
+
+  /// Calculator key label for the cost of the current result
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get calculatorKeyCost;
+
+  /// Calculator key label for the weight of the current result
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get calculatorKeyWeight;
+
+  /// Calculator key label for board feet
+  ///
+  /// In en, this message translates to:
+  /// **'Bd Ft'**
+  String get calculatorKeyBdFt;
+
+  /// Calculator key label for metres
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get calculatorKeyMetre;
+
+  /// Calculator key label for centimetres
+  ///
+  /// In en, this message translates to:
+  /// **'cm'**
+  String get calculatorKeyCentimetre;
+
+  /// Calculator key label for millimetres
+  ///
+  /// In en, this message translates to:
+  /// **'mm'**
+  String get calculatorKeyMillimetre;
+
+  /// Calculator key label for metric tons
+  ///
+  /// In en, this message translates to:
+  /// **'m Tons'**
+  String get calculatorKeyMetricTons;
+
+  /// Calculator key label for the arc sine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'ASIN'**
+  String get calculatorKeyAsin;
+
+  /// Calculator key label for the arc cosine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'ACOS'**
+  String get calculatorKeyAcos;
+
+  /// Calculator key label for the arc tangent trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'ATAN'**
+  String get calculatorKeyAtan;
+
+  /// Calculator key label for the degrees, minutes and seconds angle entry
+  ///
+  /// In en, this message translates to:
+  /// **'D:M:S'**
+  String get calculatorKeyDms;
+
+  /// Full name of the abbreviated "Diag" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Diagonal'**
+  String get calculatorKeyDiagFullName;
+
+  /// Full name of the abbreviated "Col/Cone" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Column or cone'**
+  String get calculatorKeyColConeFullName;
+
+  /// Full name of the abbreviated "Msnry" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Masonry covered area'**
+  String get calculatorKeyMsnryFullName;
+
+  /// Full name of the abbreviated "Drywal" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Drywall covered area'**
+  String get calculatorKeyDrywalFullName;
+
+  /// Full name of the abbreviated "Footng" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Footing'**
+  String get calculatorKeyFootngFullName;
+
+  /// Full name of the abbreviated "Qty@OC" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity at on-centre spacing'**
+  String get calculatorKeyQtyAtOcFullName;
+
+  /// Full name of the abbreviated "Bd Ft" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Board feet'**
+  String get calculatorKeyBdFtFullName;
+
+  /// Full name of the abbreviated "m" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Metres'**
+  String get calculatorKeyMetreFullName;
+
+  /// Full name of the abbreviated "cm" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Centimetres'**
+  String get calculatorKeyCentimetreFullName;
+
+  /// Full name of the abbreviated "mm" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Millimetres'**
+  String get calculatorKeyMillimetreFullName;
+
+  /// Full name of the abbreviated "Lbs" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Pounds'**
+  String get calculatorKeyLbsFullName;
+
+  /// Full name of the abbreviated "Kg" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Kilograms'**
+  String get calculatorKeyKgFullName;
+
+  /// Full name of the abbreviated "Tons" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Tons'**
+  String get calculatorKeyTonsFullName;
+
+  /// Full name of the abbreviated "m Tons" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Metric tons'**
+  String get calculatorKeyMetricTonsFullName;
+
+  /// Full name of the abbreviated "Sin" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Sine'**
+  String get calculatorKeySinFullName;
+
+  /// Full name of the abbreviated "Cos" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Cosine'**
+  String get calculatorKeyCosFullName;
+
+  /// Full name of the abbreviated "Tan" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Tangent'**
+  String get calculatorKeyTanFullName;
+
+  /// Full name of the abbreviated "ASIN" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Arc sine'**
+  String get calculatorKeyAsinFullName;
+
+  /// Full name of the abbreviated "ACOS" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Arc cosine'**
+  String get calculatorKeyAcosFullName;
+
+  /// Full name of the abbreviated "ATAN" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Arc tangent'**
+  String get calculatorKeyAtanFullName;
+
+  /// Full name of the abbreviated "D:M:S" calculator key, read by screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Degrees, minutes and seconds'**
+  String get calculatorKeyDmsFullName;
 
   /// Message shown on the defensive fallback page when a deep link points to a feature that this build does not include
   ///

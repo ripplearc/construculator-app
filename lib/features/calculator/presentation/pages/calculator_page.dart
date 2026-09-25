@@ -30,28 +30,134 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   static const String _basicGeometryId = 'Basic Geometry';
+  static const String _shapesId = 'Shapes';
   static const String _materialsId = 'Materials';
+  static const String _unitId = 'Unit';
   static const String _trigonometryId = 'Trigonometry';
+
+  static const List<({String groupId, List<String> keyIds})> _groupTable = [
+    (
+      groupId: _basicGeometryId,
+      keyIds: [
+        'Width',
+        'Length',
+        'Height',
+        'Pitch',
+        'Run',
+        'Rise',
+        'Diag',
+        'Slope',
+      ],
+    ),
+    (
+      groupId: _shapesId,
+      keyIds: [
+        'Diameter',
+        'Radius',
+        'Sides',
+        'Chord',
+        'Rise',
+        'Height',
+        'Arc',
+        'ColCon',
+      ],
+    ),
+    (
+      groupId: _materialsId,
+      keyIds: [
+        'Msnry',
+        'Drywal',
+        'Footng',
+        'Fence',
+        'Qty@OC',
+        'Cost',
+        'Weight',
+      ],
+    ),
+    (
+      groupId: _unitId,
+      keyIds: ['bf', 'm', 'cm', 'mm', 'lbs', 'kg', 'ton', 'mton'],
+    ),
+    (
+      groupId: _trigonometryId,
+      keyIds: ['SIN', 'COS', 'TAN', 'ASIN', 'ACOS', 'ATAN', 'DMS'],
+    ),
+  ];
+
+  String _groupLabelFor(AppLocalizations l10n, String groupId) =>
+      switch (groupId) {
+        _basicGeometryId => l10n.calculatorGroupBasicGeometry,
+        _shapesId => l10n.calculatorGroupShapes,
+        _materialsId => l10n.calculatorGroupMaterials,
+        _unitId => l10n.calculatorGroupUnit,
+        _trigonometryId => l10n.calculatorGroupTrigonometry,
+        _ => _untranslated(groupId),
+      };
 
   String _displayLabelFor(AppLocalizations l10n, String id) => switch (id) {
     'Width' => l10n.calculatorKeyWidth,
     'Length' => l10n.calculatorKeyLength,
     'Height' => l10n.calculatorKeyHeight,
     'Pitch' => l10n.calculatorKeyPitch,
-    'Circle' => l10n.calculatorKeyCircle,
-    'Rise' => l10n.calculatorKeyRise,
     'Run' => l10n.calculatorKeyRun,
+    'Rise' => l10n.calculatorKeyRise,
+    'Diag' => l10n.calculatorKeyDiag,
+    'Slope' => l10n.calculatorKeySlope,
+    'Diameter' => l10n.calculatorKeyDiameter,
     'Radius' => l10n.calculatorKeyRadius,
-    'Lbs' => l10n.calculatorKeyLbs,
-    'Kg' => l10n.calculatorKeyKg,
-    'Tons' => l10n.calculatorKeyTons,
-    'Drywall' => l10n.calculatorKeyDrywall,
+    'Sides' => l10n.calculatorKeySides,
+    'Chord' => l10n.calculatorKeyChord,
+    'Arc' => l10n.calculatorKeyArc,
+    'ColCon' => l10n.calculatorKeyColCone,
+    'Msnry' => l10n.calculatorKeyMsnry,
+    'Drywal' => l10n.calculatorKeyDrywal,
+    'Footng' => l10n.calculatorKeyFootng,
     'Fence' => l10n.calculatorKeyFence,
+    'Qty@OC' => l10n.calculatorKeyQtyAtOc,
+    'Cost' => l10n.calculatorKeyCost,
+    'Weight' => l10n.calculatorKeyWeight,
+    'bf' => l10n.calculatorKeyBdFt,
+    'm' => l10n.calculatorKeyMetre,
+    'cm' => l10n.calculatorKeyCentimetre,
+    'mm' => l10n.calculatorKeyMillimetre,
+    'lbs' => l10n.calculatorKeyLbs,
+    'kg' => l10n.calculatorKeyKg,
+    'ton' => l10n.calculatorKeyTons,
+    'mton' => l10n.calculatorKeyMetricTons,
     'SIN' => l10n.calculatorKeySin,
     'COS' => l10n.calculatorKeyCos,
     'TAN' => l10n.calculatorKeyTan,
+    'ASIN' => l10n.calculatorKeyAsin,
+    'ACOS' => l10n.calculatorKeyAcos,
+    'ATAN' => l10n.calculatorKeyAtan,
+    'DMS' => l10n.calculatorKeyDms,
     'Posts' => l10n.calculatorResultPosts,
     _ => _untranslated(id),
+  };
+
+  String? _fullNameFor(AppLocalizations l10n, String id) => switch (id) {
+    'Diag' => l10n.calculatorKeyDiagFullName,
+    'ColCon' => l10n.calculatorKeyColConeFullName,
+    'Msnry' => l10n.calculatorKeyMsnryFullName,
+    'Drywal' => l10n.calculatorKeyDrywalFullName,
+    'Footng' => l10n.calculatorKeyFootngFullName,
+    'Qty@OC' => l10n.calculatorKeyQtyAtOcFullName,
+    'bf' => l10n.calculatorKeyBdFtFullName,
+    'm' => l10n.calculatorKeyMetreFullName,
+    'cm' => l10n.calculatorKeyCentimetreFullName,
+    'mm' => l10n.calculatorKeyMillimetreFullName,
+    'lbs' => l10n.calculatorKeyLbsFullName,
+    'kg' => l10n.calculatorKeyKgFullName,
+    'ton' => l10n.calculatorKeyTonsFullName,
+    'mton' => l10n.calculatorKeyMetricTonsFullName,
+    'SIN' => l10n.calculatorKeySinFullName,
+    'COS' => l10n.calculatorKeyCosFullName,
+    'TAN' => l10n.calculatorKeyTanFullName,
+    'ASIN' => l10n.calculatorKeyAsinFullName,
+    'ACOS' => l10n.calculatorKeyAcosFullName,
+    'ATAN' => l10n.calculatorKeyAtanFullName,
+    'DMS' => l10n.calculatorKeyDmsFullName,
+    _ => null,
   };
 
   String _untranslated(String id) {
@@ -83,7 +189,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
     required String id,
     required String groupId,
     required AppLocalizations l10n,
-  }) => KeyType(id: id, groupName: groupId, label: _displayLabelFor(l10n, id));
+  }) => KeyType(
+    id: id,
+    groupName: groupId,
+    label: _displayLabelFor(l10n, id),
+    semanticLabel: _fullNameFor(l10n, id),
+  );
 
   List<CoreDependentKeyData> _dependentKeys(
     AppLocalizations l10n,
@@ -101,53 +212,19 @@ class _CalculatorPageState extends State<CalculatorPage> {
     ];
   }
 
-  List<FunctionGroup> _buildGroups(AppLocalizations l10n) {
-    final basicGeometryGroup = GroupNameType(
-      id: _basicGeometryId,
-      label: l10n.calculatorGroupBasicGeometry,
-    );
-    final materialsGroup = GroupNameType(
-      id: _materialsId,
-      label: l10n.calculatorGroupMaterials,
-    );
-    final trigonometryGroup = GroupNameType(
-      id: _trigonometryId,
-      label: l10n.calculatorGroupTrigonometry,
-    );
-
-    return [
+  List<FunctionGroup> _buildGroups(AppLocalizations l10n) => [
+    for (final group in _groupTable)
       FunctionGroup(
-        name: basicGeometryGroup,
+        name: GroupNameType(
+          id: group.groupId,
+          label: _groupLabelFor(l10n, group.groupId),
+        ),
         keys: [
-          for (final id in const [
-            'Width',
-            'Length',
-            'Height',
-            'Pitch',
-            'Circle',
-            'Rise',
-            'Run',
-            'Radius',
-          ])
-            _key(id: id, groupId: _basicGeometryId, l10n: l10n),
+          for (final id in group.keyIds)
+            _key(id: id, groupId: group.groupId, l10n: l10n),
         ],
       ),
-      FunctionGroup(
-        name: materialsGroup,
-        keys: [
-          for (final id in const ['Lbs', 'Kg', 'Tons', 'Drywall', 'Fence'])
-            _key(id: id, groupId: _materialsId, l10n: l10n),
-        ],
-      ),
-      FunctionGroup(
-        name: trigonometryGroup,
-        keys: [
-          for (final id in const ['SIN', 'COS', 'TAN'])
-            _key(id: id, groupId: _trigonometryId, l10n: l10n),
-        ],
-      ),
-    ];
-  }
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -156,8 +233,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
     final groups = _groupsFor(context);
     final Map<GroupNameType, Color> groupAccentColors = {
       groups[0].name: colors.keyboardFunctions,
-      groups[1].name: colors.keyboardUnits,
-      groups[2].name: colors.textSuccess,
+      groups[1].name: colors.indigo,
+      groups[2].name: colors.iconOrange,
+      groups[3].name: colors.keyboardUnits,
+      groups[4].name: colors.textSuccess,
     };
 
     return BlocProvider<CalculatorBloc>(
