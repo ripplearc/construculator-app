@@ -88,11 +88,9 @@ Since the code can't be bypassed, the practical approach is to read the real one
 
 This drives the real OTP round trip against the real local auth server, which is stronger coverage than trying to skip the step.
 
-#### Known gap: Android and iOS drive different app identities
+#### Resolved: Android and iOS now drive the same app identity
 
-Patrol needs an app identity per platform (`pubspec.yaml`'s `patrol.android.package_name` / `patrol.ios.bundle_id`). Android points at the fishfood flavor (`com.ripplearc.construculator.fishfood`), but the repo tracks no iOS `.xcscheme` files, so there is no iOS flavor to point at and `bundle_id` is the unflavored `com.example.construculatorAppArchitecture`.
-
-The consequence is that the two platforms exercise different builds, potentially against different backends — which cuts against the "deterministic by construction" goal above and matters when reading a cross-platform E2E result. This predates the E2E work and is not solved here; it is recorded so results are read with it in mind, and adding iOS flavor schemes belongs in Phase 2 alongside the CI environment work.
+Patrol needs an app identity per platform (`pubspec.yaml`'s `patrol.android.package_name` / `patrol.ios.bundle_id`). CA-1054 added iOS flavor `.xcscheme` files, so both platforms now point at the fishfood flavor (`com.ripplearc.construculator.fishfood`). Previously the repo tracked no iOS `.xcscheme` files, so there was no iOS flavor to point at and `bundle_id` fell back to the unflavored base id, meaning the two platforms exercised different builds against potentially different backends.
 
 ### Phase 2 — Dedicated test environment (future)
 

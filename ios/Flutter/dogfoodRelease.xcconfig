@@ -1,5 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
 
+ASSET_PREFIX=dogfood
 BUNDLE_NAME=construculator
 BUNDLE_DISPLAY_NAME=Construculator
