@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE CHAIN EVALUATOR AND TAPE CHAIN MUTATION TESTING -->
+    <!-- Targets: ChainEvaluator, which folds the tape left to right, and the
+         operator and equals handlers of Tape. Critical path: the fold is
+         the running total on the strip and the answer = lands; a wrong
+         restart makes 2 + 3 × 4 answer 14 or 20 for the wrong reason, and
+         a wrong route lands a result where a toast belongs. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a chip with no operator continues the chain instead of
+             restarting it -->
+        <regex pattern="if \(total == null \|\| operator == null\) \{" dotAll="true" id="chain_evaluator.fold.no_restart">
+            <mutation text="if (total == null) {"/>
+        </regex>
+
+        <!-- RULE 2: a result chip does not restart the count of steps -->
+        <regex pattern="return \(total: value, steps: 0, failure: null\);" dotAll="true" id="chain_evaluator.fold.result_keeps_steps">
+            <mutation text="return (total: value, steps: running.steps, failure: null);"/>
+            <mutation text="return (total: value, steps: 0, failure: running.failure);"/>
+        </regex>
+
+        <!-- RULE 3: an error chip empties the whole tape instead of ending
+             its own chain -->
+        <regex pattern="case ErrorChip\(\):\s*running = _nothing;" dotAll="true" id="chain_evaluator.fold.error_empties_tape">
+            <mutation text="case ErrorChip(): return const ChainEmpty();"/>
+        </regex>
+
+        <!-- RULE 4: an unreadable chip is skipped instead of stopping the
+             fold -->
+        <regex pattern="if \(value == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
+            <mutation text="if (value == null) continue;"/>
+        </regex>
+
+        <!-- RULE 5: steps are never counted, so no Calc is ever offered -->
+        <regex pattern="steps: running\.steps \+ 1," dotAll="true" id="chain_evaluator.fold.no_steps">
+            <mutation text="steps: running.steps,"/>
+        </regex>
+
+        <!-- RULE 6: a second operator stacks a chip instead of changing the
+             pending one -->
+        <regex pattern="if \(chip\.operator != null &amp;&amp; chip\.entry\.isEmpty\) \{" dotAll="true" id="tape.press_operator.stack_operators">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 7: an operator after an error chip chains off nothing -->
+        <regex pattern="ErrorChip\(\) \|\| null =&gt; false," dotAll="true" id="tape.press_operator.chain_off_error">
+            <mutation text="ErrorChip() || null =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 8: = lands a value that is not a calculation -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; TapeChanged\(" dotAll="true" id="tape.press_equals.land_plain_value">
+            <mutation text="ChainValue(:final value) =&gt; TapeChanged("/>
+        </regex>
+
+        <!-- RULE 9: = lands the total under a label that is not Calc -->
+        <regex pattern="append\(ResultChip\(key: calcKey, value: value\)\)," dotAll="true" id="tape.press_equals.wrong_label">
+            <mutation text="append(ResultChip(key: 'Total', value: value)),"/>
+        </regex>
+
+        <!-- RULE 10: a lone value counts as a calculation -->
+        <regex pattern="bool get isCalculation =&gt; steps &gt; 0;" dotAll="true" id="chain_evaluator.is_calculation.boundary">
+            <mutation text="bool get isCalculation =&gt; steps &gt;= 0;"/>
+        </regex>
+
+        <!-- RULE 11: a failed chain keeps folding, so the failure is lost
+             to the next step -->
+        <regex pattern="if \(running\.failure != null\) return running;" dotAll="true" id="chain_evaluator.fold.refold_failed_chain">
+            <mutation text="if (false) return running;"/>
+        </regex>
+
+        <!-- RULE 12: a result chip's operator is ignored -->
+        <regex pattern="case ResultChip\(:final value, :final operator\):\s*running = _joined\(running, operator, value\);" dotAll="true" id="chain_evaluator.fold.result_operator_ignored">
+            <mutation text="case ResultChip(:final value): running = _joined(running, null, value);"/>
+        </regex>
+
+        <!-- RULE 13: = lands a failed step as a Calc 0 instead of an error
+             chip -->
+        <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
+            <mutation text="ChainFailed() =&gt; TapeChanged(append(const ResultChip(key: calcKey, value: Scalar(0)))),"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_chain" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_chain_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
