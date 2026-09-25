@@ -1614,6 +1614,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get yourRatesEntryLabelDialogTitle => 'Name this rate';
+
+  @override
+  String get yourRatesEntryLabelDialogBody =>
+      'You already have a saved rate for this equipment. Give this one a name so you can tell them apart.';
+
+  @override
+  String get yourRatesEntryLabelHint => 'e.g. Supplier A';
+
+  @override
+  String get yourRatesEntryLabelRequiredError =>
+      'A name is required to save this rate';
+
+  @override
+  String get yourRatesEntryLabelCancel => 'Cancel';
+
+  @override
+  String get yourRatesEntryLabelSave => 'Save';
+
+  @override
+  String get yourRatesSaveFailedError =>
+      'Couldn\'t save this rate. Please try again.';
+
+  @override
   String get equipmentNoteLabel => 'Note';
 
   @override

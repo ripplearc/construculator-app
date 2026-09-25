@@ -1617,10 +1617,15 @@ void main() {
         // handler) — the badge only renders for ownRateConfirmed/
         // sampleRateUnverified, so neither badge variant shows here.
         expect(find.byKey(const Key('rate_status_badge')), findsNothing);
-        expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
-        // Also not offered here: saving an already-own-but-unconfirmed
-        // value is still redundant (see _saveAsMyRateLink's doc comment).
-        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+        expect(
+          find.text(l10n.equipmentRateStatusYourRateBadge),
+          findsNothing,
+        );
+        // "Save as my rate" shows for any non-missing rate (CA-1151), not
+        // just an unverified sample rate — re-saving an already-confirmed
+        // rate is a harmless idempotent overwrite via the repository's
+        // collision rule.
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
       },
     );
 
@@ -1752,5 +1757,119 @@ void main() {
       expect(find.text('Dumpster'), findsNothing);
       expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
     });
+  });
+
+  group('EquipmentCostFormFields — save as my rate', () {
+    Future<YourRateEntry> seedRate({
+      required String itemName,
+      required double amount,
+      required EquipmentPricingMethod method,
+      String? entryLabel,
+    }) async {
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: itemName,
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: method,
+          entryLabel: entryLabel,
+        ),
+      );
+      final saved = await repository.search(
+        itemName,
+        category: CostItemType.equipment,
+      );
+      return saved.fold(
+        (_) => throw StateError('seed search failed'),
+        (entries) => entries.first,
+      );
+    }
+
+    testWidgets('saving a new rate succeeds without a label prompt', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+
+      final repository = Modular.get<YourRatesRepository>();
+      final saved = await repository.search(
+        'Backhoe',
+        category: CostItemType.equipment,
+      );
+      expect(saved.fold((_) => null, (e) => e.length), 1);
+    });
+
+    testWidgets(
+      'saving a second rate for the same equipment prompts for a label',
+      (tester) async {
+        await seedRate(
+          itemName: 'Backhoe',
+          amount: 100,
+          method: EquipmentPricingMethod.day,
+          entryLabel: 'Supplier A',
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Backhoe',
+        );
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '150');
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('entry_label_dialog_title')),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('entry_label_dialog_save_button')),
+        );
+        await tester.pump();
+        expect(
+          find.text(l10n.yourRatesEntryLabelRequiredError),
+          findsOneWidget,
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('entry_label_field')),
+          'Supplier B',
+        );
+        await tester.tap(
+          find.byKey(const Key('entry_label_dialog_save_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('entry_label_dialog_title')), findsNothing);
+        final repository = Modular.get<YourRatesRepository>();
+        final saved = await repository.search(
+          'Backhoe',
+          category: CostItemType.equipment,
+        );
+        expect(saved.fold((_) => null, (e) => e.length), 2);
+      },
+    );
   });
 }
