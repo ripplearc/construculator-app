@@ -91,7 +91,11 @@ void main() {
         semantics,
         isSemantics(isButton: true, hasTapAction: true),
       );
-      expect(semantics.label, startsWith('Sent to Judy Smith'));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        semantics.label,
+        startsWith(l10n.activityCostEstimationSent('Judy Smith')),
+      );
     });
 
     testWidgets('a11y: created activity passes', (tester) async {

@@ -235,7 +235,8 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   }
 
   // TODO: https://ripplearc.youtrack.cloud/issue/CA-1177 - Open the Send
-  // screen for this entry's send once CUJ 8 builds it.
+  // screen once CUJ 8 builds it. onSendTap passes nothing yet, so it will
+  // need to pass the tapped entry to open that entry's send.
   void _openSendScreen() {}
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
