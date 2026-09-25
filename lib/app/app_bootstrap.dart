@@ -2,6 +2,7 @@
 import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
+import 'package:construculator/libraries/app_lifecycle/interfaces/app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
@@ -125,6 +126,10 @@ class AppBootstrap {
   /// writes it on every navigation) — the same instance to both.
   final CurrentScreenTracker currentScreenTracker;
 
+  /// Whether the app is in the foreground. Created after the Flutter binding,
+  /// it lets time-limited work pause while the app is in the background.
+  final AppLifecycleWrapper appLifecycleWrapper;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -134,5 +139,6 @@ class AppBootstrap {
     required this.powerSyncDatabase,
     required this.featureFlagRepository,
     required this.currentScreenTracker,
+    required this.appLifecycleWrapper,
   });
 }

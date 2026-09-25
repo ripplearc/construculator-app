@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- FOREGROUND TIMEOUT MUTATION TESTING -->
+    <!-- Targets: the timeout that only counts time in the foreground -->
+
+    <files>
+        <file>lib/libraries/app_lifecycle/foreground_timeout.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude imports -->
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Never start counting for a call made in the foreground -->
+        <regex pattern="if \(appLifecycle\.isInForeground\) startCounting\(\);" dotAll="true" id="foreground_timeout.skip_initial_start">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 2: Keep counting while the app is in the background -->
+        <regex pattern="isInForeground \? startCounting\(\) : stopCounting\(\)," dotAll="true" id="foreground_timeout.count_background">
+            <mutation text="isInForeground ? startCounting() : null,"/>
+        </regex>
+
+        <!-- RULE 3: Give up one tick late -->
+        <regex pattern="foregroundTime >= limit" dotAll="true" id="foreground_timeout.off_by_one_tick">
+            <mutation text="foregroundTime > limit"/>
+        </regex>
+
+        <!-- RULE 4: Leave the ticker running after the call completes -->
+        <regex pattern="whenComplete\(\(\) \{\s*stopCounting\(\);" dotAll="true" id="foreground_timeout.leak_ticker">
+            <mutation text="whenComplete(() {"/>
+        </regex>
+
+        <!-- RULE 5: Keep listening to the lifecycle after the call completes -->
+        <regex pattern="return subscription\.cancel\(\);" dotAll="true" id="foreground_timeout.leak_subscription">
+            <mutation text="return null;"/>
+        </regex>
+
+        <!-- RULE 6: Drop the value of a call that answers in time -->
+        <regex pattern="if \(!result\.isCompleted\) result\.complete\(value\);" dotAll="true" id="foreground_timeout.drop_value">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="foreground_timeout" expected-return="0">flutter test test/libraries/app_lifecycle/foreground_timeout_test.dart</command>
+    </commands>
+
+    <threshold failure="80">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

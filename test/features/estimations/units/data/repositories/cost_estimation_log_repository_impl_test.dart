@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 
+import 'package:construculator/libraries/app_lifecycle/testing/fake_app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -26,16 +27,19 @@ void main() {
     late CostEstimationLogRepositoryImpl repository;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
+    late FakeAppLifecycleWrapper fakeAppLifecycle;
 
     const testEstimateId = 'estimate-123';
     final defaultPageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
+      fakeAppLifecycle = FakeAppLifecycleWrapper();
       Modular.init(
         EstimationModule(
           FakeAppBootstrapFactory.create(
             supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+            appLifecycleWrapper: fakeAppLifecycle,
           ),
         ),
       );
@@ -52,6 +56,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeAppLifecycle.reset();
       repository.dispose();
     });
 
@@ -561,6 +566,35 @@ void main() {
               ),
             ),
           );
+        });
+      });
+
+      test('does not count time the app spends in the background', () {
+        fakeAsync((async) {
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer<void>();
+
+          Either<Failure, List<CostEstimationLog>>? result;
+          unawaited(
+            repository
+                .fetchInitialLogs(testEstimateId)
+                .then((value) => result = value),
+          );
+
+          async.elapse(const Duration(seconds: 10));
+          fakeAppLifecycle.setInForeground(false);
+          async.elapse(const Duration(minutes: 1));
+          fakeAppLifecycle.setInForeground(true);
+          async.elapse(const Duration(seconds: 4));
+          expect(
+            result,
+            isNull,
+            reason: 'only 14 of the 15 seconds were spent in the foreground',
+          );
+
+          async.elapse(restOfCutoff);
+
+          expect(result, isA<Left<Failure, List<CostEstimationLog>>>());
         });
       });
 

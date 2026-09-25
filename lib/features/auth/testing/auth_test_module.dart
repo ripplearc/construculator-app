@@ -19,6 +19,7 @@ import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
+import 'package:construculator/libraries/app_lifecycle/testing/fake_app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
@@ -52,6 +53,7 @@ class AuthTestModule extends Module {
     powerSyncDatabase: FakePowerSyncDatabase(),
     featureFlagRepository: FakeFeatureFlagRepository(),
     currentScreenTracker: CurrentScreenTracker(),
+    appLifecycleWrapper: FakeAppLifecycleWrapper(),
   );
 
   @override
@@ -76,6 +78,7 @@ class AuthTestModule extends Module {
         powerSyncDatabase: appBootstrap.powerSyncDatabase,
         featureFlagRepository: appBootstrap.featureFlagRepository,
         currentScreenTracker: appBootstrap.currentScreenTracker,
+        appLifecycleWrapper: appBootstrap.appLifecycleWrapper,
       ),
     ),
     RouterTestModule(),
