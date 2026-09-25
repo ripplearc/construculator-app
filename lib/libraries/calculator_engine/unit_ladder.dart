@@ -84,7 +84,9 @@ final class UnitKeyRefused extends UnitKeyOutcome {
 /// ft → ft² → ft³, and stops at cubic. [Feet] on a value with leftover
 /// inches shows the trade compound (224in → 18ft 8in) and on a compound
 /// toggles back to decimal feet; a value under a foot converts to decimal
-/// feet, never "0ft 4in". Weight keys convert a weight and never raise.
+/// feet, never "0ft 4in". A fraction (7/16in then [Inch] reads 0.438in) and
+/// decimal feet ([Feet] on 18.67ft shows the compound) are re-spelled, not
+/// raised. Weight keys convert a weight and never raise.
 ///
 /// The key's effect on a number still being typed — closing it, stepping a
 /// compound down — is the entry grammar's (A2), not the ladder's.
@@ -107,6 +109,10 @@ class UnitLadder extends Equatable {
   /// [holdsLengthOnly] is true under a function key that can only hold a
   /// length (Width, Length, Height, Pitch…), which refuses the raise rather
   /// than silently making Width 22ft².
+  ///
+  /// A volume converts to the three cubed units the strip offers and to
+  /// board feet; a raised token (2106ft³) converts with its power to any
+  /// length key instead, as the prototype does.
   UnitKeyOutcome press({
     required List<Token> tokens,
     required Quantity value,
@@ -118,7 +124,9 @@ class UnitLadder extends Equatable {
     }
     final isLengthKey = key.dimension == Dimension.length;
     final single = tokens.length == 1 ? tokens.first : null;
-    if (single != null && isLengthKey && _isRaisePress(single, key)) {
+    if (single != null &&
+        isLengthKey &&
+        _raisesRatherThanRespells(single, key)) {
       return _raise(single, value, key, holdsLengthOnly: holdsLengthOnly);
     }
     if (single != null && single.power > 1 && isLengthKey) {
@@ -126,9 +134,9 @@ class UnitLadder extends Equatable {
       if (value is Volume) return _convert(value.spelledIn(key));
     }
     if (isLengthKey && value is Length) {
-      return _convert(value.spelledIn(_lengthSpelling(value, key, tokens)));
+      return _convert(value.spelledIn(_footInchOrKey(value, key, tokens)));
     }
-    if (value is Volume && _isVolumeKey(key) && key != value.unit) {
+    if (value is Volume && _isCubedOrBoardFootKey(key) && key != value.unit) {
       return _convert(value.spelledIn(key));
     }
     if (value is Weight &&
@@ -142,10 +150,7 @@ class UnitLadder extends Equatable {
     return const UnitKeyRefused(UnitKeyRefusal.cannotConvert);
   }
 
-  // The same length key again raises, except on a fraction (7/16in then
-  // [Inch] re-spells it as 0.438in) and on decimal feet ([Feet] on 18.67ft
-  // shows the compound) — both are conversions, not a new dimension.
-  bool _isRaisePress(Token token, Unit key) {
+  bool _raisesRatherThanRespells(Token token, Unit key) {
     if (token.unit != key || token.denominator != null) return false;
     if (key == Unit.foot && token.digits.contains('.') && token.power == 1) {
       return false;
@@ -177,10 +182,7 @@ class UnitLadder extends Equatable {
     return UnitKeyRaised(quantity, [raised]);
   }
 
-  // [Feet] on a value with leftover inches shows the trade compound, unless
-  // the value already was one (then decimal feet, so the key toggles) or is
-  // under a foot (0.333ft, never 0ft 4in).
-  Unit _lengthSpelling(Length value, Unit key, List<Token> tokens) {
+  Unit _footInchOrKey(Length value, Unit key, List<Token> tokens) {
     final wasCompound = tokens.length > 1;
     final hasLeftoverInches = value.ticks % Length.ticksPerFoot != 0;
     if (key == Unit.foot &&
@@ -192,10 +194,7 @@ class UnitLadder extends Equatable {
     return key;
   }
 
-  // A volume in board feet converts to the three cubed units the strip
-  // offers and back to board feet; a raised token (2106ft³) converts with
-  // its power to any length key instead, as the prototype does.
-  bool _isVolumeKey(Unit key) =>
+  bool _isCubedOrBoardFootKey(Unit key) =>
       key == Unit.foot ||
       key == Unit.yard ||
       key == Unit.metre ||

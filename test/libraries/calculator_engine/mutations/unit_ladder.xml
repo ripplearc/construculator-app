@@ -62,13 +62,13 @@
         </regex>
 
         <!-- RULE 10: the ft-in compound loses its inches -->
-        <regex pattern="Token\(digits: _digits\(inches, compoundInchDecimals\), unit: Unit\.inch\)," dotAll="true" id="quantity_speller.compound.drop_inches">
-            <mutation text="Token(digits: '0', unit: Unit.inch),"/>
+        <regex pattern="digits: _digitsWithoutTrailingZeros\(inches, compoundInchDecimals\),\s*unit: Unit\.inch," dotAll="true" id="quantity_speller.compound.drop_inches">
+            <mutation text="digits: '0', unit: Unit.inch,"/>
         </regex>
 
         <!-- RULE 11: board feet are spelled as cubic feet -->
-        <regex pattern="digits: _digits\(value\.boardFeet, volumeDecimals\)," dotAll="true" id="quantity_speller.volume.board_feet_as_cubic_feet">
-            <mutation text="digits: _digits(value.cubicFeet, volumeDecimals),"/>
+        <regex pattern="digits: _digitsWithoutTrailingZeros\(value\.boardFeet, volumeDecimals\)," dotAll="true" id="quantity_speller.volume.board_feet_as_cubic_feet">
+            <mutation text="digits: _digitsWithoutTrailingZeros(value.cubicFeet, volumeDecimals),"/>
         </regex>
 
         <!-- RULE 12: a length keeps only two decimals -->
@@ -99,6 +99,12 @@
         <!-- RULE 17: the compound's inches are the whole length -->
         <regex pattern="final inches = \(ticks - feet \* Length\.ticksPerFoot\) / Length\.ticksPerInch;" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
             <mutation text="final inches = ticks / Length.ticksPerInch;"/>
+        </regex>
+
+        <!-- RULE 18: the cubic stop points every key at yards, so [Inch] a
+             fourth time suggests yd³ instead of ft³ -->
+        <regex pattern="final alternative = key == Unit\.foot \? Unit\.yard : Unit\.foot;" dotAll="true" id="unit_ladder.raise.cubic_stop_alternative_always_yard">
+            <mutation text="final alternative = key == Unit.foot ? Unit.yard : Unit.yard;"/>
         </regex>
     </rules>
 
