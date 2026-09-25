@@ -164,6 +164,29 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('a11y: sheet header text is readable in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      for (final theme in [createTestTheme(), createTestThemeDark()]) {
+        await pumpWidget(tester, theme: theme);
+
+        for (final text in [
+          l10n().logsAction,
+          estimateName,
+          l10n().logsNewestFirst,
+        ]) {
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.text(text),
+            checkTapTargetSize: false,
+            checkLabeledTapTarget: false,
+          );
+        }
+      }
+    });
+
     testWidgets('a11y: empty state text remains readable in both themes', (
       tester,
     ) async {

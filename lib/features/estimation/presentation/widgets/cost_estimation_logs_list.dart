@@ -79,23 +79,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: CoreSpacing.space4,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            boxShadow: CoreShadows.small,
-            color: context.colorTheme.pageBackground,
-          ),
-          padding: EdgeInsets.symmetric(
-            vertical: CoreSpacing.space3,
-            horizontal: CoreSpacing.space4,
-          ),
-          child: Text(
-            widget.estimateName,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.titleMediumSemiBold.copyWith(
-              color: context.colorTheme.textHeadline,
-            ),
-          ),
-        ),
+        _buildHeader(context),
         Flexible(
           fit: FlexFit.loose,
           child: Padding(
@@ -140,6 +124,54 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         ),
         SizedBox(height: CoreSpacing.space2),
       ],
+    );
+  }
+
+  // "Logs", then the estimate and the list order (CUJ 11 screen 5). A long
+  // name is cut with an ellipsis, and "newest first" stays whole.
+  Widget _buildHeader(BuildContext context) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+    final orderStyle = typography.bodySmallRegular.copyWith(
+      color: appColors.textBody,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: CoreSpacing.space4,
+        children: [
+          Text(
+            context.l10n.logsAction,
+            style: typography.titleMediumSemiBold.copyWith(
+              color: appColors.textHeadline,
+            ),
+          ),
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  widget.estimateName,
+                  overflow: TextOverflow.ellipsis,
+                  style: orderStyle,
+                ),
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              Container(
+                width: CoreSpacing.space1,
+                height: CoreSpacing.space1,
+                decoration: BoxDecoration(
+                  color: appColors.lineDarkOutline,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              Text(context.l10n.logsNewestFirst, style: orderStyle),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -245,7 +277,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           children: [
             CoreIconWidget(
               icon: CoreIcons.error,
-              size: CoreIconSize.size20,
+              size: CoreIconSize.size16,
               color: appColors.textError,
             ),
             const SizedBox(width: CoreSpacing.space2),
@@ -257,7 +289,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                 liveRegion: true,
                 child: Text(
                   message,
-                  style: typography.bodyMediumRegular.copyWith(
+                  style: typography.bodySmallRegular.copyWith(
                     color: appColors.textError,
                   ),
                 ),
@@ -268,12 +300,12 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         const SizedBox(height: CoreSpacing.space3),
         Text(
           context.l10n.logsLoadErrorReassurance,
-          style: typography.bodyMediumRegular.copyWith(
+          style: typography.bodySmallRegular.copyWith(
             color: appColors.textBody,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: CoreSpacing.space4),
+        const SizedBox(height: CoreSpacing.space3),
         CoreButton(
           key: retryButtonKey,
           label: context.l10n.retryLoadLogsButton,
