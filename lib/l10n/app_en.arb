@@ -2204,9 +2204,45 @@
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
   },
-  "calculatorOcLabel": "O.C",
-  "@calculatorOcLabel": {
-    "description": "Label for the on-centre spacing dependent key shown alongside the fence posts result"
+  "calculatorPillOnCentre": "O.C",
+  "@calculatorPillOnCentre": {
+    "description": "Dependent-key pill: the on-centre spacing behind a fence or framing count"
+  },
+  "calculatorPillSheetSize": "Sheet size",
+  "@calculatorPillSheetSize": {
+    "description": "Dependent-key pill: the sheet size behind a drywall count"
+  },
+  "calculatorPillPieceSize": "Piece size",
+  "@calculatorPillPieceSize": {
+    "description": "Dependent-key pill: the piece size behind a masonry count"
+  },
+  "calculatorPillCrossSection": "Cross-section",
+  "@calculatorPillCrossSection": {
+    "description": "Dependent-key pill: the cross-section behind a footing volume"
+  },
+  "calculatorPillRailsPerSection": "Rails/section",
+  "@calculatorPillRailsPerSection": {
+    "description": "Dependent-key pill: the rails per section behind a fence rail count"
+  },
+  "calculatorPillRate": "Rate",
+  "@calculatorPillRate": {
+    "description": "Dependent-key pill: the unit rate behind a cost"
+  },
+  "calculatorPillWaste": "Waste",
+  "@calculatorPillWaste": {
+    "description": "Dependent-key pill: the waste allowance behind a cost"
+  },
+  "calculatorPillDensity": "Density",
+  "@calculatorPillDensity": {
+    "description": "Dependent-key pill: the material density behind a weight"
+  },
+  "calculatorPillShownAs": "Shown as",
+  "@calculatorPillShownAs": {
+    "description": "Dependent-key pill that respells a pitch as in/12in, degrees or grade"
+  },
+  "calculatorPillAcross": "Across",
+  "@calculatorPillAcross": {
+    "description": "Dependent-key pill that flips which way a spacing runs across a span"
   },
   "calculatorGroupBasicGeometry": "Basic Geometry",
   "@calculatorGroupBasicGeometry": {
