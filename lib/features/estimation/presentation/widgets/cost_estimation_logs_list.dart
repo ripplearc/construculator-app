@@ -43,7 +43,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
   /// Size of the spinners that sit beside a text label, on the first load
   /// and on the load of older events, so the two states match.
-  static const double _inlineSpinnerSize = 24.0;
+  static const double _inlineSpinnerSize = CoreIconSize.size24;
 
   @override
   void initState() {
