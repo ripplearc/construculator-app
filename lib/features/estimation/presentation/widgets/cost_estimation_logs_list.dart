@@ -1,7 +1,5 @@
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_log_tile.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,9 +8,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
+  static const loadMoreErrorViewKey = Key(
+    'cost_estimation_logs_load_more_error_view',
+  );
   static const loadMoreRetryButtonKey = Key(
     'cost_estimation_logs_load_more_retry',
   );
+  static const logsScrollViewKey = Key('cost_estimation_logs_scroll_view');
 
   final String estimateId;
   final String estimateName;
@@ -84,18 +86,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           fit: FlexFit.loose,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
-            child: BlocConsumer<CostEstimationLogBloc, CostEstimationLogState>(
-              listener: (context, state) {
-                // A first-load failure is shown in the body by
-                // _buildErrorState, which stays until the contractor retries.
-                if (state is CostEstimationLogLoadMoreError) {
-                  CoreToast.showError(
-                    context,
-                    _buildLoadMoreErrorMessage(context, state.failure),
-                    context.l10n.closeLabel,
-                  );
-                }
-              },
+            child: BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
               builder: (context, state) {
                 if (state is CostEstimationLogLoading) {
                   return _buildLoadingState();
@@ -106,7 +97,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                 }
 
                 if (state is CostEstimationLogError) {
-                  return _buildErrorState(context);
+                  return _buildErrorState(context, state);
                 }
 
                 // CostEstimationLogLoadMoreError extends CostEstimationLogWithData,
@@ -241,7 +232,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
   // Sized to its content, so the sheet grows to fit the message (CUJ 11
   // screen 3) instead of filling to its height cap.
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, CostEstimationLogError state) {
+    final l10n = context.l10n;
+
     return Center(
       key: CostEstimationLogsList.errorViewKey,
       heightFactor: 1,
@@ -249,7 +242,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space10),
         child: _buildFailureNotice(
           context,
-          message: context.l10n.errorLoadingLogs,
+          message: state.isRepeatFailure
+              ? l10n.errorLoadingLogsRepeat
+              : l10n.errorLoadingLogs,
           retryButtonKey: CostEstimationLogsList.errorRetryButtonKey,
           onRetry: () {
             context.read<CostEstimationLogBloc>().add(
@@ -261,7 +256,8 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  // What failed, that the estimate is safe, and a way to try again.
+  // The failure block shared by the first load and the load of older events:
+  // what failed, that the estimate is safe, and a way to try again.
   Widget _buildFailureNotice(
     BuildContext context, {
     required String message,
@@ -324,6 +320,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     CostEstimationLogWithData state,
   ) {
     return CustomScrollView(
+      key: CostEstimationLogsList.logsScrollViewKey,
       controller: _scrollController,
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
@@ -342,7 +339,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         if (state.isLoadingMore)
           SliverToBoxAdapter(child: _buildLoadMoreIndicator(context)),
         if (state is CostEstimationLogLoadMoreError)
-          SliverToBoxAdapter(child: _buildLoadMoreRetry(context)),
+          SliverToBoxAdapter(child: _buildLoadMoreFailure(context, state)),
       ],
     );
   }
@@ -354,50 +351,30 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  Widget _buildLoadMoreRetry(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: CoreSpacing.space4,
-        right: CoreSpacing.space4,
-        top: CoreSpacing.space2,
-        bottom: CoreSpacing.space4,
-      ),
-      child: Center(
-        child: CoreButton(
-          key: CostEstimationLogsList.loadMoreRetryButtonKey,
-          label: context.l10n.retryLoadLogsButton,
-          onPressed: () {
-            context.read<CostEstimationLogBloc>().add(
-              CostEstimationLogLoadMore(estimateId: widget.estimateId),
-            );
-          },
-          variant: CoreButtonVariant.secondary,
-          size: CoreButtonSize.small,
-          fullWidth: false,
-        ),
-      ),
-    );
-  }
-
-  String _mapFailureToMessage(BuildContext context, Failure failure) {
+  Widget _buildLoadMoreFailure(
+    BuildContext context,
+    CostEstimationLogLoadMoreError state,
+  ) {
     final l10n = context.l10n;
 
-    if (failure is! EstimationFailure) {
-      return l10n.unexpectedErrorMessage;
-    }
-
-    switch (failure.errorType) {
-      case EstimationErrorType.timeoutError:
-        return l10n.timeoutError;
-      case EstimationErrorType.connectionError:
-        return l10n.connectionError;
-      default:
-        return l10n.unexpectedErrorMessage;
-    }
-  }
-
-  String _buildLoadMoreErrorMessage(BuildContext context, Failure failure) {
-    final details = _mapFailureToMessage(context, failure);
-    return '${context.l10n.loadMoreLogsError}: $details';
+    return Padding(
+      key: CostEstimationLogsList.loadMoreErrorViewKey,
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space5,
+        bottom: CoreSpacing.space4,
+      ),
+      child: _buildFailureNotice(
+        context,
+        message: state.isRepeatFailure
+            ? l10n.loadMoreLogsErrorRepeat
+            : l10n.loadMoreLogsError,
+        retryButtonKey: CostEstimationLogsList.loadMoreRetryButtonKey,
+        onRetry: () {
+          context.read<CostEstimationLogBloc>().add(
+            CostEstimationLogLoadMore(estimateId: widget.estimateId),
+          );
+        },
+      ),
+    );
   }
 }

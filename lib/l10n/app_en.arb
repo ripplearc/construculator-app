@@ -1337,6 +1337,10 @@
   "@errorLoadingLogs": {
     "description": "Message shown in place of the list when the first page of activity logs fails to load"
   },
+  "errorLoadingLogsRepeat": "Still couldn't load Logs.",
+  "@errorLoadingLogsRepeat": {
+    "description": "Message shown when a retried first load of activity logs fails again"
+  },
   "logsLoadErrorReassurance": "Check your connection. Your estimate is not affected.",
   "@logsLoadErrorReassurance": {
     "description": "Line under a failed activity logs load, telling the contractor what to check and that nothing was changed"
@@ -1345,9 +1349,13 @@
   "@retryLoadLogsButton": {
     "description": "Button label to retry a failed load of activity logs"
   },
-  "loadMoreLogsError": "Failed to load more logs",
+  "loadMoreLogsError": "Couldn't load older events.",
   "@loadMoreLogsError": {
-    "description": "Error message shown when loading more logs fails"
+    "description": "Message shown under the list when loading older activity logs fails"
+  },
+  "loadMoreLogsErrorRepeat": "Still couldn't load older events.",
+  "@loadMoreLogsErrorRepeat": {
+    "description": "Message shown when a retried load of older activity logs fails again"
   },
   "appTitle": "Construculator",
   "@appTitle": {

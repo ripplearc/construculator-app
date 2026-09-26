@@ -53,25 +53,44 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
 class CostEstimationLogError extends CostEstimationLogState {
   final Failure failure;
 
-  const CostEstimationLogError({required this.failure});
+  /// Whether this failure directly followed an earlier first-load failure,
+  /// meaning the contractor's retry is what failed.
+  final bool isRepeatFailure;
+
+  const CostEstimationLogError({
+    required this.failure,
+    this.isRepeatFailure = false,
+  });
 
   @override
-  List<Object?> get props => [failure];
+  List<Object?> get props => [failure, isRepeatFailure];
 }
 
 /// State when loading more logs fails but we have previous data
 class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
   final Failure failure;
 
+  /// Whether this failure directly followed an earlier load-more failure,
+  /// meaning the contractor's retry is what failed rather than the first
+  /// attempt. The message shown differs so the two are distinguishable.
+  final bool isRepeatFailure;
+
   CostEstimationLogLoadMoreError({
     required this.failure,
     required super.logs,
+    this.isRepeatFailure = false,
     super.hasMore,
     super.isLoadingMore = false,
   });
 
   @override
-  List<Object?> get props => [failure, logs, hasMore, isLoadingMore];
+  List<Object?> get props => [
+    failure,
+    isRepeatFailure,
+    logs,
+    hasMore,
+    isLoadingMore,
+  ];
 }
 
 /// State when the logs are loaded successfully with data

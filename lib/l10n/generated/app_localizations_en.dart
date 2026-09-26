@@ -846,6 +846,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingLogs => 'Couldn\'t load Logs.';
 
   @override
+  String get errorLoadingLogsRepeat => 'Still couldn\'t load Logs.';
+
+  @override
   String get logsLoadErrorReassurance =>
       'Check your connection. Your estimate is not affected.';
 
@@ -853,7 +856,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retryLoadLogsButton => 'Try again';
 
   @override
-  String get loadMoreLogsError => 'Failed to load more logs';
+  String get loadMoreLogsError => 'Couldn\'t load older events.';
+
+  @override
+  String get loadMoreLogsErrorRepeat => 'Still couldn\'t load older events.';
 
   @override
   String get appTitle => 'Construculator';
