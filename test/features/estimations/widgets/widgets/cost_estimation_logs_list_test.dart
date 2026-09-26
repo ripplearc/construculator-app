@@ -626,7 +626,10 @@ void main() {
   group('CostEstimationLogsList in its bottom sheet', () {
     // Opens the list the way the app does, in a CoreQuickSheet, on a phone-
     // sized screen, and returns that screen's height.
-    Future<double> pumpLogsListInSheet(WidgetTester tester) async {
+    Future<double> pumpLogsListInSheet(
+      WidgetTester tester, {
+      bool settle = true,
+    }) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -660,7 +663,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      if (settle) {
+        await tester.pumpAndSettle();
+      } else {
+        // The spinner animates forever, so wait out the sheet's slide-in.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+      }
       return tester.view.physicalSize.height / tester.view.devicePixelRatio;
     }
 
@@ -690,6 +699,197 @@ void main() {
         tester.getSize(find.byType(CostEstimationLogsList)).height,
         lessThan(screenHeight / 2),
         reason: 'the sheet sizes to the message, as in CUJ 11 screen 14',
+      );
+    });
+
+    testWidgets('grows to fit the first-load spinner instead of its cap', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+
+      final screenHeight = await pumpLogsListInSheet(tester, settle: false);
+      final loadingLabels = find.text(l10n().loadingLogs).evaluate().length;
+      final sheetHeight = tester
+          .getSize(find.byType(CostEstimationLogsList))
+          .height;
+
+      // Land the held load before asserting, so its 15s timeout timer is
+      // cancelled whether or not the expectations below pass.
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(loadingLabels, 1, reason: 'measured while the first page loads');
+      expect(
+        sheetHeight,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the spinner, as in CUJ 11 screen 2',
+      );
+    });
+  });
+
+  group('CostEstimationLogsList loading labels', () {
+    // The semantics label CoreLoadingIndicator gives itself. The tests below
+    // assert it is excluded; the first test keeps them honest if CoreUI
+    // renames it.
+    const spinnerSemanticsLabel = 'Loading';
+
+    testWidgets('a bare spinner still announces $spinnerSemanticsLabel', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        const MaterialApp(home: CoreLoadingIndicator(size: 24)),
+      );
+
+      expect(find.bySemanticsLabel(spinnerSemanticsLabel), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('says Logs are loading while the first page is on its way', (
+      tester,
+    ) async {
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+
+      final bloc = Modular.get<CostEstimationLogBloc>();
+      addTearDown(bloc.close);
+      // Tear-downs run last-first: release the held load before the bloc
+      // closes, or a failed expectation leaves close() waiting on it forever.
+      addTearDown(() => pending.isCompleted ? null : pending.complete());
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(buildTestApp(bloc));
+      await tester.pump();
+
+      expect(find.text(l10n().loadingLogs), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(spinnerSemanticsLabel),
+        findsNothing,
+        reason: 'the spinner must not be announced on top of its label',
+      );
+      semantics.dispose();
+
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().loadingLogs), findsNothing);
+    });
+
+    testWidgets('says older events are loading while the next page loads', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      final pending = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = pending;
+      addTearDown(() => fakeSupabase.shouldDelayOperations = false);
+      addTearDown(() => pending.isCompleted ? null : pending.complete());
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, -1800),
+      );
+      final semantics = tester.ensureSemantics();
+      await tester.pump();
+
+      expect(find.text(l10n().loadingOlderLogEvents), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(spinnerSemanticsLabel),
+        findsNothing,
+        reason: 'the spinner must not be announced on top of its label',
+      );
+      semantics.dispose();
+
+      pending.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().loadingOlderLogEvents), findsNothing);
+    });
+  });
+
+  group('CostEstimationLogsList end-of-list marker', () {
+    testWidgets('shows no-older-events once the whole list is loaded', (
+      tester,
+    ) async {
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Liam',
+        ),
+      ]);
+
+      await pumpLogsList(tester);
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsOneWidget,
+      );
+      expect(find.text(l10n().noOlderLogEvents), findsOneWidget);
+    });
+
+    testWidgets('hides the marker while older pages remain', (tester) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows the marker after the final page is paginated in', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester);
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, -1800),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        300,
+        scrollable: find.descendant(
+          of: find.byKey(CostEstimationLogsList.logsScrollViewKey),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      expect(
+        find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+        findsOneWidget,
       );
     });
   });

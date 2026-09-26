@@ -1636,6 +1636,24 @@ abstract class AppLocalizations {
   /// **'Still couldn\'t load older events.'**
   String get loadMoreLogsErrorRepeat;
 
+  /// Label under the spinner while the first page of activity logs loads
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Logs'**
+  String get loadingLogs;
+
+  /// Label beside the spinner while older activity logs load
+  ///
+  /// In en, this message translates to:
+  /// **'Loading older events'**
+  String get loadingOlderLogEvents;
+
+  /// End-of-list marker shown when every activity log has been loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No older events'**
+  String get noOlderLogEvents;
+
   /// Application title displayed in app bar
   ///
   /// In en, this message translates to:

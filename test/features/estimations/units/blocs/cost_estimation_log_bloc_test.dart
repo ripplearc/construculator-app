@@ -790,5 +790,41 @@ void main() {
         ],
       );
     });
+
+    group('hasReachedEnd', () {
+      final logs = expectedLatestLogsForEstimate(
+        totalCount: 2,
+        takeCount: 2,
+        estimateId: testEstimateId,
+      );
+
+      test('is true when nothing more can be loaded and logs exist', () {
+        expect(CostEstimationLogLoaded(logs: logs).hasReachedEnd, isTrue);
+      });
+
+      test('is false while more pages remain', () {
+        expect(
+          CostEstimationLogLoaded(logs: logs, hasMore: true).hasReachedEnd,
+          isFalse,
+        );
+      });
+
+      test('is false when there are no logs to end', () {
+        expect(
+          CostEstimationLogLoaded(logs: const []).hasReachedEnd,
+          isFalse,
+        );
+      });
+
+      test('is false after a load-more failure, which keeps hasMore true', () {
+        final state = CostEstimationLogLoadMoreError(
+          logs: logs,
+          hasMore: true,
+          failure: EstimationFailure(errorType: EstimationErrorType.timeoutError),
+        );
+
+        expect(state.hasReachedEnd, isFalse);
+      });
+    });
   });
 }

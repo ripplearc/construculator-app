@@ -1357,6 +1357,18 @@
   "@loadMoreLogsErrorRepeat": {
     "description": "Message shown when a retried load of older activity logs fails again"
   },
+  "loadingLogs": "Loading Logs",
+  "@loadingLogs": {
+    "description": "Label under the spinner while the first page of activity logs loads"
+  },
+  "loadingOlderLogEvents": "Loading older events",
+  "@loadingOlderLogEvents": {
+    "description": "Label beside the spinner while older activity logs load"
+  },
+  "noOlderLogEvents": "No older events",
+  "@noOlderLogEvents": {
+    "description": "End-of-list marker shown when every activity log has been loaded"
+  },
   "appTitle": "Construculator",
   "@appTitle": {
     "description": "Application title displayed in app bar",

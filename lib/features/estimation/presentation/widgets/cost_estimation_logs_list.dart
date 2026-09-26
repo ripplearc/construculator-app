@@ -8,6 +8,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
+  static const endOfListMarkerKey = Key('cost_estimation_logs_end_marker');
   static const loadMoreErrorViewKey = Key(
     'cost_estimation_logs_load_more_error_view',
   );
@@ -39,6 +40,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   /// the next page of logs should be loaded. A value of 200.0 provides
   /// a smooth user experience by preloading content before reaching the end.
   static const double _loadMoreScrollThreshold = 200.0;
+
+  /// Size of the spinners that sit beside a text label, on the first load
+  /// and on the load of older events, so the two states match.
+  static const double _inlineSpinnerSize = CoreIconSize.size24;
 
   @override
   void initState() {
@@ -89,7 +94,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
             child: BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
               builder: (context, state) {
                 if (state is CostEstimationLogLoading) {
-                  return _buildLoadingState();
+                  return _buildLoadingState(context);
                 }
 
                 if (state is CostEstimationLogEmpty) {
@@ -169,8 +174,32 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(child: CoreLoadingIndicator());
+  // Sized to its content, as the failure view is, so the sheet opens at the
+  // height of its title and spinner (CUJ 11 screen 2).
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      heightFactor: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // The text below names what is loading; the indicator's own
+            // "Loading" label would make screen readers announce it twice.
+            ExcludeSemantics(
+              child: CoreLoadingIndicator(size: _inlineSpinnerSize),
+            ),
+            const SizedBox(height: CoreSpacing.space3),
+            Text(
+              context.l10n.loadingLogs,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildRefreshable({required Widget child}) {
@@ -340,14 +369,51 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           SliverToBoxAdapter(child: _buildLoadMoreIndicator(context)),
         if (state is CostEstimationLogLoadMoreError)
           SliverToBoxAdapter(child: _buildLoadMoreFailure(context, state)),
+        if (state.hasReachedEnd)
+          SliverToBoxAdapter(child: _buildEndOfListMarker(context)),
       ],
+    );
+  }
+
+  Widget _buildEndOfListMarker(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space4,
+        bottom: CoreSpacing.space4,
+      ),
+      child: Center(
+        child: Text(
+          context.l10n.noOlderLogEvents,
+          key: CostEstimationLogsList.endOfListMarkerKey,
+          style: context.textTheme.bodySmallRegular.copyWith(
+            color: context.colorTheme.textBody,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
-      child: Center(child: CoreLoadingIndicator(size: 24)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ExcludeSemantics(
+            child: CoreLoadingIndicator(size: _inlineSpinnerSize),
+          ),
+          const SizedBox(width: CoreSpacing.space3),
+          Flexible(
+            child: Text(
+              context.l10n.loadingOlderLogEvents,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

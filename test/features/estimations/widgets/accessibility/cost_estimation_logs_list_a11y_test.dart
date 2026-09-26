@@ -221,6 +221,29 @@ void main() {
       }
     });
 
+    testWidgets('a11y: end-of-list marker is readable in both themes', (
+      tester,
+    ) async {
+      seedLogs(
+        LogTestDataFactory.createLogDataList(count: 2, estimateId: estimateId),
+      );
+
+      await setupA11yTest(tester);
+
+      for (final theme in [createTestTheme(), createTestThemeDark()]) {
+        // Unmount so the next pass re-runs initState against a fresh bloc.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await pumpWidget(tester, theme: theme);
+
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      }
+    });
+
     testWidgets('a11y: empty state text remains readable in both themes', (
       tester,
     ) async {

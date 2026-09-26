@@ -862,6 +862,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMoreLogsErrorRepeat => 'Still couldn\'t load older events.';
 
   @override
+  String get loadingLogs => 'Loading Logs';
+
+  @override
+  String get loadingOlderLogEvents => 'Loading older events';
+
+  @override
+  String get noOlderLogEvents => 'No older events';
+
+  @override
   String get appTitle => 'Construculator';
 
   @override
