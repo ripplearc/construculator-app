@@ -15,6 +15,10 @@ extension ForegroundTimeout<T> on Future<T> {
   /// Time in the background does not count, so a request left running while
   /// the contractor is in another app still gets its full [limit] when they
   /// come back.
+  ///
+  /// Like [Future.timeout], this only stops waiting; it does not cancel the
+  /// underlying request. A retry may run beside the abandoned one, which is
+  /// harmless for reads.
   Future<T> timeoutInForeground(
     Duration limit,
     AppLifecycleWrapper appLifecycle,
