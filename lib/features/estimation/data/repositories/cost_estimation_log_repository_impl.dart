@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
+import 'package:construculator/libraries/app_lifecycle/foreground_timeout.dart';
+import 'package:construculator/libraries/app_lifecycle/interfaces/app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/pagination_state.dart';
@@ -19,6 +21,7 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 /// - DTO to domain entity conversion
 class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
   final CostEstimationLogDataSource dataSource;
+  final AppLifecycleWrapper appLifecycleWrapper;
   static final _logger = AppLogger().tag('CostEstimationLogRepositoryImpl');
 
   final Map<String, PaginationState> _paginationStates = {};
@@ -34,9 +37,15 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
   /// [Future.timeout] only stops waiting; it does not cancel the underlying
   /// request. A retry may therefore run beside the abandoned one, which is
   /// harmless because both are reads.
+  ///
+  /// Only time in the foreground counts (CUJ 11 screen 2), so a load left
+  /// running while the contractor is in another app is not failed on return.
   static const Duration logLoadTimeout = Duration(seconds: 15);
 
-  CostEstimationLogRepositoryImpl({required this.dataSource});
+  CostEstimationLogRepositoryImpl({
+    required this.dataSource,
+    required this.appLifecycleWrapper,
+  });
 
   @override
   Future<Either<Failure, List<CostEstimationLog>>> fetchInitialLogs(
@@ -55,7 +64,7 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
             rangeFrom: 0,
             rangeTo: defaultPageSize - 1,
           )
-          .timeout(logLoadTimeout);
+          .timeoutInForeground(logLoadTimeout, appLifecycleWrapper);
 
       final hasMore = dtos.length == defaultPageSize;
 
@@ -102,7 +111,7 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
             rangeFrom: state.currentOffset,
             rangeTo: state.currentOffset + state.pageSize - 1,
           )
-          .timeout(logLoadTimeout);
+          .timeoutInForeground(logLoadTimeout, appLifecycleWrapper);
 
       _paginationStates[estimateId] = state.copyWith(
         currentOffset: state.currentOffset + state.pageSize,

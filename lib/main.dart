@@ -8,6 +8,7 @@ import 'package:construculator/libraries/analytics/data/repositories/no_op_featu
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/analytics/posthog_sdk_impl.dart';
 import 'package:construculator/libraries/analytics/posthog_wrapper_impl.dart';
+import 'package:construculator/libraries/app_lifecycle/app_lifecycle_wrapper_impl.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
@@ -83,6 +84,9 @@ Future<AppBootstrap> _initializeApp() async {
     powerSyncDatabase: powerSyncDatabase,
     featureFlagRepository: featureFlagRepository,
     currentScreenTracker: currentScreenTracker,
+    // Built once for the whole run and never disposed, like the other wrappers
+    // here. Only a rebuilt bootstrap would need to call its dispose().
+    appLifecycleWrapper: AppLifecycleWrapperImpl(),
   );
 }
 
