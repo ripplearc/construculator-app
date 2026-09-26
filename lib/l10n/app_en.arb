@@ -970,32 +970,32 @@
     "description": "Label for save cost name button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57414-15469&t=zB64L7ji12g2HAVH-4"
   },
-  "activityCostEstimationCreated": "Cost Estimation Created",
+  "activityCostEstimationCreated": "Estimate created",
   "@activityCostEstimationCreated": {
     "description": "Activity log message for cost estimation created",
     "context": "N/A"
   },
-  "activityCostEstimationRenamed": "Cost Estimation Renamed",
+  "activityCostEstimationRenamed": "Estimate renamed",
   "@activityCostEstimationRenamed": {
     "description": "Activity log message for cost estimation renamed without details",
     "context": "N/A"
   },
-  "activityCostEstimationExported": "Cost Estimation Exported",
+  "activityCostEstimationExported": "Estimate exported",
   "@activityCostEstimationExported": {
     "description": "Activity log message for cost estimation exported",
     "context": "N/A"
   },
-  "activityCostEstimationLocked": "Cost Estimation Locked",
+  "activityCostEstimationLocked": "Estimate locked",
   "@activityCostEstimationLocked": {
     "description": "Activity log message for cost estimation locked",
     "context": "N/A"
   },
-  "activityCostEstimationUnlocked": "Cost Estimation Unlocked",
+  "activityCostEstimationUnlocked": "Estimate unlocked",
   "@activityCostEstimationUnlocked": {
     "description": "Activity log message for cost estimation unlocked",
     "context": "N/A"
   },
-  "activityCostEstimationDeleted": "Cost Estimation Deleted",
+  "activityCostEstimationDeleted": "Estimate deleted",
   "@activityCostEstimationDeleted": {
     "description": "Activity log message for cost estimation deleted",
     "context": "N/A"
@@ -1010,7 +1010,7 @@
     },
     "context": "N/A"
   },
-  "activityCostItemAddedSimple": "Cost Item Added",
+  "activityCostItemAddedSimple": "Cost item added",
   "@activityCostItemAddedSimple": {
     "description": "Activity log message for cost item added without details",
     "context": "N/A"
@@ -1025,7 +1025,7 @@
     },
     "context": "N/A"
   },
-  "activityCostItemEditedSimple": "Cost Item Edited",
+  "activityCostItemEditedSimple": "Cost item edited",
   "@activityCostItemEditedSimple": {
     "description": "Activity log message for cost item edited without details",
     "context": "N/A"
@@ -1040,7 +1040,7 @@
     },
     "context": "N/A"
   },
-  "activityCostItemRemovedSimple": "Cost Item Removed",
+  "activityCostItemRemovedSimple": "Cost item removed",
   "@activityCostItemRemovedSimple": {
     "description": "Activity log message for cost item removed without details",
     "context": "N/A"
@@ -1055,7 +1055,7 @@
     },
     "context": "N/A"
   },
-  "activityCostItemDuplicatedSimple": "Cost Item Duplicated",
+  "activityCostItemDuplicatedSimple": "Cost item duplicated",
   "@activityCostItemDuplicatedSimple": {
     "description": "Activity log message for cost item duplicated without details",
     "context": "N/A"
@@ -1073,7 +1073,7 @@
     },
     "context": "N/A"
   },
-  "activityTaskAssignedSimple": "Task Assigned",
+  "activityTaskAssignedSimple": "Task assigned",
   "@activityTaskAssignedSimple": {
     "description": "Activity log message for task assigned without details",
     "context": "N/A"
@@ -1088,12 +1088,12 @@
     },
     "context": "N/A"
   },
-  "activityTaskUnassignedSimple": "Task Unassigned",
+  "activityTaskUnassignedSimple": "Task unassigned",
   "@activityTaskUnassignedSimple": {
     "description": "Activity log message for task unassigned without details",
     "context": "N/A"
   },
-  "activityCostFileUploaded": "Cost File Uploaded: {fileName}",
+  "activityCostFileUploaded": "Cost file uploaded: {fileName}",
   "@activityCostFileUploaded": {
     "description": "Activity log message for cost file uploaded",
     "placeholders": {
@@ -1103,7 +1103,7 @@
     },
     "context": "N/A"
   },
-  "activityCostFileUploadedSimple": "Cost File Uploaded",
+  "activityCostFileUploadedSimple": "Cost file uploaded",
   "@activityCostFileUploadedSimple": {
     "description": "Activity log message for cost file uploaded without details",
     "context": "N/A"
@@ -1118,7 +1118,7 @@
     },
     "context": "N/A"
   },
-  "activityCostFileDeletedSimple": "Cost File Deleted",
+  "activityCostFileDeletedSimple": "Cost file deleted",
   "@activityCostFileDeletedSimple": {
     "description": "Activity log message for cost file deleted without details",
     "context": "N/A"
@@ -1159,7 +1159,7 @@
     },
     "context": "N/A"
   },
-  "activityAttachmentAddedSimple": "Attachment Added",
+  "activityAttachmentAddedSimple": "Attachment added",
   "@activityAttachmentAddedSimple": {
     "description": "Activity log message for attachment added without details",
     "context": "N/A"
@@ -1174,12 +1174,12 @@
     },
     "context": "N/A"
   },
-  "activityAttachmentRemovedSimple": "Attachment Removed",
+  "activityAttachmentRemovedSimple": "Attachment removed",
   "@activityAttachmentRemovedSimple": {
     "description": "Activity log message for attachment removed without details",
     "context": "N/A"
   },
-  "activityUnknown": "Unknown Activity",
+  "activityUnknown": "Unknown activity",
   "@activityUnknown": {
     "description": "Fallback activity log message for unknown activity types",
     "context": "N/A"
