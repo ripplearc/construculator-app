@@ -183,7 +183,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     return Center(
       heightFactor: 1,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space10),
+        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -380,7 +380,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
   Widget _buildEndOfListMarker(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space4,
+        bottom: CoreSpacing.space4,
+      ),
       child: Center(
         child: Text(
           context.l10n.noOlderLogEvents,
