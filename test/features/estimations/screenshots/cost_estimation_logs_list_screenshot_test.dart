@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -56,29 +58,40 @@ void main() {
     fakeSupabase.addTableData(DatabaseConstants.costEstimationLogsTable, rows);
   }
 
+  // Opens the list the way the app does, in a CoreQuickSheet over a page,
+  // so each golden shows how tall the sheet grows for that state.
   Future<void> pumpLogsList(
     WidgetTester tester, {
     required ThemeData theme,
   }) async {
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
+    late BuildContext hostContext;
 
     await tester.pumpWidget(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
-          builder: (ctx) => Scaffold(
-            backgroundColor: ctx.colorTheme.pageBackground,
-            body: BlocProvider<CostEstimationLogBloc>.value(
-              value: bloc,
-              child: const CostEstimationLogsList(
-                estimateId: estimateId,
-                estimateName: 'Kitchen Remodel',
-              ),
-            ),
+          builder: (ctx) {
+            hostContext = ctx;
+            return Scaffold(backgroundColor: ctx.colorTheme.pageBackground);
+          },
+        ),
+      ),
+    );
+
+    unawaited(
+      CoreQuickSheet.show<void>(
+        context: hostContext,
+        child: BlocProvider<CostEstimationLogBloc>.value(
+          value: bloc,
+          child: const CostEstimationLogsList(
+            estimateId: estimateId,
+            estimateName: 'Kitchen Remodel',
           ),
         ),
       ),
@@ -98,7 +111,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(Scaffold),
+        find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_empty$suffix.png',
         ),
@@ -131,9 +144,28 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(Scaffold),
+        find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_loaded$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('first-load error with try again', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_first_load_error$suffix.png',
         ),
       );
     });
@@ -164,14 +196,14 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.text('Retry'),
+        find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(Scaffold),
+        find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error$suffix.png',
         ),

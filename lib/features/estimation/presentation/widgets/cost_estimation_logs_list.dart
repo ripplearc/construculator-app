@@ -8,6 +8,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLogsList extends StatefulWidget {
+  static const errorViewKey = Key('cost_estimation_logs_error_view');
+  static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
+  static const loadMoreRetryButtonKey = Key(
+    'cost_estimation_logs_load_more_retry',
+  );
+
   final String estimateId;
   final String estimateName;
 
@@ -73,45 +79,19 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: CoreSpacing.space4,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            boxShadow: CoreShadows.small,
-            color: context.colorTheme.pageBackground,
-          ),
-          padding: EdgeInsets.symmetric(
-            vertical: CoreSpacing.space3,
-            horizontal: CoreSpacing.space4,
-          ),
-          child: Text(
-            widget.estimateName,
-            overflow: TextOverflow.ellipsis,
-            style: context.textTheme.titleMediumSemiBold.copyWith(
-              color: context.colorTheme.textHeadline,
-            ),
-          ),
-        ),
+        _buildHeader(context),
         Flexible(
           fit: FlexFit.loose,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
             child: BlocConsumer<CostEstimationLogBloc, CostEstimationLogState>(
               listener: (context, state) {
-                if (state is CostEstimationLogError) {
-                  CoreToast.showError(
-                    context,
-                    _buildLogsErrorMessage(context, state.failure),
-                    context.l10n.closeLabel,
-                  );
-                }
-
+                // A first-load failure is shown in the body by
+                // _buildErrorState, which stays until the contractor retries.
                 if (state is CostEstimationLogLoadMoreError) {
                   CoreToast.showError(
                     context,
-                    _buildLogsErrorMessage(
-                      context,
-                      state.failure,
-                      isLoadMore: true,
-                    ),
+                    _buildLoadMoreErrorMessage(context, state.failure),
                     context.l10n.closeLabel,
                   );
                 }
@@ -123,6 +103,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
                 if (state is CostEstimationLogEmpty) {
                   return _buildRefreshable(child: _buildEmptyState(context));
+                }
+
+                if (state is CostEstimationLogError) {
+                  return _buildErrorState(context);
                 }
 
                 // CostEstimationLogLoadMoreError extends CostEstimationLogWithData,
@@ -140,6 +124,57 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         ),
         SizedBox(height: CoreSpacing.space2),
       ],
+    );
+  }
+
+  // "Logs", then the estimate and the list order (CUJ 11 screen 5). A long
+  // name is cut with an ellipsis, and "newest first" stays whole.
+  Widget _buildHeader(BuildContext context) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+    final orderStyle = typography.bodySmallRegular.copyWith(
+      color: appColors.textBody,
+    );
+
+    return BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
+      builder: (context, state) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: CoreSpacing.space4,
+          children: [
+            Text(
+              context.l10n.logsAction,
+              style: typography.titleMediumSemiBold.copyWith(
+                color: appColors.textHeadline,
+              ),
+            ),
+            Row(
+              spacing: CoreSpacing.space2,
+              children: [
+                Flexible(
+                  child: Text(
+                    widget.estimateName,
+                    overflow: TextOverflow.ellipsis,
+                    style: orderStyle,
+                  ),
+                ),
+                if (state is! CostEstimationLogEmpty) ...[
+                  Container(
+                    width: CoreSpacing.space1,
+                    height: CoreSpacing.space1,
+                    decoration: BoxDecoration(
+                      color: appColors.lineDarkOutline,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Text(context.l10n.logsNewestFirst, style: orderStyle),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -171,11 +206,10 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
+        SliverToBoxAdapter(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(CoreSpacing.space6),
+              padding: const EdgeInsets.all(CoreSpacing.space8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -184,7 +218,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                   Text(
                     context.l10n.noActivityLogs,
                     style: typography.titleMediumSemiBold.copyWith(
-                      color: appColors.textDark,
+                      color: appColors.textHeadline,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -200,6 +234,86 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // Sized to its content, so the sheet grows to fit the message (CUJ 11
+  // screen 3) instead of filling to its height cap.
+  Widget _buildErrorState(BuildContext context) {
+    return Center(
+      key: CostEstimationLogsList.errorViewKey,
+      heightFactor: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space10),
+        child: _buildFailureNotice(
+          context,
+          message: context.l10n.errorLoadingLogs,
+          retryButtonKey: CostEstimationLogsList.errorRetryButtonKey,
+          onRetry: () {
+            context.read<CostEstimationLogBloc>().add(
+              CostEstimationLogFetchInitial(estimateId: widget.estimateId),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // What failed, that the estimate is safe, and a way to try again.
+  Widget _buildFailureNotice(
+    BuildContext context, {
+    required String message,
+    required Key retryButtonKey,
+    required VoidCallback onRetry,
+  }) {
+    final appColors = context.colorTheme;
+    final typography = context.textTheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CoreIconWidget(
+              icon: CoreIcons.error,
+              size: CoreIconSize.size16,
+              color: appColors.textError,
+            ),
+            const SizedBox(width: CoreSpacing.space2),
+            Flexible(
+              // Announced when it appears. Focus stays on Try again while the
+              // result swaps in, so a screen reader would not otherwise hear
+              // that the load failed.
+              child: Semantics(
+                liveRegion: true,
+                child: Text(
+                  message,
+                  style: typography.bodySmallRegular.copyWith(
+                    color: appColors.textError,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: CoreSpacing.space3),
+        Text(
+          context.l10n.logsLoadErrorReassurance,
+          style: typography.bodySmallRegular.copyWith(
+            color: appColors.textBody,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: CoreSpacing.space3),
+        CoreButton(
+          key: retryButtonKey,
+          label: context.l10n.retryLoadLogsButton,
+          onPressed: onRetry,
+          variant: CoreButtonVariant.secondary,
+          fullWidth: false,
         ),
       ],
     );
@@ -250,6 +364,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ),
       child: Center(
         child: CoreButton(
+          key: CostEstimationLogsList.loadMoreRetryButtonKey,
           label: context.l10n.retryLoadLogsButton,
           onPressed: () {
             context.read<CostEstimationLogBloc>().add(
@@ -281,14 +396,8 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     }
   }
 
-  String _buildLogsErrorMessage(
-    BuildContext context,
-    Failure failure, {
-    bool isLoadMore = false,
-  }) {
-    final l10n = context.l10n;
+  String _buildLoadMoreErrorMessage(BuildContext context, Failure failure) {
     final details = _mapFailureToMessage(context, failure);
-    final prefix = isLoadMore ? l10n.loadMoreLogsError : l10n.errorLoadingLogs;
-    return '$prefix: $details';
+    return '${context.l10n.loadMoreLogsError}: $details';
   }
 }

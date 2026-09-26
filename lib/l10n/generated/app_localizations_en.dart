@@ -833,17 +833,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noActivityLogs => 'No Activity Yet';
+  String get noActivityLogs => 'History not available';
 
   @override
   String get noActivityLogsDescription =>
-      'Activity logs will appear here when changes are made to this estimation.';
+      'Earlier events for this estimate were not recorded. New events will show here.';
 
   @override
-  String get errorLoadingLogs => 'Unable to Load Activity';
+  String get logsNewestFirst => 'newest first';
 
   @override
-  String get retryLoadLogsButton => 'Retry';
+  String get errorLoadingLogs => 'Couldn\'t load Logs.';
+
+  @override
+  String get logsLoadErrorReassurance =>
+      'Check your connection. Your estimate is not affected.';
+
+  @override
+  String get retryLoadLogsButton => 'Try again';
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';

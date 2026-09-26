@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
@@ -50,7 +52,10 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget buildTestApp(CostEstimationLogBloc bloc) {
+  Widget buildTestApp(
+    CostEstimationLogBloc bloc, {
+    String name = estimateName,
+  }) {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
@@ -62,9 +67,9 @@ void main() {
           return Scaffold(
             body: BlocProvider<CostEstimationLogBloc>.value(
               value: bloc,
-              child: const CostEstimationLogsList(
+              child: CostEstimationLogsList(
                 estimateId: estimateId,
-                estimateName: estimateName,
+                estimateName: name,
               ),
             ),
           );
@@ -75,16 +80,30 @@ void main() {
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-  Future<CostEstimationLogBloc> pumpLogsList(WidgetTester tester) async {
+  Future<CostEstimationLogBloc> pumpLogsList(
+    WidgetTester tester, {
+    String name = estimateName,
+  }) async {
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
-    await tester.pumpWidget(buildTestApp(bloc));
+    await tester.pumpWidget(buildTestApp(bloc, name: name));
     await tester.pumpAndSettle();
     return bloc;
   }
 
   void seedLogs(List<Map<String, dynamic>> rows) {
     fakeSupabase.addTableData(DatabaseConstants.costEstimationLogsTable, rows);
+  }
+
+  // One entry, so the list has an order to show under the title.
+  void seedOneLog() {
+    seedLogs([
+      LogTestDataFactory.createLogData(
+        id: 'log-1',
+        estimateId: estimateId,
+        activity: 'costEstimationCreated',
+      ),
+    ]);
   }
 
   CostEstimationLog createExpectedLog({
@@ -118,10 +137,51 @@ void main() {
   }
 
   group('CostEstimationLogsList behavior', () {
-    testWidgets('shows estimation name', (tester) async {
+    testWidgets('shows the Logs title, the estimate name and the order', (
+      tester,
+    ) async {
+      seedOneLog();
       await pumpLogsList(tester);
 
+      expect(find.text(l10n().logsAction), findsOneWidget);
       expect(find.text(estimateName), findsOneWidget);
+      expect(find.text(l10n().logsNewestFirst), findsOneWidget);
+    });
+
+    testWidgets('cuts a long estimate name and keeps newest first whole', (
+      tester,
+    ) async {
+      final longName = 'Kitchen Remodel ' * 20;
+      seedOneLog();
+
+      await pumpLogsList(tester, name: longName);
+
+      final order = tester.getRect(find.text(l10n().logsNewestFirst));
+      expect(
+        order.right,
+        lessThanOrEqualTo(
+          tester.getSize(find.byType(CostEstimationLogsList)).width,
+        ),
+      );
+      expect(
+        tester.getSize(find.text(longName)).height,
+        order.height,
+        reason: 'the name is cut to one line, not wrapped',
+      );
+    });
+
+    testWidgets('leaves out newest first when there are no entries', (
+      tester,
+    ) async {
+      await pumpLogsList(tester);
+
+      expect(find.text(l10n().logsAction), findsOneWidget);
+      expect(find.text(estimateName), findsOneWidget);
+      expect(
+        find.text(l10n().logsNewestFirst),
+        findsNothing,
+        reason: 'an empty list has no order to state (CUJ 11 screen 14)',
+      );
     });
 
     testWidgets('shows empty-state message when no logs exist', (tester) async {
@@ -391,39 +451,25 @@ void main() {
     });
   });
 
-  group('CostEstimationLogsList error mapping', () {
-    testWidgets('shows initial fetch timeout error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+  group('CostEstimationLogsList failure messages', () {
+    for (final exceptionType in [
+      SupabaseExceptionType.timeout,
+      SupabaseExceptionType.socket,
+      SupabaseExceptionType.unknown,
+    ]) {
+      testWidgets(
+        'says the first load failed and the estimate is safe on $exceptionType',
+        (tester) async {
+          fakeSupabase.shouldThrowOnSelectPaginated = true;
+          fakeSupabase.selectPaginatedExceptionType = exceptionType;
 
-      await pumpLogsList(tester);
+          await pumpLogsList(tester);
 
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().timeoutError}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
-
-    testWidgets('shows initial fetch connection error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.socket;
-
-      await pumpLogsList(tester);
-
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().connectionError}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
-
-    testWidgets('shows initial fetch generic error message', (tester) async {
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.unknown;
-
-      await pumpLogsList(tester);
-
-      final expectedMessage =
-          '${l10n().errorLoadingLogs}: ${l10n().unexpectedErrorMessage}';
-      expect(find.text(expectedMessage), findsOneWidget);
-    });
+          expect(find.text(l10n().errorLoadingLogs), findsOneWidget);
+          expect(find.text(l10n().logsLoadErrorReassurance), findsOneWidget);
+        },
+      );
+    }
 
     testWidgets('shows load more timeout error message in toast', (
       tester,
@@ -450,6 +496,125 @@ void main() {
       final expectedMessage =
           '${l10n().loadMoreLogsError}: ${l10n().timeoutError}';
       expect(find.text(expectedMessage), findsOneWidget);
+    });
+  });
+
+  group('CostEstimationLogsList first-load failure', () {
+    testWidgets('shows a try-again view in the body instead of only a toast', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester);
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsOneWidget);
+      expect(
+        find.byKey(CostEstimationLogsList.errorRetryButtonKey),
+        findsOneWidget,
+      );
+      expect(find.text(l10n().errorLoadingLogs), findsOneWidget);
+      expect(
+        find.text(l10n().closeLabel),
+        findsNothing,
+        reason: 'the failure is shown in the body, not in a dismissible toast',
+      );
+    });
+
+    testWidgets('try again re-fetches and renders the logs on success', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester);
+
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Liam',
+        ),
+      ]);
+      fakeSupabase.shouldThrowOnSelectPaginated = false;
+
+      await tester.tap(find.byKey(CostEstimationLogsList.errorRetryButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsNothing);
+      expect(find.byType(CostEstimationLogTile), findsOneWidget);
+    });
+  });
+
+  group('CostEstimationLogsList in its bottom sheet', () {
+    // Opens the list the way the app does, in a CoreQuickSheet, on a phone-
+    // sized screen, and returns that screen's height.
+    Future<double> pumpLogsListInSheet(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final bloc = Modular.get<CostEstimationLogBloc>();
+      addTearDown(bloc.close);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              buildContext = context;
+              return const Scaffold();
+            },
+          ),
+        ),
+      );
+      unawaited(
+        CoreQuickSheet.show<void>(
+          context: buildContext!,
+          child: BlocProvider<CostEstimationLogBloc>.value(
+            value: bloc,
+            child: const CostEstimationLogsList(
+              estimateId: estimateId,
+              estimateName: estimateName,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    }
+
+    testWidgets('grows to fit a first-load failure instead of its cap', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      final screenHeight = await pumpLogsListInSheet(tester);
+
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CostEstimationLogsList)).height,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the message, as in CUJ 11 screen 3',
+      );
+    });
+
+    testWidgets('grows to fit the empty state instead of its cap', (
+      tester,
+    ) async {
+      final screenHeight = await pumpLogsListInSheet(tester);
+
+      expect(find.text(l10n().noActivityLogs), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CostEstimationLogsList)).height,
+        lessThan(screenHeight / 2),
+        reason: 'the sheet sizes to the message, as in CUJ 11 screen 14',
+      );
     });
   });
 }
