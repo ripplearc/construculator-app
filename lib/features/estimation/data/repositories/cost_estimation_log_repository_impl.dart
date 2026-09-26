@@ -30,6 +30,10 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
   /// Without this cutoff a stalled request leaves the caller waiting forever;
   /// the resulting [TimeoutException] maps to
   /// [EstimationErrorType.timeoutError] so the UI can offer a retry.
+  ///
+  /// [Future.timeout] only stops waiting; it does not cancel the underlying
+  /// request. A retry may therefore run beside the abandoned one, which is
+  /// harmless because both are reads.
   static const Duration logLoadTimeout = Duration(seconds: 15);
 
   CostEstimationLogRepositoryImpl({required this.dataSource});
