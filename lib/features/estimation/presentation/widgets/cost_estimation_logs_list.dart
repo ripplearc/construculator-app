@@ -331,7 +331,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
+              padding: const EdgeInsets.only(bottom: CoreSpacing.space3),
               child: CostEstimationLogTile(
                 key: ValueKey(state.logs[index].id),
                 log: state.logs[index],

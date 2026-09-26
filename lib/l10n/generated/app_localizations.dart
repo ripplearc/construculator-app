@@ -1237,37 +1237,37 @@ abstract class AppLocalizations {
   /// Activity log message for cost estimation created
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Created'**
+  /// **'Estimate created'**
   String get activityCostEstimationCreated;
 
   /// Activity log message for cost estimation renamed without details
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Renamed'**
+  /// **'Estimate renamed'**
   String get activityCostEstimationRenamed;
 
   /// Activity log message for cost estimation exported
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Exported'**
+  /// **'Estimate exported'**
   String get activityCostEstimationExported;
 
   /// Activity log message for cost estimation locked
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Locked'**
+  /// **'Estimate locked'**
   String get activityCostEstimationLocked;
 
   /// Activity log message for cost estimation unlocked
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Unlocked'**
+  /// **'Estimate unlocked'**
   String get activityCostEstimationUnlocked;
 
   /// Activity log message for cost estimation deleted
   ///
   /// In en, this message translates to:
-  /// **'Cost Estimation Deleted'**
+  /// **'Estimate deleted'**
   String get activityCostEstimationDeleted;
 
   /// Activity log message for cost item added with item name
@@ -1279,7 +1279,7 @@ abstract class AppLocalizations {
   /// Activity log message for cost item added without details
   ///
   /// In en, this message translates to:
-  /// **'Cost Item Added'**
+  /// **'Cost item added'**
   String get activityCostItemAddedSimple;
 
   /// Activity log message for cost item edited with item name
@@ -1291,7 +1291,7 @@ abstract class AppLocalizations {
   /// Activity log message for cost item edited without details
   ///
   /// In en, this message translates to:
-  /// **'Cost Item Edited'**
+  /// **'Cost item edited'**
   String get activityCostItemEditedSimple;
 
   /// Activity log message for cost item removed with item name
@@ -1303,7 +1303,7 @@ abstract class AppLocalizations {
   /// Activity log message for cost item removed without details
   ///
   /// In en, this message translates to:
-  /// **'Cost Item Removed'**
+  /// **'Cost item removed'**
   String get activityCostItemRemovedSimple;
 
   /// Activity log message for cost item duplicated with item name
@@ -1315,7 +1315,7 @@ abstract class AppLocalizations {
   /// Activity log message for cost item duplicated without details
   ///
   /// In en, this message translates to:
-  /// **'Cost Item Duplicated'**
+  /// **'Cost item duplicated'**
   String get activityCostItemDuplicatedSimple;
 
   /// Activity log message for task assigned with task and assignee names
@@ -1327,7 +1327,7 @@ abstract class AppLocalizations {
   /// Activity log message for task assigned without details
   ///
   /// In en, this message translates to:
-  /// **'Task Assigned'**
+  /// **'Task assigned'**
   String get activityTaskAssignedSimple;
 
   /// Activity log message for task unassigned with task name
@@ -1339,19 +1339,19 @@ abstract class AppLocalizations {
   /// Activity log message for task unassigned without details
   ///
   /// In en, this message translates to:
-  /// **'Task Unassigned'**
+  /// **'Task unassigned'**
   String get activityTaskUnassignedSimple;
 
   /// Activity log message for cost file uploaded
   ///
   /// In en, this message translates to:
-  /// **'Cost File Uploaded: {fileName}'**
+  /// **'Cost file uploaded: {fileName}'**
   String activityCostFileUploaded(String fileName);
 
   /// Activity log message for cost file uploaded without details
   ///
   /// In en, this message translates to:
-  /// **'Cost File Uploaded'**
+  /// **'Cost file uploaded'**
   String get activityCostFileUploadedSimple;
 
   /// Activity log message for cost file deleted with file name
@@ -1363,7 +1363,7 @@ abstract class AppLocalizations {
   /// Activity log message for cost file deleted without details
   ///
   /// In en, this message translates to:
-  /// **'Cost File Deleted'**
+  /// **'Cost file deleted'**
   String get activityCostFileDeletedSimple;
 
   /// Label shown before the upload date of a cost file
@@ -1399,7 +1399,7 @@ abstract class AppLocalizations {
   /// Activity log message for attachment added without details
   ///
   /// In en, this message translates to:
-  /// **'Attachment Added'**
+  /// **'Attachment added'**
   String get activityAttachmentAddedSimple;
 
   /// Activity log message for attachment removed with file name
@@ -1411,13 +1411,13 @@ abstract class AppLocalizations {
   /// Activity log message for attachment removed without details
   ///
   /// In en, this message translates to:
-  /// **'Attachment Removed'**
+  /// **'Attachment removed'**
   String get activityAttachmentRemovedSimple;
 
   /// Fallback activity log message for unknown activity types
   ///
   /// In en, this message translates to:
-  /// **'Unknown Activity'**
+  /// **'Unknown activity'**
   String get activityUnknown;
 
   /// Subtitle for activity log entry indicating the initial state of the activity

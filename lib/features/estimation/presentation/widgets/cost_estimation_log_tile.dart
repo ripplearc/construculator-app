@@ -16,8 +16,8 @@ class CostEstimationLogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final appColors = context.colorTheme;
     final typography = context.textTheme;
+    final subtitle = _buildSubtitle(context);
     return Container(
-      constraints: const BoxConstraints(minHeight: 100),
       padding: EdgeInsets.only(
         top: CoreSpacing.space2,
         bottom: CoreSpacing.space4,
@@ -27,11 +27,12 @@ class CostEstimationLogTile extends StatelessWidget {
       decoration: BoxDecoration(
         boxShadow: CoreShadows.small,
         borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: appColors.lineLight),
         color: appColors.pageBackground,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -44,8 +45,8 @@ class CostEstimationLogTile extends StatelessWidget {
                     log,
                   ),
                   key: const Key('activityTitle'),
-                  style: typography.bodyMediumMedium.copyWith(
-                    color: appColors.textDark,
+                  style: typography.bodyMediumSemiBold.copyWith(
+                    color: appColors.textHeadline,
                   ),
                 ),
               ),
@@ -57,8 +58,10 @@ class CostEstimationLogTile extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: CoreSpacing.space2),
-          _buildSubtitle(context),
+          if (subtitle != null) ...[
+            const SizedBox(height: CoreSpacing.space1),
+            subtitle,
+          ],
           const SizedBox(height: CoreSpacing.space2),
           _buildBottomInfo(context),
         ],
@@ -66,7 +69,7 @@ class CostEstimationLogTile extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context) {
+  Widget? _buildSubtitle(BuildContext context) {
     switch (log.activity) {
       case CostEstimationActivityType.costEstimationRenamed:
         return _buildRenamedSubtitle(context);
@@ -80,20 +83,25 @@ class CostEstimationLogTile extends StatelessWidget {
       case CostEstimationActivityType.taskAssigned:
         return _buildTaskAssignedSubtitle(context);
       default:
-        return const SizedBox.shrink();
+        return null;
     }
   }
 
-  Widget _buildRenamedSubtitle(BuildContext context) {
+  Widget? _buildRenamedSubtitle(BuildContext context) {
     final oldName = log.activityDetails['oldName'] as String?;
     final newName = log.activityDetails['newName'] as String?;
     if (oldName != null && newName != null) {
-      return _buildSubtitleRow(context, oldName, newName);
+      return _buildSubtitleRow(
+        context,
+        oldName,
+        newName,
+        emphasizeValues: false,
+      );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
-  Widget _buildExportedSubtitle(BuildContext context) {
+  Widget? _buildExportedSubtitle(BuildContext context) {
     final format = log.activityDetails['format'] as String?;
     if (format != null) {
       return _buildSubtitleSingleInfo(
@@ -102,10 +110,10 @@ class CostEstimationLogTile extends StatelessWidget {
         format,
       );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
-  Widget _buildItemTypeSubtitle(BuildContext context) {
+  Widget? _buildItemTypeSubtitle(BuildContext context) {
     final itemType = log.activityDetails['itemType'] as String?;
     if (itemType != null) {
       return _buildSubtitleSingleInfo(
@@ -114,10 +122,10 @@ class CostEstimationLogTile extends StatelessWidget {
         itemType,
       );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
-  Widget _buildEditedFieldsSubtitle(BuildContext context) {
+  Widget? _buildEditedFieldsSubtitle(BuildContext context) {
     final changes = CostItemEditedFieldMapper.fromActivityDetails(
       context.l10n,
       log.activityDetails,
@@ -139,10 +147,10 @@ class CostEstimationLogTile extends StatelessWidget {
         ],
       );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
-  Widget _buildTaskAssignedSubtitle(BuildContext context) {
+  Widget? _buildTaskAssignedSubtitle(BuildContext context) {
     final taskName = log.activityDetails['taskName'] as String?;
     final assigneeName = log.activityDetails['assigneeName'] as String?;
     if (taskName != null && assigneeName != null) {
@@ -150,7 +158,7 @@ class CostEstimationLogTile extends StatelessWidget {
         children: [_buildSubtitleRow(context, taskName, assigneeName)],
       );
     }
-    return const SizedBox.shrink();
+    return null;
   }
 
   Widget _buildSubtitleSingleInfo(
@@ -158,24 +166,18 @@ class CostEstimationLogTile extends StatelessWidget {
     String label,
     String value,
   ) {
-    final appColors = context.colorTheme;
-    final typography = context.textTheme;
+    final emphasis = context.textTheme.bodyMediumSemiBold.copyWith(
+      color: context.colorTheme.textHeadline,
+    );
 
-    return Row(
-      children: [
-        Text(label, style: typography.bodyMediumRegular),
-        const SizedBox(width: CoreSpacing.space1),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: typography.bodyMediumMedium.copyWith(
-              color: appColors.textDark,
-            ),
-          ),
-        ),
-      ],
+    // The label ends in a space, so label and value read as one line.
+    return Text.rich(
+      TextSpan(
+        style: emphasis,
+        children: [TextSpan(text: label), TextSpan(text: value)],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
@@ -184,45 +186,48 @@ class CostEstimationLogTile extends StatelessWidget {
     String fromValue,
     String toValue, {
     String? fieldLabel,
+    bool emphasizeValues = true,
   }) {
     final appColors = context.colorTheme;
     final typography = context.textTheme;
+    final regular = typography.bodyMediumRegular.copyWith(
+      color: appColors.textBody,
+    );
+    final emphasis = typography.bodyMediumSemiBold.copyWith(
+      color: appColors.textHeadline,
+    );
+    final labelStyle = emphasizeValues ? regular : emphasis;
+    final valueStyle = emphasizeValues ? emphasis : regular;
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: CoreSpacing.space1,
-      runSpacing: CoreSpacing.space1,
-      children: [
-        if (fieldLabel != null && fieldLabel.isNotEmpty)
-          Text(
-            '$fieldLabel: ',
-            style: typography.bodySmallRegular.copyWith(
-              color: appColors.textBody,
+    // One run of text, so a long name wraps word by word as on the
+    // storyboard, with 8px either side of the dot.
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (fieldLabel != null && fieldLabel.isNotEmpty)
+            TextSpan(text: '$fieldLabel: ', style: emphasis),
+          TextSpan(text: context.l10n.activityFrom, style: labelStyle),
+          TextSpan(text: fromValue, style: valueStyle),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space2,
+              ),
+              child: Container(
+                width: CoreSpacing.space1,
+                height: CoreSpacing.space1,
+                decoration: BoxDecoration(
+                  color: appColors.lineDarkOutline,
+                  shape: BoxShape.circle,
+                ),
+              ),
             ),
           ),
-        Text(context.l10n.activityFrom, style: typography.bodyMediumRegular),
-        Text(
-          fromValue,
-          style: typography.bodyMediumMedium.copyWith(
-            color: appColors.textDark,
-          ),
-        ),
-        Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            color: appColors.iconGrayLight,
-            shape: BoxShape.circle,
-          ),
-        ),
-        Text(context.l10n.activityTo, style: typography.bodyMediumRegular),
-        Text(
-          toValue,
-          style: typography.bodyMediumMedium.copyWith(
-            color: appColors.textDark,
-          ),
-        ),
-      ],
+          TextSpan(text: context.l10n.activityTo, style: labelStyle),
+          TextSpan(text: toValue, style: valueStyle),
+        ],
+      ),
     );
   }
 
@@ -237,20 +242,22 @@ class CostEstimationLogTile extends StatelessWidget {
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
           color: appColors.iconGrayMid,
-          size: 14,
+          size: CoreIconSize.size16,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
           DisplayFormatter.formatDate(log.loggedAt),
           key: const Key('dateText'),
-          style: typography.bodySmallRegular,
+          style: typography.bodySmallRegular.copyWith(
+            color: appColors.textBody,
+          ),
         ),
         const SizedBox(width: CoreSpacing.space2),
         Container(
           width: 4,
           height: 4,
           decoration: BoxDecoration(
-            color: appColors.iconGrayLight,
+            color: appColors.lineDarkOutline,
             shape: BoxShape.circle,
           ),
         ),
@@ -270,11 +277,11 @@ class CostEstimationLogTile extends StatelessWidget {
               CoreAvatar(
                 key: const Key('avatar'),
                 radius: 12,
-                backgroundColor: appColors.orientMid,
+                backgroundColor: appColors.orientLight,
                 child: Center(
                   child: Text(
                     log.user.firstName.isNotEmpty ? log.user.firstName[0] : '?',
-                    style: typography.bodySmallMedium.copyWith(
+                    style: typography.bodySmallSemiBold.copyWith(
                       color: appColors.textHeadline,
                     ),
                   ),
