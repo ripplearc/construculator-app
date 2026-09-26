@@ -31,9 +31,14 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
+            // Top-aligned, so the golden shows the tile at the height it
+            // takes in the Logs list rather than stretched to the surface.
             return Material(
               color: context.colorTheme.pageBackground,
-              child: CostEstimationLogTile(log: log),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: CostEstimationLogTile(log: log),
+              ),
             );
           },
         ),

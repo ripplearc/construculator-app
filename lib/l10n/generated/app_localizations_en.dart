@@ -627,22 +627,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveCostNameButton => 'Save cost name';
 
   @override
-  String get activityCostEstimationCreated => 'Cost Estimation Created';
+  String get activityCostEstimationCreated => 'Estimate created';
 
   @override
-  String get activityCostEstimationRenamed => 'Cost Estimation Renamed';
+  String get activityCostEstimationRenamed => 'Estimate renamed';
 
   @override
-  String get activityCostEstimationExported => 'Cost Estimation Exported';
+  String get activityCostEstimationExported => 'Estimate exported';
 
   @override
-  String get activityCostEstimationLocked => 'Cost Estimation Locked';
+  String get activityCostEstimationLocked => 'Estimate locked';
 
   @override
-  String get activityCostEstimationUnlocked => 'Cost Estimation Unlocked';
+  String get activityCostEstimationUnlocked => 'Estimate unlocked';
 
   @override
-  String get activityCostEstimationDeleted => 'Cost Estimation Deleted';
+  String get activityCostEstimationDeleted => 'Estimate deleted';
 
   @override
   String activityCostItemAdded(String itemName) {
@@ -650,7 +650,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityCostItemAddedSimple => 'Cost Item Added';
+  String get activityCostItemAddedSimple => 'Cost item added';
 
   @override
   String activityCostItemEdited(String itemName) {
@@ -658,7 +658,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityCostItemEditedSimple => 'Cost Item Edited';
+  String get activityCostItemEditedSimple => 'Cost item edited';
 
   @override
   String activityCostItemRemoved(String itemName) {
@@ -666,7 +666,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityCostItemRemovedSimple => 'Cost Item Removed';
+  String get activityCostItemRemovedSimple => 'Cost item removed';
 
   @override
   String activityCostItemDuplicated(String itemName) {
@@ -674,7 +674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityCostItemDuplicatedSimple => 'Cost Item Duplicated';
+  String get activityCostItemDuplicatedSimple => 'Cost item duplicated';
 
   @override
   String activityTaskAssigned(String taskName, String assigneeName) {
@@ -682,7 +682,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityTaskAssignedSimple => 'Task Assigned';
+  String get activityTaskAssignedSimple => 'Task assigned';
 
   @override
   String activityTaskUnassigned(String taskName) {
@@ -690,15 +690,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityTaskUnassignedSimple => 'Task Unassigned';
+  String get activityTaskUnassignedSimple => 'Task unassigned';
 
   @override
   String activityCostFileUploaded(String fileName) {
-    return 'Cost File Uploaded: $fileName';
+    return 'Cost file uploaded: $fileName';
   }
 
   @override
-  String get activityCostFileUploadedSimple => 'Cost File Uploaded';
+  String get activityCostFileUploadedSimple => 'Cost file uploaded';
 
   @override
   String activityCostFileDeleted(String fileName) {
@@ -706,7 +706,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityCostFileDeletedSimple => 'Cost File Deleted';
+  String get activityCostFileDeletedSimple => 'Cost file deleted';
 
   @override
   String get uploadedOnLabel => 'Uploaded on';
@@ -728,7 +728,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityAttachmentAddedSimple => 'Attachment Added';
+  String get activityAttachmentAddedSimple => 'Attachment added';
 
   @override
   String activityAttachmentRemoved(String fileName) {
@@ -736,10 +736,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get activityAttachmentRemovedSimple => 'Attachment Removed';
+  String get activityAttachmentRemovedSimple => 'Attachment removed';
 
   @override
-  String get activityUnknown => 'Unknown Activity';
+  String get activityUnknown => 'Unknown activity';
 
   @override
   String get activityFrom => 'From: ';
@@ -846,6 +846,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingLogs => 'Couldn\'t load Logs.';
 
   @override
+  String get errorLoadingLogsRepeat => 'Still couldn\'t load Logs.';
+
+  @override
   String get logsLoadErrorReassurance =>
       'Check your connection. Your estimate is not affected.';
 
@@ -853,7 +856,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retryLoadLogsButton => 'Try again';
 
   @override
-  String get loadMoreLogsError => 'Failed to load more logs';
+  String get loadMoreLogsError => 'Couldn\'t load older events.';
+
+  @override
+  String get loadMoreLogsErrorRepeat => 'Still couldn\'t load older events.';
 
   @override
   String get appTitle => 'Construculator';
