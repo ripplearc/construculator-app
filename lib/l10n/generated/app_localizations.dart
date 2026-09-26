@@ -1516,6 +1516,12 @@ abstract class AppLocalizations {
   /// **'Item Type: '**
   String get activityItemType;
 
+  /// Label before an edited field's old and new values in activity logs, e.g. 'Quantity: '
+  ///
+  /// In en, this message translates to:
+  /// **'{field}: '**
+  String activityEditedFieldLabel(String field);
+
   /// Label for edited field item_type in activity logs
   ///
   /// In en, this message translates to:

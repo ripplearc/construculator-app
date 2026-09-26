@@ -798,6 +798,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityItemType => 'Item Type: ';
 
   @override
+  String activityEditedFieldLabel(String field) {
+    return '$field: ';
+  }
+
+  @override
   String get activityEditedFieldItemType => 'Item Type';
 
   @override

@@ -1284,6 +1284,16 @@
     "description": "Label for item type in activity log tile",
     "context": "N/A"
   },
+  "activityEditedFieldLabel": "{field}: ",
+  "@activityEditedFieldLabel": {
+    "description": "Label before an edited field's old and new values in activity logs, e.g. 'Quantity: '",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
   "activityEditedFieldItemType": "Item Type",
   "@activityEditedFieldItemType": {
     "description": "Label for edited field item_type in activity logs"

@@ -76,7 +76,6 @@ class CostEstimationLogTile extends StatelessWidget {
       case CostEstimationActivityType.costEstimationExported:
         return _buildExportedSubtitle(context);
       case CostEstimationActivityType.costItemAdded:
-      case CostEstimationActivityType.costItemRemoved:
         return _buildItemTypeSubtitle(context);
       case CostEstimationActivityType.costItemEdited:
         return _buildEditedFieldsSubtitle(context);
@@ -211,7 +210,10 @@ class CostEstimationLogTile extends StatelessWidget {
       TextSpan(
         children: [
           if (fieldLabel != null && fieldLabel.isNotEmpty)
-            TextSpan(text: '$fieldLabel: ', style: emphasis),
+            TextSpan(
+              text: context.l10n.activityEditedFieldLabel(fieldLabel),
+              style: emphasis,
+            ),
           TextSpan(text: context.l10n.activityFrom, style: labelStyle),
           TextSpan(text: fromValue, style: valueStyle),
           WidgetSpan(
@@ -220,19 +222,23 @@ class CostEstimationLogTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                 horizontal: CoreSpacing.space2,
               ),
-              child: Container(
-                width: CoreSpacing.space1,
-                height: CoreSpacing.space1,
-                decoration: BoxDecoration(
-                  color: appColors.lineDarkOutline,
-                  shape: BoxShape.circle,
-                ),
-              ),
+              child: _buildDot(context),
             ),
           ),
           TextSpan(text: context.l10n.activityTo, style: labelStyle),
           TextSpan(text: toValue, style: valueStyle),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDot(BuildContext context) {
+    return Container(
+      width: 4,
+      height: 4,
+      decoration: BoxDecoration(
+        color: context.colorTheme.lineDarkOutline,
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -259,14 +265,7 @@ class CostEstimationLogTile extends StatelessWidget {
           ),
         ),
         const SizedBox(width: CoreSpacing.space2),
-        Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            color: appColors.lineDarkOutline,
-            shape: BoxShape.circle,
-          ),
-        ),
+        _buildDot(context),
         const SizedBox(width: CoreSpacing.space2),
         Text(
           DisplayFormatter.formatTime(log.loggedAt),
