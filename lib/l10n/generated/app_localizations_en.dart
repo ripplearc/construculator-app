@@ -1603,6 +1603,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'No saved rates yet for this pricing method.';
 
   @override
+  String yourRatesNoMatchState(String query) {
+    return 'No saved rate matches \"$query\".';
+  }
+
+  @override
   String get yourRatesDaySuffix => '/day';
 
   @override
@@ -1610,6 +1615,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yourRatesLookupButton => 'Search saved rates';
+
+  @override
+  String get yourRatesDisclaimerText =>
+      'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.';
+
+  @override
+  String yourRatesUseButtonLabel(String amount, String unit) {
+    return 'Use $amount $unit';
+  }
 
   @override
   String get equipmentNoteLabel => 'Note';
