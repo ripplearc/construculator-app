@@ -182,6 +182,12 @@ enum RateStatus {
   /// Rate comes from a generic sample/reference rate, not yet verified by the user.
   sampleRateUnverified('sample_rate_unverified'),
 
+  /// Rate was typed in by the user but not yet confirmed as their own known
+  /// rate (e.g. via an explicit "save as my rate" action). This is the
+  /// default for a freshly typed value; it must not be treated as
+  /// [ownRateConfirmed] until the user explicitly confirms it.
+  ownRateUnconfirmed('own_rate_unconfirmed'),
+
   /// Rate has been confirmed as the user's own known rate.
   ownRateConfirmed('own_rate_confirmed'),
 
