@@ -42,12 +42,17 @@ EventTransformer<E> _debounceRestartable<E>(Duration duration) =>
 class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
 
-  YourRatesBloc({required this._repository})
-    : super(const YourRatesLoading()) {
+  /// Debounce applied to [YourRatesSearched]. Defaults to
+  /// [_kQueryDebounceDuration]; overridable so tests can pass [Duration.zero]
+  /// instead of waiting out the real debounce window.
+  YourRatesBloc({
+    required this._repository,
+    Duration queryDebounce = _kQueryDebounceDuration,
+  }) : super(const YourRatesLoading()) {
     on<YourRatesRefreshRecents>(_onRefreshRecents, transformer: _restartable());
     on<YourRatesSearched>(
       _onSearched,
-      transformer: _debounceRestartable(_kQueryDebounceDuration),
+      transformer: _debounceRestartable(queryDebounce),
     );
   }
 
