@@ -64,7 +64,21 @@ git diff --stat $BASE_BRANCH..$PR_BRANCH -- 'lib/**/*.dart' \
 
 ### Key Principle
 
-Each PR should have a **single, clear purpose** and **pass tests independently**.
+Each PR should have a **single, clear purpose** and **pass CI checks independently**:
+
+```bash
+# 1. Fast check on changed files (run locally after pushing)
+./scripts/run_check.sh --pre --target main
+
+# 2. Full validation (run inside Docker — required for golden test consistency;
+#    container name is <your-directory-name>-flutter-1, see README.md)
+docker exec -it $(docker container ps --format '{{.Names}}' | grep flutter) bash
+./scripts/run_check.sh --comp --target main
+```
+
+For a **stacked** PR, pass `--target <parent-branch>` instead of `--target main` — `run_check.sh` rebases the target branch to validate against (`check_rebase_conflicts` → `git rebase --autostash origin/$TARGET_BRANCH`), so `--target main` on a stacked child measures a diff that includes the parent's own changes and detaches the stack. See `docs/Testing/CI-Scripts.md` for the full flag reference (`--pre`, `--comp`, `--all`, iOS build).
+
+Every split PR must pass both before merge — an intermediate PR that breaks CI is not a valid split point.
 
 **Bad Example:**
 - PR contains: New authentication flow + Refactor EstimationBloc + Fix currency formatter bug

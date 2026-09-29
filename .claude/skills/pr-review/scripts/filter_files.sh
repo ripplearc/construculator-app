@@ -44,7 +44,7 @@
 #   echo '{
 #     "files": ["lib/features/auth/presentation/login.dart", "lib/domain/auth.dart"],
 #     "pattern": "lib/features/**/presentation/"
-#   }' | bash skills/pr-review/scripts/filter_files.sh
+#   }' | bash .claude/skills/pr-review/scripts/filter_files.sh
 #
 # Workflow Position: Step 3 (Filter Applicable Files)
 #   Used by: PR Review Skill to narrow down to presentation files before rule application

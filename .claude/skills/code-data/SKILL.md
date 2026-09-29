@@ -96,8 +96,8 @@ In `{feature}_module.dart`, register DataSource as `addLazySingleton` (inject `S
 
 ## References
 
-- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md`
-- **UI / Business Separation:** `skills/rules/05-ui-business-separation.md`
+- **Naming & Abstraction:** `.claude/rules/02-naming-conventions.md`
+- **UI / Business Separation:** `.claude/rules/05-ui-business-separation.md`
 - **Sentry Logging:** Sentry logging at boundaries
 - **Examples:** `lib/features/global_search/data/data_source/remote_global_search_data_source.dart`, `lib/features/global_search/data/repositories/global_search_repository_impl.dart`
 - `write-tests` skill — Unit tests for data layer with fakes

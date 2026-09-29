@@ -40,7 +40,7 @@ What do I need?
 └─ UI component?     → See component reference below
 ```
 
-Complete token tables (spacing values, typography variants, color names) live in **`skills/references/coreui-api.md`** — consult it before writing UI code.
+Complete token tables (spacing values, typography variants, color names) live in **`.claude/references/coreui-api.md`** — consult it before writing UI code.
 
 ### Component Reference
 
@@ -99,6 +99,6 @@ Replace all literal styling and Material components with CoreUI design tokens an
 ## References
 
 - [CoreUI GitHub README](https://github.com/ripplearc/coreui#readme) — latest design system docs
-- **Token tables:** `skills/references/coreui-api.md` (spacing, typography, colors, icons)
+- **Token tables:** `.claude/references/coreui-api.md` (spacing, typography, colors, icons)
 - Extension: `lib/libraries/extensions/build_context_extensions.dart` (defines `context.textTheme`, `context.colorTheme`)
 - Review Script Lines: 273-294 in `scripts/review_pr.sh`
