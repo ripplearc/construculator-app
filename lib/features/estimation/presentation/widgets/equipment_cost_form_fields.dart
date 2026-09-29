@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
@@ -10,12 +8,6 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-
-/// Inclusive bounds for a manually entered delivery fee, mirroring the daily
-/// rate/job amount bounds enforced by [EquipmentCostFormBloc]. Zero is a
-/// separate, always-valid value (confirmed-free) outside this range.
-const double _minDeliveryFee = 0.01;
-const double _maxDeliveryFee = 999999.99;
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -39,10 +31,13 @@ class EquipmentCostFormFields extends StatefulWidget {
 
   @override
   State<EquipmentCostFormFields> createState() =>
-      _EquipmentCostFormFieldsState();
+      EquipmentCostFormFieldsState();
 }
 
-class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
+/// Public so a future caller can reach [maybeConfirmOutsizedFee] via
+/// `GlobalKey<EquipmentCostFormFieldsState>` — see that method's doc
+/// comment for why nothing calls it yet.
+class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _equipmentNameController = TextEditingController();
   final _quantityController = TextEditingController();
   final _durationController = TextEditingController();
@@ -179,23 +174,39 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Fires when the delivery-fee field folds (loses focus), which this widget
-  // treats as "the user is done entering this value" for the outsized-fee
-  // check below. Unlike the old collapsed/expanded toggle, folding no longer
-  // closes the panel (see [_deliveryExpanded]'s doc comment) — this only
-  // rebuilds so the Estimated/Confirm chrome (hidden while focused) appears.
+  // Fires when the delivery-fee field folds (loses focus). This only
+  // rebuilds so the Estimated/Confirm chrome (hidden while focused)
+  // appears — it no longer triggers the outsized-fee dialog itself; see
+  // [maybeConfirmOutsizedFee]'s doc comment for why that check moved off
+  // focus loss.
   void _onDeliveryFocusChanged() {
     if (!mounted) return;
     setState(() {});
-    if (!_deliveryFocusNode.hasFocus) {
-      unawaited(_maybeConfirmOutsizedFee());
-    }
   }
 
-  Future<void> _maybeConfirmOutsizedFee() async {
+  /// Runs the outsized-fee confirmation flow for the currently entered
+  /// delivery fee, showing [_OutsizedFeeDialog] when the fee exceeds this
+  /// line's own base cost. Returns whether the caller should proceed with
+  /// submission: true when there's nothing to confirm (no fee entered, the
+  /// fee isn't outsized, or the user tapped "Add it"/dismissed the dialog
+  /// to accept it anyway); false when the user chose "Go back" (or tapped
+  /// outside the dialog, which the dialog treats the same way — see
+  /// [_OutsizedFeeDialog]) and submission should not proceed.
+  ///
+  /// Intentionally NOT wired to anything in this tree yet: the spec calls
+  /// for this to run when the user taps "Add to estimate", not when the
+  /// delivery field loses focus (the previous, incorrect trigger). That
+  /// button — `add_to_cost_button` in `CostItemFormScreen` — is still a
+  /// no-op `onPressed: () {}` stub pending CA-355's real submit flow, and
+  /// it's shared across all three cost item types (Material/Labor/
+  /// Equipment), so it has no access to this equipment-specific state
+  /// today. CA-355's implementer should reach this method — e.g. via
+  /// `GlobalKey<EquipmentCostFormFieldsState>` — from that handler before
+  /// actually submitting.
+  Future<bool> maybeConfirmOutsizedFee() async {
     final data = _dataOf(context.read<EquipmentCostFormBloc>().state);
     final fee = data.deliveryFee;
-    if (fee == null) return;
+    if (fee == null) return true;
     final isDay = data.method == EquipmentPricingMethod.day;
     final baseCost = isDay
         ? (data.duration ?? 0) * (data.dailyRate ?? 0)
@@ -203,15 +214,25 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     // A base cost of 0 means duration/rate (or the job amount) hasn't been
     // entered yet, not that the fee is genuinely outsized — without a real
     // base cost there's nothing meaningful to compare against.
-    if (baseCost <= 0) return;
-    if (fee <= baseCost) return;
+    if (baseCost <= 0) return true;
+    if (fee <= baseCost) return true;
 
     final accepted = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => _OutsizedFeeDialog(fee: fee, baseCost: baseCost),
+      // Tapping outside the dialog must behave like "Go back" (decline),
+      // not like a no-op: barrierDismissible lets that tap pop the route
+      // with a null result, which the `accepted != true` branch below
+      // already treats the same as an explicit decline.
+      barrierDismissible: true,
+      builder: (_) => _OutsizedFeeDialog(
+        fee: fee,
+        baseCost: baseCost,
+        method: data.method,
+        duration: data.duration,
+        equipmentType: data.equipmentType,
+      ),
     );
-    if (!mounted) return;
+    if (!mounted) return false;
 
     if (accepted == true) {
       // Real submission is still gated behind CA-355, so this currently
@@ -222,12 +243,19 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       context.read<EquipmentCostFormBloc>().add(
         EquipmentOutsizedFeeAcceptedEvent(estimateId: widget.estimateId ?? ''),
       );
-    } else {
-      // .clear() notifies _deliveryFeeController's listener, which already
-      // dispatches EquipmentDeliveryFeeUpdatedEvent('') and calls
-      // _notifyTotal() — see _onDeliveryFeeChanged.
-      _deliveryFeeController.clear();
+      return true;
     }
+    // "Go back" (or dismissing the barrier) must preserve the typed fee —
+    // the panel stays open, the value stays put and editable — rather than
+    // deleting it, so the controller is deliberately left untouched here.
+    // Per the storyboard ("the fee is selected and the pad is up"), also
+    // return focus to the field with its value selected, ready to retype.
+    _deliveryFocusNode.requestFocus();
+    _deliveryFeeController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _deliveryFeeController.text.length,
+    );
+    return false;
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
@@ -315,22 +343,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // EquipmentCostFormBloc doesn't validate the delivery-fee bound (only item
-  // type, duration, and dailyRate/jobAmount feed into its isValid/fieldErrors
-  // — see the bloc's _validated). This check is done locally so it stays
-  // purely advisory: it never blocks a keystroke or Save. Empty (unset) and
-  // exactly 0 (confirmed-free) are both valid and never show this error.
-  String? _deliveryFeeErrorText(BuildContext context) {
-    final raw = _deliveryFeeController.text.trim();
-    if (raw.isEmpty) return null;
-    final value = double.tryParse(raw);
-    if (value == null || value == 0) return null;
-    if (value < _minDeliveryFee || value > _maxDeliveryFee) {
-      return context.l10n.equipmentDeliveryFeeOutOfRangeError;
-    }
-    return null;
-  }
-
   String _deliveryRowText(BuildContext context, double? fee) {
     final l10n = context.l10n;
     final value = fee == null
@@ -353,9 +365,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // Both variants map directly onto RateStatus; `missing` (no rate typed
-  // yet) shows no badge at all — absence of a tag is itself the "no rate
-  // yet" signal, matching the Figma component set (node 65685:147068).
+  // The two badge variants map onto sampleRateUnverified/ownRateConfirmed
+  // only. `ownRateUnconfirmed` — a value just typed in, not yet confirmed
+  // as the user's own rate (see that enum value's own doc comment) — and
+  // `missing` (no rate typed yet) both show no badge at all: absence of a
+  // tag is itself the "not confirmed yet" signal, matching the Figma
+  // component set (node 65685:147068), which has no "in-progress" variant.
   Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
     final l10n = context.l10n;
     return switch (status) {
@@ -369,16 +384,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         label: l10n.equipmentRateStatusYourRateBadge,
         variant: RateStatusBadgeVariant.green,
       ),
-      RateStatus.missing => null,
+      RateStatus.ownRateUnconfirmed || RateStatus.missing => null,
     };
   }
 
-  // Only offered for a sample rate — once a rate is already confirmed as
-  // the user's own (RateStatus.ownRateConfirmed, the only status reachable
-  // today; see EquipmentCostFormBloc's rate-update handler), saving it again
-  // is redundant. No code path sets sampleRateUnverified yet (that's the
-  // lookup-a-rate flow, CA-1151), so this link renders correctly for that
-  // future state without being exercisable today.
+  // Only offered for a sample rate — once a value is typed in, it's already
+  // either RateStatus.ownRateUnconfirmed (the only non-missing status the
+  // bloc's rate-update handler sets today) or, once CA-1151's "save as my
+  // rate" wiring lands, RateStatus.ownRateConfirmed; either way it's
+  // already the user's own value, so offering to save it again is
+  // redundant. No code path sets sampleRateUnverified yet (that's the
+  // lookup-a-rate flow, also CA-1151), so this link renders correctly for
+  // that future state without being exercisable today.
   Widget? _saveAsMyRateLink(BuildContext context, RateStatus status) {
     if (status != RateStatus.sampleRateUnverified) return null;
     final l10n = context.l10n;
@@ -600,7 +617,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       ),
       decoration: BoxDecoration(
         color: colorTheme.backgroundGrayLight,
-        borderRadius: BorderRadius.circular(CoreSpacing.space2),
+        borderRadius: BorderRadius.circular(CoreSpacing.space3),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -741,7 +758,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                       ),
                     )
                   : null,
-              errorTextList: _errorList(_deliveryFeeErrorText(context)),
+              // Delivery fee is optional and outside EquipmentCostFormBloc's
+              // own field-error map (only item type, duration, and
+              // dailyRate/jobAmount feed its isValid/fieldErrors — see the
+              // bloc's _validated). Every digit is accepted here and the
+              // field never turns red for an out-of-range value; the bloc's
+              // own bound check (_validateDeliveryFee) only gates whether
+              // the *value* is usable, not this field's visual state.
             ),
             if (helperText != null) ...[
               const SizedBox(height: CoreSpacing.space2),
@@ -798,16 +821,56 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 /// this dialog (CA-1144). Swap the equipmentDeliveryFeeOutsizedDialogTitle/
 /// Body ARB entries once real copy is approved.
 class _OutsizedFeeDialog extends StatelessWidget {
-  const _OutsizedFeeDialog({required this.fee, required this.baseCost});
+  const _OutsizedFeeDialog({
+    required this.fee,
+    required this.baseCost,
+    required this.method,
+    required this.duration,
+    required this.equipmentType,
+  });
 
   final double fee;
   final double baseCost;
+
+  /// Which pricing method [baseCost] was computed from — the dialog body
+  /// names the time period (e.g. "4 days of excavator") for Day pricing,
+  /// matching the storyboard, and omits it for Job pricing, where there's
+  /// no duration to name.
+  final EquipmentPricingMethod method;
+
+  /// Entered duration, only meaningful (and only read) under Day pricing.
+  final double? duration;
+
+  /// Entered equipment name, only read under Day pricing to name the
+  /// item in the body text; falls back to a generic noun when blank.
+  final String equipmentType;
+
+  // Strips a trailing ".0" from a whole-number duration (e.g. `4.0` ->
+  // `"4"`) but keeps a fractional one as typed (e.g. `4.5` -> `"4.5"`).
+  String _formatDuration(double value) =>
+      value == value.roundToDouble()
+          ? value.toStringAsFixed(0)
+          : value.toString();
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    final isDay = method == EquipmentPricingMethod.day;
+    final bodyText = isDay
+        ? l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(fee),
+            _formatDuration(duration ?? 0),
+            equipmentType.trim().isEmpty
+                ? l10n.equipmentDeliveryFeeOutsizedDialogGenericItem
+                : equipmentType.trim(),
+            DisplayFormatter.currency.format(baseCost),
+          )
+        : l10n.equipmentDeliveryFeeOutsizedDialogBody(
+            DisplayFormatter.currency.format(fee),
+            DisplayFormatter.currency.format(baseCost),
+          );
     return Dialog(
       backgroundColor: colorTheme.pageBackground,
       shape: RoundedRectangleBorder(
@@ -849,10 +912,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
               ),
               const SizedBox(height: CoreSpacing.space3),
               Text(
-                l10n.equipmentDeliveryFeeOutsizedDialogBody(
-                  DisplayFormatter.currency.format(fee),
-                  DisplayFormatter.currency.format(baseCost),
-                ),
+                bodyText,
                 key: const Key('outsized_fee_dialog_body'),
                 style: textTheme.bodyMediumRegular.copyWith(
                   color: colorTheme.textBody,
