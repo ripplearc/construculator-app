@@ -1888,10 +1888,36 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mini excavator'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
 
       expect(find.text('Mini excavator'), findsOneWidget);
-      expect(find.text('145.0'), findsOneWidget);
+      // Not '145.0': the field expects a plain typed-style number, matching
+      // what a user would have typed directly (N6).
+      expect(find.text('145'), findsOneWidget);
     });
+
+    testWidgets(
+      'picking a fractional-amount entry keeps the decimal, unlike a whole number',
+      (tester) async {
+        await seedRate(
+          itemName: 'Skid steer',
+          amount: 132.5,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('lookup_rate_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skid steer'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('your_rates_use_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('132.5'), findsOneWidget);
+      },
+    );
 
     testWidgets('a Job-priced entry never appears while Day is active', (
       tester,
