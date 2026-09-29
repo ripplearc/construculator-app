@@ -476,6 +476,13 @@ void main() {
                 100,
               ),
         ],
+        verify: (_) {
+          // A not-yet-created item must not send an empty id: cost_items.id
+          // is a uuid column, and Postgres rejects '' with error 22P02. The
+          // database default should generate the id instead (B1).
+          final call = fakeSupabaseWrapper.getMethodCallsFor('insert').single;
+          expect((call['data'] as Map).containsKey('id'), isFalse);
+        },
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
