@@ -53,6 +53,28 @@ void main() {
       expect(dto.updatedAt, isNull);
     });
 
+    test(
+      'fromJson leaves description null when the server omits it '
+      '(no your_rates.description column yet)',
+      () {
+        expect(fullJson.containsKey('description'), isFalse);
+
+        final dto = YourRateEntryDto.fromJson(fullJson);
+
+        expect(dto.description, isNull);
+      },
+    );
+
+    test('fromJson reads description when present, for forward-compatibility '
+        'once the backend column lands', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['description'] = 'Quoted for the whole dig, machine + operator';
+
+      final dto = YourRateEntryDto.fromJson(json);
+
+      expect(dto.description, 'Quoted for the whole dig, machine + operator');
+    });
+
     test('toJson excludes id, createdAt, and updatedAt', () {
       final dto = YourRateEntryDto.fromJson(fullJson);
 
@@ -72,6 +94,15 @@ void main() {
         'entry_label': 'Supplier A',
         'saved_at': '2026-01-01T00:00:00.000Z',
       });
+    });
+
+    test('toJson excludes description even when set: your_rates has no '
+        'matching column yet', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['description'] = 'Quoted for the whole dig, machine + operator';
+      final dto = YourRateEntryDto.fromJson(json);
+
+      expect(dto.toJson().containsKey('description'), isFalse);
     });
 
     test('toEntity converts every field correctly', () {
@@ -101,6 +132,18 @@ void main() {
       expect(entity.equipmentMethod, isNull);
     });
 
+    test('toEntity carries description through when the server sends it', () {
+      final json = Map<String, dynamic>.from(fullJson)
+        ..['description'] = 'Quoted for the whole dig, machine + operator';
+
+      final entity = YourRateEntryDto.fromJson(json).toEntity();
+
+      expect(
+        entity.description,
+        'Quoted for the whole dig, machine + operator',
+      );
+    });
+
     test('fromEntity converts every field correctly', () {
       final entity = YourRateEntry(
         id: 'rate-1',
@@ -112,6 +155,7 @@ void main() {
         savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
         equipmentMethod: EquipmentPricingMethod.day,
         entryLabel: 'Supplier A',
+        description: 'Quoted for the whole dig, machine + operator',
       );
 
       final dto = YourRateEntryDto.fromEntity(entity);
@@ -125,7 +169,30 @@ void main() {
       expect(dto.unit, 'days');
       expect(dto.equipmentMethod, 'day');
       expect(dto.entryLabel, 'Supplier A');
+      expect(dto.description, 'Quoted for the whole dig, machine + operator');
       expect(dto.savedAt, '2026-01-01T00:00:00.000Z');
+    });
+
+    test('fromEntity converts a local DateTime to UTC before serializing', () {
+      // A local (non-UTC) DateTime — e.g. clock.now() — has no zone suffix
+      // when serialized as-is; Postgres would then read it as UTC and skew
+      // the recents ordering for users outside UTC. Assert against
+      // localSavedAt.toUtc() rather than a hardcoded string, so this test
+      // passes regardless of the machine's local time zone.
+      final localSavedAt = DateTime(2026, 3, 15, 9, 30);
+      final entity = YourRateEntry(
+        id: 'rate-3',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0, currency: 'USD'),
+        savedAt: localSavedAt,
+      );
+
+      final dto = YourRateEntryDto.fromEntity(entity);
+
+      expect(dto.savedAt, localSavedAt.toUtc().toIso8601String());
+      expect(dto.savedAt, endsWith('Z'));
     });
 
     test('fromEntity leaves unit and equipmentMethod null for a material entry', () {
@@ -143,6 +210,7 @@ void main() {
       expect(dto.unit, isNull);
       expect(dto.equipmentMethod, isNull);
       expect(dto.entryLabel, isNull);
+      expect(dto.description, isNull);
     });
 
     test('round-trips entity -> dto -> entity', () {
@@ -156,6 +224,7 @@ void main() {
         savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
         equipmentMethod: EquipmentPricingMethod.day,
         entryLabel: 'Supplier A',
+        description: 'Quoted for the whole dig, machine + operator',
       );
 
       final roundTripped = YourRateEntryDto.fromEntity(entity).toEntity();
