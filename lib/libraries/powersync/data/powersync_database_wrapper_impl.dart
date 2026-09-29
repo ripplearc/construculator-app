@@ -18,8 +18,7 @@ import 'package:powersync/powersync.dart';
 class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
   final PowerSyncDatabase _database;
 
-  PowerSyncDatabaseWrapperImpl({required PowerSyncDatabase database})
-    : _database = database;
+  PowerSyncDatabaseWrapperImpl({required this._database});
 
   /// Runs [sql] once and returns every matching row as a plain mutable map.
   @override
