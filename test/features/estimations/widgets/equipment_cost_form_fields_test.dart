@@ -929,6 +929,28 @@ void main() {
       // raw digits while typing.
       expect(find.text(deliveryRowText(85)), findsOneWidget);
     });
+
+    testWidgets(
+      'panel is stroked with lineLight (#eaecf0), matching Figma node 66337:162350',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        final panel = tester.widget<Container>(
+          find.ancestor(
+            of: find.byKey(const Key('delivery_fee_row')),
+            matching: find.byType(Container),
+          ),
+        );
+        final decoration = panel.decoration as BoxDecoration;
+        final border = decoration.border as Border;
+        expect(border.top.width, 1);
+        expect(
+          border.top.color,
+          CoreTheme.light().extension<AppColorsExtension>()!.lineLight,
+        );
+      },
+    );
   });
 
   group('EquipmentCostFormFields — delivery fee is never shown as an error', () {
