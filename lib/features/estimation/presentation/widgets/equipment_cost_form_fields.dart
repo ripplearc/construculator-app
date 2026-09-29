@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -11,6 +13,15 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// Strips a trailing ".0" from a whole number (e.g. `4.0` -> `"4"`) but
+/// keeps a fractional value as typed (e.g. `4.5` -> `"4.5"`). For numeric
+/// text fields, which expect a plain typed-style number rather than one
+/// formatted for display — a duration named in dialog copy, or a rate
+/// amount picked from Your rates.
+String _formatTrimmedNumber(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toString();
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -350,9 +361,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Shown only while the field is empty — once a rate exists (typed or
-  // picked), [_saveAsMyRateLink] takes this slot instead.
-  Widget? _lookupRateButton(
+  Widget? _lookupRateButtonWhenEmpty(
     BuildContext context,
     EquipmentCostFormWithData data,
   ) {
@@ -398,8 +407,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
-        .text = entry.rate.amount
-        .toString();
+        .text = _formatTrimmedNumber(
+      entry.rate.amount,
+    );
   }
 
   @override
@@ -543,7 +553,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButton(context, data),
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -558,7 +568,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButton(context, data),
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
               const SizedBox(height: CoreSpacing.space5),
@@ -774,16 +784,12 @@ class _OutsizedFeeDialog extends StatelessWidget {
 
   final String equipmentType;
 
-  String _formatDuration(double value) => value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toString();
-
   String _formatDurationPhrase(BuildContext context, double value) {
     final l10n = context.l10n;
     if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
     if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
     return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
-      _formatDuration(value),
+      _formatTrimmedNumber(value),
     );
   }
 

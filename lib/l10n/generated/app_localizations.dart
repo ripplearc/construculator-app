@@ -2964,11 +2964,17 @@ abstract class AppLocalizations {
   /// **'Search or type equipment'**
   String get yourRatesSearchHint;
 
-  /// Shown in the Look-up-a-rate sheet when no saved entry matches the current search/pricing method
+  /// Shown in the Look-up-a-rate sheet's recents view (empty search query) when there's no saved entry for the current pricing method
   ///
   /// In en, this message translates to:
   /// **'No saved rates yet for this pricing method.'**
   String get yourRatesEmptyState;
+
+  /// Shown in the Look-up-a-rate sheet when a non-empty search query matches no saved entry, distinct from yourRatesEmptyState which covers the no-query/recents case
+  ///
+  /// In en, this message translates to:
+  /// **'No saved rate matches \"{query}\".'**
+  String yourRatesNoMatchState(String query);
 
   /// Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows
   ///
@@ -2987,6 +2993,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search saved rates'**
   String get yourRatesLookupButton;
+
+  /// Explanatory note shown near the top of the Look-up-a-rate sheet, below the search field (Figma node 66342:169078, the sheet's <Alert> instance)
+  ///
+  /// In en, this message translates to:
+  /// **'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.'**
+  String get yourRatesDisclaimerText;
+
+  /// Label for the primary button that confirms the currently-selected result row and closes the Look-up-a-rate sheet; amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the selected entry's pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'Use {amount} {unit}'**
+  String yourRatesUseButtonLabel(String amount, String unit);
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
