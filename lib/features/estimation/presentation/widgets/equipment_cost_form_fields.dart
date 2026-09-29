@@ -310,11 +310,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
-                  ),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -324,11 +319,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   controller: _jobAmountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
-                  ),
-                  suffix: CoreIconWidget(
-                    icon: CoreIcons.dollar,
-                    color: colorTheme.textHeadline,
-                    size: 24,
                   ),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
