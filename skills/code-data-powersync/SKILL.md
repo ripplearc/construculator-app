@@ -65,7 +65,7 @@ a test. Never work around the wrapper.
 | Class | Naming | Returns | Notes |
 |-------|--------|---------|-------|
 | **DataSource** (interface) | `PowerSync{Noun}DataSource` | `Stream`/`Future` of DTOs | The `PowerSync` prefix goes on the *interface*. The request/response `{Noun}DataSource` can still exist at the same time during a migration. Never return `Either` here. Always rethrow. |
-| **DataSource** (impl) | `PowerSync{Noun}DataSourceImpl` | same | Owns on-demand activation (see §5). `_logger.debug()` on success is fine. Never log errors at this layer. |
+| **DataSource** (impl) | `PowerSync{Noun}DataSourceImpl` | same | Owns on-demand activation (see §6.1). `_logger.debug()` on success is fine. Never log errors at this layer. |
 | **RepositoryImpl** | `{Noun}RepositoryImpl` | `Stream<Either<Failure, T>>` / `Future<Either<Failure, void>>` | **This is the error boundary.** It maps exceptions to `Failure` and logs each one exactly once. |
 | **DTO** | `{Noun}Dto` | None | Use `fromRow` for SQLite rows. `fromJson` keeps the Supabase JSON shape (see §7). |
 
@@ -82,11 +82,12 @@ instances.
   RLS denial (`42501`), it completes the transaction anyway so the upload queue isn't
   blocked, and the optimistic row stays in place. Surfacing that rejection to the user goes
   through the conflict channel (`CA-660`), not through this write's return value.
-- **Write ids and timestamps explicitly.** Get the id from the injected
-  [`UuidGenerator`](../../lib/libraries/uuid/interfaces/uuid_generator.dart) interface, and
-  get the time from `Clock`. Never call `Uuid().v4()` inline. Tests need to assert the exact
-  insert parameters, and an inline call makes that impossible.
-- **Use `writeTransaction` only for an atomic multi-table write.** It commits every row
+- **Write ids and timestamps explicitly.** Create the id on the client and pass it
+  in the insert. Do not let SQLite create it. Get the time from `Clock`
+  (`lib/libraries/time/interfaces/clock.dart`). If there is no id generator
+  interface yet, add one in the same shape as `Clock`, with a fake. Do not call
+  `Uuid().v4()` inline. Tests must be able to check the exact insert parameters.
+- **Use `writeTransaction` when 2+ rows must land as a unit.** It commits every row
   together and rolls back all of them if the callback throws. For a single row, use bare
   `execute()`.
 
@@ -112,8 +113,10 @@ Once you have that pasted config, check each of these against it:
 - [ ] **Every column in `schema.dart` must also be selected by the matching stream in
       `sync-streams.yaml`.** If a column is missing from the stream's `SELECT`, rows lose
       that data silently. No error is raised.
-- [ ] **The RLS policy must mirror what the connector does.** It must allow `upsert`,
-      `update`, and `delete`, each keyed on `id`.
+- [ ] **The RLS policies must allow what the connector sends.** The connector
+      calls `upsert`, `update`, and `delete`, keyed on `id`. So the table needs
+      `INSERT`, `UPDATE`, and `DELETE` policies. `upsert` needs both `INSERT`
+      and `UPDATE`.
 - [ ] **The table must be in the Postgres publication.** If it isn't, the table never
       syncs down at all.
 - [ ] **Permissions must be derived from the JWT on the server side.** The client must
@@ -155,9 +158,10 @@ Hold these five rules when you write it:
 **On `dedupe`:** `watch()` re-fires whenever *any* row in the queried table changes, even
 one unrelated to what you're watching. That means a single-row watch can rebuild an
 identical value just because some other row changed. Pass `true` for shapes that support
-value equality, such as a single DTO or a scalar. Leave it off for `List<Dto>`. Dart
-compares lists by identity, not by value, so passing `true` there does nothing and can be
-mistaken for real protection.
+value equality, such as a single DTO or a scalar. Leave a bare `.distinct()` off for
+`List<Dto>`. It compares by identity, so it does nothing. If the DTO has value equality,
+use `.distinct(listEquals)` from `package:flutter/foundation.dart`. That compares each
+item.
 
 > ⚠️ **An empty stream does not mean "no permission."** If the server denies permission,
 > no rows sync down and `watch()` emits `[]`. That looks the same as there simply being no
@@ -176,10 +180,10 @@ to re-subscribe.
 For writes: use `try`/`catch`. On success, return `Right(null)`, meaning "saved locally
 and queued" as described in §4. On a local error, return `Left`.
 
-Reuse `code-data`'s existing exception-to-`Failure` mapping: a timeout or socket error
-maps to a warning, a Postgrest error maps to an error, and an unrecognized case becomes
-`UnexpectedFailure`. **Always reuse an existing `{Feature}Failure` type. Never invent a
-new one inline.**
+Reuse `code-data`'s exception-to-`Failure` table as it is. Timeout, socket, and
+expected Postgrest codes log a warning. Unknown Postgrest codes and anything
+else log an error. Anything unknown becomes `UnexpectedFailure`. **Always reuse
+an existing `{Feature}Failure` type. Never invent a new one inline.**
 
 ### 6.3 Presentation & DI
 
@@ -227,9 +231,12 @@ Never test against the real database.
   name.
 - **Release:** After cancel, `fake.syncStreamUnsubscribes` contains the stream name exactly
   once.
-- **Cancel during activation:** Call `listen()`, then `cancel()` synchronously, then
-  `await pumpEventQueue()`. This asserts that a handle acquired after the subscriber left
-  is still released.
+- **Cancel during activation:** Set `fake.syncStreamActivationGate` and
+  `fake.syncStreamInvokedSignal` to new `Completer`s. Call `listen()`. Await
+  `syncStreamInvokedSignal`. Set `fake.syncStreamUnsubscribeSignal`, then
+  `cancel()`. Complete the gate. Await `syncStreamUnsubscribeSignal`. Then check
+  that `fake.syncStreamUnsubscribes` holds the stream name once.
+  Do not use `pumpEventQueue()` or `Future.delayed` here.
 - Call `fake.reset()` between tests, and `fake.dispose()` in teardown.
 
 ## Checklist
