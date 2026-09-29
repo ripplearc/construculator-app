@@ -609,6 +609,11 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       decoration: BoxDecoration(
         color: colorTheme.backgroundGrayLight,
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
+        // Figma node 66337:162350's "Details Row" instance strokes the
+        // whole panel with `#eaecf0` at 1px — colorTheme.lineLight resolves
+        // to exactly that (gray200, 0xFFEAECF0 in ripplearc_coreui's own
+        // token file), confirmed directly rather than guessed.
+        border: Border.all(color: colorTheme.lineLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
