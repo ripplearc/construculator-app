@@ -35,9 +35,18 @@ enum RateStatusBadgeVariant {
 /// short of WCAG AA's 4.5:1 minimum for 12px text (it would only need 3:1
 /// if this counted as "large text", which 12px does not, bold or not). This
 /// is the exact pairing the live Figma component specifies, confirmed
-/// directly rather than inferred — see this pass's PR description for the
-/// full account of why the Figma spec was kept as-is despite the failure.
-/// The green variant passes AA at ~4.54:1.
+/// directly rather than inferred. The green variant passes AA at ~4.54:1.
+///
+/// This is currently tracked as an OPEN DESIGN QUESTION, not an accepted
+/// tradeoff — see this pass's PR description for the full account. A
+/// darker orange text (`#B03C00`, `_CoreColorPalette.orange700` in
+/// `ripplearc_coreui` 0.15.0) would clear AA at ~5.41:1 on this same fill,
+/// but that palette step isn't exposed as a public/semantic token anywhere
+/// in the theme (`_CoreColorPalette` is a private class internal to
+/// `ripplearc_coreui`; the only text-level orange token this app can reach
+/// is `textWarning`, which is the failing `#CD5000`) — so fixing this from
+/// the app side isn't possible without a `ripplearc_coreui` release that
+/// exports a stronger orange text token. Left as-is pending that decision.
 ///
 // TODO: CA-1159 — replace with CoreUI's status badge once it exists
 class RateStatusBadge extends StatelessWidget {

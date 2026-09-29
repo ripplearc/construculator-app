@@ -2386,19 +2386,19 @@
   },
   "equipmentDeliveryFeeEstimatedBadge": "Estimated",
   "@equipmentDeliveryFeeEstimatedBadge": {
-    "description": "Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed with the supplier (manually mode)"
+    "description": "Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed by the user (manually mode)"
   },
   "equipmentDeliveryFeeConfirmLink": "Confirm",
   "@equipmentDeliveryFeeConfirmLink": {
-    "description": "Link/button next to the delivery-fee row that confirms the entered fee with the supplier for this estimate only (manually mode)"
+    "description": "Link/button next to the delivery-fee row that lets the user confirm the entered fee as accurate for this estimate only; this never contacts the supplier itself (manually mode)"
   },
-  "equipmentDeliveryFeeConfirmedHelperText": "Confirmed with supplier — quote for this trip",
+  "equipmentDeliveryFeeConfirmedHelperText": "Confirmed by you — quote for this trip",
   "@equipmentDeliveryFeeConfirmedHelperText": {
     "description": "Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)"
   },
   "equipmentDeliveryFeeEstimatedHelperText": "Estimated — confirm the supplier's actual delivery quote",
   "@equipmentDeliveryFeeEstimatedHelperText": {
-    "description": "Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed with the supplier (manually mode)"
+    "description": "Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed by the user (manually mode)"
   },
   "equipmentDeliveryAddNoteLink": "Add note",
   "@equipmentDeliveryAddNoteLink": {
@@ -2414,7 +2414,7 @@
   },
   "equipmentDeliveryFeeOutsizedDialogBody": "The delivery fee ({feeAmount}) is more than the equipment's own cost ({baseCostAmount}). Do you want to add it as entered?",
   "@equipmentDeliveryFeeOutsizedDialogBody": {
-    "description": "PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog; feeAmount and baseCostAmount are pre-formatted currency strings for this line.",
+    "description": "PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.",
     "placeholders": {
       "feeAmount": {
         "type": "String",
@@ -2426,9 +2426,35 @@
       }
     }
   },
+  "equipmentDeliveryFeeOutsizedDialogBodyDay": "The delivery fee ({feeAmount}) is more than the cost of {durationText} days of {equipmentType} ({baseCostAmount}). Do you want to add it as entered?",
+  "@equipmentDeliveryFeeOutsizedDialogBodyDay": {
+    "description": "PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Day pricing, naming the time period per the storyboard (e.g. 'the cost of 4 days of excavator'); feeAmount and baseCostAmount are pre-formatted currency strings, durationText is the pre-formatted duration count, and equipmentType is the typed equipment name for this line.",
+    "placeholders": {
+      "feeAmount": {
+        "type": "String",
+        "example": "$8,500.00"
+      },
+      "durationText": {
+        "type": "String",
+        "example": "4"
+      },
+      "equipmentType": {
+        "type": "String",
+        "example": "excavator"
+      },
+      "baseCostAmount": {
+        "type": "String",
+        "example": "$580.00"
+      }
+    }
+  },
+  "equipmentDeliveryFeeOutsizedDialogGenericItem": "this equipment",
+  "@equipmentDeliveryFeeOutsizedDialogGenericItem": {
+    "description": "Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet"
+  },
   "equipmentDeliveryFeeOutsizedDialogGoBack": "Go back",
   "@equipmentDeliveryFeeOutsizedDialogGoBack": {
-    "description": "Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and leaves the fee unset"
+    "description": "Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and returns focus to the delivery-fee field with its value selected, preserving what was typed"
   },
   "equipmentDeliveryFeeOutsizedDialogAddIt": "Add it",
   "@equipmentDeliveryFeeOutsizedDialogAddIt": {
@@ -2442,7 +2468,7 @@
   "@equipmentRateStatusYourRateBadge": {
     "description": "Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon"
   },
-  "equipmentSaveAsMyRateLink": "Save as my rate",
+  "equipmentSaveAsMyRateLink": "Save as my default",
   "@equipmentSaveAsMyRateLink": {
     "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)"
   },
