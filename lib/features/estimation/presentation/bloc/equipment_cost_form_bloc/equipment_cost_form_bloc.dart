@@ -8,7 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
 
-/// Inclusive bounds for a manually entered daily rate or job amount.
+/// Inclusive bounds for a manually entered daily rate, job amount, or
+/// delivery fee. A delivery fee of exactly 0 is validated separately as a
+/// distinct "confirmed free" state, not against this range.
 const double _minRate = 0.01;
 const double _maxRate = 999999.99;
 
@@ -33,11 +35,15 @@ class EquipmentCostFormBloc
         final rate = e.method == EquipmentPricingMethod.day
             ? d.dailyRate
             : d.jobAmount;
+        // A value preserved from before the switch can only have gotten here
+        // by being typed (see EquipmentRateUpdatedEvent below), so it's
+        // unconfirmed too — switching methods must never upgrade it to
+        // ownRateConfirmed on its own.
         return d.copyWith(
           method: e.method,
           rateStatus: rate == null
               ? RateStatus.missing
-              : RateStatus.ownRateConfirmed,
+              : RateStatus.ownRateUnconfirmed,
         );
       });
     });
@@ -48,12 +54,14 @@ class EquipmentCostFormBloc
     on<EquipmentRateUpdatedEvent>((e, emit) {
       final rate = double.tryParse(e.value);
       // A manually typed rate is the user's own, not a sampled catalog rate,
-      // so it's confirmed as soon as it parses. There is no lookup-a-rate
-      // flow wired yet (CA-1145/CA-1151); a future catalog selection path
-      // will need to set sampleRateUnverified instead before landing here.
+      // but typing it is not the same as confirming it: it only becomes
+      // ownRateConfirmed through an explicit action (e.g. "save as my rate",
+      // CA-1145/CA-1151), or by picking an already-confirmed rate from
+      // Your Rates. A future catalog selection path will need to set
+      // sampleRateUnverified instead before landing here.
       final rateStatus = rate == null
           ? RateStatus.missing
-          : RateStatus.ownRateConfirmed;
+          : RateStatus.ownRateUnconfirmed;
       _emit(
         emit,
         (d) => d.method == EquipmentPricingMethod.day
@@ -74,7 +82,14 @@ class EquipmentCostFormBloc
       );
     });
     on<EquipmentDeliveryFeeConfirmedEvent>((e, emit) {
-      if (_current().deliveryFee == null) return;
+      final current = _current();
+      // Validated in _validated() below; a null or out-of-range delivery fee
+      // (NaN/Infinity included, since those never populate fieldErrors as
+      // "in range") must not be confirmable.
+      if (current.deliveryFee == null ||
+          current.fieldErrors.containsKey('deliveryFee')) {
+        return;
+      }
       _emit(
         emit,
         (d) => d.copyWith(deliveryFeeStatus: DeliveryFeeStatus.confirmed),
@@ -138,29 +153,87 @@ class EquipmentCostFormBloc
     };
   }
 
+  // Determines whether required fields are present (for isValid, which
+  // gates the Add button) and builds fieldErrors for rendering.
+  //
+  // An empty/missing field is never added to fieldErrors: per product
+  // decision, an empty field never renders a red error — the disabled Add
+  // button already names what's missing, and on a phone, focus leaves a
+  // field constantly during normal use, so a blur-triggered error there
+  // would turn fields red during ordinary interaction. fieldErrors only
+  // ever holds "a value was entered but it can't be used" messages (e.g. a
+  // typed duration of 0), which the widget layer is expected to show on
+  // blur and clear on the first valid keystroke.
   EquipmentCostFormWithData _validated(EquipmentCostFormWithData draft) {
     final errors = <String, String>{};
-    if (draft.equipmentType.trim().isEmpty) {
-      errors['itemType'] = 'itemTypeRequired';
-    }
+    final hasItemType = draft.equipmentType.trim().isNotEmpty;
+
+    final bool hasDuration;
+    final bool hasRate;
     if (draft.method == EquipmentPricingMethod.day) {
-      final duration = draft.duration;
-      if (duration == null || duration <= 0) {
-        errors['duration'] = 'durationRequired';
-      }
-      _validateRate(draft.dailyRate, 'dailyRate', errors);
+      hasDuration = _validateDuration(draft.duration, errors);
+      hasRate = _validateRate(draft.dailyRate, 'dailyRate', errors);
     } else {
-      _validateRate(draft.jobAmount, 'jobAmount', errors);
+      hasDuration = true;
+      hasRate = _validateRate(draft.jobAmount, 'jobAmount', errors);
     }
-    return draft.copyWith(isValid: errors.isEmpty, fieldErrors: errors);
+    final hasValidDeliveryFee = _validateDeliveryFee(draft.deliveryFee, errors);
+
+    return draft.copyWith(
+      isValid: hasItemType && hasDuration && hasRate && hasValidDeliveryFee,
+      fieldErrors: errors,
+    );
   }
 
-  void _validateRate(double? rate, String field, Map<String, String> errors) {
-    if (rate == null) {
-      errors[field] = 'rateRequired';
-    } else if (rate < _minRate || rate > _maxRate) {
+  // Returns whether duration is present and a valid whole/half-day step
+  // (0.5, 1, 1.5, 2, ...). A missing duration produces no errors entry; a
+  // present-but-invalid one (not positive, not a half-day step, including
+  // non-finite values) does.
+  bool _validateDuration(double? duration, Map<String, String> errors) {
+    if (duration == null) return false;
+    final isValid =
+        duration > 0 && duration.isFinite && _isHalfDayStep(duration);
+    if (!isValid) {
+      errors['duration'] = 'durationInvalid';
+    }
+    return isValid;
+  }
+
+  // Whether duration lands on a half-day step, i.e. duration * 2 is a
+  // whole number. Only called for finite, positive durations.
+  bool _isHalfDayStep(double duration) {
+    final doubled = duration * 2;
+    return (doubled - doubled.roundToDouble()).abs() < 1e-9;
+  }
+
+  // Returns whether rate is present and within _minRate.._maxRate. A
+  // missing rate produces no errors entry; a present-but-out-of-range one
+  // (NaN/Infinity included) does.
+  bool _validateRate(double? rate, String field, Map<String, String> errors) {
+    if (rate == null) return false;
+    final inRange =
+        !rate.isNaN && !rate.isInfinite && rate >= _minRate && rate <= _maxRate;
+    if (!inRange) {
       errors[field] = 'rateOutOfRange';
     }
+    return inRange;
+  }
+
+  // Returns whether fee is a valid delivery fee: unset (optional, so
+  // valid), exactly 0 (a distinct "confirmed-free" state, not subject to
+  // _minRate), or within _minRate.._maxRate. NaN/Infinity are always
+  // rejected explicitly, since a NaN comparison against the range is always
+  // false and would otherwise silently pass.
+  bool _validateDeliveryFee(double? fee, Map<String, String> errors) {
+    if (fee == null) return true;
+    final isFree = fee == 0;
+    final inRange =
+        !fee.isNaN && !fee.isInfinite && fee >= _minRate && fee <= _maxRate;
+    final isValid = isFree || inRange;
+    if (!isValid) {
+      errors['deliveryFee'] = 'deliveryFeeOutOfRange';
+    }
+    return isValid;
   }
 
   EquipmentCostItem _buildCostItem(
