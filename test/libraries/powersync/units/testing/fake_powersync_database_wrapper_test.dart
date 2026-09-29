@@ -319,6 +319,15 @@ void main() {
         ]);
         await emission;
       });
+
+      test('closes watch streams opened before reset', () async {
+        const sql = 'SELECT * FROM projects';
+        final done = expectLater(fakeWrapper.watch(sql), emitsDone);
+
+        fakeWrapper.reset();
+
+        await done;
+      });
     });
   });
 }

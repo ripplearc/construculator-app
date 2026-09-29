@@ -80,13 +80,9 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
   }
 }
 
-/// Adapts the enclosing transaction context to the project-owned [WriteContext]
-/// seam by holding its `execute` closure.
-///
-/// Taking the closure rather than the context object means `sqlite_async`'s
-/// `SqliteWriteContext` is never named here, so this library needs no direct
-/// dependency on `sqlite_async` — and the type still cannot leak above the
-/// data-source layer.
+// Takes the enclosing transaction's `execute` closure rather than the
+// context object itself, so `sqlite_async`'s `SqliteWriteContext` is never
+// named here and this library needs no direct dependency on `sqlite_async`.
 class _WriteContextAdapter implements WriteContext {
   final Future<void> Function(String sql, [List<Object?> parameters]) _execute;
 
@@ -101,8 +97,8 @@ class _WriteContextAdapter implements WriteContext {
   }
 }
 
-/// Forwards [unsubscribe] to the underlying PowerSync [SyncStreamSubscription],
-/// keeping that type out of the data-source layer.
+// Forwards unsubscribe to the underlying PowerSync SyncStreamSubscription,
+// keeping that type out of the data-source layer.
 class _PowerSyncStreamHandle implements SyncStreamHandle {
   final SyncStreamSubscription _subscription;
 

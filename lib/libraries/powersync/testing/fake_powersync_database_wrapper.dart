@@ -15,17 +15,16 @@ typedef RecordedSqlCall = ({String sql, List<Object?> parameters});
 /// implements the narrow wrapper seam features actually use. It records calls
 /// for assertions, lets tests script [getAll] results and [watch] emissions per
 /// SQL string, and can be configured to throw.
+///
+/// Stubs and watch streams are matched by SQL text only — [parameters] are
+/// ignored, so two calls with the same SQL and different parameters share one
+/// scripted result / stream.
 class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
-  /// Scripted [getAll] results, keyed by exact SQL string.
   final Map<String, List<Map<String, dynamic>>> _getAllResults = {};
 
-  /// Live [watch] controllers, keyed by exact SQL string.
   final Map<String, StreamController<List<Map<String, dynamic>>>>
   _watchControllers = {};
 
-  /// Latest value emitted (or seeded) per watched SQL string, replayed to new
-  /// listeners so subscribing after [emitWatch] still sees the current state —
-  /// mirroring how real `watch` emits immediately on listen.
   final Map<String, List<Map<String, dynamic>>> _watchSeed = {};
 
   /// Every [getAll] call, in order.
@@ -37,8 +36,8 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// Every [execute] call, in order.
   final List<RecordedSqlCall> executeCalls = [];
 
-  /// Every [writeTransaction] invocation, in order (call count only — writes
-  /// within the transaction appear in [executeCalls] as usual).
+  /// Count of [writeTransaction] invocations — writes within the transaction
+  /// appear in [executeCalls] as usual.
   int writeTransactionCallCount = 0;
 
   /// Every [syncStream] activation, in order (by stream name).
@@ -68,8 +67,9 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// would).
   Object? writeTransactionError;
 
-  /// When set, every [syncStream] call throws this error until it is cleared
-  /// (set back to `null`) or [reset] is called.
+  /// When set, every [syncStream] call throws this error on every call until
+  /// explicitly cleared (`syncStreamError = null`) or [reset] is called — it
+  /// does NOT self-clear after one use.
   Object? syncStreamError;
 
   /// Scripts [rows] as the result of [getAll] for [sql].
@@ -202,9 +202,6 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   }
 }
 
-/// Routes writes issued inside [FakePowerSyncDatabaseWrapper.writeTransaction]
-/// through the fake's own [execute], so they appear in [executeCalls] and
-/// respect [executeError] — no real transaction semantics needed in tests.
 class _FakeWriteContext implements WriteContext {
   final FakePowerSyncDatabaseWrapper _fake;
 
@@ -215,8 +212,6 @@ class _FakeWriteContext implements WriteContext {
       _fake.execute(sql, parameters);
 }
 
-/// A [SyncStreamHandle] whose [unsubscribe] runs the callback the fake uses to
-/// record the release, so tests can assert an activated stream is released.
 class _FakeSyncStreamHandle implements SyncStreamHandle {
   final void Function() _onUnsubscribe;
 
