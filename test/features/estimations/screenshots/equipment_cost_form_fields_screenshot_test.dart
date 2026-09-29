@@ -85,26 +85,30 @@ void main() {
       );
     });
 
-    testWidgets('renders manually mode with item type error', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: theme);
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        'x',
-      );
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(EquipmentCostFormFields),
-        matchesGoldenFile(
-          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_error$suffix.png',
-        ),
-      );
-    });
+    testWidgets(
+      'renders manually mode with no red error after clearing item type '
+      '(empty fields never show a red error, per product decision)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(tester: tester, theme: theme);
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'x',
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          '',
+        );
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_error$suffix.png',
+          ),
+        );
+      },
+    );
   });
 }
