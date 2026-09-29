@@ -52,13 +52,15 @@ void main() {
 
     group('EquipmentCostItemTypeChanged', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'emits Editing with itemTypeError when value is empty',
+        'emits Editing with no red error but isItemTypeValid false when '
+        'value is empty (empty fields never show a red error)',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentCostItemTypeChanged('')),
         expect: () => [
           isA<EquipmentCostFormEditing>()
-              .having((s) => s.itemTypeError, 'itemTypeError', isNotNull)
-              .having((s) => s.data.isItemTypeValid, 'isItemTypeValid', false),
+              .having((s) => s.itemTypeError, 'itemTypeError', isNull)
+              .having((s) => s.data.isItemTypeValid, 'isItemTypeValid', false)
+              .having((s) => s.data.isValid, 'isValid', false),
         ],
       );
 
@@ -151,7 +153,8 @@ void main() {
 
     group('EquipmentRateUpdatedEvent — rateStatus', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'sets rateStatus to ownRateConfirmed once a manually typed rate parses',
+        'sets rateStatus to ownRateUnconfirmed (not confirmed) once a '
+        'manually typed rate parses',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentRateUpdatedEvent('100')),
         expect: () => [
@@ -160,7 +163,7 @@ void main() {
               .having(
                 (s) => s.data.rateStatus,
                 'rateStatus',
-                RateStatus.ownRateConfirmed,
+                RateStatus.ownRateUnconfirmed,
               ),
         ],
       );
@@ -184,12 +187,11 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'sets rateStatus to ownRateConfirmed for a manually typed job amount',
+        'sets rateStatus to ownRateUnconfirmed for a manually typed job '
+        'amount',
         build: () => bloc,
         act: (bloc) => bloc
-          ..add(
-            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
-          )
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
           ..add(const EquipmentRateUpdatedEvent('500')),
         skip: 1,
         expect: () => [
@@ -198,7 +200,27 @@ void main() {
               .having(
                 (s) => s.data.rateStatus,
                 'rateStatus',
-                RateStatus.ownRateConfirmed,
+                RateStatus.ownRateUnconfirmed,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does not upgrade a typed, unconfirmed rate to ownRateConfirmed when '
+        'switching methods and back',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100')) // dailyRate typed
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 2,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', 100)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateUnconfirmed,
               ),
         ],
       );
@@ -206,7 +228,8 @@ void main() {
 
     group('EquipmentDurationUpdatedEvent', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'blocks submission with a field error when duration is blank',
+        'blocks submission with no red error when duration is blank (empty '
+        'fields never show a red error)',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('')),
         expect: () => [
@@ -215,14 +238,15 @@ void main() {
               .having(
                 (s) => s.data.fieldErrors['duration'],
                 'duration error',
-                isNotNull,
+                isNull,
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'blocks submission with a field error when duration is zero',
+        'blocks submission with a field error when duration is zero '
+        '(entered but invalid, unlike a blank field)',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('0')),
         expect: () => [
@@ -233,6 +257,170 @@ void main() {
                 isNotNull,
               )
               .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'blocks submission with a field error when duration is negative',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('-1')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.fieldErrors['duration'],
+                'duration error',
+                isNotNull,
+              )
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'blocks submission with a field error when duration is not a '
+        'whole/half-day step',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('1.3')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.fieldErrors['duration'],
+                'duration error',
+                isNotNull,
+              )
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      for (final step in ['0.5', '1', '1.5', '2', '2.5', '10'])
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'accepts a valid half-day step duration of $step with no field '
+          'error',
+          build: () => bloc,
+          act: (bloc) => bloc.add(EquipmentDurationUpdatedEvent(step)),
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.fieldErrors['duration'],
+              'duration error',
+              isNull,
+            ),
+          ],
+        );
+    });
+
+    group('EquipmentDeliveryFeeUpdatedEvent — bound/NaN checks', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts a delivery fee of exactly 0 as a valid confirmed-free '
+        'value with no field error',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('0')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.deliveryFee, 'deliveryFee', 0)
+              .having(
+                (s) => s.data.fieldErrors['deliveryFee'],
+                'deliveryFee error',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'rejects a negative delivery fee with a field error',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('-5')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.deliveryFee, 'deliveryFee', -5)
+              .having(
+                (s) => s.data.fieldErrors['deliveryFee'],
+                'deliveryFee error',
+                isNotNull,
+              )
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      for (final bad in ['NaN', 'Infinity', '-Infinity', '1e400'])
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'rejects a delivery fee of "$bad" with a field error instead of '
+          'silently corrupting the total',
+          build: () => bloc,
+          act: (bloc) => bloc.add(EquipmentDeliveryFeeUpdatedEvent(bad)),
+          expect: () => [
+            isA<EquipmentCostFormEditing>()
+                .having(
+                  (s) => s.data.fieldErrors['deliveryFee'],
+                  'deliveryFee error',
+                  isNotNull,
+                )
+                .having((s) => s.data.isValid, 'isValid', false),
+          ],
+        );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'rejects a delivery fee above the maximum with a field error',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDeliveryFeeUpdatedEvent('1000000')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.fieldErrors['deliveryFee'],
+                'deliveryFee error',
+                isNotNull,
+              )
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts a delivery fee within bounds with no field error',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('50')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.fieldErrors['deliveryFee'],
+            'deliveryFee error',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('EquipmentDeliveryFeeConfirmedEvent', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does not confirm an out-of-range delivery fee',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentDeliveryFeeUpdatedEvent('-5'))
+          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
+        skip: 1,
+        expect: () => <EquipmentCostFormState>[],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does not confirm a NaN delivery fee',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentDeliveryFeeUpdatedEvent('NaN'))
+          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
+        skip: 1,
+        expect: () => <EquipmentCostFormState>[],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'confirms a valid delivery fee',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentDeliveryFeeUpdatedEvent('20'))
+          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.deliveryFeeStatus,
+            'deliveryFeeStatus',
+            DeliveryFeeStatus.confirmed,
+          ),
         ],
       );
     });
