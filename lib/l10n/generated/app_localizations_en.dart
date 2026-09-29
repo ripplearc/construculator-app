@@ -1453,7 +1453,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get equipmentDeliveryFeeConfirmedHelperText =>
-      'Confirmed with supplier — quote for this trip';
+      'Confirmed by you — quote for this trip';
 
   @override
   String get equipmentDeliveryFeeEstimatedHelperText =>
@@ -1479,6 +1479,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String equipmentDeliveryFeeOutsizedDialogBodyDay(
+    String feeAmount,
+    String durationText,
+    String equipmentType,
+    String baseCostAmount,
+  ) {
+    return 'The delivery fee ($feeAmount) is more than the cost of $durationText days of $equipmentType ($baseCostAmount). Do you want to add it as entered?';
+  }
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogGenericItem => 'this equipment';
+
+  @override
   String get equipmentDeliveryFeeOutsizedDialogGoBack => 'Go back';
 
   @override
@@ -1491,7 +1504,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRateStatusYourRateBadge => '✓ Your rate';
 
   @override
-  String get equipmentSaveAsMyRateLink => 'Save as my rate';
+  String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
   String get equipmentNoteLabel => 'Note';

@@ -128,9 +128,8 @@ void main() {
             await tester.pump();
             await tester.enterText(find.byKey(const Key('rate_field')), '150');
             await tester.pump();
-            // The Rate field's "✓ Your rate" badge (shown as soon as a rate
-            // parses) pushes the delivery row further down than the small
-            // a11y test viewport shows — scroll it into view before tapping.
+            // The small a11y test viewport doesn't show the delivery row
+            // without scrolling — ensure it's in view before tapping.
             await tester.ensureVisible(
               find.byKey(const Key('delivery_fee_row')),
             );

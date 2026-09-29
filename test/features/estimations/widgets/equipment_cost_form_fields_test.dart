@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
@@ -69,6 +71,19 @@ void main() {
     // Unfocus by tapping something else that doesn't itself steal semantics
     // we care about; the equipment name field is always present.
     await tester.tap(find.byKey(const Key('equipment_name_field')));
+    await tester.pumpAndSettle();
+  }
+
+  // The outsized-fee check no longer runs on delivery-field focus loss (see
+  // EquipmentCostFormFieldsState.maybeConfirmOutsizedFee's doc comment) —
+  // it's meant to run from "Add to estimate", which is still a no-op stub
+  // outside this widget (CA-355). Standing in for that future call, this
+  // reaches the same public method directly via the widget's State.
+  Future<void> triggerOutsizedFeeCheck(WidgetTester tester) async {
+    final state = tester.state<EquipmentCostFormFieldsState>(
+      find.byType(EquipmentCostFormFields),
+    );
+    unawaited(state.maybeConfirmOutsizedFee());
     await tester.pumpAndSettle();
   }
 
@@ -814,6 +829,54 @@ void main() {
     });
   });
 
+  group('EquipmentCostFormFields — delivery fee is never shown as an error', () {
+    // UnderlineTextField only ever renders its error icon/text pair
+    // together (see its errorTextList/hasError logic), so the absence of
+    // this error string is enough to confirm no red/error chrome rendered
+    // for the delivery-fee field.
+    testWidgets(
+      'a delivery fee above the accepted bound never colors the field red (S4)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '5000000',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'a delivery fee of exactly 0 never colors the field red',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '0',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
+          findsNothing,
+        );
+      },
+    );
+  });
+
   group('EquipmentCostFormFields — Estimated/Confirm badge lifecycle', () {
     testWidgets('hides the badge and link while the field has focus', (
       tester,
@@ -939,6 +1002,35 @@ void main() {
 
   group('EquipmentCostFormFields — outsized delivery-fee dialog', () {
     testWidgets(
+      'does not open on delivery-field focus loss, even for an outsized fee',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pump();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        // Folding the field alone must not trigger the dialog — only the
+        // "Add to estimate" hook (stood in for by triggerOutsizedFeeCheck
+        // in the tests below) does, per the fix to S1.
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
       'opens when the delivery fee exceeds the Day base cost (duration × rate)',
       (tester) async {
         await tester.pumpWidget(makeWidget());
@@ -956,6 +1048,7 @@ void main() {
         );
         await tester.pump();
         await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
 
         expect(
           find.byKey(const Key('outsized_fee_dialog_title')),
@@ -982,6 +1075,7 @@ void main() {
       );
       await tester.pump();
       await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
 
       expect(
         find.byKey(const Key('outsized_fee_dialog_title')),
@@ -1007,6 +1101,7 @@ void main() {
       );
       await tester.pump();
       await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
 
       expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
     });
@@ -1026,6 +1121,7 @@ void main() {
         );
         await tester.pump();
         await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
 
         expect(
           find.byKey(const Key('outsized_fee_dialog_title')),
@@ -1034,7 +1130,76 @@ void main() {
       },
     );
 
-    testWidgets('"Go back" dismisses the dialog and leaves the fee unset', (
+    testWidgets('names the duration and equipment in the Day-priced body', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'excavator',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(8500),
+            '4',
+            'excavator',
+            DisplayFormatter.currency.format(580),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('omits the time period from the Job-priced body', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '600',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBody(
+            DisplayFormatter.currency.format(600),
+            DisplayFormatter.currency.format(500),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('"Go back" dismisses the dialog and preserves the typed fee', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
@@ -1052,15 +1217,68 @@ void main() {
       );
       await tester.pump();
       await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
 
       await tester.tap(
         find.byKey(const Key('outsized_fee_dialog_go_back_button')),
       );
       await tester.pumpAndSettle();
+      // The focus/selection request runs in the microtask continuation
+      // after the dialog's own pop future resolves — pumpAndSettle already
+      // flushes this, but one more explicit pump removes any doubt.
+      await tester.pump();
 
       expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
-      expect(find.text(deliveryRowText()), findsOneWidget);
+      // The fee is preserved, not cleared — the panel stays open and the
+      // value stays put and editable.
+      expect(find.text(deliveryRowText(8500)), findsOneWidget);
+      expect(
+        find.widgetWithText(TextField, '8500'),
+        findsOneWidget,
+      );
+      // Per the storyboard ("the fee is selected and the pad is up"), focus
+      // returns to the field with its value selected, ready to retype.
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, '8500'),
+      );
+      expect(field.focusNode?.hasFocus, isTrue);
+      expect(
+        field.controller?.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 4),
+      );
     });
+
+    testWidgets(
+      'tapping outside the dialog behaves like "Go back": preserves the fee',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pump();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
+
+        // Tap the barrier, well outside the dialog's own 340-wide card.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+        expect(find.text(deliveryRowText(8500)), findsOneWidget);
+      },
+    );
 
     testWidgets('"Add it" closes the dialog and keeps the fee as entered', (
       tester,
@@ -1080,6 +1298,7 @@ void main() {
       );
       await tester.pump();
       await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
 
       await tester.tap(
         find.byKey(const Key('outsized_fee_dialog_add_it_button')),
@@ -1246,36 +1465,47 @@ void main() {
       expect(find.byKey(const Key('rate_status_badge')), findsNothing);
     });
 
-    testWidgets('shows "✓ Your rate" once a daily rate is typed', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows no badge once a daily rate is typed (ownRateUnconfirmed)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('rate_field')), '150');
-      await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '150');
+        await tester.pump();
 
-      expect(find.byKey(const Key('rate_status_badge')), findsOneWidget);
-      expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsOneWidget);
-      // Only offered for an unverified sample rate; typing a rate confirms
-      // it as the user's own immediately (see EquipmentCostFormBloc's
-      // rate-update handler), so this link never shows in that flow.
-      expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
-    });
+        // A freshly typed rate is RateStatus.ownRateUnconfirmed, not
+        // ownRateConfirmed (see EquipmentCostFormBloc's rate-update
+        // handler) — the badge only renders for ownRateConfirmed/
+        // sampleRateUnverified, so neither badge variant shows here.
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        expect(
+          find.text(l10n.equipmentRateStatusYourRateBadge),
+          findsNothing,
+        );
+        // Also not offered here: saving an already-own-but-unconfirmed
+        // value is still redundant (see _saveAsMyRateLink's doc comment).
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+      },
+    );
 
-    testWidgets('shows "✓ Your rate" once a job amount is typed', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows no badge once a job amount is typed (ownRateUnconfirmed)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('job_method_chip')));
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('amount_field')), '500');
-      await tester.pump();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('amount_field')), '500');
+        await tester.pump();
 
-      expect(find.byKey(const Key('rate_status_badge')), findsOneWidget);
-      expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsOneWidget);
-    });
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        expect(
+          find.text(l10n.equipmentRateStatusYourRateBadge),
+          findsNothing,
+        );
+      },
+    );
   });
 }

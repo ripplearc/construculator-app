@@ -2728,13 +2728,13 @@ abstract class AppLocalizations {
   /// **'—'**
   String get equipmentDeliveryFeeUnsetText;
 
-  /// Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed with the supplier (manually mode)
+  /// Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed by the user (manually mode)
   ///
   /// In en, this message translates to:
   /// **'Estimated'**
   String get equipmentDeliveryFeeEstimatedBadge;
 
-  /// Link/button next to the delivery-fee row that confirms the entered fee with the supplier for this estimate only (manually mode)
+  /// Link/button next to the delivery-fee row that lets the user confirm the entered fee as accurate for this estimate only; this never contacts the supplier itself (manually mode)
   ///
   /// In en, this message translates to:
   /// **'Confirm'**
@@ -2743,10 +2743,10 @@ abstract class AppLocalizations {
   /// Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)
   ///
   /// In en, this message translates to:
-  /// **'Confirmed with supplier — quote for this trip'**
+  /// **'Confirmed by you — quote for this trip'**
   String get equipmentDeliveryFeeConfirmedHelperText;
 
-  /// Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed with the supplier (manually mode)
+  /// Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed by the user (manually mode)
   ///
   /// In en, this message translates to:
   /// **'Estimated — confirm the supplier\'s actual delivery quote'**
@@ -2770,7 +2770,7 @@ abstract class AppLocalizations {
   /// **'Confirm this delivery fee?'**
   String get equipmentDeliveryFeeOutsizedDialogTitle;
 
-  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
+  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
   ///
   /// In en, this message translates to:
   /// **'The delivery fee ({feeAmount}) is more than the equipment\'s own cost ({baseCostAmount}). Do you want to add it as entered?'**
@@ -2779,7 +2779,24 @@ abstract class AppLocalizations {
     String baseCostAmount,
   );
 
-  /// Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and leaves the fee unset
+  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Day pricing, naming the time period per the storyboard (e.g. 'the cost of 4 days of excavator'); feeAmount and baseCostAmount are pre-formatted currency strings, durationText is the pre-formatted duration count, and equipmentType is the typed equipment name for this line.
+  ///
+  /// In en, this message translates to:
+  /// **'The delivery fee ({feeAmount}) is more than the cost of {durationText} days of {equipmentType} ({baseCostAmount}). Do you want to add it as entered?'**
+  String equipmentDeliveryFeeOutsizedDialogBodyDay(
+    String feeAmount,
+    String durationText,
+    String equipmentType,
+    String baseCostAmount,
+  );
+
+  /// Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet
+  ///
+  /// In en, this message translates to:
+  /// **'this equipment'**
+  String get equipmentDeliveryFeeOutsizedDialogGenericItem;
+
+  /// Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and returns focus to the delivery-fee field with its value selected, preserving what was typed
   ///
   /// In en, this message translates to:
   /// **'Go back'**
@@ -2806,7 +2823,7 @@ abstract class AppLocalizations {
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)
   ///
   /// In en, this message translates to:
-  /// **'Save as my rate'**
+  /// **'Save as my default'**
   String get equipmentSaveAsMyRateLink;
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
