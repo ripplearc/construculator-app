@@ -78,7 +78,18 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
     final errorTextList = widget.errorTextList;
-    final hasError = errorTextList != null && errorTextList.isNotEmpty;
+    // An error for a genuinely invalid value (e.g. a typed duration of 0)
+    // is only surfaced once the user leaves the field, not on every
+    // keystroke — "0" is a valid prefix of "0.5" — and it clears the
+    // instant the bloc stops reporting one, which happens as soon as a
+    // valid value is typed, focused or not.
+    final visibleErrorText =
+        errorTextList != null &&
+            errorTextList.isNotEmpty &&
+            !_focusNode.hasFocus
+        ? errorTextList.first
+        : null;
+    final hasError = visibleErrorText != null;
     final isEmpty = widget.controller.text.isEmpty;
     final ruleColor = hasError
         ? colorTheme.statusError
@@ -86,6 +97,24 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         ? colorTheme.textHeadline
         : colorTheme.lineMid;
     final ruleHeight = _focusNode.hasFocus || hasError ? 1.5 : 1.0;
+    final textField = TextField(
+      controller: widget.controller,
+      focusNode: _focusNode,
+      keyboardType: widget.keyboardType,
+      cursorColor: colorTheme.textHeadline,
+      style: isEmpty
+          ? textTheme.bodyLargeRegular.copyWith(color: colorTheme.textDisable)
+          : textTheme.bodyLargeSemiBold.copyWith(
+              color: colorTheme.textHeadline,
+            ),
+      decoration: const InputDecoration(
+        border: InputBorder.none,
+        // Vertical padding, not zero: without it the field's own
+        // interactive area is only as tall as its text line (~24px), short
+        // of Android's 48dp minimum tap target.
+        contentPadding: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
+      ),
+    );
 
     // The label is its own Text (for exact control over the Figma
     // label-above-value layout) rather than InputDecoration.labelText, so
@@ -107,30 +136,21 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: _focusNode,
-                  keyboardType: widget.keyboardType,
-                  cursorColor: colorTheme.textHeadline,
-                  style: isEmpty
-                      ? textTheme.bodyLargeRegular.copyWith(
-                          color: colorTheme.textDisable,
-                        )
-                      : textTheme.bodyLargeSemiBold.copyWith(
-                          color: colorTheme.textHeadline,
-                        ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    // Vertical padding, not zero: without it the field's own
-                    // interactive area is only as tall as its text line
-                    // (~24px), short of Android's 48dp minimum tap target.
-                    contentPadding: EdgeInsets.symmetric(
-                      vertical: CoreSpacing.space3,
-                    ),
-                  ),
-                ),
-              ),
+              // With a suffix (e.g. "days", "$"), the value field must size
+              // to its own content so the suffix sits right beside the typed
+              // number, matching Figma — an Expanded field would claim the
+              // whole row before the suffix lays out, stranding it at the
+              // row's trailing edge, far from the value. IntrinsicWidth (with
+              // a floor so the tap target stays reasonable when empty) gives
+              // that content-sized behavior; a field with no suffix keeps
+              // Expanded so it still fills the row for normal typing.
+              if (suffix != null)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 24),
+                  child: IntrinsicWidth(child: textField),
+                )
+              else
+                Expanded(child: textField),
               if (suffix != null) ...[
                 const SizedBox(width: CoreSpacing.space2),
                 suffix,
@@ -143,7 +163,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
             height: ruleHeight,
             color: ruleColor,
           ),
-          if (errorTextList != null && errorTextList.isNotEmpty) ...[
+          if (hasError) ...[
             const SizedBox(height: CoreSpacing.space1),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -156,7 +176,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 const SizedBox(width: CoreSpacing.space1),
                 Expanded(
                   child: Text(
-                    errorTextList.first,
+                    visibleErrorText,
                     style: textTheme.bodySmallRegular.copyWith(
                       color: colorTheme.textError,
                     ),

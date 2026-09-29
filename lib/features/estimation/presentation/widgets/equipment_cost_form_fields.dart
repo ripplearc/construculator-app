@@ -155,15 +155,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     BuildContext context,
     EquipmentCostFormWithData data,
   ) {
-    return data.fieldErrors['duration'] == 'durationRequired'
-        ? context.l10n.equipmentDurationRequiredError
+    return data.fieldErrors['duration'] == 'durationInvalid'
+        ? context.l10n.equipmentDurationInvalidError
         : null;
   }
 
   String? _rateErrorText(BuildContext context, EquipmentCostFormWithData data) {
     final l10n = context.l10n;
     return switch (data.fieldErrors['dailyRate']) {
-      'rateRequired' => l10n.equipmentRateRequiredError,
       'rateOutOfRange' => l10n.equipmentRateOutOfRangeError,
       _ => null,
     };
@@ -175,7 +174,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   ) {
     final l10n = context.l10n;
     return switch (data.fieldErrors['jobAmount']) {
-      'rateRequired' => l10n.equipmentAmountRequiredError,
       'rateOutOfRange' => l10n.equipmentAmountOutOfRangeError,
       _ => null,
     };
@@ -263,6 +261,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     : null,
               ),
               const SizedBox(height: CoreSpacing.space5),
+              Text(
+                l10n.equipmentBasisLabel,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space1),
               Row(
                 children: [
                   ChoiceChipToggle(

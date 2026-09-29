@@ -68,6 +68,13 @@ void main() {
     await tester.pump();
   }
 
+  // Invalid-value errors only render once the field loses focus (see
+  // UnderlineTextField); this drops focus without touching any field's text.
+  Future<void> unfocusAll(WidgetTester tester) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+  }
+
   group('EquipmentCostFormFields — manually mode', () {
     testWidgets('shows equipment name field', (tester) async {
       await tester.pumpWidget(makeWidget());
@@ -95,6 +102,13 @@ void main() {
 
       expect(find.byKey(const Key('unit_price_field')), findsNothing);
       expect(find.byKey(const Key('quantity_field')), findsNothing);
+    });
+
+    testWidgets('shows a Basis label above the Day/Job toggle', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.equipmentBasisLabel), findsOneWidget);
     });
 
     testWidgets('hides cost file field', (tester) async {
@@ -197,6 +211,44 @@ void main() {
     );
   });
 
+  group('EquipmentCostFormFields — no errors on untouched fields (B1)', () {
+    // #650 stopped the bloc from ever putting a missing field into
+    // fieldErrors (only a value that was actually typed and is invalid
+    // gets an entry), so switching method or typing into one field can no
+    // longer surface an error under a different, still-empty field.
+    testWidgets('tapping Job on a fresh form shows no error text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pumpAndSettle();
+      await unfocusAll(tester);
+
+      expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
+      expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
+    });
+
+    testWidgets(
+      'typing only a name in Day mode shows no Duration or Rate error',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Backhoe',
+        );
+        await tester.pumpAndSettle();
+        await unfocusAll(tester);
+
+        expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
+        expect(find.text(l10n.equipmentRateOutOfRangeError), findsNothing);
+      },
+    );
+  });
+
   group('EquipmentCostFormFields — item type error', () {
     testWidgets(
       'never shows error text when equipment name is cleared after typing '
@@ -237,7 +289,7 @@ void main() {
   });
 
   group('EquipmentCostFormFields — Day validation errors', () {
-    testWidgets('shows duration error when duration is entered then cleared', (
+    testWidgets('does not show duration error while the field has focus', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
@@ -246,68 +298,134 @@ void main() {
       await tester.enterText(find.byKey(const Key('duration_field')), '0');
       await tester.pump();
 
-      expect(find.text(l10n.equipmentDurationRequiredError), findsOneWidget);
+      expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
     });
 
-    testWidgets('hides duration error once duration is positive', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows duration error once the field loses focus with an invalid value',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('duration_field')), '0');
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('duration_field')), '2');
-      await tester.pump();
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pump();
+        await unfocusAll(tester);
 
-      expect(find.text(l10n.equipmentDurationRequiredError), findsNothing);
-    });
+        expect(find.text(l10n.equipmentDurationInvalidError), findsOneWidget);
+      },
+    );
 
-    testWidgets('shows rate out-of-range error above the accepted bound', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'hides the duration error again as soon as the field regains focus',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('rate_field')), '1000000');
-      await tester.pump();
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pump();
+        await unfocusAll(tester);
+        expect(find.text(l10n.equipmentDurationInvalidError), findsOneWidget);
 
-      expect(find.text(l10n.equipmentRateOutOfRangeError), findsOneWidget);
-    });
+        // Tap the actual TextField, not just its key's bounding box: with
+        // the item-1 fix, that box is only as wide as the "0" it contains,
+        // so a tap at the key's geometric center can miss it.
+        await tester.tap(
+          find.descendant(
+            of: find.byKey(const Key('duration_field')),
+            matching: find.byType(TextField),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'clears the duration error on the next blur once a valid value is typed',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pump();
+        await unfocusAll(tester);
+        expect(find.text(l10n.equipmentDurationInvalidError), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '2');
+        await tester.pump();
+        await unfocusAll(tester);
+
+        expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows rate out-of-range error once the field loses focus above the accepted bound',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '1000000');
+        await tester.pump();
+
+        expect(find.text(l10n.equipmentRateOutOfRangeError), findsNothing);
+
+        await unfocusAll(tester);
+
+        expect(find.text(l10n.equipmentRateOutOfRangeError), findsOneWidget);
+      },
+    );
   });
 
   group('EquipmentCostFormFields — Job validation errors', () {
-    testWidgets('shows amount out-of-range error above the accepted bound', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows amount out-of-range error once the field loses focus above the accepted bound',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('job_method_chip')));
-      await tester.pump();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
 
-      await tester.enterText(find.byKey(const Key('amount_field')), '1000000');
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('amount_field')),
+          '1000000',
+        );
+        await tester.pump();
 
-      expect(find.text(l10n.equipmentAmountOutOfRangeError), findsOneWidget);
-    });
+        expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
 
-    testWidgets('hides amount error once a valid amount is entered', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+        await unfocusAll(tester);
 
-      await tester.tap(find.byKey(const Key('job_method_chip')));
-      await tester.pump();
+        expect(find.text(l10n.equipmentAmountOutOfRangeError), findsOneWidget);
+      },
+    );
 
-      await tester.enterText(find.byKey(const Key('amount_field')), '1000000');
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('amount_field')), '500');
-      await tester.pump();
+    testWidgets(
+      'clears the amount error on the next blur once a valid amount is typed',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
-    });
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+
+        await tester.enterText(
+          find.byKey(const Key('amount_field')),
+          '1000000',
+        );
+        await tester.pump();
+        await unfocusAll(tester);
+        expect(find.text(l10n.equipmentAmountOutOfRangeError), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('amount_field')), '500');
+        await tester.pump();
+        await unfocusAll(tester);
+
+        expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
+      },
+    );
   });
 
   group('EquipmentCostFormFields — from cost file mode', () {
