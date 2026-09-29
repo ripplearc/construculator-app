@@ -190,8 +190,13 @@ class CostItemDto extends Equatable {
   ///
   /// This method converts the DTO back to the database/API JSON format,
   /// mapping camelCase Dart properties to snake_case JSON keys.
+  ///
+  /// `id` is omitted entirely when empty (a not-yet-created item, matching
+  /// [CostEstimateDto.toJson]'s pattern) so the `uuid` column's database
+  /// default generates one; an empty string is not a valid uuid and
+  /// Postgres rejects it (error 22P02).
   Map<String, dynamic> toJson() => {
-    'id': id,
+    if (id.isNotEmpty) 'id': id,
     'estimate_id': estimateId,
     'item_name': itemName,
     'item_type': itemType,
