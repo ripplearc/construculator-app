@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -114,6 +115,24 @@ void main() {
     });
 
     group('YourRatesSearched', () {
+      // These tests build their own bloc (bypassing the shared Modular
+      // instance from setUp) with queryDebounce: Duration.zero, so they don't
+      // need to wait out the real 300ms debounce — a real-time wait is
+      // flaky under CI load and this codebase's convention forbids it. Each
+      // act() then awaits bloc.stream.firstWhere(...) for the terminal
+      // state, the same pattern ProjectSearchBloc's tests use to gate on a
+      // handler's completion instead of a wall-clock wait; this is a second,
+      // independent stream subscription, so it doesn't affect the list of
+      // states blocTest's own `expect` collects.
+      // The Modular-registered YourRatesBloc always uses the production
+      // debounce; these tests need the zero-debounce constructor parameter,
+      // which DI can't override per-test.
+      // ignore: no_direct_instantiation, reason: needs queryDebounce: Duration.zero, which Modular's registration can't supply per-test
+      YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        queryDebounce: Duration.zero,
+      );
+
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then SearchResults matching the query',
         setUp: () {
@@ -122,11 +141,13 @@ void main() {
             row(id: 'r2', itemName: 'Bulldozer'),
           ]);
         },
-        build: () => bloc,
-        act: (bloc) => bloc.add(
-          const YourRatesSearched('exc', category: CostItemType.equipment),
-        ),
-        wait: const Duration(milliseconds: 310),
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
         expect: () => [
           isA<YourRatesLoading>(),
           isA<YourRatesSearchResults>().having(
@@ -142,9 +163,11 @@ void main() {
         setUp: () {
           fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
         },
-        build: () => bloc,
-        act: (bloc) => bloc.add(const YourRatesSearched('exc')),
-        wait: const Duration(milliseconds: 310),
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          bloc.add(const YourRatesSearched('exc'));
+          await bloc.stream.firstWhere((s) => s is YourRatesError);
+        },
         expect: () => [isA<YourRatesLoading>(), isA<YourRatesError>()],
       );
 
@@ -157,13 +180,13 @@ void main() {
             row(id: 'r2', itemName: 'Bulldozer'),
           ]);
         },
-        build: () => bloc,
-        act: (bloc) {
+        build: zeroDebounceBloc,
+        act: (bloc) async {
           bloc
             ..add(const YourRatesSearched('exc'))
             ..add(const YourRatesSearched('bull'));
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
         },
-        wait: const Duration(milliseconds: 310),
         expect: () => [
           isA<YourRatesLoading>(),
           isA<YourRatesSearchResults>().having(
