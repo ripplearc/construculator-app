@@ -1,5 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/powersync/data/connectors/supabase_powersync_connector.dart';
+import 'package:construculator/libraries/powersync/data/powersync_database_wrapper_impl.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
 import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -26,6 +28,12 @@ class PowerSyncModule extends Module {
     );
 
     i.addLazySingleton<PowerSyncDatabase>(() => appBootstrap.powerSyncDatabase);
+
+    // The seam features depend on for reads/writes. Wraps the same opened
+    // database singleton; keeps PowerSync/sqlite types out of data sources.
+    i.addLazySingleton<PowerSyncDatabaseWrapper>(
+      () => PowerSyncDatabaseWrapperImpl(database: i()),
+    );
 
     // Eager singleton: instantiated when the module is committed at app
     // startup (see auto_injector's startSingletons), so the manager immediately
