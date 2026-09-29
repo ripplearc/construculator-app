@@ -832,6 +832,12 @@ class YourRateEntry extends Equatable {
   /// "Supplier B").
   final String? entryLabel;
 
+  /// Optional free-text note describing what this rate covers, shown as a
+  /// secondary line under [itemName] in the "Look up a rate" list (e.g.
+  /// "Quoted for the whole dig, machine + operator"). Not every entry has
+  /// one.
+  final String? description;
+
   const YourRateEntry({
     required this.id,
     required this.companyId,
@@ -842,6 +848,7 @@ class YourRateEntry extends Equatable {
     this.unit,
     this.equipmentMethod,
     this.entryLabel,
+    this.description,
   });
 
   @override
@@ -855,6 +862,7 @@ class YourRateEntry extends Equatable {
     savedAt,
     equipmentMethod,
     entryLabel,
+    description,
   ];
 
   /// Creates a copy of this [YourRateEntry] with the given fields replaced.
@@ -871,6 +879,7 @@ class YourRateEntry extends Equatable {
     DateTime? savedAt,
     Object? equipmentMethod,
     Object? entryLabel,
+    Object? description,
   }) {
     return YourRateEntry(
       id: id ?? this.id,
@@ -887,6 +896,9 @@ class YourRateEntry extends Equatable {
       entryLabel: entryLabel == clearField
           ? null
           : (entryLabel as String?) ?? this.entryLabel,
+      description: description == clearField
+          ? null
+          : (description as String?) ?? this.description,
     );
   }
 }
