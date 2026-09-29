@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -10,6 +12,15 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// Strips a trailing ".0" from a whole number (e.g. `4.0` -> `"4"`) but
+/// keeps a fractional value as typed (e.g. `4.5` -> `"4.5"`). For numeric
+/// text fields, which expect a plain typed-style number rather than one
+/// formatted for display — a duration named in dialog copy, or a rate
+/// amount picked from Your rates.
+String _formatTrimmedNumber(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toString();
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -436,9 +447,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Shown only while the field is empty — once a rate exists (typed or
-  // picked), [_saveAsMyRateLink] takes this slot instead.
-  Widget? _lookupRateButton(
+  Widget? _lookupRateButtonWhenEmpty(
     BuildContext context,
     EquipmentCostFormWithData data,
   ) {
@@ -484,8 +493,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
-        .text = entry.rate.amount
-        .toString();
+        .text = _formatTrimmedNumber(
+      entry.rate.amount,
+    );
   }
 
   @override
@@ -627,7 +637,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButton(context, data),
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -641,7 +651,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
                   trailingAction:
                       _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButton(context, data),
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
               const SizedBox(height: CoreSpacing.space5),
@@ -922,13 +932,6 @@ class _OutsizedFeeDialog extends StatelessWidget {
   /// item in the body text; falls back to a generic noun when blank.
   final String equipmentType;
 
-  // Strips a trailing ".0" from a whole-number duration (e.g. `4.0` ->
-  // `"4"`) but keeps a fractional one as typed (e.g. `4.5` -> `"4.5"`).
-  String _formatDuration(double value) =>
-      value == value.roundToDouble()
-          ? value.toStringAsFixed(0)
-          : value.toString();
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -938,7 +941,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
     final bodyText = isDay
         ? l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
             DisplayFormatter.currency.format(fee),
-            _formatDuration(duration ?? 0),
+            _formatTrimmedNumber(duration ?? 0),
             equipmentType.trim().isEmpty
                 ? l10n.equipmentDeliveryFeeOutsizedDialogGenericItem
                 : equipmentType.trim(),
