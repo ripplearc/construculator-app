@@ -246,6 +246,50 @@ void main() {
       );
 
       blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should mark two retries sent in the same frame as repeats',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogError,
+          );
+
+          // A double tap on Try again, before the button is replaced. Both
+          // retries are in flight before the network answers.
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc
+            ..add(
+              const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+            )
+            ..add(
+              const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+            );
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoading);
+          await pumpEventQueue();
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+        },
+        skip: 2,
+        expect: () => [
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
         'should not mark a first-load failure as a repeat after a success',
         build: () {
           seedLogTable(

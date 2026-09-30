@@ -25,6 +25,10 @@ class CostEstimationLogBloc
   CancelableOperation<Either<Failure, List<CostEstimationLog>>>?
   _inFlightLoadMore;
 
+  // Kept apart from [state]: a second tap on Try again can start before the
+  // first one's Loading has been drawn, and by then [state] is Loading.
+  bool _lastFirstLoadFailed = false;
+
   CostEstimationLogBloc({required this._repository})
     : super(const CostEstimationLogInitial()) {
     on<CostEstimationLogFetchInitial>(_onFetchInitial);
@@ -39,11 +43,12 @@ class CostEstimationLogBloc
     await _inFlightLoadMore?.cancel();
     _inFlightLoadMore = null;
 
-    final isRetryAfterFailure = state is CostEstimationLogError;
+    final isRetryAfterFailure = _lastFirstLoadFailed;
     emit(const CostEstimationLogLoading());
 
     final result = await _repository.fetchInitialLogs(event.estimateId);
 
+    _lastFirstLoadFailed = result.isLeft();
     result.fold(
       (failure) => emit(
         CostEstimationLogError(
