@@ -32,6 +32,7 @@ extension CostEstimationActivitySendScreen on CostEstimationActivityType {
     CostEstimationActivityType.costEstimationSendFailed ||
     CostEstimationActivityType.costEstimationRevoked ||
     CostEstimationActivityType.costEstimationPdfShared ||
+    CostEstimationActivityType.costFileUpdated ||
     CostEstimationActivityType.unknown => false,
   };
 }
