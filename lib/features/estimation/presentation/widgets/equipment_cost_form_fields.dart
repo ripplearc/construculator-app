@@ -416,8 +416,10 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // for writes, which the backend validates against the caller's actual
   // company membership — an empty id fails that check server-side instead
   // of writing to the wrong company.
-  // TODO: [CA-1179](https://ripplearc.youtrack.cloud/issue/CA-1179) Replace
-  // with a real company id once CurrentCompanyResolver exists.
+  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace
+  // this stub with a real company id from CurrentCompanyResolver — CA-1180
+  // owns updating this call site specifically, once CurrentCompanyResolver
+  // itself (CA-1179, a CA-1180 dependency) exists.
   String get _currentCompanyId => '';
 
   YourRateEntry _buildYourRateEntry(
@@ -447,12 +449,22 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // itself lives in YourRatesBloc, not here — this just maps each resulting
   // state to its UI effect.
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
+    final l10n = context.l10n;
     switch (state) {
       case YourRatesSaveCollision(:final entry):
         unawaited(_promptEntryLabelAndRetry(context, entry));
       case YourRatesSaveFailed():
-        _showSnack(context, context.l10n.yourRatesSaveFailedError);
+        CoreToast.showError(
+          context,
+          l10n.yourRatesSaveFailedError,
+          l10n.closeLabel,
+        );
       case YourRatesSaveSucceeded():
+        CoreToast.showSuccess(
+          context,
+          l10n.yourRatesSaveSucceededMessage,
+          l10n.closeLabel,
+        );
       case YourRatesLoading():
       case YourRatesLoaded():
       case YourRatesSearchResults():
@@ -475,15 +487,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  void _showSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   // True when the rate/amount field currently in play (Day pricing reads
   // dailyRate, Job pricing reads jobAmount) has a validation error. Checked
-  // by [_saveAsMyRateLink] alongside [EquipmentCostFormWithData.itemTypeError]
+  // by [_offersSaveAsMyRate] alongside [EquipmentCostFormWithData.itemTypeError]
   // so the link can't fire a save built from an equipment name or rate the
   // form itself is showing red.
   bool _hasRateFieldError(EquipmentCostFormWithData data) {
@@ -493,21 +499,33 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return data.fieldErrors.containsKey(key);
   }
 
-  // Shown for any rate the contractor hasn't yet saved to Your rates:
-  // RateStatus.missing (nothing typed) shows the look-up-a-rate search
-  // button instead — see the caller — so this only covers
-  // ownRateConfirmed/sampleRateUnverified. Also withheld while the
-  // equipment name or the rate/amount field itself has a validation error,
-  // so the link can't save an empty name or an out-of-range rate.
+  // Shared gate for [_saveAsMyRateLink] and [_saveAsMyRateHelperText], which
+  // always appear together (Figma node 66342:178091's "Buttons" link and its
+  // "Ic_Info_16x16" + text row right below it). True for any rate the
+  // contractor hasn't yet saved to Your rates: RateStatus.missing (nothing
+  // typed) shows the look-up-a-rate search button instead — see the caller —
+  // so this only covers ownRateConfirmed/sampleRateUnverified. Also false
+  // while the rate/amount field itself has a validation error, so neither
+  // the link nor the helper text can offer to save an out-of-range rate.
+  //
+  // `data.itemTypeError` is checked too, but per EquipmentCostFormBloc's own
+  // field-error policy (see its `_validated` doc comment) an empty item type
+  // never populates fieldErrors — only a present-but-unusable value does —
+  // so that check alone never actually excludes a blank name. The
+  // controller-text check below is what really does that job, reading
+  // straight from the same controller [_buildYourRateEntry] uses to build
+  // `itemName`, so the two can never disagree about what "empty" means.
+  bool _offersSaveAsMyRate(EquipmentCostFormWithData data) =>
+      data.rateStatus != RateStatus.missing &&
+      data.itemTypeError == null &&
+      _equipmentNameController.text.trim().isNotEmpty &&
+      !_hasRateFieldError(data);
+
   Widget? _saveAsMyRateLink(
     BuildContext context,
     EquipmentCostFormWithData data,
   ) {
-    if (data.rateStatus == RateStatus.missing ||
-        data.itemTypeError != null ||
-        _hasRateFieldError(data)) {
-      return null;
-    }
+    if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
@@ -529,6 +547,67 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // "/day" for Day pricing, "job" for Job — the Rate/Amount field's own unit
+  // suffix (Figma's "Text Field" component instances for both fields set
+  // `Field unit`/`Show field unit`, mirroring the Duration field's "days"
+  // suffix just above it). Reuses yourRatesDaySuffix/yourRatesJobSuffix
+  // rather than adding a duplicate string, since the Look-up-a-rate sheet's
+  // "Use $520.00 job" button already established this exact Day/Job
+  // vocabulary.
+  String _rateUnitSuffix(BuildContext context, EquipmentPricingMethod method) {
+    final l10n = context.l10n;
+    return method == EquipmentPricingMethod.day
+        ? l10n.yourRatesDaySuffix
+        : l10n.yourRatesJobSuffix;
+  }
+
+  // Explanatory row (info icon + text) directly below the Rate/Amount field,
+  // shown only alongside [_saveAsMyRateLink] (Figma node 66342:178091's
+  // "Ic_Info_16x16" + text instances at y=442-443, right under the "Save as
+  // my default" link). Styled like [_buildDeliveryFeeSection]'s own helper
+  // text row — the established pattern in this file for a 16px info icon
+  // plus bodySmallRegular/textBody text.
+  Widget? _saveAsMyRateHelperText(
+    BuildContext context,
+    EquipmentCostFormWithData data,
+  ) {
+    if (!_offersSaveAsMyRate(data)) return null;
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final amount = DisplayFormatter.currency.format(
+      (isDay ? data.dailyRate : data.jobAmount) ?? 0,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoreIconWidget(
+            icon: CoreIcons.info,
+            color: colorTheme.iconGrayMid,
+            size: 16,
+          ),
+          const SizedBox(width: CoreSpacing.space1),
+          Expanded(
+            child: Text(
+              l10n.equipmentSaveAsMyRateHelperText(
+                amount,
+                _rateUnitSuffix(context, data.method),
+                data.equipmentType,
+              ),
+              key: const Key('save_as_my_rate_helper_text'),
+              style: textTheme.bodySmallRegular.copyWith(
+                color: colorTheme.textBody,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -724,13 +803,21 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    suffix: Text(
+                      _rateUnitSuffix(context, data.method),
+                      style: textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
                     labelTrailing: _rateStatusBadge(context, data.rateStatus),
                     trailingAction:
                         _saveAsMyRateLink(context, data) ??
                         _lookupRateButtonWhenEmpty(context, data),
                     errorTextList: _errorList(_rateErrorText(context, data)),
                   ),
-                ] else
+                  _saveAsMyRateHelperText(context, data) ??
+                      const SizedBox.shrink(),
+                ] else ...[
                   UnderlineTextField(
                     key: const Key('amount_field'),
                     label: l10n.equipmentAmountLabel,
@@ -738,12 +825,21 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    suffix: Text(
+                      _rateUnitSuffix(context, data.method),
+                      style: textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
                     labelTrailing: _rateStatusBadge(context, data.rateStatus),
                     trailingAction:
                         _saveAsMyRateLink(context, data) ??
                         _lookupRateButtonWhenEmpty(context, data),
                     errorTextList: _errorList(_amountErrorText(context, data)),
                   ),
+                  _saveAsMyRateHelperText(context, data) ??
+                      const SizedBox.shrink(),
+                ],
                 const SizedBox(height: CoreSpacing.space5),
                 _buildDeliveryFeeSection(context, data),
               ],
@@ -1076,6 +1172,10 @@ class _OutsizedFeeDialog extends StatelessWidget {
 /// guessing which row to overwrite.
 ///
 /// Returns the typed label via `Navigator.pop`, or null if cancelled.
+///
+/// Shares [_OutsizedFeeDialog]'s 340-wide, 22px-padded "Confirmation
+/// Dialog" shell (Figma node 65354:146175) — see that class's doc comment
+/// for the full component spec and why those numbers stay literal.
 class _EntryLabelDialog extends StatefulWidget {
   const _EntryLabelDialog();
 
@@ -1112,6 +1212,10 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(CoreSpacing.space5),
       ),
+      // 22px padding and the 340 width, same as _OutsizedFeeDialog just
+      // above: CoreSpacing has no token that lands exactly on 22 (space5=20
+      // and space6=24 both sit 2px off), so this keeps the literal
+      // shared-shell value rather than swapping in an approximate token.
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: SizedBox(

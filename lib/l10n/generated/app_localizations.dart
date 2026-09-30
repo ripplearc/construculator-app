@@ -2952,6 +2952,16 @@ abstract class AppLocalizations {
   /// **'Save as my default'**
   String get equipmentSaveAsMyRateLink;
 
+  /// Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (Figma node 66342:178091/178103, the cuj6-equip-5-verify storyboard frame); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix for the active pricing method, and itemName is the typed equipment name
+  ///
+  /// In en, this message translates to:
+  /// **'Saves {amount} {unit} to Your rates — it auto-fills next time you add {itemName}.'**
+  String equipmentSaveAsMyRateHelperText(
+    String amount,
+    String unit,
+    String itemName,
+  );
+
   /// Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button
   ///
   /// In en, this message translates to:
@@ -3047,6 +3057,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save this rate. Please try again.'**
   String get yourRatesSaveFailedError;
+
+  /// Success toast shown after a rate is saved to Your rates, whether on the first attempt or after a label-collision retry
+  ///
+  /// In en, this message translates to:
+  /// **'Rate saved to Your rates'**
+  String get yourRatesSaveSucceededMessage;
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
