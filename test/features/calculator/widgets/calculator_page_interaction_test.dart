@@ -169,7 +169,6 @@ void main() {
   testWidgets('the display area close control resets the calculator', (
     tester,
   ) async {
-    final semantics = tester.ensureSemantics();
     await pumpPage(tester);
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(
@@ -183,7 +182,5 @@ void main() {
     await tester.tap(find.bySemanticsLabel(l10n.closeButton));
     await tester.pump();
     expect(bloc.state, equals(CalculatorState.initial()));
-
-    semantics.dispose();
   });
 }
