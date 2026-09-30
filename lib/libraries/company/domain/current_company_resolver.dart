@@ -18,11 +18,10 @@ abstract class CurrentCompanyResolver {
   /// saved rates," never as an error state.
   ///
   /// The first successful call (network reached, whether or not an id came
-  /// back) caches its result for the rest of the login session: every
-  /// later call, online or offline, returns the cached value without
-  /// hitting the network again. A call that fails before any call has
-  /// succeeded returns a [Failure] and caches nothing, so the next call
-  /// retries.
+  /// back) caches its result for the rest of the login session: every later
+  /// call, online or offline, returns the cached value without hitting the
+  /// network again. A call that fails before any call has succeeded returns
+  /// a [Failure] and caches nothing, so the next call retries.
   Future<Either<Failure, String?>> resolve();
 
   /// Clears the cached result, so the next [resolve] call hits the network
