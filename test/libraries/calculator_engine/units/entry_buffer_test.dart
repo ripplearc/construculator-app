@@ -214,14 +214,25 @@ void main() {
         'on fresh entry, Width 18ft 8 [Lbs] starts 8lbs as its own value',
         () {
           final feet = changed(type('18').closeWith(Unit.foot));
+          final split =
+              type('8', feet).closeWith(Unit.pound, holdsLengthOnly: true)
+                  as EntrySplit;
           expect(
-            type('8', feet).closeWith(Unit.pound, holdsLengthOnly: true),
+            split,
             EntrySplit(
               finished: feet,
               started: const EntryBuffer([
                 Token(digits: '8', unit: Unit.pound),
               ]),
             ),
+          );
+          expect(
+            () => split.finished.tokens.add(const Token(digits: '9')),
+            throwsUnsupportedError,
+          );
+          expect(
+            () => split.started.tokens.add(const Token(digits: '9')),
+            throwsUnsupportedError,
           );
         },
       );
