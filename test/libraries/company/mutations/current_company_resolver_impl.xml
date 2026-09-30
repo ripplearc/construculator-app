@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CURRENT COMPANY RESOLVER IMPL MUTATION TESTING -->
+    <!-- Targets: resolve()'s session cache and _handleError's exception mapping -->
+
+    <files>
+        <file>lib/libraries/company/data/current_company_resolver_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the cache-hit check, so a cached call re-hits the RPC -->
+        <regex pattern="if \(_hasResolved\) \{" dotAll="true" id="resolver.cache.skip_hit_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: Never mark a call as resolved, so caching never engages -->
+        <regex pattern="_hasResolved = true;" dotAll="true" id="resolver.cache.skip_mark_resolved">
+            <mutation text="_hasResolved = false;"/>
+        </regex>
+
+        <!-- RULE 3: clearCache doesn't actually drop the resolved flag -->
+        <regex pattern="void clearCache\(\) \{\n    _hasResolved = false;" dotAll="true" id="resolver.cache.clear_no_op">
+            <mutation text="void clearCache() {\n    _hasResolved = true;"/>
+        </regex>
+
+        <!-- RULE 4: Skip the TimeoutException branch -->
+        <regex pattern="if \(error is TimeoutException\) \{" dotAll="true" id="resolver.error.skip_timeout_branch">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 5: Skip the SocketException branch -->
+        <regex pattern="if \(error is SocketException\) \{" dotAll="true" id="resolver.error.skip_socket_branch">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 6: Skip the PostgrestException branch -->
+        <regex pattern="if \(error is supabase\.PostgrestException\) \{" dotAll="true" id="resolver.error.skip_postgrest_branch">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 7: Timeout maps to the wrong CompanyErrorType -->
+        <regex pattern="return const CompanyFailure\(errorType: CompanyErrorType\.timeoutError\);" dotAll="true" id="resolver.error.wrong_timeout_type">
+            <mutation text="return const CompanyFailure(errorType: CompanyErrorType.unexpectedError);"/>
+        </regex>
+
+        <!-- RULE 8: Connection error maps to the wrong CompanyErrorType -->
+        <regex pattern="return const CompanyFailure\(errorType: CompanyErrorType\.connectionError\);" dotAll="true" id="resolver.error.wrong_connection_type">
+            <mutation text="return const CompanyFailure(errorType: CompanyErrorType.unexpectedError);"/>
+        </regex>
+
+        <!-- RULE 9: Postgrest error maps to the wrong CompanyErrorType -->
+        <regex pattern="errorType: CompanyErrorType\.unexpectedDatabaseError," dotAll="true" id="resolver.error.wrong_database_type">
+            <mutation text="errorType: CompanyErrorType.unexpectedError,"/>
+        </regex>
+
+        <!-- RULE 10: Default/unexpected error maps to the wrong CompanyErrorType -->
+        <regex pattern="return const CompanyFailure\(errorType: CompanyErrorType\.unexpectedError\);" dotAll="true" id="resolver.error.wrong_default_type">
+            <mutation text="return const CompanyFailure(errorType: CompanyErrorType.timeoutError);"/>
+        </regex>
+
+        <!-- RULE 11: resolve() calls the wrong RPC function -->
+        <regex pattern="DatabaseConstants\.getMyCompanyIdRpcFunction," dotAll="true" id="resolver.rpc.wrong_function">
+            <mutation text="'wrong_function',"/>
+        </regex>
+
+        <!-- RULE 12: resolve() doesn't share an in-flight call, so concurrent
+             callers would each start their own RPC request -->
+        <regex pattern="return _inFlight \?\?= _fetch\(\);" dotAll="true" id="resolver.inflight.always_start_new">
+            <mutation text="return _fetch();"/>
+        </regex>
+
+        <!-- RULE 13: the in-flight slot is never cleared after completion,
+             so a failed call could never retry -->
+        <regex pattern="\} finally \{\n      _inFlight = null;\n    \}" dotAll="true" id="resolver.inflight.never_clear">
+            <mutation text="} finally {\n      // no-op\n    }"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="current_company_resolver_impl" expected-return="0">flutter test test/libraries/company/units/data/current_company_resolver_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="70">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
