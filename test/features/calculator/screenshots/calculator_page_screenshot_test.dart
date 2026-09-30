@@ -7,6 +7,7 @@ import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const size = Size(390, 844);
+  const sheetSize = Size(390, 1100);
   const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -18,6 +19,7 @@ void main() {
       MaterialApp(
         theme: theme,
         locale: const Locale('en'),
+        debugShowCheckedModeBanner: false,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const CalculatorPage(),
@@ -42,6 +44,24 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/calculator_page/${size.width}x${size.height}/calculator_page_initial$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the "View all" sheet over the page', (tester) async {
+      tester.view.physicalSize = sheetSize;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      await tester.tap(find.text('View all'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/calculator_page/${sheetSize.width}x${sheetSize.height}/calculator_page_view_all_sheet$suffix.png',
         ),
       );
     });

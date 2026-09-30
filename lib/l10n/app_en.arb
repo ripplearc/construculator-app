@@ -2428,10 +2428,6 @@
   "@calculatorKeyKgFullName": {
     "description": "Full name of the abbreviated \"Kg\" calculator key, read by screen readers"
   },
-  "calculatorKeyTonsFullName": "Tons",
-  "@calculatorKeyTonsFullName": {
-    "description": "Full name of the abbreviated \"Tons\" calculator key, read by screen readers"
-  },
   "calculatorKeyMetricTonsFullName": "Metric tons",
   "@calculatorKeyMetricTonsFullName": {
     "description": "Full name of the abbreviated \"m Tons\" calculator key, read by screen readers"

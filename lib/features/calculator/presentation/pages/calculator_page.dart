@@ -94,6 +94,18 @@ class _CalculatorPageState extends State<CalculatorPage> {
         _ => _untranslated(groupId),
       };
 
+  Color _accentFor(AppColorsExtension colors, String groupId) =>
+      switch (groupId) {
+        _basicGeometryId => colors.keyboardFunctions,
+        _shapesId => colors.indigo,
+        _materialsId => colors.iconOrange,
+        // TODO: [CA-1196] Use the group accent tokens once coreui has them.
+        // https://ripplearc.youtrack.cloud/issue/CA-1196
+        _unitId => colors.keyboardUnits,
+        _trigonometryId => colors.textSuccess,
+        _ => colors.keyboardFunctions,
+      };
+
   String _displayLabelFor(AppLocalizations l10n, String id) => switch (id) {
     'Width' => l10n.calculatorKeyWidth,
     'Length' => l10n.calculatorKeyLength,
@@ -148,7 +160,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     'mm' => l10n.calculatorKeyMillimetreFullName,
     'lbs' => l10n.calculatorKeyLbsFullName,
     'kg' => l10n.calculatorKeyKgFullName,
-    'ton' => l10n.calculatorKeyTonsFullName,
     'mton' => l10n.calculatorKeyMetricTonsFullName,
     'SIN' => l10n.calculatorKeySinFullName,
     'COS' => l10n.calculatorKeyCosFullName,
@@ -233,12 +244,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
     final colors = context.colorTheme;
     final l10n = context.l10n;
     final groups = _groupsFor(context);
-    final Map<GroupNameType, Color> groupAccentColors = {
-      groups[0].name: colors.keyboardFunctions,
-      groups[1].name: colors.indigo,
-      groups[2].name: colors.iconOrange,
-      groups[3].name: colors.keyboardUnits,
-      groups[4].name: colors.textSuccess,
+    final groupAccentColors = {
+      for (final group in groups) group.name: _accentFor(colors, group.name.id),
     };
 
     return BlocProvider<CalculatorBloc>(

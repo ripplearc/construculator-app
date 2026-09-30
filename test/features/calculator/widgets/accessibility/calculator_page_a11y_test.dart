@@ -39,5 +39,20 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'an abbreviated key is read by its face, then its full name as a hint',
+      (tester) async {
+        final l10n = AppLocalizationsEn();
+        await tester.pumpWidget(makeTestableWidget());
+
+        final diag = tester.getSemantics(
+          find.byKey(const ValueKey('calc_key_Diag')),
+        );
+
+        expect(diag.label, contains(l10n.calculatorKeyDiag));
+        expect(diag.hint, equals(l10n.calculatorKeyDiagFullName));
+      },
+    );
   });
 }
