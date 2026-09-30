@@ -1511,6 +1511,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
+  String equipmentSaveAsMyRateHelperText(
+    String amount,
+    String unit,
+    String itemName,
+  ) {
+    return 'Saves $amount $unit to Your rates — it auto-fills next time you add $itemName.';
+  }
+
+  @override
   String get yourRatesLookupTitle => 'Look up a rate';
 
   @override
@@ -1566,6 +1575,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get yourRatesSaveFailedError =>
       'Couldn\'t save this rate. Please try again.';
+
+  @override
+  String get yourRatesSaveSucceededMessage => 'Rate saved to Your rates';
 
   @override
   String get equipmentNoteLabel => 'Note';

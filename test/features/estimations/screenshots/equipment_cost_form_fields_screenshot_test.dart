@@ -123,6 +123,29 @@ void main() {
     });
 
     testWidgets(
+      'renders the Save as my default link and helper text once a rate is '
+      'typed (Figma node 66342:178091, cuj6-equip-5-verify)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(tester: tester, theme: theme);
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Mini excavator',
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_save_as_my_rate$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
       'renders manually mode with no red error after clearing item type '
       '(empty fields never show a red error, per product decision)',
       (tester) async {
