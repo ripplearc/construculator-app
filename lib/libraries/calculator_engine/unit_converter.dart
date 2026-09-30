@@ -21,13 +21,13 @@ class UnitConverter {
   /// The value re-spelled in each unit the strip should offer, in the order
   /// the strip lists them. Empty when nothing is offered.
   ///
-  /// The typed unit is left out and at most three readings are offered; from
-  /// inches the compound leads because 264in is easier to picture as
-  /// 22ft 0in. A length in centimetres or millimetres offers nothing
-  /// (Appendix A). That rule is for lengths only: an area or a volume is
-  /// offered the same square or cubic units whatever unit it was raised in,
-  /// as the prototype's `areaConversions` does, so 100cm² still reads as
-  /// 0.11ft² on the strip.
+  /// The typed unit is always left out. A length offers at most three
+  /// readings; from inches the compound leads because 264in is easier to
+  /// picture as 22ft 0in. A length in centimetres or millimetres offers
+  /// nothing (Appendix A). Both length rules stop at lengths: an area or a
+  /// volume is offered the same square or cubic units whatever unit it was
+  /// raised in, as the prototype's `areaConversions` does, so 100cm² still
+  /// reads as 0.11ft² on the strip.
   List<Quantity> offersFor(Quantity value) => switch (value) {
     Length() =>
       (_lengthOffersByTypedUnit[value.unit] ?? const [])

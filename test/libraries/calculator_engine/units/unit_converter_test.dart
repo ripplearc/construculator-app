@@ -101,17 +101,18 @@ void main() {
         expect(unitsOf(converter.offersFor(area)), contains(Unit.acre));
       });
 
-      test('offers an area raised in centimetres the four square units', () {
-        const area = Area(
-          100.0 * Area.squareTicksPerSquareInch,
+      test('offers 100cm² the four square units, reading 0.11ft² first', () {
+        final ticksPerCentimetre = Unit.centimetre.ticksPerUnit;
+        final area = Area(
+          100.0 * ticksPerCentimetre * ticksPerCentimetre,
           unit: Unit.centimetre,
         );
-        expect(unitsOf(converter.offersFor(area)), [
-          Unit.foot,
-          Unit.yard,
-          Unit.inch,
-          Unit.metre,
-        ]);
+        final offers = converter.offersFor(area);
+        expect(unitsOf(offers), [Unit.foot, Unit.yard, Unit.inch, Unit.metre]);
+        expect(
+          offers.whereType<Area>().first.squareFeet,
+          closeTo(0.1076, 0.0001),
+        );
       });
 
       test('leaves the typed unit out: 2in² is offered in ft², yd², m²', () {
