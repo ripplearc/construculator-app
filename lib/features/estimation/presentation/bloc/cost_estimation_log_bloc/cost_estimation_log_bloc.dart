@@ -18,15 +18,17 @@ part 'cost_estimation_log_state.dart';
 /// - Loading more logs with pagination
 /// - Error handling and state management
 /// - Event concurrency via transformers (restartable for FetchInitial)
+///
+/// Whether the last first load failed is kept in a field, not read back from
+/// [state]: a second tap on Try again can start after the first retry has
+/// already emitted Loading, and the second failure must still read "Still
+/// couldn't load Logs."
 class CostEstimationLogBloc
     extends Bloc<CostEstimationLogEvent, CostEstimationLogState> {
   final CostEstimationLogRepository _repository;
   String? _currentEstimateId;
   CancelableOperation<Either<Failure, List<CostEstimationLog>>>?
   _inFlightLoadMore;
-
-  // Kept apart from [state]: a second tap on Try again can start before the
-  // first one's Loading has been drawn, and by then [state] is Loading.
   bool _lastFirstLoadFailed = false;
 
   CostEstimationLogBloc({required this._repository})
