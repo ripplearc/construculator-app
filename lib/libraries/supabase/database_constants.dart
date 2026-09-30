@@ -70,6 +70,13 @@ class DatabaseConstants {
   static const String projectSearchSuggestionsRpcFunction =
       'get_project_search_suggestions';
 
+  /// The RPC that returns the caller's own `company_id` from
+  /// `company_users` (CA-710), or null when no `company_users` row exists
+  /// yet for them (e.g. the signup trigger hasn't run). `SECURITY DEFINER`
+  /// on the backend, scoped internally to the caller's own auth id — no
+  /// explicit user id param is required or accepted.
+  static const String getMyCompanyIdRpcFunction = 'get_my_company_id';
+
   /// Parameter name for the `user_id` argument of
   /// [projectSearchSuggestionsRpcFunction].
   static const String projectSearchSuggestionsUserIdParam = 'user_id';
