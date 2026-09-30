@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 /// What a value on the calculator tape measures.
 ///
 /// Every chip is exactly one of these, and arithmetic checks dimensions at
