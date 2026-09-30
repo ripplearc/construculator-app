@@ -137,6 +137,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
 
     return BlocBuilder<CostEstimationLogBloc, CostEstimationLogState>(
+      buildWhen: (previous, current) =>
+          (previous is CostEstimationLogEmpty) !=
+          (current is CostEstimationLogEmpty),
       builder: (context, state) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
         child: Column(

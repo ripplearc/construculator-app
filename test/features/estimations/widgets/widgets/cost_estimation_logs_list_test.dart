@@ -184,6 +184,19 @@ void main() {
       );
     });
 
+    testWidgets('shows newest first once a reload fills an empty list', (
+      tester,
+    ) async {
+      final bloc = await pumpLogsList(tester);
+      expect(find.text(l10n().logsNewestFirst), findsNothing);
+
+      seedOneLog();
+      bloc.add(const CostEstimationLogFetchInitial(estimateId: estimateId));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().logsNewestFirst), findsOneWidget);
+    });
+
     testWidgets('shows empty-state message when no logs exist', (tester) async {
       await pumpLogsList(tester);
 
