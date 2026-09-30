@@ -2,6 +2,7 @@
 
 export 'entry_buffer.dart';
 export 'models/calculator_preferences.dart';
+export 'models/chip.dart';
 export 'models/dimension.dart';
 export 'models/quantity.dart';
 export 'models/token.dart';
@@ -9,5 +10,6 @@ export 'models/unit.dart';
 export 'quantity_formatter.dart';
 export 'quantity_parser.dart';
 export 'quantity_speller.dart';
+export 'tape.dart';
 export 'unit_converter.dart';
 export 'unit_ladder.dart';
