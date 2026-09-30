@@ -6,9 +6,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 /// Module providing [CurrentCompanyResolver].
 ///
-/// Bound as a lazy singleton: the resolver's in-memory cache (see
-/// [CurrentCompanyResolverImpl]) is only useful for the "once per login"
-/// behavior the ticket calls for if the same instance lives for the app
+/// Bound as a lazy singleton so its in-memory cache lives for the app
 /// session rather than being recreated per call site.
 class CompanyLibraryModule extends Module {
   /// Bootstrap used to resolve the Supabase dependencies.

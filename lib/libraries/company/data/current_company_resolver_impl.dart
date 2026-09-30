@@ -22,20 +22,27 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   /// Whether a call has already resolved successfully this session.
   bool _hasResolved = false;
 
-  /// The last successfully resolved company id, or null if the caller has
-  /// no `company_users` row yet. Only meaningful when [_hasResolved] is
-  /// true.
+  /// The last resolved company id, or null for no `company_users` row.
+  /// Only meaningful when [_hasResolved] is true.
   String? _cachedCompanyId;
+
+  /// The in-flight RPC call, if one is already running — shared so two
+  /// callers racing [resolve] before the first response lands don't each
+  /// fire their own RPC call.
+  Future<Either<Failure, String?>>? _inFlight;
 
   /// Creates a [CurrentCompanyResolverImpl].
   CurrentCompanyResolverImpl({required this._supabaseWrapper});
 
   @override
-  Future<Either<Failure, String?>> resolve() async {
+  Future<Either<Failure, String?>> resolve() {
     if (_hasResolved) {
-      return Right(_cachedCompanyId);
+      return Future.value(Right(_cachedCompanyId));
     }
+    return _inFlight ??= _fetch();
+  }
 
+  Future<Either<Failure, String?>> _fetch() async {
     try {
       _logger.debug('Resolving current company id');
       final companyId = await _supabaseWrapper.rpc<String?>(
@@ -47,6 +54,8 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
       return Right(companyId);
     } catch (e) {
       return Left(_handleError(e));
+    } finally {
+      _inFlight = null;
     }
   }
 
