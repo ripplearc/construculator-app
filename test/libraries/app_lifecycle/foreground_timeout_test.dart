@@ -54,6 +54,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(error, isA<FormatException>());
+        expect(async.periodicTimerCount, 0, reason: 'a failed call stops');
       });
     });
 
@@ -69,6 +70,7 @@ void main() {
           call.error(),
           isA<TimeoutException>().having((e) => e.duration, 'duration', limit),
         );
+        expect(async.periodicTimerCount, 0, reason: 'a timed-out call stops');
       });
     });
 

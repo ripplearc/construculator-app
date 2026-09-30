@@ -5,6 +5,11 @@ import 'package:flutter/widgets.dart';
 
 /// [AppLifecycleWrapper] backed by Flutter's [AppLifecycleListener].
 ///
+/// Inactive still counts as foreground: the app stays visible and has only
+/// lost focus for a moment, to an incoming call or the app switcher. Before
+/// the platform reports a state, as at launch, the app counts as in the
+/// foreground too.
+///
 /// Create it once the Flutter binding is initialized. The app keeps one for
 /// its whole run; [dispose] releases it.
 class AppLifecycleWrapperImpl implements AppLifecycleWrapper {
@@ -37,9 +42,6 @@ class AppLifecycleWrapperImpl implements AppLifecycleWrapper {
     _foregroundChanges.add(isInForeground);
   }
 
-  // Inactive still counts as foreground: the app stays visible and has only
-  // lost focus for a moment, to an incoming call or the app switcher. A null
-  // state means the platform has not reported one yet, as at launch.
   static bool _isForegroundState(AppLifecycleState? state) =>
       state == null ||
       state == AppLifecycleState.resumed ||

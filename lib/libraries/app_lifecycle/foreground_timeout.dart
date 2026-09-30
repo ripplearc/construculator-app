@@ -4,9 +4,6 @@ import 'package:construculator/libraries/app_lifecycle/interfaces/app_lifecycle_
 
 /// A [Future.timeout] that only counts time the app spends in the foreground.
 extension ForegroundTimeout<T> on Future<T> {
-  /// How often foreground time is counted. Going to the background drops the
-  /// part of a second since the last tick, so each trip away can lengthen
-  /// the wait by up to this much.
   static const _tick = Duration(seconds: 1);
 
   /// Completes as this future does, or fails with a [TimeoutException] once
@@ -14,7 +11,9 @@ extension ForegroundTimeout<T> on Future<T> {
   ///
   /// Time in the background does not count, so a request left running while
   /// the contractor is in another app still gets its full [limit] when they
-  /// come back.
+  /// come back. Foreground time is counted once a second, and going to the
+  /// background drops the part of a second since the last count, so each
+  /// trip away can lengthen the wait by up to a second.
   ///
   /// Like [Future.timeout], this only stops waiting; it does not cancel the
   /// underlying request. A retry may run beside the abandoned one, which is
