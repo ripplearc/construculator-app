@@ -7,10 +7,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// no surrounding border box, just a single rule beneath the value that
 /// darkens and thickens on focus.
 ///
-/// [CoreTextField] only renders an outlined box in every state — confirmed
-/// by reading its source, no underline variant exists in `ripplearc_coreui`
-/// as of 0.22.0 — so this widget exists specifically for the fields the
-/// Figma mocks show underlined: Equipment name, Duration, Rate, and Amount.
+/// [CoreTextField] only renders an outlined box in every state; no underline
+/// variant exists in `ripplearc_coreui` as of 0.22.0. This widget exists
+/// specifically for the fields the Figma mocks show underlined: Equipment
+/// name, Duration, Rate, and Amount.
 ///
 // TODO: [CA-1158] Replace with CoreUI's underline text field once it exists. https://ripplearc.youtrack.cloud/issue/CA-1158
 class UnderlineTextField extends StatefulWidget {

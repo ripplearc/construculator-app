@@ -7,11 +7,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// `65814:173092`) exactly: light-blue fill + teal border/text when
 /// selected, white fill + grey border/dark text otherwise.
 ///
-/// [CoreChip]'s theme resolver can't produce this — its selected background
-/// is always `colors.pageBackground`, confirmed by reading
-/// `core_chip_theme.dart` — so this is a small standalone widget instead of
-/// a `CoreChip` configuration. Reusable for any future two-option toggle in
-/// this feature, not just Day/Job.
+/// [CoreChip]'s theme resolver can't produce this: its selected background
+/// is always `colors.pageBackground` (see `core_chip_theme.dart`), so this
+/// is a small standalone widget instead of a `CoreChip` configuration.
+/// Reusable for any future two-option toggle in this feature, not just
+/// Day/Job.
 ///
 /// Mirrors [CoreChip]'s `selected`/`onTap` contract exactly: the caller owns
 /// the [selected] notifier, and this widget toggles it right after [onTap]
