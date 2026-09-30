@@ -2644,12 +2644,6 @@ abstract class AppLocalizations {
   /// **'Rate'**
   String get equipmentRateLabel;
 
-  /// Static unit text shown beside the rate field on the equipment cost form (Day pricing, manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'/day'**
-  String get equipmentRateSuffix;
-
   /// Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)
   ///
   /// In en, this message translates to:

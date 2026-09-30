@@ -1401,9 +1401,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRateLabel => 'Rate';
 
   @override
-  String get equipmentRateSuffix => '/day';
-
-  @override
   String get equipmentAmountLabel => 'Amount';
 
   @override

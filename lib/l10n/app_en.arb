@@ -2195,11 +2195,6 @@
   "@equipmentRateLabel": {
     "description": "Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)"
   },
-  "equipmentRateSuffix": "/day",
-  "@equipmentRateSuffix": {
-    "description": "Static unit text shown beside the rate field on the equipment cost form (Day pricing, manually mode)",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186150"
-  },
   "equipmentAmountLabel": "Amount",
   "@equipmentAmountLabel": {
     "description": "Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)"

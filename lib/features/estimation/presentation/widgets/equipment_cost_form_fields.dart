@@ -303,12 +303,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  suffix: Text(
-                    l10n.equipmentRateSuffix,
-                    style: textTheme.bodyMediumRegular.copyWith(
-                      color: colorTheme.textBody,
-                    ),
-                  ),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
