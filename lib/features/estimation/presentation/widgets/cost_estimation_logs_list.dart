@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// The Logs sheet's body: one estimate's history, newest first (CUJ 11).
+///
+/// The first load and the load of older events show their spinner at the
+/// same size beside a text label, so the two loading states match.
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
@@ -41,8 +45,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   /// a smooth user experience by preloading content before reaching the end.
   static const double _loadMoreScrollThreshold = 200.0;
 
-  /// Size of the spinners that sit beside a text label, on the first load
-  /// and on the load of older events, so the two states match.
   static const double _inlineSpinnerSize = CoreIconSize.size24;
 
   @override
