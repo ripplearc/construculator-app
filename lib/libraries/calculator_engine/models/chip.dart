@@ -106,6 +106,8 @@ final class ValueChip extends TapeChip {
   bool get isReadable =>
       exactValue != null || entry.isComplete || _isUnnamedBareNumber;
 
+  // TODO: [CA-1202] Limit this to keys that want a unit: Pitch, Slope and
+  // Sides take a plain number. https://ripplearc.youtrack.cloud/issue/CA-1202
   bool get _isUnnamedBareNumber => key == null && _isBareNumber;
 
   bool get _isBareNumber =>

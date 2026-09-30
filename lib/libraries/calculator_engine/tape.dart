@@ -248,7 +248,9 @@ class Tape extends Equatable {
   }
 
   TapeOutcome _entry(ValueChip chip, EntryOutcome outcome) => switch (outcome) {
-    EntryChanged(:final buffer) => _replaceLast(chip.copyWith(entry: buffer)),
+    EntryChanged(:final buffer) => _replaceLast(
+      chip.copyWith(entry: buffer, exact: buffer.isEmpty ? () => null : null),
+    ),
     EntrySplit(:final finished, :final started) => TapeChanged(
       _replaceActive(
         chip.copyWith(entry: finished),

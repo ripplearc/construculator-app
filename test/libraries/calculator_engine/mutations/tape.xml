@@ -105,6 +105,12 @@
         <regex pattern="bool get _isUnnamedBareNumber =&gt; key == null &amp;&amp; _isBareNumber;" dotAll="true" id="chip.bare_number.named_is_readable">
             <mutation text="bool get _isUnnamedBareNumber =&gt; _isBareNumber;"/>
         </regex>
+
+        <!-- RULE 18: an emptied chip keeps the exact quantity it was
+             converted from -->
+        <regex pattern="chip\.copyWith\(entry: buffer, exact: buffer\.isEmpty \? \(\) =&gt; null : null\)," dotAll="true" id="tape.entry.empty_keeps_exact">
+            <mutation text="chip.copyWith(entry: buffer),"/>
+        </regex>
     </rules>
 
     <commands>

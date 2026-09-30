@@ -306,6 +306,23 @@ void main() {
         );
       });
 
+      test('a converted chip emptied by ⌫ is the digits again', () {
+        var cleared = press(const Tape(), '[Width] 1 8 ft 8 in yd');
+        while (!cleared.active!.entry.isEmpty) {
+          cleared = press(cleared, '⌫');
+        }
+        expect(cleared.active!.exact, isNull);
+        final retyped = press(cleared, '6 . 2 2 2 yd');
+        expect(
+          retyped.active!.value(parser),
+          const Length(14335, unit: Unit.yard),
+        );
+        expect(
+          retyped.active,
+          equals(press(const Tape(), '[Width] 6 . 2 2 2 yd').active),
+        );
+      });
+
       test('rule 4.15: the next value typed never changes a converted one', () {
         final tape = press(const Tape(), '[Length] 1 8 ft 8 in yd 3 cm');
         expect(texts(tape), ['Length6.222yd', '3cm']);
