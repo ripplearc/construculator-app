@@ -2659,7 +2659,7 @@ abstract class AppLocalizations {
   /// Dependent-key pill: the on-centre spacing behind a fence or framing count
   ///
   /// In en, this message translates to:
-  /// **'O.C'**
+  /// **'O.C.'**
   String get calculatorPillOnCentre;
 
   /// Dependent-key pill: the sheet size behind a drywall count
@@ -2698,7 +2698,7 @@ abstract class AppLocalizations {
   /// **'Waste'**
   String get calculatorPillWaste;
 
-  /// Dependent-key pill: the material density behind a weight
+  /// Dependent-key pill: the material density behind a weight. Plain word until CA-1083 supplies the material name
   ///
   /// In en, this message translates to:
   /// **'Density'**
@@ -2710,7 +2710,7 @@ abstract class AppLocalizations {
   /// **'Shown as'**
   String get calculatorPillShownAs;
 
-  /// Dependent-key pill that flips which way a spacing runs across a span
+  /// Dependent-key pill on a polygon area. Its value is 'corners' or 'flats': whether the diameter was measured corner to corner or flat side to flat side
   ///
   /// In en, this message translates to:
   /// **'Across'**

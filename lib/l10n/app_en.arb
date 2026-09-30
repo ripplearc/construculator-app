@@ -2204,7 +2204,7 @@
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
   },
-  "calculatorPillOnCentre": "O.C",
+  "calculatorPillOnCentre": "O.C.",
   "@calculatorPillOnCentre": {
     "description": "Dependent-key pill: the on-centre spacing behind a fence or framing count"
   },
@@ -2234,7 +2234,7 @@
   },
   "calculatorPillDensity": "Density",
   "@calculatorPillDensity": {
-    "description": "Dependent-key pill: the material density behind a weight"
+    "description": "Dependent-key pill: the material density behind a weight. Plain word until CA-1083 supplies the material name"
   },
   "calculatorPillShownAs": "Shown as",
   "@calculatorPillShownAs": {
@@ -2242,7 +2242,7 @@
   },
   "calculatorPillAcross": "Across",
   "@calculatorPillAcross": {
-    "description": "Dependent-key pill that flips which way a spacing runs across a span"
+    "description": "Dependent-key pill on a polygon area. Its value is 'corners' or 'flats': whether the diameter was measured corner to corner or flat side to flat side"
   },
   "calculatorGroupBasicGeometry": "Basic Geometry",
   "@calculatorGroupBasicGeometry": {

@@ -1409,7 +1409,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have permission to view this project.';
 
   @override
-  String get calculatorPillOnCentre => 'O.C';
+  String get calculatorPillOnCentre => 'O.C.';
 
   @override
   String get calculatorPillSheetSize => 'Sheet size';

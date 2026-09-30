@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -353,6 +354,22 @@ void main() {
       find.textContaining(l10n.calculatorPillOnCentre, findRichText: true),
       findsOneWidget,
     );
+  });
+
+  test('a pill is drawn as the kind its id names', () {
+    final l10n = AppLocalizationsEn();
+
+    final toggle = CalculatorPage.pillFor(
+      l10n,
+      DependentKeyId.shownAs,
+      'in/12in',
+    );
+    final editable = CalculatorPage.pillFor(l10n, DependentKeyId.rate, '4.5');
+
+    expect(toggle.kind, equals(CoreDependentKeyKind.toggle));
+    expect(toggle.label, equals(l10n.calculatorPillShownAs));
+    expect(toggle.value, equals('in/12in'));
+    expect(editable.kind, equals(CoreDependentKeyKind.editable));
   });
 
   testWidgets(
