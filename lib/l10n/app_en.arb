@@ -2475,6 +2475,24 @@
   "@equipmentSaveAsMyRateLink": {
     "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)"
   },
+  "equipmentSaveAsMyRateHelperText": "Saves {amount} {unit} to Your rates — it auto-fills next time you add {itemName}.",
+  "@equipmentSaveAsMyRateHelperText": {
+    "description": "Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (Figma node 66342:178091/178103, the cuj6-equip-5-verify storyboard frame); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix for the active pricing method, and itemName is the typed equipment name",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$145.00"
+      },
+      "unit": {
+        "type": "String",
+        "example": "/day"
+      },
+      "itemName": {
+        "type": "String",
+        "example": "Mini excavator — 1.5 ton"
+      }
+    }
+  },
   "yourRatesLookupTitle": "Look up a rate",
   "@yourRatesLookupTitle": {
     "description": "Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button"
@@ -2562,6 +2580,10 @@
   "yourRatesSaveFailedError": "Couldn't save this rate. Please try again.",
   "@yourRatesSaveFailedError": {
     "description": "Toast/snackbar shown when saving to Your rates fails for a reason other than a label collision"
+  },
+  "yourRatesSaveSucceededMessage": "Rate saved to Your rates",
+  "@yourRatesSaveSucceededMessage": {
+    "description": "Success toast shown after a rate is saved to Your rates, whether on the first attempt or after a label-collision retry"
   },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {
