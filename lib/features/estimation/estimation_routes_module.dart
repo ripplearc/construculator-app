@@ -46,6 +46,8 @@ class EstimationRoutesModule extends Module {
         return CostEstimationDetailsPage(
           estimationId: estimationId,
           router: Modular.get<AppRouter>(),
+          equipmentCostFormBlocFactory: () =>
+              Modular.get<EquipmentCostFormBloc>(),
         );
       },
     );
@@ -94,6 +96,7 @@ class EstimationRoutesModule extends Module {
       },
     );
 
+    // TODO: [CA-1199] Reconcile this legacy full-screen route with the sheet presentation the equipment FAB now uses. https://ripplearc.youtrack.cloud/issue/CA-1199
     r.child(
       addEquipmentCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
