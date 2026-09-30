@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -143,6 +145,33 @@ void main() {
         );
       },
     );
+
+    test('two concurrent resolve calls before the RPC responds share one '
+        'network call', () async {
+      supabaseWrapper.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
+      supabaseWrapper.shouldDelayOperations = true;
+      supabaseWrapper.completer = Completer<void>();
+
+      final firstFuture = resolver.resolve();
+      final secondFuture = resolver.resolve();
+      supabaseWrapper.completer!.complete();
+      final results = await Future.wait([firstFuture, secondFuture]);
+
+      expect(
+        supabaseWrapper.getMethodCallsFor('rpc'),
+        hasLength(1),
+        reason: 'concurrent callers should share the same in-flight call',
+      );
+      for (final result in results) {
+        result.fold(
+          (_) => fail('Expected Right but got Left'),
+          (companyId) => expect(companyId, 'company-1'),
+        );
+      }
+    });
 
     test(
       'the cached value is reused when a later call would be offline',
