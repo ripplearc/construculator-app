@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 export 'models/dimension.dart';
 export 'models/quantity.dart';
 export 'models/token.dart';
