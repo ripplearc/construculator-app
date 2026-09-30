@@ -105,6 +105,28 @@ void main() {
       expect(find.byKey(const Key('quantity_field')), findsNothing);
     });
 
+    testWidgets('shows placeholder text on the empty name, duration, and '
+        'rate fields', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.equipmentNamePlaceholder), findsOneWidget);
+      expect(find.text(l10n.equipmentDurationPlaceholder), findsOneWidget);
+      expect(find.text(l10n.equipmentRatePlaceholder), findsOneWidget);
+    });
+
+    testWidgets('shows placeholder text on the empty amount field (Job)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.equipmentAmountPlaceholder), findsOneWidget);
+    });
+
     testWidgets('shows a Basis label above the Day/Job toggle', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();

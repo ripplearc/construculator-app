@@ -20,6 +20,9 @@ class UnderlineTextField extends StatefulWidget {
   /// Controls and reads the value text.
   final TextEditingController controller;
 
+  /// Placeholder text shown in the value row while the field is empty.
+  final String? hintText;
+
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
 
@@ -35,6 +38,7 @@ class UnderlineTextField extends StatefulWidget {
     super.key,
     required this.label,
     required this.controller,
+    this.hintText,
     this.keyboardType,
     this.suffix,
     this.errorTextList,
@@ -110,12 +114,18 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
           : textTheme.bodyLargeSemiBold.copyWith(
               color: colorTheme.textHeadline,
             ),
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         border: InputBorder.none,
         // Vertical padding, not zero: without it the field's own
         // interactive area is only as tall as its text line (~24px), short
         // of Android's 48dp minimum tap target.
-        contentPadding: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: CoreSpacing.space3,
+        ),
+        hintText: widget.hintText,
+        hintStyle: textTheme.bodyLargeRegular.copyWith(
+          color: colorTheme.textDisable,
+        ),
       ),
     );
 

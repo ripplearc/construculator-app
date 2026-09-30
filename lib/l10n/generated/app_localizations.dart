@@ -2608,6 +2608,12 @@ abstract class AppLocalizations {
   /// **'Equipment'**
   String get equipmentNameLabel;
 
+  /// Placeholder text for the equipment name field while it is empty (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Name the equipment'**
+  String get equipmentNamePlaceholder;
+
   /// Label for the Day choice chip in the equipment pricing method toggle (manually mode)
   ///
   /// In en, this message translates to:
@@ -2632,6 +2638,12 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get equipmentDurationLabel;
 
+  /// Placeholder text for the duration field while it is empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set the days'**
+  String get equipmentDurationPlaceholder;
+
   /// Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
@@ -2644,11 +2656,23 @@ abstract class AppLocalizations {
   /// **'Rate'**
   String get equipmentRateLabel;
 
+  /// Placeholder text for the rate field while it is empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set your rate'**
+  String get equipmentRatePlaceholder;
+
   /// Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Amount'**
   String get equipmentAmountLabel;
+
+  /// Placeholder text for the flat job amount field while it is empty (Job pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set the amount'**
+  String get equipmentAmountPlaceholder;
 
   /// Rate label inside the calculation method card when per-day method is selected (from cost file mode)
   ///

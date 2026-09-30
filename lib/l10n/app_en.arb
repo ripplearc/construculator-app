@@ -2171,6 +2171,11 @@
     "description": "Hint label for the equipment name field on the equipment cost form (manually mode)",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186054"
   },
+  "equipmentNamePlaceholder": "Name the equipment",
+  "@equipmentNamePlaceholder": {
+    "description": "Placeholder text for the equipment name field while it is empty (manually mode)",
+    "context": "N/A"
+  },
   "equipmentDayMethodLabel": "Day",
   "@equipmentDayMethodLabel": {
     "description": "Label for the Day choice chip in the equipment pricing method toggle (manually mode)"
@@ -2187,6 +2192,11 @@
   "@equipmentDurationLabel": {
     "description": "Hint label for the duration field on the equipment cost form (Day pricing, manually mode)"
   },
+  "equipmentDurationPlaceholder": "Set the days",
+  "@equipmentDurationPlaceholder": {
+    "description": "Placeholder text for the duration field while it is empty (Day pricing, manually mode)",
+    "context": "N/A"
+  },
   "equipmentDurationSuffix": "days",
   "@equipmentDurationSuffix": {
     "description": "Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)"
@@ -2195,9 +2205,19 @@
   "@equipmentRateLabel": {
     "description": "Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)"
   },
+  "equipmentRatePlaceholder": "Set your rate",
+  "@equipmentRatePlaceholder": {
+    "description": "Placeholder text for the rate field while it is empty (Day pricing, manually mode)",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186054"
+  },
   "equipmentAmountLabel": "Amount",
   "@equipmentAmountLabel": {
     "description": "Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)"
+  },
+  "equipmentAmountPlaceholder": "Set the amount",
+  "@equipmentAmountPlaceholder": {
+    "description": "Placeholder text for the flat job amount field while it is empty (Job pricing, manually mode)",
+    "context": "N/A"
   },
   "rateDayLabel": "Rate/Day:",
   "@rateDayLabel": {

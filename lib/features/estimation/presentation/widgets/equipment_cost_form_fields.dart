@@ -251,6 +251,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               UnderlineTextField(
                 key: const Key('equipment_name_field'),
                 label: l10n.equipmentNameLabel,
+                hintText: l10n.equipmentNamePlaceholder,
                 controller: _equipmentNameController,
               ),
               const SizedBox(height: CoreSpacing.space5),
@@ -283,6 +284,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 UnderlineTextField(
                   key: const Key('duration_field'),
                   label: l10n.equipmentDurationLabel,
+                  hintText: l10n.equipmentDurationPlaceholder,
                   controller: _durationController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -299,6 +301,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 UnderlineTextField(
                   key: const Key('rate_field'),
                   label: l10n.equipmentRateLabel,
+                  hintText: l10n.equipmentRatePlaceholder,
                   controller: _dailyRateController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -309,6 +312,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 UnderlineTextField(
                   key: const Key('amount_field'),
                   label: l10n.equipmentAmountLabel,
+                  hintText: l10n.equipmentAmountPlaceholder,
                   controller: _jobAmountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
