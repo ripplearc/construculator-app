@@ -16,12 +16,14 @@ import 'package:equatable/equatable.dart';
 /// [formatStoredLength] never groups.
 ///
 /// Rounding follows the prototype, so a value on a boundary lands where the
-/// prototype lands: a number is pre-rounded with JavaScript's
-/// `Math.round(v * 100) / 100`, whose half rounds toward +∞ (-2.5 is -2),
-/// then written as en-US `toLocaleString` writes it: at most the allowed
-/// decimals, no trailing zeros, rounded half away from zero on the shortest
-/// decimal spelling of the double (which is what ICU rounds, and why 1.005
-/// reads 1.01 there while `toStringAsFixed` would say 1.00). A scalar below
+/// prototype lands: volumes, angles, scalars at or above 0.1, acres and
+/// stored sizes are first pre-rounded with JavaScript's
+/// `Math.round(v * 10^d) / 10^d` for their d decimals, whose half rounds
+/// toward +∞ (-2.5 is -2); every number is then written as en-US
+/// `toLocaleString` writes it: at most the allowed decimals, no trailing
+/// zeros, rounded half away from zero on the shortest decimal spelling of
+/// the double (which is what ICU rounds, and why 1.005 reads 1.01 there
+/// while `toStringAsFixed` would say 1.00). A scalar below
 /// 0.1 keeps two significant digits instead of two decimals, because two
 /// decimals there hide up to a third of the value (0.0129 → 0.01) or erase a
 /// nonzero answer (rule 4.15: 1 ÷ 78 reads 0.013).
@@ -259,6 +261,9 @@ class QuantityFormatter extends Equatable {
     return '$buffer$rest';
   }
 
+  // TODO: [CA-1201] Refuse a value at or above 2^53 instead of clamping it
+  // at 2^63; reachable once × lands in #642.
+  // https://ripplearc.youtrack.cloud/issue/CA-1201
   int _jsMathRound(double value) => (value + 0.5).floor();
 
   @override
