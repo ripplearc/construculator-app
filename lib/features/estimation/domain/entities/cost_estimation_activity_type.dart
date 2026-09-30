@@ -9,10 +9,12 @@
 ///
 /// [CostEstimationActivityTypeExtension.toJson] is snake_case of the member
 /// name, so the names below *are* the wire contract — renaming one is a
-/// breaking change that needs a matching `ALTER TYPE` migration. The
-/// Estimation-v2 kinds are not in the backend enum yet; they follow its
-/// `<entity>_<verb>` convention so the migration that adds them can use these
-/// values verbatim.
+/// breaking change that needs a matching `ALTER TYPE` migration. A rename
+/// with no migration does not crash:
+/// [CostEstimationActivityTypeExtension.fromJson] falls back to [unknown]
+/// silently. The Estimation-v2 kinds are not in the backend enum yet; they
+/// follow its `<entity>_<verb>` convention so the migration that adds them can
+/// use these values verbatim.
 ///
 /// The Send kinds document only the details their titles or second lines
 /// name. The rest of a Send entry's second line (version, detail level,
