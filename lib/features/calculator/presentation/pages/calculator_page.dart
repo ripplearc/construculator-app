@@ -96,6 +96,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
         label: label == 'oc' ? l10n.calculatorOcLabel : label,
         value: state.dependentKeyValue ?? '',
         kind: CoreDependentKeyKind.editable,
+        // TODO: [CA-1096] Open the single-value editor to change the spacing.
+        // https://ripplearc.youtrack.cloud/issue/CA-1096
         onPressed: () {},
       ),
     ];
