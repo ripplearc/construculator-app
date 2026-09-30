@@ -58,6 +58,13 @@ class UnderlineTextField extends StatefulWidget {
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
   final List<String>? errorTextList;
 
+  /// When true, the value cannot be edited: no keyboard, no cursor, no
+  /// focus. Used for a rate recalled from Your Rates that its pricing
+  /// method makes non-editable (e.g. a saved day rate's Rate field, per
+  /// CUJ 6 Sub-flow B) — the value still renders exactly as a normal filled
+  /// field would, just without accepting a tap-driven edit.
+  final bool readOnly;
+
   const UnderlineTextField({
     super.key,
     required this.label,
@@ -70,6 +77,7 @@ class UnderlineTextField extends StatefulWidget {
     this.trailingAction,
     this.focusNode,
     this.errorTextList,
+    this.readOnly = false,
   });
 
   @override
@@ -88,6 +96,15 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
   void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
+    // A read-only field must never actually gain focus: TextField's own
+    // readOnly still lets a tap show a cursor/selection handles with no
+    // keyboard, which reads as a broken editable field rather than a
+    // genuinely non-interactive one. Set once here (and again in
+    // didUpdateWidget only when it actually changes) rather than on every
+    // build — canRequestFocus notifies this node's own listeners, so
+    // reassigning it unconditionally on every build would re-trigger
+    // _onFocusChange's setState on every frame.
+    _focusNode.canRequestFocus = !widget.readOnly;
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
   }
@@ -98,6 +115,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onTextChange);
       widget.controller.addListener(_onTextChange);
+    }
+    if (oldWidget.readOnly != widget.readOnly) {
+      _focusNode.canRequestFocus = !widget.readOnly;
     }
   }
 
@@ -146,6 +166,8 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final textField = TextField(
       controller: widget.controller,
       focusNode: _focusNode,
+      readOnly: widget.readOnly,
+      showCursor: !widget.readOnly,
       keyboardType: widget.keyboardType,
       cursorColor: colorTheme.textHeadline,
       style: isEmpty
