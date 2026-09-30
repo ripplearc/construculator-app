@@ -63,6 +63,18 @@ class EquipmentCostFormBloc
             : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
       );
     });
+    on<EquipmentSavedRateRecalledEvent>((e, emit) {
+      _emit(emit, (d) {
+        final recalled = d.copyWith(
+          equipmentType: e.equipmentType,
+          method: e.method,
+          rateStatus: RateStatus.ownRateConfirmed,
+        );
+        return e.method == EquipmentPricingMethod.day
+            ? recalled.copyWith(dailyRate: e.rate)
+            : recalled.copyWith(jobAmount: e.rate);
+      });
+    });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
       final usable = fee != null && fee.isFinite && fee >= 0 && fee <= _maxRate;
