@@ -1577,9 +1577,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyKgFullName => 'Kilograms';
 
   @override
-  String get calculatorKeyTonsFullName => 'Tons';
-
-  @override
   String get calculatorKeyMetricTonsFullName => 'Metric tons';
 
   @override

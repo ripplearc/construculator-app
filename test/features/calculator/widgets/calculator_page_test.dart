@@ -161,7 +161,39 @@ void main() {
     },
   );
 
-  testWidgets('an abbreviated key face is announced by its full name', (
+  testWidgets('a group is coloured by its id, not by its position', (
+    tester,
+  ) async {
+    final theme = CoreTheme.light();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final colors = theme.coreColors;
+    final keyboard = tester.widget<CoreKeyboard>(find.byType(CoreKeyboard));
+    final accentsById = {
+      for (final entry in keyboard.groupAccentColors.entries)
+        entry.key.id: entry.value,
+    };
+
+    expect(
+      accentsById,
+      equals({
+        'Basic Geometry': colors.keyboardFunctions,
+        'Shapes': colors.indigo,
+        'Materials': colors.iconOrange,
+        'Unit': colors.keyboardUnits,
+        'Trigonometry': colors.textSuccess,
+      }),
+    );
+  });
+
+  testWidgets('an abbreviated key hands its full name to the keyboard', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -181,6 +213,10 @@ void main() {
       for (final group in keyboard.allGroups)
         for (final key in group.keys) key.id: key.semanticLabel,
     };
+    final facesById = {
+      for (final group in keyboard.allGroups)
+        for (final key in group.keys) key.id: key.label,
+    };
 
     expect(semanticsById['Msnry'], equals(l10n.calculatorKeyMsnryFullName));
     expect(semanticsById['Drywal'], equals(l10n.calculatorKeyDrywalFullName));
@@ -189,10 +225,15 @@ void main() {
     expect(semanticsById['DMS'], equals(l10n.calculatorKeyDmsFullName));
     expect(semanticsById['Width'], isNull);
     expect(semanticsById['Fence'], isNull);
+    expect(semanticsById['ton'], isNull);
     final abbreviated = semanticsById.entries.where((e) => e.value != null);
-    expect(abbreviated, hasLength(21));
+    expect(abbreviated, hasLength(20));
     for (final entry in abbreviated) {
-      expect(entry.value, isNot(equals(entry.key)), reason: entry.key);
+      expect(
+        entry.value,
+        isNot(equals(facesById[entry.key])),
+        reason: entry.key,
+      );
     }
   });
 

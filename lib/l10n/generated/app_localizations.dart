@@ -2992,12 +2992,6 @@ abstract class AppLocalizations {
   /// **'Kilograms'**
   String get calculatorKeyKgFullName;
 
-  /// Full name of the abbreviated "Tons" calculator key, read by screen readers
-  ///
-  /// In en, this message translates to:
-  /// **'Tons'**
-  String get calculatorKeyTonsFullName;
-
   /// Full name of the abbreviated "m Tons" calculator key, read by screen readers
   ///
   /// In en, this message translates to:
