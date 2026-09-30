@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -226,7 +227,10 @@ void main() {
       await tester.pumpAndSettle();
       await unfocusAll(tester);
 
-      expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
+      final nameField = tester.widget<UnderlineTextField>(
+        find.byKey(const Key('equipment_name_field')),
+      );
+      expect(nameField.errorTextList, isNull);
       expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
     });
 
@@ -249,30 +253,12 @@ void main() {
     );
   });
 
-  group('EquipmentCostFormFields — item type error', () {
-    testWidgets(
-      'never shows error text when equipment name is cleared after typing '
-      '(empty fields never show a red error, per product decision)',
-      (tester) async {
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
-
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          '',
-        );
-        await tester.pump();
-
-        expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
-      },
-    );
-
-    testWidgets('hides error text when equipment name is non-empty', (
+  group('EquipmentCostFormFields — equipment name field', () {
+    // The equipment name field never carries an error list at all (no
+    // required-field error exists for it — the disabled Add button names
+    // what's missing instead, per S1 on #653's review); this guards against
+    // that wiring being re-added.
+    testWidgets('never carries an error list, regardless of content', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
@@ -283,8 +269,13 @@ void main() {
         'Backhoe',
       );
       await tester.pump();
+      await tester.enterText(find.byKey(const Key('equipment_name_field')), '');
+      await tester.pump();
 
-      expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
+      final nameField = tester.widget<UnderlineTextField>(
+        find.byKey(const Key('equipment_name_field')),
+      );
+      expect(nameField.errorTextList, isNull);
     });
   });
 

@@ -2166,9 +2166,10 @@
   "@equipmentTypeLabel": {
     "description": "Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)"
   },
-  "equipmentNameLabel": "Equipment name*",
+  "equipmentNameLabel": "Equipment",
   "@equipmentNameLabel": {
-    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
+    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)",
+    "context": "N/A"
   },
   "equipmentDayMethodLabel": "Day",
   "@equipmentDayMethodLabel": {
@@ -2194,6 +2195,11 @@
   "@equipmentRateLabel": {
     "description": "Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)"
   },
+  "equipmentRateSuffix": "/day",
+  "@equipmentRateSuffix": {
+    "description": "Static unit text shown beside the rate field on the equipment cost form (Day pricing, manually mode)",
+    "context": "N/A"
+  },
   "equipmentAmountLabel": "Amount",
   "@equipmentAmountLabel": {
     "description": "Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)"
@@ -2214,13 +2220,10 @@
   "@labourTypeRequiredError": {
     "description": "Validation error shown below the labour type field when it is submitted empty"
   },
-  "equipmentNameRequiredError": "Equipment name is required",
-  "@equipmentNameRequiredError": {
-    "description": "Validation error shown below the equipment name field when it is submitted empty"
-  },
-  "equipmentDurationInvalidError": "Duration must be more than zero",
+  "equipmentDurationInvalidError": "Duration must be more than zero.",
   "@equipmentDurationInvalidError": {
-    "description": "Validation error shown below the duration field, on blur, when a typed value is zero, negative, or not a half-day step (Day pricing, manually mode)"
+    "description": "Validation error shown below the duration field, on blur, when a typed value is zero, negative, or not a half-day step (Day pricing, manually mode)",
+    "context": "N/A"
   },
   "equipmentRateOutOfRangeError": "Rate must be between $0.01 and $999,999.99",
   "@equipmentRateOutOfRangeError": {

@@ -1380,7 +1380,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentTypeLabel => 'Equipment type*';
 
   @override
-  String get equipmentNameLabel => 'Equipment name*';
+  String get equipmentNameLabel => 'Equipment';
 
   @override
   String get equipmentDayMethodLabel => 'Day';
@@ -1401,6 +1401,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRateLabel => 'Rate';
 
   @override
+  String get equipmentRateSuffix => '/day';
+
+  @override
   String get equipmentAmountLabel => 'Amount';
 
   @override
@@ -1416,10 +1419,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labourTypeRequiredError => 'Labour type is required';
 
   @override
-  String get equipmentNameRequiredError => 'Equipment name is required';
-
-  @override
-  String get equipmentDurationInvalidError => 'Duration must be more than zero';
+  String get equipmentDurationInvalidError =>
+      'Duration must be more than zero.';
 
   @override
   String get equipmentRateOutOfRangeError =>

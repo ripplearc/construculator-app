@@ -2605,7 +2605,7 @@ abstract class AppLocalizations {
   /// Hint label for the equipment name field on the equipment cost form (manually mode)
   ///
   /// In en, this message translates to:
-  /// **'Equipment name*'**
+  /// **'Equipment'**
   String get equipmentNameLabel;
 
   /// Label for the Day choice chip in the equipment pricing method toggle (manually mode)
@@ -2644,6 +2644,12 @@ abstract class AppLocalizations {
   /// **'Rate'**
   String get equipmentRateLabel;
 
+  /// Static unit text shown beside the rate field on the equipment cost form (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'/day'**
+  String get equipmentRateSuffix;
+
   /// Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)
   ///
   /// In en, this message translates to:
@@ -2674,16 +2680,10 @@ abstract class AppLocalizations {
   /// **'Labour type is required'**
   String get labourTypeRequiredError;
 
-  /// Validation error shown below the equipment name field when it is submitted empty
-  ///
-  /// In en, this message translates to:
-  /// **'Equipment name is required'**
-  String get equipmentNameRequiredError;
-
   /// Validation error shown below the duration field, on blur, when a typed value is zero, negative, or not a half-day step (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
-  /// **'Duration must be more than zero'**
+  /// **'Duration must be more than zero.'**
   String get equipmentDurationInvalidError;
 
   /// Validation error shown below the rate field, on blur, when a typed value is outside the accepted bound (Day pricing, manually mode)

@@ -20,12 +20,23 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Enter/Space activation keep working, the same as the `CoreChip` this
 /// replaces.
 ///
-// TODO: CA-1160 — replace this with CoreChip once it supports a tinted selected background
+// TODO: [CA-1160] Replace with CoreChip once it supports a tinted selected background. https://ripplearc.youtrack.cloud/issue/CA-1160
 class ChoiceChipToggle extends StatefulWidget {
+  /// Text shown inside the pill.
   final String label;
+
+  /// Whether this pill is the selected option. The caller owns this
+  /// notifier; this widget flips it right after [onTap] returns.
   final ValueNotifier<bool> selected;
+
+  /// Called when the pill is tapped, before [selected] is flipped.
   final VoidCallback? onTap;
+
+  /// Focus node for keyboard traversal. A new one is created and disposed
+  /// internally when omitted.
   final FocusNode? focusNode;
+
+  /// Whether this pill should request focus as soon as it's built.
   final bool autofocus;
 
   const ChoiceChipToggle({
@@ -86,6 +97,11 @@ class _ChoiceChipToggleState extends State<ChoiceChipToggle> {
                 // Android's 48dp minimum without inflating the visible 44px
                 // pill the Figma spec calls for.
                 padding: const EdgeInsets.symmetric(vertical: 2),
+                // height: 44, horizontal padding: 18, matching the Figma
+                // "Choice Chips" component (node 65814:173124) exactly. No
+                // CoreSpacing token lands on either value (nearest are
+                // space10=40/space12=48 and space4=16/space5=20), so these
+                // stay literal rather than rounding to an inexact token.
                 child: Container(
                   height: 44,
                   padding: const EdgeInsets.symmetric(horizontal: 18),

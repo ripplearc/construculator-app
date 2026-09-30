@@ -12,12 +12,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// as of 0.22.0 — so this widget exists specifically for the fields the
 /// Figma mocks show underlined: Equipment name, Duration, Rate, and Amount.
 ///
-// TODO: CA-1158 — replace this with CoreUI's underline text field once it exists
+// TODO: [CA-1158] Replace with CoreUI's underline text field once it exists. https://ripplearc.youtrack.cloud/issue/CA-1158
 class UnderlineTextField extends StatefulWidget {
   /// Label shown above the value.
   final String label;
 
+  /// Controls and reads the value text.
   final TextEditingController controller;
+
+  /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
 
   /// Trailing content at the end of the value row (e.g. the "days" suffix

@@ -33,10 +33,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _dailyRateController = TextEditingController();
   final _jobAmountController = TextEditingController();
 
-  /// Owns the Day/Job choice-chip selection. Exactly one of these is true at
-  /// all times; kept as persistent notifiers (rather than derived fresh from
-  /// bloc state on every build) so the chip's own tap-driven toggle can be
-  /// corrected deterministically — see [_selectMethod].
   final _daySelected = ValueNotifier<bool>(true);
   final _jobSelected = ValueNotifier<bool>(false);
 
@@ -105,12 +101,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
-  // Tapping a chip re-drives both notifiers to `false`: ChoiceChipToggle
-  // toggles its own `selected` notifier right after this callback returns,
-  // so the tapped chip's notifier flips back to `true` on its own, while the
-  // untapped sibling — never auto-toggled — is left `false`. This holds
-  // regardless of which chip was active beforehand, so re-tapping the
-  // already-active chip leaves the same chip selected.
   void _selectMethod(EquipmentPricingMethod tapped) {
     _daySelected.value = false;
     _jobSelected.value = false;
@@ -244,7 +234,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return [
       BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
         listener: (_, state) {
-          widget.onSaveEnabledChanged?.call(_dataOf(state).isValid);
+          final data = _dataOf(state);
+          widget.onSaveEnabledChanged?.call(data.isValid);
+          // The bloc is the only owner of the Day/Job choice; mirror it into
+          // the chip notifiers here so a method change from any source (not
+          // just a tap on these two chips) keeps both chips in sync with it.
+          _daySelected.value = data.method == EquipmentPricingMethod.day;
+          _jobSelected.value = data.method == EquipmentPricingMethod.job;
         },
         builder: (_, state) {
           final data = _dataOf(state);
@@ -256,9 +252,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 key: const Key('equipment_name_field'),
                 label: l10n.equipmentNameLabel,
                 controller: _equipmentNameController,
-                errorTextList: data.itemTypeError != null
-                    ? [l10n.equipmentNameRequiredError]
-                    : null,
               ),
               const SizedBox(height: CoreSpacing.space5),
               Text(
@@ -309,6 +302,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   controller: _dailyRateController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
+                  ),
+                  suffix: Text(
+                    l10n.equipmentRateSuffix,
+                    style: textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
                   ),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),

@@ -64,10 +64,6 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
-  // Header row used in place of a CoreAppBar when presentAsSheet is true,
-  // matching the Figma "Sheet Header" spec: a teal back arrow (the drag
-  // handle itself comes from CoreQuickSheet, which already wraps this
-  // content) + title, SF Pro 590/18px, colorTheme.textHeadline.
   Widget _buildSheetHeader(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
