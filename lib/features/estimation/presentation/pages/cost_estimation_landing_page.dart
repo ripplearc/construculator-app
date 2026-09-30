@@ -115,7 +115,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) {
+      builder: (sheetContext) {
         return BlocProvider.value(
           value: changeLockStatusBloc,
           child: BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
@@ -150,6 +150,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                 );
               },
               onLogs: () {
+                // Not widget.router.pop(): that pops Modular's root navigator,
+                // but this sheet sits on the Estimates tab's own navigator.
+                Navigator.of(sheetContext).pop();
                 CoreQuickSheet.show(
                   context: context,
                   child: BlocProvider.value(
