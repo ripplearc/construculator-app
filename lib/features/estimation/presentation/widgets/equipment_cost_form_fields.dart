@@ -549,7 +549,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 UnderlineTextField(
                   key: const Key('rate_field'),
                   label: l10n.equipmentRateLabel,
-                  hintText: l10n.equipmentRatePlaceholder,
                   controller: _dailyRateController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -562,7 +561,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 UnderlineTextField(
                   key: const Key('amount_field'),
                   label: l10n.equipmentAmountLabel,
-                  hintText: l10n.equipmentAmountPlaceholder,
                   controller: _jobAmountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
