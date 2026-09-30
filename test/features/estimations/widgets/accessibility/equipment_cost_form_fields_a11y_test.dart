@@ -1,3 +1,5 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -14,8 +16,10 @@ import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
+  late FakeSupabaseWrapper fakeSupabase;
+
   setUpAll(() {
-    final fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
@@ -24,6 +28,10 @@ void main() {
 
   tearDownAll(() {
     Modular.dispose();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
   });
 
   Widget makeWidget(ThemeData theme, {bool fromCostFile = false}) {
@@ -185,6 +193,90 @@ void main() {
             );
             await tester.pump();
           },
+        );
+      },
+    );
+
+    // Opens the label-collision dialog (_EntryLabelDialog) so its 3
+    // interactive elements — the text field and the two buttons — get their
+    // own a11y coverage, matching the rest of this file's one-target-per-test
+    // granularity. Seeds a colliding "Backhoe" entry first so tapping
+    // "Save as my rate" triggers YourRatesSaveCollision instead of a plain
+    // save.
+    Future<void> openEntryLabelDialog(WidgetTester tester) async {
+      // The theme loop in expectMeetsTapTargetAndLabelGuidelinesForEachTheme
+      // reuses the same widget State across both pumps (see the
+      // delivery-fee Confirm-link test above), so the dialog opened on the
+      // first theme may still be showing on the second — only open it once.
+      if (find.byKey(const Key('entry_label_dialog_title')).evaluate().isNotEmpty) {
+        return;
+      }
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 100),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+          entryLabel: 'Supplier A',
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'a11y: entry-label field meets text contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('entry_label_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: openEntryLabelDialog,
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: entry-label dialog Cancel button meets tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('entry_label_dialog_cancel_button')),
+          setupAfterPump: openEntryLabelDialog,
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: entry-label dialog Save button meets tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('entry_label_dialog_save_button')),
+          setupAfterPump: openEntryLabelDialog,
         );
       },
     );
