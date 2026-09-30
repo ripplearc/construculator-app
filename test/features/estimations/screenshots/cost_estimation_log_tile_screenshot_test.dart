@@ -97,6 +97,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        78,
+        reason: 'an entry with no detail line is 78px (CUJ 11 screen 5)',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
@@ -200,6 +205,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        102,
+        reason: 'an entry with one detail line is 102px (CUJ 11 screen 5)',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(

@@ -1537,7 +1537,7 @@ abstract class AppLocalizations {
   /// Label for edited field unit_price in activity logs
   ///
   /// In en, this message translates to:
-  /// **'Unit Price'**
+  /// **'Rate'**
   String get activityEditedFieldUnitPrice;
 
   /// Label for edited field quantity in activity logs

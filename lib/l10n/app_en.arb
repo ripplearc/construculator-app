@@ -1302,7 +1302,7 @@
   "@activityEditedFieldItemName": {
     "description": "Label for edited field item_name in activity logs"
   },
-  "activityEditedFieldUnitPrice": "Unit Price",
+  "activityEditedFieldUnitPrice": "Rate",
   "@activityEditedFieldUnitPrice": {
     "description": "Label for edited field unit_price in activity logs"
   },

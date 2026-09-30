@@ -809,7 +809,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityEditedFieldItemName => 'Item Name';
 
   @override
-  String get activityEditedFieldUnitPrice => 'Unit Price';
+  String get activityEditedFieldUnitPrice => 'Rate';
 
   @override
   String get activityEditedFieldQuantity => 'Quantity';
