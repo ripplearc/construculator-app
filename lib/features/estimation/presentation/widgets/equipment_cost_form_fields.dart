@@ -1240,9 +1240,11 @@ class _OutsizedFeeDialog extends StatelessWidget {
 ///
 /// Returns the typed label via `Navigator.pop`, or null if cancelled.
 ///
-/// Shares [_OutsizedFeeDialog]'s 340-wide, 22px-padded "Confirmation
-/// Dialog" shell (Figma node 65354:146175) — see that class's doc comment
-/// for the full component spec and why those numbers stay literal.
+/// Shares [_OutsizedFeeDialog]'s 340-wide "Confirmation Dialog" shell
+/// (Figma node 65354:146175) — see that class's doc comment for the full
+/// component spec. Unlike that class, this one's padding uses
+/// [CoreSpacing.space6] rather than repeating the same literal 22px value —
+/// see the comment above the `Padding` below for why.
 class _EntryLabelDialog extends StatefulWidget {
   const _EntryLabelDialog();
 
@@ -1279,12 +1281,13 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(CoreSpacing.space5),
       ),
-      // 22px padding and the 340 width, same as _OutsizedFeeDialog just
-      // above: CoreSpacing has no token that lands exactly on 22 (space5=20
-      // and space6=24 both sit 2px off), so this keeps the literal
-      // shared-shell value rather than swapping in an approximate token.
+      // CoreSpacing has no token that lands exactly on _OutsizedFeeDialog's
+      // literal 22px padding (space5=20, space6=24 — both 2px off), so this
+      // dialog uses the nearest token, space6, instead of also hardcoding
+      // 22. The 340 width just below has no spacing-token equivalent at
+      // all (it isn't a padding/gap value), so it stays literal.
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(CoreSpacing.space6),
         child: SizedBox(
           width: 340,
           child: Column(
