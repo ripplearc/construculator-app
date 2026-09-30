@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/analytics/domain/types/analytics_error_type.dart';
 import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
@@ -111,6 +112,24 @@ class FeatureFlagFailure extends Failure {
 
   /// Creates a [FeatureFlagFailure] with the given [errorType].
   const FeatureFlagFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure thrown when [CurrentCompanyResolver] cannot reach the backend to
+/// resolve the caller's company id.
+///
+/// A successful RPC call that simply returns no id (no `company_users` row
+/// yet) is NOT this failure — [CurrentCompanyResolver.resolve] returns
+/// `Right(null)` for that case, since callers must treat it identically to
+/// "zero saved rates," never as an error.
+class CompanyFailure extends Failure {
+  /// The type of error that occurred.
+  final CompanyErrorType errorType;
+
+  /// Creates a [CompanyFailure] with the given [errorType].
+  const CompanyFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];
