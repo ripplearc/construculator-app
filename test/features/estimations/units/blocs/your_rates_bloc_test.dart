@@ -1,7 +1,9 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -238,6 +240,27 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveSucceeded when a labeled retry follows a collision',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(id: 'existing', itemName: 'Excavator', entryLabel: 'Supplier A'),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveCollision);
+
+          bloc.add(YourRatesSaveRequested(entry(entryLabel: 'Supplier B')));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [
+          isA<YourRatesSaveCollision>(),
+          isA<YourRatesSaveSucceeded>(),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveFailed for a non-collision failure',
         setUp: () {
           fakeSupabaseWrapper.shouldThrowOnInsert = true;
@@ -245,6 +268,28 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
         expect: () => [isA<YourRatesSaveFailed>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'drops a second save fired while the first is still in flight, so a '
+        'fast double-tap can only ever produce one save outcome',
+        build: () => bloc,
+        act: (bloc) async {
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+
+          bloc.add(YourRatesSaveRequested(entry()));
+          bloc.add(YourRatesSaveRequested(entry()));
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [isA<YourRatesSaveSucceeded>()],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert').length, 1);
+        },
       );
     });
   });
