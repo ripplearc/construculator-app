@@ -2169,7 +2169,7 @@
   "equipmentNameLabel": "Equipment",
   "@equipmentNameLabel": {
     "description": "Hint label for the equipment name field on the equipment cost form (manually mode)",
-    "context": "N/A"
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186054"
   },
   "equipmentDayMethodLabel": "Day",
   "@equipmentDayMethodLabel": {
@@ -2198,7 +2198,7 @@
   "equipmentRateSuffix": "/day",
   "@equipmentRateSuffix": {
     "description": "Static unit text shown beside the rate field on the equipment cost form (Day pricing, manually mode)",
-    "context": "N/A"
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186150"
   },
   "equipmentAmountLabel": "Amount",
   "@equipmentAmountLabel": {

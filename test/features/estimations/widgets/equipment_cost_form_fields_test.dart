@@ -269,13 +269,25 @@ void main() {
         'Backhoe',
       );
       await tester.pump();
+      expect(
+        tester
+            .widget<UnderlineTextField>(
+              find.byKey(const Key('equipment_name_field')),
+            )
+            .errorTextList,
+        isNull,
+      );
+
       await tester.enterText(find.byKey(const Key('equipment_name_field')), '');
       await tester.pump();
-
-      final nameField = tester.widget<UnderlineTextField>(
-        find.byKey(const Key('equipment_name_field')),
+      expect(
+        tester
+            .widget<UnderlineTextField>(
+              find.byKey(const Key('equipment_name_field')),
+            )
+            .errorTextList,
+        isNull,
       );
-      expect(nameField.errorTextList, isNull);
     });
   });
 
