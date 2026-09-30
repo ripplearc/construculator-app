@@ -6,6 +6,9 @@ part of 'calculator_bloc.dart';
 ///
 /// The bloc names a pill by this id and the page supplies the visible
 /// text from i18n, in line with the keyboard's stable key ids.
+///
+/// Only [onCentre] has a producer today. The others wait for the engine
+/// stack.
 enum DependentKeyId {
   /// The on-centre spacing behind a fence or framing count.
   onCentre(CoreDependentKeyKind.editable),
@@ -34,7 +37,8 @@ enum DependentKeyId {
   /// How a pitch is spelled: in/12in, degrees or grade.
   shownAs(CoreDependentKeyKind.toggle),
 
-  /// Which way a spacing runs across a span.
+  /// Which span of a polygon the diameter measures: corner to corner,
+  /// or flat side to flat side.
   across(CoreDependentKeyKind.toggle);
 
   const DependentKeyId(this.kind);

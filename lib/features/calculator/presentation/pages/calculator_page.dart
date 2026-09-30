@@ -26,6 +26,23 @@ class CalculatorPage extends StatefulWidget {
         DependentKeyId.shownAs => l10n.calculatorPillShownAs,
         DependentKeyId.across => l10n.calculatorPillAcross,
       };
+
+  /// The pill for [id], named from i18n and drawn as the id's kind.
+  @visibleForTesting
+  static CoreDependentKeyData pillFor(
+    AppLocalizations l10n,
+    DependentKeyId id,
+    String value,
+  ) => CoreDependentKeyData(
+    label: pillLabelFor(l10n, id),
+    value: value,
+    kind: id.kind,
+    // TODO: [CA-1096] Open the single-value editor to change the spacing.
+    // https://ripplearc.youtrack.cloud/issue/CA-1096
+    // TODO: [CA-1094] Pass a semanticsHint for the kind once a tap edits or
+    // toggles. https://ripplearc.youtrack.cloud/issue/CA-1094
+    onPressed: () {},
+  );
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
@@ -229,16 +246,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   ) {
     final id = state.dependentKeyId;
     if (id == null) return const [];
-    return [
-      CoreDependentKeyData(
-        label: CalculatorPage.pillLabelFor(l10n, id),
-        value: state.dependentKeyValue ?? '',
-        kind: id.kind,
-        // TODO: [CA-1096] Open the single-value editor to change the spacing.
-        // https://ripplearc.youtrack.cloud/issue/CA-1096
-        onPressed: () {},
-      ),
-    ];
+    return [CalculatorPage.pillFor(l10n, id, state.dependentKeyValue ?? '')];
   }
 
   List<FunctionGroup> _buildGroups(AppLocalizations l10n) => [
