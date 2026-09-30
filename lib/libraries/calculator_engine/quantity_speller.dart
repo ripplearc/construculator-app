@@ -17,9 +17,9 @@ import 'package:equatable/equatable.dart';
 ///
 /// A ft-in compound is written as whole feet, then the leftover inches to
 /// two decimals: 224in reads 18ft 8in and 1ft 1/16in re-spelled reads
-/// 1ft 0.06in. Every number is rounded the way the prototype rounds,
-/// `Math.round(v * 1000) / 1000`, and written without trailing zeros or a
-/// trailing point, so 264 not 264.000 and 6.222 not 6.2220.
+/// 1ft 0.06in. Every number is rounded half up to the decimals its
+/// dimension keeps (the constants below), and written without trailing
+/// zeros or a trailing point, so 264 not 264.000 and 6.222 not 6.2220.
 class QuantitySpeller extends Equatable {
   /// Decimals kept when a length, an area or a weight is re-spelled; an
   /// angle or a scalar, which no key converts, is spelled the same way

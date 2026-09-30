@@ -15,12 +15,12 @@
 
     <rules>
         <!-- RULE 1: a fraction is raised instead of re-spelled -->
-        <regex pattern="if \(token\.unit != key \|\| token\.denominator != null\) return false;" dotAll="true" id="unit_ladder.is_raise_press.raise_fraction">
+        <regex pattern="if \(token\.unit != key \|\| token\.denominator != null\) return false;" dotAll="true" id="unit_ladder.raises_rather_than_respells.raise_fraction">
             <mutation text="if (token.unit != key) return false;"/>
         </regex>
 
         <!-- RULE 2: decimal feet are raised instead of shown as a compound -->
-        <regex pattern="if \(key == Unit\.foot &amp;&amp; token\.digits\.contains\('\.'\) &amp;&amp; token\.power == 1\) \{" dotAll="true" id="unit_ladder.is_raise_press.raise_decimal_feet">
+        <regex pattern="if \(key == Unit\.foot &amp;&amp; token\.digits\.contains\('\.'\) &amp;&amp; token\.power == 1\) \{" dotAll="true" id="unit_ladder.raises_rather_than_respells.raise_decimal_feet">
             <mutation text="if (false) {"/>
         </regex>
 
@@ -36,22 +36,22 @@
 
         <!-- RULE 5: [Feet] on a compound shows a compound again instead of
              toggling to decimal feet -->
-        <regex pattern="final wasCompound = tokens\.length &gt; 1;" dotAll="true" id="unit_ladder.length_spelling.ignore_was_compound">
+        <regex pattern="final wasCompound = tokens\.length &gt; 1;" dotAll="true" id="unit_ladder.foot_inch_or_key.ignore_was_compound">
             <mutation text="final wasCompound = false;"/>
         </regex>
 
         <!-- RULE 6: a value under a foot is shown as 0ft 4in -->
-        <regex pattern="value\.ticks &gt;= Length\.ticksPerFoot &amp;&amp;" dotAll="true" id="unit_ladder.length_spelling.compound_under_a_foot">
+        <regex pattern="value\.ticks &gt;= Length\.ticksPerFoot &amp;&amp;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_under_a_foot">
             <mutation text="true &amp;&amp;"/>
         </regex>
 
         <!-- RULE 7: a whole number of feet is shown as a compound -->
-        <regex pattern="final hasLeftoverInches = value\.ticks % Length\.ticksPerFoot != 0;" dotAll="true" id="unit_ladder.length_spelling.compound_whole_feet">
+        <regex pattern="final hasLeftoverInches = value\.ticks % Length\.ticksPerFoot != 0;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_whole_feet">
             <mutation text="final hasLeftoverInches = true;"/>
         </regex>
 
         <!-- RULE 8: board feet stop being a volume key -->
-        <regex pattern="key == Unit\.metre \|\|\s*key == Unit\.boardFoot;" dotAll="true" id="unit_ladder.is_volume_key.drop_board_foot">
+        <regex pattern="key == Unit\.metre \|\|\s*key == Unit\.boardFoot;" dotAll="true" id="unit_ladder.is_cubed_or_board_foot_key.drop_board_foot">
             <mutation text="key == Unit.metre;"/>
         </regex>
 
