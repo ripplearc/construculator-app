@@ -119,6 +119,16 @@
         <regex pattern="currentOffset: state\.pageSize," dotAll="true" id="log_repo.pagination.double_increment">
             <mutation text="currentOffset: state.pageSize * 2,"/>
         </regex>
+
+        <!-- RULE 21: Drop the load cutoff so a stalled request hangs forever -->
+        <regex pattern="\.timeout\(logLoadTimeout\)" dotAll="true" id="log_repo.timeout.skip_cutoff">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 22: Stretch the cutoff so it never fires in practice -->
+        <regex pattern="Duration\(seconds: 15\)" dotAll="true" id="log_repo.timeout.cutoff_too_long">
+            <mutation text="Duration(days: 1)"/>
+        </regex>
     </rules>
 
     <commands>
