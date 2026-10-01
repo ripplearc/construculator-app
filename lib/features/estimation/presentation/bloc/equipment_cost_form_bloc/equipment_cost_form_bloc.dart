@@ -8,9 +8,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
 
-/// Inclusive bounds for a manually entered daily rate, job amount, or
-/// delivery fee. A delivery fee of exactly 0 is validated separately as a
-/// distinct "confirmed free" state, not against this range.
 const double _minRate = 0.01;
 const double _maxRate = 999999.99;
 
@@ -254,14 +251,15 @@ class EquipmentCostFormBloc
       estimateId: estimateId,
       itemName: draft.equipmentType,
       calculation: {
-        if (isDay) 'dailyRate': dailyRate ?? 0,
+        if (isDay) 'daily_rate': dailyRate ?? 0,
         if (isDay) 'duration': duration ?? 0,
-        if (!isDay) 'jobAmount': jobAmount ?? 0,
-        if (deliveryFee != null) 'deliveryFee': deliveryFee,
+        if (!isDay) 'job_amount': jobAmount ?? 0,
+        if (deliveryFee != null) 'delivery_fee': deliveryFee,
       },
       itemTotalCost: total,
       createdAt: now,
       updatedAt: now,
+      // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
       currency: 'USD',
       pricingMethod: draft.method,
       deliveryFeeStatus: draft.deliveryFeeStatus,
