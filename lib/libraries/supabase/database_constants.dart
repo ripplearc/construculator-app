@@ -151,9 +151,9 @@ class DatabaseConstants {
   static const String itemTypeColumn = 'item_type';
 
   // Your Rates columns (id and created_at/updated_at use the shared columns
-  // above; company_id is scoped by RLS on every read, with companyIdColumn
-  // available as an additional, optional filter — see YourRatesRepository's
-  // doc comment for why)
+  // above; RLS alone does not scope a read to one company, so companyId
+  // filters with companyIdColumn are the real company scoping — see
+  // YourRatesRepository's doc comment for why)
   static const String companyIdColumn = 'company_id';
   static const String categoryColumn = 'category';
   static const String itemNameColumn = 'item_name';

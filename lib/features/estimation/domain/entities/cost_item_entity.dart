@@ -770,12 +770,12 @@ class YourRateEntry extends Equatable {
 
   /// The company this rate entry belongs to.
   ///
-  /// Row visibility is enforced by RLS, scoped to the caller's own company,
-  /// regardless of this field — but `YourRatesRepository.search` and
-  /// `getByItemName` also accept it as an explicit, defense-in-depth filter,
-  /// and `YourRatesBloc` always resolves and passes one. For writes, the
-  /// backend checks this value against the caller's actual company
-  /// membership.
+  /// RLS alone does not scope a read to one company — a user who belongs to
+  /// more than one company gets rows from every company they are a member
+  /// of — so `YourRatesRepository.search` and `getByItemName` accept this as
+  /// the real company-scoping filter, and `YourRatesBloc` always resolves
+  /// and passes one. For writes, the backend checks this value against the
+  /// caller's actual company membership.
   final String companyId;
 
   /// Display name of the item this rate is for.
