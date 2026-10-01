@@ -216,7 +216,7 @@ void main() {
       await repository.save(
         YourRateEntry(
           id: '',
-          companyId: 'company-1',
+          companyId: '',
           itemName: 'Backhoe',
           category: CostItemType.equipment,
           rate: const Money(amount: 100),

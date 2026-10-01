@@ -1786,7 +1786,7 @@ void main() {
       await repository.save(
         YourRateEntry(
           id: '',
-          companyId: 'company-1',
+          companyId: '',
           itemName: itemName,
           category: CostItemType.equipment,
           rate: Money(amount: amount),
