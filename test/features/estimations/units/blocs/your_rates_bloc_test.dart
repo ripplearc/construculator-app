@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -62,6 +63,15 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      // CurrentCompanyResolverImpl caches its result for the resolver's own
+      // lifetime, which outlives a single test here (it's a lazy singleton
+      // shared across this file's setUpAll'd Modular instance) — clear it so
+      // each test starts from a fresh, un-resolved session.
+      Modular.get<CurrentCompanyResolver>().clearCache();
+      fakeSupabaseWrapper.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
       bloc = Modular.get<YourRatesBloc>();
     });
 
@@ -115,6 +125,61 @@ void main() {
           ),
         ],
       );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'never returns another company\'s rows, even though both share the '
+        'same item name',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(id: 'mine', savedAt: '2026-01-01T00:00:00.000Z'),
+            {...row(id: 'theirs'), 'company_id': 'company-2'},
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having(
+            (s) => s.recents.map((e) => e.id).toList(),
+            'recents',
+            ['mine'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits Loading then Loaded with no recents when the caller has no '
+        'company yet, without querying the repository',
+        setUp: () {
+          fakeSupabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            null,
+          );
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having((s) => s.recents, 'recents', isEmpty),
+        ],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+        },
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits Loading then Error when the company id itself fails to '
+        'resolve',
+        setUp: () {
+          fakeSupabaseWrapper.shouldThrowOnRpc = true;
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesError>()],
+      );
     });
 
     group('YourRatesSearched', () {
@@ -133,6 +198,7 @@ void main() {
       // ignore: no_direct_instantiation, reason: needs queryDebounce: Duration.zero, which Modular's registration can't supply per-test
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
         queryDebounce: Duration.zero,
       );
 
@@ -264,6 +330,53 @@ void main() {
         'emits SaveFailed for a non-collision failure',
         setUp: () {
           fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveFailed>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'saves under the resolved company id, ignoring whatever companyId '
+        'the submitted entry carried',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(YourRatesSaveRequested(entry().copyWith(companyId: ''))),
+        expect: () => [isA<YourRatesSaveSucceeded>()],
+        verify: (_) {
+          final inserted = fakeSupabaseWrapper
+              .getMethodCallsFor('insert')
+              .single['data'];
+          expect(
+            (inserted as Map<String, dynamic>)[DatabaseConstants.companyIdColumn],
+            'company-1',
+          );
+        },
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveFailed when the caller has no company to save under',
+        setUp: () {
+          fakeSupabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            null,
+          );
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [
+          isA<YourRatesSaveFailed>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.permissionDenied,
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveFailed when the company id itself fails to resolve',
+        setUp: () {
+          fakeSupabaseWrapper.shouldThrowOnRpc = true;
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
