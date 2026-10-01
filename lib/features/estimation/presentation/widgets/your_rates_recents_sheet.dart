@@ -156,6 +156,7 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
+// TODO: CA-1204 — replace with CoreUI's list-row component once it exists.
 class _RecentRateRow extends StatelessWidget {
   final YourRateEntry entry;
   final DateTime now;
@@ -240,6 +241,7 @@ class _RecentRateRow extends StatelessWidget {
   }
 }
 
+// TODO: CA-1204 — replace with CoreUI's list-row component once it exists.
 class _NewEquipmentCostRow extends StatelessWidget {
   final VoidCallback onTap;
 
