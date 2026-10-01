@@ -368,6 +368,7 @@ class AuthManagerImpl implements AuthManager {
         ),
       );
       await _analyticsRepository.reset();
+      // TODO: [CA-1209] also clear CurrentCompanyResolver's cache here
 
       _logger.info('Logout successful');
       return AuthResult.success(null);
