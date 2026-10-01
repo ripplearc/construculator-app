@@ -1,8 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -328,8 +331,8 @@ void main() {
     });
 
     testWidgets(
-      'tapping add equipment cost button opens the equipment cost sheet '
-      'instead of navigating to a route',
+      'tapping add equipment cost button opens "Your recents" instead of '
+      'navigating to a route',
       (WidgetTester tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
@@ -343,8 +346,9 @@ void main() {
         await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
         expect(find.byType(BottomSheet), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsNothing);
 
         final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
         expect(
@@ -355,6 +359,95 @@ void main() {
             ),
           ),
         );
+      },
+    );
+
+    testWidgets(
+      '"Your recents" has no search box or disclaimer, unlike the '
+      'look-up-a-rate sheet',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('your_rates_search_field')),
+          findsNothing,
+        );
+        expect(find.byKey(const Key('your_rates_disclaimer')), findsNothing);
+        expect(
+          find.byKey(const Key('new_equipment_cost_row')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping "New equipment cost" on "Your recents" opens the form blank',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(BottomSheet), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping a recent row shows its recency subtitle and recalls it into '
+      'the form with no separate confirm step',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        final saveResult = await Modular.get<YourRatesRepository>().save(
+          YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Scissor lift — 19ft',
+            category: CostItemType.equipment,
+            rate: Money(amount: 120),
+            savedAt: clock.now().subtract(const Duration(days: 10)),
+            equipmentMethod: EquipmentPricingMethod.day,
+          ),
+        );
+        saveResult.fold((f) => throw StateError('seed failed: $f'), (_) {});
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Used last week'), findsOneWidget);
+
+        await tester.tap(find.text('Scissor lift — 19ft'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text('Scissor lift — 19ft'), findsOneWidget);
+        expect(find.text('120'), findsOneWidget);
       },
     );
 
@@ -371,6 +464,8 @@ void main() {
         await tester.tap(find.text(l10n.equipmentsTab));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.text('New equipment cost'), findsOneWidget);
@@ -391,6 +486,8 @@ void main() {
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
 
       final sheetHeight = tester.getSize(find.byType(CostItemFormScreen)).height;
@@ -413,6 +510,8 @@ void main() {
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.byKey(const Key('rate_field')));
@@ -440,6 +539,8 @@ void main() {
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
       expect(find.byType(CostItemFormScreen), findsOneWidget);
 

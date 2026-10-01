@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -34,8 +37,9 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// [equipmentCostFormBlocFactory].
   final YourRatesBloc Function() yourRatesBlocFactory;
 
-  /// Backs the equipment form's "Save as my rate" timestamp. Same
-  /// not-a-module-file reasoning as [equipmentCostFormBlocFactory].
+  /// Backs the equipment form's "Save as my rate" timestamp and the
+  /// "Your recents" sheet's recency subtitles. Same not-a-module-file
+  /// reasoning as [equipmentCostFormBlocFactory].
   final Clock clock;
 
   const CostEstimationDetailsPage({
@@ -178,21 +182,11 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => CoreQuickSheet.show(
-          context: context,
-          backgroundColor: sheetSurface(context),
-          child: BlocProvider<EquipmentCostFormBloc>(
-            create: (_) => widget.equipmentCostFormBlocFactory(),
-            child: CostItemFormScreen(
-              type: CostItemType.equipment,
-              estimationId: widget.estimationId,
-              router: widget.router,
-              presentAsSheet: true,
-              yourRatesBlocFactory: widget.yourRatesBlocFactory,
-              clock: widget.clock,
-            ),
-          ),
-        ),
+        // Equipment's "New equipment cost" form is a bottom sheet over this
+        // screen in the Figma mocks, not a routed full-screen page — see
+        // CostItemFormScreen.presentAsSheet. Material and Labor still push
+        // their own full-screen route below.
+        onPressed: () => unawaited(_addEquipmentCost(context)),
       ),
       CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),
@@ -206,5 +200,37 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         ),
       ),
     };
+  }
+
+  // "Your recents" (CA-1151) sits in front of the equipment form: shows a
+  // tap-to-reuse list of recently-saved rates, then opens the form either
+  // pre-filled with the tapped one or blank ("+ New equipment cost" was
+  // tapped, or the sheet was dismissed without a pick).
+  Future<void> _addEquipmentCost(BuildContext context) async {
+    final entry = await YourRatesRecentsSheet.show(
+      context: context,
+      clock: widget.clock,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (!context.mounted) return;
+    await CoreQuickSheet.show(
+      context: context,
+      // BlocProvider(create:...), not .value — the factory hands back a
+      // fresh bloc per tap (see estimation_module.dart's `i.add` binding),
+      // and only `create:` closes it when the sheet is dismissed; `.value`
+      // would leak a bloc on every open.
+      child: BlocProvider<EquipmentCostFormBloc>(
+        create: (_) => widget.equipmentCostFormBlocFactory(),
+        child: CostItemFormScreen(
+          type: CostItemType.equipment,
+          estimationId: widget.estimationId,
+          router: widget.router,
+          presentAsSheet: true,
+          yourRatesBlocFactory: widget.yourRatesBlocFactory,
+          clock: widget.clock,
+          initialRateEntry: entry,
+        ),
+      ),
+    );
   }
 }
