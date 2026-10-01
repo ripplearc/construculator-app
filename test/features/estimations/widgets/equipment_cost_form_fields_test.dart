@@ -862,13 +862,9 @@ void main() {
     );
   });
 
-  group('EquipmentCostFormFields — delivery fee is never shown as an error', () {
-    // UnderlineTextField only ever renders its error icon/text pair
-    // together (see its errorTextList/hasError logic), so the absence of
-    // this error string is enough to confirm no red/error chrome rendered
-    // for the delivery-fee field.
+  group('EquipmentCostFormFields — delivery fee out-of-range error', () {
     testWidgets(
-      'a delivery fee above the accepted bound never colors the field red (S4)',
+      'shows the out-of-range error once the field loses focus above the accepted bound',
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
@@ -879,17 +875,24 @@ void main() {
           '5000000',
         );
         await tester.pump();
-        await foldDeliveryField(tester);
 
         expect(
           find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
           findsNothing,
         );
+
+        await foldDeliveryField(tester);
+
+        expect(
+          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
+          findsOneWidget,
+        );
       },
     );
 
     testWidgets(
-      'a delivery fee of exactly 0 never colors the field red',
+      'a delivery fee of exactly 0 never shows the out-of-range error, since '
+      "it's a distinct, valid confirmed-free value",
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();

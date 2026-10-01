@@ -425,6 +425,35 @@ void main() {
       );
     });
 
+    group('EquipmentDescriptionUpdatedEvent', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'stores typed note text in description',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDescriptionUpdatedEvent('Leave at gate')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.description,
+            'description',
+            'Leave at gate',
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'blank note text gives a null description',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDescriptionUpdatedEvent('   ')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.description,
+            'description',
+            isNull,
+          ),
+        ],
+      );
+    });
+
     group('EquipmentCostSubmittedEvent', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'emits Editing with field errors and does not submit when invalid',
