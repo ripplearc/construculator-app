@@ -99,10 +99,10 @@
             <mutation text="return TapeChanged( _removeBracket(bracket), notice: TapeNotice.emptyBracketsRemoved,"/>
         </regex>
 
-        <!-- RULE 17: ⌫ on a reopened bracket emptied by the edit throws the
-             group away -->
-        <regex pattern="if \(bracket\.original != null\) return _restored\(bracket\);\s*return TapeChanged\(_removeBracket\(bracket\)\);" dotAll="true" id="tape.backspace.forget_original">
-            <mutation text="return TapeChanged(_removeBracket(bracket));"/>
+        <!-- RULE 17: ⌫ on a reopened bracket emptied by the edit does not
+             remove it -->
+        <regex pattern="if \(bracket\.inner\.isEmpty\) return TapeChanged\(_removeBracket\(bracket\)\);" dotAll="true" id="tape.backspace.keep_reopened_empty">
+            <mutation text="if (bracket.inner.isEmpty &amp;&amp; bracket.original == null) return TapeChanged(_removeBracket(bracket));"/>
         </regex>
 
         <!-- RULE 18: [( )] under a name replaces the named chip silently -->
@@ -114,6 +114,12 @@
              closed -->
         <regex pattern="final BracketChip closed =&gt; _with\(\[\.\.\.before, _reopened\(closed\)\]\)," dotAll="true" id="tape.backspace.error_keeps_bracket_closed">
             <mutation text="final BracketChip closed =&gt; _with([...before, closed]),"/>
+        </regex>
+
+        <!-- RULE 20: [( )] under a name answers with the function-key
+             refusal, whose toast says to close a bracket that is not open -->
+        <regex pattern="return const TapeRefused\(TapeRefusal\.bracketCannotTakeName\);" dotAll="true" id="tape.open_bracket.name_refusal_reuses_function_key">
+            <mutation text="return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);"/>
         </regex>
     </rules>
 

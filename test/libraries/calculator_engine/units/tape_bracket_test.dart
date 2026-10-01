@@ -252,14 +252,14 @@ void main() {
         );
       });
 
-      test('[( )] under a name is refused: brackets hold plain arithmetic', () {
+      test('[( )] under a name is refused: a bracket cannot take a name', () {
         expect(
           press(const Tape(), '[Length]').pressBracket(),
-          const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+          const TapeRefused(TapeRefusal.bracketCannotTakeName),
         );
         expect(
           press(const Tape(), '2 + [Area]').pressBracket(),
-          const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+          const TapeRefused(TapeRefusal.bracketCannotTakeName),
         );
       });
 
@@ -362,13 +362,16 @@ void main() {
         expect(lastResult(press(outcome.tape, '=')), 'Calc 14');
       });
 
-      test('emptying a reopened bracket and ⌫ once more brings it back', () {
+      test('emptying a reopened bracket and ⌫ once more removes it', () {
         final tape = press(const Tape(), '2 + ( 3 ( ⌫ ⌫');
         expect(bracketText(tape), '+(');
         final outcome = tape.backspace() as TapeChanged;
-        expect(outcome.notice, TapeNotice.bracketEditCancelled);
-        expect(bracketText(outcome.tape), '+(3)');
-        expect(lastResult(press(outcome.tape, '=')), 'Calc 5');
+        expect(outcome.notice, isNull);
+        expect(outcome.tape.openBracket, isNull);
+        expect(outcome.tape.chips, hasLength(2));
+        expect(outcome.tape.active!.operator, Operator.add);
+        expect(outcome.tape.active!.entry.isEmpty, isTrue);
+        expect(lastResult(press(outcome.tape, '4 =')), 'Calc 6');
       });
 
       test('a reopened bracket closed with a new inside forgets the old', () {
