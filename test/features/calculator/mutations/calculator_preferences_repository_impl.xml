@@ -52,6 +52,29 @@
         <regex pattern="_user = user;\s*_current = CalculatorPreferencesDto\.fromJson\(" dotAll="true" id="calculator_preferences_repository.change.keep_current">
             <mutation text="_user = user; final _ = CalculatorPreferencesDto.fromJson("/>
         </regex>
+
+        <!-- RULE 9: a slow first fetch overwrites a profile announced while
+             it ran -->
+        <regex pattern="if \(_profileVersion == versionAtStart\) _onProfileChanged" dotAll="true" id="calculator_preferences_repository.fetch.skip_version_check">
+            <mutation text="_onProfileChanged"/>
+        </regex>
+
+        <!-- RULE 10: the fetch's own echo brings the older profile back -->
+        <regex pattern="if \(user != null &amp;&amp; identical\(user, _fetchEcho\)\) \{" dotAll="true" id="calculator_preferences_repository.announce.keep_echo">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 11: a save before the first fetch finishes starts a second
+             fetch -->
+        <regex pattern="if \(_signedInProfileFetch case final inFlight\?\) return inFlight;" dotAll="true" id="calculator_preferences_repository.load.no_shared_fetch">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 12: a failed fetch is kept, so no later save fetches again -->
+        <regex pattern="final result = await _authManager\.getUserProfile\(credentialId\);\s*_signedInProfileFetch = null;" dotAll="true" id="calculator_preferences_repository.fetch.keep_finished_fetch">
+            <mutation text="final result = await _authManager.getUserProfile(credentialId);"/>
+        </regex>
+
     </rules>
 
     <commands>

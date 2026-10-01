@@ -36,6 +36,18 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 /// rest. The profile is followed once, on the first watch or save; a
 /// repository created after sign-in would otherwise never hear of the
 /// profile until its next change.
+///
+/// ## The first fetch never overwrites a newer profile
+///
+/// The fetch of the profile already signed in is shared: a save that
+/// arrives before it finishes waits for the same fetch instead of starting
+/// a second one. Its result is applied only if no profile was announced
+/// while it ran, since it may be older than that announcement. As it
+/// returns, `AuthManager.getUserProfile` also announces what it fetched on
+/// `onUserProfileChanged`; that echo is dropped once, so it cannot bring
+/// the older profile back either. A setting changed while a slow fetch was
+/// running is never put back, and the next save never writes back older
+/// keys.
 class CalculatorPreferencesRepositoryImpl
     implements CalculatorPreferencesRepository {
   static final _logger = AppLogger().tag('CalculatorPreferencesRepositoryImpl');
@@ -45,6 +57,9 @@ class CalculatorPreferencesRepositoryImpl
   final _preferences = StreamController<CalculatorPreferences>.broadcast();
 
   StreamSubscription<User?>? _profileSubscription;
+  Future<void>? _signedInProfileFetch;
+  User? _fetchEcho;
+  int _profileVersion = 0;
   User? _user;
   CalculatorPreferences _current = CalculatorPreferences.defaults;
   bool _isDisposed = false;
@@ -72,7 +87,8 @@ class CalculatorPreferencesRepositoryImpl
     CalculatorPreferences preferences,
   ) async {
     _followProfile();
-    final user = _user ?? await _loadSignedInProfile();
+    if (_user == null) await _loadSignedInProfile();
+    final user = _user;
     if (user == null) {
       _logger.warning('No signed-in profile to save calculator preferences to');
       return Left(UserNotFoundFailure());
@@ -109,18 +125,34 @@ class CalculatorPreferencesRepositoryImpl
   void _followProfile() {
     if (_isDisposed || _profileSubscription != null) return;
     _profileSubscription = _authNotifier.onUserProfileChanged.listen(
-      _onProfileChanged,
+      _onProfileAnnounced,
     );
     unawaited(_loadSignedInProfile());
   }
 
-  Future<User?> _loadSignedInProfile() async {
+  void _onProfileAnnounced(User? user) {
+    if (user != null && identical(user, _fetchEcho)) {
+      _fetchEcho = null;
+      return;
+    }
+    _profileVersion++;
+    _onProfileChanged(user);
+  }
+
+  Future<void> _loadSignedInProfile() {
+    if (_signedInProfileFetch case final inFlight?) return inFlight;
     final credentialId = _authManager.getCurrentCredentials().data?.id;
-    if (credentialId == null || credentialId.isEmpty) return null;
+    if (credentialId == null || credentialId.isEmpty) return Future.value();
+    return _signedInProfileFetch = _fetchSignedInProfile(credentialId);
+  }
+
+  Future<void> _fetchSignedInProfile(String credentialId) async {
+    final versionAtStart = _profileVersion;
     final result = await _authManager.getUserProfile(credentialId);
-    if (!result.isSuccess) return null;
-    _onProfileChanged(result.data);
-    return result.data;
+    _signedInProfileFetch = null;
+    if (!result.isSuccess) return;
+    _fetchEcho = result.data;
+    if (_profileVersion == versionAtStart) _onProfileChanged(result.data);
   }
 
   void _onProfileChanged(User? user) {

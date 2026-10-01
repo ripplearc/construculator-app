@@ -27,16 +27,16 @@ void main() {
     });
 
     test('a save is seen by watchers and recorded', () async {
-      final seen = <CalculatorPreferences>[];
-      final subscription = repository.watchPreferences().listen(seen.add);
-      addTearDown(subscription.cancel);
+      final settings = expectLater(
+        repository.watchPreferences(),
+        emitsInOrder([CalculatorPreferences.defaults, metric]),
+      );
 
       final result = await repository.savePreferences(metric);
-      await pumpEventQueue();
 
+      await settings;
       expect(result.fold((_) => null, (saved) => saved), metric);
       expect(repository.savedPreferences, [metric]);
-      expect(seen, [CalculatorPreferences.defaults, metric]);
     });
 
     test('a configured failure is answered and nothing changes', () async {
@@ -59,14 +59,20 @@ void main() {
       expect(repository.savedPreferences, isEmpty);
     });
 
-    test('ends its streams on dispose and ignores later emits', () async {
-      var done = false;
-      repository.watchPreferences().listen((_) {}, onDone: () => done = true);
-      repository.dispose();
-      await pumpEventQueue();
-      expect(done, isTrue);
-      repository.emit(metric);
-      expect(repository.current, metric);
-    });
+    test(
+      'ends its streams on dispose, and a later emit only updates current',
+      () async {
+        final ended = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([CalculatorPreferences.defaults, emitsDone]),
+        );
+        repository.dispose();
+        await ended;
+
+        repository.emit(metric);
+
+        expect(repository.current, metric);
+      },
+    );
   });
 }

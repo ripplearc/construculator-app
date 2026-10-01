@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/calculator/data/models/calculator_preferences_dto.dart';
 import 'package:construculator/features/calculator/data/repositories/calculator_preferences_repository_impl.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -27,6 +29,12 @@ void main() {
     densityUnit: DensityUnit.kilogramsPerCubicMetre,
   );
 
+  final hasMetricSystem = isA<CalculatorPreferences>().having(
+    (preferences) => preferences.system,
+    'system',
+    MeasurementSystem.metric,
+  );
+
   User userWith(Map<String, dynamic> preferences) => User(
     id: 'user-1',
     credentialId: 'cred-1',
@@ -52,6 +60,16 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       ),
     );
+  }
+
+  // Announces a profile change and returns once every listener, the
+  // repository among them, has received it: a broadcast stream delivers to
+  // its listeners in the order they subscribed, and the repository
+  // subscribes on its first watch or save, before this call.
+  Future<void> announce(User? user) async {
+    final delivered = authNotifier.onUserProfileChanged.first;
+    authNotifier.emitUserProfileChanged(user);
+    await delivered;
   }
 
   setUp(() {
@@ -95,21 +113,22 @@ void main() {
               'calculator': {'system': 'metric'},
             }),
           );
-          final seen = <CalculatorPreferences>[];
-          final subscription = repository.watchPreferences().listen(seen.add);
-          addTearDown(subscription.cancel);
-          await pumpEventQueue();
 
-          expect(seen.last.system, MeasurementSystem.metric);
+          await expectLater(
+            repository.watchPreferences(),
+            emitsInOrder([CalculatorPreferences.defaults, hasMetricSystem]),
+          );
           expect(authRepository.getUserProfileCalls, ['cred-1']);
         },
       );
 
       test('emits the profile\'s settings when the profile changes', () async {
-        final seen = <CalculatorPreferences>[];
-        final subscription = repository.watchPreferences().listen(seen.add);
-        addTearDown(subscription.cancel);
-        authNotifier.emitUserProfileChanged(
+        final settings = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([CalculatorPreferences.defaults, metric]),
+        );
+
+        await announce(
           userWith({
             'calculator': {
               'system': 'metric',
@@ -120,60 +139,124 @@ void main() {
             },
           }),
         );
-        await pumpEventQueue();
-        expect(seen, [CalculatorPreferences.defaults, metric]);
+
+        await settings;
       });
 
       test('a new watcher gets the current settings at once', () async {
-        repository.watchPreferences().listen((_) {});
-        authNotifier.emitUserProfileChanged(
+        final followed = expectLater(
+          repository.watchPreferences(),
+          emitsThrough(hasMetricSystem),
+        );
+        await announce(
           userWith({
             'calculator': {'system': 'metric'},
           }),
         );
-        await pumpEventQueue();
-        final first = await repository.watchPreferences().first;
-        expect(first.system, MeasurementSystem.metric);
+        await followed;
+
+        expect(await repository.watchPreferences().first, hasMetricSystem);
       });
 
       test(
         'collapses a profile change that leaves the settings as they were',
         () async {
-          final seen = <CalculatorPreferences>[];
-          final subscription = repository.watchPreferences().listen(seen.add);
-          addTearDown(subscription.cancel);
-          authNotifier.emitUserProfileChanged(userWith({'theme': 'dark'}));
-          authNotifier.emitUserProfileChanged(userWith({'theme': 'light'}));
-          await pumpEventQueue();
-          expect(seen, [CalculatorPreferences.defaults]);
+          final settings = expectLater(
+            repository.watchPreferences(),
+            emitsInOrder([CalculatorPreferences.defaults, hasMetricSystem]),
+          );
+
+          await announce(userWith({'theme': 'dark'}));
+          await announce(userWith({'theme': 'light'}));
+          await announce(
+            userWith({
+              'calculator': {'system': 'metric'},
+            }),
+          );
+
+          await settings;
         },
       );
 
       test('reads the prototype\'s keys off an old profile', () async {
-        final seen = <CalculatorPreferences>[];
-        final subscription = repository.watchPreferences().listen(seen.add);
-        addTearDown(subscription.cancel);
-        authNotifier.emitUserProfileChanged(
+        final settings = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([
+            CalculatorPreferences.defaults,
+            isA<CalculatorPreferences>().having(
+              (preferences) => preferences.fractionResolution,
+              'fractionResolution',
+              FractionResolution.sixtyFourth,
+            ),
+          ]),
+        );
+
+        await announce(
           userWith({
             'calculator': {'fracRes': 64},
           }),
         );
-        await pumpEventQueue();
-        expect(seen.last.fractionResolution, FractionResolution.sixtyFourth);
+
+        await settings;
       });
 
       test('falls back to the defaults when the user signs out', () async {
-        final seen = <CalculatorPreferences>[];
-        final subscription = repository.watchPreferences().listen(seen.add);
-        addTearDown(subscription.cancel);
-        authNotifier.emitUserProfileChanged(
+        final settings = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([
+            CalculatorPreferences.defaults,
+            hasMetricSystem,
+            CalculatorPreferences.defaults,
+          ]),
+        );
+
+        await announce(
           userWith({
             'calculator': {'system': 'metric'},
           }),
         );
-        authNotifier.emitUserProfileChanged(null);
-        await pumpEventQueue();
-        expect(seen.last, CalculatorPreferences.defaults);
+        await announce(null);
+
+        await settings;
+      });
+
+      test('a change announced during the first fetch wins over the older '
+          'fetched profile', () async {
+        signIn(
+          userWith({
+            'theme': 'light',
+            'calculator': {'system': 'imperial'},
+          }),
+        );
+        final gate = Completer<void>();
+        authRepository.getUserProfileGate = gate;
+        final settings = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([
+            CalculatorPreferences.defaults,
+            hasMetricSystem,
+            emitsDone,
+          ]),
+        );
+        final newer = userWith({
+          'theme': 'dark',
+          'calculator': {'system': 'metric'},
+        });
+        authRepository.setUserProfile(newer);
+
+        await announce(newer);
+        final echoed = authNotifier.onUserProfileChanged.first;
+        gate.complete();
+        await echoed;
+        await repository.savePreferences(metric);
+        repository.dispose();
+
+        await settings;
+        expect(authRepository.getUserProfileCalls, ['cred-1']);
+        expect(
+          authRepository.updateProfileCalls.single.userPreferences['theme'],
+          'dark',
+        );
       });
 
       test('does not follow the profile again after dispose', () async {
@@ -183,22 +266,12 @@ void main() {
           }),
         );
         repository.dispose();
-        expect(
-          await repository.watchPreferences().first,
-          CalculatorPreferences.defaults,
-        );
-        authNotifier.emitUserProfileChanged(
-          userWith({
-            'calculator': {'system': 'metric'},
-          }),
-        );
-        await pumpEventQueue();
 
-        expect(authRepository.getUserProfileCalls, isEmpty);
         expect(
           await repository.watchPreferences().first,
           CalculatorPreferences.defaults,
         );
+        expect(authRepository.getUserProfileCalls, isEmpty);
       });
 
       test('a profile that arrives after dispose is dropped', () async {
@@ -207,9 +280,14 @@ void main() {
             'calculator': {'system': 'metric'},
           }),
         );
+        final gate = Completer<void>();
+        authRepository.getUserProfileGate = gate;
         repository.watchPreferences().listen((_) {});
         repository.dispose();
-        await pumpEventQueue();
+
+        final echoed = authNotifier.onUserProfileChanged.first;
+        gate.complete();
+        await echoed;
 
         expect(authRepository.getUserProfileCalls, ['cred-1']);
         expect(
@@ -219,11 +297,14 @@ void main() {
       });
 
       test('ends the streams it handed out on dispose', () async {
-        var done = false;
-        repository.watchPreferences().listen((_) {}, onDone: () => done = true);
+        final ended = expectLater(
+          repository.watchPreferences(),
+          emitsInOrder([CalculatorPreferences.defaults, emitsDone]),
+        );
+
         repository.dispose();
-        await pumpEventQueue();
-        expect(done, isTrue);
+
+        await ended;
       });
     });
 
@@ -237,7 +318,7 @@ void main() {
         );
       });
 
-      test('fails when the signed-in profile cannot be fetched', () async {
+      test('fails when the credentials cannot be read', () async {
         signIn(userWith({}));
         authManager.setAuthResponse(
           succeed: false,
@@ -254,22 +335,49 @@ void main() {
       });
 
       test(
-        'saves to the profile already signed in before any watcher',
+        'fails when the credentials are read but the profile fetch fails',
         () async {
-          signIn(userWith({'theme': 'dark'}));
+          signIn(userWith({}));
+          authManager.getUserProfileErrorType = AuthErrorType.networkError;
 
           final result = await repository.savePreferences(metric);
 
-          expect(result.fold((_) => null, (saved) => saved), metric);
-          final written =
-              authRepository.updateProfileCalls.single.userPreferences;
-          expect(written['theme'], 'dark');
           expect(
-            written['calculator'],
-            CalculatorPreferencesDto(metric).toJson(),
+            result.fold((failure) => failure, (_) => null),
+            isA<UserNotFoundFailure>(),
           );
+          expect(authRepository.updateProfileCalls, isEmpty);
         },
       );
+
+      test('fetches again on the next save after a failed fetch', () async {
+        signIn(userWith({'theme': 'dark'}));
+        authManager.getUserProfileErrorType = AuthErrorType.networkError;
+        await repository.savePreferences(metric);
+        authManager.getUserProfileErrorType = null;
+
+        final result = await repository.savePreferences(metric);
+
+        expect(result.fold((_) => null, (saved) => saved), metric);
+        expect(authRepository.getUserProfileCalls, ['cred-1']);
+      });
+
+      test('saves to the profile already signed in before any watcher, '
+          'fetching it once', () async {
+        signIn(userWith({'theme': 'dark'}));
+
+        final result = await repository.savePreferences(metric);
+
+        expect(result.fold((_) => null, (saved) => saved), metric);
+        expect(authRepository.getUserProfileCalls, ['cred-1']);
+        final written =
+            authRepository.updateProfileCalls.single.userPreferences;
+        expect(written['theme'], 'dark');
+        expect(
+          written['calculator'],
+          CalculatorPreferencesDto(metric).toJson(),
+        );
+      });
 
       test(
         'writes the settings under the calculator key and keeps the other keys',
@@ -280,12 +388,12 @@ void main() {
           });
           authRepository.setUserProfile(user);
           repository.watchPreferences().listen((_) {});
-          authNotifier.emitUserProfileChanged(user);
-          await pumpEventQueue();
+          await announce(user);
 
           final result = await repository.savePreferences(metric);
 
           expect(result.fold((_) => null, (saved) => saved), metric);
+          expect(authRepository.getUserProfileCalls, isEmpty);
           final written =
               authRepository.updateProfileCalls.single.userPreferences;
           expect(written['theme'], 'dark');
@@ -302,25 +410,23 @@ void main() {
       test(
         'every watcher sees a save, through the profile it re-emits',
         () async {
-          final seen = <CalculatorPreferences>[];
-          final subscription = repository.watchPreferences().listen(seen.add);
-          addTearDown(subscription.cancel);
           final user = userWith({});
           authRepository.setUserProfile(user);
-          authNotifier.emitUserProfileChanged(user);
-          await pumpEventQueue();
+          final settings = expectLater(
+            repository.watchPreferences(),
+            emitsInOrder([CalculatorPreferences.defaults, metric]),
+          );
+          await announce(user);
 
           await repository.savePreferences(metric);
-          await pumpEventQueue();
 
-          expect(seen.last, metric);
+          await settings;
         },
       );
 
       test('answers not found when the profile row is gone', () async {
         repository.watchPreferences().listen((_) {});
-        authNotifier.emitUserProfileChanged(userWith({}));
-        await pumpEventQueue();
+        await announce(userWith({}));
 
         final result = await repository.savePreferences(metric);
 
@@ -334,8 +440,7 @@ void main() {
         'answers an auth failure when the profile cannot be updated',
         () async {
           repository.watchPreferences().listen((_) {});
-          authNotifier.emitUserProfileChanged(userWith({}));
-          await pumpEventQueue();
+          await announce(userWith({}));
           authManager.setAuthResponse(
             succeed: false,
             errorType: AuthErrorType.networkError,
