@@ -4,10 +4,10 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// Abstract interface for "Your rates" data source operations: the
 /// contractor's personal saved-rate book.
 ///
-/// Following Rule 11: Method names are explicit about their operations
-/// (fetch from network) and scope. Reads rely entirely on RLS to scope rows
-/// to the caller's own company; no method here takes an explicit company id
-/// filter for that reason.
+/// Method names are explicit about their operation (fetch from network) and
+/// scope. Reads rely entirely on RLS to scope rows to the caller's own
+/// company; no method here takes an explicit company id filter for that
+/// reason.
 abstract class YourRatesDataSource {
   /// Fetches all your_rates rows visible to the caller, optionally filtered
   /// to one [category], ordered by saved_at descending (most recently saved
