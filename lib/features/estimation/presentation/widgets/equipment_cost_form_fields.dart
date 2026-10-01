@@ -235,14 +235,18 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     if (!mounted) return false;
 
     if (accepted == true) {
+      final estimateId = widget.estimateId;
       // Real submission is still gated behind CA-355, so this currently
       // no-ops (the bloc only reacts to it from
       // EquipmentCostFormOutsizedFeeConfirm, a state this widget doesn't
       // drive the bloc into — see the class doc comment). Dispatched anyway
-      // for forward compatibility once CA-355 wires up submission.
-      context.read<EquipmentCostFormBloc>().add(
-        EquipmentOutsizedFeeAcceptedEvent(estimateId: widget.estimateId ?? ''),
-      );
+      // for forward compatibility once CA-355 wires up submission; skipped
+      // entirely without an estimateId rather than sending an empty one.
+      if (estimateId != null) {
+        context.read<EquipmentCostFormBloc>().add(
+          EquipmentOutsizedFeeAcceptedEvent(estimateId: estimateId),
+        );
+      }
       return true;
     }
     // "Go back" (or dismissing the barrier) must preserve the typed fee —
@@ -343,6 +347,15 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
+  String? _deliveryFeeErrorText(
+    BuildContext context,
+    EquipmentCostFormWithData data,
+  ) {
+    return data.fieldErrors['deliveryFee'] == 'deliveryFeeOutOfRange'
+        ? context.l10n.equipmentDeliveryFeeOutOfRangeError
+        : null;
+  }
+
   String _deliveryRowText(BuildContext context, double? fee) {
     final l10n = context.l10n;
     final value = fee == null
@@ -408,7 +421,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       child: GestureDetector(
         key: const Key('save_as_my_rate_link'),
         behavior: HitTestBehavior.opaque,
-        // TODO: CA-1151 — wire to YourRatesRepository.save() once it exists.
+        // TODO: [CA-1151] wire to YourRatesRepository.save() once it exists. https://ripplearc.youtrack.cloud/issue/CA-1151
         onTap: () {},
         child: Container(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -627,63 +640,74 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         children: [
           Row(
             children: [
+              // Figma node 66337:162350's "Details Row" packs the value,
+              // dot, and "Add note" tightly together on the left, with only
+              // the chevron pushed to the far right — so the dot and "Add
+              // note" must sit in the same Row, not in separate Expanded
+              // siblings (which would leave a gap between them).
               Expanded(
-                child: Semantics(
-                  button: true,
-                  label: _deliveryRowText(context, data.deliveryFee),
-                  excludeSemantics: true,
-                  child: GestureDetector(
-                    key: const Key('delivery_fee_row'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _toggleDeliveryExpanded,
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 48),
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              _deliveryRowText(context, data.deliveryFee),
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.bodyLargeRegular.copyWith(
-                                color: colorTheme.textHeadline,
-                              ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Semantics(
+                        button: true,
+                        label: _deliveryRowText(context, data.deliveryFee),
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                          key: const Key('delivery_fee_row'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _toggleDeliveryExpanded,
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _deliveryRowText(context, data.deliveryFee),
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodyLargeRegular.copyWith(
+                                      color: colorTheme.textHeadline,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '  ·  ',
+                                  style: textTheme.bodyLargeRegular.copyWith(
+                                    color: colorTheme.textHeadline,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            '  ·  ',
+                        ),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: l10n.equipmentDeliveryAddNoteLink,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        key: const Key('delivery_fee_add_note_link'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _openNoteField,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            l10n.equipmentDeliveryAddNoteLink,
                             style: textTheme.bodyLargeRegular.copyWith(
-                              color: colorTheme.textHeadline,
+                              color: colorTheme.textLink,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              Semantics(
-                button: true,
-                label: l10n.equipmentDeliveryAddNoteLink,
-                excludeSemantics: true,
-                child: GestureDetector(
-                  key: const Key('delivery_fee_add_note_link'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _openNoteField,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      l10n.equipmentDeliveryAddNoteLink,
-                      style: textTheme.bodyLargeRegular.copyWith(
-                        color: colorTheme.textLink,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
               ),
               // Purely decorative: the labeled header zone to its left
@@ -761,13 +785,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                       ),
                     )
                   : null,
-              // Delivery fee is optional and outside EquipmentCostFormBloc's
-              // own field-error map (only item type, duration, and
-              // dailyRate/jobAmount feed its isValid/fieldErrors — see the
-              // bloc's _validated). Every digit is accepted here and the
-              // field never turns red for an out-of-range value; the bloc's
-              // own bound check (_validateDeliveryFee) only gates whether
-              // the *value* is usable, not this field's visual state.
+              errorTextList: _errorList(_deliveryFeeErrorText(context, data)),
             ),
             if (helperText != null) ...[
               const SizedBox(height: CoreSpacing.space2),
