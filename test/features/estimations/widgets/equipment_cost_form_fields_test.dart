@@ -45,6 +45,7 @@ void main() {
     ValueChanged<double>? onTotalChanged,
     ValueChanged<bool>? onSaveEnabledChanged,
     String? estimateId,
+    YourRateEntry? initialRateEntry,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -60,6 +61,7 @@ void main() {
             onSaveEnabledChanged: onSaveEnabledChanged,
             estimateId: estimateId,
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            initialRateEntry: initialRateEntry,
           ),
         ),
       ),
@@ -1659,6 +1661,58 @@ void main() {
 
       expect(find.text('Dumpster'), findsNothing);
       expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
+    });
+  });
+
+  // CA-1151: a rate picked on "Your recents" before this form even opened
+  // must populate it exactly like an in-form "Look up a rate" pick does.
+  group('EquipmentCostFormFields — initial rate entry (recents recall)', () {
+    testWidgets('a Day-method entry fills name and rate, Day stays selected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeWidget(
+          initialRateEntry: YourRateEntry(
+            id: 'rate-1',
+            companyId: 'company-1',
+            itemName: 'Scissor lift — 19ft',
+            category: CostItemType.equipment,
+            rate: Money(amount: 120),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Scissor lift — 19ft'), findsOneWidget);
+      expect(find.text('120'), findsOneWidget);
+      expect(find.byKey(const Key('rate_field')), findsOneWidget);
+    });
+
+    testWidgets('a Job-method entry switches the toggle and fills the amount '
+        'field', (tester) async {
+      await tester.pumpWidget(
+        makeWidget(
+          initialRateEntry: YourRateEntry(
+            id: 'rate-2',
+            companyId: 'company-1',
+            itemName: 'Dumpster — 30 yd',
+            category: CostItemType.equipment,
+            rate: Money(amount: 400),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.job,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dumpster — 30 yd'), findsOneWidget);
+      expect(find.text('400'), findsOneWidget);
+      // Job mode, not Day: the duration+rate fields are gone, replaced by a
+      // single amount field.
+      expect(find.byKey(const Key('rate_field')), findsNothing);
+      expect(find.byKey(const Key('amount_field')), findsOneWidget);
     });
   });
 }

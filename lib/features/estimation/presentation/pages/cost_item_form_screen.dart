@@ -28,6 +28,12 @@ class CostItemFormScreen extends StatefulWidget {
   /// [Scaffold] presentation (this defaults to false).
   final bool presentAsSheet;
 
+  /// A rate already picked on the Equipment "Your recents" screen (CA-1151)
+  /// before this form opened. Forwarded to [EquipmentCostFormFields], which
+  /// recalls it the same way its own "Look up a rate" magnifier does.
+  /// Ignored for [CostItemType.material] and [CostItemType.labor].
+  final YourRateEntry? initialRateEntry;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -35,6 +41,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.router,
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
+    this.initialRateEntry,
   });
 
   @override
@@ -218,6 +225,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         onSaveEnabledChanged: onSaveEnabledChanged,
         estimateId: widget.estimationId,
         yourRatesBlocFactory: widget.yourRatesBlocFactory,
+        initialRateEntry: widget.initialRateEntry,
       ),
     };
   }
