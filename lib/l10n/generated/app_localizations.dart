@@ -2886,6 +2886,24 @@ abstract class AppLocalizations {
   /// **'Use {amount} {unit}'**
   String yourRatesUseButtonLabel(String amount, String unit);
 
+  /// Title of the 'Your recents' sheet opened by the Equipment tab's '+ Add equipment cost' button, before the cost-entry form itself (Figma node 66342:177929)
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment'**
+  String get yourRatesRecentsTitle;
+
+  /// Section heading above the list of recently-saved equipment rates in the 'Your recents' sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Recent — tap to reuse'**
+  String get yourRatesRecentsSectionHeading;
+
+  /// Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate
+  ///
+  /// In en, this message translates to:
+  /// **'New equipment cost'**
+  String get yourRatesNewEquipmentCostAction;
+
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
   /// In en, this message translates to:

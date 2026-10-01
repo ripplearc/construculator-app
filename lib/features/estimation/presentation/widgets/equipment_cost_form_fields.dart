@@ -40,6 +40,12 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// sheet open, matching [YourRatesBloc]'s factory registration.
   final YourRatesBloc Function() yourRatesBlocFactory;
 
+  /// A rate already picked on the "Your recents" screen (CA-1151) before
+  /// this form opened. When set, the form recalls it on first build exactly
+  /// as [_recallRateEntry] does for a mid-form "Look up a rate" pick — see
+  /// that method's doc comment.
+  final YourRateEntry? initialRateEntry;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
@@ -47,6 +53,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.onSaveEnabledChanged,
     this.estimateId,
     required this.yourRatesBlocFactory,
+    this.initialRateEntry,
   });
 
   @override
@@ -91,6 +98,16 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
+    final initialEntry = widget.initialRateEntry;
+    if (initialEntry != null) {
+      // Deferred a frame: recalling synchronously here would run
+      // [_notifyTotal] (via [_selectMethod]) while this widget's own
+      // ancestor, [CostItemFormScreen], is still building — too early to
+      // call its onTotalChanged's setState.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _recallRateEntry(initialEntry);
+      });
+    }
   }
 
   @override
@@ -476,7 +493,19 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (entry == null || !mounted) return;
+    _recallRateEntry(entry);
+  }
+
+  // Populates the name and rate fields from an already-picked saved rate,
+  // switching the Day/Job toggle to match it first. Shared by
+  // [_openRateLookup] (the in-form magnifier, whose result already matches
+  // the active method) and [EquipmentCostFormFields.initialRateEntry] (a
+  // "Your recents" pick made before this form even opened, where the entry
+  // can be either method) so both recall a rate the exact same way.
+  void _recallRateEntry(YourRateEntry entry) {
     _equipmentNameController.text = entry.itemName;
+    final method = entry.equipmentMethod ?? EquipmentPricingMethod.day;
+    _selectMethod(method);
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
