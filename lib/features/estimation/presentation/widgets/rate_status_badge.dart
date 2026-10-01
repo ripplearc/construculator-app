@@ -28,8 +28,8 @@ enum RateStatusBadgeVariant {
 ///
 /// One widget, not two: the orange variant is visually identical between
 /// the Rate/Amount field's "Sample rate" badge and the delivery row's
-/// "Estimated" badge (fix 6a/1 of the CA-1144 retrofit) — only the label
-/// text differs, so callers pass their own [label].
+/// "Estimated" badge — only the label text differs, so callers pass their
+/// own [label].
 ///
 /// a11y note: `#CD5000` text on `#FFF0E9` fill measures ~3.98:1 contrast,
 /// short of WCAG AA's 4.5:1 minimum for 12px text (it would only need 3:1
@@ -38,8 +38,7 @@ enum RateStatusBadgeVariant {
 /// directly rather than inferred. The green variant passes AA at ~4.54:1.
 ///
 /// This is currently tracked as an OPEN DESIGN QUESTION, not an accepted
-/// tradeoff — see this pass's PR description for the full account. A
-/// darker orange text (`#B03C00`, `_CoreColorPalette.orange700` in
+/// tradeoff. A darker orange text (`#B03C00`, `_CoreColorPalette.orange700` in
 /// `ripplearc_coreui` 0.15.0) would clear AA at ~5.41:1 on this same fill,
 /// but that palette step isn't exposed as a public/semantic token anywhere
 /// in the theme (`_CoreColorPalette` is a private class internal to
