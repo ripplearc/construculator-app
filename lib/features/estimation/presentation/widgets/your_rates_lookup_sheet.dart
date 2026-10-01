@@ -126,6 +126,11 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   // method still sees the empty state here. Fixing it means either
   // over-fetching recents so filtering still leaves enough rows, or moving
   // the method filter into the bloc/repository query itself.
+  //
+  // TODO: CA-1205 — a different gap in the same method: a search (not
+  // recents) that comes up empty for the active method gives no hint that
+  // a match exists under the other method, even though the unfiltered
+  // [YourRatesSearchResults.results] this method receives already has it.
   List<YourRateEntry> _entriesOf(YourRatesState state) {
     final entries = switch (state) {
       YourRatesLoaded(:final recents) => recents,
