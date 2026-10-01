@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/underlin
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -43,6 +44,11 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// registration.
   final YourRatesBloc Function() yourRatesBlocFactory;
 
+  /// Supplies "now" for a saved [YourRateEntry]'s timestamp — see [Clock]'s
+  /// own doc comment for why this is injected rather than calling
+  /// [DateTime.now] directly.
+  final Clock clock;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
@@ -50,6 +56,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.onSaveEnabledChanged,
     this.estimateId,
     required this.yourRatesBlocFactory,
+    required this.clock,
   });
 
   @override
@@ -446,7 +453,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       itemName: _equipmentNameController.text,
       category: CostItemType.equipment,
       rate: Money(amount: (isDay ? data.dailyRate : data.jobAmount) ?? 0),
-      savedAt: DateTime.now(),
+      savedAt: widget.clock.now(),
       equipmentMethod: data.method,
       entryLabel: entryLabel,
     );

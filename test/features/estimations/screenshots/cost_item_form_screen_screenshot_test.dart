@@ -69,6 +69,7 @@ void main() {
             estimationId: 'test-estimation-id',
             router: FakeAppRouter(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: FakeClockImpl(),
           ),
         ),
       ),

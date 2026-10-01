@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/widgets/labour_c
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -28,6 +29,10 @@ class CostItemFormScreen extends StatefulWidget {
   /// [Scaffold] presentation (this defaults to false).
   final bool presentAsSheet;
 
+  /// Backs the equipment form's "Save as my rate" timestamp. Same
+  /// not-a-module-file reasoning as [yourRatesBlocFactory].
+  final Clock clock;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -35,6 +40,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.router,
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
+    required this.clock,
   });
 
   @override
@@ -218,6 +224,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         onSaveEnabledChanged: onSaveEnabledChanged,
         estimateId: widget.estimationId,
         yourRatesBlocFactory: widget.yourRatesBlocFactory,
+        clock: widget.clock,
       ),
     };
   }

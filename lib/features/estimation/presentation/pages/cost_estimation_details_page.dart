@@ -7,6 +7,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -32,12 +33,17 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// [equipmentCostFormBlocFactory].
   final YourRatesBloc Function() yourRatesBlocFactory;
 
+  /// Backs the equipment form's "Save as my rate" timestamp. Same
+  /// not-a-module-file reasoning as [equipmentCostFormBlocFactory].
+  final Clock clock;
+
   const CostEstimationDetailsPage({
     super.key,
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
     required this.yourRatesBlocFactory,
+    required this.clock,
   });
 
   @override
@@ -189,6 +195,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
               router: widget.router,
               presentAsSheet: true,
               yourRatesBlocFactory: widget.yourRatesBlocFactory,
+              clock: widget.clock,
             ),
           ),
         ),
