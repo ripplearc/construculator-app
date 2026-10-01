@@ -159,4 +159,57 @@ class DatabaseConstants {
   static const String recordedAtColumn = 'recorded_at';
   static const String appVersionColumn = 'app_version';
   static const String platformColumn = 'platform';
+
+  /// Local-only PowerSync table of the calculator's stored sizes: drywall
+  /// sheets, masonry pieces and footing cross-sections (see `schema.dart`).
+  static const String calculatorSizesTable = 'calculator_sizes';
+
+  /// Local-only PowerSync table of the on-centre spacings the Qty@OC key
+  /// offers.
+  static const String calculatorSpacingsTable = 'calculator_spacings';
+
+  /// Local-only PowerSync table holding the one fence configuration row.
+  static const String calculatorFenceTable = 'calculator_fence';
+
+  /// Local-only PowerSync table of one rate and waste factor per rate unit.
+  static const String calculatorRatesTable = 'calculator_rates';
+
+  /// Local-only PowerSync table of the named material densities.
+  static const String calculatorDensitiesTable = 'calculator_densities';
+
+  /// Which size store a row belongs to: a `SizeStore` name.
+  static const String storeColumn = 'store';
+
+  /// The unit system a size row was seeded for: a `MeasurementSystem` name.
+  static const String systemColumn = 'system';
+
+  /// A stored width in whole ticks of 1/64 inch.
+  static const String widthTicksColumn = 'width_ticks';
+
+  /// A stored height in whole ticks of 1/64 inch.
+  static const String heightTicksColumn = 'height_ticks';
+
+  /// The user's order of a row within its store, from zero.
+  static const String positionColumn = 'position';
+
+  /// An on-centre spacing in whole ticks of 1/64 inch.
+  static const String ticksColumn = 'ticks';
+
+  /// The fence's post spacing in whole ticks of 1/64 inch.
+  static const String onCentreTicksColumn = 'on_centre_ticks';
+
+  /// The fence's rails between two posts.
+  static const String railsPerSectionColumn = 'rails_per_section';
+
+  /// The unit a rate is per: a `RateUnit` name.
+  static const String unitColumn = 'unit';
+
+  /// A rate in the user's currency.
+  static const String rateColumn = 'rate';
+
+  /// The waste factor of a rate, in percent.
+  static const String wastePercentColumn = 'waste_percent';
+
+  /// A material density in pounds per cubic yard.
+  static const String poundsPerCubicYardColumn = 'pounds_per_cubic_yard';
 }
