@@ -1179,6 +1179,61 @@
     "description": "Activity log message for attachment removed without details",
     "context": "N/A"
   },
+  "activityCostEstimationSent": "Sent to {recipientName}",
+  "@activityCostEstimationSent": {
+    "description": "Activity log title for an estimate sent to a recipient, naming them",
+    "placeholders": {
+      "recipientName": {
+        "type": "String"
+      }
+    },
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationSentSimple": "Estimate sent",
+  "@activityCostEstimationSentSimple": {
+    "description": "Activity log title for an estimate sent, when the recipient is not known",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationSendFailed": "Send to {recipientName} failed",
+  "@activityCostEstimationSendFailed": {
+    "description": "Activity log title for a send the server confirmed did not go out, naming the recipient",
+    "placeholders": {
+      "recipientName": {
+        "type": "String"
+      }
+    },
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationSendFailedSimple": "Send failed",
+  "@activityCostEstimationSendFailedSimple": {
+    "description": "Activity log title for a failed send, when the recipient is not known",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationOpened": "Link opened",
+  "@activityCostEstimationOpened": {
+    "description": "Activity log title for the first open of a sent estimate link",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationRevoked": "Link revoked",
+  "@activityCostEstimationRevoked": {
+    "description": "Activity log title for a sent estimate link revoked by the sender",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationApproved": "Approval recorded",
+  "@activityCostEstimationApproved": {
+    "description": "Activity log title for a recipient approval, which the sender records",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationChangesRequested": "Changes requested",
+  "@activityCostEstimationChangesRequested": {
+    "description": "Activity log title for changes requested on a sent estimate",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
+  "activityCostEstimationPdfShared": "PDF shared",
+  "@activityCostEstimationPdfShared": {
+    "description": "Activity log title for the estimate PDF handed to another app from the share sheet",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/main/construculator-calc-to-estimate-storyboard.html (CUJ 11, screen 5)"
+  },
   "activityUnknown": "Unknown Activity",
   "@activityUnknown": {
     "description": "Fallback activity log message for unknown activity types",

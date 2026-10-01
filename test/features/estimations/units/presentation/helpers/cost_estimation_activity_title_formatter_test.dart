@@ -362,6 +362,114 @@ void main() {
         },
       );
 
+      test('names the recipient for costEstimationSent activity', () {
+        final log = _createLog(
+          id: '28',
+          activity: CostEstimationActivityType.costEstimationSent,
+          activityDetails: {'recipientName': 'Judy Smith'},
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSent('Judy Smith')));
+      });
+
+      test('returns simple sent message when the recipient is missing', () {
+        final log = _createLog(
+          id: '33',
+          activity: CostEstimationActivityType.costEstimationSent,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSentSimple));
+      });
+
+      test('names the recipient for costEstimationSendFailed activity', () {
+        final log = _createLog(
+          id: '34',
+          activity: CostEstimationActivityType.costEstimationSendFailed,
+          activityDetails: {'recipientName': 'Judy Smith'},
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(
+          result,
+          equals(l10n.activityCostEstimationSendFailed('Judy Smith')),
+        );
+      });
+
+      test('returns simple send failed message without a recipient', () {
+        final log = _createLog(
+          id: '35',
+          activity: CostEstimationActivityType.costEstimationSendFailed,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationSendFailedSimple));
+      });
+
+      test('returns pdf shared message for costEstimationPdfShared', () {
+        final log = _createLog(
+          id: '36',
+          activity: CostEstimationActivityType.costEstimationPdfShared,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationPdfShared));
+      });
+
+      test('returns opened message for costEstimationOpened activity', () {
+        final log = _createLog(
+          id: '29',
+          activity: CostEstimationActivityType.costEstimationOpened,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationOpened));
+      });
+
+      test('returns revoked message for costEstimationRevoked activity', () {
+        final log = _createLog(
+          id: '30',
+          activity: CostEstimationActivityType.costEstimationRevoked,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationRevoked));
+      });
+
+      test('returns approved message for costEstimationApproved activity', () {
+        final log = _createLog(
+          id: '31',
+          activity: CostEstimationActivityType.costEstimationApproved,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityCostEstimationApproved));
+      });
+
+      test(
+        'returns changes requested message for '
+        'costEstimationChangesRequested activity',
+        () {
+          final log = _createLog(
+            id: '32',
+            activity: CostEstimationActivityType.costEstimationChangesRequested,
+          );
+
+          final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+          expect(result, equals(l10n.activityCostEstimationChangesRequested));
+        },
+      );
+
       test('returns localized fallback for unknown activity', () {
         final log = _createLog(
           id: '27',
@@ -372,6 +480,54 @@ void main() {
 
         expect(result, equals(l10n.activityUnknown));
       });
+    });
+
+    group('storyboard copy (CUJ 11, screen 5)', () {
+      const judy = {'recipientName': 'Judy Smith'};
+
+      for (final (activity, details, title) in [
+        (
+          CostEstimationActivityType.costEstimationSent,
+          judy,
+          'Sent to Judy Smith',
+        ),
+        (
+          CostEstimationActivityType.costEstimationSendFailed,
+          judy,
+          'Send to Judy Smith failed',
+        ),
+        (CostEstimationActivityType.costEstimationOpened, judy, 'Link opened'),
+        (
+          CostEstimationActivityType.costEstimationRevoked,
+          judy,
+          'Link revoked',
+        ),
+        (
+          CostEstimationActivityType.costEstimationApproved,
+          judy,
+          'Approval recorded',
+        ),
+        (
+          CostEstimationActivityType.costEstimationChangesRequested,
+          judy,
+          'Changes requested',
+        ),
+        (
+          CostEstimationActivityType.costEstimationPdfShared,
+          {'appName': 'Messages'},
+          'PDF shared',
+        ),
+      ]) {
+        test('titles ${activity.name} "$title"', () {
+          final log = _createLog(
+            id: activity.name,
+            activity: activity,
+            activityDetails: details,
+          );
+
+          expect(CostEstimationActivityTitleFormatter.format(l10n, log), title);
+        });
+      }
     });
   });
 }

@@ -76,7 +76,8 @@ class CostEstimationLogDto extends Equatable {
   /// - Parses ISO 8601 timestamp string to [DateTime] object
   ///
   /// Throws [FormatException] if timestamp string is invalid.
-  /// Throws [ArgumentError] if activity type string is unrecognized.
+  /// An unrecognized activity type string does not throw; it falls back to
+  /// [CostEstimationActivityType.unknown].
   ///
   /// **Important**: The repository layer should wrap calls to this method in a
   /// try/catch block to handle potential exceptions from malformed database rows.

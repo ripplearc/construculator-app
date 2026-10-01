@@ -103,6 +103,28 @@ class CostEstimationActivityTitleFormatter {
           return l10n.activityAttachmentRemoved(fileName);
         }
         return l10n.activityAttachmentRemovedSimple;
+      case CostEstimationActivityType.costEstimationSent:
+        final recipientName = details['recipientName'] as String?;
+        if (recipientName != null) {
+          return l10n.activityCostEstimationSent(recipientName);
+        }
+        return l10n.activityCostEstimationSentSimple;
+      case CostEstimationActivityType.costEstimationSendFailed:
+        final recipientName = details['recipientName'] as String?;
+        if (recipientName != null) {
+          return l10n.activityCostEstimationSendFailed(recipientName);
+        }
+        return l10n.activityCostEstimationSendFailedSimple;
+      case CostEstimationActivityType.costEstimationOpened:
+        return l10n.activityCostEstimationOpened;
+      case CostEstimationActivityType.costEstimationRevoked:
+        return l10n.activityCostEstimationRevoked;
+      case CostEstimationActivityType.costEstimationApproved:
+        return l10n.activityCostEstimationApproved;
+      case CostEstimationActivityType.costEstimationChangesRequested:
+        return l10n.activityCostEstimationChangesRequested;
+      case CostEstimationActivityType.costEstimationPdfShared:
+        return l10n.activityCostEstimationPdfShared;
       case CostEstimationActivityType.unknown:
         // Unknown activity types should not appear in production but are handled
         // gracefully to prevent crashes when new server-side activity types are
