@@ -119,13 +119,13 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     Navigator.of(context).pop(entry);
   }
 
-  // KNOWN GAP (reported, not fixed by this pass): [YourRatesLoaded] caps
-  // recents at the bloc's own limit *before* this method's method filter
-  // runs. If every one of those newest rows happens to be the other
-  // pricing method, a contractor with plenty of saved rates for this
-  // method still sees the empty state here. Fixing it means either
-  // over-fetching recents so filtering still leaves enough rows, or moving
-  // the method filter into the bloc/repository query itself.
+  // TODO: CA-1206 — [YourRatesLoaded] caps recents at the bloc's own limit
+  // *before* this method's method filter runs. If every one of those
+  // newest rows happens to be the other pricing method, a contractor with
+  // plenty of saved rates for this method still sees the empty state here.
+  // Fixing it means either over-fetching recents so filtering still leaves
+  // enough rows, or moving the method filter into the bloc/repository
+  // query itself.
   //
   // TODO: CA-1205 — a different gap in the same method: a search (not
   // recents) that comes up empty for the active method gives no hint that
