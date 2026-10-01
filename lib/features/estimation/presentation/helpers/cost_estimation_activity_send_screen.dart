@@ -2,6 +2,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 
 /// Decides which Logs entries lead to the Send screen.
 extension CostEstimationActivitySendScreen on CostEstimationActivityType {
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-1178 - Keep the arrow
+  // only on the newest send's entries; this decides by kind alone.
   /// Whether a Logs entry of this kind shows an arrow and opens the Send
   /// screen when tapped.
   ///
