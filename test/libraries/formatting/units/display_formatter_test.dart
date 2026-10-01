@@ -235,6 +235,92 @@ void main() {
       });
     });
 
+    group('formatRecency', () {
+      final now = DateTime(2026, 1, 15);
+
+      test('returns "Used today" for the same day, including future skew', () {
+        expect(
+          DisplayFormatter.formatRecency(now, now: now),
+          equals('Used today'),
+        );
+        expect(
+          DisplayFormatter.formatRecency(
+            now.add(const Duration(minutes: 1)),
+            now: now,
+          ),
+          equals('Used today'),
+        );
+      });
+
+      test('returns "Used yesterday" exactly one day back', () {
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 1)),
+            now: now,
+          ),
+          equals('Used yesterday'),
+        );
+      });
+
+      test('returns a day count from 2 through 6 days back', () {
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 2)),
+            now: now,
+          ),
+          equals('Used 2 days ago'),
+        );
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 6)),
+            now: now,
+          ),
+          equals('Used 6 days ago'),
+        );
+      });
+
+      test('returns "Used last week" from 7 through 13 days back', () {
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 7)),
+            now: now,
+          ),
+          equals('Used last week'),
+        );
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 13)),
+            now: now,
+          ),
+          equals('Used last week'),
+        );
+      });
+
+      test('returns whole weeks from 14 days back onward', () {
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 14)),
+            now: now,
+          ),
+          equals('Used 2 weeks ago'),
+        );
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 20)),
+            now: now,
+          ),
+          equals('Used 2 weeks ago'),
+        );
+        expect(
+          DisplayFormatter.formatRecency(
+            now.subtract(const Duration(days: 21)),
+            now: now,
+          ),
+          equals('Used 3 weeks ago'),
+        );
+      });
+    });
+
     group('Static formatters', () {
       test('should have consistent static formatters', () {
         expect(DisplayFormatter.currency.decimalDigits, equals(2));
