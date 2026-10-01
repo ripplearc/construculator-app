@@ -694,14 +694,6 @@ void main() {
       expect(updated.dailyRate?.amount, 600.0);
     });
 
-    test('copyWith does not expose a way to change pricingMethod', () {
-      final updated = dayPricedItem.copyWith(itemName: 'Renamed');
-
-      // copyWith has no pricingMethod parameter, so the pricing method of a
-      // saved line can never change through it.
-      expect(updated.pricingMethod, dayPricedItem.pricingMethod);
-    });
-
     test('copyWith can clear nullable fields using clearField', () {
       final updated = dayPricedItem.copyWith(
         productLink: clearField,

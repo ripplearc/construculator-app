@@ -146,8 +146,13 @@ class CostItemTestDataMapFactory {
       'labor_unit_type': null,
       'labor_unit_value': null,
       'crew_size': null,
-      'calculation': calculation ?? {'daily_rate': rate, 'duration': days},
-      'item_total_cost': itemTotalCost ?? (days * rate),
+      'calculation':
+          calculation ??
+          (method == 'day'
+              ? {'daily_rate': rate, 'duration': days}
+              : {'job_amount': jobAmount ?? 600.0}),
+      'item_total_cost':
+          itemTotalCost ?? (method == 'day' ? days * rate : jobAmount ?? 600.0),
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
       'currency': currency ?? 'USD',

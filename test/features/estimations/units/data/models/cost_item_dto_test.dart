@@ -301,6 +301,16 @@ void main() {
             expect(dto, testDto);
           });
         });
+
+        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
+          final dto = CostItemDto.fromJson(testJson);
+          final entity = dto.toEntity();
+          final dtoAgain = CostItemDto.fromEntity(entity);
+          final jsonAgain = dtoAgain.toJson();
+
+          expect(dtoAgain, dto);
+          expect(jsonAgain, testJson);
+        });
       });
 
       group('job pricing', () {
