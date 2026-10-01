@@ -253,17 +253,21 @@ void main() {
       fakeSupabase.shouldThrowOnSelectPaginated = true;
       fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
 
-      await tester.drag(
-        find.byType(CustomScrollView).first,
-        const Offset(0, -1800),
+      final logsScrollView = find.byKey(
+        CostEstimationLogsList.logsScrollViewKey,
       );
+      final logsScrollable = find.descendant(
+        of: logsScrollView,
+        matching: find.byType(Scrollable),
+      );
+      await tester.drag(logsScrollView, const Offset(0, -1800));
       await tester.pumpAndSettle();
 
       final retry = find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey);
       await tester.scrollUntilVisible(
         retry,
         300,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: logsScrollable,
       );
       await tester.pumpAndSettle();
       await tester.tap(retry);
@@ -272,7 +276,7 @@ void main() {
       await tester.scrollUntilVisible(
         retry,
         300,
-        scrollable: find.byType(Scrollable).first,
+        scrollable: logsScrollable,
       );
       await tester.pumpAndSettle();
 
