@@ -460,6 +460,11 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     switch (state) {
       case YourRatesSaveCollision(:final entry):
         unawaited(_promptEntryLabelAndRetry(context, entry));
+      // TODO: CA-1207 — every YourRatesSaveFailed shows this same generic
+      // message, even though YourRatesRepositoryImpl._handleError already
+      // distinguishes timeoutError/connectionError/parsingError/
+      // permissionDenied/notFoundError. Needs that EstimationErrorType
+      // threaded through this state and distinct, actionable copy per type.
       case YourRatesSaveFailed():
         CoreToast.showError(
           context,
@@ -536,6 +541,10 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    // TODO: CA-1207 — nothing on screen changes between this tap and the
+    // eventual success/failure toast. The _droppable() transformer on
+    // YourRatesSaveRequested already stops a double-tap from double-saving,
+    // but gives no visual confirmation the first tap registered.
     return Semantics(
       button: true,
       label: l10n.equipmentSaveAsMyRateLink,
