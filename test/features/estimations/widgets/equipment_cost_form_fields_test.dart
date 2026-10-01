@@ -1710,8 +1710,7 @@ void main() {
   // Figma's actual B2/C2 confirmation screens (nodes 66337:158600 and
   // 66337:159434) replace the full entry form with a compact Title/Subtitle
   // header plus a single editable field — not the full form with a
-  // read-only Rate field. See the CA-1146 ticket's own comment for the
-  // finding and the decision to rebuild this as a follow-up PR.
+  // read-only Rate field.
   //
   // Sub-flow D (switching pricing methods) stays covered by the generic
   // 'Day/Job toggle' group above: that toggle only ever appears on an
