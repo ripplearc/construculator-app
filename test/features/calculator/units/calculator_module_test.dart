@@ -24,46 +24,41 @@ void main() {
       expect(routeManager.allRoutes.single.name, equals('/'));
     });
 
-    test('binds one preferences repository over the auth library', () {
-      final clock = FakeClockImpl();
-      final authNotifier = FakeAuthNotifier();
-      final authManager = FakeAuthManager(
-        authNotifier: authNotifier,
-        authRepository: FakeAuthRepository(clock: clock),
-        wrapper: FakeSupabaseWrapper(clock: clock),
-        clock: clock,
-      );
-      Modular.init(CalculatorModule(FakeAppBootstrapFactory.create()));
-      Modular.replaceInstance<AuthNotifier>(authNotifier);
-      Modular.replaceInstance<AuthManager>(authManager);
-      addTearDown(Modular.destroy);
+    group('bindings', () {
+      setUp(() {
+        final clock = FakeClockImpl();
+        final authNotifier = FakeAuthNotifier();
+        final authManager = FakeAuthManager(
+          authNotifier: authNotifier,
+          authRepository: FakeAuthRepository(clock: clock),
+          wrapper: FakeSupabaseWrapper(clock: clock),
+          clock: clock,
+        );
+        Modular.init(CalculatorModule(FakeAppBootstrapFactory.create()));
+        Modular.replaceInstance<AuthNotifier>(authNotifier);
+        Modular.replaceInstance<AuthManager>(authManager);
+      });
 
-      final repository = Modular.get<CalculatorPreferencesRepository>();
-      expect(repository, same(Modular.get<CalculatorPreferencesRepository>()));
-    });
+      tearDown(Modular.destroy);
 
-    test('disposes the repository with the module', () async {
-      final clock = FakeClockImpl();
-      final authNotifier = FakeAuthNotifier();
-      final authManager = FakeAuthManager(
-        authNotifier: authNotifier,
-        authRepository: FakeAuthRepository(clock: clock),
-        wrapper: FakeSupabaseWrapper(clock: clock),
-        clock: clock,
-      );
-      Modular.init(CalculatorModule(FakeAppBootstrapFactory.create()));
-      Modular.replaceInstance<AuthNotifier>(authNotifier);
-      Modular.replaceInstance<AuthManager>(authManager);
-      var done = false;
-      Modular.get<CalculatorPreferencesRepository>().watchPreferences().listen(
-        (_) {},
-        onDone: () => done = true,
-      );
+      test('binds one preferences repository over the auth library', () {
+        final repository = Modular.get<CalculatorPreferencesRepository>();
+        expect(
+          repository,
+          same(Modular.get<CalculatorPreferencesRepository>()),
+        );
+      });
 
-      Modular.destroy();
-      await pumpEventQueue();
+      test('disposes the repository with the module', () async {
+        final ended = expectLater(
+          Modular.get<CalculatorPreferencesRepository>().watchPreferences(),
+          emitsInOrder([anything, emitsDone]),
+        );
 
-      expect(done, isTrue);
+        Modular.destroy();
+
+        await ended;
+      });
     });
   });
 }

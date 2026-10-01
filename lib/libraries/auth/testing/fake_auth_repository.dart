@@ -30,6 +30,11 @@ class FakeAuthRepository implements AuthRepository {
   /// Exception message to be returned on exceptions
   String exceptionMessage = 'Test exception';
 
+  /// When set, [getUserProfile] reads the profile, then waits for this to
+  /// complete before answering, so a test can change the profile while a
+  /// fetch is in flight and get back the profile as it was read.
+  Completer<void>? getUserProfileGate;
+
   /// List of get user profile calls
   final List<String> getUserProfileCalls = [];
 
@@ -62,6 +67,7 @@ class FakeAuthRepository implements AuthRepository {
     returnNullUserProfile = false;
     shouldThrowOnGetUserProfile = false;
     exceptionMessage = 'Test exception';
+    getUserProfileGate = null;
     getUserProfileCalls.clear();
     createProfileCalls.clear();
     updateProfileCalls.clear();
@@ -163,7 +169,9 @@ class FakeAuthRepository implements AuthRepository {
       return null;
     }
 
-    return _userProfiles[userId];
+    final profile = _userProfiles[userId];
+    if (getUserProfileGate case final gate?) await gate.future;
+    return profile;
   }
 
   @override
