@@ -14,11 +14,17 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// server-side, but [YourRateEntry.equipmentMethod] has no bloc-level
 /// filter, so this sheet filters that locally.
 ///
-/// Doubles as the "Your recents" screen (Figma Screen 2): opened with an
-/// empty query, [YourRatesBloc] returns the most-recently-saved entries via
-/// [YourRatesRefreshRecents] — same list, same row widget, no separate
-/// screen needed for a search-vs-recents distinction that isn't visually
-/// different.
+/// Also handles "Your recents" (Figma Screen 2) today: opened with an empty
+/// query, [YourRatesBloc] returns the most-recently-saved entries via
+/// [YourRatesRefreshRecents], reusing this same list and row widget.
+///
+/// TODO: CA-1151 — split "Your recents" into its own row treatment. Recents
+/// and lookup are NOT the same screen in Figma (confirmed by reading both
+/// nodes directly). Recents (node `66342:177929`) shows a recency subtitle
+/// ("Used last week") and a trailing "+ New equipment cost" row, with no
+/// checkbox-select interaction, no search box, and no disclaimer. Lookup
+/// (this sheet's own node, above) has the search box and the "Not your own
+/// rates…" disclaimer, neither of which belongs on recents.
 ///
 /// Selecting a result is a two-step flow, per the Figma spec: tapping a row
 /// only selects it (leading check + highlighted fill); confirming — via the
