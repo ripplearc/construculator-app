@@ -287,6 +287,8 @@ class Tape extends Equatable {
       ChainValue(:final value, isCalculation: true) => TapeChanged(
         append(ResultChip(key: calcKey, value: value)),
       ),
+      // TODO: [CA-1208] On ÷ 0, reopen the divisor empty so the next number
+      // replaces it. https://ripplearc.youtrack.cloud/issue/CA-1208
       ChainFailed(:final error) => TapeChanged(append(ErrorChip(error))),
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),

@@ -297,6 +297,8 @@ void main() {
       test('a metric chain answers in the unit it was typed in', () {
         // 2cm and 3cm are whole ticks on the tape (50 and 76), so the area
         // reads 5.99cm², in centimetres rather than 0m².
+        // TODO: [CA-1190] Expect Calc 6cm² once a typed length is kept
+        // exactly. https://ripplearc.youtrack.cloud/issue/CA-1190
         final landed = press(const Tape(), '2 cm × 3 cm =');
         expect(lastResult(landed), 'Calc 5.99cm²');
         expect(
@@ -334,7 +336,7 @@ void main() {
     const evaluator = ChainEvaluator();
 
     test('folds nothing on an empty tape', () {
-      final empty = evaluator.fold(List<TapeChip>.empty());
+      final empty = evaluator.fold(<TapeChip>[]);
       expect(empty, const ChainEmpty());
       expect(empty.hashCode, const ChainEmpty().hashCode);
     });
