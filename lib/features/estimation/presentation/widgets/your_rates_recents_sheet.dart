@@ -23,10 +23,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// TODO: CA-1151 — Figma's recents screen also shows a "Search or type
 /// equipment" name-entry field above this list, for typing a brand-new
 /// equipment name directly (a different concern from [YourRatesLookupSheet]'s
-/// saved-rate search). Left out of this pass: the follow-up-PR scope agreed
-/// on this ticket only covers the recents list and the "+ New equipment
-/// cost" row, and this field's behavior — filtering these recents vs.
-/// feeding the form's name field directly — isn't specified anywhere yet.
+/// saved-rate search). Not built here: this field's behavior — filtering
+/// these recents vs. feeding the form's name field directly — isn't
+/// specified anywhere yet.
 ///
 /// Returns the tapped [YourRateEntry], or null if dismissed or if "+ New
 /// equipment cost" was tapped — both mean "open the form blank."
