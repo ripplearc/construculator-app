@@ -23,10 +23,17 @@ abstract class YourRatesDataSource {
   /// by item name do so themselves against the returned list. See
   /// `YourRatesRepositoryImpl.search` for why.
   ///
+  /// [limit], when provided, caps the row count at the database level. Only
+  /// safe to pass when the caller does no further client-side filtering of
+  /// the result — passing it alongside a text-search filter would cap the
+  /// candidate set before that filter runs, dropping matches that fall
+  /// outside the row window.
+  ///
   /// Throws an exception if the fetch operation fails.
   Future<List<YourRateEntryDto>> fetchRates({
     String? category,
     String? companyId,
+    int? limit,
   });
 
   /// Fetches rows in the exact (category, itemName) grouping.

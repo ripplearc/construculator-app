@@ -23,10 +23,16 @@ abstract class YourRatesRepository {
   /// descending (most recently saved first). There is no separate "recents"
   /// method on this interface — this empty-query form is the primitive
   /// `YourRatesBloc` uses to build its recents list.
+  ///
+  /// [limit] caps the row count at the database level. Only applied when
+  /// [query] is empty: a non-empty query is matched client-side against the
+  /// fetched rows, and a database-level cap applied before that match would
+  /// drop matches outside the row window.
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
     String? companyId,
+    int? limit,
   });
 
   /// Looks up the rate entry for one item within one category, optionally

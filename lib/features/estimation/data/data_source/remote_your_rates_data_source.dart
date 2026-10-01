@@ -21,6 +21,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   Future<List<YourRateEntryDto>> fetchRates({
     String? category,
     String? companyId,
+    int? limit,
   }) async {
     _logger.debug(
       'Fetching your rates'
@@ -42,6 +43,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
       filters: filters,
       orderBy: DatabaseConstants.savedAtColumn,
       ascending: false,
+      limit: limit,
     );
 
     return response.map(YourRateEntryDto.fromJson).toList();
