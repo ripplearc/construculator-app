@@ -132,9 +132,12 @@ void main() {
         },
       );
 
-      test('an all-metric answer keeps the first metric unit: 2cm × 3cm', () {
+      test('an all-metric answer keeps its metric unit: 2cm × 3cm', () {
         const centimetres = Length(50, unit: Unit.centimetre);
         const millimetres = Length(8, unit: Unit.millimetre);
+        // TODO: [CA-1190] Expect 6cm² once a typed length is kept exactly;
+        // 3800 square ticks read 5.99cm².
+        // https://ripplearc.youtrack.cloud/issue/CA-1190
         expect(
           arithmetic.combine(
             centimetres,
@@ -149,7 +152,11 @@ void main() {
         );
         expect(
           arithmetic.combine(centimetres, Operator.multiply, millimetres),
-          const ArithmeticValue(Area(400, unit: Unit.centimetre)),
+          const ArithmeticValue(Area(400, unit: Unit.millimetre)),
+        );
+        expect(
+          arithmetic.combine(millimetres, Operator.multiply, centimetres),
+          const ArithmeticValue(Area(400, unit: Unit.millimetre)),
         );
       });
 
@@ -170,6 +177,22 @@ void main() {
           (value(arithmetic.combine(metre, Operator.multiply, feet(1))) as Area)
               .unit,
           Unit.foot,
+        );
+      });
+
+      test('one imperial length makes the answer imperial: 1mm × 1ft', () {
+        const millimetre = Length(3, unit: Unit.millimetre);
+        expect(
+          (value(arithmetic.combine(millimetre, Operator.multiply, feet(1)))
+                  as Area)
+              .unit,
+          Unit.foot,
+        );
+        expect(
+          (value(arithmetic.combine(feet(1), Operator.add, millimetre))
+                  as Length)
+              .unit,
+          Unit.footInch,
         );
       });
 
@@ -459,6 +482,32 @@ void main() {
         expect(
           arithmetic.combine(metre, Operator.add, metre),
           const ArithmeticValue(Length(5040, unit: Unit.metre)),
+        );
+      });
+
+      test('a metric sum answers in the smallest unit typed: 1m + 1mm', () {
+        const metre = Length(2520, unit: Unit.metre);
+        const millimetre = Length(3, unit: Unit.millimetre);
+        expect(
+          arithmetic.combine(metre, Operator.add, millimetre),
+          const ArithmeticValue(Length(2523, unit: Unit.millimetre)),
+        );
+        expect(
+          arithmetic.combine(millimetre, Operator.add, metre),
+          const ArithmeticValue(Length(2523, unit: Unit.millimetre)),
+        );
+      });
+
+      test('1m + 50cm answers in centimetres, in either order', () {
+        const metre = Length(2520, unit: Unit.metre);
+        const centimetres = Length(1260, unit: Unit.centimetre);
+        expect(
+          arithmetic.combine(metre, Operator.add, centimetres),
+          const ArithmeticValue(Length(3780, unit: Unit.centimetre)),
+        );
+        expect(
+          arithmetic.combine(centimetres, Operator.subtract, metre),
+          const ArithmeticValue(Length(-1260, unit: Unit.centimetre)),
         );
       });
     });

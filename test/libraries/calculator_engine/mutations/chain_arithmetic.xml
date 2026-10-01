@@ -75,9 +75,10 @@
         </regex>
 
         <!-- RULE 13: an all-metric answer is always in metres, so 2cm × 3cm
-             reads 0m² -->
-        <regex pattern="return lengths\.first;" dotAll="true" id="chain_arithmetic.metric_unit.always_metres">
+             reads 0m², or in the first unit typed, so 1m + 1mm reads 1m -->
+        <regex pattern="return lengths\.reduce\(_smallerUnit\);" dotAll="true" id="chain_arithmetic.metric_unit.not_the_smallest">
             <mutation text="return Unit.metre;"/>
+            <mutation text="return lengths.first;"/>
         </regex>
 
         <!-- RULE 14: area × length is no longer a volume -->
@@ -103,6 +104,11 @@
         <!-- RULE 18: an answer that overflowed to infinity is kept -->
         <regex pattern="if \(!_magnitude\(value\)\.isFinite\) \{" dotAll="true" id="chain_arithmetic.combine.keep_infinity">
             <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 19: the largest metric unit typed wins -->
+        <regex pattern="b\.ticksPerUnit &lt; a\.ticksPerUnit \? b : a;" dotAll="true" id="chain_arithmetic.metric_unit.largest_wins">
+            <mutation text="b.ticksPerUnit &gt; a.ticksPerUnit ? b : a;"/>
         </regex>
     </rules>
 

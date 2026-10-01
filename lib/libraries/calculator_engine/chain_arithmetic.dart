@@ -46,9 +46,10 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// weight scaled by a bare number, or summed, keeps the first operand's
 /// unit (500bf ÷ 4 reads 125bf; 500bf + 1yd³ = 824bf; 1yd² + 2ft² = 3yd²).
 /// A length answer, scaled, summed or made from other quantities, is
-/// written as the trade compound, or in the first metric length's unit when
-/// every length that went in was metric (3yd × 2 = 18ft 0in; 1mm + 1mm =
-/// 2mm); an area or a volume made from lengths answers in feet, or in that
+/// written as the trade compound, or in the smallest metric unit typed when
+/// every length that went in was metric, whatever their order (3yd × 2 =
+/// 18ft 0in; 1m + 1mm = 1,001mm, where metres would hide the millimetre);
+/// an area or a volume made from lengths answers in feet, or in that
 /// metric unit by the same vote (2cm × 3cm = 6cm²). Acres and board feet
 /// carry no length system and do not vote, so 1 acre × 1m answers in m³.
 /// A bare number scales an area in either order, where the prototype
@@ -212,8 +213,10 @@ class ChainArithmetic extends Equatable {
     if (lengths.isEmpty || !lengths.every((unit) => unit.isMetric)) {
       return null;
     }
-    return lengths.first;
+    return lengths.reduce(_smallerUnit);
   }
+
+  Unit _smallerUnit(Unit a, Unit b) => b.ticksPerUnit < a.ticksPerUnit ? b : a;
 
   int _wholeTicks(double ticks) {
     final rounded = (ticks + 0.5).floorToDouble();
@@ -227,8 +230,6 @@ class ChainArithmetic extends Equatable {
   List<Object?> get props => const [];
 }
 
-/// Raised inside a row when a length answer has no whole tick count, so
-/// that [ChainArithmetic.combine] can refuse the step instead of clamping.
 class _TicksOutOfRange implements Exception {
   const _TicksOutOfRange();
 }
