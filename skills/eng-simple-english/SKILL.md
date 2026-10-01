@@ -41,9 +41,10 @@ list in section 4, plus the self-check results from section 5.
 | A runbook or setup guide | Code itself. This skill edits prose, not `.dart` files. |
 | An internal doc read once by the team | A README meant to sell the project to outsiders. Ask the user first: that is closer to marketing copy. |
 
-If you are unsure which bucket a document falls in, ask: will one person read
-this once and act on it, or will many people read it to decide whether they
-like the project? The first is this skill's job. The second is not.
+If you are unsure which bucket a document falls in, ask one question: will
+one person read this once and act on it? Or will many people read it to
+decide if they like the project? The first case is this skill's job. The
+second is not.
 
 ## 2. Where these rules come from
 
@@ -59,20 +60,11 @@ copied from either:
   agencies write for the reader: short sentences, active voice, everyday
   words, one idea at a time, no legal or technical jargon left unexplained.
 
-Inside this repo, two more things already apply and this skill does not
-replace them:
-
-- **The "Plain English" output style** (`~/.claude/output-styles/plain-english.md`)
-  governs every chat reply, automatically, on every message. This skill is
-  the equivalent discipline for a document, not a reply. The rules below are
-  stricter, because a document gets read more than once and nobody is present
-  to answer a follow-up question about it.
-- **A Stop hook** (`~/.claude/hooks/plain-english-lint.py`) checks chat
-  replies for banned phrases, em dashes, run-on semicolons, and long
-  sentences. It is a personal setup, so not every machine has it installed.
-  This skill's rule list works with or without it. If it is present, run it
-  as an extra check (section 5), never as a replacement for reading the
-  document yourself.
+An optional personal Stop hook can exist at
+`~/.claude/hooks/plain-english-lint.py`. It checks chat replies for banned
+phrases, em dashes, run-on semicolons, and long sentences. This skill's rule
+list works with or without it. If it is present, run it as an extra check
+(section 5), never as a replacement for reading the document yourself.
 
 ## 3. The method, in four steps
 
@@ -139,7 +131,7 @@ thing.
   This list overlaps with `~/.claude/hooks/plain-english-lint.json`'s
   `banned_phrases`, kept here so the skill works on a machine without that
   personal hook. If you also have that hook, treat its list as the more
-  current one and fold new entries back into this list when you find them.
+  current one. When you find a new entry there, fold it back into this list.
 
 - **Use the plain word.** "Use" beats "leverage" or "utilize." "Before" beats
   "prior to." "If" beats "in the event that." "Show" beats "surface." "Start"
@@ -147,26 +139,23 @@ thing.
 
 - **One idea, one word, for the whole document.** This is Step 2, enforced.
 
-- **Keep a real technical or domain name exact, and define it once.** A term
-  is real, not a metaphor, when it names a specific thing in this codebase or
-  in Dart. Examples: `PowerSyncDatabaseWrapper`, cascade notation, a gate (the
-  consent gate feature), a hook (a callback registration point), a guardrail,
-  a spine, plumbing (a real construction term, since this app estimates
-  building costs). The first time a document uses one of these, say what it
-  means in one clause, for example "the `PowerSyncDatabaseWrapper` interface
-  (the interface a feature depends on instead of the SDK directly)." After
-  that first sentence, use the bare word freely in that document.
+- **Keep a real technical or domain name exact, and define it once.** When a
+  term names a specific thing in this codebase or in Dart, it is real, not a
+  metaphor. Examples: `PowerSyncDatabaseWrapper`, cascade notation, a gate
+  (the consent gate feature), a hook (a callback registration point),
+  plumbing (a real construction term, since this app estimates building
+  costs). The first time a document uses one of these, say what it means in
+  one clause. For example: "the `PowerSyncDatabaseWrapper` interface" means
+  "the interface a feature depends on instead of the SDK directly." After
+  that first use, use the bare word freely in that document.
 
-- **`seam` is banned, even though this repo's own skills use it.** Several
-  existing `SKILL.md` files use `seam` to mean "the interface a feature
-  depends on instead of the real SDK" (the `PowerSyncDatabaseWrapper` seam,
-  the `SupabaseWrapper` seam). Do not carry that word into a rewrite. Replace
-  it with the literal phrase: "the `PowerSyncDatabaseWrapper` interface," or
-  "a test override point," or "the wrapper." This is a personal rule, not a
-  general one. `seam` also names a real, literal thing in construction:
-  roofing, flooring, and drywall trades all seal seams. A sentence about a
-  cost item or a trade can still use the word literally. Only the
-  design/testing sense is banned. Do not coin a *new* metaphor to stand in
+- **`seam` is banned.** Do not carry that word into a rewrite. Replace it
+  with the literal phrase: "the `PowerSyncDatabaseWrapper` interface," or "a
+  test override point," or "the wrapper." `seam` also names a real, literal
+  thing in construction: roofing, flooring, and drywall trades all seal
+  seams. A sentence about a cost item or a trade can still use the word
+  literally. Only the design/testing sense is banned. Do not coin a *new*
+  metaphor to stand in
   for "a place code plugs into" either. A new metaphor is exactly what turns
   one team's shorthand into another reader's confusion.
 
@@ -203,7 +192,7 @@ thing.
 |---|---|
 | "should" (a requirement) | "must" |
 | "should" (a suggestion) | State it as a fact and say why ("X is better because Y"), or delete the sentence |
-| "may," "might," "could" (something is possible) | "can": "The build can fail if the disk is full." |
+| "may," "might," "could" (something is possible) | "can": "If the disk is full, the build can fail." |
 | "may" (permission) | "can" |
 | "would" (a hypothetical) | Restate as a real condition: "If X happens, Y happens." |
 
@@ -254,8 +243,10 @@ Run these checks on the rewritten document. Fix what they find, then stop.
 
 ## 6. Worked example
 
-This example is a real excerpt from `docs/Agentic-Skills-Migration-Plan.md`
-in this repo, sorted as an explanation.
+This example is a real excerpt from an earlier version of
+`docs/Agentic-Skills-Migration-Plan.md` in this repo, sorted as an
+explanation. A later PR rewrote the file to the "After" text below, so the
+"Before" text no longer appears on `main`.
 
 **Before:**
 
