@@ -700,7 +700,16 @@ class EquipmentCostItem extends CostItem {
     super.brand,
     super.productLink,
     super.description,
-  }) : super(itemType: CostItemType.equipment);
+  }) : assert(
+         pricingMethod != EquipmentPricingMethod.day || jobAmount == null,
+         'jobAmount must be null when pricingMethod is day',
+       ),
+       assert(
+         pricingMethod != EquipmentPricingMethod.job ||
+             (duration == null && dailyRate == null),
+         'duration and dailyRate must be null when pricingMethod is job',
+       ),
+       super(itemType: CostItemType.equipment);
 
   @override
   List<Object?> get props => [
