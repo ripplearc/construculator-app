@@ -245,9 +245,8 @@ void main() {
 
   group('EquipmentCostFormFields — equipment name field', () {
     // The equipment name field never carries an error list at all (no
-    // required-field error exists for it — the disabled Add button names
-    // what's missing instead, per S1 on #653's review); this guards against
-    // that wiring being re-added.
+    // required-field error exists for it; the disabled Add button names what
+    // is missing instead). This guards against that wiring being re-added.
     testWidgets('never carries an error list, regardless of content', (
       tester,
     ) async {
