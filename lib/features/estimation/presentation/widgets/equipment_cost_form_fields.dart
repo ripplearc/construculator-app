@@ -698,6 +698,99 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
+  // Figma's "How many days?" field (B2, node 66337:158600) and the Duration
+  // field above (the full, not-yet-recalled form) are the same control —
+  // same controller, same validation — so this is shared between both
+  // layouts rather than duplicated.
+  Widget _durationField(BuildContext context, EquipmentCostFormWithData data) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return UnderlineTextField(
+      key: const Key('duration_field'),
+      label: l10n.equipmentDurationLabel,
+      hintText: l10n.equipmentDurationPlaceholder,
+      controller: _durationController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      suffix: Text(
+        l10n.equipmentDurationSuffix,
+        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
+      ),
+      errorTextList: _errorList(_durationErrorText(context, data)),
+    );
+  }
+
+  // Shared between the full form's Amount field and C2's recalled-job-price
+  // confirmation (node 66337:159434) — same controller, same validation.
+  // [showRateChrome] is false for C2, which per Figma shows none of the
+  // rate-status badge, "Save as my default" link, or look-up-a-rate button
+  // a not-yet-recalled Amount field offers.
+  Widget _amountField(
+    BuildContext context,
+    EquipmentCostFormWithData data, {
+    bool showRateChrome = true,
+  }) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return UnderlineTextField(
+      key: const Key('amount_field'),
+      label: l10n.equipmentAmountLabel,
+      controller: _jobAmountController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      suffix: Text(
+        _rateUnitSuffix(context, data.method),
+        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
+      ),
+      labelTrailing: showRateChrome
+          ? _rateStatusBadge(context, data.rateStatus)
+          : null,
+      trailingAction: showRateChrome
+          ? (_saveAsMyRateLink(context, data) ??
+                _lookupRateButtonWhenEmpty(context, data))
+          : null,
+      errorTextList: _errorList(_amountErrorText(context, data)),
+    );
+  }
+
+  // Title (equipment name) + subtitle (saved rate, e.g. "$120.00 /day · your
+  // default") standing in for the full name field/rate field/badge once a
+  // rate is recalled from Your Rates — Figma's B2/C2 confirmation header
+  // (nodes 66337:158600/66337:159434), not the screen's own CoreAppBar
+  // title, which stays the fixed "Add equipment costs" string.
+  List<Widget> _recalledRateHeader(
+    BuildContext context,
+    EquipmentCostFormWithData data,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final amount = DisplayFormatter.currency.format(
+      (isDay ? data.dailyRate : data.jobAmount) ?? 0,
+    );
+    return [
+      Text(
+        data.equipmentType,
+        key: const Key('recalled_rate_title'),
+        style: textTheme.titleMediumSemiBold.copyWith(
+          color: colorTheme.textHeadline,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space1),
+      Text(
+        l10n.equipmentRecalledRateSubtitle(
+          amount,
+          _rateUnitSuffix(context, data.method),
+        ),
+        key: const Key('recalled_rate_subtitle'),
+        style: textTheme.bodyMediumRegular.copyWith(
+          color: colorTheme.textBody,
+        ),
+      ),
+    ];
+  }
+
   List<Widget> _manuallyFields(BuildContext context) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
@@ -719,6 +812,28 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           builder: (_, state) {
             final data = _dataOf(state);
             final isDay = data.method == EquipmentPricingMethod.day;
+            // CUJ 6 Sub-flows B/C: once a rate is recalled from Your Rates
+            // it's already verified, so Figma swaps the full entry form for
+            // a compact confirmation — name/rate become a read-only
+            // Title/Subtitle and only Duration (Day) or Amount (Job) stays
+            // editable. No equipment-name field, Day/Job toggle,
+            // rate-status badge, "Save as my default" link, or
+            // look-up-a-rate button on this screen (see
+            // _recalledRateHeader/_amountField's own doc comments).
+            if (data.rateStatus == RateStatus.ownRateConfirmed) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ..._recalledRateHeader(context, data),
+                  const SizedBox(height: CoreSpacing.space5),
+                  isDay
+                      ? _durationField(context, data)
+                      : _amountField(context, data, showRateChrome: false),
+                  const SizedBox(height: CoreSpacing.space5),
+                  _buildDeliveryFeeSection(context, data),
+                ],
+              );
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -755,25 +870,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 ),
                 const SizedBox(height: CoreSpacing.space5),
                 if (isDay) ...[
-                  UnderlineTextField(
-                    key: const Key('duration_field'),
-                    label: l10n.equipmentDurationLabel,
-                    hintText: l10n.equipmentDurationPlaceholder,
-                    controller: _durationController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    hideSuffixWhenEmpty: true,
-                    suffix: Text(
-                      l10n.equipmentDurationSuffix,
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                    errorTextList: _errorList(
-                      _durationErrorText(context, data),
-                    ),
-                  ),
+                  _durationField(context, data),
                   const SizedBox(height: CoreSpacing.space5),
                   UnderlineTextField(
                     key: const Key('rate_field'),
@@ -799,28 +896,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                   _rateSaveFooter(context, data),
                 ] else ...[
-                  UnderlineTextField(
-                    key: const Key('amount_field'),
-                    label: l10n.equipmentAmountLabel,
-                    hintText: l10n.equipmentAmountPlaceholder,
-                    controller: _jobAmountController,
-                    hideSuffixWhenEmpty: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    suffix: Text(
-                      _rateUnitSuffix(context, data.method),
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                    labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                    trailingAction:
-                        _saveAsMyRateLink(context, data) ??
-                        _lookupRateButtonWhenEmpty(context, data),
-                    errorTextList: _errorList(_amountErrorText(context, data)),
-                  ),
-                  _rateSaveFooter(context, data),
+                  _amountField(context, data),
+                  _saveAsMyRateHelperText(context, data) ??
+                      const SizedBox.shrink(),
                 ],
                 const SizedBox(height: CoreSpacing.space5),
                 _buildDeliveryFeeSection(context, data),
