@@ -257,7 +257,7 @@ class _NewEquipmentCostRow extends StatelessWidget {
         key: const Key('new_equipment_cost_row'),
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
           padding: const EdgeInsets.symmetric(
             vertical: CoreSpacing.space3,
             horizontal: CoreSpacing.space2,
@@ -268,7 +268,11 @@ class _NewEquipmentCostRow extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CoreIconWidget(icon: CoreIcons.add, color: colorTheme.textLink, size: 16),
+              CoreIconWidget(
+                icon: CoreIcons.add,
+                color: colorTheme.textLink,
+                size: CoreSpacing.space4,
+              ),
               const SizedBox(width: CoreSpacing.space2),
               Text(
                 label,
