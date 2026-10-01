@@ -31,9 +31,14 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
+            // Top-aligned, so the golden shows the tile at the height it
+            // takes in the Logs list rather than stretched to the surface.
             return Material(
               color: context.colorTheme.pageBackground,
-              child: CostEstimationLogTile(log: log),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: CostEstimationLogTile(log: log),
+              ),
             );
           },
         ),
@@ -92,6 +97,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        78,
+        reason: 'an entry with no detail line is 78px (CUJ 11 screen 5)',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
@@ -195,6 +205,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        102,
+        reason: 'an entry with one detail line is 102px (CUJ 11 screen 5)',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
@@ -351,6 +366,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        126,
+        reason: 'a second changed field adds a 4px gap and a 20px line',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(

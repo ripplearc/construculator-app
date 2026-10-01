@@ -352,6 +352,24 @@ void main() {
         expect(richTextContaining('Material'), findsOneWidget);
       });
 
+      testWidgets('displays no item type for a removed cost item', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costItemRemoved,
+          activityDetails: {'itemName': 'Scaffolding', 'itemType': 'Material'},
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          richTextContaining(localization.activityItemType),
+          findsNothing,
+        );
+        expect(richTextContaining('Material'), findsNothing);
+      });
+
       testWidgets('displays edited fields subtitle', (tester) async {
         final log = testLog.copyWith(
           activity: CostEstimationActivityType.costItemEdited,
