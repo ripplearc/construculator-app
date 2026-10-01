@@ -76,6 +76,12 @@ final class ChainEmpty extends ChainOutcome {
 /// An error chip ends its chain the same way, wherever it sits: once the
 /// failed step has landed on the tape the strip goes silent (rule 4.12), a
 /// second = has nothing to land, and 4 + 3 after the chip folds again.
+///
+/// A closed bracket is worth what its inside folds to, at full precision
+/// and with its dimension (Section 7, "Brackets with units"), and the
+/// steps worked inside it count, so (2 + 3) on its own is a calculation
+/// and = lands Calc 5. An open bracket is worth nothing yet, which is why
+/// no Calc is offered while it is open.
 class ChainEvaluator extends Equatable {
   /// Reads each chip's value.
   final QuantityParser parser;
@@ -97,10 +103,15 @@ class ChainEvaluator extends Equatable {
           running = _nothing;
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
-        case ValueChip(:final operator):
-          final value = chip.value(parser);
-          if (value == null) return const ChainEmpty();
-          running = _joined(running, operator, value);
+        case ValueChip(:final operator) || BracketChip(:final operator):
+          final reading = _readingOf(chip);
+          if (reading == null) return const ChainEmpty();
+          running = _joined(
+            running,
+            operator,
+            reading.value,
+            stepsInside: reading.steps,
+          );
       }
     }
     if (running.failure case final failure?) return failure;
@@ -115,17 +126,18 @@ class ChainEvaluator extends Equatable {
   _RunningChain _joined(
     _RunningChain running,
     Operator? operator,
-    Quantity value,
-  ) {
+    Quantity value, {
+    int stepsInside = 0,
+  }) {
     final total = running.total;
     if (total == null || operator == null) {
-      return (total: value, steps: 0, failure: null);
+      return (total: value, steps: stepsInside, failure: null);
     }
     if (running.failure != null) return running;
     return switch (arithmetic.combine(total, operator, value)) {
       ArithmeticValue(value: final next) => (
         total: next,
-        steps: running.steps + 1,
+        steps: running.steps + 1 + stepsInside,
         failure: null,
       ),
       ArithmeticFailed(:final error) => (
@@ -140,6 +152,18 @@ class ChainEvaluator extends Equatable {
       ),
     };
   }
+
+  ({Quantity value, int steps})? _readingOf(TapeChip chip) => switch (chip) {
+    ValueChip() => switch (chip.value(parser)) {
+      final value? => (value: value, steps: 0),
+      null => null,
+    },
+    BracketChip(isOpen: false, :final inner) => switch (fold(inner)) {
+      ChainValue(:final value, :final steps) => (value: value, steps: steps),
+      ChainFailed() || ChainEmpty() => null,
+    },
+    BracketChip() || ResultChip() || ErrorChip() => null,
+  };
 
   @override
   List<Object?> get props => [parser, arithmetic];
