@@ -282,16 +282,13 @@ void main() {
       fakeSupabase.completer = Completer();
       fakeSupabase.shouldDelayOperations = true;
 
-      await tester.drag(
-        find.byType(CustomScrollView).first,
-        const Offset(0, -1800),
+      final logsScrollView = find.byKey(
+        CostEstimationLogsList.logsScrollViewKey,
       );
+      await tester.drag(logsScrollView, const Offset(0, -1800));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
-      await tester.drag(
-        find.byType(CustomScrollView).first,
-        const Offset(0, -1800),
-      );
+      await tester.drag(logsScrollView, const Offset(0, -1800));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
