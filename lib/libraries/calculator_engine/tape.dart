@@ -51,10 +51,12 @@ enum TapeRefusal {
   groupCannotTakeUnit,
 
   /// A function key while a bracket is open ("Brackets hold plain
-  /// arithmetic"), or [( )] on an empty named chip (Length then ( ), since
-  /// a bracket holds numbers, units, fractions and operators only
-  /// (Appendix D).
+  /// arithmetic").
   bracketsHoldPlainArithmetic,
+
+  /// [( )] on an empty named chip (Length then ( )): a bracket holds
+  /// numbers, units, fractions and operators only (Appendix D).
+  bracketCannotTakeName,
 
   /// ( by a path other than the [( )] key while a bracket is open ("One
   /// bracket at a time").
@@ -73,9 +75,8 @@ enum TapeNotice {
   /// the prototype does.
   emptyBracketsRemoved,
 
-  /// A bracket reopened by ⌫ was emptied and then closed, or emptied and
-  /// ⌫ pressed once more, so the edit was cancelled and the group is back
-  /// as it was (Section 7, "Editing a bracket"; Section 5, "The group had
+  /// A bracket reopened by ⌫ was emptied and then closed, so the edit was
+  /// cancelled and the group is back as it was (Section 7, "Editing a bracket"; Section 5, "The group had
   /// nothing inside it, so your change was cancelled").
   bracketEditCancelled,
 
@@ -422,16 +423,12 @@ class Tape extends Equatable {
   /// typing into its last value again (Section 7, "Editing a bracket").
   /// Inside a bracket a chip has no name, so a bare one emptied by ⌫ has
   /// nothing left to show and is dropped, which makes the next ⌫ remove
-  /// the bracket itself ("on an empty bracket it removes the bracket"); an
-  /// emptied operator chip stays, since it still holds the operator. When
-  /// the emptied bracket is one that ⌫ reopened, that ⌫ cancels the edit
-  /// and brings the group back as it was.
+  /// the bracket itself ("on an empty bracket it removes the bracket"),
+  /// one that ⌫ reopened included; an emptied operator chip stays, since
+  /// it still holds the operator.
   TapeOutcome backspace() {
     if (openBracket case final bracket?) {
-      if (bracket.inner.isEmpty) {
-        if (bracket.original != null) return _restored(bracket);
-        return TapeChanged(_removeBracket(bracket));
-      }
+      if (bracket.inner.isEmpty) return TapeChanged(_removeBracket(bracket));
       return _inside(bracket, (inner) => inner._backspaceInsideBracket());
     }
     if (chips.isNotEmpty) {
@@ -486,7 +483,7 @@ class Tape extends Equatable {
     }
     final chip = active;
     if (chip != null && chip.entry.isEmpty && chip.key != null) {
-      return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+      return const TapeRefused(TapeRefusal.bracketCannotTakeName);
     }
     if (chip != null && chip.entry.isEmpty) {
       return _replaceLastChip(BracketChip(operator: chip.operator));
