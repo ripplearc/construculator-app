@@ -1,3 +1,5 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -171,5 +173,77 @@ void main() {
         );
       },
     );
+
+    // CA-1146: CUJ 6 Sub-flow B (saved day rate) — Figma's B2 confirmation
+    // (node 66337:158600), a compact Title/Subtitle header with Duration as
+    // the only editable field, replacing the full entry form.
+    testWidgets('renders the recalled-day-rate confirmation (B2)', (
+      tester,
+    ) async {
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Scissor lift — 19ft',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 120),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        ),
+      );
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scissor lift — 19ft'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_day_rate$suffix.png',
+        ),
+      );
+    });
+
+    // CA-1146: CUJ 6 Sub-flow C (saved job price) — Figma's C2 confirmation
+    // (node 66337:159434), the same compact header shape with Amount as the
+    // only editable field, pre-filled from the recalled price.
+    testWidgets('renders the recalled-job-price confirmation (C2)', (
+      tester,
+    ) async {
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Dumpster — 30 yd',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 400),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.job,
+        ),
+      );
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dumpster — 30 yd'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price$suffix.png',
+        ),
+      );
+    });
   });
 }
