@@ -53,6 +53,7 @@ void main() {
             child: EquipmentCostFormFields(
               fromCostFile: fromCostFile,
               yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+              clock: FakeClockImpl(),
             ),
           ),
         ),
