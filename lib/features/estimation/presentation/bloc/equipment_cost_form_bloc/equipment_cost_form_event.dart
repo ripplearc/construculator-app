@@ -49,8 +49,10 @@ class EquipmentDeliveryFeeUpdatedEvent extends EquipmentCostFormEvent {
   final String value;
 }
 
-/// Fired when the user edits the optional note field inside the expanded
-/// delivery-fee editor.
+/// Fired when the user edits the item's note. The field is placed inside the
+/// expanded delivery-fee editor, but the value it carries is the whole cost
+/// item's [EquipmentCostItem.description], the same item-level field Material
+/// and Labour items use — not something scoped to the delivery fee.
 class EquipmentDescriptionUpdatedEvent extends EquipmentCostFormEvent {
   const EquipmentDescriptionUpdatedEvent(this.value);
   final String value;

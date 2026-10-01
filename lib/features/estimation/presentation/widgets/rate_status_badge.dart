@@ -47,7 +47,7 @@ enum RateStatusBadgeVariant {
 /// the app side isn't possible without a `ripplearc_coreui` release that
 /// exports a stronger orange text token. Left as-is pending that decision.
 ///
-// TODO: CA-1159 — replace with CoreUI's status badge once it exists
+// TODO: [CA-1159] replace with CoreUI's status badge once it exists. https://ripplearc.youtrack.cloud/issue/CA-1159
 class RateStatusBadge extends StatelessWidget {
   final String label;
   final RateStatusBadgeVariant variant;
