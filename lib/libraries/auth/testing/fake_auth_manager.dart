@@ -28,6 +28,11 @@ class FakeAuthManager implements AuthManager {
   // Currently authenticated user credential
   UserCredential? _currentCredential;
 
+  /// When set, [getUserProfile] answers with this error while every other
+  /// call keeps following [setAuthResponse], as when the credentials are
+  /// read but the profile fetch fails.
+  AuthErrorType? getUserProfileErrorType;
+
   /// List of login attempts
   final List<({String email, String password})> loginAttempts = [];
 
@@ -314,6 +319,9 @@ class FakeAuthManager implements AuthManager {
     if (!_authShouldSucceed) {
       return AuthResult.failure(_errorType);
     }
+    if (getUserProfileErrorType case final errorType?) {
+      return AuthResult.failure(errorType);
+    }
 
     try {
       final result = await _authRepository.getUserProfile(credentialId);
@@ -386,6 +394,7 @@ class FakeAuthManager implements AuthManager {
     logoutAttempts.clear();
     _authShouldSucceed = true;
     _errorType = AuthErrorType.serverError;
+    getUserProfileErrorType = null;
     setCurrentCredential(null);
   }
 }

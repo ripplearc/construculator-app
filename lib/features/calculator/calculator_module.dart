@@ -5,9 +5,15 @@ import 'package:construculator/features/calculator/presentation/pages/calculator
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+/// The calculator feature: its page and the settings repository it reads,
+/// which follows the signed-in profile through the auth library.
 class CalculatorModule extends Module {
+  /// The app's shared bootstrap, handed on to the imported
+  /// [AuthLibraryModule] so the repository sees the same auth state as the
+  /// rest of the app.
   final AppBootstrap appBootstrap;
 
+  /// Creates the module over the app's [appBootstrap].
   CalculatorModule(this.appBootstrap);
 
   @override
