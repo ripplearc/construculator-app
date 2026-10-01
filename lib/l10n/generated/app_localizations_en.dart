@@ -1544,6 +1544,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get yourRatesRecentsTitle => 'Add equipment';
+
+  @override
+  String get yourRatesRecentsSectionHeading => 'Recent — tap to reuse';
+
+  @override
+  String get yourRatesNewEquipmentCostAction => 'New equipment cost';
+
+  @override
   String get equipmentNoteLabel => 'Note';
 
   @override
