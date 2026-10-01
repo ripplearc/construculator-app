@@ -2826,6 +2826,12 @@ abstract class AppLocalizations {
   /// **'✓ Your rate'**
   String get equipmentRateStatusYourRateBadge;
 
+  /// Subtitle below the equipment name in the compact confirmation header shown once a rate is recalled from Your Rates (CUJ 6 Sub-flows B/C, Figma nodes 66337:158600 and 66337:159434); amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the recalled rate's pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} {unit} · your default'**
+  String equipmentRecalledRateSubtitle(String amount, String unit);
+
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:

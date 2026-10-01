@@ -101,6 +101,19 @@ void main() {
     return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
+  // Matches the compact header's Subtitle text (e.g. "$145.00 /day · your
+  // default") shown once a rate is recalled from Your Rates (CA-1146,
+  // Figma nodes 66337:158600/66337:159434).
+  String recalledRateSubtitleText(double amount, EquipmentPricingMethod method) {
+    final unit = method == EquipmentPricingMethod.day
+        ? l10n.yourRatesDaySuffix
+        : l10n.yourRatesJobSuffix;
+    return l10n.equipmentRecalledRateSubtitle(
+      DisplayFormatter.currency.format(amount),
+      unit,
+    );
+  }
+
   Future<void> fillValidDayFields(WidgetTester tester) async {
     await tester.enterText(
       find.byKey(const Key('equipment_name_field')),
@@ -1617,32 +1630,38 @@ void main() {
       expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
     });
 
-    testWidgets('picking a Your-rates entry fills name and rate', (
-      tester,
-    ) async {
-      await seedRate(
-        itemName: 'Mini excavator',
-        amount: 145,
-        method: EquipmentPricingMethod.day,
-      );
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'picking a Your-rates entry shows it as a confirmed Title/Subtitle, '
+      'not a filled-in name/rate field pair',
+      (tester) async {
+        await seedRate(
+          itemName: 'Mini excavator',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('lookup_rate_button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Mini excavator'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('your_rates_use_button')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('lookup_rate_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Mini excavator'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('your_rates_use_button')));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Mini excavator'), findsOneWidget);
-      // Not '145.0': the field expects a plain typed-style number, matching
-      // what a user would have typed directly (N6).
-      expect(find.text('145'), findsOneWidget);
-    });
+        expect(find.text('Mini excavator'), findsOneWidget);
+        expect(
+          find.text(
+            recalledRateSubtitleText(145, EquipmentPricingMethod.day),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
-      'picking a fractional-amount entry keeps the decimal, unlike a whole number',
+      'a fractional saved rate renders as a two-decimal currency amount in '
+      'the subtitle',
       (tester) async {
         await seedRate(
           itemName: 'Skid steer',
@@ -1659,7 +1678,12 @@ void main() {
         await tester.tap(find.byKey(const Key('your_rates_use_button')));
         await tester.pumpAndSettle();
 
-        expect(find.text('132.5'), findsOneWidget);
+        expect(
+          find.text(
+            recalledRateSubtitleText(132.5, EquipmentPricingMethod.day),
+          ),
+          findsOneWidget,
+        );
       },
     );
 
@@ -1682,9 +1706,19 @@ void main() {
     });
   });
 
-  // CA-1146: CUJ 6 Sub-flows B (saved day rate), C (saved job price) and D
-  // (switching methods, including on a recalled line).
-  group('EquipmentCostFormFields — recalled rate (Sub-flows B, C, D)', () {
+  // CA-1146: CUJ 6 Sub-flows B (saved day rate) and C (saved job price).
+  // Figma's actual B2/C2 confirmation screens (nodes 66337:158600 and
+  // 66337:159434) replace the full entry form with a compact Title/Subtitle
+  // header plus a single editable field — not the full form with a
+  // read-only Rate field.
+  //
+  // Sub-flow D (switching pricing methods) stays covered by the generic
+  // 'Day/Job toggle' group above: that toggle only ever appears on an
+  // unsaved draft (RateStatus other than ownRateConfirmed) — Figma's B2/C2
+  // have no toggle at all, so once a rate is recalled there is no UI path
+  // left to switch methods on that line. That absence is asserted directly
+  // below ("hides the equipment-name field, Day/Job toggle, ...").
+  group('EquipmentCostFormFields — recalled rate (Sub-flows B, C)', () {
     Future<YourRateEntry> seedRate({
       required String itemName,
       required double amount,
@@ -1722,21 +1756,25 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    bool textFieldReadOnly(WidgetTester tester, Key fieldKey) {
-      return tester
-          .widget<TextField>(
-            find.descendant(
-              of: find.byKey(fieldKey),
-              matching: find.byType(TextField),
-            ),
-          )
-          .readOnly;
+    // Widgets that only ever belong to the full, not-yet-recalled form —
+    // none of these appear in Figma's B2/C2 confirmation header.
+    void expectFullFormChromeAbsent(WidgetTester tester) {
+      expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+      expect(find.byKey(const Key('day_method_chip')), findsNothing);
+      expect(find.byKey(const Key('job_method_chip')), findsNothing);
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+      expect(
+        find.byKey(const Key('save_as_my_rate_helper_text')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
     }
 
     group('Sub-flow B: saved day rate', () {
       testWidgets(
-        'Rate field becomes read-only, Duration stays editable, and no '
-        '"Save as my rate" link/helper text remains',
+        'shows the equipment name as a Title and the saved rate as a '
+        'Subtitle, with Duration as the only field',
         (tester) async {
           await seedRate(
             itemName: 'Scissor lift',
@@ -1748,32 +1786,21 @@ void main() {
 
           await recallRate(tester, 'Scissor lift');
 
-          expect(textFieldReadOnly(tester, const Key('rate_field')), isTrue);
+          expect(find.text('Scissor lift'), findsOneWidget);
           expect(
-            textFieldReadOnly(tester, const Key('duration_field')),
-            isFalse,
-          );
-          expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
-          expect(
-            find.byKey(const Key('save_as_my_rate_helper_text')),
-            findsNothing,
-          );
-          // Confirmed already, not a sample — the green "Your rate" badge,
-          // never the orange "Sample rate" one.
-          expect(
-            find.text(l10n.equipmentRateStatusYourRateBadge),
+            find.text(
+              recalledRateSubtitleText(145, EquipmentPricingMethod.day),
+            ),
             findsOneWidget,
           );
-          expect(
-            find.text(l10n.equipmentRateStatusSampleRateBadge),
-            findsNothing,
-          );
+          expect(find.byKey(const Key('rate_field')), findsNothing);
+          expect(find.byKey(const Key('duration_field')), findsOneWidget);
         },
       );
 
       testWidgets(
-        'attempting to type into the read-only Rate field leaves its value '
-        'unchanged',
+        'hides the equipment-name field, Day/Job toggle, rate-status badge, '
+        'and save-as-my-rate link/magnifier',
         (tester) async {
           await seedRate(
             itemName: 'Scissor lift',
@@ -1782,13 +1809,10 @@ void main() {
           );
           await tester.pumpWidget(makeWidget());
           await tester.pumpAndSettle();
+
           await recallRate(tester, 'Scissor lift');
 
-          await tester.enterText(find.byKey(const Key('rate_field')), '999');
-          await tester.pump();
-
-          expect(find.text('145'), findsOneWidget);
-          expect(find.text('999'), findsNothing);
+          expectFullFormChromeAbsent(tester);
         },
       );
 
@@ -1835,12 +1859,34 @@ void main() {
           expect(saveEnabled, isTrue);
         },
       );
+
+      testWidgets(
+        'the total is duration × the recalled rate, same as the full form',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          double? total;
+          await tester.pumpWidget(
+            makeWidget(onTotalChanged: (value) => total = value),
+          );
+          await tester.pumpAndSettle();
+
+          await recallRate(tester, 'Scissor lift');
+          await tester.enterText(find.byKey(const Key('duration_field')), '3');
+          await tester.pump();
+
+          expect(total, 435.0);
+        },
+      );
     });
 
     group('Sub-flow C: saved job price', () {
       testWidgets(
-        'Amount arrives filled, Add is active on arrival, and the Amount '
-        'field stays editable',
+        'shows the equipment name as a Title, the saved price as a '
+        'Subtitle, and Amount pre-filled and editable',
         (tester) async {
           await seedRate(
             itemName: 'Dumpster',
@@ -1859,13 +1905,16 @@ void main() {
 
           await recallRate(tester, 'Dumpster');
 
+          expect(find.text('Dumpster'), findsOneWidget);
+          expect(
+            find.text(
+              recalledRateSubtitleText(400, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
           // A confirmation, not a form: nothing else to fill in before Add
           // is available.
           expect(saveEnabled, isTrue);
-          expect(
-            textFieldReadOnly(tester, const Key('amount_field')),
-            isFalse,
-          );
 
           await tester.enterText(find.byKey(const Key('amount_field')), '450');
           await tester.pump();
@@ -1874,7 +1923,8 @@ void main() {
       );
 
       testWidgets(
-        'no "Sample rate" tag on a job price reused from Your rates',
+        'hides the equipment-name field, Day/Job toggle, rate-status badge, '
+        'and save-as-my-rate link/magnifier',
         (tester) async {
           await seedRate(
             itemName: 'Dumpster',
@@ -1888,14 +1938,7 @@ void main() {
 
           await recallRate(tester, 'Dumpster');
 
-          expect(
-            find.text(l10n.equipmentRateStatusSampleRateBadge),
-            findsNothing,
-          );
-          expect(
-            find.text(l10n.equipmentRateStatusYourRateBadge),
-            findsOneWidget,
-          );
+          expectFullFormChromeAbsent(tester);
         },
       );
 
@@ -1919,79 +1962,6 @@ void main() {
           await recallRate(tester, 'Dumpster');
 
           expect(total, 400.0);
-        },
-      );
-    });
-
-    group('Sub-flow D: switching methods on a recalled line', () {
-      testWidgets(
-        'switching from a recalled \$145/day rate to Job never shows a '
-        'derived amount, and preserves equipment name, delivery and note',
-        (tester) async {
-          await seedRate(
-            itemName: 'Scissor lift',
-            amount: 145,
-            method: EquipmentPricingMethod.day,
-          );
-          await tester.pumpWidget(makeWidget());
-          await tester.pumpAndSettle();
-          await recallRate(tester, 'Scissor lift');
-          await expandDeliveryField(tester);
-          await tester.enterText(
-            find.byKey(const Key('delivery_note_field')),
-            'Bring the ramps',
-          );
-          // Focusing the note field can auto-scroll the sheet's
-          // SingleChildScrollView to keep it visible; settle that before
-          // tapping the chip so its on-screen offset is stable.
-          await unfocusAll(tester);
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byKey(const Key('job_method_chip')));
-          await tester.pump();
-
-          // Never "4 x $145.00" or "$580.00" — the Amount field starts
-          // blank, a separate catalog entry from the Day rate.
-          expect(find.text('580'), findsNothing);
-          expect(find.text('145'), findsNothing);
-          final amountField = tester.widget<TextField>(
-            find.descendant(
-              of: find.byKey(const Key('amount_field')),
-              matching: find.byType(TextField),
-            ),
-          );
-          expect(amountField.controller!.text, isEmpty);
-          // Equipment name, delivery row and note all preserved.
-          expect(find.text('Scissor lift'), findsOneWidget);
-          expect(find.text('Bring the ramps'), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'switching back to Day after recalling a day rate preserves the '
-        'value but makes it editable again rather than silently reusing the '
-        'confirmed state',
-        (tester) async {
-          await seedRate(
-            itemName: 'Scissor lift',
-            amount: 145,
-            method: EquipmentPricingMethod.day,
-          );
-          await tester.pumpWidget(makeWidget());
-          await tester.pumpAndSettle();
-          await recallRate(tester, 'Scissor lift');
-
-          await tester.tap(find.byKey(const Key('job_method_chip')));
-          await tester.pump();
-          await tester.tap(find.byKey(const Key('day_method_chip')));
-          await tester.pump();
-
-          expect(find.text('145'), findsOneWidget);
-          expect(textFieldReadOnly(tester, const Key('rate_field')), isFalse);
-          expect(
-            find.text(l10n.equipmentRateStatusYourRateBadge),
-            findsNothing,
-          );
         },
       );
     });

@@ -8,7 +8,6 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,14 +69,19 @@ void main() {
       },
     );
 
-    // CA-1146: a day rate recalled from Your Rates makes the Rate field
-    // read-only (CUJ 6 Sub-flow B) rather than removing it, so it keeps the
-    // same contrast requirement as the editable state, plus a real semantics
-    // change worth checking directly: TextField's own readOnly flag should
-    // make it announce as read-only rather than a normal editable field.
+    // CA-1146: once a day rate is recalled from Your Rates (CUJ 6 Sub-flow
+    // B), Figma's B2 confirmation (node 66337:158600) replaces the editable
+    // Rate field with a static Title/Subtitle header — the rate itself is no
+    // longer an editable/read-only text field at all, just plain text, so
+    // its only a11y requirement is text contrast, checked here on the
+    // Subtitle. The Duration field stays the one live, editable control on
+    // this screen and keeps its own normal (not read-only) a11y coverage —
+    // see 'a11y: rate field meets text contrast guidelines...' above for the
+    // equivalent check on the not-yet-recalled form's Duration-adjacent
+    // field.
     testWidgets(
-      'a11y: a recalled (read-only) rate field meets text contrast '
-      'guidelines and is exposed as read-only, not an editable field',
+      'a11y: the recalled-rate Subtitle meets text contrast guidelines in '
+      'both themes',
       (tester) async {
         await setupA11yTest(tester);
         final repository = Modular.get<YourRatesRepository>();
@@ -96,7 +100,7 @@ void main() {
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           makeWidget,
-          find.byKey(const Key('rate_field')),
+          find.byKey(const Key('recalled_rate_subtitle')),
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
           setupAfterPump: (tester) async {
@@ -115,14 +119,45 @@ void main() {
           },
         );
 
-        final semantics = tester.getSemantics(
-          find.descendant(
-            of: find.byKey(const Key('rate_field')),
-            matching: find.byType(EditableText),
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a11y: the recalled-rate Duration field meets tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final repository = Modular.get<YourRatesRepository>();
+        await repository.save(
+          YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Backhoe',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
           ),
         );
-        expect(semantics.hasFlag(SemanticsFlag.isReadOnly), isTrue);
-        expect(semantics.hasFlag(SemanticsFlag.isTextField), isTrue);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('duration_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (tester) async {
+            final lookupButton = find.byKey(const Key('lookup_rate_button'));
+            if (lookupButton.evaluate().isEmpty) return;
+            await tester.tap(lookupButton);
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Backhoe'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.byKey(const Key('your_rates_use_button')));
+            await tester.pumpAndSettle();
+          },
+        );
       },
     );
 
