@@ -366,6 +366,11 @@ void main() {
 
       await pumpLogTile(tester: tester, log: log, theme: theme);
 
+      expect(
+        tester.getSize(find.byType(CostEstimationLogTile)).height,
+        126,
+        reason: 'a second changed field adds a 4px gap and a 20px line',
+      );
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
