@@ -12,6 +12,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -50,6 +51,7 @@ class EstimationRoutesModule extends Module {
           equipmentCostFormBlocFactory: () =>
               Modular.get<EquipmentCostFormBloc>(),
           yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+          clock: Modular.get<Clock>(),
         );
       },
     );
@@ -72,6 +74,7 @@ class EstimationRoutesModule extends Module {
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: Modular.get<Clock>(),
           ),
         );
       },
@@ -95,6 +98,7 @@ class EstimationRoutesModule extends Module {
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: Modular.get<Clock>(),
           ),
         );
       },
@@ -119,6 +123,7 @@ class EstimationRoutesModule extends Module {
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: Modular.get<Clock>(),
           ),
         );
       },

@@ -61,6 +61,7 @@ void main() {
             onSaveEnabledChanged: onSaveEnabledChanged,
             estimateId: estimateId,
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: FakeClockImpl(),
           ),
         ),
       ),
