@@ -18,12 +18,18 @@ part 'cost_estimation_log_state.dart';
 /// - Loading more logs with pagination
 /// - Error handling and state management
 /// - Event concurrency via transformers (restartable for FetchInitial)
+///
+/// Whether the last first load failed is kept in a field, not read back from
+/// [state]: a second tap on Try again can start after the first retry has
+/// already emitted Loading, and the second failure must still read "Still
+/// couldn't load Logs."
 class CostEstimationLogBloc
     extends Bloc<CostEstimationLogEvent, CostEstimationLogState> {
   final CostEstimationLogRepository _repository;
   String? _currentEstimateId;
   CancelableOperation<Either<Failure, List<CostEstimationLog>>>?
   _inFlightLoadMore;
+  bool _lastFirstLoadFailed = false;
 
   CostEstimationLogBloc({required this._repository})
     : super(const CostEstimationLogInitial()) {
@@ -39,20 +45,28 @@ class CostEstimationLogBloc
     await _inFlightLoadMore?.cancel();
     _inFlightLoadMore = null;
 
+    final isRetryAfterFailure = _lastFirstLoadFailed;
     emit(const CostEstimationLogLoading());
 
     final result = await _repository.fetchInitialLogs(event.estimateId);
 
-    result.fold((failure) => emit(CostEstimationLogError(failure: failure)), (
-      logs,
-    ) {
-      if (logs.isEmpty) {
-        emit(const CostEstimationLogEmpty());
-      } else {
-        final hasMore = _repository.hasMoreLogs(event.estimateId);
-        emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
-      }
-    });
+    _lastFirstLoadFailed = result.isLeft();
+    result.fold(
+      (failure) => emit(
+        CostEstimationLogError(
+          failure: failure,
+          isRepeatFailure: isRetryAfterFailure,
+        ),
+      ),
+      (logs) {
+        if (logs.isEmpty) {
+          emit(const CostEstimationLogEmpty());
+        } else {
+          final hasMore = _repository.hasMoreLogs(event.estimateId);
+          emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
+        }
+      },
+    );
   }
 
   Future<void> _onLoadMore(
@@ -100,6 +114,7 @@ class CostEstimationLogBloc
         CostEstimationLogLoadMoreError(
           failure: failure,
           logs: currentState.logs.toList(),
+          isRepeatFailure: currentState is CostEstimationLogLoadMoreError,
           hasMore: currentState.hasMore,
         ),
       ),

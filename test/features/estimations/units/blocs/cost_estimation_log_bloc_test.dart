@@ -208,6 +208,123 @@ void main() {
           ),
         ],
       );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should mark the second consecutive first-load failure as a repeat',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogError,
+          );
+
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+        },
+        expect: () => [
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            false,
+          ),
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should mark two retries sent in the same frame as repeats',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogError,
+          );
+
+          // A double tap on Try again, before the button is replaced. Both
+          // retries are in flight before the network answers.
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc
+            ..add(
+              const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+            )
+            ..add(
+              const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+            );
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoading);
+          await pumpEventQueue();
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+        },
+        skip: 2,
+        expect: () => [
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should not mark a first-load failure as a repeat after a success',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 1,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoaded,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            false,
+          ),
+        ],
+      );
     });
 
     group('CostEstimationLogLoadMore', () {
@@ -453,6 +570,124 @@ void main() {
                 'error type',
                 EstimationErrorType.timeoutError,
               ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should mark the second consecutive load more failure as a repeat',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoaded,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoadMoreError,
+          );
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<CostEstimationLogLoadMoreError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            false,
+          ),
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<CostEstimationLogLoadMoreError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should clear the repeat marker once a load more succeeds again',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 2 + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoaded,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoadMoreError,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is CostEstimationLogLoaded && !state.isLoadingMore,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          isA<CostEstimationLogLoaded>(),
+          isA<CostEstimationLogLoadMoreError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            false,
+          ),
+          isA<CostEstimationLogLoaded>(),
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.logs.length,
+            'logs length',
+            defaultPageSize * 2,
+          ),
+          isA<CostEstimationLogLoaded>(),
+          isA<CostEstimationLogLoadMoreError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            false,
+          ),
         ],
       );
 

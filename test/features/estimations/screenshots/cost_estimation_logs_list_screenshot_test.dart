@@ -209,5 +209,83 @@ void main() {
         ),
       );
     });
+
+    // CUJ 11 screen 4.
+    testWidgets('first-load error again after try again', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(CostEstimationLogsList.errorRetryButtonKey));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_first_load_error_repeat$suffix.png',
+        ),
+      );
+    });
+
+    // CUJ 11 screen 12.
+    testWidgets('load-more error again after retry', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      final logsScrollView = find.byKey(
+        CostEstimationLogsList.logsScrollViewKey,
+      );
+      final logsScrollable = find.descendant(
+        of: logsScrollView,
+        matching: find.byType(Scrollable),
+      );
+      await tester.drag(logsScrollView, const Offset(0, -1800));
+      await tester.pumpAndSettle();
+
+      final retry = find.byKey(CostEstimationLogsList.loadMoreRetryButtonKey);
+      await tester.scrollUntilVisible(
+        retry,
+        300,
+        scrollable: logsScrollable,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        retry,
+        300,
+        scrollable: logsScrollable,
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error_repeat$suffix.png',
+        ),
+      );
+    });
   });
 }
