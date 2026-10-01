@@ -303,6 +303,7 @@ class _Disclaimer extends StatelessWidget {
   }
 }
 
+// TODO: CA-1204 — replace with CoreUI's list-row component once it exists.
 class _YourRateRow extends StatelessWidget {
   final YourRateEntry entry;
   final EquipmentPricingMethod method;
