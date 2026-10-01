@@ -20,8 +20,9 @@ class UnderlineTextField extends StatefulWidget {
   /// Controls and reads the value text.
   final TextEditingController controller;
 
-  /// Placeholder text shown in the value row, in the value's own text
-  /// color/weight, while the controller is empty (e.g. the equipment name
+  /// Placeholder text shown in the value row, in the same disabled
+  /// weight/color as the empty-value text itself (`bodyLargeRegular` /
+  /// `textDisable`), while the controller is empty (e.g. the equipment name
   /// field's "Name the equipment", or the Note field's "Add a note
   /// (optional)"). Fields that don't pass this simply render nothing while
   /// empty.
