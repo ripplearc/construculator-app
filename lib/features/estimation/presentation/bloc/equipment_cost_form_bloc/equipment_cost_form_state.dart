@@ -155,9 +155,4 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
   final Failure failure;
 }
 
-/// Sentinel distinguishing "omit this parameter" (keep the current value)
-/// from an explicit `null` (clear the field) in
-/// [EquipmentCostFormWithData.copyWith]. Deliberately local to this file and
-/// not shared with [EquipmentCostItem.copyWith]'s `clearField`, since that
-/// sentinel means the opposite: pass it explicitly to clear, omit to keep.
 const Object _unset = Object();
