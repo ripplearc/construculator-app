@@ -70,6 +70,25 @@ class DisplayFormatter {
     return formatter.format(time);
   }
 
+  /// Formats how long ago [savedAt] was, relative to [now], matching the
+  /// recency subtitle on the Equipment "Your recents" screen (Figma node
+  /// `66342:177929`): "today"/"yesterday" for the first two days, a day
+  /// count through the rest of the week, then whole weeks beyond that.
+  ///
+  /// [now] is caller-supplied rather than read from [DateTime.now] so this
+  /// stays a pure function of its inputs — callers should source it from a
+  /// `Clock` (see `lib/libraries/time`).
+  ///
+  /// Example: 10 days before [now] -> "Used last week"
+  static String formatRecency(DateTime savedAt, {required DateTime now}) {
+    final days = now.difference(savedAt).inDays;
+    if (days <= 0) return 'Used today';
+    if (days == 1) return 'Used yesterday';
+    if (days < 7) return 'Used $days days ago';
+    final weeks = days ~/ 7;
+    return weeks == 1 ? 'Used last week' : 'Used $weeks weeks ago';
+  }
+
   /// Formats a file size in bytes to a human-readable string.
   ///
   /// Example: 204800 -> "200KB", 1572864 -> "1.5MB", 512 -> "512B"
