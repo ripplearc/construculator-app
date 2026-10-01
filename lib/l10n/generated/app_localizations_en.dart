@@ -770,6 +770,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityCostEstimationPdfShared => 'PDF shared';
 
   @override
+  String activityCostFileUpdated(String itemName) {
+    return 'Cost file updated: $itemName';
+  }
+
+  @override
+  String activityCostFileUpdatedCount(int count) {
+    return 'Cost file updated: $count prices changed';
+  }
+
+  @override
+  String get activityCostFileUpdatedSimple => 'Cost file updated';
+
+  @override
   String get activityUnknown => 'Unknown Activity';
 
   @override
