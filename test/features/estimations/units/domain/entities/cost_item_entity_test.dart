@@ -547,30 +547,6 @@ void main() {
     });
   });
 
-  group('DeliveryFeeStatus enum', () {
-    test('fromJson creates correct enum from string', () {
-      expect(DeliveryFeeStatus.fromJson('unset'), DeliveryFeeStatus.unset);
-      expect(
-        DeliveryFeeStatus.fromJson('estimated'),
-        DeliveryFeeStatus.estimated,
-      );
-      expect(
-        DeliveryFeeStatus.fromJson('confirmed'),
-        DeliveryFeeStatus.confirmed,
-      );
-    });
-
-    test('fromJson returns unset for invalid value', () {
-      expect(DeliveryFeeStatus.fromJson('invalid'), DeliveryFeeStatus.unset);
-    });
-
-    test('round-trip serialization preserves all values', () {
-      for (final status in DeliveryFeeStatus.values) {
-        expect(DeliveryFeeStatus.fromJson(status.toJson()), status);
-      }
-    });
-  });
-
   group('RateStatus enum', () {
     test('fromJson creates correct enum from string', () {
       expect(
@@ -609,7 +585,6 @@ void main() {
       duration: 5.0,
       dailyRate: const Money(amount: 500.0, currency: 'USD'),
       deliveryFee: const Money(amount: 50.0, currency: 'USD'),
-      deliveryFeeStatus: DeliveryFeeStatus.confirmed,
       rateStatus: RateStatus.ownRateConfirmed,
       productLink: 'https://example.com/excavator',
       description: 'Heavy equipment rental',
@@ -626,7 +601,6 @@ void main() {
       currency: 'USD',
       pricingMethod: EquipmentPricingMethod.job,
       jobAmount: const Money(amount: 3000.0, currency: 'USD'),
-      deliveryFeeStatus: DeliveryFeeStatus.unset,
       rateStatus: RateStatus.sampleRateUnverified,
     );
 
@@ -640,7 +614,6 @@ void main() {
       expect(dayPricedItem.dailyRate?.amount, 500.0);
       expect(dayPricedItem.jobAmount, isNull);
       expect(dayPricedItem.deliveryFee?.amount, 50.0);
-      expect(dayPricedItem.deliveryFeeStatus, DeliveryFeeStatus.confirmed);
       expect(dayPricedItem.rateStatus, RateStatus.ownRateConfirmed);
       expect(dayPricedItem.productLink, 'https://example.com/excavator');
       expect(dayPricedItem.description, 'Heavy equipment rental');
@@ -652,7 +625,6 @@ void main() {
       expect(jobPricedItem.duration, isNull);
       expect(jobPricedItem.dailyRate, isNull);
       expect(jobPricedItem.deliveryFee, isNull);
-      expect(jobPricedItem.deliveryFeeStatus, DeliveryFeeStatus.unset);
       expect(jobPricedItem.rateStatus, RateStatus.sampleRateUnverified);
     });
 
@@ -662,7 +634,6 @@ void main() {
         final unquoted = dayPricedItem.copyWith(deliveryFee: clearField);
         final confirmedFree = dayPricedItem.copyWith(
           deliveryFee: const Money(amount: 0.0),
-          deliveryFeeStatus: DeliveryFeeStatus.confirmed,
         );
 
         expect(unquoted.deliveryFee, isNull);
@@ -670,6 +641,28 @@ void main() {
         expect(confirmedFree.deliveryFee, isNot(unquoted.deliveryFee));
       },
     );
+
+    test('day line with a jobAmount throws', () {
+      expect(
+        () => dayPricedItem.copyWith(
+          jobAmount: const Money(amount: 1.0, currency: 'USD'),
+        ),
+        throwsAssertionError,
+      );
+    });
+
+    test('job line with a duration throws', () {
+      expect(() => jobPricedItem.copyWith(duration: 2.0), throwsAssertionError);
+    });
+
+    test('job line with a dailyRate throws', () {
+      expect(
+        () => jobPricedItem.copyWith(
+          dailyRate: const Money(amount: 1.0, currency: 'USD'),
+        ),
+        throwsAssertionError,
+      );
+    });
 
     test('itemType is always equipment', () {
       expect(dayPricedItem.itemType, CostItemType.equipment);
@@ -730,7 +723,6 @@ void main() {
         pricingMethod: EquipmentPricingMethod.day,
         duration: 5.0,
         dailyRate: const Money(amount: 500.0),
-        deliveryFeeStatus: DeliveryFeeStatus.unset,
         rateStatus: RateStatus.sampleRateUnverified,
       );
 
@@ -746,7 +738,6 @@ void main() {
         pricingMethod: EquipmentPricingMethod.day,
         duration: 5.0,
         dailyRate: const Money(amount: 500.0),
-        deliveryFeeStatus: DeliveryFeeStatus.unset,
         rateStatus: RateStatus.sampleRateUnverified,
       );
 
@@ -775,7 +766,6 @@ void main() {
           updatedAt: DateTime(2024, 1, 1),
           currency: 'USD',
           pricingMethod: EquipmentPricingMethod.day,
-          deliveryFeeStatus: DeliveryFeeStatus.unset,
           rateStatus: RateStatus.missing,
         );
         final jobVariant = EquipmentCostItem(
@@ -788,7 +778,6 @@ void main() {
           updatedAt: DateTime(2024, 1, 1),
           currency: 'USD',
           pricingMethod: EquipmentPricingMethod.job,
-          deliveryFeeStatus: DeliveryFeeStatus.unset,
           rateStatus: RateStatus.missing,
         );
 
@@ -836,7 +825,6 @@ void main() {
           pricingMethod: EquipmentPricingMethod.day,
           duration: 5.0,
           dailyRate: const Money(amount: 500.0),
-          deliveryFeeStatus: DeliveryFeeStatus.unset,
           rateStatus: RateStatus.sampleRateUnverified,
         ),
       ];

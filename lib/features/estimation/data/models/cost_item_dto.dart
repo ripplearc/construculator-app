@@ -67,9 +67,6 @@ class CostItemDto extends Equatable {
   /// Delivery fee for equipment items; null means unquoted.
   final double? deliveryFee;
 
-  /// Confirmation state of [deliveryFee]: 'unset', 'estimated', or 'confirmed'.
-  final String? deliveryFeeStatus;
-
   /// Confidence level of the equipment rate: 'sample_rate_unverified',
   /// 'own_rate_confirmed', or 'missing'.
   final String? rateStatus;
@@ -119,7 +116,6 @@ class CostItemDto extends Equatable {
     this.dailyRate,
     this.jobAmount,
     this.deliveryFee,
-    this.deliveryFeeStatus,
     this.rateStatus,
     this.laborCalcMethod,
     this.laborDays,
@@ -167,7 +163,6 @@ class CostItemDto extends Equatable {
       deliveryFee: json['delivery_fee'] != null
           ? (json['delivery_fee'] as num).toDouble()
           : null,
-      deliveryFeeStatus: json['delivery_fee_status'] as String?,
       rateStatus: json['rate_status'] as String?,
       laborCalcMethod: json['labor_calc_method'] as String?,
       laborDays: json['labor_days'] != null
@@ -209,7 +204,6 @@ class CostItemDto extends Equatable {
     'daily_rate': dailyRate,
     'job_amount': jobAmount,
     'delivery_fee': deliveryFee,
-    'delivery_fee_status': deliveryFeeStatus,
     'rate_status': rateStatus,
     'labor_calc_method': laborCalcMethod,
     'labor_days': laborDays,
@@ -298,13 +292,14 @@ class CostItemDto extends Equatable {
           updatedAt: DateTime.parse(updatedAt),
           currency: currency,
           pricingMethod: method,
-          duration: duration,
-          dailyRate: _moneyOrNull(dailyRate, currency),
-          jobAmount: _moneyOrNull(jobAmount, currency),
+          duration: method == EquipmentPricingMethod.day ? duration : null,
+          dailyRate: method == EquipmentPricingMethod.day
+              ? _moneyOrNull(dailyRate, currency)
+              : null,
+          jobAmount: method == EquipmentPricingMethod.job
+              ? _moneyOrNull(jobAmount, currency)
+              : null,
           deliveryFee: _moneyOrNull(deliveryFee, currency),
-          deliveryFeeStatus: DeliveryFeeStatus.fromJson(
-            deliveryFeeStatus ?? 'unset',
-          ),
           rateStatus: RateStatus.fromJson(rateStatus ?? 'missing'),
           brand: brand,
           productLink: productLink,
@@ -370,10 +365,6 @@ class CostItemDto extends Equatable {
         EquipmentCostItem() => item.deliveryFee?.amount,
         MaterialCostItem() || LaborCostItem() => null,
       },
-      deliveryFeeStatus: switch (item) {
-        EquipmentCostItem() => item.deliveryFeeStatus.toJson(),
-        MaterialCostItem() || LaborCostItem() => null,
-      },
       rateStatus: switch (item) {
         EquipmentCostItem() => item.rateStatus.toJson(),
         MaterialCostItem() || LaborCostItem() => null,
@@ -425,7 +416,6 @@ class CostItemDto extends Equatable {
     dailyRate,
     jobAmount,
     deliveryFee,
-    deliveryFeeStatus,
     rateStatus,
     laborCalcMethod,
     laborDays,
