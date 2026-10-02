@@ -2848,6 +2848,116 @@ abstract class AppLocalizations {
   /// **'Amount must be between \$0.01 and \$999,999.99'**
   String get equipmentAmountOutOfRangeError;
 
+  /// Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get equipmentDeliveryRowLabel;
+
+  /// Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get equipmentDeliveryFeeUnsetText;
+
+  /// Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get equipmentDeliveryAddNoteLink;
+
+  /// Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost, matching the storyboard frame "Delivery $8500" verbatim.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery costs more than the machine'**
+  String get equipmentDeliveryFeeOutsizedDialogTitle;
+
+  /// Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery is {feeAmount} against {baseCostAmount} for the job. Add it anyway?'**
+  String equipmentDeliveryFeeOutsizedDialogBody(
+    String feeAmount,
+    String baseCostAmount,
+  );
+
+  /// Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame "Delivery $8500" (e.g. "Delivery is $8,500.00 against $580.00 for 4 days of excavator. Add it anyway?"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery is {feeAmount} against {baseCostAmount} for {durationPhrase} of {equipmentType}. Add it anyway?'**
+  String equipmentDeliveryFeeOutsizedDialogBodyDay(
+    String feeAmount,
+    String baseCostAmount,
+    String durationPhrase,
+    String equipmentType,
+  );
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 1 (the storyboard calls out this case specially, as "one day")
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get equipmentDeliveryFeeOutsizedDialogOneDay;
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 0.5 (the storyboard calls out this case specially)
+  ///
+  /// In en, this message translates to:
+  /// **'half a day'**
+  String get equipmentDeliveryFeeOutsizedDialogHalfDay;
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body for any duration other than exactly 1 or 0.5; durationText is the pre-formatted duration count
+  ///
+  /// In en, this message translates to:
+  /// **'{durationText} days'**
+  String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText);
+
+  /// Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet
+  ///
+  /// In en, this message translates to:
+  /// **'this equipment'**
+  String get equipmentDeliveryFeeOutsizedDialogGenericItem;
+
+  /// Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and returns focus to the delivery-fee field with its value selected, preserving what was typed
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get equipmentDeliveryFeeOutsizedDialogGoBack;
+
+  /// Primary button on the outsized delivery-fee confirmation dialog; proceeds and saves the fee as entered
+  ///
+  /// In en, this message translates to:
+  /// **'Add it'**
+  String get equipmentDeliveryFeeOutsizedDialogAddIt;
+
+  /// Status badge next to the Rate/Amount field label when the value came from a generic sample/reference rate, not yet confirmed as the user's own (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Sample rate'**
+  String get equipmentRateStatusSampleRateBadge;
+
+  /// Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Your rate'**
+  String get equipmentRateStatusYourRateBadge;
+
+  /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)
+  ///
+  /// In en, this message translates to:
+  /// **'Save as my default'**
+  String get equipmentSaveAsMyRateLink;
+
+  /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get equipmentNoteLabel;
+
+  /// Placeholder text for the optional note field inside the expanded delivery-fee editor (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get equipmentNotePlaceholder;
+
   /// Toast shown when navigation to project settings fails
   ///
   /// In en, this message translates to:

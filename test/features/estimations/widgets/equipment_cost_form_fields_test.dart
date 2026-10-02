@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +42,7 @@ void main() {
     bool fromCostFile = false,
     ValueChanged<double>? onTotalChanged,
     ValueChanged<bool>? onSaveEnabledChanged,
+    String? estimateId,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -51,10 +56,43 @@ void main() {
             fromCostFile: fromCostFile,
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
+            estimateId: estimateId,
           ),
         ),
       ),
     );
+  }
+
+  Future<void> expandDeliveryField(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('delivery_fee_row')));
+    await tester.pump();
+  }
+
+  Future<void> foldDeliveryField(WidgetTester tester) async {
+    // Unfocus by tapping something else that doesn't itself steal semantics
+    // we care about; the equipment name field is always present.
+    await tester.tap(find.byKey(const Key('equipment_name_field')));
+    await tester.pumpAndSettle();
+  }
+
+  // The outsized-fee check no longer runs on delivery-field focus loss (see
+  // EquipmentCostFormFieldsState.maybeConfirmOutsizedFee's doc comment) —
+  // it's meant to run from "Add to estimate", which is still a no-op stub
+  // outside this widget (CA-355). Standing in for that future call, this
+  // reaches the same public method directly via the widget's State.
+  Future<void> triggerOutsizedFeeCheck(WidgetTester tester) async {
+    final state = tester.state<EquipmentCostFormFieldsState>(
+      find.byType(EquipmentCostFormFields),
+    );
+    unawaited(state.maybeConfirmOutsizedFee());
+    await tester.pumpAndSettle();
+  }
+
+  String deliveryRowText([double? fee]) {
+    final value = fee == null
+        ? l10n.equipmentDeliveryFeeUnsetText
+        : DisplayFormatter.currency.format(fee);
+    return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
   Future<void> fillValidDayFields(WidgetTester tester) async {
@@ -105,17 +143,29 @@ void main() {
       expect(find.byKey(const Key('quantity_field')), findsNothing);
     });
 
-    testWidgets('shows placeholder text on the empty name, duration, and '
-        'rate fields', (tester) async {
+    testWidgets('shows placeholder text on the empty name and duration '
+        'fields', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.equipmentNamePlaceholder), findsOneWidget);
       expect(find.text(l10n.equipmentDurationPlaceholder), findsOneWidget);
-      expect(find.text(l10n.equipmentRatePlaceholder), findsOneWidget);
     });
 
-    testWidgets('shows placeholder text on the empty amount field (Job)', (
+    // Rate and Amount don't get placeholder text: with the rate-status badge
+    // and Save-as-my-rate/Look-up trailing action both present, a hint text
+    // overflows the value row by 128px. Name and Duration have neither, so
+    // they keep theirs.
+    testWidgets('does not show placeholder text on the rate field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.equipmentRatePlaceholder), findsNothing);
+    });
+
+    testWidgets('does not show placeholder text on the amount field (Job)', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
@@ -124,7 +174,7 @@ void main() {
       await tester.tap(find.byKey(const Key('job_method_chip')));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.equipmentAmountPlaceholder), findsOneWidget);
+      expect(find.text(l10n.equipmentAmountPlaceholder), findsNothing);
     });
 
     testWidgets('shows a Basis label above the Day/Job toggle', (tester) async {
@@ -211,12 +261,24 @@ void main() {
       expect(find.byKey(const Key('rate_field')), findsOneWidget);
       expect(find.byKey(const Key('amount_field')), findsNothing);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
@@ -233,12 +295,24 @@ void main() {
 
       expect(find.byKey(const Key('amount_field')), findsOneWidget);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
@@ -387,10 +461,7 @@ void main() {
           find.text(l10n.equipmentDurationNotHalfDayError),
           findsOneWidget,
         );
-        expect(
-          find.text(l10n.equipmentDurationNotPositiveError),
-          findsNothing,
-        );
+        expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
       },
     );
 
@@ -831,6 +902,737 @@ void main() {
         await tester.pump();
 
         expect(capturedTotal, 0.0);
+      },
+    );
+  });
+
+  group('EquipmentCostFormFields — delivery fee row display states', () {
+    testWidgets('shows a dash when no delivery fee has been entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text(deliveryRowText()), findsOneWidget);
+    });
+
+    testWidgets('formats to two decimals once folded', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await fillValidDayFields(
+        tester,
+      ); // base cost 300, well above the fee below
+
+      await expandDeliveryField(tester);
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
+      await tester.pump();
+      await foldDeliveryField(tester);
+
+      expect(find.text(deliveryRowText(85)), findsOneWidget);
+    });
+
+    testWidgets('typed 0 folds to a distinct \$0.00, never a dash', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '0');
+      await tester.pump();
+      await foldDeliveryField(tester);
+
+      expect(find.text(deliveryRowText(0)), findsOneWidget);
+      expect(find.text(deliveryRowText()), findsNothing);
+    });
+
+    testWidgets('shows raw typed digits in the field while open, unformatted', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
+      await tester.pump();
+
+      expect(find.text('85'), findsOneWidget);
+      expect(find.text('\$85.00'), findsNothing);
+      // The header shows the same raw digits as the field itself while
+      // open (N12): it reads "Delivery 85", never "Delivery $85.00", so
+      // the two never disagree mid-keystroke.
+      expect(find.text('${l10n.equipmentDeliveryRowLabel} 85'), findsOneWidget);
+    });
+
+    testWidgets(
+      'panel is stroked with lineLight (#eaecf0), matching Figma node 66337:162350',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        final panel = tester.widget<Container>(
+          find.ancestor(
+            of: find.byKey(const Key('delivery_fee_row')),
+            matching: find.byType(Container),
+          ),
+        );
+        final decoration = panel.decoration as BoxDecoration;
+        final border = decoration.border as Border;
+        expect(border.top.width, 1);
+        expect(
+          border.top.color,
+          CoreTheme.light().extension<AppColorsExtension>()!.lineLight,
+        );
+      },
+    );
+  });
+
+  group('EquipmentCostFormFields — delivery fee never colors the field', () {
+    // Per the storyboard: "Every digit is accepted. The app asks about a
+    // large amount on Add to estimate, and never refuses a keypress or
+    // colours the field." Range validity is enforced by the bloc (gates
+    // Save/Submit, see equipment_cost_form_bloc_test.dart), not by a red
+    // field error here.
+    testWidgets(
+      'an out-of-range delivery fee never shows a red field error, even '
+      'once folded',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '5000000',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          tester
+              .widget<UnderlineTextField>(
+                find.byKey(const Key('delivery_fee_field')),
+              )
+              .errorTextList,
+          isNull,
+        );
+      },
+    );
+
+    testWidgets(
+      'a delivery fee of exactly 0 never shows a red field error, since '
+      "it's a distinct, valid confirmed-free value",
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '0',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          tester
+              .widget<UnderlineTextField>(
+                find.byKey(const Key('delivery_fee_field')),
+              )
+              .errorTextList,
+          isNull,
+        );
+      },
+    );
+  });
+
+  group('EquipmentCostFormFields — delivery fee has no status', () {
+    testWidgets(
+      'a typed fee shows no badge or Confirm link once folded, per the '
+      'storyboard: a typed fee is final immediately',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await fillValidDayFields(
+          tester,
+        ); // base cost 300, well above the fee below
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.byKey(const Key('delivery_fee_estimated_badge')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('delivery_fee_confirm_link')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'a typed \$0.00 fee also shows no badge or link, per the storyboard: '
+      'a confirmed-free fee has no tag',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '0',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(
+          find.byKey(const Key('delivery_fee_estimated_badge')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('delivery_fee_confirm_link')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('shows no badge when unset', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('delivery_fee_estimated_badge')),
+        findsNothing,
+      );
+    });
+  });
+
+  group('EquipmentCostFormFields — outsized delivery-fee dialog', () {
+    testWidgets(
+      'does not open on delivery-field focus loss, even for an outsized fee',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pump();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        // Folding the field alone must not trigger the dialog — only the
+        // "Add to estimate" hook (stood in for by triggerOutsizedFeeCheck
+        // in the tests below) does, per the fix to S1.
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'opens when the delivery fee exceeds the Day base cost (duration × rate)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pump();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('opens when the delivery fee exceeds the Job amount', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '600',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.byKey(const Key('outsized_fee_dialog_title')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not open when the fee is at or below the base cost', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '580',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
+    });
+
+    testWidgets(
+      'does not open when duration/rate are not entered yet (base cost is 0)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        // Duration/rate are left empty; entering the delivery fee first
+        // must not compare it against an unset $0 base cost.
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '5',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('names the duration and equipment in the Day-priced body', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'excavator',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(8500),
+            DisplayFormatter.currency.format(580),
+            l10n.equipmentDeliveryFeeOutsizedDialogDurationDays('4'),
+            'excavator',
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('says "1 day", not "1 days", for a one-day duration', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'excavator',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('duration_field')), '1');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(500),
+            DisplayFormatter.currency.format(145),
+            l10n.equipmentDeliveryFeeOutsizedDialogOneDay,
+            'excavator',
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('omits the time period from the Job-priced body', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '600',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBody(
+            DisplayFormatter.currency.format(600),
+            DisplayFormatter.currency.format(500),
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('"Go back" dismisses the dialog and preserves the typed fee', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      await tester.tap(
+        find.byKey(const Key('outsized_fee_dialog_go_back_button')),
+      );
+      await tester.pumpAndSettle();
+      // The focus/selection request runs in the microtask continuation
+      // after the dialog's own pop future resolves — pumpAndSettle already
+      // flushes this, but one more explicit pump removes any doubt.
+      await tester.pump();
+
+      expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
+      // The fee is preserved, not cleared — the panel stays open and the
+      // value stays put and editable. Focus is back on the field (see
+      // below), so the row reads the raw digits too (N12), not formatted.
+      expect(
+        find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextField, '8500'), findsOneWidget);
+      // Per the storyboard ("the fee is selected and the pad is up"), focus
+      // returns to the field with its value selected, ready to retype.
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, '8500'),
+      );
+      expect(field.focusNode?.hasFocus, isTrue);
+      expect(
+        field.controller?.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 4),
+      );
+    });
+
+    testWidgets(
+      'tapping outside the dialog behaves like "Go back": preserves the fee',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pump();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+        await triggerOutsizedFeeCheck(tester);
+
+        // Tap the barrier, well outside the dialog's own 340-wide card.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+        expect(
+          find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('"Add it" closes the dialog and keeps the fee as entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget(estimateId: 'estimate-1'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      await tester.tap(
+        find.byKey(const Key('outsized_fee_dialog_add_it_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
+      expect(find.text(deliveryRowText(8500)), findsOneWidget);
+    });
+  });
+
+  group('EquipmentCostFormFields — delivery fee in the total', () {
+    testWidgets('adds the delivery fee to the Day total after the base cost', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '2');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '200');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '50');
+      await tester.pump();
+
+      expect(capturedTotal, 450.0);
+    });
+
+    testWidgets('adds the delivery fee to the Job total', (tester) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('amount_field')), '750');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '25');
+      await tester.pump();
+
+      expect(capturedTotal, 775.0);
+    });
+
+    testWidgets('an unset delivery fee does not affect the total', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '2');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '200');
+      await tester.pump();
+
+      expect(capturedTotal, 400.0);
+    });
+  });
+
+  group('EquipmentCostFormFields — delivery panel open/close', () {
+    testWidgets(
+      'stays open across a fold, unlike the old collapse-on-blur behavior',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await expandDeliveryField(tester);
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pump();
+        await foldDeliveryField(tester);
+
+        expect(find.byKey(const Key('delivery_fee_field')), findsOneWidget);
+        expect(find.byKey(const Key('delivery_note_field')), findsOneWidget);
+      },
+    );
+
+    testWidgets('closes only when the header is tapped again', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      expect(find.byKey(const Key('delivery_fee_field')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
+      expect(find.byKey(const Key('delivery_note_field')), findsNothing);
+    });
+  });
+
+  group('EquipmentCostFormFields — Note field', () {
+    testWidgets('"Add note" opens the panel focused on the Note field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('delivery_note_field')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('delivery_fee_add_note_link')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('delivery_note_field')), findsOneWidget);
+    });
+
+    testWidgets('typed note text is retained in the field', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_note_field')),
+        'Leave at the gate',
+      );
+      await tester.pump();
+
+      expect(find.text('Leave at the gate'), findsOneWidget);
+    });
+  });
+
+  group('EquipmentCostFormFields — Rate/Amount status badge', () {
+    testWidgets('shows no badge before a rate is entered (Day)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+    });
+
+    testWidgets(
+      'shows no badge once a daily rate is typed (ownRateUnconfirmed)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '150');
+        await tester.pump();
+
+        // A freshly typed rate is RateStatus.ownRateUnconfirmed, not
+        // ownRateConfirmed (see EquipmentCostFormBloc's rate-update
+        // handler) — the badge only renders for ownRateConfirmed/
+        // sampleRateUnverified, so neither badge variant shows here.
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
+        // Also not offered here: saving an already-own-but-unconfirmed
+        // value is still redundant (see _saveAsMyRateLink's doc comment).
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows no badge once a job amount is typed (ownRateUnconfirmed)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('amount_field')), '500');
+        await tester.pump();
+
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
       },
     );
   });

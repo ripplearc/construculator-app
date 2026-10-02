@@ -1517,6 +1517,72 @@ class AppLocalizationsEn extends AppLocalizations {
       'Amount must be between \$0.01 and \$999,999.99';
 
   @override
+  String get equipmentDeliveryRowLabel => 'Delivery';
+
+  @override
+  String get equipmentDeliveryFeeUnsetText => '—';
+
+  @override
+  String get equipmentDeliveryAddNoteLink => 'Add note';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogTitle =>
+      'Delivery costs more than the machine';
+
+  @override
+  String equipmentDeliveryFeeOutsizedDialogBody(
+    String feeAmount,
+    String baseCostAmount,
+  ) {
+    return 'Delivery is $feeAmount against $baseCostAmount for the job. Add it anyway?';
+  }
+
+  @override
+  String equipmentDeliveryFeeOutsizedDialogBodyDay(
+    String feeAmount,
+    String baseCostAmount,
+    String durationPhrase,
+    String equipmentType,
+  ) {
+    return 'Delivery is $feeAmount against $baseCostAmount for $durationPhrase of $equipmentType. Add it anyway?';
+  }
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogOneDay => '1 day';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogHalfDay => 'half a day';
+
+  @override
+  String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText) {
+    return '$durationText days';
+  }
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogGenericItem => 'this equipment';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogGoBack => 'Go back';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogAddIt => 'Add it';
+
+  @override
+  String get equipmentRateStatusSampleRateBadge => 'Sample rate';
+
+  @override
+  String get equipmentRateStatusYourRateBadge => '✓ Your rate';
+
+  @override
+  String get equipmentSaveAsMyRateLink => 'Save as my default';
+
+  @override
+  String get equipmentNoteLabel => 'Note';
+
+  @override
+  String get equipmentNotePlaceholder => 'Add a note (optional)';
+
+  @override
   String get projectSettingsNavigationError =>
       'Unable to open project settings. Please try again.';
 
