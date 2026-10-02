@@ -23,9 +23,13 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
+    String? companyId,
   }) async {
     try {
-      final dtos = await dataSource.fetchRates(category: category?.toJson());
+      final dtos = await dataSource.fetchRates(
+        category: category?.toJson(),
+        companyId: companyId,
+      );
       final entries = dtos.map((dto) => dto.toEntity()).toList();
 
       if (query.isEmpty) {
@@ -46,12 +50,14 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   @override
   Future<Either<Failure, YourRateEntry?>> getByItemName(
     String itemName,
-    CostItemType category,
-  ) async {
+    CostItemType category, {
+    String? companyId,
+  }) async {
     try {
       final dtos = await dataSource.fetchGrouping(
         category: category.toJson(),
         itemName: itemName,
+        companyId: companyId,
       );
 
       // Multiple entries can legally share a grouping (Decision 55); a
@@ -84,6 +90,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       final existingDtos = await dataSource.fetchGrouping(
         category: normalizedEntry.category.toJson(),
         itemName: normalizedEntry.itemName,
+        companyId: normalizedEntry.companyId,
       );
 
       if (existingDtos.isEmpty) {
