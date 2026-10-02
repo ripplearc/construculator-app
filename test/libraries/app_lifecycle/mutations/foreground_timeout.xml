@@ -45,7 +45,7 @@
     </rules>
 
     <commands>
-        <command group="foreground_timeout" expected-return="0">flutter test test/libraries/app_lifecycle/foreground_timeout_test.dart</command>
+        <command group="foreground_timeout" expected-return="0">flutter test test/libraries/app_lifecycle/units/foreground_timeout_test.dart</command>
     </commands>
 
     <threshold failure="80">

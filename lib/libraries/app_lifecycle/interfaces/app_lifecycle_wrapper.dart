@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Tells whether the app is in the foreground, and when that changes.
 ///
 /// Wraps Flutter's app lifecycle so code outside the widget tree, such as a
