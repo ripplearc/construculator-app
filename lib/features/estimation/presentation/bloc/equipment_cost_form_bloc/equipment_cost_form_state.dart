@@ -12,15 +12,14 @@ class EquipmentCostFormInitial extends EquipmentCostFormState {
 
 /// Full set of equipment form field values, carried by every state once the
 /// user has started filling in the form.
-class EquipmentCostFormWithData extends Equatable {
-  const EquipmentCostFormWithData({
+class EquipmentCostFormData extends Equatable {
+  const EquipmentCostFormData({
     this.method = EquipmentPricingMethod.day,
     this.equipmentType = '',
     this.duration,
     this.dailyRate,
     this.jobAmount,
     this.deliveryFee,
-    this.deliveryFeeStatus = DeliveryFeeStatus.unset,
     this.rateStatus = RateStatus.missing,
     this.description,
     this.isValid = false,
@@ -36,9 +35,6 @@ class EquipmentCostFormWithData extends Equatable {
   /// Raw duration/dailyRate/jobAmount/deliveryFee values entered by the user;
   /// only the pair relevant to [method] is meaningful.
   final double? duration, dailyRate, jobAmount, deliveryFee;
-
-  /// Confirmation state of [deliveryFee].
-  final DeliveryFeeStatus deliveryFeeStatus;
 
   /// Confidence level of the rate used for this line.
   final RateStatus rateStatus;
@@ -62,20 +58,19 @@ class EquipmentCostFormWithData extends Equatable {
   /// Returns a copy with the given fields replaced. For a nullable field, an
   /// explicit value sets it, `null` clears it, and omitting the parameter
   /// keeps its current value.
-  EquipmentCostFormWithData copyWith({
+  EquipmentCostFormData copyWith({
     EquipmentPricingMethod? method,
     String? equipmentType,
     Object? duration = _unset,
     Object? dailyRate = _unset,
     Object? jobAmount = _unset,
     Object? deliveryFee = _unset,
-    DeliveryFeeStatus? deliveryFeeStatus,
     RateStatus? rateStatus,
     Object? description = _unset,
     bool? isValid,
     Map<String, String>? fieldErrors,
   }) {
-    return EquipmentCostFormWithData(
+    return EquipmentCostFormData(
       method: method ?? this.method,
       equipmentType: equipmentType ?? this.equipmentType,
       duration: duration == _unset ? this.duration : duration as double?,
@@ -84,7 +79,6 @@ class EquipmentCostFormWithData extends Equatable {
       deliveryFee: deliveryFee == _unset
           ? this.deliveryFee
           : deliveryFee as double?,
-      deliveryFeeStatus: deliveryFeeStatus ?? this.deliveryFeeStatus,
       rateStatus: rateStatus ?? this.rateStatus,
       description: description == _unset
           ? this.description
@@ -102,7 +96,6 @@ class EquipmentCostFormWithData extends Equatable {
     dailyRate,
     jobAmount,
     deliveryFee,
-    deliveryFeeStatus,
     rateStatus,
     description,
     isValid,
@@ -113,10 +106,12 @@ class EquipmentCostFormWithData extends Equatable {
 /// State while the user is filling in the equipment cost form.
 class EquipmentCostFormEditing extends EquipmentCostFormState {
   const EquipmentCostFormEditing(this.data);
-  final EquipmentCostFormWithData data;
+
+  /// The form's current field values and validation results.
+  final EquipmentCostFormData data;
 
   /// Kept as a direct getter so existing item-type field widget code doesn't
-  /// need to know about [EquipmentCostFormWithData].
+  /// need to know about [EquipmentCostFormData].
   String? get itemTypeError => data.itemTypeError;
 }
 
@@ -128,19 +123,25 @@ class EquipmentCostFormEditing extends EquipmentCostFormState {
 /// from it.
 class EquipmentCostFormOutsizedFeeConfirm extends EquipmentCostFormState {
   const EquipmentCostFormOutsizedFeeConfirm(this.data);
-  final EquipmentCostFormWithData data;
+
+  /// The validated form data awaiting the user's outsized-fee decision.
+  final EquipmentCostFormData data;
 }
 
 /// State while the cost item is being submitted to the repository.
 class EquipmentCostFormSubmitting extends EquipmentCostFormState {
   const EquipmentCostFormSubmitting(this.data);
-  final EquipmentCostFormWithData data;
+
+  /// The form data being submitted.
+  final EquipmentCostFormData data;
 }
 
 /// State when the cost item was submitted successfully.
 class EquipmentCostFormSuccess extends EquipmentCostFormState {
   const EquipmentCostFormSuccess(this.data, this.createdItem);
-  final EquipmentCostFormWithData data;
+
+  /// The form data as it was at submission time.
+  final EquipmentCostFormData data;
 
   /// The cost item as persisted by [CostItemRepository.createCostItem].
   final CostItem createdItem;
@@ -149,7 +150,9 @@ class EquipmentCostFormSuccess extends EquipmentCostFormState {
 /// State when submitting the cost item failed.
 class EquipmentCostFormFailure extends EquipmentCostFormState {
   const EquipmentCostFormFailure(this.data, this.failure);
-  final EquipmentCostFormWithData data;
+
+  /// The form data as it was at submission time.
+  final EquipmentCostFormData data;
 
   /// The failure returned by [CostItemRepository.createCostItem].
   final Failure failure;

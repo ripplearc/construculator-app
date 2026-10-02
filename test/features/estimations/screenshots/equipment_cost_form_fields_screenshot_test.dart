@@ -105,7 +105,7 @@ void main() {
         await expectLater(
           find.byType(EquipmentCostFormFields),
           matchesGoldenFile(
-            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_error$suffix.png',
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_name_cleared$suffix.png',
           ),
         );
       },

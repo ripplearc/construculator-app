@@ -142,49 +142,50 @@ void main() {
     });
 
     testWidgets(
-      'calls onSaveEnabledChanged(true) when equipment name has text',
-      (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
-        await tester.pumpAndSettle();
+        'calls onSaveEnabledChanged(true) when equipment name has text', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
 
-        expect(captured, isTrue);
-      },
-    );
+      expect(captured, isTrue);
+    });
 
     testWidgets(
-      'calls onSaveEnabledChanged(false) when equipment name is cleared',
-      (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
-        await tester.pumpAndSettle();
+        'calls onSaveEnabledChanged(false) when equipment name is cleared', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          '',
-        );
-        await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        '',
+      );
+      await tester.pump();
 
-        expect(captured, isFalse);
-      },
-    );
+      expect(captured, isFalse);
+    });
 
-    testWidgets('does not call onSaveEnabledChanged in from cost file mode', (
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode', (
       tester,
     ) async {
       bool? captured;
@@ -200,32 +201,29 @@ void main() {
     });
 
     testWidgets(
-      'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing',
-      (tester) async {
-        bool? captured;
-        await tester.pumpWidget(
-          makeWidget(onSaveEnabledChanged: (v) => captured = v),
-        );
-        await tester.pumpAndSettle();
+        'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('equipment_name_field')),
-          'Backhoe',
-        );
-        await tester.pump();
-        expect(captured, isTrue);
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      expect(captured, isTrue);
 
-        await tester.pumpWidget(
-          makeWidget(
-            fromCostFile: true,
-            onSaveEnabledChanged: (v) => captured = v,
-          ),
-        );
-        await tester.pump();
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pump();
 
-        expect(captured, isFalse);
-      },
-    );
+      expect(captured, isFalse);
+    });
   });
 
   group('EquipmentCostFormFields — item type error', () {
@@ -333,33 +331,29 @@ void main() {
       expect(capturedTotal, 0.0);
     });
 
-    testWidgets(
-      'resets total to 0 when fromCostFile flips on a mounted widget',
-      (tester) async {
-        double? capturedTotal;
-        await tester.pumpWidget(
-          makeWidget(onTotalChanged: (total) => capturedTotal = total),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('resets total to 0 when fromCostFile flips on a mounted widget', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('unit_price_field')),
-          '200',
-        );
-        await tester.pump();
-        await tester.enterText(find.byKey(const Key('quantity_field')), '3');
-        await tester.pump();
+      await tester.enterText(find.byKey(const Key('unit_price_field')), '200');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('quantity_field')), '3');
+      await tester.pump();
 
-        await tester.pumpWidget(
-          makeWidget(
-            fromCostFile: true,
-            onTotalChanged: (total) => capturedTotal = total,
-          ),
-        );
-        await tester.pump();
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onTotalChanged: (total) => capturedTotal = total,
+        ),
+      );
+      await tester.pump();
 
-        expect(capturedTotal, 0.0);
-      },
-    );
+      expect(capturedTotal, 0.0);
+    });
   });
 }
