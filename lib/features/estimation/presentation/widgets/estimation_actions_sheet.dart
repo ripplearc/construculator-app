@@ -127,7 +127,7 @@ class EstimationActionsSheet extends StatelessWidget {
                   children: [
                     _ActionListItem(
                       key: const Key('logs_action_row'),
-                      icon: CoreIcons.calendar,
+                      icon: CoreIcons.list,
                       label: l10n.logsAction,
                       onTap: onLogs,
                     ),
