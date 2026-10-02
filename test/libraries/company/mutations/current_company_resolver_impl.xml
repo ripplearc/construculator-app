@@ -32,6 +32,13 @@
             <mutation text="void clearCache() {\n    _hasResolved = true;"/>
         </regex>
 
+        <!-- RULE 3b: clearCache doesn't bump the generation, so a fetch
+             already in flight from before the clear can still win the race
+             and write a stale (e.g. the previous user's) id into the cache -->
+        <regex pattern="_cacheGeneration\+\+;" dotAll="true" id="resolver.cache.clear_no_generation_bump">
+            <mutation text="_cacheGeneration += 0;"/>
+        </regex>
+
         <!-- RULE 4: Skip the TimeoutException branch -->
         <regex pattern="if \(error is TimeoutException\) \{" dotAll="true" id="resolver.error.skip_timeout_branch">
             <mutation text="if (false) {"/>
@@ -74,14 +81,29 @@
 
         <!-- RULE 12: resolve() doesn't share an in-flight call, so concurrent
              callers would each start their own RPC request -->
-        <regex pattern="return _inFlight \?\?= _fetch\(\);" dotAll="true" id="resolver.inflight.always_start_new">
-            <mutation text="return _fetch();"/>
+        <regex pattern="return _inFlight \?\?= _fetch\(_cacheGeneration\);" dotAll="true" id="resolver.inflight.always_start_new">
+            <mutation text="return _fetch(_cacheGeneration);"/>
         </regex>
 
         <!-- RULE 13: the in-flight slot is never cleared after completion,
              so a failed call could never retry -->
-        <regex pattern="\} finally \{\n      _inFlight = null;\n    \}" dotAll="true" id="resolver.inflight.never_clear">
-            <mutation text="} finally {\n      // no-op\n    }"/>
+        <regex pattern="if \(requestGeneration == _cacheGeneration\) \{\n        _inFlight = null;\n      \}" dotAll="true" id="resolver.inflight.never_clear">
+            <mutation text="if (false) {\n        _inFlight = null;\n      }"/>
+        </regex>
+
+        <!-- RULE 14: a stale fetch (one already running when clearCache was
+             called) writes its result into the cache anyway, letting the
+             previous caller's company id leak into the next caller's
+             session -->
+        <regex pattern="if \(requestGeneration == _cacheGeneration &amp;&amp; companyId != null\) \{" dotAll="true" id="resolver.cache.ignore_stale_generation">
+            <mutation text="if (companyId != null) {"/>
+        </regex>
+
+        <!-- RULE 15: a null company id (signup step not done yet) gets
+             cached as resolved, so the app keeps answering "no company"
+             even after a real id becomes available later in the session -->
+        <regex pattern="if \(requestGeneration == _cacheGeneration &amp;&amp; companyId != null\) \{" dotAll="true" id="resolver.cache.cache_null_forever">
+            <mutation text="if (requestGeneration == _cacheGeneration) {"/>
         </regex>
     </rules>
 

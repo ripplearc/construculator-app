@@ -204,21 +204,75 @@ void main() {
       },
     );
 
-    test('a null resolution (no company_users row) is also cached, so a '
-        'second call still does not re-hit the RPC', () async {
+    test('a null resolution (no company_users row yet) is not cached, so a '
+        'later call retries the RPC and can pick up a real id', () async {
       supabaseWrapper.setRpcResponse(
         DatabaseConstants.getMyCompanyIdRpcFunction,
         null,
       );
+      final first = await resolver.resolve();
+      first.fold(
+        (_) => fail('Expected Right but got Left'),
+        (companyId) => expect(companyId, isNull),
+      );
 
-      await resolver.resolve();
+      supabaseWrapper.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
       final second = await resolver.resolve();
 
       second.fold(
         (_) => fail('Expected Right but got Left'),
-        (companyId) => expect(companyId, isNull),
+        (companyId) => expect(companyId, 'company-1'),
       );
-      expect(supabaseWrapper.getMethodCallsFor('rpc'), hasLength(1));
+      expect(
+        supabaseWrapper.getMethodCallsFor('rpc'),
+        hasLength(2),
+        reason: 'a null answer must not be cached as final',
+      );
+    });
+
+    test('a fetch already in flight when clearCache runs must not overwrite '
+        'the next caller with the previous one\'s company id', () async {
+      supabaseWrapper.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-a',
+      );
+      supabaseWrapper.shouldDelayOperations = true;
+      supabaseWrapper.completer = Completer<void>();
+
+      final staleFuture = resolver.resolve();
+      resolver.clearCache();
+      supabaseWrapper.completer!.complete();
+      final staleResult = await staleFuture;
+
+      staleResult.fold(
+        (_) => fail('Expected Right but got Left'),
+        (companyId) => expect(
+          companyId,
+          'company-a',
+          reason: 'the original caller still gets its own answer',
+        ),
+      );
+
+      supabaseWrapper.shouldDelayOperations = false;
+      supabaseWrapper.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-b',
+      );
+      final nextResult = await resolver.resolve();
+
+      nextResult.fold(
+        (_) => fail('Expected Right but got Left'),
+        (companyId) => expect(
+          companyId,
+          'company-b',
+          reason:
+              'the stale fetch must not have cached company-a after '
+              'clearCache ran',
+        ),
+      );
     });
 
     test(
