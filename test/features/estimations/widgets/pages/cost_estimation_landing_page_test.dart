@@ -690,6 +690,13 @@ void main() {
 
       expect(find.byType(EstimationActionsSheet), findsNothing);
       expect(find.byType(CostEstimationLogsList), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(CostEstimationLogsList))).pop();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostEstimationLogsList), findsNothing);
+      expect(find.byType(EstimationActionsSheet), findsNothing);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
     });
   });
   group('Delete Estimation', () {
