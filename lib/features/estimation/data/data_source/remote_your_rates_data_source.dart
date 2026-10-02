@@ -7,10 +7,10 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// Remote data source for "Your rates" operations using Supabase.
 ///
 /// This data source handles all remote database operations for the
-/// contractor's personal saved-rate book. Reads are scoped by RLS to the
-/// caller's own company; the optional `companyId` filter some methods accept
-/// is an additional, defense-in-depth filter on top of that, not a
-/// replacement for it.
+/// contractor's personal saved-rate book. RLS alone does not scope reads to
+/// one company — a user who belongs to more than one company gets rows from
+/// every company they are a member of — so the `companyId` filter some
+/// methods accept is the real company scoping, not a convenience extra.
 class RemoteYourRatesDataSource implements YourRatesDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteYourRatesDataSource');
@@ -21,6 +21,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   Future<List<YourRateEntryDto>> fetchRates({
     String? category,
     String? companyId,
+    int? limit,
   }) async {
     _logger.debug(
       'Fetching your rates'
@@ -42,6 +43,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
       filters: filters,
       orderBy: DatabaseConstants.savedAtColumn,
       ascending: false,
+      limit: limit,
     );
 
     return response.map(YourRateEntryDto.fromJson).toList();

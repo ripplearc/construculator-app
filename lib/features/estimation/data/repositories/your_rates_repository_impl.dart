@@ -24,11 +24,13 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     String query, {
     CostItemType? category,
     String? companyId,
+    int? limit,
   }) async {
     try {
       final dtos = await dataSource.fetchRates(
         category: category?.toJson(),
         companyId: companyId,
+        limit: query.isEmpty ? limit : null,
       );
       final entries = dtos.map((dto) => dto.toEntity()).toList();
 
@@ -139,7 +141,6 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
-  // Treats a blank label ('' or whitespace-only) the same as no label.
   static String? _normalizeLabel(String? label) {
     final trimmed = label?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;

@@ -6,33 +6,37 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
-/// All reads are scoped by RLS to the caller's own company — that remains
-/// the real enforcement, in production, regardless of whether a caller
-/// passes the optional `companyId` parameter some methods below accept.
-/// That parameter is an additional, defense-in-depth filter on top of RLS,
-/// not a replacement for it or a claim that RLS is insufficient today: it
-/// also makes company isolation testable, since `FakeSupabaseWrapper` has no
-/// concept of RLS and so cannot otherwise catch a cross-company read in a
-/// test. [save] always writes a [YourRateEntry.companyId] the backend checks
-/// against the caller's actual company membership.
+/// RLS alone does not scope a read to the caller's own company: a user who
+/// belongs to more than one company (via `company_users`) gets rows from
+/// every company they are a member of. The `companyId` parameter the methods
+/// below accept is the real company scoping, resolved by the caller (see
+/// `CurrentCompanyResolver`) before the call. [save] always writes a
+/// [YourRateEntry.companyId] the backend checks against the caller's actual
+/// company membership.
 abstract class YourRatesRepository {
   /// Searches saved rate entries by case-insensitive substring match on item
-  /// name, optionally scoped to one [category] and, in addition to RLS, one
-  /// [companyId].
+  /// name, optionally scoped to one [category] and, for real company
+  /// scoping, one [companyId].
   ///
   /// Passing an empty [query] returns every matching row for [category] (or
   /// every category when null), ordered by [YourRateEntry.savedAt]
   /// descending (most recently saved first). There is no separate "recents"
   /// method on this interface — this empty-query form is the primitive
   /// `YourRatesBloc` uses to build its recents list.
+  ///
+  /// [limit] caps the row count at the database level. Only applied when
+  /// [query] is empty: a non-empty query is matched client-side against the
+  /// fetched rows, and a database-level cap applied before that match would
+  /// drop matches outside the row window.
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
     String? companyId,
+    int? limit,
   });
 
   /// Looks up the rate entry for one item within one category, optionally
-  /// scoped, in addition to RLS, to one [companyId].
+  /// scoped, for real company scoping, to one [companyId].
   ///
   /// Multiple entries can share the same (companyId, category, itemName)
   /// grouping, distinguished by [YourRateEntry.entryLabel], so a

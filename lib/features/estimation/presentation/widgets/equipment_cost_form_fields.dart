@@ -417,18 +417,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // No mechanism anywhere in this app resolves the caller's real company id
-  // (no companyId on ProjectRepository/Project, no CurrentCompanyRepository).
-  // Per YourRatesRepository.save's own doc comment, companyId only matters
-  // for writes, which the backend validates against the caller's actual
-  // company membership — an empty id fails that check server-side instead
-  // of writing to the wrong company.
-  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace
-  // this stub with a real company id from CurrentCompanyResolver — CA-1180
-  // owns updating this call site specifically, once CurrentCompanyResolver
-  // itself (CA-1179, a CA-1180 dependency) exists.
-  String get _currentCompanyId => '';
-
   YourRateEntry _buildYourRateEntry(
     EquipmentCostFormData data, {
     String? entryLabel,
@@ -436,7 +424,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final isDay = data.method == EquipmentPricingMethod.day;
     return YourRateEntry(
       id: '',
-      companyId: _currentCompanyId,
+      // Resolved by YourRatesBloc from CurrentCompanyResolver before saving
+      // — same throwaway-until-stamped treatment as id above.
+      companyId: '',
       itemName: _equipmentNameController.text,
       category: CostItemType.equipment,
       rate: Money(amount: (isDay ? data.dailyRate : data.jobAmount) ?? 0),
