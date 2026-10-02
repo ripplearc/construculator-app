@@ -10,6 +10,11 @@ part 'equipment_cost_form_state.dart';
 
 const double _minRate = 0.01;
 const double _maxRate = 999999.99;
+// cost_items.duration is numeric(10,2) in construculator-backend #58; a
+// larger value fails the insert with a generic decimal-overflow error
+// instead of this field-level message. Product has not set a practical
+// business limit (CA-1142 N13), so this is the database's own ceiling.
+const double _maxDuration = 99999999.99;
 
 /// BLoC for managing the equipment cost form: item type, Day/Job pricing,
 /// delivery fee, validation, and submission to [CostItemRepository].
@@ -68,29 +73,7 @@ class EquipmentCostFormBloc
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
-      _emit(
-        emit,
-        (d) => d.copyWith(
-          deliveryFee: fee,
-          deliveryFeeStatus: fee == null
-              ? DeliveryFeeStatus.unset
-              : DeliveryFeeStatus.estimated,
-        ),
-      );
-    });
-    on<EquipmentDeliveryFeeConfirmedEvent>((e, emit) {
-      final current = _current();
-      // Validated in _validated() below; a null or out-of-range delivery fee
-      // (NaN/Infinity included, since those never populate fieldErrors as
-      // "in range") must not be confirmable.
-      if (current.deliveryFee == null ||
-          current.fieldErrors.containsKey('deliveryFee')) {
-        return;
-      }
-      _emit(
-        emit,
-        (d) => d.copyWith(deliveryFeeStatus: DeliveryFeeStatus.confirmed),
-      );
+      _emit(emit, (d) => d.copyWith(deliveryFee: fee));
     });
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
@@ -98,7 +81,7 @@ class EquipmentCostFormBloc
 
   void _emit(
     Emitter<EquipmentCostFormState> emit,
-    EquipmentCostFormWithData Function(EquipmentCostFormWithData) update,
+    EquipmentCostFormData Function(EquipmentCostFormData) update,
   ) {
     emit(EquipmentCostFormEditing(_validated(update(_current()))));
   }
@@ -107,6 +90,12 @@ class EquipmentCostFormBloc
     EquipmentCostSubmittedEvent event,
     Emitter<EquipmentCostFormState> emit,
   ) async {
+    // A second tap while the first submit is in flight (or has already
+    // succeeded) must not insert a duplicate cost line.
+    if (state is EquipmentCostFormSubmitting ||
+        state is EquipmentCostFormSuccess) {
+      return;
+    }
     final draft = _validated(_current());
     if (!draft.isValid) {
       emit(EquipmentCostFormEditing(draft));
@@ -125,7 +114,7 @@ class EquipmentCostFormBloc
   }
 
   Future<void> _submit(
-    EquipmentCostFormWithData draft,
+    EquipmentCostFormData draft,
     String estimateId,
     Emitter<EquipmentCostFormState> emit,
   ) async {
@@ -139,14 +128,14 @@ class EquipmentCostFormBloc
     );
   }
 
-  EquipmentCostFormWithData _current() {
+  EquipmentCostFormData _current() {
     return switch (state) {
       EquipmentCostFormEditing(:final data) => data,
       EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
       EquipmentCostFormSubmitting(:final data) => data,
       EquipmentCostFormSuccess(:final data) => data,
       EquipmentCostFormFailure(:final data) => data,
-      EquipmentCostFormInitial() => const EquipmentCostFormWithData(),
+      EquipmentCostFormInitial() => const EquipmentCostFormData(),
     };
   }
 
@@ -161,7 +150,7 @@ class EquipmentCostFormBloc
   // ever holds "a value was entered but it can't be used" messages (e.g. a
   // typed duration of 0), which the widget layer is expected to show on
   // blur and clear on the first valid keystroke.
-  EquipmentCostFormWithData _validated(EquipmentCostFormWithData draft) {
+  EquipmentCostFormData _validated(EquipmentCostFormData draft) {
     final errors = <String, String>{};
     final hasItemType = draft.equipmentType.trim().isNotEmpty;
 
@@ -182,30 +171,28 @@ class EquipmentCostFormBloc
     );
   }
 
-  // Returns whether duration is present and a valid whole/half-day step
-  // (0.5, 1, 1.5, 2, ...). A missing duration produces no errors entry; a
-  // present-but-invalid one (not positive, not a half-day step, including
-  // non-finite values) does.
   bool _validateDuration(double? duration, Map<String, String> errors) {
     if (duration == null) return false;
-    final isValid =
-        duration > 0 && duration.isFinite && _isHalfDayStep(duration);
-    if (!isValid) {
-      errors['duration'] = 'durationInvalid';
+    if (!(duration > 0 && duration.isFinite)) {
+      errors['duration'] = 'durationNotPositive';
+      return false;
     }
-    return isValid;
+    if (duration > _maxDuration) {
+      errors['duration'] = 'durationTooLarge';
+      return false;
+    }
+    if (!_isHalfDayStep(duration)) {
+      errors['duration'] = 'durationNotHalfDay';
+      return false;
+    }
+    return true;
   }
 
-  // Whether duration lands on a half-day step, i.e. duration * 2 is a
-  // whole number. Only called for finite, positive durations.
   bool _isHalfDayStep(double duration) {
     final doubled = duration * 2;
     return (doubled - doubled.roundToDouble()).abs() < 1e-9;
   }
 
-  // Returns whether rate is present and within _minRate.._maxRate. A
-  // missing rate produces no errors entry; a present-but-out-of-range one
-  // (NaN/Infinity included) does.
   bool _validateRate(double? rate, String field, Map<String, String> errors) {
     if (rate == null) return false;
     final inRange =
@@ -216,11 +203,6 @@ class EquipmentCostFormBloc
     return inRange;
   }
 
-  // Returns whether fee is a valid delivery fee: unset (optional, so
-  // valid), exactly 0 (a distinct "confirmed-free" state, not subject to
-  // _minRate), or within _minRate.._maxRate. NaN/Infinity are always
-  // rejected explicitly, since a NaN comparison against the range is always
-  // false and would otherwise silently pass.
   bool _validateDeliveryFee(double? fee, Map<String, String> errors) {
     if (fee == null) return true;
     final isFree = fee == 0;
@@ -234,7 +216,7 @@ class EquipmentCostFormBloc
   }
 
   EquipmentCostItem _buildCostItem(
-    EquipmentCostFormWithData draft,
+    EquipmentCostFormData draft,
     String estimateId,
   ) {
     final now = _clock.now();
@@ -262,7 +244,6 @@ class EquipmentCostFormBloc
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
       currency: 'USD',
       pricingMethod: draft.method,
-      deliveryFeeStatus: draft.deliveryFeeStatus,
       rateStatus: draft.rateStatus,
       duration: isDay ? duration : null,
       dailyRate: isDay && dailyRate != null ? Money(amount: dailyRate) : null,
