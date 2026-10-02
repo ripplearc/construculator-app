@@ -352,6 +352,14 @@ workflows:
           fi
         test_report: test-results/flutter.json
 
+      - name: Golden Replay
+        script: |
+          # CA-1116: replays the calculator prototype's scenarios against the
+          # bloc and reports N/134. Soft until G3 lands; then set
+          # GOLDEN_REPLAY_GATE=1 here to fail the build under a full pass.
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/run_golden_replay.sh
+          ./scripts/ci/run_golden_replay.sh
       - name: Run Screenshot Tests
         script: |
           SCREENSHOT_TEST_DIRS=()
