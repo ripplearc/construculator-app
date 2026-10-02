@@ -436,7 +436,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   Widget? _lookupRateButtonWhenEmpty(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     if (data.rateStatus != RateStatus.missing) return null;
     final colorTheme = context.colorTheme;
