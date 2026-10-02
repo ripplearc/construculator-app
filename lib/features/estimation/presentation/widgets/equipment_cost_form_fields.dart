@@ -69,7 +69,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
-    _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
   }
 
@@ -166,22 +165,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _noteFocusNode.requestFocus();
     });
-  }
-
-  void _onConfirmDeliveryFee() {
-    context.read<EquipmentCostFormBloc>().add(
-      const EquipmentDeliveryFeeConfirmedEvent(),
-    );
-  }
-
-  // Fires when the delivery-fee field folds (loses focus). This only
-  // rebuilds so the Estimated/Confirm chrome (hidden while focused)
-  // appears — it no longer triggers the outsized-fee dialog itself; see
-  // [maybeConfirmOutsizedFee]'s doc comment for why that check moved off
-  // focus loss.
-  void _onDeliveryFocusChanged() {
-    if (!mounted) return;
-    setState(() {});
   }
 
   /// Runs the outsized-fee confirmation flow for the currently entered
@@ -344,7 +327,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   String? _deliveryFeeErrorText(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     return data.fieldErrors['deliveryFee'] == 'deliveryFeeOutOfRange'
         ? context.l10n.equipmentDeliveryFeeOutOfRangeError
@@ -357,20 +340,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         ? l10n.equipmentDeliveryFeeUnsetText
         : DisplayFormatter.currency.format(fee);
     return '${l10n.equipmentDeliveryRowLabel} $value';
-  }
-
-  String? _deliveryStatusHelperText(
-    BuildContext context,
-    DeliveryFeeStatus status,
-  ) {
-    final l10n = context.l10n;
-    return switch (status) {
-      DeliveryFeeStatus.estimated =>
-        l10n.equipmentDeliveryFeeEstimatedHelperText,
-      DeliveryFeeStatus.confirmed =>
-        l10n.equipmentDeliveryFeeConfirmedHelperText,
-      DeliveryFeeStatus.unset => null,
-    };
   }
 
   // The two badge variants map onto sampleRateUnverified/ownRateConfirmed
@@ -601,20 +570,11 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // closes it. See [_deliveryExpanded]'s doc comment.
   Widget _buildDeliveryFeeSection(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    // Hidden while the field has focus (mid-keystroke), matching the Figma
-    // mock: the badge/link only appear once the value has folded.
-    final showConfirmChrome =
-        !_deliveryFocusNode.hasFocus &&
-        data.deliveryFeeStatus == DeliveryFeeStatus.estimated;
-    final helperText = _deliveryStatusHelperText(
-      context,
-      data.deliveryFeeStatus,
-    );
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: CoreSpacing.space4,
@@ -747,65 +707,8 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 color: colorTheme.textHeadline,
                 size: 24,
               ),
-              labelTrailing: showConfirmChrome
-                  ? RateStatusBadge(
-                      key: const Key('delivery_fee_estimated_badge'),
-                      label: l10n.equipmentDeliveryFeeEstimatedBadge,
-                      variant: RateStatusBadgeVariant.orange,
-                    )
-                  : null,
-              trailingAction: showConfirmChrome
-                  ? Semantics(
-                      button: true,
-                      label: l10n.equipmentDeliveryFeeConfirmLink,
-                      excludeSemantics: true,
-                      child: GestureDetector(
-                        key: const Key('delivery_fee_confirm_link'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _onConfirmDeliveryFee,
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            l10n.equipmentDeliveryFeeConfirmLink,
-                            style: textTheme.bodySmallSemiBold.copyWith(
-                              color: colorTheme.textLink,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : null,
               errorTextList: _errorList(_deliveryFeeErrorText(context, data)),
             ),
-            if (helperText != null) ...[
-              const SizedBox(height: CoreSpacing.space2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CoreIconWidget(
-                    icon: CoreIcons.info,
-                    color: colorTheme.iconGrayMid,
-                    size: 16,
-                  ),
-                  const SizedBox(width: CoreSpacing.space1),
-                  Expanded(
-                    child: Text(
-                      helperText,
-                      key: data.deliveryFeeStatus == DeliveryFeeStatus.confirmed
-                          ? const Key('delivery_fee_confirmed_helper_text')
-                          : const Key('delivery_fee_estimated_helper_text'),
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
             const SizedBox(height: CoreSpacing.space3),
             UnderlineTextField(
               key: const Key('delivery_note_field'),
@@ -862,10 +765,9 @@ class _OutsizedFeeDialog extends StatelessWidget {
 
   // Strips a trailing ".0" from a whole-number duration (e.g. `4.0` ->
   // `"4"`) but keeps a fractional one as typed (e.g. `4.5` -> `"4.5"`).
-  String _formatDuration(double value) =>
-      value == value.roundToDouble()
-          ? value.toStringAsFixed(0)
-          : value.toString();
+  String _formatDuration(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
 
   @override
   Widget build(BuildContext context) {
