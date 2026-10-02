@@ -180,6 +180,36 @@ void main() {
       expect(find.byKey(const Key('duration_field')), findsOneWidget);
       expect(find.byKey(const Key('rate_field')), findsOneWidget);
       expect(find.byKey(const Key('amount_field')), findsNothing);
+      expect(
+        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
+        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+      );
+      expect(
+        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
+        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+      );
+    });
+
+    testWidgets('re-tapping the already-active Job chip is a no-op', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('amount_field')), findsOneWidget);
+      expect(
+        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
+        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+      );
+      expect(
+        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
+        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+      );
     });
 
     testWidgets(
@@ -237,7 +267,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
+        expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
         expect(find.text(l10n.equipmentRateOutOfRangeError), findsNothing);
       },
     );
@@ -288,7 +318,19 @@ void main() {
       await tester.enterText(find.byKey(const Key('duration_field')), '0');
       await tester.pump();
 
-      expect(find.text(l10n.equipmentDurationInvalidError), findsOneWidget);
+      expect(find.text(l10n.equipmentDurationNotPositiveError), findsOneWidget);
+    });
+
+    testWidgets('shows the half-day-step error for a positive non-half-day '
+        'value', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '1.3');
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentDurationNotHalfDayError), findsOneWidget);
+      expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
     });
 
     testWidgets('clears the duration error once a valid value is typed', (
@@ -299,12 +341,12 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('duration_field')), '0');
       await tester.pump();
-      expect(find.text(l10n.equipmentDurationInvalidError), findsOneWidget);
+      expect(find.text(l10n.equipmentDurationNotPositiveError), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('duration_field')), '2');
       await tester.pump();
 
-      expect(find.text(l10n.equipmentDurationInvalidError), findsNothing);
+      expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
     });
 
     testWidgets(
@@ -313,10 +355,7 @@ void main() {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byKey(const Key('rate_field')),
-          '1000000',
-        );
+        await tester.enterText(find.byKey(const Key('rate_field')), '1000000');
         await tester.pump();
 
         expect(find.text(l10n.equipmentRateOutOfRangeError), findsOneWidget);
@@ -340,10 +379,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(
-          find.text(l10n.equipmentAmountOutOfRangeError),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.equipmentAmountOutOfRangeError), findsOneWidget);
       },
     );
 
@@ -490,8 +526,7 @@ void main() {
       },
     );
 
-    testWidgets(
-        'does not call onSaveEnabledChanged in from cost file mode', (
+    testWidgets('does not call onSaveEnabledChanged in from cost file mode', (
       tester,
     ) async {
       bool? captured;
@@ -588,6 +623,48 @@ void main() {
       },
     );
 
+    testWidgets(
+      'calls onTotalChanged with 0 (not the raw product) when duration is '
+      'not a half-day step',
+      (tester) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
+        await tester.pump();
+        expect(capturedTotal, 600.0);
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '1.3');
+        await tester.pump();
+
+        expect(capturedTotal, 0.0);
+      },
+    );
+
+    testWidgets(
+      'calls onTotalChanged with 0 (not a negative product) when the rate '
+      'is out of range',
+      (tester) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '-200');
+        await tester.pump();
+
+        expect(capturedTotal, 0.0);
+      },
+    );
+
     testWidgets('calls onTotalChanged with 0 when duration is empty', (
       tester,
     ) async {
@@ -621,29 +698,30 @@ void main() {
       expect(capturedTotal, 0.0);
     });
 
-    testWidgets('resets total to 0 when fromCostFile flips on a mounted widget', (
-      tester,
-    ) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'resets total to 0 when fromCostFile flips on a mounted widget',
+      (tester) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('duration_field')), '3');
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('rate_field')), '200');
-      await tester.pump();
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
+        await tester.pump();
 
-      await tester.pumpWidget(
-        makeWidget(
-          fromCostFile: true,
-          onTotalChanged: (total) => capturedTotal = total,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: true,
+            onTotalChanged: (total) => capturedTotal = total,
+          ),
+        );
+        await tester.pump();
 
-      expect(capturedTotal, 0.0);
-    });
+        expect(capturedTotal, 0.0);
+      },
+    );
   });
 }
