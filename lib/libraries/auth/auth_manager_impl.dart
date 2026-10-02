@@ -11,6 +11,7 @@ import 'package:construculator/libraries/auth/domain/validation/auth_validation.
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -23,6 +24,7 @@ class AuthManagerImpl implements AuthManager {
   final AuthRepository _authRepository;
   final SentryWrapper _sentryWrapper;
   final AnalyticsRepository _analyticsRepository;
+  final CurrentCompanyResolver _currentCompanyResolver;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
@@ -31,6 +33,7 @@ class AuthManagerImpl implements AuthManager {
     required this._authNotifier,
     required this._sentryWrapper,
     required this._analyticsRepository,
+    required this._currentCompanyResolver,
   }) {
     _initAuthListener();
   }
@@ -368,7 +371,7 @@ class AuthManagerImpl implements AuthManager {
         ),
       );
       await _analyticsRepository.reset();
-      // TODO: [CA-1209] also clear CurrentCompanyResolver's cache here
+      _currentCompanyResolver.clearCache();
 
       _logger.info('Logout successful');
       return AuthResult.success(null);
