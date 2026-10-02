@@ -36,7 +36,9 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: CostEstimationLogTile(log: log)),
+        home: Scaffold(
+          body: CostEstimationLogTile(log: log, onSendTap: () {}),
+        ),
       );
     }
 
@@ -49,6 +51,50 @@ void main() {
         find.byType(CostEstimationLogTile),
         checkTapTargetSize: false,
         checkLabeledTapTarget: false,
+      );
+    });
+
+    testWidgets('a11y: a Send entry is a labelled tap target in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      final log = testLog.copyWith(
+        activity: CostEstimationActivityType.costEstimationSent,
+        activityDetails: {'recipientName': 'Judy Smith'},
+      );
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => createWidget(log, theme: theme),
+        find.byType(CostEstimationLogTile),
+      );
+    });
+
+    testWidgets('a11y: a Send entry reads as one button with its title', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      final log = testLog.copyWith(
+        activity: CostEstimationActivityType.costEstimationSent,
+        activityDetails: {'recipientName': 'Judy Smith'},
+      );
+
+      await tester.pumpWidget(createWidget(log, theme: createTestTheme()));
+      await tester.pumpAndSettle();
+
+      final semantics = tester.getSemantics(
+        find.byType(CostEstimationLogTile),
+      );
+      expect(
+        semantics,
+        isSemantics(isButton: true, hasTapAction: true),
+      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        semantics.label,
+        startsWith(l10n.activityCostEstimationSent('Judy Smith')),
       );
     });
 
