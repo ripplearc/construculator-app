@@ -2384,22 +2384,6 @@
   "@equipmentDeliveryFeeUnsetText": {
     "description": "Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value"
   },
-  "equipmentDeliveryFeeEstimatedBadge": "Estimated",
-  "@equipmentDeliveryFeeEstimatedBadge": {
-    "description": "Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed by the user (manually mode)"
-  },
-  "equipmentDeliveryFeeConfirmLink": "Confirm",
-  "@equipmentDeliveryFeeConfirmLink": {
-    "description": "Link/button next to the delivery-fee row that lets the user confirm the entered fee as accurate for this estimate only; this never contacts the supplier itself (manually mode)"
-  },
-  "equipmentDeliveryFeeConfirmedHelperText": "Confirmed by you — quote for this trip",
-  "@equipmentDeliveryFeeConfirmedHelperText": {
-    "description": "Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)"
-  },
-  "equipmentDeliveryFeeEstimatedHelperText": "Estimated — confirm the supplier's actual delivery quote",
-  "@equipmentDeliveryFeeEstimatedHelperText": {
-    "description": "Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed by the user (manually mode)"
-  },
   "equipmentDeliveryAddNoteLink": "Add note",
   "@equipmentDeliveryAddNoteLink": {
     "description": "Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)"
