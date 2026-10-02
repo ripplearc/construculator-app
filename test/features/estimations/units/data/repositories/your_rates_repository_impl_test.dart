@@ -169,6 +169,26 @@ void main() {
           DatabaseConstants.companyIdColumn: testCompanyId,
         });
       });
+
+      test(
+        'companyId actually keeps a second company\'s rows out of the result, '
+        'not just out of the filter map',
+        () async {
+          seed([
+            row(id: 'mine', companyId: testCompanyId, itemName: 'Excavator'),
+            row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator'),
+          ]);
+
+          final result = await repository.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+          );
+
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['mine']);
+        },
+      );
     });
 
     group('getByItemName', () {
@@ -223,6 +243,23 @@ void main() {
           DatabaseConstants.companyIdColumn: testCompanyId,
         });
       });
+
+      test(
+        'companyId actually keeps a same-grouping row in a second company '
+        'from being returned',
+        () async {
+          seed([row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator')]);
+
+          final result = await repository.getByItemName(
+            'Excavator',
+            CostItemType.equipment,
+            companyId: testCompanyId,
+          );
+
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull(), isNull);
+        },
+      );
     });
 
     group('save', () {
@@ -400,6 +437,28 @@ void main() {
             DatabaseConstants.itemNameColumn: entry.itemName,
             DatabaseConstants.companyIdColumn: entry.companyId,
           });
+        },
+      );
+
+      test(
+        'an unlabeled row in a second company does not collide with this '
+        'entry\'s own save, so it inserts rather than overwriting',
+        () async {
+          seed([
+            row(
+              id: 'theirs',
+              companyId: 'company-2',
+              entryLabel: null,
+              rateAmount: 100.0,
+            ),
+          ]);
+          final entry = buildEntry(amount: 300.0);
+
+          final result = await repository.save(entry);
+
+          expect(result.isRight(), true);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
         },
       );
 
