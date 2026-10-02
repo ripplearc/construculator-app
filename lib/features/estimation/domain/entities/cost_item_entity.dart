@@ -172,39 +172,6 @@ enum EquipmentPricingMethod {
   String toJson() => name;
 }
 
-/// Confirmation state of a quoted delivery fee.
-///
-/// Distinguishes "not yet quoted" from "confirmed zero" so the UI can show a
-/// dash instead of a $0 amount until a real quote exists.
-enum DeliveryFeeStatus {
-  /// No delivery fee has been quoted yet.
-  unset,
-
-  /// Delivery fee is a system estimate, not yet confirmed.
-  estimated,
-
-  /// Delivery fee has been confirmed.
-  confirmed;
-
-  /// Deserializes a [DeliveryFeeStatus] from JSON string.
-  ///
-  /// Falls back to [DeliveryFeeStatus.unset] for unknown values to ensure
-  /// forward compatibility with new statuses added in future versions.
-  /// Unset is the safest default because it never implies a fee was quoted.
-  ///
-  /// Note: This fallback behavior means validation errors are silent.
-  /// Consider logging unknown values if strict validation is required.
-  static DeliveryFeeStatus fromJson(String value) {
-    return DeliveryFeeStatus.values.firstWhere(
-      (e) => e.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => DeliveryFeeStatus.unset,
-    );
-  }
-
-  /// Serializes this [DeliveryFeeStatus] to its JSON string representation.
-  String toJson() => name;
-}
-
 /// Confidence level of a rate value used in a cost item's calculation.
 ///
 /// This is intentionally generic and not equipment-specific: it is introduced
@@ -675,9 +642,6 @@ class EquipmentCostItem extends CostItem {
   /// charge, which is distinct from not having a quote at all.
   final Money? deliveryFee;
 
-  /// Confirmation state of [deliveryFee].
-  final DeliveryFeeStatus deliveryFeeStatus;
-
   /// Confidence level of the rate used for this line ([dailyRate] or [jobAmount]).
   final RateStatus rateStatus;
 
@@ -691,7 +655,6 @@ class EquipmentCostItem extends CostItem {
     required super.updatedAt,
     required super.currency,
     required this.pricingMethod,
-    required this.deliveryFeeStatus,
     required this.rateStatus,
     this.duration,
     this.dailyRate,
@@ -719,7 +682,6 @@ class EquipmentCostItem extends CostItem {
     dailyRate,
     jobAmount,
     deliveryFee,
-    deliveryFeeStatus,
     rateStatus,
   ];
 
@@ -749,7 +711,6 @@ class EquipmentCostItem extends CostItem {
     Object? dailyRate,
     Object? jobAmount,
     Object? deliveryFee,
-    DeliveryFeeStatus? deliveryFeeStatus,
     RateStatus? rateStatus,
     Object? brand,
     Object? productLink,
@@ -777,7 +738,6 @@ class EquipmentCostItem extends CostItem {
       deliveryFee: deliveryFee == clearField
           ? null
           : (deliveryFee as Money?) ?? this.deliveryFee,
-      deliveryFeeStatus: deliveryFeeStatus ?? this.deliveryFeeStatus,
       rateStatus: rateStatus ?? this.rateStatus,
       brand: brand == clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == clearField
