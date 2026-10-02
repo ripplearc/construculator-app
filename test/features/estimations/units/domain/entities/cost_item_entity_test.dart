@@ -874,4 +874,86 @@ void main() {
       expect(laborItems.length, 1);
     });
   });
+
+  group('YourRateEntry', () {
+    final testEntry = YourRateEntry(
+      id: 'rate-1',
+      companyId: 'company-1',
+      itemName: 'Excavator',
+      category: CostItemType.equipment,
+      rate: const Money(amount: 250.0),
+      savedAt: DateTime(2024, 1, 1),
+      unit: Unit.days,
+      equipmentMethod: EquipmentPricingMethod.day,
+      entryLabel: 'Supplier A',
+      description: 'Quoted for the whole dig, machine + operator',
+    );
+
+    test('two entries with the same values are equal', () {
+      final other = YourRateEntry(
+        id: 'rate-1',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0),
+        savedAt: DateTime(2024, 1, 1),
+        unit: Unit.days,
+        equipmentMethod: EquipmentPricingMethod.day,
+        entryLabel: 'Supplier A',
+        description: 'Quoted for the whole dig, machine + operator',
+      );
+
+      expect(testEntry, other);
+    });
+
+    test('description is optional', () {
+      final withoutDescription = YourRateEntry(
+        id: 'rate-2',
+        companyId: 'company-1',
+        itemName: 'Cement',
+        category: CostItemType.material,
+        rate: const Money(amount: 12.5),
+        savedAt: DateTime(2024, 1, 1),
+      );
+
+      expect(withoutDescription.description, isNull);
+    });
+
+    test('copyWith creates new instance with updated values', () {
+      final updated = testEntry.copyWith(
+        itemName: 'Bulldozer',
+        entryLabel: 'Supplier B',
+        description: 'Up to 4 hours on site',
+      );
+
+      expect(updated.itemName, 'Bulldozer');
+      expect(updated.entryLabel, 'Supplier B');
+      expect(updated.description, 'Up to 4 hours on site');
+      expect(updated.id, testEntry.id);
+      expect(updated.rate, testEntry.rate);
+    });
+
+    test('copyWith preserves original values when not specified', () {
+      final updated = testEntry.copyWith(itemName: 'Bulldozer');
+
+      expect(updated.unit, testEntry.unit);
+      expect(updated.equipmentMethod, testEntry.equipmentMethod);
+      expect(updated.entryLabel, testEntry.entryLabel);
+      expect(updated.description, testEntry.description);
+    });
+
+    test('copyWith can clear nullable fields using clearField', () {
+      final updated = testEntry.copyWith(
+        unit: clearField,
+        equipmentMethod: clearField,
+        entryLabel: clearField,
+        description: clearField,
+      );
+
+      expect(updated.unit, isNull);
+      expect(updated.equipmentMethod, isNull);
+      expect(updated.entryLabel, isNull);
+      expect(updated.description, isNull);
+    });
+  });
 }
