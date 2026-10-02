@@ -1487,8 +1487,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labourTypeRequiredError => 'Labour type is required';
 
   @override
-  String get equipmentDurationInvalidError =>
+  String get equipmentDurationNotPositiveError =>
       'Duration must be more than zero.';
+
+  @override
+  String get equipmentDurationNotHalfDayError => 'Use whole or half days.';
+
+  @override
+  String get equipmentDurationTooLargeError => 'Duration is too large.';
 
   @override
   String get equipmentRateOutOfRangeError =>

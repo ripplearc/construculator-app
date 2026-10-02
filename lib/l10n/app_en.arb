@@ -2333,9 +2333,19 @@
   "@labourTypeRequiredError": {
     "description": "Validation error shown below the labour type field when it is submitted empty"
   },
-  "equipmentDurationInvalidError": "Duration must be more than zero.",
-  "@equipmentDurationInvalidError": {
-    "description": "Validation error shown below the duration field when a typed value is zero, negative, or not a half-day step (Day pricing, manually mode)",
+  "equipmentDurationNotPositiveError": "Duration must be more than zero.",
+  "@equipmentDurationNotPositiveError": {
+    "description": "Validation error shown below the duration field when a typed value is zero or negative (Day pricing, manually mode)",
+    "context": "N/A"
+  },
+  "equipmentDurationNotHalfDayError": "Use whole or half days.",
+  "@equipmentDurationNotHalfDayError": {
+    "description": "Validation error shown below the duration field when a typed value is positive but not a whole or half-day step (Day pricing, manually mode)",
+    "context": "N/A"
+  },
+  "equipmentDurationTooLargeError": "Duration is too large.",
+  "@equipmentDurationTooLargeError": {
+    "description": "Validation error shown below the duration field when a typed value exceeds what the database can store (Day pricing, manually mode)",
     "context": "N/A"
   },
   "equipmentRateOutOfRangeError": "Rate must be between $0.01 and $999,999.99",

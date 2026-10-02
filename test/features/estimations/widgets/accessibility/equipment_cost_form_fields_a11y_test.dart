@@ -70,7 +70,8 @@ void main() {
     );
 
     testWidgets(
-      'a11y: equipment name error text meets contrast guidelines in both themes',
+      'a11y: equipment name field meets tap target and label guidelines in '
+      'both themes (it never shows an error, per product decision)',
       (tester) async {
         await setupA11yTest(tester);
 
@@ -89,6 +90,28 @@ void main() {
             await tester.enterText(
               find.byKey(const Key('equipment_name_field')),
               '',
+            );
+            await tester.pump();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: duration error text meets contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('duration_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (tester) async {
+            await tester.enterText(
+              find.byKey(const Key('duration_field')),
+              '0',
             );
             await tester.pump();
           },

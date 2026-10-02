@@ -2794,11 +2794,23 @@ abstract class AppLocalizations {
   /// **'Labour type is required'**
   String get labourTypeRequiredError;
 
-  /// Validation error shown below the duration field when a typed value is zero, negative, or not a half-day step (Day pricing, manually mode)
+  /// Validation error shown below the duration field when a typed value is zero or negative (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Duration must be more than zero.'**
-  String get equipmentDurationInvalidError;
+  String get equipmentDurationNotPositiveError;
+
+  /// Validation error shown below the duration field when a typed value is positive but not a whole or half-day step (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Use whole or half days.'**
+  String get equipmentDurationNotHalfDayError;
+
+  /// Validation error shown below the duration field when a typed value exceeds what the database can store (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Duration is too large.'**
+  String get equipmentDurationTooLargeError;
 
   /// Validation error shown below the rate field when a typed value is outside the accepted bound (Day pricing, manually mode)
   ///
