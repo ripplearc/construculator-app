@@ -669,6 +669,35 @@ void main() {
       expect(logsList.estimateId, estimationId);
       expect(logsList.estimateName, estimationName);
     });
+
+    testWidgets('closes the row menu before opening logs', (tester) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      final logsAction = find.byKey(const Key('logs_action_row'));
+      await tester.ensureVisible(logsAction);
+      await tester.tap(logsAction);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EstimationActionsSheet), findsNothing);
+      expect(find.byType(CostEstimationLogsList), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(CostEstimationLogsList))).pop();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostEstimationLogsList), findsNothing);
+      expect(find.byType(EstimationActionsSheet), findsNothing);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+    });
   });
   group('Delete Estimation', () {
     testWidgets(

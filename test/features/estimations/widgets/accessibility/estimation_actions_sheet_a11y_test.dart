@@ -121,6 +121,39 @@ void main() {
       });
     });
 
+    group('Reading Order', () {
+      testWidgets('screen readers reach logs before other list items', (
+        tester,
+      ) async {
+        await setupA11yTest(tester);
+
+        await tester.pumpWidget(createWidget());
+        await tester.pumpAndSettle();
+
+        final semanticsHandle = tester.ensureSemantics();
+        try {
+          final labels = tester.semantics
+              .simulatedAccessibilityTraversal()
+              .map((node) => node.label)
+              .toList();
+          int positionOf(String label) =>
+              labels.indexWhere((nodeLabel) => nodeLabel.contains(label));
+
+          final logsPosition = positionOf(l10n().logsAction);
+          expect(logsPosition, isNonNegative);
+          for (final label in [
+            l10n().copyEstimationAction,
+            l10n().shareExportAction,
+            l10n().lockEstimationAction,
+          ]) {
+            expect(logsPosition, lessThan(positionOf(label)));
+          }
+        } finally {
+          semanticsHandle.dispose();
+        }
+      });
+    });
+
     group('Lock Toggle Integration', () {
       Future<void> verifySwitchSemanticLabels(
         WidgetTester tester,
