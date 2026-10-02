@@ -1526,29 +1526,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDeliveryAddNoteLink => 'Add note';
 
   @override
-  String get equipmentDeliveryFeeOutOfRangeError =>
-      'Delivery fee must be between \$0.01 and \$999,999.99';
-
-  @override
   String get equipmentDeliveryFeeOutsizedDialogTitle =>
-      'Confirm this delivery fee?';
+      'Delivery costs more than the machine';
 
   @override
   String equipmentDeliveryFeeOutsizedDialogBody(
     String feeAmount,
     String baseCostAmount,
   ) {
-    return 'The delivery fee ($feeAmount) is more than the equipment\'s own cost ($baseCostAmount). Do you want to add it as entered?';
+    return 'Delivery is $feeAmount against $baseCostAmount for the job. Add it anyway?';
   }
 
   @override
   String equipmentDeliveryFeeOutsizedDialogBodyDay(
     String feeAmount,
-    String durationText,
-    String equipmentType,
     String baseCostAmount,
+    String durationPhrase,
+    String equipmentType,
   ) {
-    return 'The delivery fee ($feeAmount) is more than the cost of $durationText days of $equipmentType ($baseCostAmount). Do you want to add it as entered?';
+    return 'Delivery is $feeAmount against $baseCostAmount for $durationPhrase of $equipmentType. Add it anyway?';
+  }
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogOneDay => '1 day';
+
+  @override
+  String get equipmentDeliveryFeeOutsizedDialogHalfDay => 'half a day';
+
+  @override
+  String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText) {
+    return '$durationText days';
   }
 
   @override
