@@ -1,13 +1,26 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// Strips a trailing ".0" from a whole number (e.g. `4.0` -> `"4"`) but
+/// keeps a fractional value as typed (e.g. `4.5` -> `"4.5"`). For numeric
+/// text fields, which expect a plain typed-style number rather than one
+/// formatted for display — a duration named in dialog copy, or a rate
+/// amount picked from Your rates.
+String _formatTrimmedNumber(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toString();
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -21,12 +34,19 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// delivery fee. May be null wherever the caller doesn't have one yet.
   final String? estimateId;
 
+  /// Builds a [YourRatesBloc] for the Rate/Amount field's look-up-a-rate
+  /// search button. Injected rather than resolved with `Modular.get` here,
+  /// since this widget isn't a module file. Called once per look-up-a-rate
+  /// sheet open, matching [YourRatesBloc]'s factory registration.
+  final YourRatesBloc Function() yourRatesBlocFactory;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
     this.estimateId,
+    required this.yourRatesBlocFactory,
   });
 
   @override
@@ -414,6 +434,57 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  Widget? _lookupRateButtonWhenEmpty(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    if (data.rateStatus != RateStatus.missing) return null;
+    final colorTheme = context.colorTheme;
+    return Semantics(
+      button: true,
+      label: context.l10n.yourRatesLookupButton,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('lookup_rate_button'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => unawaited(_openRateLookup(context, data.method)),
+        child: Container(
+          width: CoreSpacing.space10,
+          height: CoreSpacing.space10,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: colorTheme.textLink),
+            borderRadius: BorderRadius.circular(CoreSpacing.space2),
+          ),
+          child: CoreIconWidget(
+            icon: CoreIcons.search,
+            color: colorTheme.iconGrayMid,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openRateLookup(
+    BuildContext context,
+    EquipmentPricingMethod method,
+  ) async {
+    final entry = await YourRatesLookupSheet.show(
+      context: context,
+      method: method,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (entry == null || !mounted) return;
+    _equipmentNameController.text = entry.itemName;
+    (method == EquipmentPricingMethod.day
+            ? _dailyRateController
+            : _jobAmountController)
+        .text = _formatTrimmedNumber(
+      entry.rate.amount,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -550,7 +621,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     decimal: true,
                   ),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
               ] else
@@ -562,7 +635,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     decimal: true,
                   ),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
               const SizedBox(height: CoreSpacing.space5),
@@ -779,12 +854,6 @@ class _OutsizedFeeDialog extends StatelessWidget {
   /// item in the body text; falls back to a generic noun when blank.
   final String equipmentType;
 
-  // Strips a trailing ".0" from a whole-number duration (e.g. `4.0` ->
-  // `"4"`) but keeps a fractional one as typed (e.g. `4.5` -> `"4.5"`).
-  String _formatDuration(double value) => value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toString();
-
   // "1 day"/"half a day"/"N days" — the storyboard names a single day and a
   // half day specially; everything else stays in digit form (see this
   // class's doc comment for why digits rather than spelled-out numbers).
@@ -793,7 +862,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
     if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
     if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
     return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
-      _formatDuration(value),
+      _formatTrimmedNumber(value),
     );
   }
 

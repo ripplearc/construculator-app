@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
@@ -57,6 +60,7 @@ void main() {
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
             estimateId: estimateId,
+            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           ),
         ),
       ),
@@ -1635,5 +1639,118 @@ void main() {
         expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
       },
     );
+  });
+
+  group('EquipmentCostFormFields — look up a rate', () {
+    Future<YourRateEntry> seedRate({
+      required String itemName,
+      required double amount,
+      required EquipmentPricingMethod method,
+    }) async {
+      final repository = Modular.get<YourRatesRepository>();
+      final saveResult = await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: itemName,
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: method,
+        ),
+      );
+      saveResult.fold((f) => throw StateError('seed save failed: $f'), (_) {});
+      final searchResult = await repository.search(
+        itemName,
+        category: CostItemType.equipment,
+      );
+      return searchResult.fold(
+        (_) => throw StateError('seed search failed'),
+        (entries) => entries.firstWhere((e) => e.itemName == itemName),
+      );
+    }
+
+    testWidgets('shows a search button when the rate is empty (Day)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
+    });
+
+    testWidgets('hides the search button once a rate is typed', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+
+      expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
+    });
+
+    testWidgets('picking a Your-rates entry fills name and rate', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Mini excavator',
+        amount: 145,
+        method: EquipmentPricingMethod.day,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mini excavator'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mini excavator'), findsOneWidget);
+      // Not '145.0': the field expects a plain typed-style number, matching
+      // what a user would have typed directly (N6).
+      expect(find.text('145'), findsOneWidget);
+    });
+
+    testWidgets(
+      'picking a fractional-amount entry keeps the decimal, unlike a whole number',
+      (tester) async {
+        await seedRate(
+          itemName: 'Skid steer',
+          amount: 132.5,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('lookup_rate_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skid steer'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('your_rates_use_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('132.5'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a Job-priced entry never appears while Day is active', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Dumpster',
+        amount: 400,
+        method: EquipmentPricingMethod.job,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dumpster'), findsNothing);
+      expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
+    });
   });
 }
