@@ -6,6 +6,7 @@ import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
+import 'package:construculator/libraries/app_lifecycle/testing/fake_app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
@@ -33,6 +34,7 @@ void main() {
           powerSyncDatabase: FakePowerSyncDatabase(),
           featureFlagRepository: FakeFeatureFlagRepository(),
           currentScreenTracker: CurrentScreenTracker(),
+          appLifecycleWrapper: FakeAppLifecycleWrapper(),
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -86,6 +88,7 @@ void main() {
           powerSyncDatabase: FakePowerSyncDatabase(),
           featureFlagRepository: FakeFeatureFlagRepository(),
           currentScreenTracker: CurrentScreenTracker(),
+          appLifecycleWrapper: FakeAppLifecycleWrapper(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();
