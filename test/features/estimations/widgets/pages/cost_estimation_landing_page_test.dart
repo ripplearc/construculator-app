@@ -683,7 +683,7 @@ void main() {
       await tester.tap(find.byKey(const Key('menuIcon')));
       await tester.pumpAndSettle();
 
-      final logsAction = find.text(l10n().logsAction);
+      final logsAction = find.byKey(const Key('logs_action_row'));
       await tester.ensureVisible(logsAction);
       await tester.tap(logsAction);
       await tester.pumpAndSettle();
