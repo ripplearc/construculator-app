@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -124,6 +126,14 @@ void main() {
 
         await emission;
       });
+
+      test('completes watchInvokedSignal when watch is called', () {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
+
+        fakeWrapper.watch(sql);
+
+        expect(fakeWrapper.watchInvokedSignal!.isCompleted, isTrue);
+      });
     });
 
     group('syncStream', () {
@@ -137,6 +147,42 @@ void main() {
         final handle = await fakeWrapper.syncStream('user_cost_estimates');
 
         expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
+
+        handle.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribes, ['user_cost_estimates']);
+      });
+
+      test('completes syncStreamInvokedSignal when syncStream is called', () async {
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
+
+        final future = fakeWrapper.syncStream('user_cost_estimates');
+
+        expect(fakeWrapper.syncStreamInvokedSignal!.isCompleted, isTrue);
+        await future;
+      });
+
+      test('completes syncStreamUnsubscribeSignal on unsubscribe', () async {
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
+        final handle = await fakeWrapper.syncStream('user_cost_estimates');
+
+        handle.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribeSignal!.isCompleted, isTrue);
+      });
+
+      test('can delay activation until the gate completes', () async {
+        fakeWrapper.syncStreamActivationGate = Completer<void>();
+
+        // syncStreamCalls is recorded synchronously at the top of syncStream(),
+        // before the internal gate await — no async wait needed to observe it.
+        final future = fakeWrapper.syncStream('user_cost_estimates');
+
+        expect(fakeWrapper.syncStreamCalls, ['user_cost_estimates']);
+        expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
+
+        fakeWrapper.syncStreamActivationGate!.complete();
+        final handle = await future;
 
         handle.unsubscribe();
 
@@ -293,6 +339,10 @@ void main() {
         fakeWrapper.executeError = Exception('y');
         fakeWrapper.writeTransactionError = Exception('w');
         fakeWrapper.syncStreamError = Exception('z');
+        fakeWrapper.syncStreamActivationGate = Completer<void>();
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
+        fakeWrapper.watchInvokedSignal = Completer<void>();
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
 
         fakeWrapper.reset();
 
@@ -306,6 +356,10 @@ void main() {
         expect(fakeWrapper.executeError, isNull);
         expect(fakeWrapper.writeTransactionError, isNull);
         expect(fakeWrapper.syncStreamError, isNull);
+        expect(fakeWrapper.syncStreamActivationGate, isNull);
+        expect(fakeWrapper.syncStreamInvokedSignal, isNull);
+        expect(fakeWrapper.watchInvokedSignal, isNull);
+        expect(fakeWrapper.syncStreamUnsubscribeSignal, isNull);
         expect(await fakeWrapper.getAll(sql), isEmpty);
 
         final emission = expectLater(
