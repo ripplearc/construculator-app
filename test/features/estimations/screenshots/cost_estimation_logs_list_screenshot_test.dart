@@ -210,6 +210,100 @@ void main() {
       );
     });
 
+    // CUJ 11 screen 2. The spinner animation does not draw in a golden; its
+    // label and the sheet's height do.
+    testWidgets('first page loading', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.completer = Completer();
+      fakeSupabase.shouldDelayOperations = true;
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_first_loading$suffix.png',
+        ),
+      );
+
+      fakeSupabase.shouldDelayOperations = false;
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    // CUJ 11 screen 7.
+    testWidgets('a brand-new estimate with one entry', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Sam',
+        ),
+      ]);
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_one_entry$suffix.png',
+        ),
+      );
+    });
+
+    // CUJ 11 screen 8.
+    testWidgets('older events loading', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      fakeSupabase.completer = Completer();
+      fakeSupabase.shouldDelayOperations = true;
+
+      final logsScrollView = find.byKey(
+        CostEstimationLogsList.logsScrollViewKey,
+      );
+      await tester.drag(logsScrollView, const Offset(0, -1800));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.drag(logsScrollView, const Offset(0, -1800));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_older_loading$suffix.png',
+        ),
+      );
+
+      fakeSupabase.shouldDelayOperations = false;
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+    });
+
     // CUJ 11 screen 4.
     testWidgets('first-load error again after try again', (tester) async {
       tester.view.physicalSize = size;
