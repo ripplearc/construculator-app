@@ -1523,20 +1523,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDeliveryFeeUnsetText => '—';
 
   @override
-  String get equipmentDeliveryFeeEstimatedBadge => 'Estimated';
-
-  @override
-  String get equipmentDeliveryFeeConfirmLink => 'Confirm';
-
-  @override
-  String get equipmentDeliveryFeeConfirmedHelperText =>
-      'Confirmed by you — quote for this trip';
-
-  @override
-  String get equipmentDeliveryFeeEstimatedHelperText =>
-      'Estimated — confirm the supplier\'s actual delivery quote';
-
-  @override
   String get equipmentDeliveryAddNoteLink => 'Add note';
 
   @override

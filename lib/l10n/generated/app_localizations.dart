@@ -2860,30 +2860,6 @@ abstract class AppLocalizations {
   /// **'—'**
   String get equipmentDeliveryFeeUnsetText;
 
-  /// Status badge shown next to the delivery-fee row while a fee has been entered but not yet confirmed by the user (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated'**
-  String get equipmentDeliveryFeeEstimatedBadge;
-
-  /// Link/button next to the delivery-fee row that lets the user confirm the entered fee as accurate for this estimate only; this never contacts the supplier itself (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
-  String get equipmentDeliveryFeeConfirmLink;
-
-  /// Helper text shown below the delivery-fee row after the fee has been confirmed (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed by you — quote for this trip'**
-  String get equipmentDeliveryFeeConfirmedHelperText;
-
-  /// Helper text shown below the delivery-fee row while the fee is a system estimate, not yet confirmed by the user (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated — confirm the supplier\'s actual delivery quote'**
-  String get equipmentDeliveryFeeEstimatedHelperText;
-
   /// Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)
   ///
   /// In en, this message translates to:

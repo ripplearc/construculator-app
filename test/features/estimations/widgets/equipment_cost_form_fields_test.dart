@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -260,12 +261,24 @@ void main() {
       expect(find.byKey(const Key('rate_field')), findsOneWidget);
       expect(find.byKey(const Key('amount_field')), findsNothing);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
@@ -282,12 +295,24 @@ void main() {
 
       expect(find.byKey(const Key('amount_field')), findsOneWidget);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
@@ -436,10 +461,7 @@ void main() {
           find.text(l10n.equipmentDurationNotHalfDayError),
           findsOneWidget,
         );
-        expect(
-          find.text(l10n.equipmentDurationNotPositiveError),
-          findsNothing,
-        );
+        expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
       },
     );
 
@@ -1016,26 +1038,10 @@ void main() {
     );
   });
 
-  group('EquipmentCostFormFields — Estimated/Confirm badge lifecycle', () {
-    testWidgets('hides the badge and link while the field has focus', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      await expandDeliveryField(tester);
-      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
-      await tester.pump();
-
-      expect(
-        find.byKey(const Key('delivery_fee_estimated_badge')),
-        findsNothing,
-      );
-      expect(find.byKey(const Key('delivery_fee_confirm_link')), findsNothing);
-    });
-
+  group('EquipmentCostFormFields — delivery fee has no status', () {
     testWidgets(
-      'shows Estimated badge and Confirm link once folded with a fee entered',
+      'a typed fee shows no badge or Confirm link once folded, per the '
+      'storyboard: a typed fee is final immediately',
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
@@ -1053,52 +1059,18 @@ void main() {
 
         expect(
           find.byKey(const Key('delivery_fee_estimated_badge')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const Key('delivery_fee_confirm_link')),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'tapping Confirm removes the badge/link and shows the confirmed helper text',
-      (tester) async {
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
-        await fillValidDayFields(
-          tester,
-        ); // base cost 300, well above the fee below
-
-        await expandDeliveryField(tester);
-        await tester.enterText(
-          find.byKey(const Key('delivery_fee_field')),
-          '85',
-        );
-        await tester.pump();
-        await foldDeliveryField(tester);
-
-        await tester.tap(find.byKey(const Key('delivery_fee_confirm_link')));
-        await tester.pump();
-
-        expect(
-          find.byKey(const Key('delivery_fee_estimated_badge')),
           findsNothing,
         );
         expect(
           find.byKey(const Key('delivery_fee_confirm_link')),
           findsNothing,
         );
-        expect(
-          find.text(l10n.equipmentDeliveryFeeConfirmedHelperText),
-          findsOneWidget,
-        );
       },
     );
 
     testWidgets(
-      'an entered-but-unconfirmed \$0.00 still gets the Estimated/Confirm treatment',
+      'a typed \$0.00 fee also shows no badge or link, per the storyboard: '
+      'a confirmed-free fee has no tag',
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
@@ -1113,27 +1085,21 @@ void main() {
 
         expect(
           find.byKey(const Key('delivery_fee_estimated_badge')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const Key('delivery_fee_confirm_link')),
-          findsOneWidget,
+          findsNothing,
         );
       },
     );
 
-    testWidgets('shows neither badge nor helper text when unset', (
-      tester,
-    ) async {
+    testWidgets('shows no badge when unset', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(
         find.byKey(const Key('delivery_fee_estimated_badge')),
-        findsNothing,
-      );
-      expect(
-        find.text(l10n.equipmentDeliveryFeeConfirmedHelperText),
         findsNothing,
       );
     });
@@ -1371,10 +1337,7 @@ void main() {
       // The fee is preserved, not cleared — the panel stays open and the
       // value stays put and editable.
       expect(find.text(deliveryRowText(8500)), findsOneWidget);
-      expect(
-        find.widgetWithText(TextField, '8500'),
-        findsOneWidget,
-      );
+      expect(find.widgetWithText(TextField, '8500'), findsOneWidget);
       // Per the storyboard ("the fee is selected and the pad is up"), focus
       // returns to the field with its value selected, ready to retype.
       final field = tester.widget<TextField>(
@@ -1541,27 +1504,6 @@ void main() {
       expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
       expect(find.byKey(const Key('delivery_note_field')), findsNothing);
     });
-
-    testWidgets(
-      'shows the Estimated helper sentence once folded with a fee entered',
-      (tester) async {
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
-
-        await expandDeliveryField(tester);
-        await tester.enterText(
-          find.byKey(const Key('delivery_fee_field')),
-          '85',
-        );
-        await tester.pump();
-        await foldDeliveryField(tester);
-
-        expect(
-          find.text(l10n.equipmentDeliveryFeeEstimatedHelperText),
-          findsOneWidget,
-        );
-      },
-    );
   });
 
   group('EquipmentCostFormFields — Note field', () {
@@ -1618,10 +1560,7 @@ void main() {
         // handler) — the badge only renders for ownRateConfirmed/
         // sampleRateUnverified, so neither badge variant shows here.
         expect(find.byKey(const Key('rate_status_badge')), findsNothing);
-        expect(
-          find.text(l10n.equipmentRateStatusYourRateBadge),
-          findsNothing,
-        );
+        expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
         // Also not offered here: saving an already-own-but-unconfirmed
         // value is still redundant (see _saveAsMyRateLink's doc comment).
         expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
@@ -1640,10 +1579,7 @@ void main() {
         await tester.pump();
 
         expect(find.byKey(const Key('rate_status_badge')), findsNothing);
-        expect(
-          find.text(l10n.equipmentRateStatusYourRateBadge),
-          findsNothing,
-        );
+        expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
       },
     );
   });
