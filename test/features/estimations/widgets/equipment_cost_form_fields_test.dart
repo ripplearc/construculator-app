@@ -958,10 +958,10 @@ void main() {
 
       expect(find.text('85'), findsOneWidget);
       expect(find.text('\$85.00'), findsNothing);
-      // The header stays visible (and already formatted) alongside the
-      // still-open field per the Figma mock — only the field itself shows
-      // raw digits while typing.
-      expect(find.text(deliveryRowText(85)), findsOneWidget);
+      // The header shows the same raw digits as the field itself while
+      // open (N12): it reads "Delivery 85", never "Delivery $85.00", so
+      // the two never disagree mid-keystroke.
+      expect(find.text('${l10n.equipmentDeliveryRowLabel} 85'), findsOneWidget);
     });
 
     testWidgets(
@@ -987,9 +987,15 @@ void main() {
     );
   });
 
-  group('EquipmentCostFormFields — delivery fee out-of-range error', () {
+  group('EquipmentCostFormFields — delivery fee never colors the field', () {
+    // Per the storyboard: "Every digit is accepted. The app asks about a
+    // large amount on Add to estimate, and never refuses a keypress or
+    // colours the field." Range validity is enforced by the bloc (gates
+    // Save/Submit, see equipment_cost_form_bloc_test.dart), not by a red
+    // field error here.
     testWidgets(
-      'shows the out-of-range error once the field loses focus above the accepted bound',
+      'an out-of-range delivery fee never shows a red field error, even '
+      'once folded',
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
@@ -1000,23 +1006,21 @@ void main() {
           '5000000',
         );
         await tester.pump();
-
-        expect(
-          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
-          findsNothing,
-        );
-
         await foldDeliveryField(tester);
 
         expect(
-          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
-          findsOneWidget,
+          tester
+              .widget<UnderlineTextField>(
+                find.byKey(const Key('delivery_fee_field')),
+              )
+              .errorTextList,
+          isNull,
         );
       },
     );
 
     testWidgets(
-      'a delivery fee of exactly 0 never shows the out-of-range error, since '
+      'a delivery fee of exactly 0 never shows a red field error, since '
       "it's a distinct, valid confirmed-free value",
       (tester) async {
         await tester.pumpWidget(makeWidget());
@@ -1031,8 +1035,12 @@ void main() {
         await foldDeliveryField(tester);
 
         expect(
-          find.text(l10n.equipmentDeliveryFeeOutOfRangeError),
-          findsNothing,
+          tester
+              .widget<UnderlineTextField>(
+                find.byKey(const Key('delivery_fee_field')),
+              )
+              .errorTextList,
+          isNull,
         );
       },
     );
@@ -1264,9 +1272,47 @@ void main() {
         find.text(
           l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
             DisplayFormatter.currency.format(8500),
-            '4',
-            'excavator',
             DisplayFormatter.currency.format(580),
+            l10n.equipmentDeliveryFeeOutsizedDialogDurationDays('4'),
+            'excavator',
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('says "1 day", not "1 days", for a one-day duration', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'excavator',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('duration_field')), '1');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '500',
+      );
+      await tester.pump();
+      await foldDeliveryField(tester);
+      await triggerOutsizedFeeCheck(tester);
+
+      expect(
+        find.text(
+          l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(500),
+            DisplayFormatter.currency.format(145),
+            l10n.equipmentDeliveryFeeOutsizedDialogOneDay,
+            'excavator',
           ),
         ),
         findsOneWidget,
@@ -1335,8 +1381,12 @@ void main() {
 
       expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
       // The fee is preserved, not cleared — the panel stays open and the
-      // value stays put and editable.
-      expect(find.text(deliveryRowText(8500)), findsOneWidget);
+      // value stays put and editable. Focus is back on the field (see
+      // below), so the row reads the raw digits too (N12), not formatted.
+      expect(
+        find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+        findsOneWidget,
+      );
       expect(find.widgetWithText(TextField, '8500'), findsOneWidget);
       // Per the storyboard ("the fee is selected and the pad is up"), focus
       // returns to the field with its value selected, ready to retype.
@@ -1378,7 +1428,10 @@ void main() {
           find.byKey(const Key('outsized_fee_dialog_title')),
           findsNothing,
         );
-        expect(find.text(deliveryRowText(8500)), findsOneWidget);
+        expect(
+          find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+          findsOneWidget,
+        );
       },
     );
 

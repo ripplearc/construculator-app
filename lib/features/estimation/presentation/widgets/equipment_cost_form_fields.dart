@@ -69,6 +69,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
+    _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
   }
 
@@ -135,6 +136,14 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
+  // Rebuilds so the delivery row header switches between the raw typed
+  // digits (focused) and the two-decimal formatted value (folded) — see
+  // _deliveryRowText.
+  void _onDeliveryFocusChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _onDescriptionChanged() {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentDescriptionUpdatedEvent(_noteController.text),
@@ -170,11 +179,11 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   /// Runs the outsized-fee confirmation flow for the currently entered
   /// delivery fee, showing [_OutsizedFeeDialog] when the fee exceeds this
   /// line's own base cost. Returns whether the caller should proceed with
-  /// submission: true when there's nothing to confirm (no fee entered, the
-  /// fee isn't outsized, or the user tapped "Add it"/dismissed the dialog
-  /// to accept it anyway); false when the user chose "Go back" (or tapped
-  /// outside the dialog, which the dialog treats the same way — see
-  /// [_OutsizedFeeDialog]) and submission should not proceed.
+  /// submission: true when there's nothing to confirm (no fee entered or
+  /// the fee isn't outsized) or the user tapped "Add it"; false when the
+  /// user chose "Go back", or dismissed the dialog by tapping outside it
+  /// (which the dialog treats the same as "Go back" — see
+  /// [_OutsizedFeeDialog]), and submission should not proceed.
   ///
   /// Intentionally NOT wired to anything in this tree yet: the spec calls
   /// for this to run when the user taps "Add to estimate", not when the
@@ -186,6 +195,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   /// today. CA-355's implementer should reach this method — e.g. via
   /// `GlobalKey<EquipmentCostFormFieldsState>` — from that handler before
   /// actually submitting.
+  // TODO: [CA-355] wire this from the real "Add to estimate" handler. https://ripplearc.youtrack.cloud/issue/CA-355
   Future<bool> maybeConfirmOutsizedFee() async {
     final data = _dataOf(context.read<EquipmentCostFormBloc>().state);
     final fee = data.deliveryFee;
@@ -330,20 +340,18 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  String? _deliveryFeeErrorText(
-    BuildContext context,
-    EquipmentCostFormData data,
-  ) {
-    return data.fieldErrors['deliveryFee'] == 'deliveryFeeOutOfRange'
-        ? context.l10n.equipmentDeliveryFeeOutOfRangeError
-        : null;
-  }
-
+  // Shows the raw typed digits while the field has focus (so the row header
+  // and the field itself never disagree mid-keystroke, e.g. both read "85"
+  // rather than the row jumping ahead to "$85.00"), and the two-decimal
+  // formatted value once the field folds.
   String _deliveryRowText(BuildContext context, double? fee) {
     final l10n = context.l10n;
-    final value = fee == null
-        ? l10n.equipmentDeliveryFeeUnsetText
-        : DisplayFormatter.currency.format(fee);
+    final raw = _deliveryFeeController.text;
+    final value = switch ((_deliveryFocusNode.hasFocus, raw.isEmpty, fee)) {
+      (true, false, _) => raw,
+      (_, _, null) => l10n.equipmentDeliveryFeeUnsetText,
+      (_, _, final fee?) => DisplayFormatter.currency.format(fee),
+    };
     return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
@@ -713,7 +721,6 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 color: colorTheme.textHeadline,
                 size: 24,
               ),
-              errorTextList: _errorList(_deliveryFeeErrorText(context, data)),
             ),
             const SizedBox(height: CoreSpacing.space3),
             UnderlineTextField(
@@ -740,10 +747,13 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 /// blue icon circle, an 18px semibold title, a 14px regular body, and a
 /// secondary/primary [CoreButton] pair.
 ///
-/// The title/body copy below is PLACEHOLDER TEXT pending design sign-off:
-/// neither the design doc nor the storyboard specifies exact strings for
-/// this dialog (CA-1144). Swap the equipmentDeliveryFeeOutsizedDialogTitle/
-/// Body ARB entries once real copy is approved.
+/// The title/body copy matches the storyboard frame "Delivery $8500"
+/// ("Delivery costs more than the machine" / "Delivery is {fee} against
+/// {baseCost} for {duration} of {equipment}. Add it anyway?"). The
+/// storyboard spells its one example duration as a word ("four days");
+/// this uses digits instead so arbitrary durations don't need a
+/// number-to-words conversion — flagging that choice for the owner to
+/// override if the word form matters.
 class _OutsizedFeeDialog extends StatelessWidget {
   const _OutsizedFeeDialog({
     required this.fee,
@@ -775,6 +785,18 @@ class _OutsizedFeeDialog extends StatelessWidget {
       ? value.toStringAsFixed(0)
       : value.toString();
 
+  // "1 day"/"half a day"/"N days" — the storyboard names a single day and a
+  // half day specially; everything else stays in digit form (see this
+  // class's doc comment for why digits rather than spelled-out numbers).
+  String _formatDurationPhrase(BuildContext context, double value) {
+    final l10n = context.l10n;
+    if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
+    if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
+    return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
+      _formatDuration(value),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -784,11 +806,11 @@ class _OutsizedFeeDialog extends StatelessWidget {
     final bodyText = isDay
         ? l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
             DisplayFormatter.currency.format(fee),
-            _formatDuration(duration ?? 0),
+            DisplayFormatter.currency.format(baseCost),
+            _formatDurationPhrase(context, duration ?? 0),
             equipmentType.trim().isEmpty
                 ? l10n.equipmentDeliveryFeeOutsizedDialogGenericItem
                 : equipmentType.trim(),
-            DisplayFormatter.currency.format(baseCost),
           )
         : l10n.equipmentDeliveryFeeOutsizedDialogBody(
             DisplayFormatter.currency.format(fee),

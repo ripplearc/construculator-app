@@ -2866,37 +2866,49 @@ abstract class AppLocalizations {
   /// **'Add note'**
   String get equipmentDeliveryAddNoteLink;
 
-  /// Validation error shown below the delivery-fee field when a non-zero entry is outside the accepted bound (manually mode)
+  /// Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost, matching the storyboard frame "Delivery $8500" verbatim.
   ///
   /// In en, this message translates to:
-  /// **'Delivery fee must be between \$0.01 and \$999,999.99'**
-  String get equipmentDeliveryFeeOutOfRangeError;
-
-  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm this delivery fee?'**
+  /// **'Delivery costs more than the machine'**
   String get equipmentDeliveryFeeOutsizedDialogTitle;
 
-  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
+  /// Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.
   ///
   /// In en, this message translates to:
-  /// **'The delivery fee ({feeAmount}) is more than the equipment\'s own cost ({baseCostAmount}). Do you want to add it as entered?'**
+  /// **'Delivery is {feeAmount} against {baseCostAmount} for the job. Add it anyway?'**
   String equipmentDeliveryFeeOutsizedDialogBody(
     String feeAmount,
     String baseCostAmount,
   );
 
-  /// PLACEHOLDER COPY pending design sign-off (CA-1144: no exact string exists in the design doc or storyboard for this dialog). Body of the outsized delivery-fee confirmation dialog under Day pricing, naming the time period per the storyboard (e.g. 'the cost of 4 days of excavator'); feeAmount and baseCostAmount are pre-formatted currency strings, durationText is the pre-formatted duration count, and equipmentType is the typed equipment name for this line.
+  /// Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame "Delivery $8500" (e.g. "Delivery is $8,500.00 against $580.00 for 4 days of excavator. Add it anyway?"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.
   ///
   /// In en, this message translates to:
-  /// **'The delivery fee ({feeAmount}) is more than the cost of {durationText} days of {equipmentType} ({baseCostAmount}). Do you want to add it as entered?'**
+  /// **'Delivery is {feeAmount} against {baseCostAmount} for {durationPhrase} of {equipmentType}. Add it anyway?'**
   String equipmentDeliveryFeeOutsizedDialogBodyDay(
     String feeAmount,
-    String durationText,
-    String equipmentType,
     String baseCostAmount,
+    String durationPhrase,
+    String equipmentType,
   );
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 1 (the storyboard calls out this case specially, as "one day")
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get equipmentDeliveryFeeOutsizedDialogOneDay;
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 0.5 (the storyboard calls out this case specially)
+  ///
+  /// In en, this message translates to:
+  /// **'half a day'**
+  String get equipmentDeliveryFeeOutsizedDialogHalfDay;
+
+  /// Duration phrase used in the Day-pricing outsized-fee dialog body for any duration other than exactly 1 or 0.5; durationText is the pre-formatted duration count
+  ///
+  /// In en, this message translates to:
+  /// **'{durationText} days'**
+  String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText);
 
   /// Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet
   ///
