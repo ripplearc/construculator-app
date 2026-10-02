@@ -6,6 +6,34 @@ import '../../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   group('CostItemDto', () {
+    group('toJson id handling', () {
+      CostItemDto dtoWithId(String id) => CostItemDto(
+        id: id,
+        estimateId: 'estimate-456',
+        itemName: 'Concrete Mix',
+        itemType: 'material',
+        calculation: const {'base': 100.0},
+        itemTotalCost: 100.0,
+        createdAt: '2025-02-25T14:30:00.000Z',
+        updatedAt: '2025-02-25T14:30:00.000Z',
+        currency: 'USD',
+      );
+
+      test('an empty id omits the id key (so the uuid column default '
+          'generates one)', () {
+        final json = dtoWithId('').toJson();
+
+        expect(json.containsKey('id'), isFalse);
+      });
+
+      test('a real id keeps the id key (so an update targets the right '
+          'row)', () {
+        final json = dtoWithId('item-123').toJson();
+
+        expect(json['id'], 'item-123');
+      });
+    });
+
     group('MaterialCostItem', () {
       final testJson = CostItemTestDataMapFactory.createMaterialItemData(
         id: 'item-123',
@@ -299,15 +327,18 @@ void main() {
           });
         });
 
-        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
-          final dto = CostItemDto.fromJson(testJson);
-          final entity = dto.toEntity();
-          final dtoAgain = CostItemDto.fromEntity(entity);
-          final jsonAgain = dtoAgain.toJson();
+        test(
+          'round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent',
+          () {
+            final dto = CostItemDto.fromJson(testJson);
+            final entity = dto.toEntity();
+            final dtoAgain = CostItemDto.fromEntity(entity);
+            final jsonAgain = dtoAgain.toJson();
 
-          expect(dtoAgain, dto);
-          expect(jsonAgain, testJson);
-        });
+            expect(dtoAgain, dto);
+            expect(jsonAgain, testJson);
+          },
+        );
       });
 
       group('job pricing', () {
@@ -380,15 +411,18 @@ void main() {
           });
         });
 
-        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
-          final dto = CostItemDto.fromJson(testJson);
-          final entity = dto.toEntity();
-          final dtoAgain = CostItemDto.fromEntity(entity);
-          final jsonAgain = dtoAgain.toJson();
+        test(
+          'round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent',
+          () {
+            final dto = CostItemDto.fromJson(testJson);
+            final entity = dto.toEntity();
+            final dtoAgain = CostItemDto.fromEntity(entity);
+            final jsonAgain = dtoAgain.toJson();
 
-          expect(dtoAgain, dto);
-          expect(jsonAgain, testJson);
-        });
+            expect(dtoAgain, dto);
+            expect(jsonAgain, testJson);
+          },
+        );
       });
     });
 
