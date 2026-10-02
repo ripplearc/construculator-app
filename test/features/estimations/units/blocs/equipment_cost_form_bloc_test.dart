@@ -226,6 +226,53 @@ void main() {
       );
     });
 
+    group('EquipmentRateUpdatedEvent — bound/NaN checks', () {
+      for (final bad in ['0', '0.009', '1000000', 'NaN', 'Infinity'])
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'rejects a daily rate of "$bad" with rateOutOfRange',
+          build: () => bloc,
+          act: (bloc) => bloc.add(EquipmentRateUpdatedEvent(bad)),
+          expect: () => [
+            isA<EquipmentCostFormEditing>()
+                .having(
+                  (s) => s.data.fieldErrors['dailyRate'],
+                  'dailyRate error',
+                  'rateOutOfRange',
+                )
+                .having((s) => s.data.isValid, 'isValid', false),
+          ],
+        );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts a daily rate within bounds with no field error',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentRateUpdatedEvent('100')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.fieldErrors['dailyRate'],
+            'dailyRate error',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'rejects an out-of-range job amount under the jobAmount key',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentRateUpdatedEvent('0')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.fieldErrors['jobAmount'],
+            'jobAmount error',
+            'rateOutOfRange',
+          ),
+        ],
+      );
+    });
+
     group('EquipmentDurationUpdatedEvent', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'blocks submission with no red error when duration is blank (empty '
@@ -245,7 +292,7 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'blocks submission with a field error when duration is zero '
+        'blocks submission with durationNotPositive when duration is zero '
         '(entered but invalid, unlike a blank field)',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('0')),
@@ -254,14 +301,15 @@ void main() {
               .having(
                 (s) => s.data.fieldErrors['duration'],
                 'duration error',
-                isNotNull,
+                'durationNotPositive',
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'blocks submission with a field error when duration is negative',
+        'blocks submission with durationNotPositive when duration is '
+        'negative',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('-1')),
         expect: () => [
@@ -269,15 +317,15 @@ void main() {
               .having(
                 (s) => s.data.fieldErrors['duration'],
                 'duration error',
-                isNotNull,
+                'durationNotPositive',
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'blocks submission with a field error when duration is not a '
-        'whole/half-day step',
+        'blocks submission with durationNotHalfDay when duration is '
+        'positive but not a whole/half-day step',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('1.3')),
         expect: () => [
@@ -285,7 +333,7 @@ void main() {
               .having(
                 (s) => s.data.fieldErrors['duration'],
                 'duration error',
-                isNotNull,
+                'durationNotHalfDay',
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
@@ -305,6 +353,37 @@ void main() {
             ),
           ],
         );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'blocks submission with durationTooLarge when duration would '
+        'overflow the database column (cost_items.duration is numeric(10,2))',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDurationUpdatedEvent('100000000')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.fieldErrors['duration'],
+                'duration error',
+                'durationTooLarge',
+              )
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts a duration right at the database column limit',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDurationUpdatedEvent('99999999.5')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.fieldErrors['duration'],
+            'duration error',
+            isNull,
+          ),
+        ],
+      );
     });
 
     group('EquipmentDeliveryFeeUpdatedEvent — bound/NaN checks', () {
@@ -387,45 +466,58 @@ void main() {
       );
     });
 
-    group('EquipmentDeliveryFeeConfirmedEvent', () {
-      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'does not confirm an out-of-range delivery fee',
-        build: () => bloc,
-        act: (bloc) => bloc
-          ..add(const EquipmentDeliveryFeeUpdatedEvent('-5'))
-          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
-        skip: 1,
-        expect: () => <EquipmentCostFormState>[],
-      );
-
-      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'does not confirm a NaN delivery fee',
-        build: () => bloc,
-        act: (bloc) => bloc
-          ..add(const EquipmentDeliveryFeeUpdatedEvent('NaN'))
-          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
-        skip: 1,
-        expect: () => <EquipmentCostFormState>[],
-      );
-
-      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'confirms a valid delivery fee',
-        build: () => bloc,
-        act: (bloc) => bloc
-          ..add(const EquipmentDeliveryFeeUpdatedEvent('20'))
-          ..add(const EquipmentDeliveryFeeConfirmedEvent()),
-        skip: 1,
-        expect: () => [
-          isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.deliveryFeeStatus,
-            'deliveryFeeStatus',
-            DeliveryFeeStatus.confirmed,
-          ),
-        ],
-      );
-    });
-
     group('EquipmentCostSubmittedEvent', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sends the typed delivery fee as final (no status) in the insert '
+        'payload',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(const EquipmentDeliveryFeeUpdatedEvent('20'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 4,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
+        verify: (_) {
+          final call = fakeSupabaseWrapper.getMethodCallsFor('insert').single;
+          final data = call['data'] as Map;
+          expect(data['delivery_fee'], 20.0);
+          expect(data.containsKey('delivery_fee_status'), isFalse);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sends a null delivery_fee when the delivery fee is left blank',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
+        verify: (_) {
+          final call = fakeSupabaseWrapper.getMethodCallsFor('insert').single;
+          final data = call['data'] as Map;
+          expect(data['delivery_fee'], isNull);
+        },
+      );
+
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'emits Editing with field errors and does not submit when invalid',
         build: () => bloc,
@@ -474,15 +566,114 @@ void main() {
                 (s) => (s.createdItem as EquipmentCostItem).dailyRate?.amount,
                 'dailyRate',
                 100,
-              ),
+              )
+              .having((s) => s.createdItem.itemTotalCost, 'itemTotalCost', 500)
+              .having((s) => s.createdItem.calculation, 'calculation', {
+                'daily_rate': 100.0,
+                'duration': 5.0,
+              }),
         ],
         verify: (_) {
           // A not-yet-created item must not send an empty id: cost_items.id
           // is a uuid column, and Postgres rejects '' with error 22P02. The
           // database default should generate the id instead (B1).
           final call = fakeSupabaseWrapper.getMethodCallsFor('insert').single;
-          expect((call['data'] as Map).containsKey('id'), isFalse);
+          final data = call['data'] as Map;
+          expect(data.containsKey('id'), isFalse);
+          // rate_status_enum in construculator-backend #58 only accepts
+          // these four values; any other string fails the real insert with
+          // error 22P02 even though FakeSupabaseWrapper accepts any text (B5).
+          expect(data['rate_status'], 'own_rate_unconfirmed');
+          expect(
+            data['rate_status'],
+            isIn(const [
+              'sample_rate_unverified',
+              'own_rate_unconfirmed',
+              'own_rate_confirmed',
+              'missing',
+            ]),
+          );
         },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'emits Submitting then Success for a Job submit, with duration and '
+        'dailyRate left null on the created item',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
+            ..add(const EquipmentRateUpdatedEvent('3000'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>()
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).jobAmount?.amount,
+                'jobAmount',
+                3000,
+              )
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).duration,
+                'duration',
+                isNull,
+              )
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).dailyRate,
+                'dailyRate',
+                isNull,
+              )
+              .having((s) => s.createdItem.itemTotalCost, 'itemTotalCost', 3000)
+              .having((s) => s.createdItem.calculation, 'calculation', {
+                'job_amount': 3000.0,
+              }),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'switching Day to Job then submitting drops the day-pricing fields '
+        'instead of sending both',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
+            ..add(const EquipmentRateUpdatedEvent('3000'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>()
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).duration,
+                'duration',
+                isNull,
+              )
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).dailyRate,
+                'dailyRate',
+                isNull,
+              )
+              .having(
+                (s) => (s.createdItem as EquipmentCostItem).jobAmount?.amount,
+                'jobAmount',
+                3000,
+              ),
+        ],
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
