@@ -2946,11 +2946,21 @@ abstract class AppLocalizations {
   /// **'✓ Your rate'**
   String get equipmentRateStatusYourRateBadge;
 
-  /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)
+  /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:
   /// **'Save as my default'**
   String get equipmentSaveAsMyRateLink;
+
+  /// Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (Figma node 66342:178091/178103, the cuj6-equip-5-verify storyboard frame); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix for the active pricing method, and itemName is the typed equipment name
+  ///
+  /// In en, this message translates to:
+  /// **'Saves {amount} {unit} to Your rates — it auto-fills next time you add {itemName}.'**
+  String equipmentSaveAsMyRateHelperText(
+    String amount,
+    String unit,
+    String itemName,
+  );
 
   /// Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button
   ///
@@ -3005,6 +3015,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use {amount} {unit}'**
   String yourRatesUseButtonLabel(String amount, String unit);
+
+  /// Title of the dialog prompting for a distinguishing label when saving a rate collides with an existing entry for the same equipment
+  ///
+  /// In en, this message translates to:
+  /// **'Name this rate'**
+  String get yourRatesEntryLabelDialogTitle;
+
+  /// Body copy of the entry-label collision dialog
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a saved rate for this equipment. Give this one a name so you can tell them apart.'**
+  String get yourRatesEntryLabelDialogBody;
+
+  /// Placeholder text for the entry-label text field in the collision dialog
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Supplier A'**
+  String get yourRatesEntryLabelHint;
+
+  /// Validation error shown when the contractor tries to save an entry label that is empty or whitespace-only
+  ///
+  /// In en, this message translates to:
+  /// **'A name is required to save this rate'**
+  String get yourRatesEntryLabelRequiredError;
+
+  /// Secondary button on the entry-label collision dialog; dismisses without saving
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get yourRatesEntryLabelCancel;
+
+  /// Primary button on the entry-label collision dialog; retries the save with the typed label
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get yourRatesEntryLabelSave;
+
+  /// Toast/snackbar shown when saving to Your rates fails for a reason other than a label collision
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save this rate. Please try again.'**
+  String get yourRatesSaveFailedError;
+
+  /// Success toast shown after a rate is saved to Your rates, whether on the first attempt or after a label-collision retry
+  ///
+  /// In en, this message translates to:
+  /// **'Rate saved to Your rates'**
+  String get yourRatesSaveSucceededMessage;
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///

@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/underlin
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -34,11 +35,19 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// delivery fee. May be null wherever the caller doesn't have one yet.
   final String? estimateId;
 
-  /// Builds a [YourRatesBloc] for the Rate/Amount field's look-up-a-rate
-  /// search button. Injected rather than resolved with `Modular.get` here,
-  /// since this widget isn't a module file. Called once per look-up-a-rate
-  /// sheet open, matching [YourRatesBloc]'s factory registration.
+  /// Builds a [YourRatesBloc] backing the "Save as my rate" link and the
+  /// Rate/Amount field's look-up-a-rate search button. Injected rather than
+  /// resolved with `Modular.get` here, since this widget isn't a module
+  /// file. Called twice: once for the bloc this widget owns for saves (see
+  /// [_EquipmentCostFormFieldsState]'s own instance), and once per
+  /// look-up-a-rate sheet open, matching [YourRatesBloc]'s factory
+  /// registration.
   final YourRatesBloc Function() yourRatesBlocFactory;
+
+  /// Supplies "now" for a saved [YourRateEntry]'s timestamp — see [Clock]'s
+  /// own doc comment for why this is injected rather than calling
+  /// [DateTime.now] directly.
+  final Clock clock;
 
   const EquipmentCostFormFields({
     super.key,
@@ -47,6 +56,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.onSaveEnabledChanged,
     this.estimateId,
     required this.yourRatesBlocFactory,
+    required this.clock,
   });
 
   @override
@@ -80,9 +90,17 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   /// header tap.
   bool _deliveryExpanded = false;
 
+  /// Owned by this widget solely for [YourRatesSaveRequested] — never
+  /// dispatches Refresh/Search on it, so every state it emits is a save
+  /// outcome (see [_handleYourRatesSaveState]). The look-up-a-rate sheet
+  /// gets its own separate, shorter-lived instance instead (see
+  /// [_openRateLookup]).
+  late final YourRatesBloc _yourRatesBloc;
+
   @override
   void initState() {
     super.initState();
+    _yourRatesBloc = widget.yourRatesBlocFactory();
     _equipmentNameController.addListener(_onEquipmentNameChanged);
     _quantityController.addListener(_notifyTotal);
     _durationController.addListener(_onDurationChanged);
@@ -122,6 +140,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _noteFocusNode.dispose();
     _daySelected.dispose();
     _jobSelected.dispose();
+    unawaited(_yourRatesBloc.close());
     super.dispose();
   }
 
@@ -398,19 +417,134 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // Only offered for a sample rate — once a value is typed in, it's already
-  // either RateStatus.ownRateUnconfirmed (the only non-missing status the
-  // bloc's rate-update handler sets today) or, once CA-1151's "save as my
-  // rate" wiring lands, RateStatus.ownRateConfirmed; either way it's
-  // already the user's own value, so offering to save it again is
-  // redundant. No code path sets sampleRateUnverified yet (that's the
-  // lookup-a-rate flow, also CA-1151), so this link renders correctly for
-  // that future state without being exercisable today.
-  Widget? _saveAsMyRateLink(BuildContext context, RateStatus status) {
-    if (status != RateStatus.sampleRateUnverified) return null;
+  // No mechanism anywhere in this app resolves the caller's real company id
+  // (no companyId on ProjectRepository/Project, no CurrentCompanyRepository).
+  // Per YourRatesRepository.save's own doc comment, companyId only matters
+  // for writes, which the backend validates against the caller's actual
+  // company membership — an empty id fails that check server-side instead
+  // of writing to the wrong company.
+  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace
+  // this stub with a real company id from CurrentCompanyResolver — CA-1180
+  // owns updating this call site specifically, once CurrentCompanyResolver
+  // itself (CA-1179, a CA-1180 dependency) exists.
+  String get _currentCompanyId => '';
+
+  YourRateEntry _buildYourRateEntry(
+    EquipmentCostFormData data, {
+    String? entryLabel,
+  }) {
+    final isDay = data.method == EquipmentPricingMethod.day;
+    return YourRateEntry(
+      id: '',
+      companyId: _currentCompanyId,
+      itemName: _equipmentNameController.text,
+      category: CostItemType.equipment,
+      rate: Money(amount: (isDay ? data.dailyRate : data.jobAmount) ?? 0),
+      savedAt: widget.clock.now(),
+      equipmentMethod: data.method,
+      entryLabel: entryLabel,
+    );
+  }
+
+  void _saveAsMyRate(EquipmentCostFormData data) {
+    _yourRatesBloc.add(YourRatesSaveRequested(_buildYourRateEntry(data)));
+  }
+
+  // Reacts to the dedicated _yourRatesBloc instance this widget owns for
+  // saves only (never dispatches Refresh/Search on it — see initState), so
+  // every state it emits is a save outcome. The collision/failure branching
+  // itself lives in YourRatesBloc, not here — this just maps each resulting
+  // state to its UI effect.
+  void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
+    final l10n = context.l10n;
+    switch (state) {
+      case YourRatesSaveCollision(:final entry):
+        unawaited(_promptEntryLabelAndRetry(context, entry));
+      // TODO: CA-1207 — every YourRatesSaveFailed shows this same generic
+      // message, even though YourRatesRepositoryImpl._handleError already
+      // distinguishes timeoutError/connectionError/parsingError/
+      // permissionDenied/notFoundError. Needs that EstimationErrorType
+      // threaded through this state and distinct, actionable copy per type.
+      case YourRatesSaveFailed():
+        CoreToast.showError(
+          context,
+          l10n.yourRatesSaveFailedError,
+          l10n.closeLabel,
+        );
+      case YourRatesSaveSucceeded():
+        CoreToast.showSuccess(
+          context,
+          l10n.yourRatesSaveSucceededMessage,
+          l10n.closeLabel,
+        );
+      case YourRatesLoading():
+      case YourRatesLoaded():
+      case YourRatesSearchResults():
+      case YourRatesError():
+        break;
+    }
+  }
+
+  Future<void> _promptEntryLabelAndRetry(
+    BuildContext context,
+    YourRateEntry entry,
+  ) async {
+    final label = await showDialog<String>(
+      context: context,
+      builder: (_) => const _EntryLabelDialog(),
+    );
+    if (label == null || !mounted) return;
+    _yourRatesBloc.add(
+      YourRatesSaveRequested(entry.copyWith(entryLabel: label)),
+    );
+  }
+
+  // True when the rate/amount field currently in play (Day pricing reads
+  // dailyRate, Job pricing reads jobAmount) has a validation error. Checked
+  // by [_offersSaveAsMyRate] alongside [EquipmentCostFormData.itemTypeError]
+  // so the link can't fire a save built from an equipment name or rate the
+  // form itself is showing red.
+  bool _hasRateFieldError(EquipmentCostFormData data) {
+    final key = data.method == EquipmentPricingMethod.day
+        ? 'dailyRate'
+        : 'jobAmount';
+    return data.fieldErrors.containsKey(key);
+  }
+
+  // Shared gate for [_saveAsMyRateLink] and [_saveAsMyRateHelperText], which
+  // always appear together (Figma node 66342:178091's "Buttons" link and its
+  // "Ic_Info_16x16" + text row right below it). True for any rate the
+  // contractor hasn't yet saved to Your rates: RateStatus.missing (nothing
+  // typed) shows the look-up-a-rate search button instead — see the caller —
+  // so this only covers ownRateConfirmed/sampleRateUnverified. Also false
+  // while the rate/amount field itself has a validation error, so neither
+  // the link nor the helper text can offer to save an out-of-range rate.
+  //
+  // `data.itemTypeError` is checked too, but per EquipmentCostFormBloc's own
+  // field-error policy (see its `_validated` doc comment) an empty item type
+  // never populates fieldErrors — only a present-but-unusable value does —
+  // so that check alone never actually excludes a blank name. The
+  // controller-text check below is what really does that job, reading
+  // straight from the same controller [_buildYourRateEntry] uses to build
+  // `itemName`, so the two can never disagree about what "empty" means.
+  bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
+      data.rateStatus != RateStatus.missing &&
+      data.itemTypeError == null &&
+      _equipmentNameController.text.trim().isNotEmpty &&
+      !_hasRateFieldError(data);
+
+  Widget? _saveAsMyRateLink(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    // TODO: CA-1207 — nothing on screen changes between this tap and the
+    // eventual success/failure toast. The _droppable() transformer on
+    // YourRatesSaveRequested already stops a double-tap from double-saving,
+    // but gives no visual confirmation the first tap registered.
     return Semantics(
       button: true,
       label: l10n.equipmentSaveAsMyRateLink,
@@ -418,8 +552,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       child: GestureDetector(
         key: const Key('save_as_my_rate_link'),
         behavior: HitTestBehavior.opaque,
-        // TODO: [CA-1151] wire to YourRatesRepository.save() once it exists. https://ripplearc.youtrack.cloud/issue/CA-1151
-        onTap: () {},
+        onTap: () => _saveAsMyRate(data),
         child: Container(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           alignment: Alignment.centerRight,
@@ -430,6 +563,67 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // "/day" for Day pricing, "job" for Job — the Rate/Amount field's own unit
+  // suffix (Figma's "Text Field" component instances for both fields set
+  // `Field unit`/`Show field unit`, mirroring the Duration field's "days"
+  // suffix just above it). Reuses yourRatesDaySuffix/yourRatesJobSuffix
+  // rather than adding a duplicate string, since the Look-up-a-rate sheet's
+  // "Use $520.00 job" button already established this exact Day/Job
+  // vocabulary.
+  String _rateUnitSuffix(BuildContext context, EquipmentPricingMethod method) {
+    final l10n = context.l10n;
+    return method == EquipmentPricingMethod.day
+        ? l10n.yourRatesDaySuffix
+        : l10n.yourRatesJobSuffix;
+  }
+
+  // Explanatory row (info icon + text) directly below the Rate/Amount field,
+  // shown only alongside [_saveAsMyRateLink] (Figma node 66342:178091's
+  // "Ic_Info_16x16" + text instances at y=442-443, right under the "Save as
+  // my default" link). Styled like [_buildDeliveryFeeSection]'s own helper
+  // text row — the established pattern in this file for a 16px info icon
+  // plus bodySmallRegular/textBody text.
+  Widget? _saveAsMyRateHelperText(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    if (!_offersSaveAsMyRate(data)) return null;
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final amount = DisplayFormatter.currency.format(
+      (isDay ? data.dailyRate : data.jobAmount) ?? 0,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoreIconWidget(
+            icon: CoreIcons.info,
+            color: colorTheme.iconGrayMid,
+            size: 16,
+          ),
+          const SizedBox(width: CoreSpacing.space1),
+          Expanded(
+            child: Text(
+              l10n.equipmentSaveAsMyRateHelperText(
+                amount,
+                _rateUnitSuffix(context, data.method),
+                data.equipmentType,
+              ),
+              key: const Key('save_as_my_rate_helper_text'),
+              style: textTheme.bodySmallRegular.copyWith(
+                color: colorTheme.textBody,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -548,103 +742,126 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     return [
-      BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
-        listener: (_, state) {
-          final data = _dataOf(state);
-          widget.onSaveEnabledChanged?.call(data.isValid);
-          _mirrorMethodIntoChips(data.method);
-          if (!widget.fromCostFile) {
-            _notifyTotalFromData(data);
-          }
-        },
-        builder: (_, state) {
-          final data = _dataOf(state);
-          final isDay = data.method == EquipmentPricingMethod.day;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              UnderlineTextField(
-                key: const Key('equipment_name_field'),
-                label: l10n.equipmentNameLabel,
-                hintText: l10n.equipmentNamePlaceholder,
-                controller: _equipmentNameController,
-              ),
-              const SizedBox(height: CoreSpacing.space5),
-              Text(
-                l10n.equipmentBasisLabel,
-                style: textTheme.bodySmallRegular.copyWith(
-                  color: colorTheme.textBody,
-                ),
-              ),
-              const SizedBox(height: CoreSpacing.space1),
-              Row(
-                children: [
-                  ChoiceChipToggle(
-                    key: const Key('day_method_chip'),
-                    label: l10n.equipmentDayMethodLabel,
-                    selected: _daySelected,
-                    onTap: () => _selectMethod(EquipmentPricingMethod.day),
-                  ),
-                  const SizedBox(width: CoreSpacing.space2),
-                  ChoiceChipToggle(
-                    key: const Key('job_method_chip'),
-                    label: l10n.equipmentJobMethodLabel,
-                    selected: _jobSelected,
-                    onTap: () => _selectMethod(EquipmentPricingMethod.job),
-                  ),
-                ],
-              ),
-              const SizedBox(height: CoreSpacing.space5),
-              if (isDay) ...[
+      BlocListener<YourRatesBloc, YourRatesState>(
+        bloc: _yourRatesBloc,
+        listener: _handleYourRatesSaveState,
+        child: BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
+          listener: (_, state) {
+            final data = _dataOf(state);
+            widget.onSaveEnabledChanged?.call(data.isValid);
+            _mirrorMethodIntoChips(data.method);
+            if (!widget.fromCostFile) {
+              _notifyTotalFromData(data);
+            }
+          },
+          builder: (_, state) {
+            final data = _dataOf(state);
+            final isDay = data.method == EquipmentPricingMethod.day;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 UnderlineTextField(
-                  key: const Key('duration_field'),
-                  label: l10n.equipmentDurationLabel,
-                  hintText: l10n.equipmentDurationPlaceholder,
-                  controller: _durationController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  suffix: Text(
-                    l10n.equipmentDurationSuffix,
-                    style: textTheme.bodyMediumRegular.copyWith(
-                      color: colorTheme.textBody,
-                    ),
-                  ),
-                  errorTextList: _errorList(_durationErrorText(context, data)),
+                  key: const Key('equipment_name_field'),
+                  label: l10n.equipmentNameLabel,
+                  hintText: l10n.equipmentNamePlaceholder,
+                  controller: _equipmentNameController,
                 ),
                 const SizedBox(height: CoreSpacing.space5),
-                UnderlineTextField(
-                  key: const Key('rate_field'),
-                  label: l10n.equipmentRateLabel,
-                  controller: _dailyRateController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                Text(
+                  l10n.equipmentBasisLabel,
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textBody,
                   ),
-                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction:
-                      _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButtonWhenEmpty(context, data),
-                  errorTextList: _errorList(_rateErrorText(context, data)),
                 ),
-              ] else
-                UnderlineTextField(
-                  key: const Key('amount_field'),
-                  label: l10n.equipmentAmountLabel,
-                  controller: _jobAmountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                const SizedBox(height: CoreSpacing.space1),
+                Row(
+                  children: [
+                    ChoiceChipToggle(
+                      key: const Key('day_method_chip'),
+                      label: l10n.equipmentDayMethodLabel,
+                      selected: _daySelected,
+                      onTap: () => _selectMethod(EquipmentPricingMethod.day),
+                    ),
+                    const SizedBox(width: CoreSpacing.space2),
+                    ChoiceChipToggle(
+                      key: const Key('job_method_chip'),
+                      label: l10n.equipmentJobMethodLabel,
+                      selected: _jobSelected,
+                      onTap: () => _selectMethod(EquipmentPricingMethod.job),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: CoreSpacing.space5),
+                if (isDay) ...[
+                  UnderlineTextField(
+                    key: const Key('duration_field'),
+                    label: l10n.equipmentDurationLabel,
+                    hintText: l10n.equipmentDurationPlaceholder,
+                    controller: _durationController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    suffix: Text(
+                      l10n.equipmentDurationSuffix,
+                      style: textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                    errorTextList: _errorList(
+                      _durationErrorText(context, data),
+                    ),
                   ),
-                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction:
-                      _saveAsMyRateLink(context, data.rateStatus) ??
-                      _lookupRateButtonWhenEmpty(context, data),
-                  errorTextList: _errorList(_amountErrorText(context, data)),
-                ),
-              const SizedBox(height: CoreSpacing.space5),
-              _buildDeliveryFeeSection(context, data),
-            ],
-          );
-        },
+                  const SizedBox(height: CoreSpacing.space5),
+                  UnderlineTextField(
+                    key: const Key('rate_field'),
+                    label: l10n.equipmentRateLabel,
+                    controller: _dailyRateController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    suffix: Text(
+                      _rateUnitSuffix(context, data.method),
+                      style: textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                    labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                    trailingAction:
+                        _saveAsMyRateLink(context, data) ??
+                        _lookupRateButtonWhenEmpty(context, data),
+                    errorTextList: _errorList(_rateErrorText(context, data)),
+                  ),
+                  _saveAsMyRateHelperText(context, data) ??
+                      const SizedBox.shrink(),
+                ] else ...[
+                  UnderlineTextField(
+                    key: const Key('amount_field'),
+                    label: l10n.equipmentAmountLabel,
+                    controller: _jobAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    suffix: Text(
+                      _rateUnitSuffix(context, data.method),
+                      style: textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                    labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                    trailingAction:
+                        _saveAsMyRateLink(context, data) ??
+                        _lookupRateButtonWhenEmpty(context, data),
+                    errorTextList: _errorList(_amountErrorText(context, data)),
+                  ),
+                  _saveAsMyRateHelperText(context, data) ??
+                      const SizedBox.shrink(),
+                ],
+                const SizedBox(height: CoreSpacing.space5),
+                _buildDeliveryFeeSection(context, data),
+              ],
+            );
+          },
+        ),
       ),
     ];
   }
@@ -952,6 +1169,124 @@ class _OutsizedFeeDialog extends StatelessWidget {
                       variant: CoreButtonVariant.primary,
                       size: CoreButtonSize.medium,
                       onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Prompts for the freeform label required to save a rate that collides
+/// with an existing "Your rates" entry for the same equipment (Decision 55):
+/// [YourRatesRepository.save] rejects an unlabeled save into an
+/// already-populated (companyId, category, itemName) grouping rather than
+/// guessing which row to overwrite.
+///
+/// Returns the typed label via `Navigator.pop`, or null if cancelled.
+///
+/// Shares [_OutsizedFeeDialog]'s 340-wide "Confirmation Dialog" shell
+/// (Figma node 65354:146175) — see that class's doc comment for the full
+/// component spec. Unlike that class, this one's padding uses
+/// [CoreSpacing.space6] rather than repeating the same literal 22px value —
+/// see the comment above the `Padding` below for why.
+class _EntryLabelDialog extends StatefulWidget {
+  const _EntryLabelDialog();
+
+  @override
+  State<_EntryLabelDialog> createState() => _EntryLabelDialogState();
+}
+
+class _EntryLabelDialogState extends State<_EntryLabelDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final label = _controller.text.trim();
+    if (label.isEmpty) {
+      setState(() => _error = context.l10n.yourRatesEntryLabelRequiredError);
+      return;
+    }
+    Navigator.of(context).pop(label);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Dialog(
+      backgroundColor: colorTheme.pageBackground,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CoreSpacing.space5),
+      ),
+      // CoreSpacing has no token that lands exactly on _OutsizedFeeDialog's
+      // literal 22px padding (space5=20, space6=24 — both 2px off), so this
+      // dialog uses the nearest token, space6, instead of also hardcoding
+      // 22. The 340 width just below has no spacing-token equivalent at
+      // all (it isn't a padding/gap value), so it stays literal.
+      child: Padding(
+        padding: const EdgeInsets.all(CoreSpacing.space6),
+        child: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.yourRatesEntryLabelDialogTitle,
+                key: const Key('entry_label_dialog_title'),
+                style: textTheme.titleMediumSemiBold.copyWith(
+                  color: colorTheme.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Text(
+                l10n.yourRatesEntryLabelDialogBody,
+                style: textTheme.bodyMediumRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              CoreTextField(
+                key: const Key('entry_label_field'),
+                hintText: l10n.yourRatesEntryLabelHint,
+                controller: _controller,
+                errorTextList: switch (_error) {
+                  final error? => [error],
+                  null => null,
+                },
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Row(
+                children: [
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('entry_label_dialog_cancel_button'),
+                      label: l10n.yourRatesEntryLabelCancel,
+                      variant: CoreButtonVariant.secondary,
+                      size: CoreButtonSize.medium,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: CoreSpacing.space3),
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('entry_label_dialog_save_button'),
+                      label: l10n.yourRatesEntryLabelSave,
+                      variant: CoreButtonVariant.primary,
+                      size: CoreButtonSize.medium,
+                      onPressed: _submit,
                     ),
                   ),
                 ],

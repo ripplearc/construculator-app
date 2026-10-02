@@ -135,7 +135,11 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     final entries = switch (state) {
       YourRatesLoaded(:final recents) => recents,
       YourRatesSearchResults(:final results) => results,
-      YourRatesLoading() || YourRatesError() => const <YourRateEntry>[],
+      YourRatesLoading() ||
+      YourRatesError() ||
+      YourRatesSaveSucceeded() ||
+      YourRatesSaveCollision() ||
+      YourRatesSaveFailed() => const <YourRateEntry>[],
     };
     return entries.where((e) => e.equipmentMethod == widget.method).toList();
   }
