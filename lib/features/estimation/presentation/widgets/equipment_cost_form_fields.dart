@@ -82,21 +82,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentDurationUpdatedEvent(_durationController.text),
     );
-    _notifyTotal();
   }
 
   void _onDailyRateChanged() {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(_dailyRateController.text),
     );
-    _notifyTotal();
   }
 
   void _onJobAmountChanged() {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(_jobAmountController.text),
     );
-    _notifyTotal();
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
@@ -105,50 +102,67 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentMethodSwitchedEvent(tapped),
     );
-    _notifyTotal(tapped);
+  }
+
+  // Only reached in fromCostFile mode: the quantity field there never drives
+  // a real total, and a fromCostFile toggle is a widget prop change, not a
+  // bloc event, so the BlocConsumer listener below won't fire for it on its
+  // own.
+  void _notifyTotal() {
+    if (widget.fromCostFile) {
+      widget.onTotalChanged?.call(0);
+    }
+  }
+
+  void _mirrorMethodIntoChips(EquipmentPricingMethod method) {
+    _daySelected.value = method == EquipmentPricingMethod.day;
+    _jobSelected.value = method == EquipmentPricingMethod.job;
   }
 
   // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
-  void _notifyTotal([EquipmentPricingMethod? method]) {
-    if (widget.fromCostFile) {
+  //
+  // Reads from the bloc's validated data rather than the raw controller
+  // text, so an invalid duration/rate (or a Day/Job switch) can never
+  // multiply into a total the form itself says is wrong.
+  void _notifyTotalFromData(EquipmentCostFormData data) {
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final hasFieldError = isDay
+        ? data.fieldErrors.containsKey('duration') ||
+              data.fieldErrors.containsKey('dailyRate')
+        : data.fieldErrors.containsKey('jobAmount');
+    if (hasFieldError) {
       widget.onTotalChanged?.call(0);
       return;
     }
-    final isDay =
-        (method ??
-            (_daySelected.value
-                ? EquipmentPricingMethod.day
-                : EquipmentPricingMethod.job)) ==
-        EquipmentPricingMethod.day;
-    final rawTotal = isDay
-        ? (double.tryParse(_durationController.text) ?? 0) *
-              (double.tryParse(_dailyRateController.text) ?? 0)
-        : double.tryParse(_jobAmountController.text) ?? 0;
-    widget.onTotalChanged?.call(rawTotal.isFinite ? rawTotal : 0.0);
+    final total = isDay
+        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
+        : data.jobAmount ?? 0;
+    widget.onTotalChanged?.call(total);
   }
 
-  EquipmentCostFormWithData _dataOf(EquipmentCostFormState state) =>
+  EquipmentCostFormData _dataOf(EquipmentCostFormState state) =>
       switch (state) {
         EquipmentCostFormEditing(:final data) => data,
         EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
         EquipmentCostFormSubmitting(:final data) => data,
         EquipmentCostFormSuccess(:final data) => data,
         EquipmentCostFormFailure(:final data) => data,
-        EquipmentCostFormInitial() => const EquipmentCostFormWithData(),
+        EquipmentCostFormInitial() => const EquipmentCostFormData(),
       };
 
   List<String>? _errorList(String? text) => text == null ? null : [text];
 
-  String? _durationErrorText(
-    BuildContext context,
-    EquipmentCostFormWithData data,
-  ) {
-    return data.fieldErrors['duration'] == 'durationInvalid'
-        ? context.l10n.equipmentDurationInvalidError
-        : null;
+  String? _durationErrorText(BuildContext context, EquipmentCostFormData data) {
+    final l10n = context.l10n;
+    return switch (data.fieldErrors['duration']) {
+      'durationNotPositive' => l10n.equipmentDurationNotPositiveError,
+      'durationNotHalfDay' => l10n.equipmentDurationNotHalfDayError,
+      'durationTooLarge' => l10n.equipmentDurationTooLargeError,
+      _ => null,
+    };
   }
 
-  String? _rateErrorText(BuildContext context, EquipmentCostFormWithData data) {
+  String? _rateErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
     return switch (data.fieldErrors['dailyRate']) {
       'rateOutOfRange' => l10n.equipmentRateOutOfRangeError,
@@ -156,10 +170,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  String? _amountErrorText(
-    BuildContext context,
-    EquipmentCostFormWithData data,
-  ) {
+  String? _amountErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
     return switch (data.fieldErrors['jobAmount']) {
       'rateOutOfRange' => l10n.equipmentAmountOutOfRangeError,
@@ -234,11 +245,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         listener: (_, state) {
           final data = _dataOf(state);
           widget.onSaveEnabledChanged?.call(data.isValid);
-          // The bloc is the only owner of the Day/Job choice; mirror it into
-          // the chip notifiers here so a method change from any source (not
-          // just a tap on these two chips) keeps both chips in sync with it.
-          _daySelected.value = data.method == EquipmentPricingMethod.day;
-          _jobSelected.value = data.method == EquipmentPricingMethod.job;
+          _mirrorMethodIntoChips(data.method);
+          if (!widget.fromCostFile) {
+            _notifyTotalFromData(data);
+          }
         },
         builder: (_, state) {
           final data = _dataOf(state);
