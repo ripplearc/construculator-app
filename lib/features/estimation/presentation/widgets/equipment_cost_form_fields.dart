@@ -430,7 +430,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   String get _currentCompanyId => '';
 
   YourRateEntry _buildYourRateEntry(
-    EquipmentCostFormWithData data, {
+    EquipmentCostFormData data, {
     String? entryLabel,
   }) {
     final isDay = data.method == EquipmentPricingMethod.day;
@@ -446,7 +446,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  void _saveAsMyRate(EquipmentCostFormWithData data) {
+  void _saveAsMyRate(EquipmentCostFormData data) {
     _yourRatesBloc.add(YourRatesSaveRequested(_buildYourRateEntry(data)));
   }
 
@@ -501,10 +501,10 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   // True when the rate/amount field currently in play (Day pricing reads
   // dailyRate, Job pricing reads jobAmount) has a validation error. Checked
-  // by [_offersSaveAsMyRate] alongside [EquipmentCostFormWithData.itemTypeError]
+  // by [_offersSaveAsMyRate] alongside [EquipmentCostFormData.itemTypeError]
   // so the link can't fire a save built from an equipment name or rate the
   // form itself is showing red.
-  bool _hasRateFieldError(EquipmentCostFormWithData data) {
+  bool _hasRateFieldError(EquipmentCostFormData data) {
     final key = data.method == EquipmentPricingMethod.day
         ? 'dailyRate'
         : 'jobAmount';
@@ -527,7 +527,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // controller-text check below is what really does that job, reading
   // straight from the same controller [_buildYourRateEntry] uses to build
   // `itemName`, so the two can never disagree about what "empty" means.
-  bool _offersSaveAsMyRate(EquipmentCostFormWithData data) =>
+  bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
       data.rateStatus != RateStatus.missing &&
       data.itemTypeError == null &&
       _equipmentNameController.text.trim().isNotEmpty &&
@@ -535,7 +535,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   Widget? _saveAsMyRateLink(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
@@ -589,7 +589,7 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // plus bodySmallRegular/textBody text.
   Widget? _saveAsMyRateHelperText(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
