@@ -19,17 +19,10 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('CurrentCompanyResolverImpl');
 
-  /// Whether a call has already resolved successfully this session.
   bool _hasResolved = false;
-
-  /// The last resolved company id, or null for no `company_users` row.
-  /// Only meaningful when [_hasResolved] is true.
   String? _cachedCompanyId;
-
-  /// The in-flight RPC call, if one is already running — shared so two
-  /// callers racing [resolve] before the first response lands don't each
-  /// fire their own RPC call.
   Future<Either<Failure, String?>>? _inFlight;
+  int _cacheGeneration = 0;
 
   /// Creates a [CurrentCompanyResolverImpl].
   CurrentCompanyResolverImpl({required this._supabaseWrapper});
@@ -39,23 +32,31 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
-    return _inFlight ??= _fetch();
+    return _inFlight ??= _fetch(_cacheGeneration);
   }
 
-  Future<Either<Failure, String?>> _fetch() async {
+  Future<Either<Failure, String?>> _fetch(int requestGeneration) async {
     try {
       _logger.debug('Resolving current company id');
       final companyId = await _supabaseWrapper.rpc<String?>(
         DatabaseConstants.getMyCompanyIdRpcFunction,
       );
 
-      _cachedCompanyId = companyId;
-      _hasResolved = true;
+      // A stale fetch (clearCache ran while this one was in flight) must
+      // not overwrite a newer caller's session, and a null result (the
+      // signup step hasn't run yet) must not be cached permanently, since
+      // either can resolve to a real id later in the same session.
+      if (requestGeneration == _cacheGeneration && companyId != null) {
+        _cachedCompanyId = companyId;
+        _hasResolved = true;
+      }
       return Right(companyId);
     } catch (e) {
       return Left(_handleError(e));
     } finally {
-      _inFlight = null;
+      if (requestGeneration == _cacheGeneration) {
+        _inFlight = null;
+      }
     }
   }
 
@@ -63,6 +64,8 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   void clearCache() {
     _hasResolved = false;
     _cachedCompanyId = null;
+    _inFlight = null;
+    _cacheGeneration++;
   }
 
   Failure _handleError(Object error) {
