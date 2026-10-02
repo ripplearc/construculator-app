@@ -12,9 +12,12 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -30,6 +33,7 @@ void main() {
   late FakeSupabaseWrapper supabaseWrapper;
   late FakeSentryWrapper sentryWrapper;
   late FakeAnalyticsRepository analyticsRepository;
+  late CurrentCompanyResolver currentCompanyResolver;
   late AuthManager authManager;
   late Clock clock;
   const testEmail = 'test@example.com';
@@ -58,6 +62,7 @@ void main() {
     sentryWrapper = Modular.get<SentryWrapper>() as FakeSentryWrapper;
     analyticsRepository =
         Modular.get<AnalyticsRepository>() as FakeAnalyticsRepository;
+    currentCompanyResolver = Modular.get<CurrentCompanyResolver>();
     authManager = Modular.get<AuthManager>();
     clock = Modular.get<Clock>();
   });
@@ -1270,6 +1275,71 @@ void main() {
         expect(result.isSuccess, false);
         expect(analyticsRepository.resetCallCount, 0);
       });
+
+      test(
+        'logout clears the current-company cache so the next user is '
+        'resolved fresh',
+        () async {
+          await authManager.loginWithEmail(testEmail, testPassword);
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-a',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-a',
+          );
+
+          await authManager.logout();
+
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-b',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-b',
+          );
+          expect(
+            supabaseWrapper
+                .getMethodCallsFor('rpc')
+                .where(
+                  (call) =>
+                      call['functionName'] ==
+                      DatabaseConstants.getMyCompanyIdRpcFunction,
+                ),
+            hasLength(2),
+          );
+        },
+      );
+
+      test(
+        'logout does not clear the current-company cache on failure',
+        () async {
+          await authManager.loginWithEmail(testEmail, testPassword);
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-a',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-a',
+          );
+
+          supabaseWrapper.shouldThrowOnSignOut = true;
+          supabaseWrapper.signOutErrorMessage = 'Logout failed';
+          await authManager.logout();
+
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-b',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-a',
+          );
+        },
+      );
     });
   });
 }
@@ -1284,6 +1354,9 @@ class _TestAppModule extends Module {
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
     i.addSingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
+    i.addSingleton<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(supabaseWrapper: i()),
+    );
     i.add<AuthManager>(
       () => AuthManagerImpl(
         wrapper: i(),
@@ -1291,6 +1364,7 @@ class _TestAppModule extends Module {
         authNotifier: i(),
         sentryWrapper: i<SentryWrapper>(),
         analyticsRepository: i<AnalyticsRepository>(),
+        currentCompanyResolver: i<CurrentCompanyResolver>(),
       ),
     );
   }
