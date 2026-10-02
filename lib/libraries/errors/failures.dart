@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/analytics/domain/types/analytics_error_type.dart';
 import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
