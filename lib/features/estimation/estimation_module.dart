@@ -148,7 +148,9 @@ class EstimationModule extends Module {
     );
     i.add<MaterialCostFormBloc>(() => MaterialCostFormBloc());
     i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
-    i.add<EquipmentCostFormBloc>(() => EquipmentCostFormBloc());
+    i.add<EquipmentCostFormBloc>(
+      () => EquipmentCostFormBloc(repository: i.get(), clock: i.get()),
+    );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );
