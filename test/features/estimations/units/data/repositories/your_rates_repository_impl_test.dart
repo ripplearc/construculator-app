@@ -155,6 +155,20 @@ void main() {
           ),
         );
       });
+
+      test('passes companyId through to the data source when given', () async {
+        await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: 'equipment',
+          DatabaseConstants.companyIdColumn: testCompanyId,
+        });
+      });
     });
 
     group('getByItemName', () {
@@ -193,6 +207,21 @@ void main() {
 
         expect(result.isRight(), true);
         expect(result.getRightOrNull(), isNull);
+      });
+
+      test('passes companyId through to the data source when given', () async {
+        await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: 'equipment',
+          DatabaseConstants.itemNameColumn: 'Excavator',
+          DatabaseConstants.companyIdColumn: testCompanyId,
+        });
       });
     });
 
@@ -357,6 +386,22 @@ void main() {
         expect(result.isRight(), true);
         expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
       });
+
+      test(
+        "scopes the collision-grouping lookup to the entry's companyId",
+        () async {
+          final entry = buildEntry();
+
+          await repository.save(entry);
+
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+          expect(calls.first['filters'], {
+            DatabaseConstants.categoryColumn: entry.category.toJson(),
+            DatabaseConstants.itemNameColumn: entry.itemName,
+            DatabaseConstants.companyIdColumn: entry.companyId,
+          });
+        },
+      );
 
       test('maps an RLS violation (42501) to permissionDenied', () async {
         fakeSupabaseWrapper.shouldThrowOnInsert = true;

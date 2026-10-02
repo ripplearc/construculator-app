@@ -7,8 +7,10 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// Remote data source for "Your rates" operations using Supabase.
 ///
 /// This data source handles all remote database operations for the
-/// contractor's personal saved-rate book. Reads rely entirely on RLS to
-/// scope rows to the caller's own company.
+/// contractor's personal saved-rate book. Reads are scoped by RLS to the
+/// caller's own company; the optional `companyId` filter some methods accept
+/// is an additional, defense-in-depth filter on top of that, not a
+/// replacement for it.
 class RemoteYourRatesDataSource implements YourRatesDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteYourRatesDataSource');
@@ -16,7 +18,10 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   RemoteYourRatesDataSource({required this._supabaseWrapper});
 
   @override
-  Future<List<YourRateEntryDto>> fetchRates({String? category}) async {
+  Future<List<YourRateEntryDto>> fetchRates({
+    String? category,
+    String? companyId,
+  }) async {
     _logger.debug(
       'Fetching your rates'
       '${category != null ? ', category: $category' : ''}',
@@ -24,6 +29,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
 
     final filters = <String, dynamic>{
       DatabaseConstants.categoryColumn: ?category,
+      DatabaseConstants.companyIdColumn: ?companyId,
     };
 
     // No server-side text search primitive is available on SupabaseWrapper
@@ -45,6 +51,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   Future<List<YourRateEntryDto>> fetchGrouping({
     required String category,
     required String itemName,
+    String? companyId,
   }) async {
     _logger.debug(
       'Fetching your rates grouping: category=$category, itemName=$itemName',
@@ -55,6 +62,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
       filters: {
         DatabaseConstants.categoryColumn: category,
         DatabaseConstants.itemNameColumn: itemName,
+        DatabaseConstants.companyIdColumn: ?companyId,
       },
     );
 
