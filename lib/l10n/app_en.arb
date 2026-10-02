@@ -2284,13 +2284,38 @@
   "@equipmentTypeLabel": {
     "description": "Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)"
   },
-  "equipmentNameLabel": "Equipment name*",
+  "equipmentNameLabel": "Equipment",
   "@equipmentNameLabel": {
-    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
+    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66368-186054"
   },
-  "unitPriceLabel": "Unit price*",
-  "@unitPriceLabel": {
-    "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
+  "equipmentDayMethodLabel": "Day",
+  "@equipmentDayMethodLabel": {
+    "description": "Label for the Day choice chip in the equipment pricing method toggle (manually mode)"
+  },
+  "equipmentJobMethodLabel": "Job",
+  "@equipmentJobMethodLabel": {
+    "description": "Label for the Job choice chip in the equipment pricing method toggle (manually mode)"
+  },
+  "equipmentBasisLabel": "Basis",
+  "@equipmentBasisLabel": {
+    "description": "Caption above the Day/Job pricing method toggle on the equipment cost form (manually mode)"
+  },
+  "equipmentDurationLabel": "Duration",
+  "@equipmentDurationLabel": {
+    "description": "Hint label for the duration field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentDurationSuffix": "days",
+  "@equipmentDurationSuffix": {
+    "description": "Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentRateLabel": "Rate",
+  "@equipmentRateLabel": {
+    "description": "Hint label for the daily rate field on the equipment cost form (Day pricing, manually mode)"
+  },
+  "equipmentAmountLabel": "Amount",
+  "@equipmentAmountLabel": {
+    "description": "Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)"
   },
   "rateDayLabel": "Rate/Day:",
   "@rateDayLabel": {
@@ -2308,9 +2333,28 @@
   "@labourTypeRequiredError": {
     "description": "Validation error shown below the labour type field when it is submitted empty"
   },
-  "equipmentNameRequiredError": "Equipment name is required",
-  "@equipmentNameRequiredError": {
-    "description": "Validation error shown below the equipment name field when it is submitted empty"
+  "equipmentDurationNotPositiveError": "Duration must be more than zero.",
+  "@equipmentDurationNotPositiveError": {
+    "description": "Validation error shown below the duration field when a typed value is zero or negative (Day pricing, manually mode)",
+    "context": "N/A"
+  },
+  "equipmentDurationNotHalfDayError": "Use whole or half days.",
+  "@equipmentDurationNotHalfDayError": {
+    "description": "Validation error shown below the duration field when a typed value is positive but not a whole or half-day step (Day pricing, manually mode)",
+    "context": "N/A"
+  },
+  "equipmentDurationTooLargeError": "Duration is too large.",
+  "@equipmentDurationTooLargeError": {
+    "description": "Validation error shown below the duration field when a typed value exceeds what the database can store (Day pricing, manually mode)",
+    "context": "N/A"
+  },
+  "equipmentRateOutOfRangeError": "Rate must be between $0.01 and $999,999.99",
+  "@equipmentRateOutOfRangeError": {
+    "description": "Validation error shown below the rate field when a typed value is outside the accepted bound (Day pricing, manually mode)"
+  },
+  "equipmentAmountOutOfRangeError": "Amount must be between $0.01 and $999,999.99",
+  "@equipmentAmountOutOfRangeError": {
+    "description": "Validation error shown below the amount field when a typed value is outside the accepted bound (Job pricing, manually mode)"
   },
   "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
   "@projectSettingsNavigationError": {
