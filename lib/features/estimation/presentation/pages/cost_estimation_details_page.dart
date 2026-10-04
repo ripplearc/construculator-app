@@ -164,16 +164,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        // Equipment's "New equipment cost" form is a bottom sheet over this
-        // screen in the Figma mocks, not a routed full-screen page — see
-        // CostItemFormScreen.presentAsSheet. Material and Labor still push
-        // their own full-screen route below.
         onPressed: () => CoreQuickSheet.show(
           context: context,
-          // BlocProvider(create:...), not .value — the factory hands back a
-          // fresh bloc per tap (see estimation_module.dart's `i.add`
-          // binding), and only `create:` closes it when the sheet is
-          // dismissed; `.value` would leak a bloc on every open.
           child: BlocProvider<EquipmentCostFormBloc>(
             create: (_) => widget.equipmentCostFormBlocFactory(),
             child: CostItemFormScreen(

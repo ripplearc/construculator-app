@@ -53,6 +53,10 @@ class ChoiceChipToggle extends StatefulWidget {
 }
 
 class _ChoiceChipToggleState extends State<ChoiceChipToggle> {
+  static const double _pillHeight = 44;
+  static const double _pillHorizontalPadding = 18;
+  static const double _tapTargetPadding = 2;
+
   late final FocusNode _focusNode;
 
   @override
@@ -93,29 +97,16 @@ class _ChoiceChipToggleState extends State<ChoiceChipToggle> {
               onTap: _handleTap,
               customBorder: const StadiumBorder(),
               child: Padding(
-                // Invisible hit-area padding so the tap target still clears
-                // Android's 48dp minimum without inflating the visible 44px
-                // pill the Figma spec calls for.
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                // height: 44, horizontal padding: 18, matching the Figma
-                // "Choice Chips" component (node 65814:173124) exactly. No
-                // CoreSpacing token lands on either value (nearest are
-                // space10=40/space12=48 and space4=16/space5=20), so these
-                // stay literal rather than rounding to an inexact token.
+                padding: const EdgeInsets.symmetric(
+                  vertical: _tapTargetPadding,
+                ),
                 child: Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  height: _pillHeight,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: _pillHorizontalPadding,
+                  ),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    // `pageBackground` is gray50 (#F9FAFB) in light mode —
-                    // visually indistinguishable from the Figma spec's
-                    // literal #FFFFFF — and, unlike a hardcoded white, it
-                    // flips to a dark surface in dark mode along with
-                    // `textDark` (the unselected label color), keeping
-                    // contrast intact there. A literal white fill paired
-                    // with `textDark` (which flips to a *light* color for
-                    // dark backgrounds) fails contrast in dark mode —
-                    // caught by this widget's own a11y test.
                     color: isSelected
                         ? colorTheme.backgroundBlueLight
                         : colorTheme.pageBackground,
