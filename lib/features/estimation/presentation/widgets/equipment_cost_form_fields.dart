@@ -31,13 +31,10 @@ class EquipmentCostFormFields extends StatefulWidget {
 
   @override
   State<EquipmentCostFormFields> createState() =>
-      EquipmentCostFormFieldsState();
+      _EquipmentCostFormFieldsState();
 }
 
-/// Public so a future caller can reach [maybeConfirmOutsizedFee] via
-/// `GlobalKey<EquipmentCostFormFieldsState>` — see that method's doc
-/// comment for why nothing calls it yet.
-class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
+class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _equipmentNameController = TextEditingController();
   final _quantityController = TextEditingController();
   final _durationController = TextEditingController();
@@ -176,47 +173,19 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     });
   }
 
-  /// Runs the outsized-fee confirmation flow for the currently entered
-  /// delivery fee, showing [_OutsizedFeeDialog] when the fee exceeds this
-  /// line's own base cost. Returns whether the caller should proceed with
-  /// submission: true when there's nothing to confirm (no fee entered or
-  /// the fee isn't outsized) or the user tapped "Add it"; false when the
-  /// user chose "Go back", or dismissed the dialog by tapping outside it
-  /// (which the dialog treats the same as "Go back" — see
-  /// [_OutsizedFeeDialog]), and submission should not proceed.
-  ///
-  /// Intentionally NOT wired to anything in this tree yet: the spec calls
-  /// for this to run when the user taps "Add to estimate", not when the
-  /// delivery field loses focus (the previous, incorrect trigger). That
-  /// button — `add_to_cost_button` in `CostItemFormScreen` — is still a
-  /// no-op `onPressed: () {}` stub pending CA-355's real submit flow, and
-  /// it's shared across all three cost item types (Material/Labor/
-  /// Equipment), so it has no access to this equipment-specific state
-  /// today. CA-355's implementer should reach this method — e.g. via
-  /// `GlobalKey<EquipmentCostFormFieldsState>` — from that handler before
-  /// actually submitting.
-  // TODO: [CA-355] wire this from the real "Add to estimate" handler. https://ripplearc.youtrack.cloud/issue/CA-355
-  Future<bool> maybeConfirmOutsizedFee() async {
-    final data = _dataOf(context.read<EquipmentCostFormBloc>().state);
+  Future<void> _showOutsizedFeeDialog(EquipmentCostFormData data) async {
     final fee = data.deliveryFee;
-    if (fee == null) return true;
+    if (fee == null) return;
     final isDay = data.method == EquipmentPricingMethod.day;
     final baseCost = isDay
         ? (data.duration ?? 0) * (data.dailyRate ?? 0)
         : (data.jobAmount ?? 0);
-    // A base cost of 0 means duration/rate (or the job amount) hasn't been
-    // entered yet, not that the fee is genuinely outsized — without a real
-    // base cost there's nothing meaningful to compare against.
-    if (baseCost <= 0) return true;
-    if (fee <= baseCost) return true;
+    final bloc = context.read<EquipmentCostFormBloc>();
 
+    // Tapping outside the dialog pops it with a null result, which is
+    // treated the same as "Go back".
     final accepted = await showDialog<bool>(
       context: context,
-      // Tapping outside the dialog must behave like "Go back" (decline),
-      // not like a no-op: barrierDismissible lets that tap pop the route
-      // with a null result, which the `accepted != true` branch below
-      // already treats the same as an explicit decline.
-      barrierDismissible: true,
       builder: (_) => _OutsizedFeeDialog(
         fee: fee,
         baseCost: baseCost,
@@ -225,34 +194,19 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         equipmentType: data.equipmentType,
       ),
     );
-    if (!mounted) return false;
+    if (!mounted) return;
 
-    if (accepted == true) {
-      final estimateId = widget.estimateId;
-      // Real submission is still gated behind CA-355, so this currently
-      // no-ops (the bloc only reacts to it from
-      // EquipmentCostFormOutsizedFeeConfirm, a state this widget doesn't
-      // drive the bloc into — see the class doc comment). Dispatched anyway
-      // for forward compatibility once CA-355 wires up submission; skipped
-      // entirely without an estimateId rather than sending an empty one.
-      if (estimateId != null) {
-        context.read<EquipmentCostFormBloc>().add(
-          EquipmentOutsizedFeeAcceptedEvent(estimateId: estimateId),
-        );
-      }
-      return true;
+    final estimateId = widget.estimateId;
+    if (accepted == true && estimateId != null) {
+      bloc.add(EquipmentOutsizedFeeAcceptedEvent(estimateId: estimateId));
+      return;
     }
-    // "Go back" (or dismissing the barrier) must preserve the typed fee —
-    // the panel stays open, the value stays put and editable — rather than
-    // deleting it, so the controller is deliberately left untouched here.
-    // Per the storyboard ("the fee is selected and the pad is up"), also
-    // return focus to the field with its value selected, ready to retype.
+    bloc.add(const EquipmentOutsizedFeeDeclinedEvent());
     _deliveryFocusNode.requestFocus();
     _deliveryFeeController.selection = TextSelection(
       baseOffset: 0,
       extentOffset: _deliveryFeeController.text.length,
     );
-    return false;
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
@@ -475,6 +429,9 @@ class EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
         listener: (_, state) {
           final data = _dataOf(state);
+          if (state is EquipmentCostFormOutsizedFeeConfirm) {
+            _showOutsizedFeeDialog(data);
+          }
           widget.onSaveEnabledChanged?.call(data.isValid);
           _mirrorMethodIntoChips(data.method);
           _notifyTotalFromData(data);
