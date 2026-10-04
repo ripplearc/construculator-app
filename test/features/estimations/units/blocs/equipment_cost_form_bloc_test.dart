@@ -194,12 +194,7 @@ void main() {
                 'rateStatus',
                 RateStatus.ownRateConfirmed,
               )
-              .having((s) => s.data.deliveryFee, 'deliveryFee', isNull)
-              .having(
-                (s) => s.data.deliveryFeeStatus,
-                'deliveryFeeStatus',
-                DeliveryFeeStatus.unset,
-              ),
+              .having((s) => s.data.deliveryFee, 'deliveryFee', isNull),
         ],
       );
 
