@@ -144,29 +144,18 @@ void main() {
       expect(find.byKey(const Key('quantity_field')), findsNothing);
     });
 
-    testWidgets('shows placeholder text on the empty name and duration '
-        'fields', (tester) async {
+    testWidgets('shows placeholder text on the empty name, duration and '
+        'rate fields', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.equipmentNamePlaceholder), findsOneWidget);
       expect(find.text(l10n.equipmentDurationPlaceholder), findsOneWidget);
+      expect(find.text(l10n.equipmentRatePlaceholder), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
-    // Rate and Amount don't get placeholder text: with the rate-status badge
-    // and Save-as-my-rate/Look-up trailing action both present, a hint text
-    // overflows the value row by 128px. Name and Duration have neither, so
-    // they keep theirs.
-    testWidgets('does not show placeholder text on the rate field', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.equipmentRatePlaceholder), findsNothing);
-    });
-
-    testWidgets('does not show placeholder text on the amount field (Job)', (
+    testWidgets('shows placeholder text on the empty amount field (Job)', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
@@ -175,7 +164,23 @@ void main() {
       await tester.tap(find.byKey(const Key('job_method_chip')));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.equipmentAmountPlaceholder), findsNothing);
+      expect(find.text(l10n.equipmentAmountPlaceholder), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('shows the rate placeholder again after the typed rate, its '
+        'status badge and its trailing link are cleared', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '');
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.equipmentRatePlaceholder), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('shows a Basis label above the Day/Job toggle', (tester) async {
