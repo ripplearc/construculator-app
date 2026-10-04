@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+// TODO: [CA-1217] add the "Search or type equipment" field above this list. https://ripplearc.youtrack.cloud/issue/CA-1217
+// TODO: [CA-1216] add the back arrow to the title row. https://ripplearc.youtrack.cloud/issue/CA-1216
 /// "Your recents" sheet (Figma node `66342:177929`, "phone ·
 /// cuj6-equip-1-recents" on the "Estimate V2" canvas): the pre-form step
 /// opened by "+ Add equipment cost" — a tap-to-reuse list of the
@@ -20,15 +22,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// disclaimer, no checkbox-select-then-confirm step, and isn't filtered to a
 /// single pricing method — tapping a row recalls it immediately.
 ///
-/// TODO: CA-1151 — Figma's recents screen also shows a "Search or type
-/// equipment" name-entry field above this list, for typing a brand-new
-/// equipment name directly (a different concern from [YourRatesLookupSheet]'s
-/// saved-rate search). Not built here: this field's behavior — filtering
-/// these recents vs. feeding the form's name field directly — isn't
-/// specified anywhere yet.
-///
-/// Returns the tapped [YourRateEntry], or null if dismissed or if "+ New
-/// equipment cost" was tapped — both mean "open the form blank."
+/// Returns a [YourRatesRecentsResult]: the tapped entry, the "+ New equipment
+/// cost" action, or a dismissal (swipe down, tap outside, or back).
 class YourRatesRecentsSheet extends StatefulWidget {
   /// Supplies "now" for each row's recency subtitle — see [Clock]'s own doc
   /// comment for why this is injected rather than calling [DateTime.now]
@@ -40,21 +35,20 @@ class YourRatesRecentsSheet extends StatefulWidget {
   @override
   State<YourRatesRecentsSheet> createState() => _YourRatesRecentsSheetState();
 
-  /// Opens this sheet in a [CoreQuickSheet] and returns the tapped
-  /// [YourRateEntry], or null if the sheet was dismissed, or "+ New
-  /// equipment cost" was tapped, without picking one.
-  static Future<YourRateEntry?> show({
+  /// Opens this sheet in a [CoreQuickSheet] and returns what the user chose.
+  static Future<YourRatesRecentsResult> show({
     required BuildContext context,
     required Clock clock,
     required YourRatesBloc Function() blocFactory,
-  }) {
-    return CoreQuickSheet.show<YourRateEntry>(
+  }) async {
+    final result = await CoreQuickSheet.show<YourRatesRecentsResult>(
       context: context,
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
         child: YourRatesRecentsSheet(clock: clock),
       ),
     );
+    return result ?? const YourRatesRecentsDismissed();
   }
 }
 
@@ -67,9 +61,11 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     );
   }
 
-  void _onRowTap(YourRateEntry entry) => Navigator.of(context).pop(entry);
+  void _onRowTap(YourRateEntry entry) =>
+      Navigator.of(context).pop(YourRatesRecentsPicked(entry));
 
-  void _onNewEquipmentCost() => Navigator.of(context).pop();
+  void _onNewEquipmentCost() =>
+      Navigator.of(context).pop(const YourRatesRecentsNewEquipmentCost());
 
   @override
   Widget build(BuildContext context) {
@@ -287,4 +283,26 @@ class _NewEquipmentCostRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What the user chose on [YourRatesRecentsSheet].
+sealed class YourRatesRecentsResult {
+  const YourRatesRecentsResult();
+}
+
+/// A saved rate row was tapped.
+final class YourRatesRecentsPicked extends YourRatesRecentsResult {
+  final YourRateEntry entry;
+
+  const YourRatesRecentsPicked(this.entry);
+}
+
+/// "+ New equipment cost" was tapped.
+final class YourRatesRecentsNewEquipmentCost extends YourRatesRecentsResult {
+  const YourRatesRecentsNewEquipmentCost();
+}
+
+/// The sheet was closed without a choice: swipe down, tap outside, or back.
+final class YourRatesRecentsDismissed extends YourRatesRecentsResult {
+  const YourRatesRecentsDismissed();
 }
