@@ -22,10 +22,23 @@ sealed class ConsentStatus extends Equatable {
   /// lives here: a second implementation that disagreed would gate users
   /// differently depending on which path reached it. The route guard and the
   /// tests both read this rather than restating the mapping.
+  ///
+  /// Type-aware: only [ConsentType.termsAndPrivacy] gates the app shell. An
+  /// [ConsentType.analytics] outcome never does, whatever its status — a stale
+  /// or missing analytics consent disables capture, it does not lock anyone
+  /// out of a calculator. Every gating status already names its type, so the
+  /// check needs nothing beyond what the status carries.
   bool get gatesAccess => switch (this) {
     ConsentSatisfied() || ConsentUnverified() => false,
-    ConsentOutdated() || ConsentNeverGiven() || ConsentIndeterminate() => true,
+    ConsentOutdated(:final requiredVersion) ||
+    ConsentNeverGiven(
+      :final requiredVersion,
+    ) => _gatesShell(requiredVersion.consentType),
+    ConsentIndeterminate(:final consentType) => _gatesShell(consentType),
   };
+
+  static bool _gatesShell(ConsentType type) =>
+      type == ConsentType.termsAndPrivacy;
 
   /// Resolves the gate outcome for [acceptedVersion] against [published].
   ///
