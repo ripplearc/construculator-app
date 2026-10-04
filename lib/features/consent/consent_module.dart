@@ -7,6 +7,8 @@ import 'package:construculator/libraries/consent/consent_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/consent_routes.dart';
+import 'package:construculator/libraries/url_launcher/interfaces/url_launcher.dart';
+import 'package:construculator/libraries/url_launcher/url_launcher_module.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -35,7 +37,10 @@ class ConsentModule extends Module {
   });
 
   @override
-  List<Module> get imports => [ConsentLibraryModule(appBootstrap)];
+  List<Module> get imports => [
+    ConsentLibraryModule(appBootstrap),
+    UrlLauncherModule(),
+  ];
 
   @override
   void binds(Injector i) {
@@ -66,20 +71,7 @@ class ConsentModule extends Module {
             Modular.get<ConsentGateBloc>()..add(const ConsentGateStarted()),
         child: ConsentGatePage(
           router: Modular.get<AppRouter>(),
-          // Inert for now, matching the existing signup terms links
-          // (`_openLink` in create_account_page.dart). Opening these
-          // externally needs a URL-launcher wrapper, which the app does not
-          // have yet — the page takes this as a parameter so wiring one in
-          // later touches only this line.
-          onOpenDocument: (_) {},
-          // TODO: https://ripplearc.youtrack.cloud/issue/CA-1024 - Wire a
-          // real URL launcher wrapper. Until then this stays false: the
-          // callback above can't open anything, and unlike the dismissible
-          // signup screen, this gate cannot be left, so a tappable-but-dead
-          // link is worse than no link at all -- see
-          // ConsentPrompt.documentLinksAvailable. Flip to true (or drop the
-          // parameter, since it defaults true) once the launcher lands.
-          documentLinksAvailable: false,
+          onOpenDocument: Modular.get<UrlLauncher>().openExternal,
         ),
       ),
     );

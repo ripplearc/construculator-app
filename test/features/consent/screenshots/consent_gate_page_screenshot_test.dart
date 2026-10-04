@@ -143,10 +143,9 @@ void main() {
     testWidgets('renders the prompt with the document links hidden', (
       tester,
     ) async {
-      // The only configuration production ships today: consent_module.dart
-      // passes documentLinksAvailable: false until the URL launcher lands
-      // (CA-1024). Every other golden here renders with the default true, so
-      // without this one nothing captures what a real user actually sees.
+      // What a caller with no way to open documents gets: the links are
+      // hidden rather than rendered dead. Every other golden here renders
+      // them, as production does.
       repository.resolveTo(
         ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
       );

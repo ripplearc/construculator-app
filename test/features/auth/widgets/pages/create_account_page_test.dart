@@ -15,6 +15,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/url_launcher/testing/fake_url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -39,6 +40,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
   late Clock clock;
+  final urlLauncher = FakeUrlLauncher();
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
 
@@ -73,6 +75,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    urlLauncher.reset();
     fakeSupabase.addTableData('professional_roles', [
       {'id': 'uuid', 'name': testRole},
     ]);
@@ -103,7 +106,13 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email, router: router)),
+      makeTestableWidget(
+        child: CreateAccountPage(
+          email: email,
+          router: router,
+          urlLauncher: urlLauncher,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -156,6 +165,14 @@ void main() {
     await tester.tap(find.text(l10n().roleLabel), warnIfMissed: false);
     await tester.pumpAndSettle();
     await tester.tap(find.text(roleName).last);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapLink(WidgetTester tester, Key key) async {
+    final link = find.byKey(key);
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(link, 100, scrollable: scrollable);
+    await tester.tap(link);
     await tester.pumpAndSettle();
   }
 
@@ -507,24 +524,35 @@ void main() {
       expect(isContinueButtonEnabled(tester), isTrue);
     });
 
-    testWidgets('can interact with terms and conditions links', (tester) async {
+    testWidgets('tapping the terms link opens the terms document', (
+      tester,
+    ) async {
       await renderPage(tester);
 
-      expect(find.textContaining(l10n().termsAndServicesLink), findsOneWidget);
-      expect(find.textContaining(l10n().privacyPolicyLink), findsOneWidget);
+      await tapLink(tester, const Key('terms_and_services_link'));
 
-      await tester.tap(
-        find.textContaining(l10n().termsAndServicesLink),
-        warnIfMissed: false,
-      );
-      await tester.pumpAndSettle();
+      expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
+    });
 
-      await tester.tap(
-        find.textContaining(l10n().privacyPolicyLink),
-        warnIfMissed: false,
-      );
-      await tester.pumpAndSettle();
+    testWidgets('tapping the privacy link opens the privacy document', (
+      tester,
+    ) async {
+      await renderPage(tester);
 
+      await tapLink(tester, const Key('privacy_policy_link'));
+
+      expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
+    });
+
+    testWidgets('stays on the page when the document cannot be opened', (
+      tester,
+    ) async {
+      urlLauncher.shouldOpen = false;
+      await renderPage(tester);
+
+      await tapLink(tester, const Key('terms_and_services_link'));
+
+      expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
       expect(find.text(l10n().createAccountTitle), findsOneWidget);
     });
 
@@ -532,7 +560,13 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget(child: CreateAccountPage(phone: '1234567890', router: router)),
+        makeTestableWidget(
+          child: CreateAccountPage(
+            phone: '1234567890',
+            router: router,
+            urlLauncher: urlLauncher,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -551,7 +585,13 @@ void main() {
       fakeSupabase.setCurrentUser(createFakeUser(testEmail));
 
       await tester.pumpWidget(
-        makeTestableWidget(child: CreateAccountPage(phone: '5551234567', router: router)),
+        makeTestableWidget(
+          child: CreateAccountPage(
+            phone: '5551234567',
+            router: router,
+            urlLauncher: urlLauncher,
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 

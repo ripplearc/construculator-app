@@ -21,13 +21,10 @@ class ConsentPrompt extends StatelessWidget {
 
   /// Whether the terms/privacy links can actually open a document.
   ///
-  /// [onOpenDocument] is currently a no-op everywhere it's wired (no
-  /// url_launcher yet, matching the existing signup terms links) -- but this
-  /// screen, unlike signup, cannot be dismissed. A dead link a user cannot
-  /// tell is dead is worse than no link, so when this is false the links are
-  /// hidden rather than rendered inert. Defaults to true so a future caller
-  /// that genuinely wires a working launcher doesn't have to remember to
-  /// flip it.
+  /// This screen, unlike signup, cannot be dismissed. A dead link a user
+  /// cannot tell is dead is worse than no link, so a caller whose
+  /// [onOpenDocument] cannot open anything passes false and the links are
+  /// hidden rather than rendered inert.
   final bool documentLinksAvailable;
 
   /// Whether an acceptance is in flight; replaces the action with a spinner.
@@ -84,6 +81,12 @@ class ConsentPrompt extends StatelessWidget {
               ),
               if (documentLinksAvailable) ...[
                 const SizedBox(height: CoreSpacing.space6),
+                // TODO: https://ripplearc.youtrack.cloud/issue/CA-963 - The
+                // seeded document_url is a provisional ripplearc.com URL;
+                // replace it with the published document's URL. Both links
+                // open it until we know whether terms and privacy are one
+                // document or two (two needs a second field on
+                // ConsentVersion).
                 ConsentDocumentLinks(
                   termsLabel: l10n.consentGateTermsLink,
                   privacyLabel: l10n.consentGatePrivacyLink,

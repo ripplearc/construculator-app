@@ -10,6 +10,8 @@ import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
+import 'package:construculator/libraries/url_launcher/interfaces/url_launcher.dart';
+import 'package:construculator/libraries/url_launcher/url_launcher_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -79,6 +81,10 @@ void main() {
       }
 
       Modular.get<ConsentRepository>().dispose();
+    });
+
+    test('the create account route resolves the real URL launcher', () {
+      expect(Modular.get<UrlLauncher>(), isA<UrlLauncherImpl>());
     });
   });
 }

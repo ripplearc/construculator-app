@@ -87,6 +87,28 @@ void main() {
       expect(find.byKey(const Key('consentGateAcceptButton')), findsOneWidget);
     });
 
+    testWidgets('tapping terms opens the version document', (tester) async {
+      final openedUrls = <String>[];
+      await tester.pumpWidget(buildPage(openedUrls: openedUrls));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('consentGateTermsLink')));
+
+      expect(openedUrls, [requiredVersion.documentUrl]);
+    });
+
+    testWidgets('tapping privacy opens the version document', (tester) async {
+      // Terms and privacy are one document today, so both links open the
+      // version's single documentUrl.
+      final openedUrls = <String>[];
+      await tester.pumpWidget(buildPage(openedUrls: openedUrls));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('consentGatePrivacyLink')));
+
+      expect(openedUrls, [requiredVersion.documentUrl]);
+    });
+
     testWidgets('offers no back affordance', (tester) async {
       // A consent screen the user can dismiss is not a consent screen.
       await tester.pumpWidget(buildPage());
@@ -141,11 +163,11 @@ void main() {
   });
 
   group('when the launcher cannot open a document', () {
-    // The configuration production actually wires: consent_module.dart
-    // passes documentLinksAvailable: false because onOpenDocument is a no-op
-    // until CA-1024 lands. A link that announces as a link to a screen reader
-    // and gives tap feedback but opens nothing is undetectable to the user,
-    // so the gate hides the links rather than rendering them dead.
+    // A caller with no way to open documents passes
+    // documentLinksAvailable: false. A link that announces as a link to a
+    // screen reader and gives tap feedback but opens nothing is undetectable
+    // to the user, so the gate hides the links rather than rendering them
+    // dead.
     setUp(
       () => repository.resolveTo(
         ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
