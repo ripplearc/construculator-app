@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -42,6 +43,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -121,6 +123,122 @@ void main() {
         matchesGoldenFile(
           'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_duration_long$suffix.png',
         ),
+      );
+    });
+
+    Future<void> expectFieldsGolden(WidgetTester tester, String name, suffix) =>
+        expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/$name$suffix.png',
+          ),
+        );
+
+    testWidgets('renders the Delivery panel open with a fee typed', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
+      await tester.pumpAndSettle();
+      await expectFieldsGolden(tester, 'delivery_open_fee', suffix);
+    });
+
+    testWidgets('renders the Delivery panel with the Note field filled', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
+      await tester.enterText(
+        find.byKey(const Key('delivery_note_field')),
+        'Crane truck, call on arrival',
+      );
+      await tester.pumpAndSettle();
+      await expectFieldsGolden(tester, 'delivery_open_note', suffix);
+    });
+
+    testWidgets('renders the Delivery row folded with a fee', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('delivery_fee_field')), '85');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('equipment_name_field')));
+      await tester.pumpAndSettle();
+      await expectFieldsGolden(tester, 'delivery_folded_fee', suffix);
+    });
+
+    testWidgets('renders the big-fee question for an outsized delivery fee', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Mini excavator',
+      );
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pumpAndSettle();
+      BlocProvider.of<EquipmentCostFormBloc>(
+        tester.element(find.byType(EquipmentCostFormFields)),
+      ).add(const EquipmentCostSubmittedEvent(estimateId: 'estimate-1'));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/390.0x800.0/outsized_fee_dialog$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders both rate status badge colours', (tester) async {
+      tester.view.physicalSize = const Size(390, 120);
+      tester.view.devicePixelRatio = 1.0;
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: const [
+                  RateStatusBadge(
+                    label: 'Sample rate',
+                    variant: RateStatusBadgeVariant.orange,
+                  ),
+                  SizedBox(width: 12),
+                  RateStatusBadge(
+                    label: 'Your rate',
+                    variant: RateStatusBadgeVariant.green,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(Row).first,
+        matchesGoldenFile('goldens/rate_status_badge/rate_status_badges$suffix.png'),
       );
     });
 
