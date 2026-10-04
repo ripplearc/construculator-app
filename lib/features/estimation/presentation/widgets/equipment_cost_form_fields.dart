@@ -733,10 +733,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
-  // Figma's "How many days?" field (B2, node 66337:158600) and the Duration
-  // field above (the full, not-yet-recalled form) are the same control —
-  // same controller, same validation — so this is shared between both
-  // layouts rather than duplicated.
   Widget _durationField(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
@@ -757,11 +753,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   // TODO: [CA-1219] show "Used on this line only. Your default stays ..." and the "Save ... as my default" button once the amount differs from the saved price. https://ripplearc.youtrack.cloud/issue/CA-1219
-  // Shared between the full form's Amount field and C2's recalled-job-price
-  // confirmation (node 66337:159434) — same controller, same validation.
-  // [showRateChrome] is false for C2, which per Figma shows none of the
-  // rate-status badge, "Save as my default" link, or look-up-a-rate button
-  // a not-yet-recalled Amount field offers.
   Widget _amountField(
     BuildContext context,
     EquipmentCostFormData data, {
@@ -791,11 +782,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Title (equipment name) + subtitle (saved rate, e.g. "$120.00 /day · your
-  // default") standing in for the full name field/rate field/badge once a
-  // rate is recalled from Your Rates — Figma's B2/C2 confirmation header
-  // (nodes 66337:158600/66337:159434), not the screen's own CoreAppBar
-  // title, which stays the fixed "Add equipment costs" string.
   // TODO: [CA-1218] use the "How many days?" label, show the Job amount as $400.00, and add the divider below this header. https://ripplearc.youtrack.cloud/issue/CA-1218
   List<Widget> _recalledRateHeader(
     BuildContext context,
@@ -851,14 +837,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           builder: (_, state) {
             final data = _dataOf(state);
             final isDay = data.method == EquipmentPricingMethod.day;
-            // CUJ 6 Sub-flows B/C: once a rate is recalled from Your Rates
-            // it's already verified, so Figma swaps the full entry form for
-            // a compact confirmation — name/rate become a read-only
-            // Title/Subtitle and only Duration (Day) or Amount (Job) stays
-            // editable. No equipment-name field, Day/Job toggle,
-            // rate-status badge, "Save as my default" link, or
-            // look-up-a-rate button on this screen (see
-            // _recalledRateHeader/_amountField's own doc comments).
             if (data.recalledFromRecents) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

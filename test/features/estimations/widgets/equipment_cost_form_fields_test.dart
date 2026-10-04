@@ -1951,6 +1951,37 @@ void main() {
       expect(find.text('145'), findsOneWidget);
     });
 
+    testWidgets(
+      'a picked rate stays editable with no tag, and clearing it brings the '
+      'look-up button back',
+      (tester) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('lookup_rate_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Scissor lift'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('your_rates_use_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '999');
+        await tester.pump();
+        expect(find.text('999'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '');
+        await tester.pump();
+        expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
+      },
+    );
+
     testWidgets('a Job-priced entry never appears while Day is active', (
       tester,
     ) async {
@@ -2089,25 +2120,6 @@ void main() {
           expectFullFormChromeAbsent(tester);
         },
       );
-
-      testWidgets('typing over the recalled Rate replaces its value', (
-        tester,
-      ) async {
-        await seedRate(
-          itemName: 'Scissor lift',
-          amount: 145,
-          method: EquipmentPricingMethod.day,
-        );
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
-        await recallRate(tester, 'Scissor lift');
-
-        await tester.enterText(find.byKey(const Key('rate_field')), '999');
-        await tester.pump();
-
-        expect(find.text('999'), findsOneWidget);
-        expect(find.text('145'), findsNothing);
-      });
 
       testWidgets(
         'delivery is still offered and stays unpriced after recalling a day '
