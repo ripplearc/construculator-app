@@ -31,6 +31,22 @@ void main() {
     Modular.dispose();
   });
 
+  setUp(() {
+    fakeSupabase.addTableData('your_rates', [
+      for (var i = 0; i < 4; i++)
+        {
+          'id': 'rate-$i',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Excavator $i',
+          'rate_amount': 100 + i,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 15 - i).toIso8601String(),
+        },
+    ]);
+  });
+
   tearDown(() {
     fakeSupabase.reset();
   });
@@ -78,6 +94,40 @@ void main() {
 
       expect(find.byKey(SheetHeader.backButtonKey), findsOneWidget);
       expect(find.text(l10n.yourRatesLookupTitle), findsOneWidget);
+    });
+
+    testWidgets('keeps the search field above the keyboard', (tester) async {
+      fakeSupabase.reset();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 900);
+      addTearDown(tester.view.resetViewInsets);
+      await openSheet(tester, []);
+
+      final keyboardTop =
+          (tester.view.physicalSize.height - 900) /
+          tester.view.devicePixelRatio;
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.byKey(const Key('your_rates_search_field'))).bottom,
+        lessThanOrEqualTo(keyboardTop),
+      );
+    });
+
+    testWidgets('scrolls the results when the sheet is too short for them', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1170, 1200);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      await openSheet(tester, []);
+
+      await tester.dragUntilVisible(
+        find.byKey(const Key('your_rate_row_rate-3')),
+        find.byType(SingleChildScrollView),
+        const Offset(0, -100),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('your_rate_row_rate-3')), findsOneWidget);
     });
 
     testWidgets('tapping the back arrow closes the sheet without a pick', (
