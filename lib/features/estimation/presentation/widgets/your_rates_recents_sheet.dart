@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 // TODO: [CA-1217] add the "Search or type equipment" field above this list. https://ripplearc.youtrack.cloud/issue/CA-1217
-// TODO: [CA-1216] add the back arrow to the title row. https://ripplearc.youtrack.cloud/issue/CA-1216
 /// "Your recents" sheet (Figma node `66342:177929`, "phone ·
 /// cuj6-equip-1-recents" on the "Estimate V2" canvas): the pre-form step
 /// opened by "+ Add equipment cost" — a tap-to-reuse list of the
@@ -72,72 +72,79 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final now = widget.clock.now();
-    return Padding(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.yourRatesRecentsTitle,
-            style: context.textTheme.titleMediumSemiBold.copyWith(
-              color: colorTheme.textHeadline,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SheetHeader(title: l10n.yourRatesRecentsTitle),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CoreSpacing.space4,
+            0,
+            CoreSpacing.space4,
+            CoreSpacing.space4,
           ),
-          const SizedBox(height: CoreSpacing.space4),
-          BlocBuilder<YourRatesBloc, YourRatesState>(
-            builder: (context, state) {
-              if (state is YourRatesLoading) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: CoreSpacing.space6),
-                  child: CoreLoadingIndicator(),
-                );
-              }
-              final entries = switch (state) {
-                YourRatesLoaded(:final recents) => recents,
-                _ => const <YourRateEntry>[],
-              };
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (entries.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: CoreSpacing.space2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              BlocBuilder<YourRatesBloc, YourRatesState>(
+                builder: (context, state) {
+                  if (state is YourRatesLoading) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: CoreSpacing.space6,
                       ),
-                      child: Text(
-                        l10n.yourRatesRecentsSectionHeading.toUpperCase(),
-                        style: context.textTheme.bodySmallSemiBold.copyWith(
-                          color: colorTheme.textBody,
+                      child: CoreLoadingIndicator(),
+                    );
+                  }
+                  final entries = switch (state) {
+                    YourRatesLoaded(:final recents) => recents,
+                    _ => const <YourRateEntry>[],
+                  };
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (entries.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: CoreSpacing.space2,
+                          ),
+                          child: Text(
+                            l10n.yourRatesRecentsSectionHeading.toUpperCase(),
+                            style: context.textTheme.bodySmallSemiBold.copyWith(
+                              color: colorTheme.textBody,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    ListView.separated(
-                      key: const Key('your_rates_recents_list'),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: entries.length,
-                      separatorBuilder: (_, _) =>
-                          const SizedBox(height: CoreSpacing.space2),
-                      itemBuilder: (context, index) {
-                        final entry = entries[index];
-                        return _RecentRateRow(
-                          key: Key('your_rate_row_${entry.id}'),
-                          entry: entry,
-                          now: now,
-                          onTap: () => _onRowTap(entry),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: CoreSpacing.space2),
-                  ],
-                  _NewEquipmentCostRow(onTap: _onNewEquipmentCost),
-                ],
-              );
-            },
+                        ListView.separated(
+                          key: const Key('your_rates_recents_list'),
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: entries.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: CoreSpacing.space2),
+                          itemBuilder: (context, index) {
+                            final entry = entries[index];
+                            return _RecentRateRow(
+                              key: Key('your_rate_row_${entry.id}'),
+                              entry: entry,
+                              now: now,
+                              onTap: () => _onRowTap(entry),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: CoreSpacing.space2),
+                      ],
+                      _NewEquipmentCostRow(onTap: _onNewEquipmentCost),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -212,9 +219,7 @@ class _RecentRateRow extends StatelessWidget {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: DisplayFormatter.currency.format(
-                        entry.rate.amount,
-                      ),
+                      text: DisplayFormatter.currency.format(entry.rate.amount),
                       style: textTheme.bodyLargeSemiBold.copyWith(
                         color: colorTheme.textHeadline,
                       ),

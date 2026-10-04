@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -148,6 +149,24 @@ void main() {
       await openSheet(tester);
 
       await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsDismissed>());
+    });
+
+    testWidgets('shows a back arrow next to the Add equipment title', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      expect(find.byKey(SheetHeader.backButtonKey), findsOneWidget);
+      expect(find.text('Add equipment'), findsOneWidget);
+    });
+
+    testWidgets('tapping the back arrow returns dismissed', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.byKey(SheetHeader.backButtonKey));
       await tester.pumpAndSettle();
 
       expect(result, isA<YourRatesRecentsDismissed>());
