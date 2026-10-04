@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -44,7 +45,6 @@ void main() {
     required CostItemType type,
     required ThemeData theme,
     bool fromCostFile = false,
-    bool presentAsSheet = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -66,13 +66,11 @@ void main() {
           ],
           child: Builder(
             builder: (context) {
-              final screen = CostItemFormScreen(
+              return CostItemFormScreen(
                 type: type,
                 estimationId: 'test-estimation-id',
                 router: FakeAppRouter(),
-                presentAsSheet: presentAsSheet,
               );
-              return presentAsSheet ? Material(child: screen) : screen;
             },
           ),
         ),
@@ -175,21 +173,48 @@ void main() {
       );
     });
 
-    testWidgets('renders equipment cost form as a sheet with the back arrow', (
+    testWidgets('renders equipment cost form as a sheet over the estimate', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await pumpScreen(
-        tester: tester,
-        type: CostItemType.equipment,
-        theme: theme,
-        presentAsSheet: true,
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  key: const Key('open_sheet'),
+                  onPressed: () => CoreQuickSheet.show(
+                    context: context,
+                    child: BlocProvider<EquipmentCostFormBloc>(
+                      create: (_) => Modular.get<EquipmentCostFormBloc>(),
+                      child: CostItemFormScreen(
+                        type: CostItemType.equipment,
+                        estimationId: 'test-estimation-id',
+                        router: FakeAppRouter(),
+                        presentAsSheet: true,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Add equipment cost'),
+                ),
+              ),
+            ),
+          ),
+        ),
       );
+      await tester.tap(find.byKey(const Key('open_sheet')));
+      await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostItemFormScreen),
+        find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/cost_item_form_screen/${size.width}x${size.height}/equipment_sheet$suffix.png',
         ),

@@ -1554,10 +1554,10 @@
     "description": "App bar title for the add labour cost form screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
   },
-  "addEquipmentCostsScreenTitle": "Equipment cost entry",
+  "addEquipmentCostsScreenTitle": "New equipment cost",
   "@addEquipmentCostsScreenTitle": {
-    "description": "App bar title for the add equipment cost form screen",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
+    "description": "Header title for the add equipment cost form sheet",
+    "context": "https://www.figma.com/design/P6y3MzhjzU9Gjc9qql63TQ/Construculator-Visual-Design--Copy---Copy-?node-id=66368-186054"
   },
   "howToCalculateCostLabel": "How you want to calculate cost?",
   "@howToCalculateCostLabel": {

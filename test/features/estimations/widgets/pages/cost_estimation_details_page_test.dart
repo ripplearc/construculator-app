@@ -358,6 +358,27 @@ void main() {
       },
     );
 
+    testWidgets(
+      'equipment sheet shows the New equipment cost title and no cost-file '
+      'mode toggle',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('New equipment cost'), findsOneWidget);
+        expect(find.byKey(const Key('how_to_calculate_label')), findsNothing);
+        expect(find.byKey(const Key('from_cost_file_pill')), findsNothing);
+      },
+    );
+
     testWidgets('tapping the back arrow on the equipment sheet closes it', (
       WidgetTester tester,
     ) async {
