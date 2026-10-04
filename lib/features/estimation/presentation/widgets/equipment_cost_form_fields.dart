@@ -322,6 +322,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                 ),
+              // TODO: [CA-1144] add the Delivery row below the rate and amount fields. https://ripplearc.youtrack.cloud/issue/CA-1144
             ],
           );
         },

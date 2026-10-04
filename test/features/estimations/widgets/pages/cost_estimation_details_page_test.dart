@@ -379,6 +379,55 @@ void main() {
       },
     );
 
+    testWidgets('equipment sheet is shorter than 90 percent of the screen', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+
+      final sheetHeight = tester.getSize(find.byType(CostItemFormScreen)).height;
+      final screenHeight = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      expect(sheetHeight, lessThan(screenHeight * 0.9));
+    });
+
+    testWidgets('equipment sheet keeps the Rate field above the keyboard', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const Key('rate_field')));
+      await tester.pumpAndSettle();
+
+      final screenHeight = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      final keyboardTop = screenHeight - 300 / tester.view.devicePixelRatio;
+      final rateBottom = tester.getRect(find.byKey(const Key('rate_field'))).bottom;
+      final barTop = tester.getRect(find.byKey(const Key('cost_item_total_label'))).top;
+      expect(tester.takeException(), isNull);
+      expect(rateBottom, lessThanOrEqualTo(keyboardTop));
+      expect(rateBottom, lessThanOrEqualTo(barTop));
+    });
+
     testWidgets('tapping the back arrow on the equipment sheet closes it', (
       WidgetTester tester,
     ) async {

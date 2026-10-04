@@ -46,13 +46,20 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       return ColoredBox(
         key: const Key('cost_item_form_screen'),
         color: colorTheme.pageBackground,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SheetHeader(title: _screenTitle(context)),
-            Flexible(child: _buildBody(context)),
-            _buildBottomBar(context),
-          ],
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SheetHeader(title: _screenTitle(context)),
+              Flexible(child: _buildBody(context)),
+              // TODO: [CA-355] replace the Total bar with the "Adds to this estimate" panel and the full-width button. https://ripplearc.youtrack.cloud/issue/CA-355
+              _buildBottomBar(context),
+            ],
+          ),
         ),
       );
     }
@@ -124,6 +131,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     return Column(
+      mainAxisSize: widget.presentAsSheet
+          ? MainAxisSize.min
+          : MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!widget.presentAsSheet)
@@ -151,7 +161,10 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
               ),
             ),
           ),
-        Expanded(child: _buildFormFields()),
+        if (widget.presentAsSheet)
+          Flexible(child: _buildFormFields())
+        else
+          Expanded(child: _buildFormFields()),
       ],
     );
   }
