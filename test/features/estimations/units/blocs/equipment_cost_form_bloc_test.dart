@@ -181,7 +181,11 @@ void main() {
         ),
         expect: () => [
           isA<EquipmentCostFormEditing>()
-              .having((s) => s.data.method, 'method', EquipmentPricingMethod.day)
+              .having(
+                (s) => s.data.method,
+                'method',
+                EquipmentPricingMethod.day,
+              )
               .having((s) => s.data.dailyRate, 'dailyRate', 145)
               .having(
                 (s) => s.data.rateStatus,
@@ -319,14 +323,8 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        // The other half of the same rule: switching back to Day must not
-        // silently re-confirm the preserved $145 as if it were re-fetched
-        // from Your Rates — it downgrades to ownRateUnconfirmed (editable),
-        // the same outcome as any other preserved-but-unverified value, so
-        // the contractor must re-verify (re-look-up or re-save) rather than
-        // the form quietly trusting stale confirmed state.
-        'switching back to Day after recalling a day rate preserves the '
-        'value but does not silently re-confirm it',
+        'switching back to Day after recalling a day rate restores the value '
+        'and its confirmed status',
         build: () => bloc,
         act: (bloc) => bloc
           ..add(
@@ -341,6 +339,28 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having((s) => s.data.dailyRate, 'dailyRate', 145)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'switching back restores a typed Day rate as unconfirmed and keeps '
+        'the Job amount typed in between',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentRateUpdatedEvent('300'))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', 100)
+              .having((s) => s.data.jobAmount, 'jobAmount', 300)
               .having(
                 (s) => s.data.rateStatus,
                 'rateStatus',

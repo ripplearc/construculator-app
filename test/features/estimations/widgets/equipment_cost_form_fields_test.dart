@@ -2068,8 +2068,8 @@ void main() {
 
     group('Sub-flow B: saved day rate', () {
       testWidgets(
-        'Rate field becomes read-only, Duration stays editable, and no '
-        '"Save as my rate" link/helper text remains',
+        'Rate and Duration stay editable, with no tag and no "Save as my '
+        'rate" link or helper text',
         (tester) async {
           await seedRate(
             itemName: 'Scissor lift',
@@ -2081,7 +2081,7 @@ void main() {
 
           await recallRate(tester, 'Scissor lift');
 
-          expect(textFieldReadOnly(tester, const Key('rate_field')), isTrue);
+          expect(textFieldReadOnly(tester, const Key('rate_field')), isFalse);
           expect(
             textFieldReadOnly(tester, const Key('duration_field')),
             isFalse,
@@ -2091,22 +2091,12 @@ void main() {
             find.byKey(const Key('save_as_my_rate_helper_text')),
             findsNothing,
           );
-          // Confirmed already, not a sample — the green "Your rate" badge,
-          // never the orange "Sample rate" one.
-          expect(
-            find.text(l10n.equipmentRateStatusYourRateBadge),
-            findsOneWidget,
-          );
-          expect(
-            find.text(l10n.equipmentRateStatusSampleRateBadge),
-            findsNothing,
-          );
+          expect(find.byKey(const Key('rate_status_badge')), findsNothing);
         },
       );
 
       testWidgets(
-        'attempting to type into the read-only Rate field leaves its value '
-        'unchanged',
+        'clearing the recalled Rate brings the look-up button back',
         (tester) async {
           await seedRate(
             itemName: 'Scissor lift',
@@ -2116,14 +2106,33 @@ void main() {
           await tester.pumpWidget(makeWidget());
           await tester.pumpAndSettle();
           await recallRate(tester, 'Scissor lift');
+          expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
 
-          await tester.enterText(find.byKey(const Key('rate_field')), '999');
+          await tester.enterText(find.byKey(const Key('rate_field')), '');
           await tester.pump();
 
-          expect(find.text('145'), findsOneWidget);
-          expect(find.text('999'), findsNothing);
+          expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
         },
       );
+
+      testWidgets('typing over the recalled Rate replaces its value', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await recallRate(tester, 'Scissor lift');
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '999');
+        await tester.pump();
+
+        expect(find.text('999'), findsOneWidget);
+        expect(find.text('145'), findsNothing);
+      });
 
       testWidgets(
         'delivery is still offered and stays unpriced after recalling a day '
@@ -2201,7 +2210,7 @@ void main() {
       );
 
       testWidgets(
-        'no "Sample rate" tag on a job price reused from Your rates',
+        'no rate tag on a job price reused from Your rates',
         (tester) async {
           await seedRate(
             itemName: 'Dumpster',
@@ -2215,14 +2224,7 @@ void main() {
 
           await recallRate(tester, 'Dumpster');
 
-          expect(
-            find.text(l10n.equipmentRateStatusSampleRateBadge),
-            findsNothing,
-          );
-          expect(
-            find.text(l10n.equipmentRateStatusYourRateBadge),
-            findsOneWidget,
-          );
+          expect(find.byKey(const Key('rate_status_badge')), findsNothing);
         },
       );
 
@@ -2271,7 +2273,7 @@ void main() {
           // Focusing the note field can auto-scroll the sheet's
           // SingleChildScrollView to keep it visible; settle that before
           // tapping the chip so its on-screen offset is stable.
-          await unfocusAll(tester);
+          FocusManager.instance.primaryFocus?.unfocus();
           await tester.pumpAndSettle();
 
           await tester.tap(find.byKey(const Key('job_method_chip')));

@@ -358,12 +358,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         label: l10n.equipmentRateStatusSampleRateBadge,
         variant: RateStatusBadgeVariant.orange,
       ),
-      RateStatus.ownRateConfirmed => RateStatusBadge(
-        key: const Key('rate_status_badge'),
-        label: l10n.equipmentRateStatusYourRateBadge,
-        variant: RateStatusBadgeVariant.green,
-      ),
-      RateStatus.ownRateUnconfirmed || RateStatus.missing => null,
+      RateStatus.ownRateConfirmed ||
+      RateStatus.ownRateUnconfirmed ||
+      RateStatus.missing => null,
     };
   }
 
@@ -433,25 +430,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return data.fieldErrors.containsKey(field);
   }
 
-  // Shared gate for [_saveAsMyRateLink] and [_saveAsMyRateHelperText], which
-  // always appear together (Figma node 66342:178091's "Buttons" link and its
-  // "Ic_Info_16x16" + text row right below it). True for a rate the
-  // contractor hasn't yet saved to Your rates: RateStatus.missing (nothing
-  // typed) shows the look-up-a-rate search button instead — see the caller —
-  // and RateStatus.ownRateConfirmed (recalled from Your Rates, CUJ 6
-  // Sub-flows B/C) is already saved there, so re-offering to save it again
-  // is redundant — so this only covers sampleRateUnverified/
-  // ownRateUnconfirmed. Also false while the rate/amount field itself has a
-  // validation error, so neither the link nor the helper text can offer to
-  // save an out-of-range rate.
-  //
-  // `data.itemTypeError` is checked too, but per EquipmentCostFormBloc's own
-  // field-error policy (see its `_validated` doc comment) an empty item type
-  // never populates fieldErrors — only a present-but-unusable value does —
-  // so that check alone never actually excludes a blank name. The
-  // controller-text check below is what really does that job, reading
-  // straight from the same controller [_buildYourRateEntry] uses to build
-  // `itemName`, so the two can never disagree about what "empty" means.
   bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
       (data.rateStatus == RateStatus.sampleRateUnverified ||
           data.rateStatus == RateStatus.ownRateUnconfirmed) &&
@@ -648,14 +626,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (entry == null || !mounted) return;
-    // Setting these controllers' text fires their own listeners first
-    // (EquipmentCostItemTypeChanged, EquipmentRateUpdatedEvent), which would
-    // mark the rate ownRateUnconfirmed like any other typed value. The
-    // EquipmentSavedRateRecalledEvent dispatched below runs after both, on
-    // the same synchronous event queue, so it's what the bloc's state
-    // actually settles on: equipmentType/method/rate set again, this time
-    // with RateStatus.ownRateConfirmed — CUJ 6 Sub-flows B/C's "already
-    // verified, no verification step" rate.
     if (_equipmentNameController.text.trim().isEmpty) {
       _equipmentNameController.text = entry.itemName;
     }
@@ -815,12 +785,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     controller: _dailyRateController,
                     // TODO: [CA-1218] show the rate as currency ($145.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                     hideSuffixWhenEmpty: true,
-                    // Sub-flow B: a day rate recalled from Your Rates is
-                    // already verified, so it's read-only here — Duration is
-                    // the only editable field for a recalled day rate. A
-                    // freshly typed (ownRateUnconfirmed) or sample rate
-                    // stays fully editable.
-                    readOnly: data.rateStatus == RateStatus.ownRateConfirmed,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
