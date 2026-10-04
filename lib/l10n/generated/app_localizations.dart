@@ -1846,10 +1846,10 @@ abstract class AppLocalizations {
   /// **'Labour cost entry'**
   String get addLabourCostsScreenTitle;
 
-  /// App bar title for the add equipment cost form screen
+  /// Header title for the add equipment cost form sheet
   ///
   /// In en, this message translates to:
-  /// **'Equipment cost entry'**
+  /// **'New equipment cost'**
   String get addEquipmentCostsScreenTitle;
 
   /// Label above the manual/cost-file mode toggle on the cost item form screen

@@ -126,30 +126,31 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ColoredBox(
-          color: colorTheme.backgroundBlueLight,
-          child: Padding(
-            padding: const EdgeInsets.all(CoreSpacing.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.howToCalculateCostLabel,
-                  key: const Key('how_to_calculate_label'),
-                  style: textTheme.bodyMediumRegular.copyWith(
-                    color: colorTheme.textHeadline,
+        if (!widget.presentAsSheet)
+          ColoredBox(
+            color: colorTheme.backgroundBlueLight,
+            child: Padding(
+              padding: const EdgeInsets.all(CoreSpacing.space4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.howToCalculateCostLabel,
+                    key: const Key('how_to_calculate_label'),
+                    style: textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textHeadline,
+                    ),
                   ),
-                ),
-                const SizedBox(height: CoreSpacing.space2),
-                CostItemModeToggle(
-                  fromCostFile: _fromCostFile,
-                  onFromCostFile: () => setState(() => _fromCostFile = true),
-                  onManually: () => setState(() => _fromCostFile = false),
-                ),
-              ],
+                  const SizedBox(height: CoreSpacing.space2),
+                  CostItemModeToggle(
+                    fromCostFile: _fromCostFile,
+                    onFromCostFile: () => setState(() => _fromCostFile = true),
+                    onManually: () => setState(() => _fromCostFile = false),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         Expanded(child: _buildFormFields()),
       ],
     );
