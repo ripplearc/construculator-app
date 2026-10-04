@@ -90,15 +90,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
     final errorTextList = widget.errorTextList;
-    // An error for a genuinely invalid value (e.g. a typed duration of 0)
-    // is only surfaced once the user leaves the field, not on every
-    // keystroke — "0" is a valid prefix of "0.5" — and it clears the
-    // instant the bloc stops reporting one, which happens as soon as a
-    // valid value is typed, focused or not.
-    final visibleErrorText =
-        errorTextList != null &&
-            errorTextList.isNotEmpty &&
-            !_focusNode.hasFocus
+    final visibleErrorText = errorTextList != null && errorTextList.isNotEmpty
         ? errorTextList.first
         : null;
     final hasError = visibleErrorText != null;
@@ -116,14 +108,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
       cursorColor: colorTheme.textHeadline,
       style: isEmpty
           ? textTheme.bodyLargeRegular.copyWith(color: colorTheme.textDisable)
-          : textTheme.bodyLargeSemiBold.copyWith(
-              color: colorTheme.textHeadline,
-            ),
+          : textTheme.bodyLargeRegular.copyWith(color: colorTheme.textHeadline),
       decoration: InputDecoration(
         border: InputBorder.none,
-        // Vertical padding, not zero: without it the field's own
-        // interactive area is only as tall as its text line (~24px), short
-        // of Android's 48dp minimum tap target.
         contentPadding: const EdgeInsets.symmetric(
           vertical: CoreSpacing.space3,
         ),
@@ -134,12 +121,6 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
       ),
     );
 
-    // The label is its own Text (for exact control over the Figma
-    // label-above-value layout) rather than InputDecoration.labelText, so
-    // without this the field's accessible name would be dropped — a screen
-    // reader would announce only "edit text", not "Equipment name, edit
-    // text". MergeSemantics folds the label (and error) text into the same
-    // node as the field, restoring that association.
     return MergeSemantics(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -157,19 +138,6 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // With a suffix (e.g. "days", "$"), the value field must size
-                // to its own content so the suffix sits right beside the typed
-                // number, matching Figma — an Expanded field would claim the
-                // whole row before the suffix lays out, stranding it at the
-                // row's trailing edge, far from the value. IntrinsicWidth (with
-                // a floor so the tap target stays reasonable when empty) gives
-                // that content-sized behavior; a field with no suffix keeps
-                // Expanded so it still fills the row for normal typing. The
-                // hint is dropped once text is typed, because an
-                // InputDecoration always sizes to its hint, which would keep
-                // the suffix at the hint's width. Flexible lets a very long
-                // value shrink and scroll instead of pushing the suffix out
-                // of the row.
                 if (suffix != null)
                   Flexible(
                     child: ConstrainedBox(
