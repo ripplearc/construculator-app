@@ -709,13 +709,121 @@ void main() {
       );
     });
 
-    group('EquipmentOutsizedFeeAcceptedEvent', () {
+    group('outsized delivery fee', () {
+      void fillDay(EquipmentCostFormBloc bloc, {required String fee}) {
+        bloc
+          ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+          ..add(const EquipmentDurationUpdatedEvent('5'))
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(EquipmentDeliveryFeeUpdatedEvent(fee));
+      }
+
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'is a no-op when not currently in OutsizedFeeConfirm',
+        'submitting a Day fee above duration x rate emits OutsizedFeeConfirm '
+        'without Submitting',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '501');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        skip: 4,
+        expect: () => [isA<EquipmentCostFormOutsizedFeeConfirm>()],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'submitting a Day fee equal to duration x rate goes straight to '
+        'Submitting',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '500');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        skip: 4,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'submitting a Job fee above the job amount emits OutsizedFeeConfirm',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
+            ..add(const EquipmentRateUpdatedEvent('3000'))
+            ..add(const EquipmentDeliveryFeeUpdatedEvent('8500'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 4,
+        expect: () => [isA<EquipmentCostFormOutsizedFeeConfirm>()],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Add it submits the fee as typed',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '8500');
+          bloc
+            ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+            ..add(
+              const EquipmentOutsizedFeeAcceptedEvent(
+                estimateId: testEstimateId,
+              ),
+            );
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>().having(
+            (s) => (s.createdItem as EquipmentCostItem).deliveryFee?.amount,
+            'deliveryFee',
+            8500,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Go back returns to Editing with the typed fee kept',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '8500');
+          bloc
+            ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+            ..add(const EquipmentOutsizedFeeDeclinedEvent());
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.deliveryFee,
+            'deliveryFee',
+            8500,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Add it is a no-op when not currently in OutsizedFeeConfirm',
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentOutsizedFeeAcceptedEvent(estimateId: testEstimateId),
         ),
+        expect: () => <EquipmentCostFormState>[],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Go back is a no-op when not currently in OutsizedFeeConfirm',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentOutsizedFeeDeclinedEvent()),
         expect: () => <EquipmentCostFormState>[],
       );
     });

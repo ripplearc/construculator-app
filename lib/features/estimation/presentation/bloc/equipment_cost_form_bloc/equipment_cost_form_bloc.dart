@@ -77,6 +77,7 @@ class EquipmentCostFormBloc
     });
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
+    on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
   }
 
   void _emit(
@@ -101,7 +102,29 @@ class EquipmentCostFormBloc
       emit(EquipmentCostFormEditing(draft));
       return;
     }
+    if (_isOutsizedFee(draft)) {
+      emit(EquipmentCostFormOutsizedFeeConfirm(draft));
+      return;
+    }
     await _submit(draft, event.estimateId, emit);
+  }
+
+  bool _isOutsizedFee(EquipmentCostFormData draft) {
+    final fee = draft.deliveryFee;
+    if (fee == null) return false;
+    final baseCost = draft.method == EquipmentPricingMethod.day
+        ? (draft.duration ?? 0) * (draft.dailyRate ?? 0)
+        : (draft.jobAmount ?? 0);
+    return baseCost > 0 && fee > baseCost;
+  }
+
+  void _onOutsizedFeeDeclined(
+    EquipmentOutsizedFeeDeclinedEvent event,
+    Emitter<EquipmentCostFormState> emit,
+  ) {
+    final current = state;
+    if (current is! EquipmentCostFormOutsizedFeeConfirm) return;
+    emit(EquipmentCostFormEditing(current.data));
   }
 
   Future<void> _onOutsizedFeeAccepted(

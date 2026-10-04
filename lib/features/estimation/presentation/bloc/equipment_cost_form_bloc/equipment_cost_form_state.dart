@@ -115,12 +115,13 @@ class EquipmentCostFormEditing extends EquipmentCostFormState {
   String? get itemTypeError => data.itemTypeError;
 }
 
-/// State while an unusually high rate or delivery fee needs explicit user
-/// confirmation before submission proceeds.
+/// State while a delivery fee larger than the base cost (duration x rate for
+/// Day, the amount for Job) needs explicit user confirmation before
+/// submission proceeds.
 ///
-/// Entering this state (e.g. from the delivery-fee editor) is CA-1144's job;
-/// this bloc only reacts to [EquipmentOutsizedFeeAcceptedEvent] to move on
-/// from it.
+/// Entered from [EquipmentCostSubmittedEvent]. [EquipmentOutsizedFeeAcceptedEvent]
+/// continues to submission and [EquipmentOutsizedFeeDeclinedEvent] returns to
+/// editing.
 class EquipmentCostFormOutsizedFeeConfirm extends EquipmentCostFormState {
   const EquipmentCostFormOutsizedFeeConfirm(this.data);
 
