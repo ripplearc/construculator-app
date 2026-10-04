@@ -182,11 +182,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        // Equipment's "New equipment cost" form is a bottom sheet over this
-        // screen in the Figma mocks, not a routed full-screen page — see
-        // CostItemFormScreen.presentAsSheet. Material and Labor still push
-        // their own full-screen route below.
-        onPressed: () => unawaited(_addEquipmentCost(context)),
+        onPressed: () => unawaited(_openRecentsThenEquipmentForm(context)),
       ),
       CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),
@@ -202,11 +198,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     };
   }
 
-  // "Your recents" (CA-1151) sits in front of the equipment form: shows a
-  // tap-to-reuse list of recently-saved rates, then opens the form pre-filled
-  // with the tapped one, or blank for "+ New equipment cost". Closing the
-  // sheet without a choice opens nothing.
-  Future<void> _addEquipmentCost(BuildContext context) async {
+  Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
     final result = await YourRatesRecentsSheet.show(
       context: context,
       clock: widget.clock,
@@ -217,10 +209,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     final entry = result is YourRatesRecentsPicked ? result.entry : null;
     await CoreQuickSheet.show(
       context: context,
-      // BlocProvider(create:...), not .value — the factory hands back a
-      // fresh bloc per tap (see estimation_module.dart's `i.add` binding),
-      // and only `create:` closes it when the sheet is dismissed; `.value`
-      // would leak a bloc on every open.
       child: BlocProvider<EquipmentCostFormBloc>(
         create: (_) => widget.equipmentCostFormBlocFactory(),
         child: CostItemFormScreen(
