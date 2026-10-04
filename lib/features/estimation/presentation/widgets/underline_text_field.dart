@@ -122,7 +122,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         contentPadding: const EdgeInsets.symmetric(
           vertical: CoreSpacing.space3,
         ),
-        hintText: widget.hintText,
+        hintText: suffix != null && !isEmpty ? null : widget.hintText,
         hintStyle: textTheme.bodyLargeRegular.copyWith(
           color: colorTheme.textDisable,
         ),
@@ -156,11 +156,18 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               // row's trailing edge, far from the value. IntrinsicWidth (with
               // a floor so the tap target stays reasonable when empty) gives
               // that content-sized behavior; a field with no suffix keeps
-              // Expanded so it still fills the row for normal typing.
+              // Expanded so it still fills the row for normal typing. The
+              // hint is dropped once text is typed, because an
+              // InputDecoration always sizes to its hint, which would keep
+              // the suffix at the hint's width. Flexible lets a very long
+              // value shrink and scroll instead of pushing the suffix out
+              // of the row.
               if (suffix != null)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 24),
-                  child: IntrinsicWidth(child: textField),
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 24),
+                    child: IntrinsicWidth(child: textField),
+                  ),
                 )
               else
                 Expanded(child: textField),

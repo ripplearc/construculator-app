@@ -150,6 +150,43 @@ void main() {
     });
   });
 
+  group('EquipmentCostFormFields — days suffix position', () {
+    Future<double> daysLeftAfterTyping(WidgetTester tester, String text) async {
+      await tester.enterText(find.byKey(const Key('duration_field')), text);
+      await tester.pumpAndSettle();
+      return tester.getTopLeft(find.text('days')).dx;
+    }
+
+    testWidgets('days follows the typed number to the right and back to the '
+        'left', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      final empty = tester.getTopLeft(find.text('days')).dx;
+      final one = await daysLeftAfterTyping(tester, '4');
+      final many = await daysLeftAfterTyping(tester, '4444444');
+      final backToOne = await daysLeftAfterTyping(tester, '4');
+
+      expect(one, lessThan(empty));
+      expect(many, greaterThan(one));
+      expect(backToOne, one);
+    });
+
+    testWidgets('a very long duration keeps days inside the row without '
+        'overflowing', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await daysLeftAfterTyping(tester, '1234567890' * 3);
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getTopRight(find.text('days')).dx,
+        lessThanOrEqualTo(tester.view.physicalSize.width),
+      );
+    });
+  });
+
   group('EquipmentCostFormFields — Day/Job toggle', () {
     testWidgets('tapping Job swaps duration+rate for a single amount field', (
       tester,

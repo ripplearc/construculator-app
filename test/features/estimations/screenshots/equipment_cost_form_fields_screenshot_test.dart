@@ -89,6 +89,34 @@ void main() {
       );
     });
 
+    testWidgets('renders the days suffix right next to a typed duration', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_duration_typed$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders a very long duration without overflowing', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(find.byKey(const Key('duration_field')), '1234567890' * 3);
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_duration_long$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders manually mode with duration error', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
