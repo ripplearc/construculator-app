@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_ite
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSheetHeader(context),
+            SheetHeader(title: _screenTitle(context)),
             Flexible(child: _buildBody(context)),
             _buildBottomBar(context),
           ],
@@ -61,41 +62,6 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       appBar: _buildAppBar(context),
       body: _buildBody(context),
       bottomNavigationBar: _buildBottomBar(context),
-    );
-  }
-
-  Widget _buildSheetHeader(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: CoreSpacing.space2,
-        right: CoreSpacing.space4,
-        bottom: CoreSpacing.space2,
-      ),
-      child: Row(
-        children: [
-          CoreIconWidget(
-            key: const Key('sheet_back_button'),
-            icon: CoreIcons.arrowLeft,
-            color: colorTheme.textLink,
-            padding: const EdgeInsets.all(CoreSpacing.space3),
-            size: 24,
-            semanticLabel: l10n.backLabel,
-            onTap: () => Navigator.of(context).pop(),
-          ),
-          Expanded(
-            child: Text(
-              _screenTitle(context),
-              style: textTheme.titleMediumSemiBold.copyWith(
-                color: colorTheme.textHeadline,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

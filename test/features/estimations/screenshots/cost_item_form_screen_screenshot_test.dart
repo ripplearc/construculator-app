@@ -44,6 +44,7 @@ void main() {
     required CostItemType type,
     required ThemeData theme,
     bool fromCostFile = false,
+    bool presentAsSheet = false,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -63,10 +64,16 @@ void main() {
               create: (_) => Modular.get<EquipmentCostFormBloc>(),
             ),
           ],
-          child: CostItemFormScreen(
-            type: type,
-            estimationId: 'test-estimation-id',
-            router: FakeAppRouter(),
+          child: Builder(
+            builder: (context) {
+              final screen = CostItemFormScreen(
+                type: type,
+                estimationId: 'test-estimation-id',
+                router: FakeAppRouter(),
+                presentAsSheet: presentAsSheet,
+              );
+              return presentAsSheet ? Material(child: screen) : screen;
+            },
           ),
         ),
       ),
@@ -164,6 +171,27 @@ void main() {
         find.byType(CostItemFormScreen),
         matchesGoldenFile(
           'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_error$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders equipment cost form as a sheet with the back arrow', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester: tester,
+        type: CostItemType.equipment,
+        theme: theme,
+        presentAsSheet: true,
+      );
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/equipment_sheet$suffix.png',
         ),
       );
     });
