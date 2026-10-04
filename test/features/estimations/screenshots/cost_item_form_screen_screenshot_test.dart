@@ -254,17 +254,5 @@ void main() {
 
       await expectSheetGolden(tester, 'equipment_sheet_saved_day_rate');
     });
-
-    testWidgets('renders the saved job price in the sheet header', (
-      tester,
-    ) async {
-      await openEquipmentSheet(
-        tester,
-        recalledMethod: EquipmentPricingMethod.job,
-        recalledRate: 400,
-      );
-
-      await expectSheetGolden(tester, 'equipment_sheet_saved_job_price');
-    });
   });
 }

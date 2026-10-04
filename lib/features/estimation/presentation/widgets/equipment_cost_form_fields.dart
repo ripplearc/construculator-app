@@ -743,6 +743,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return UnderlineTextField(
       key: const Key('amount_field'),
       label: l10n.equipmentAmountLabel,
+      hintText: l10n.equipmentAmountPlaceholder,
       controller: _jobAmountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       suffix: Text(
