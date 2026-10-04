@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -314,12 +315,24 @@ void main() {
       expect(find.byKey(const Key('rate_field')), findsOneWidget);
       expect(find.byKey(const Key('amount_field')), findsNothing);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
@@ -336,12 +349,24 @@ void main() {
 
       expect(find.byKey(const Key('amount_field')), findsOneWidget);
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('job_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', true),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('job_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          true,
+        ),
       );
       expect(
-        tester.widget<CoreChip>(find.byKey(const Key('day_method_chip'))),
-        isA<CoreChip>().having((c) => c.selected.value, 'selected', false),
+        tester.widget<ChoiceChipToggle>(
+          find.byKey(const Key('day_method_chip')),
+        ),
+        isA<ChoiceChipToggle>().having(
+          (c) => c.selected.value,
+          'selected',
+          false,
+        ),
       );
     });
 
