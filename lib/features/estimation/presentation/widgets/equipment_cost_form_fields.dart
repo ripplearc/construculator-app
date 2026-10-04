@@ -46,6 +46,11 @@ class EquipmentCostFormFields extends StatefulWidget {
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
+  /// Whether the recalled rate's name and price are shown at the top of the
+  /// fields. The form sheet turns this off because it shows them in its own
+  /// header.
+  final bool showRecalledRateHeader;
+
   /// The estimate this item is being added to. Forwarded to
   /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
   /// delivery fee. May be null wherever the caller doesn't have one yet.
@@ -70,6 +75,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
+    this.showRecalledRateHeader = true,
     this.estimateId,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -759,7 +765,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // (nodes 66337:158600/66337:159434), not the screen's own CoreAppBar
   // title, which stays the fixed "Add equipment costs" string.
   // TODO: [CA-1218] use the "How many days?" label, show the Job amount as $400.00, and add the divider below this header. https://ripplearc.youtrack.cloud/issue/CA-1218
-  // TODO: [CA-1216] move this header into the sheet header next to a back arrow. https://ripplearc.youtrack.cloud/issue/CA-1216
   List<Widget> _recalledRateHeader(
     BuildContext context,
     EquipmentCostFormData data,
@@ -826,8 +831,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ..._recalledRateHeader(context, data),
-                  const SizedBox(height: CoreSpacing.space5),
+                  if (widget.showRecalledRateHeader) ...[
+                    ..._recalledRateHeader(context, data),
+                    const SizedBox(height: CoreSpacing.space5),
+                  ],
                   isDay
                       ? _durationField(context, data)
                       : _amountField(context, data, showRateChrome: false),

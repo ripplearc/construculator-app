@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
@@ -7,9 +8,11 @@ import 'package:construculator/features/estimation/presentation/widgets/material
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostItemFormScreen extends StatefulWidget {
@@ -69,7 +72,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SheetHeader(title: _screenTitle(context)),
+              _buildSheetHeader(context),
               Flexible(child: _buildBody(context)),
               // TODO: [CA-355] replace the Total bar with the "Adds to this estimate" panel and the full-width button. https://ripplearc.youtrack.cloud/issue/CA-355
               _buildBottomBar(context),
@@ -135,6 +138,31 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
+  Widget _buildSheetHeader(BuildContext context) {
+    final title = _screenTitle(context);
+    if (widget.type != CostItemType.equipment) return SheetHeader(title: title);
+    return BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
+      builder: (context, state) {
+        final data = state.formData;
+        if (data.rateStatus != RateStatus.ownRateConfirmed) {
+          return SheetHeader(title: title);
+        }
+        final l10n = context.l10n;
+        final isDay = data.method == EquipmentPricingMethod.day;
+        final amount = DisplayFormatter.currency.format(
+          (isDay ? data.dailyRate : data.jobAmount) ?? 0,
+        );
+        return SheetHeader(
+          title: data.equipmentType,
+          subtitle: l10n.equipmentRecalledRateSubtitle(
+            amount,
+            isDay ? l10n.yourRatesDaySuffix : l10n.yourRatesJobSuffix,
+          ),
+        );
+      },
+    );
+  }
+
   String _screenTitle(BuildContext context) => switch (widget.type) {
     CostItemType.material => context.l10n.addMaterialCostsScreenTitle,
     CostItemType.labor => context.l10n.addLabourCostsScreenTitle,
@@ -146,9 +174,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     return Column(
-      mainAxisSize: widget.presentAsSheet
-          ? MainAxisSize.min
-          : MainAxisSize.max,
+      mainAxisSize: widget.presentAsSheet ? MainAxisSize.min : MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!widget.presentAsSheet)
@@ -206,6 +232,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         estimateId: widget.estimationId,
         yourRatesBlocFactory: widget.yourRatesBlocFactory,
         clock: widget.clock,
+        showRecalledRateHeader: !widget.presentAsSheet,
       ),
     };
   }

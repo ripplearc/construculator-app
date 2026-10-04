@@ -206,3 +206,14 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
 }
 
 const Object _unset = Object();
+
+extension EquipmentCostFormStateData on EquipmentCostFormState {
+  EquipmentCostFormData get formData => switch (this) {
+    EquipmentCostFormEditing(:final data) => data,
+    EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
+    EquipmentCostFormSubmitting(:final data) => data,
+    EquipmentCostFormSuccess(:final data) => data,
+    EquipmentCostFormFailure(:final data) => data,
+    EquipmentCostFormInitial() => const EquipmentCostFormData(),
+  };
+}
