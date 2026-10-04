@@ -195,6 +195,7 @@ void main() {
                         router: FakeAppRouter(),
                         yourRatesBlocFactory: () =>
                             Modular.get<YourRatesBloc>(),
+                        clock: FakeClockImpl(),
                         presentAsSheet: true,
                       ),
                     ),
