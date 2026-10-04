@@ -412,6 +412,52 @@ void main() {
       },
     );
 
+    testWidgets('swiping "Your recents" down opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.fling(
+        find.byKey(const Key('new_equipment_cost_row')),
+        const Offset(0, 600),
+        2000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('the back action on "Your recents" opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
     testWidgets(
       'tapping a recent row shows its recency subtitle and recalls it into '
       'the form with no separate confirm step',

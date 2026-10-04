@@ -203,16 +203,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   }
 
   // "Your recents" (CA-1151) sits in front of the equipment form: shows a
-  // tap-to-reuse list of recently-saved rates, then opens the form either
-  // pre-filled with the tapped one or blank ("+ New equipment cost" was
-  // tapped, or the sheet was dismissed without a pick).
+  // tap-to-reuse list of recently-saved rates, then opens the form pre-filled
+  // with the tapped one, or blank for "+ New equipment cost". Closing the
+  // sheet without a choice opens nothing.
   Future<void> _addEquipmentCost(BuildContext context) async {
-    final entry = await YourRatesRecentsSheet.show(
+    final result = await YourRatesRecentsSheet.show(
       context: context,
       clock: widget.clock,
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (!context.mounted) return;
+    if (result is YourRatesRecentsDismissed) return;
+    final entry = result is YourRatesRecentsPicked ? result.entry : null;
     await CoreQuickSheet.show(
       context: context,
       // BlocProvider(create:...), not .value — the factory hands back a
