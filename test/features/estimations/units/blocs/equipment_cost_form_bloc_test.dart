@@ -235,9 +235,9 @@ void main() {
           expect: () => [
             isA<EquipmentCostFormEditing>()
                 .having(
-                  (s) => s.data.fieldErrors['dailyRate'],
+                  (s) => s.data.fieldErrors[EquipmentFormField.dailyRate],
                   'dailyRate error',
-                  'rateOutOfRange',
+                  EquipmentFieldError.rateOutOfRange,
                 )
                 .having((s) => s.data.isValid, 'isValid', false),
           ],
@@ -249,7 +249,7 @@ void main() {
         act: (bloc) => bloc.add(const EquipmentRateUpdatedEvent('100')),
         expect: () => [
           isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.fieldErrors['dailyRate'],
+            (s) => s.data.fieldErrors[EquipmentFormField.dailyRate],
             'dailyRate error',
             isNull,
           ),
@@ -265,9 +265,9 @@ void main() {
         skip: 1,
         expect: () => [
           isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.fieldErrors['jobAmount'],
+            (s) => s.data.fieldErrors[EquipmentFormField.jobAmount],
             'jobAmount error',
-            'rateOutOfRange',
+            EquipmentFieldError.rateOutOfRange,
           ),
         ],
       );
@@ -283,7 +283,7 @@ void main() {
           isA<EquipmentCostFormEditing>()
               .having((s) => s.data.duration, 'duration', isNull)
               .having(
-                (s) => s.data.fieldErrors['duration'],
+                (s) => s.data.fieldErrors[EquipmentFormField.duration],
                 'duration error',
                 isNull,
               )
@@ -299,9 +299,9 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.data.fieldErrors['duration'],
+                (s) => s.data.fieldErrors[EquipmentFormField.duration],
                 'duration error',
-                'durationNotPositive',
+                EquipmentFieldError.durationNotPositive,
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
@@ -315,9 +315,9 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.data.fieldErrors['duration'],
+                (s) => s.data.fieldErrors[EquipmentFormField.duration],
                 'duration error',
-                'durationNotPositive',
+                EquipmentFieldError.durationNotPositive,
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
@@ -331,9 +331,9 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.data.fieldErrors['duration'],
+                (s) => s.data.fieldErrors[EquipmentFormField.duration],
                 'duration error',
-                'durationNotHalfDay',
+                EquipmentFieldError.durationNotHalfDay,
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
@@ -347,7 +347,7 @@ void main() {
           act: (bloc) => bloc.add(EquipmentDurationUpdatedEvent(step)),
           expect: () => [
             isA<EquipmentCostFormEditing>().having(
-              (s) => s.data.fieldErrors['duration'],
+              (s) => s.data.fieldErrors[EquipmentFormField.duration],
               'duration error',
               isNull,
             ),
@@ -363,9 +363,9 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.data.fieldErrors['duration'],
+                (s) => s.data.fieldErrors[EquipmentFormField.duration],
                 'duration error',
-                'durationTooLarge',
+                EquipmentFieldError.durationTooLarge,
               )
               .having((s) => s.data.isValid, 'isValid', false),
         ],
@@ -378,7 +378,7 @@ void main() {
             bloc.add(const EquipmentDurationUpdatedEvent('99999999.5')),
         expect: () => [
           isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.fieldErrors['duration'],
+            (s) => s.data.fieldErrors[EquipmentFormField.duration],
             'duration error',
             isNull,
           ),
@@ -396,7 +396,7 @@ void main() {
           isA<EquipmentCostFormEditing>()
               .having((s) => s.data.deliveryFee, 'deliveryFee', 0)
               .having(
-                (s) => s.data.fieldErrors['deliveryFee'],
+                (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
                 'deliveryFee error',
                 isNull,
               ),
@@ -411,7 +411,7 @@ void main() {
           isA<EquipmentCostFormEditing>()
               .having((s) => s.data.deliveryFee, 'deliveryFee', -5)
               .having(
-                (s) => s.data.fieldErrors['deliveryFee'],
+                (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
                 'deliveryFee error',
                 isNotNull,
               )
@@ -428,7 +428,7 @@ void main() {
           expect: () => [
             isA<EquipmentCostFormEditing>()
                 .having(
-                  (s) => s.data.fieldErrors['deliveryFee'],
+                  (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
                   'deliveryFee error',
                   isNotNull,
                 )
@@ -444,7 +444,7 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.data.fieldErrors['deliveryFee'],
+                (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
                 'deliveryFee error',
                 isNotNull,
               )
@@ -458,7 +458,7 @@ void main() {
         act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('50')),
         expect: () => [
           isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.fieldErrors['deliveryFee'],
+            (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
             'deliveryFee error',
             isNull,
           ),
