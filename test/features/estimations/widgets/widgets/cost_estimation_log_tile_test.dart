@@ -419,6 +419,107 @@ void main() {
       });
     });
 
+    group('Cost file updated', () {
+      Map<String, dynamic> changedItem(String itemName) => {
+        'itemName': itemName,
+        'oldRate': 14,
+        'newRate': 14.5,
+      };
+
+      testWidgets('one changed price names the item and shows both rates', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [changedItem('Drywall sheets')],
+          },
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostFileUpdated('Drywall sheets')),
+          findsOneWidget,
+        );
+        expect(
+          richTextContaining(localization.activityEditedFieldUnitPrice),
+          findsOneWidget,
+        );
+        expect(richTextContaining(r'$14.00'), findsOneWidget);
+        expect(richTextContaining(r'$14.50'), findsOneWidget);
+      });
+
+      testWidgets('several changed prices count them and show no rates', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [
+              changedItem('Drywall sheets'),
+              changedItem('Deck boards'),
+            ],
+          },
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostFileUpdatedCount(2)),
+          findsOneWidget,
+        );
+        expect(richTextContaining(localization.activityFrom), findsNothing);
+        expect(richTextContaining(r'$14.00'), findsNothing);
+      });
+
+      final shapesWithoutItems = {
+        'no changedItems': <String, dynamic>{'fileName': 'materials.xlsx'},
+        'an empty changedItems': <String, dynamic>{'changedItems': []},
+      };
+      for (final shape in shapesWithoutItems.entries) {
+        testWidgets('${shape.key} shows the plain title only', (tester) async {
+          final log = testLog.copyWith(
+            activity: CostEstimationActivityType.costFileUpdated,
+            activityDetails: shape.value,
+          );
+
+          await tester.pumpWidget(createWidget(log));
+          final localization = l10n();
+
+          expect(
+            find.text(localization.activityCostFileUpdatedSimple),
+            findsOneWidget,
+          );
+          expect(richTextContaining(localization.activityFrom), findsNothing);
+        });
+      }
+
+      testWidgets('a rate that is not a number shows no rates', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [
+              {'itemName': 'Drywall sheets', 'oldRate': '14', 'newRate': 14.5},
+            ],
+          },
+        );
+
+        await tester.pumpWidget(createWidget(log));
+        final localization = l10n();
+
+        expect(
+          find.text(localization.activityCostFileUpdated('Drywall sheets')),
+          findsOneWidget,
+        );
+        expect(richTextContaining(localization.activityFrom), findsNothing);
+      });
+    });
+
     group('Edge Cases', () {
       testWidgets('handles user with single character first name', (
         tester,
