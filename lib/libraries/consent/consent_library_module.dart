@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/consent/data/consent_audit_metadata_impl.dart';
 import 'package:construculator/libraries/consent/data/data_source/interfaces/local_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/data_source/powersync_local_consent_data_source.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/consent/domain/usecases/record_consent_
 import 'package:construculator/libraries/consent/domain/usecases/verify_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/watch_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/withdraw_consent_usecase.dart';
+import 'package:construculator/libraries/consent/interfaces/consent_audit_metadata.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
@@ -37,10 +39,10 @@ class ConsentLibraryModule extends Module {
   ];
 
   @override
-  void exportedBinds(Injector i) => _registerDependencies(i);
+  void exportedBinds(Injector i) => _registerDependencies(i, appBootstrap);
 }
 
-void _registerDependencies(Injector i) {
+void _registerDependencies(Injector i, AppBootstrap appBootstrap) {
   // The gate stays compile-time blocked after this swap:
   // remoteConsentWritePathLanded is still false
   // (consent_gate_readiness.dart), so consentPersistenceReady is too. A
@@ -70,12 +72,17 @@ void _registerDependencies(Injector i) {
     ),
   );
 
+  i.addLazySingleton<ConsentAuditMetadata>(
+    () => ConsentAuditMetadataImpl(appVersion: appBootstrap.appVersion),
+  );
+
   i.addLazySingleton<ConsentRepository>(
     () => ConsentRepositoryImpl(
       localDataSource: i(),
       remoteDataSource: i(),
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
       clock: Modular.get<Clock>(),
+      auditMetadata: i(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );

@@ -130,6 +130,10 @@ class AppBootstrap {
   /// it lets time-limited work pause while the app is in the background.
   final AppLifecycleWrapper appLifecycleWrapper;
 
+  /// The app's version name, resolved once from `package_info_plus` because
+  /// reading it is asynchronous and it never changes at runtime.
+  final String appVersion;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -140,5 +144,6 @@ class AppBootstrap {
     required this.featureFlagRepository,
     required this.currentScreenTracker,
     required this.appLifecycleWrapper,
+    required this.appVersion,
   });
 }

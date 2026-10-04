@@ -87,6 +87,7 @@ Future<AppBootstrap> _initializeApp() async {
     // Built once for the whole run and never disposed, like the other wrappers
     // here. Only a rebuilt bootstrap would need to call its dispose().
     appLifecycleWrapper: AppLifecycleWrapperImpl(),
+    appVersion: packageInfo.version,
   );
 }
 

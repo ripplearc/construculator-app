@@ -8,6 +8,7 @@ import 'package:construculator/libraries/consent/domain/usecases/record_consent_
 import 'package:construculator/libraries/consent/domain/usecases/verify_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/watch_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/withdraw_consent_usecase.dart';
+import 'package:construculator/libraries/consent/interfaces/consent_audit_metadata.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,15 +16,15 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 
 class _FakeRouteManager extends Fake implements RouteManager {}
 
-// Mirrors the ten binds registered across this module and ConsentModule
+// Mirrors the eleven binds registered across this module and ConsentModule
 // (which imports it) inside a single Modular tree -- not a bare Injector(),
-// because two of the four dependencies in ConsentRepositoryImpl's factory
+// because two of the five dependencies in ConsentRepositoryImpl's factory
 // resolve through Modular.get<SupabaseWrapper>()/<Clock>() rather than i(),
 // which requires an initialized Modular tree to answer at all.
 class _ConsentModuleTestHarness extends Module {
   @override
   List<Module> get imports => [
-    ConsentLibraryModule(FakeAppBootstrapFactory.create()),
+    ConsentLibraryModule(FakeAppBootstrapFactory.create(appVersion: '9.8.7')),
   ];
 
   @override
@@ -57,6 +58,10 @@ void main() {
       expect(Modular.get<WithdrawConsentUseCase>(), isNotNull);
 
       repository.dispose();
+    });
+
+    test('stamps consent records with the bootstrap app version', () {
+      expect(Modular.get<ConsentAuditMetadata>().appVersion, '9.8.7');
     });
 
     test('the repository bind is a singleton', () {

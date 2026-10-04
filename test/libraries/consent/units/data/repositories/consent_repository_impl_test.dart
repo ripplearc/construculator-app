@@ -7,6 +7,7 @@ import 'package:construculator/libraries/consent/data/repositories/consent_repos
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_audit_metadata.dart';
 import 'package:construculator/libraries/consent/testing/fake_local_consent_data_source.dart';
 import 'package:construculator/libraries/consent/testing/fake_remote_consent_data_source.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -53,6 +54,10 @@ void main() {
       remoteDataSource: remote,
       supabaseWrapper: supabase,
       clock: clock,
+      auditMetadata: FakeConsentAuditMetadata(
+        appVersion: '2.3.1',
+        platform: 'android',
+      ),
     );
   });
 
@@ -302,6 +307,8 @@ void main() {
         local.insertedRecords.single.recordedAt,
         DateTime.utc(2026, 8, 13, 9, 30),
       );
+      expect(local.insertedRecords.single.appVersion, '2.3.1');
+      expect(local.insertedRecords.single.platform, 'android');
     });
 
     test('surfaces a write failure rather than swallowing it', () async {
@@ -365,6 +372,8 @@ void main() {
         3,
         reason: 'the audit row must name what was revoked',
       );
+      expect(local.insertedRecords.single.appVersion, '2.3.1');
+      expect(local.insertedRecords.single.platform, 'android');
     });
 
     test('leaves the user gated afterwards', () async {
