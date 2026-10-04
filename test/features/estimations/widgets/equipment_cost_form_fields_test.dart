@@ -81,16 +81,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // The outsized-fee check no longer runs on delivery-field focus loss (see
-  // EquipmentCostFormFieldsState.maybeConfirmOutsizedFee's doc comment) —
-  // it's meant to run from "Add to estimate", which is still a no-op stub
-  // outside this widget (CA-355). Standing in for that future call, this
-  // reaches the same public method directly via the widget's State.
+  // Stands in for tapping "Add to estimate", which is still a no-op stub
+  // outside this widget (CA-355): the bloc decides whether the submit needs
+  // the outsized-fee dialog.
   Future<void> triggerOutsizedFeeCheck(WidgetTester tester) async {
-    final state = tester.state<EquipmentCostFormFieldsState>(
-      find.byType(EquipmentCostFormFields),
-    );
-    unawaited(state.maybeConfirmOutsizedFee());
+    final nameField = find.byKey(const Key('equipment_name_field'));
+    if (tester.widget<UnderlineTextField>(nameField).controller.text.isEmpty) {
+      await tester.enterText(nameField, 'Excavator');
+      await tester.pump();
+    }
+    BlocProvider.of<EquipmentCostFormBloc>(
+      tester.element(find.byType(EquipmentCostFormFields)),
+    ).add(const EquipmentCostSubmittedEvent(estimateId: 'estimate-1'));
     await tester.pumpAndSettle();
   }
 
