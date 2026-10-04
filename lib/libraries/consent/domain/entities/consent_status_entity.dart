@@ -34,7 +34,8 @@ sealed class ConsentStatus extends Equatable {
     ConsentNeverGiven(
       :final requiredVersion,
     ) => _gatesShell(requiredVersion.consentType),
-    ConsentIndeterminate(:final consentType) => _gatesShell(consentType),
+    ConsentIndeterminate(:final consentType) ||
+    ConsentUserUnidentified(:final consentType) => _gatesShell(consentType),
   };
 
   static bool _gatesShell(ConsentType type) =>
@@ -76,23 +77,9 @@ sealed class ConsentStatus extends Equatable {
 
 /// The accepted version is at least the published version. Ungated.
 class ConsentSatisfied extends ConsentStatus {
-  /// The version the user has on file.
-  ///
-  /// May be synthetic. `ConsentRepository.noUserVersion` (`0`) is what the
-  /// repository reports when it cannot identify the user at all, which is
-  /// neither an acceptance nor an error. Callers must not read it as a version
-  /// the user actually accepted.
-  ///
-  /// `ConsentGuard` tests for that exact value and blocks, and
-  /// `ConsentGateBloc._stateFor` mirrors it — so `0` now carries a decision,
-  /// not just a caveat. Nothing else may report this state carrying `0`:
-  /// `ConsentVerificationResolver` resolves "nothing published for this type"
-  /// to [ConsentIndeterminate] or [ConsentUnverified] for that reason, and a
-  /// future path that reused `0` for a different meaning would lock those
-  /// users out at the gate's retry screen.
-  /// TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - Give the sentinel
-  /// its own sealed state so gatesAccess carries the branch and the overload
-  /// goes away.
+  /// The version the user has on file. Always a real acceptance, traced to a
+  /// published row: a session the repository cannot identify reports
+  /// [ConsentUserUnidentified] instead.
   final int acceptedVersion;
 
   const ConsentSatisfied(this.acceptedVersion);
@@ -183,6 +170,29 @@ class ConsentIndeterminate extends ConsentStatus {
   final ConsentType consentType;
 
   const ConsentIndeterminate(this.consentType);
+
+  @override
+  List<Object?> get props => [consentType];
+}
+
+/// The session is signed in but the repository cannot tell whose it is.
+/// **Gated**, with a retry screen.
+///
+/// `AuthGuard` passing does not rule this out: it tests the auth session,
+/// while the internal user id comes from a separate JWT claim. A stale token
+/// or a refresh race leaves a signed-in session without that claim, and it is
+/// most likely for a brand-new signup, whose token is minted before the
+/// profile exists.
+///
+/// Its own state rather than [ConsentSatisfied] carrying a synthetic version,
+/// so every exhaustive switch has to decide what it means. Read as an
+/// acceptance it would silently un-gate a user whose consent was never
+/// evaluated.
+class ConsentUserUnidentified extends ConsentStatus {
+  /// Which document was being checked when the user could not be identified.
+  final ConsentType consentType;
+
+  const ConsentUserUnidentified(this.consentType);
 
   @override
   List<Object?> get props => [consentType];

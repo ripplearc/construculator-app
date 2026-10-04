@@ -155,12 +155,12 @@ void main() {
       },
     );
 
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final result = await repository.getCachedConsentStatus(type);
 
-      expect(result, const ConsentSatisfied(0));
+      expect(result, const ConsentUserUnidentified(type));
     });
   });
 
@@ -260,12 +260,12 @@ void main() {
       },
     );
 
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final result = await repository.verifyPublishedVersion(type);
 
-      expect(result, const ConsentSatisfied(0));
+      expect(result, const ConsentUserUnidentified(type));
       expect(remote.callCount, 0);
     });
 
@@ -406,12 +406,12 @@ void main() {
   });
 
   group('watchConsentStatus', () {
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final statuses = repository.watchConsentStatus(type);
 
-      await expectLater(statuses, emits(const ConsentSatisfied(0)));
+      await expectLater(statuses, emits(const ConsentUserUnidentified(type)));
     });
 
     test('emits a new status when the consent record changes', () async {

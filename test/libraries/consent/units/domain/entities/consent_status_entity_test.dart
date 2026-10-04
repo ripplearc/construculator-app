@@ -47,6 +47,15 @@ void main() {
       );
     });
 
+    test('blocks a session whose user cannot be identified', () {
+      // Not an acceptance: letting it through would un-gate a user whose
+      // consent was never evaluated.
+      expect(
+        gates(const ConsentUserUnidentified(ConsentType.termsAndPrivacy)),
+        isTrue,
+      );
+    });
+
     group('for analytics', () {
       // Analytics gates capture only: blocking a calculator over an analytics
       // opt-in would be disproportionate, whatever the status.
@@ -72,6 +81,13 @@ void main() {
 
       test('lets a missing acceptance through', () {
         expect(gates(ConsentNeverGiven(analyticsVersion)), isFalse);
+      });
+
+      test('lets an unidentified user through', () {
+        expect(
+          gates(const ConsentUserUnidentified(ConsentType.analytics)),
+          isFalse,
+        );
       });
 
       test('lets an unresolved requirement through', () {

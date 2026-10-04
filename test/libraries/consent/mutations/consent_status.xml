@@ -70,9 +70,14 @@
             <mutation text="_gatesShell(ConsentType.termsAndPrivacy)"/>
         </regex>
 
-        <!-- RULE 12: Indeterminate gates whatever its type -->
-        <regex pattern="ConsentIndeterminate\(:final consentType\) =&gt; _gatesShell\(consentType\)" dotAll="true" id="status.gates.indeterminate_always_gates">
-            <mutation text="ConsentIndeterminate(:final consentType) =&gt; true"/>
+        <!-- RULE 12: Indeterminate and UserUnidentified gate whatever their type -->
+        <regex pattern="ConsentUserUnidentified\(:final consentType\) =&gt; _gatesShell\(consentType\)" dotAll="true" id="status.gates.type_carrying_always_gate">
+            <mutation text="ConsentUserUnidentified(:final consentType) =&gt; true"/>
+        </regex>
+
+        <!-- RULE 14: An unidentified user is read as consent given -->
+        <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.unidentified_ungated">
+            <mutation text="ConsentSatisfied() || ConsentUnverified() || ConsentUserUnidentified() =&gt; false"/>
         </regex>
 
         <!-- RULE 13: The ungated states gate -->
