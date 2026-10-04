@@ -718,6 +718,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       hintText: l10n.equipmentDurationPlaceholder,
       controller: _durationController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      hideSuffixWhenEmpty: true,
       suffix: Text(
         l10n.equipmentDurationSuffix,
         style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
