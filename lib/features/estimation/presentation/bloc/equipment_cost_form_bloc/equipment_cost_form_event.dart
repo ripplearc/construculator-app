@@ -68,6 +68,7 @@ class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
   const EquipmentSavedRateRecalledEvent({
     required this.method,
     required this.rate,
+    this.fromRecents = false,
   });
 
   /// Which pricing method the recalled entry was saved under. The rate lands
@@ -76,6 +77,10 @@ class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
 
   /// The recalled rate amount.
   final double rate;
+
+  /// Whether the rate came from a Your recents row, which opens the compact
+  /// saved-rate screen. A pick from the look-up sheet keeps the full form.
+  final bool fromRecents;
 }
 
 /// Fired when the user submits the equipment cost form.

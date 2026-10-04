@@ -167,10 +167,20 @@ void main() {
       );
     });
 
+    YourRateEntry savedRate(EquipmentPricingMethod method, double amount) =>
+        YourRateEntry(
+          id: 'rate-1',
+          companyId: 'company-1',
+          itemName: 'Scissor lift — 19ft',
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: method,
+        );
+
     Future<void> openEquipmentSheet(
       WidgetTester tester, {
-      EquipmentPricingMethod? recalledMethod,
-      double? recalledRate,
+      YourRateEntry? savedRate,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
@@ -199,6 +209,7 @@ void main() {
                             Modular.get<YourRatesBloc>(),
                         clock: FakeClockImpl(),
                         presentAsSheet: true,
+                        initialRateEntry: savedRate,
                       ),
                     ),
                   ),
@@ -211,20 +222,7 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('open_sheet')));
       await tester.pumpAndSettle();
-      if (recalledMethod != null && recalledRate != null) {
-        BlocProvider.of<EquipmentCostFormBloc>(
-              tester.element(find.byType(CostItemFormScreen)),
-              listen: false,
-            )
-            .add(
-              EquipmentSavedRateRecalledEvent(
-                equipmentType: 'Scissor lift — 19ft',
-                method: recalledMethod,
-                rate: recalledRate,
-              ),
-            );
-        await tester.pumpAndSettle();
-      }
+      if (savedRate != null) await tester.pumpAndSettle();
     }
 
     Future<void> expectSheetGolden(WidgetTester tester, String name) =>
@@ -248,11 +246,21 @@ void main() {
     ) async {
       await openEquipmentSheet(
         tester,
-        recalledMethod: EquipmentPricingMethod.day,
-        recalledRate: 120,
+        savedRate: savedRate(EquipmentPricingMethod.day, 120),
       );
 
       await expectSheetGolden(tester, 'equipment_sheet_saved_day_rate');
+    });
+
+    testWidgets('renders the saved job price in the sheet header', (
+      tester,
+    ) async {
+      await openEquipmentSheet(
+        tester,
+        savedRate: savedRate(EquipmentPricingMethod.job, 400),
+      );
+
+      await expectSheetGolden(tester, 'equipment_sheet_saved_job_price');
     });
   });
 }

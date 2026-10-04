@@ -55,6 +55,7 @@ class EquipmentCostFormData extends Equatable {
     this.deliveryFee,
     this.rateStatus = RateStatus.missing,
     this.otherMethodRateStatus = RateStatus.missing,
+    this.recalledFromRecents = false,
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -76,6 +77,11 @@ class EquipmentCostFormData extends Equatable {
   /// Rate status of the pricing method that is not selected, so switching
   /// back to it restores the status it had.
   final RateStatus otherMethodRateStatus;
+  /// Whether the rate was recalled from a Your recents row. It stays true
+  /// while the user edits the recalled line, so the compact saved-rate
+  /// screen is chosen from this flag and not from [rateStatus], which an
+  /// edit changes.
+  final bool recalledFromRecents;
 
   /// Freeform description/note for this item.
   final String? description;
@@ -109,6 +115,7 @@ class EquipmentCostFormData extends Equatable {
     Object? deliveryFee = _unset,
     RateStatus? rateStatus,
     RateStatus? otherMethodRateStatus,
+    bool? recalledFromRecents,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -125,6 +132,7 @@ class EquipmentCostFormData extends Equatable {
       rateStatus: rateStatus ?? this.rateStatus,
       otherMethodRateStatus:
           otherMethodRateStatus ?? this.otherMethodRateStatus,
+      recalledFromRecents: recalledFromRecents ?? this.recalledFromRecents,
       description: description == _unset
           ? this.description
           : description as String?,
@@ -143,6 +151,7 @@ class EquipmentCostFormData extends Equatable {
     deliveryFee,
     rateStatus,
     otherMethodRateStatus,
+    recalledFromRecents,
     description,
     isValid,
     fieldErrors,

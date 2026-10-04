@@ -51,6 +51,11 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// header.
   final bool showRecalledRateHeader;
 
+  /// A rate already picked on the Your recents screen before this form
+  /// opened. The form recalls it on the first frame and shows the compact
+  /// saved-rate screen.
+  final YourRateEntry? initialRateEntry;
+
   /// The estimate this item is being added to. Forwarded to
   /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
   /// delivery fee. May be null wherever the caller doesn't have one yet.
@@ -76,6 +81,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.onTotalChanged,
     this.onSaveEnabledChanged,
     this.showRecalledRateHeader = true,
+    this.initialRateEntry,
     this.estimateId,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -117,6 +123,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
+    final initialEntry = widget.initialRateEntry;
+    if (initialEntry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _applySavedRate(initialEntry, fromRecents: true);
+      });
+    }
   }
 
   @override
@@ -631,8 +643,16 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       method: method,
       blocFactory: widget.yourRatesBlocFactory,
     );
-    if (entry == null || !mounted || !context.mounted) return;
-    if (_equipmentNameController.text.trim().isEmpty) {
+    if (entry == null || !mounted) return;
+    _applySavedRate(entry, fromRecents: false);
+  }
+
+  void _applySavedRate(YourRateEntry entry, {required bool fromRecents}) {
+    final method = entry.equipmentMethod ?? _methodOfForm();
+    if (fromRecents) {
+      _selectMethod(method);
+      _equipmentNameController.text = entry.itemName;
+    } else if (_equipmentNameController.text.trim().isEmpty) {
       _equipmentNameController.text = entry.itemName;
     }
     (method == EquipmentPricingMethod.day
@@ -642,9 +662,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       entry.rate.amount,
     );
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentSavedRateRecalledEvent(method: method, rate: entry.rate.amount),
+      EquipmentSavedRateRecalledEvent(
+        method: method,
+        rate: entry.rate.amount,
+        fromRecents: fromRecents,
+      ),
     );
   }
+
+  EquipmentPricingMethod _methodOfForm() =>
+      _daySelected.value
+          ? EquipmentPricingMethod.day
+          : EquipmentPricingMethod.job;
 
   @override
   Widget build(BuildContext context) {
@@ -727,6 +756,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  // TODO: [CA-1219] show "Used on this line only. Your default stays ..." and the "Save ... as my default" button once the amount differs from the saved price. https://ripplearc.youtrack.cloud/issue/CA-1219
   // Shared between the full form's Amount field and C2's recalled-job-price
   // confirmation (node 66337:159434) — same controller, same validation.
   // [showRateChrome] is false for C2, which per Figma shows none of the
@@ -829,7 +859,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             // rate-status badge, "Save as my default" link, or
             // look-up-a-rate button on this screen (see
             // _recalledRateHeader/_amountField's own doc comments).
-            if (data.rateStatus == RateStatus.ownRateConfirmed) {
+            if (data.recalledFromRecents) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

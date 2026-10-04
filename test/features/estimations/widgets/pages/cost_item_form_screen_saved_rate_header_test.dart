@@ -36,7 +36,18 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Future<void> pumpSheet(WidgetTester tester) async {
+  YourRateEntry savedRate(EquipmentPricingMethod method, double amount) =>
+      YourRateEntry(
+        id: 'rate-1',
+        companyId: 'company-1',
+        itemName: 'Scissor lift — 19ft',
+        category: CostItemType.equipment,
+        rate: Money(amount: amount),
+        savedAt: DateTime(2026, 1, 1),
+        equipmentMethod: method,
+      );
+
+  Future<void> pumpSheet(WidgetTester tester, {YourRateEntry? entry}) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),
@@ -53,25 +64,13 @@ void main() {
               yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
               clock: FakeClockImpl(),
               presentAsSheet: true,
+              initialRateEntry: entry,
             ),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
-  }
-
-  void recall(WidgetTester tester, EquipmentPricingMethod method, double rate) {
-    BlocProvider.of<EquipmentCostFormBloc>(
-      tester.element(find.byType(CostItemFormScreen)),
-      listen: false,
-    ).add(
-      EquipmentSavedRateRecalledEvent(
-        equipmentType: 'Scissor lift — 19ft',
-        method: method,
-        rate: rate,
-      ),
-    );
   }
 
   group('CostItemFormScreen – saved rate in the sheet header', () {
@@ -87,10 +86,10 @@ void main() {
     testWidgets('a saved day rate moves the name and price into the header', (
       tester,
     ) async {
-      await pumpSheet(tester);
-
-      recall(tester, EquipmentPricingMethod.day, 120);
-      await tester.pumpAndSettle();
+      await pumpSheet(
+        tester,
+        entry: savedRate(EquipmentPricingMethod.day, 120),
+      );
 
       expect(find.text('Scissor lift — 19ft'), findsOneWidget);
       expect(find.text(r'$120.00 /day · your default'), findsOneWidget);
@@ -103,10 +102,10 @@ void main() {
     testWidgets('a saved job price moves the name and price into the header', (
       tester,
     ) async {
-      await pumpSheet(tester);
-
-      recall(tester, EquipmentPricingMethod.job, 400);
-      await tester.pumpAndSettle();
+      await pumpSheet(
+        tester,
+        entry: savedRate(EquipmentPricingMethod.job, 400),
+      );
 
       expect(find.text('Scissor lift — 19ft'), findsOneWidget);
       expect(find.text(r'$400.00 job · your default'), findsOneWidget);

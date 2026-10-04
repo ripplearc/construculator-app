@@ -34,7 +34,11 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeWidget(ThemeData theme, {bool fromCostFile = false}) {
+  Widget makeWidget(
+    ThemeData theme, {
+    bool fromCostFile = false,
+    YourRateEntry? initialRateEntry,
+  }) {
     return MaterialApp(
       theme: theme,
       locale: const Locale('en'),
@@ -47,6 +51,7 @@ void main() {
             fromCostFile: fromCostFile,
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
             clock: FakeClockImpl(),
+            initialRateEntry: initialRateEntry,
           ),
         ),
       ),
@@ -84,9 +89,7 @@ void main() {
       'both themes',
       (tester) async {
         await setupA11yTest(tester);
-        final repository = Modular.get<YourRatesRepository>();
-        await repository.save(
-          YourRateEntry(
+        final backhoe = YourRateEntry(
             id: '',
             companyId: 'company-1',
             itemName: 'Backhoe',
@@ -94,29 +97,14 @@ void main() {
             rate: const Money(amount: 145),
             savedAt: DateTime(2026, 1, 1),
             equipmentMethod: EquipmentPricingMethod.day,
-          ),
-        );
+          );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
-          makeWidget,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
           find.byKey(const Key('recalled_rate_subtitle')),
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
-          setupAfterPump: (tester) async {
-            // EquipmentCostFormBloc is a shared DI singleton, so its state
-            // (from the light-theme pass) already carries into the
-            // dark-theme pass here — the lookup button is only present
-            // before a rate is recalled.
-            final lookupButton = find.byKey(const Key('lookup_rate_button'));
-            if (lookupButton.evaluate().isEmpty) return;
-            await tester.tap(lookupButton);
-            await tester.pumpAndSettle();
-            await tester.tap(find.text('Backhoe'));
-            await tester.pumpAndSettle();
-            await tester.tap(find.byKey(const Key('your_rates_use_button')));
-            await tester.pumpAndSettle();
-          },
         );
 
         expect(find.byKey(const Key('rate_field')), findsNothing);
@@ -128,9 +116,7 @@ void main() {
       'guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
-        final repository = Modular.get<YourRatesRepository>();
-        await repository.save(
-          YourRateEntry(
+        final backhoe = YourRateEntry(
             id: '',
             companyId: 'company-1',
             itemName: 'Backhoe',
@@ -138,25 +124,14 @@ void main() {
             rate: const Money(amount: 145),
             savedAt: DateTime(2026, 1, 1),
             equipmentMethod: EquipmentPricingMethod.day,
-          ),
-        );
+          );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
-          makeWidget,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
           find.byKey(const Key('duration_field')),
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
-          setupAfterPump: (tester) async {
-            final lookupButton = find.byKey(const Key('lookup_rate_button'));
-            if (lookupButton.evaluate().isEmpty) return;
-            await tester.tap(lookupButton);
-            await tester.pumpAndSettle();
-            await tester.tap(find.text('Backhoe'));
-            await tester.pumpAndSettle();
-            await tester.tap(find.byKey(const Key('your_rates_use_button')));
-            await tester.pumpAndSettle();
-          },
         );
       },
     );

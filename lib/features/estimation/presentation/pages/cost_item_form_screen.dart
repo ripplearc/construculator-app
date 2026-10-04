@@ -34,6 +34,11 @@ class CostItemFormScreen extends StatefulWidget {
   /// [Scaffold] presentation (this defaults to false).
   final bool presentAsSheet;
 
+  /// A rate already picked on the Equipment "Your recents" screen before
+  /// this form opened. Forwarded to [EquipmentCostFormFields]. Ignored for
+  /// [CostItemType.material] and [CostItemType.labor].
+  final YourRateEntry? initialRateEntry;
+
   /// Backs the equipment form's "Save as my rate" timestamp. Same
   /// not-a-module-file reasoning as [yourRatesBlocFactory].
   final Clock clock;
@@ -45,6 +50,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.router,
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
+    this.initialRateEntry,
     required this.clock,
   });
 
@@ -144,7 +150,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     return BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
       builder: (context, state) {
         final data = state.formData;
-        if (data.rateStatus != RateStatus.ownRateConfirmed) {
+        if (!data.recalledFromRecents) {
           return SheetHeader(title: title);
         }
         final l10n = context.l10n;
@@ -233,6 +239,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         yourRatesBlocFactory: widget.yourRatesBlocFactory,
         clock: widget.clock,
         showRecalledRateHeader: !widget.presentAsSheet,
+        initialRateEntry: widget.initialRateEntry,
       ),
     };
   }

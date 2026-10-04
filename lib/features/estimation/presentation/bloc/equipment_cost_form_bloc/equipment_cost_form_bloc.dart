@@ -64,6 +64,7 @@ class EquipmentCostFormBloc
           otherMethodRateStatus: e.method == d.method
               ? d.otherMethodRateStatus
               : d.rateStatus,
+          recalledFromRecents: e.fromRecents,
         );
         return e.method == EquipmentPricingMethod.day
             ? recalled.copyWith(dailyRate: e.rate)
