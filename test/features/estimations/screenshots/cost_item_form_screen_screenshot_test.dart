@@ -192,6 +192,8 @@ void main() {
                         type: CostItemType.equipment,
                         estimationId: 'test-estimation-id',
                         router: FakeAppRouter(),
+                        yourRatesBlocFactory: () =>
+                            Modular.get<YourRatesBloc>(),
                         presentAsSheet: true,
                       ),
                     ),
