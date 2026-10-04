@@ -758,6 +758,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // rate is recalled from Your Rates — Figma's B2/C2 confirmation header
   // (nodes 66337:158600/66337:159434), not the screen's own CoreAppBar
   // title, which stays the fixed "Add equipment costs" string.
+  // TODO: [CA-1218] use the "How many days?" label, show the Job amount as $400.00, and add the divider below this header. https://ripplearc.youtrack.cloud/issue/CA-1218
+  // TODO: [CA-1216] move this header into the sheet header next to a back arrow. https://ripplearc.youtrack.cloud/issue/CA-1216
   List<Widget> _recalledRateHeader(
     BuildContext context,
     EquipmentCostFormWithData data,
