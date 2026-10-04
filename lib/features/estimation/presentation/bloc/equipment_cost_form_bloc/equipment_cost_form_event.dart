@@ -65,3 +65,9 @@ class EquipmentOutsizedFeeAcceptedEvent extends EquipmentCostFormEvent {
   /// The estimate this cost item is being added to.
   final String estimateId;
 }
+
+/// Fired when the user chooses "Go back" on the outsized-fee dialog, returning
+/// from [EquipmentCostFormOutsizedFeeConfirm] to editing.
+class EquipmentOutsizedFeeDeclinedEvent extends EquipmentCostFormEvent {
+  const EquipmentOutsizedFeeDeclinedEvent();
+}
