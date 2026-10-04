@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/consent/data/consent_recorder.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_audit_metadata.dart';
 import 'package:construculator/libraries/consent/testing/fake_local_consent_data_source.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -16,7 +17,11 @@ void main() {
     setUp(() {
       dataSource = FakeLocalConsentDataSource();
       clock = FakeClockImpl(DateTime.utc(2026, 8, 18, 12));
-      recorder = ConsentRecorder(dataSource, clock);
+      recorder = ConsentRecorder(
+        dataSource,
+        clock,
+        FakeConsentAuditMetadata(appVersion: '2.3.1', platform: 'android'),
+      );
     });
 
     test('fails without writing when there is no signed-in user', () async {
@@ -34,7 +39,7 @@ void main() {
       expect(dataSource.insertedRecords, isEmpty);
     });
 
-    test('records an acceptance stamped with the current time', () async {
+    test('records an acceptance stamped with the time and build', () async {
       final result = await recorder.record(
         userId: 'user-1',
         consentType: ConsentType.termsAndPrivacy,
@@ -50,6 +55,8 @@ void main() {
       expect(written.version, 4);
       expect(written.action, ConsentAction.accepted);
       expect(written.recordedAt, clock.now());
+      expect(written.appVersion, '2.3.1');
+      expect(written.platform, 'android');
 
       expect(result.isRight(), isTrue);
       final stored = result.getRightOrNull();
@@ -76,7 +83,10 @@ void main() {
         action: ConsentAction.withdrawn,
       );
 
-      expect(dataSource.insertedRecords.single.action, ConsentAction.withdrawn);
+      final written = dataSource.insertedRecords.single;
+      expect(written.action, ConsentAction.withdrawn);
+      expect(written.appVersion, '2.3.1');
+      expect(written.platform, 'android');
     });
 
     test('maps a permission-denied write failure', () async {

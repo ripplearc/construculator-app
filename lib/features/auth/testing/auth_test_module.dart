@@ -54,6 +54,7 @@ class AuthTestModule extends Module {
     featureFlagRepository: FakeFeatureFlagRepository(),
     currentScreenTracker: CurrentScreenTracker(),
     appLifecycleWrapper: FakeAppLifecycleWrapper(),
+    appVersion: '1.0.0',
   );
 
   @override
@@ -79,6 +80,7 @@ class AuthTestModule extends Module {
         featureFlagRepository: appBootstrap.featureFlagRepository,
         currentScreenTracker: appBootstrap.currentScreenTracker,
         appLifecycleWrapper: appBootstrap.appLifecycleWrapper,
+        appVersion: appBootstrap.appVersion,
       ),
     ),
     RouterTestModule(),

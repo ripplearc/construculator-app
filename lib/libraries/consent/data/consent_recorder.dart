@@ -5,6 +5,7 @@ import 'package:construculator/libraries/consent/data/models/user_consent_dto.da
 import 'package:construculator/libraries/consent/domain/entities/user_consent_entity.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/interfaces/consent_audit_metadata.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -23,10 +24,15 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 class ConsentRecorder {
   final LocalConsentDataSource _localDataSource;
   final Clock _clock;
+  final ConsentAuditMetadata _auditMetadata;
 
   static final _logger = AppLogger().tag('ConsentRecorder');
 
-  const ConsentRecorder(this._localDataSource, this._clock);
+  const ConsentRecorder(
+    this._localDataSource,
+    this._clock,
+    this._auditMetadata,
+  );
 
   /// Appends a [action] record for [userId] on [consentType] at [version].
   ///
@@ -47,9 +53,6 @@ class ConsentRecorder {
     }
 
     try {
-      // TODO: [CA-1026] appVersion and platform are left null — the columns
-      // and the DTO fields exist, but ConsentRepository does not expose them,
-      // so there is no path for a caller to supply them yet.
       final stored = await _localDataSource.insertUserConsent(
         UserConsentDto.draft(
           userId: userId,
@@ -57,6 +60,8 @@ class ConsentRecorder {
           version: version,
           action: action,
           recordedAt: _clock.now(),
+          appVersion: _auditMetadata.appVersion,
+          platform: _auditMetadata.platform,
         ),
       );
       return Right(stored.toDomain());
