@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -221,6 +222,7 @@ void main() {
         fakeRouter.navigationHistory,
         contains(RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null)),
       );
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets('displays preview button in bottom bar', (
@@ -322,6 +324,7 @@ void main() {
         fakeRouter.navigationHistory,
         contains(RouteCall('$fullAddLabourCostRoute/$testEstimationId', null)),
       );
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets(
@@ -354,5 +357,27 @@ void main() {
         );
       },
     );
+
+    testWidgets('tapping the back arrow on the equipment sheet closes it', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CostItemFormScreen), findsOneWidget);
+
+      await tester.tap(find.byKey(SheetHeader.backButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
   });
 }
