@@ -292,6 +292,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  hideSuffixWhenEmpty: true,
                   suffix: Text(
                     l10n.equipmentDurationSuffix,
                     style: textTheme.bodyMediumRegular.copyWith(

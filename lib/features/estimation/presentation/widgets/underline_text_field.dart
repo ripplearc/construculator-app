@@ -30,6 +30,10 @@ class UnderlineTextField extends StatefulWidget {
   /// text or the "$" icon) — stays inline in the row, not inside a box.
   final Widget? suffix;
 
+  /// Hides [suffix] while the field is empty, so a unit word such as "days"
+  /// does not repeat the placeholder text.
+  final bool hideSuffixWhenEmpty;
+
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
   final List<String>? errorTextList;
@@ -41,6 +45,7 @@ class UnderlineTextField extends StatefulWidget {
     this.hintText,
     this.keyboardType,
     this.suffix,
+    this.hideSuffixWhenEmpty = false,
     this.errorTextList,
   });
 
@@ -142,40 +147,45 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
           Text(
             widget.label,
             style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textBody,
+              color: hasError ? colorTheme.statusError : colorTheme.textBody,
             ),
           ),
           const SizedBox(height: CoreSpacing.space1),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // With a suffix (e.g. "days", "$"), the value field must size
-              // to its own content so the suffix sits right beside the typed
-              // number, matching Figma — an Expanded field would claim the
-              // whole row before the suffix lays out, stranding it at the
-              // row's trailing edge, far from the value. IntrinsicWidth (with
-              // a floor so the tap target stays reasonable when empty) gives
-              // that content-sized behavior; a field with no suffix keeps
-              // Expanded so it still fills the row for normal typing. The
-              // hint is dropped once text is typed, because an
-              // InputDecoration always sizes to its hint, which would keep
-              // the suffix at the hint's width. Flexible lets a very long
-              // value shrink and scroll instead of pushing the suffix out
-              // of the row.
-              if (suffix != null)
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 24),
-                    child: IntrinsicWidth(child: textField),
-                  ),
-                )
-              else
-                Expanded(child: textField),
-              if (suffix != null) ...[
-                const SizedBox(width: CoreSpacing.space2),
-                suffix,
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _focusNode.requestFocus,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // With a suffix (e.g. "days", "$"), the value field must size
+                // to its own content so the suffix sits right beside the typed
+                // number, matching Figma — an Expanded field would claim the
+                // whole row before the suffix lays out, stranding it at the
+                // row's trailing edge, far from the value. IntrinsicWidth (with
+                // a floor so the tap target stays reasonable when empty) gives
+                // that content-sized behavior; a field with no suffix keeps
+                // Expanded so it still fills the row for normal typing. The
+                // hint is dropped once text is typed, because an
+                // InputDecoration always sizes to its hint, which would keep
+                // the suffix at the hint's width. Flexible lets a very long
+                // value shrink and scroll instead of pushing the suffix out
+                // of the row.
+                if (suffix != null)
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 24),
+                      child: IntrinsicWidth(child: textField),
+                    ),
+                  )
+                else
+                  Expanded(child: textField),
+                if (suffix != null &&
+                    !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  suffix,
+                ],
               ],
-            ],
+            ),
           ),
           const SizedBox(height: CoreSpacing.space1),
           AnimatedContainer(

@@ -162,14 +162,51 @@ void main() {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
-      final empty = tester.getTopLeft(find.text('days')).dx;
       final one = await daysLeftAfterTyping(tester, '4');
       final many = await daysLeftAfterTyping(tester, '4444444');
       final backToOne = await daysLeftAfterTyping(tester, '4');
 
-      expect(one, lessThan(empty));
       expect(many, greaterThan(one));
       expect(backToOne, one);
+    });
+
+    testWidgets('days is hidden while the duration field is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('days'), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pumpAndSettle();
+      expect(find.text('days'), findsOneWidget);
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '');
+      await tester.pumpAndSettle();
+      expect(find.text('days'), findsNothing);
+    });
+
+    testWidgets('tapping the empty duration row still focuses the field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      final field = tester.getRect(find.byKey(const Key('duration_field')));
+      await tester.tapAt(Offset(field.right - 8, field.center.dy - 2));
+      await tester.pumpAndSettle();
+
+      final focused = tester
+          .widget<EditableText>(
+            find.descendant(
+              of: find.byKey(const Key('duration_field')),
+              matching: find.byType(EditableText),
+            ),
+          )
+          .focusNode
+          .hasFocus;
+      expect(focused, isTrue);
     });
 
     testWidgets('a very long duration keeps days inside the row without '
@@ -450,6 +487,33 @@ void main() {
         );
       },
     );
+
+    testWidgets('turns the Duration label red when the duration has an error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      final colors = AppColorsExtension.of(
+        tester.element(find.byKey(const Key('duration_field'))),
+      );
+      Color? labelColor() => tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const Key('duration_field')),
+              matching: find.text(l10n.equipmentDurationLabel),
+            ),
+          )
+          .style
+          ?.color;
+
+      expect(labelColor(), colors.textBody);
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '0');
+      await tester.pump();
+      await unfocusAll(tester);
+
+      expect(labelColor(), colors.statusError);
+    });
 
     testWidgets(
       'shows the half-day-step error once the field loses focus with a '
