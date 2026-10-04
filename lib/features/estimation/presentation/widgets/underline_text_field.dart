@@ -40,6 +40,10 @@ class UnderlineTextField extends StatefulWidget {
   /// text or the "$" icon) — stays inline in the row, not inside a box.
   final Widget? suffix;
 
+  /// Hides [suffix] while the field is empty, so a unit word such as "days"
+  /// does not repeat the placeholder text.
+  final bool hideSuffixWhenEmpty;
+
   /// Content shown at the end of the label row, beside [label] (e.g. the
   /// Rate field's "Sample rate"/"✓ Your rate" status badge).
   final Widget? labelTrailing;
@@ -71,6 +75,7 @@ class UnderlineTextField extends StatefulWidget {
     this.keyboardType,
     this.prefix,
     this.suffix,
+    this.hideSuffixWhenEmpty = false,
     this.labelTrailing,
     this.trailingAction,
     this.focusNode,
@@ -175,7 +180,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               Text(
                 widget.label,
                 style: textTheme.bodySmallRegular.copyWith(
-                  color: colorTheme.textBody,
+                  color: hasError
+                      ? colorTheme.statusError
+                      : colorTheme.textBody,
                 ),
               ),
               if (labelTrailing != null) ...[
@@ -185,31 +192,36 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
             ],
           ),
           const SizedBox(height: CoreSpacing.space1),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (prefix != null) ...[
-                prefix,
-                const SizedBox(width: CoreSpacing.space2),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _focusNode.requestFocus,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (prefix != null) ...[
+                  prefix,
+                  const SizedBox(width: CoreSpacing.space2),
+                ],
+                if (suffix != null)
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minWidth: 24),
+                      child: IntrinsicWidth(child: textField),
+                    ),
+                  )
+                else
+                  Expanded(child: textField),
+                if (suffix != null &&
+                    !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  suffix,
+                ],
+                if (trailingAction != null) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  trailingAction,
+                ],
               ],
-              if (suffix != null)
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minWidth: 24),
-                    child: IntrinsicWidth(child: textField),
-                  ),
-                )
-              else
-                Expanded(child: textField),
-              if (suffix != null) ...[
-                const SizedBox(width: CoreSpacing.space2),
-                suffix,
-              ],
-              if (trailingAction != null) ...[
-                const SizedBox(width: CoreSpacing.space2),
-                trailingAction,
-              ],
-            ],
+            ),
           ),
           const SizedBox(height: CoreSpacing.space1),
           AnimatedContainer(
