@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
@@ -145,93 +146,103 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final selected = _selectedEntry;
-    return Padding(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            l10n.yourRatesLookupTitle,
-            style: context.textTheme.titleMediumSemiBold.copyWith(
-              color: colorTheme.textHeadline,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SheetHeader(title: l10n.yourRatesLookupTitle),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CoreSpacing.space4,
+            0,
+            CoreSpacing.space4,
+            CoreSpacing.space4,
           ),
-          const SizedBox(height: CoreSpacing.space4),
-          _SearchField(controller: _searchController, onChanged: _onQueryChanged),
-          const SizedBox(height: CoreSpacing.space4),
-          _Disclaimer(text: l10n.yourRatesDisclaimerText),
-          const SizedBox(height: CoreSpacing.space4),
-          BlocBuilder<YourRatesBloc, YourRatesState>(
-            builder: (context, state) {
-              if (state is YourRatesLoading) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: CoreSpacing.space6),
-                  child: CoreLoadingIndicator(),
-                );
-              }
-              final entries = _entriesOf(state);
-              if (entries.isEmpty) {
-                final query = _searchController.text;
-                return Padding(
-                  key: const Key('your_rates_empty_state'),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: CoreSpacing.space6,
-                  ),
-                  child: Text(
-                    // A non-empty query with no matches is a different
-                    // situation from having no saved rates at all — the
-                    // contractor may have plenty, just none matching this
-                    // text (or matching, but saved under the other pricing
-                    // method — see the TODO on [_entriesOf]).
-                    query.isEmpty
-                        ? l10n.yourRatesEmptyState
-                        : l10n.yourRatesNoMatchState(query),
-                    style: context.textTheme.bodyMediumRegular.copyWith(
-                      color: colorTheme.textBody,
-                    ),
-                  ),
-                );
-              }
-              return ListView.separated(
-                key: const Key('your_rates_results_list'),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: entries.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: CoreSpacing.space3),
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  return _YourRateRow(
-                    key: Key('your_rate_row_${entry.id}'),
-                    entry: entry,
-                    method: widget.method,
-                    selected: entry.id == selected?.id,
-                    onTap: () => _onRowTap(entry),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SearchField(
+                controller: _searchController,
+                onChanged: _onQueryChanged,
+              ),
+              const SizedBox(height: CoreSpacing.space4),
+              _Disclaimer(text: l10n.yourRatesDisclaimerText),
+              const SizedBox(height: CoreSpacing.space4),
+              BlocBuilder<YourRatesBloc, YourRatesState>(
+                builder: (context, state) {
+                  if (state is YourRatesLoading) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: CoreSpacing.space6,
+                      ),
+                      child: CoreLoadingIndicator(),
+                    );
+                  }
+                  final entries = _entriesOf(state);
+                  if (entries.isEmpty) {
+                    final query = _searchController.text;
+                    return Padding(
+                      key: const Key('your_rates_empty_state'),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: CoreSpacing.space6,
+                      ),
+                      child: Text(
+                        // A non-empty query with no matches is a different
+                        // situation from having no saved rates at all — the
+                        // contractor may have plenty, just none matching this
+                        // text (or matching, but saved under the other pricing
+                        // method — see the TODO on [_entriesOf]).
+                        query.isEmpty
+                            ? l10n.yourRatesEmptyState
+                            : l10n.yourRatesNoMatchState(query),
+                        style: context.textTheme.bodyMediumRegular.copyWith(
+                          color: colorTheme.textBody,
+                        ),
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    key: const Key('your_rates_results_list'),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: entries.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: CoreSpacing.space3),
+                    itemBuilder: (context, index) {
+                      final entry = entries[index];
+                      return _YourRateRow(
+                        key: Key('your_rate_row_${entry.id}'),
+                        entry: entry,
+                        method: widget.method,
+                        selected: entry.id == selected?.id,
+                        onTap: () => _onRowTap(entry),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-          if (selected != null) ...[
-            const SizedBox(height: CoreSpacing.space4),
-            // Figma node 66342:169086: a 1px `#eaecf0` rule directly above
-            // the confirm button, separating it from the scrolling results
-            // above.
-            Container(height: 1, color: colorTheme.lineLight),
-            const SizedBox(height: CoreSpacing.space4),
-            CoreButton(
-              key: const Key('your_rates_use_button'),
-              label: l10n.yourRatesUseButtonLabel(
-                DisplayFormatter.currency.format(selected.rate.amount),
-                _unitSuffix(context, widget.method),
               ),
-              size: CoreButtonSize.medium,
-              onPressed: _onConfirm,
-            ),
-          ],
-        ],
-      ),
+              if (selected != null) ...[
+                const SizedBox(height: CoreSpacing.space4),
+                // Figma node 66342:169086: a 1px `#eaecf0` rule directly above
+                // the confirm button, separating it from the scrolling results
+                // above.
+                Container(height: 1, color: colorTheme.lineLight),
+                const SizedBox(height: CoreSpacing.space4),
+                CoreButton(
+                  key: const Key('your_rates_use_button'),
+                  label: l10n.yourRatesUseButtonLabel(
+                    DisplayFormatter.currency.format(selected.rate.amount),
+                    _unitSuffix(context, widget.method),
+                  ),
+                  size: CoreButtonSize.medium,
+                  onPressed: _onConfirm,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
