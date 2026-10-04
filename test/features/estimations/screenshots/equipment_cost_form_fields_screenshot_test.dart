@@ -123,9 +123,6 @@ void main() {
       await pumpWidget(tester: tester, theme: theme);
       await tester.enterText(find.byKey(const Key('duration_field')), '0');
       await tester.pumpAndSettle();
-      // The invalid-value error only renders once the field loses focus.
-      FocusManager.instance.primaryFocus?.unfocus();
-      await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
