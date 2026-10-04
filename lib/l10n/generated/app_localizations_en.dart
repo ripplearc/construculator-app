@@ -981,7 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addLabourCostsScreenTitle => 'Labour cost entry';
 
   @override
-  String get addEquipmentCostsScreenTitle => 'Equipment cost entry';
+  String get addEquipmentCostsScreenTitle => 'New equipment cost';
 
   @override
   String get howToCalculateCostLabel => 'How you want to calculate cost?';
