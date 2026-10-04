@@ -70,23 +70,22 @@ class DisplayFormatter {
     return formatter.format(time);
   }
 
-  /// Formats how long ago [savedAt] was, relative to [now], matching the
-  /// recency subtitle on the Equipment "Your recents" screen (Figma node
-  /// `66342:177929`): "today"/"yesterday" for the first two days, a day
-  /// count through the rest of the week, then whole weeks beyond that.
+  /// Counts the calendar days from [savedAt] to [now], both read in local
+  /// time, so 4 pm yesterday seen at 9 am today is 1 day, not 0. A [savedAt]
+  /// later than [now] counts as 0.
   ///
   /// [now] is caller-supplied rather than read from [DateTime.now] so this
-  /// stays a pure function of its inputs — callers should source it from a
+  /// stays a pure function of its inputs; callers should source it from a
   /// `Clock` (see `lib/libraries/time`).
-  ///
-  /// Example: 10 days before [now] -> "Used last week"
-  static String formatRecency(DateTime savedAt, {required DateTime now}) {
-    final days = now.difference(savedAt).inDays;
-    if (days <= 0) return 'Used today';
-    if (days == 1) return 'Used yesterday';
-    if (days < 7) return 'Used $days days ago';
-    final weeks = days ~/ 7;
-    return weeks == 1 ? 'Used last week' : 'Used $weeks weeks ago';
+  static int calendarDaysSince(DateTime savedAt, {required DateTime now}) {
+    final savedDay = savedAt.toLocal();
+    final today = now.toLocal();
+    final days = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).difference(DateTime(savedDay.year, savedDay.month, savedDay.day)).inDays;
+    return days < 0 ? 0 : days;
   }
 
   /// Formats a file size in bytes to a human-readable string.

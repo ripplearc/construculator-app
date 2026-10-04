@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -78,12 +79,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       children: [
         SheetHeader(title: l10n.yourRatesRecentsTitle),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CoreSpacing.space4,
-            0,
-            CoreSpacing.space4,
-            CoreSpacing.space4,
-          ),
+          padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -98,6 +94,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                       child: CoreLoadingIndicator(),
                     );
                   }
+                  // TODO: [CA-1249] show a failure state with a Retry when the load fails, instead of the empty list. https://ripplearc.youtrack.cloud/issue/CA-1249
                   final entries = switch (state) {
                     YourRatesLoaded(:final recents) => recents,
                     _ => const <YourRateEntry>[],
@@ -107,8 +104,11 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                     children: [
                       if (entries.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: CoreSpacing.space2,
+                          padding: const EdgeInsets.fromLTRB(
+                            CoreSpacing.space5,
+                            CoreSpacing.space3,
+                            CoreSpacing.space5,
+                            CoreSpacing.space1,
                           ),
                           child: Text(
                             l10n.yourRatesRecentsSectionHeading.toUpperCase(),
@@ -122,8 +122,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: entries.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: CoreSpacing.space2),
+                          separatorBuilder: (_, _) => const SizedBox.shrink(),
                           itemBuilder: (context, index) {
                             final entry = entries[index];
                             return _RecentRateRow(
@@ -136,6 +135,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         ),
                         const SizedBox(height: CoreSpacing.space2),
                       ],
+                      const CoreDivider(),
                       _NewEquipmentCostRow(onTap: _onNewEquipmentCost),
                     ],
                   );
@@ -149,16 +149,19 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
-/// The unit suffix shown after a row's rate amount; a per-entry equivalent
-/// of `your_rates_lookup_sheet.dart`'s own `_unitSuffix`, needed here
-/// because recents rows — unlike that sheet's rows — aren't all the same
-/// pricing method.
 String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     method == EquipmentPricingMethod.job
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
-// TODO: CA-1204 — replace with CoreUI's list-row component once it exists.
+String _recencyLabel(AppLocalizations l10n, int days) {
+  if (days <= 0) return l10n.yourRatesUsedToday;
+  if (days == 1) return l10n.yourRatesUsedYesterday;
+  if (days < 7) return l10n.yourRatesUsedDaysAgo(days);
+  return l10n.yourRatesUsedWeeksAgo(days ~/ 7);
+}
+
+// TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _RecentRateRow extends StatelessWidget {
   final YourRateEntry entry;
   final DateTime now;
@@ -175,7 +178,10 @@ class _RecentRateRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    final recency = DisplayFormatter.formatRecency(entry.savedAt, now: now);
+    final recency = _recencyLabel(
+      context.l10n,
+      DisplayFormatter.calendarDaysSince(entry.savedAt, now: now),
+    );
     final unitSuffix = _unitSuffixFor(context, entry.equipmentMethod);
     final priceLabel =
         '${DisplayFormatter.currency.format(entry.rate.amount)} $unitSuffix';
@@ -188,11 +194,11 @@ class _RecentRateRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space2,
+            horizontal: CoreSpacing.space7,
             vertical: CoreSpacing.space3,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -241,7 +247,7 @@ class _RecentRateRow extends StatelessWidget {
   }
 }
 
-// TODO: CA-1204 — replace with CoreUI's list-row component once it exists.
+// TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _NewEquipmentCostRow extends StatelessWidget {
   final VoidCallback onTap;
 
@@ -262,10 +268,7 @@ class _NewEquipmentCostRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
           padding: const EdgeInsets.symmetric(
             vertical: CoreSpacing.space3,
-            horizontal: CoreSpacing.space2,
-          ),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: colorTheme.lineLight)),
+            horizontal: CoreSpacing.space5,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -273,9 +276,9 @@ class _NewEquipmentCostRow extends StatelessWidget {
               CoreIconWidget(
                 icon: CoreIcons.add,
                 color: colorTheme.textLink,
-                size: CoreSpacing.space4,
+                size: CoreSpacing.space5,
               ),
-              const SizedBox(width: CoreSpacing.space2),
+              const SizedBox(width: CoreSpacing.space3),
               Text(
                 label,
                 style: context.textTheme.bodyMediumSemiBold.copyWith(

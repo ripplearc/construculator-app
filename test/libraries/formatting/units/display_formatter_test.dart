@@ -235,88 +235,51 @@ void main() {
       });
     });
 
-    group('formatRecency', () {
-      final now = DateTime(2026, 1, 15);
+    group('calendarDaysSince', () {
+      final now = DateTime(2026, 1, 15, 9);
 
-      test('returns "Used today" for the same day, including future skew', () {
+      test('is 0 on the same day and for a time later than now', () {
+        expect(DisplayFormatter.calendarDaysSince(now, now: now), 0);
         expect(
-          DisplayFormatter.formatRecency(now, now: now),
-          equals('Used today'),
-        );
-        expect(
-          DisplayFormatter.formatRecency(
-            now.add(const Duration(minutes: 1)),
+          DisplayFormatter.calendarDaysSince(
+            now.add(const Duration(days: 1)),
             now: now,
           ),
-          equals('Used today'),
+          0,
         );
       });
 
-      test('returns "Used yesterday" exactly one day back', () {
+      test('counts 4 pm yesterday seen at 9 am as 1 day, not 0', () {
         expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 1)),
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 14, 16),
             now: now,
           ),
-          equals('Used yesterday'),
+          1,
         );
       });
 
-      test('returns a day count from 2 through 6 days back', () {
+      test('counts 11 pm yesterday seen just after midnight as 1 day', () {
         expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 2)),
-            now: now,
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 14, 23),
+            now: DateTime(2026, 1, 15, 0, 5),
           ),
-          equals('Used 2 days ago'),
-        );
-        expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 6)),
-            now: now,
-          ),
-          equals('Used 6 days ago'),
+          1,
         );
       });
 
-      test('returns "Used last week" from 7 through 13 days back', () {
+      test('counts whole calendar days across a week and a month edge', () {
         expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 7)),
-            now: now,
-          ),
-          equals('Used last week'),
+          DisplayFormatter.calendarDaysSince(DateTime(2026, 1, 8, 23), now: now),
+          7,
         );
         expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 13)),
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2025, 12, 31, 10),
             now: now,
           ),
-          equals('Used last week'),
-        );
-      });
-
-      test('returns whole weeks from 14 days back onward', () {
-        expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 14)),
-            now: now,
-          ),
-          equals('Used 2 weeks ago'),
-        );
-        expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 20)),
-            now: now,
-          ),
-          equals('Used 2 weeks ago'),
-        );
-        expect(
-          DisplayFormatter.formatRecency(
-            now.subtract(const Duration(days: 21)),
-            now: now,
-          ),
-          equals('Used 3 weeks ago'),
+          15,
         );
       });
     });

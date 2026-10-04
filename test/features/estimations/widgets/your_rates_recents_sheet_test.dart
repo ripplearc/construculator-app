@@ -6,6 +6,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -32,6 +33,7 @@ void main() {
 
   setUp(() {
     result = null;
+    clock.set(DateTime(2026, 1, 15));
     fakeSupabase.addTableData('your_rates', [
       {
         'id': 'day-rate',
@@ -95,6 +97,80 @@ void main() {
     await tester.tap(find.byKey(const Key('open_sheet')));
     await tester.pumpAndSettle();
   }
+
+  group('YourRatesRecentsSheet – rows', () {
+    testWidgets('lists the same-name day and job rows newest first, each with '
+        'its own unit', (tester) async {
+      await openSheet(tester);
+
+      final dayRow = find.byKey(const Key('your_rate_row_day-rate'));
+      final jobRow = find.byKey(const Key('your_rate_row_job-rate'));
+      expect(
+        tester.getTopLeft(dayRow).dy,
+        lessThan(tester.getTopLeft(jobRow).dy),
+      );
+      expect(
+        find.descendant(of: dayRow, matching: find.textContaining('/day')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: jobRow, matching: find.textContaining('job')),
+        findsOneWidget,
+      );
+      expect(find.text('Scissor lift'), findsNWidgets(2));
+    });
+
+    testWidgets('counts calendar days: 4 pm yesterday seen at 9 am reads '
+        '"Used yesterday"', (tester) async {
+      clock.set(DateTime(2026, 1, 15, 9));
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'yesterday-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 14, 16).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_yesterday-rate')),
+          matching: find.text('Used yesterday'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows the loading indicator before the rates arrive', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<YourRatesBloc>(
+              create: (_) => Modular.get<YourRatesBloc>(),
+              child: YourRatesRecentsSheet(clock: clock),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+    });
+  });
 
   group('YourRatesRecentsSheet – result', () {
     testWidgets('tapping a row returns picked with that exact entry', (

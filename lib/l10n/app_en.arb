@@ -2613,6 +2613,32 @@
   "@yourRatesRecentsSectionHeading": {
     "description": "Section heading above the list of recently-saved equipment rates in the 'Your recents' sheet"
   },
+  "yourRatesUsedToday": "Used today",
+  "@yourRatesUsedToday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved earlier today"
+  },
+  "yourRatesUsedYesterday": "Used yesterday",
+  "@yourRatesUsedYesterday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day"
+  },
+  "yourRatesUsedDaysAgo": "{count, plural, one{Used {count} day ago} other{Used {count} days ago}}",
+  "@yourRatesUsedDaysAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesUsedWeeksAgo": "{count, plural, =1{Used last week} other{Used {count} weeks ago}}",
+  "@yourRatesUsedWeeksAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "yourRatesNewEquipmentCostAction": "New equipment cost",
   "@yourRatesNewEquipmentCostAction": {
     "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"

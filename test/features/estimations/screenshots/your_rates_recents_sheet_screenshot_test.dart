@@ -24,7 +24,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await loadAppFonts();
+    await loadAppFontsAll();
     clock = FakeClockImpl(DateTime(2026, 1, 15));
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     Modular.init(

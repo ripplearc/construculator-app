@@ -3112,6 +3112,30 @@ abstract class AppLocalizations {
   /// **'Recent — tap to reuse'**
   String get yourRatesRecentsSectionHeading;
 
+  /// Recency subtitle on a 'Your recents' row for a rate saved earlier today
+  ///
+  /// In en, this message translates to:
+  /// **'Used today'**
+  String get yourRatesUsedToday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'Used yesterday'**
+  String get yourRatesUsedYesterday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Used {count} day ago} other{Used {count} days ago}}'**
+  String yourRatesUsedDaysAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Used last week} other{Used {count} weeks ago}}'**
+  String yourRatesUsedWeeksAgo(int count);
+
   /// Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate
   ///
   /// In en, this message translates to:
