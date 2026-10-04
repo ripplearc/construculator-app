@@ -1947,6 +1947,33 @@ void main() {
       expect(find.text('145'), findsOneWidget);
     });
 
+    testWidgets('picking a Your-rates entry keeps the name already typed', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Mini excavator — 1.5 ton',
+        amount: 145,
+        method: EquipmentPricingMethod.day,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'mini excavator 1.5t',
+      );
+
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mini excavator — 1.5 ton'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('mini excavator 1.5t'), findsOneWidget);
+      expect(find.text('Mini excavator — 1.5 ton'), findsNothing);
+      expect(find.text('145'), findsOneWidget);
+    });
+
     testWidgets(
       'picking a fractional-amount entry keeps the decimal, unlike a whole number',
       (tester) async {

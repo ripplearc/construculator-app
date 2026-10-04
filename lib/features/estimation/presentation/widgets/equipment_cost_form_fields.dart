@@ -656,7 +656,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     // actually settles on: equipmentType/method/rate set again, this time
     // with RateStatus.ownRateConfirmed — CUJ 6 Sub-flows B/C's "already
     // verified, no verification step" rate.
-    _equipmentNameController.text = entry.itemName;
+    if (_equipmentNameController.text.trim().isEmpty) {
+      _equipmentNameController.text = entry.itemName;
+    }
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
@@ -665,7 +667,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
     context.read<EquipmentCostFormBloc>().add(
       EquipmentSavedRateRecalledEvent(
-        equipmentType: entry.itemName,
         method: method,
         rate: entry.rate.amount,
       ),

@@ -66,13 +66,9 @@ class EquipmentDescriptionUpdatedEvent extends EquipmentCostFormEvent {
 /// not the same as a fresh, unconfirmed keystroke.
 class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
   const EquipmentSavedRateRecalledEvent({
-    required this.equipmentType,
     required this.method,
     required this.rate,
   });
-
-  /// The recalled entry's item name, applied to the equipment name field.
-  final String equipmentType;
 
   /// Which pricing method the recalled entry was saved under. The rate lands
   /// in [EquipmentCostFormWithData.dailyRate] or `.jobAmount` accordingly.

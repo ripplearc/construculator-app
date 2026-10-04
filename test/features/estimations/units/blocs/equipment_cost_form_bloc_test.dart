@@ -175,18 +175,12 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
-            equipmentType: testEquipmentType,
             method: EquipmentPricingMethod.day,
             rate: 145,
           ),
         ),
         expect: () => [
           isA<EquipmentCostFormEditing>()
-              .having(
-                (s) => s.data.equipmentType,
-                'equipmentType',
-                testEquipmentType,
-              )
               .having((s) => s.data.method, 'method', EquipmentPricingMethod.day)
               .having((s) => s.data.dailyRate, 'dailyRate', 145)
               .having(
@@ -199,12 +193,35 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'keeps the equipment name that was already typed, because picking a '
+        'price never renames the line',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('mini excavator 1.5t'))
+            ..add(
+              const EquipmentSavedRateRecalledEvent(
+                method: EquipmentPricingMethod.day,
+                rate: 145,
+              ),
+            );
+        },
+        verify: (bloc) {
+          final state = bloc.state;
+          expect(state, isA<EquipmentCostFormEditing>());
+          expect(
+            (state as EquipmentCostFormEditing).data.equipmentType,
+            'mini excavator 1.5t',
+          );
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'Add stays disabled for a recalled day rate until Duration is typed '
         '(only Duration is editable, but it is still required)',
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
-            equipmentType: testEquipmentType,
             method: EquipmentPricingMethod.day,
             rate: 145,
           ),
@@ -223,13 +240,15 @@ void main() {
         'price, with Add already active on arrival (a confirmation, not a '
         'form — Job pricing needs no duration)',
         build: () => bloc,
-        act: (bloc) => bloc.add(
-          const EquipmentSavedRateRecalledEvent(
-            equipmentType: testEquipmentType,
-            method: EquipmentPricingMethod.job,
-            rate: 400,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+            ),
           ),
-        ),
+        skip: 1,
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having((s) => s.data.jobAmount, 'jobAmount', 400)
@@ -250,7 +269,6 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
-              equipmentType: testEquipmentType,
               method: EquipmentPricingMethod.job,
               rate: 400,
             ),
@@ -282,7 +300,6 @@ void main() {
           ..add(const EquipmentDurationUpdatedEvent('4'))
           ..add(
             const EquipmentSavedRateRecalledEvent(
-              equipmentType: testEquipmentType,
               method: EquipmentPricingMethod.day,
               rate: 145,
             ),
@@ -314,7 +331,6 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
-              equipmentType: testEquipmentType,
               method: EquipmentPricingMethod.day,
               rate: 145,
             ),

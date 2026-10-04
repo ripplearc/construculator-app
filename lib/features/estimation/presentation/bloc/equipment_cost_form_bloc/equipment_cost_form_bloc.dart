@@ -66,7 +66,6 @@ class EquipmentCostFormBloc
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
       _emit(emit, (d) {
         final recalled = d.copyWith(
-          equipmentType: e.equipmentType,
           method: e.method,
           rateStatus: RateStatus.ownRateConfirmed,
         );
