@@ -1,5 +1,23 @@
 part of 'equipment_cost_form_bloc.dart';
 
+/// The equipment form fields that can carry a validation error.
+enum EquipmentFormField {
+  itemType,
+  duration,
+  dailyRate,
+  jobAmount,
+  deliveryFee,
+}
+
+/// Why a value entered in an [EquipmentFormField] can't be used.
+enum EquipmentFieldError {
+  durationNotPositive,
+  durationTooLarge,
+  durationNotHalfDay,
+  rateOutOfRange,
+  deliveryFeeOutOfRange,
+}
+
 /// Base sealed class for all equipment cost form states.
 sealed class EquipmentCostFormState {
   const EquipmentCostFormState();
@@ -46,11 +64,11 @@ class EquipmentCostFormData extends Equatable {
   /// within bounds.
   final bool isValid;
 
-  /// Validation error keys by field name, present only for invalid fields.
-  final Map<String, String> fieldErrors;
+  /// Validation error by field, present only for invalid fields.
+  final Map<EquipmentFormField, EquipmentFieldError> fieldErrors;
 
   /// Validation error key for the item type field, or null when valid.
-  String? get itemTypeError => fieldErrors['itemType'];
+  EquipmentFieldError? get itemTypeError => fieldErrors[EquipmentFormField.itemType];
 
   /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
@@ -68,7 +86,7 @@ class EquipmentCostFormData extends Equatable {
     RateStatus? rateStatus,
     Object? description = _unset,
     bool? isValid,
-    Map<String, String>? fieldErrors,
+    Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
   }) {
     return EquipmentCostFormData(
       method: method ?? this.method,
@@ -112,7 +130,7 @@ class EquipmentCostFormEditing extends EquipmentCostFormState {
 
   /// Kept as a direct getter so existing item-type field widget code doesn't
   /// need to know about [EquipmentCostFormData].
-  String? get itemTypeError => data.itemTypeError;
+  EquipmentFieldError? get itemTypeError => data.itemTypeError;
 }
 
 /// State while a delivery fee larger than the base cost (duration x rate for

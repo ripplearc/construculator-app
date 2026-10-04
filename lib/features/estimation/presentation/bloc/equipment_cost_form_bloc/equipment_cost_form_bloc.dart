@@ -174,17 +174,25 @@ class EquipmentCostFormBloc
   // typed duration of 0), which the widget layer is expected to show on
   // blur and clear on the first valid keystroke.
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
-    final errors = <String, String>{};
+    final errors = <EquipmentFormField, EquipmentFieldError>{};
     final hasItemType = draft.equipmentType.trim().isNotEmpty;
 
     final bool hasDuration;
     final bool hasRate;
     if (draft.method == EquipmentPricingMethod.day) {
       hasDuration = _validateDuration(draft.duration, errors);
-      hasRate = _validateRate(draft.dailyRate, 'dailyRate', errors);
+      hasRate = _validateRate(
+        draft.dailyRate,
+        EquipmentFormField.dailyRate,
+        errors,
+      );
     } else {
       hasDuration = true;
-      hasRate = _validateRate(draft.jobAmount, 'jobAmount', errors);
+      hasRate = _validateRate(
+        draft.jobAmount,
+        EquipmentFormField.jobAmount,
+        errors,
+      );
     }
     final hasValidDeliveryFee = _validateDeliveryFee(draft.deliveryFee, errors);
 
@@ -194,18 +202,24 @@ class EquipmentCostFormBloc
     );
   }
 
-  bool _validateDuration(double? duration, Map<String, String> errors) {
+  bool _validateDuration(
+    double? duration,
+    Map<EquipmentFormField, EquipmentFieldError> errors,
+  ) {
     if (duration == null) return false;
     if (!(duration > 0 && duration.isFinite)) {
-      errors['duration'] = 'durationNotPositive';
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationNotPositive;
       return false;
     }
     if (duration > _maxDuration) {
-      errors['duration'] = 'durationTooLarge';
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationTooLarge;
       return false;
     }
     if (!_isHalfDayStep(duration)) {
-      errors['duration'] = 'durationNotHalfDay';
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationNotHalfDay;
       return false;
     }
     return true;
@@ -216,24 +230,32 @@ class EquipmentCostFormBloc
     return (doubled - doubled.roundToDouble()).abs() < 1e-9;
   }
 
-  bool _validateRate(double? rate, String field, Map<String, String> errors) {
+  bool _validateRate(
+    double? rate,
+    EquipmentFormField field,
+    Map<EquipmentFormField, EquipmentFieldError> errors,
+  ) {
     if (rate == null) return false;
     final inRange =
         !rate.isNaN && !rate.isInfinite && rate >= _minRate && rate <= _maxRate;
     if (!inRange) {
-      errors[field] = 'rateOutOfRange';
+      errors[field] = EquipmentFieldError.rateOutOfRange;
     }
     return inRange;
   }
 
-  bool _validateDeliveryFee(double? fee, Map<String, String> errors) {
+  bool _validateDeliveryFee(
+    double? fee,
+    Map<EquipmentFormField, EquipmentFieldError> errors,
+  ) {
     if (fee == null) return true;
     final isFree = fee == 0;
     final inRange =
         !fee.isNaN && !fee.isInfinite && fee >= _minRate && fee <= _maxRate;
     final isValid = isFree || inRange;
     if (!isValid) {
-      errors['deliveryFee'] = 'deliveryFeeOutOfRange';
+      errors[EquipmentFormField.deliveryFee] =
+          EquipmentFieldError.deliveryFeeOutOfRange;
     }
     return isValid;
   }
