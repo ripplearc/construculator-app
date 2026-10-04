@@ -71,7 +71,7 @@ class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
   });
 
   /// Which pricing method the recalled entry was saved under. The rate lands
-  /// in [EquipmentCostFormWithData.dailyRate] or `.jobAmount` accordingly.
+  /// in [EquipmentCostFormData.dailyRate] or `.jobAmount` accordingly.
   final EquipmentPricingMethod method;
 
   /// The recalled rate amount.

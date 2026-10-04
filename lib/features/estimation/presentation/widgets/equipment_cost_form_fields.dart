@@ -702,7 +702,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // field above (the full, not-yet-recalled form) are the same control —
   // same controller, same validation — so this is shared between both
   // layouts rather than duplicated.
-  Widget _durationField(BuildContext context, EquipmentCostFormWithData data) {
+  Widget _durationField(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
@@ -727,7 +727,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // a not-yet-recalled Amount field offers.
   Widget _amountField(
     BuildContext context,
-    EquipmentCostFormWithData data, {
+    EquipmentCostFormData data, {
     bool showRateChrome = true,
   }) {
     final l10n = context.l10n;
@@ -762,7 +762,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // TODO: [CA-1216] move this header into the sheet header next to a back arrow. https://ripplearc.youtrack.cloud/issue/CA-1216
   List<Widget> _recalledRateHeader(
     BuildContext context,
-    EquipmentCostFormWithData data,
+    EquipmentCostFormData data,
   ) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
