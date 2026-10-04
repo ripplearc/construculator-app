@@ -479,34 +479,47 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
     });
 
+    Future<void> seedRecent({
+      required String itemName,
+      required double amount,
+      required EquipmentPricingMethod method,
+    }) async {
+      final saveResult = await Modular.get<YourRatesRepository>().save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: itemName,
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: clock.now().subtract(const Duration(days: 10)),
+          equipmentMethod: method,
+        ),
+      );
+      saveResult.fold((f) => throw StateError('seed failed: $f'), (_) {});
+    }
+
+    Future<void> openRecents(WidgetTester tester) async {
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets(
-      'tapping a recent row shows its recency subtitle and recalls it into '
-      'the form with no separate confirm step',
+      'tapping a recent Day row opens the compact saved-rate screen: name and '
+      'price in the sheet header, Duration as the only field',
       (WidgetTester tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        final saveResult = await Modular.get<YourRatesRepository>().save(
-          YourRateEntry(
-            id: '',
-            companyId: 'company-1',
-            itemName: 'Scissor lift — 19ft',
-            category: CostItemType.equipment,
-            rate: Money(amount: 120),
-            savedAt: clock.now().subtract(const Duration(days: 10)),
-            equipmentMethod: EquipmentPricingMethod.day,
-          ),
+        await seedRecent(
+          itemName: 'Scissor lift — 19ft',
+          amount: 120,
+          method: EquipmentPricingMethod.day,
         );
-        saveResult.fold((f) => throw StateError('seed failed: $f'), (_) {});
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
-        await tester.pumpAndSettle();
-
+        await openRecents(tester);
         expect(find.text('Used last week'), findsOneWidget);
 
         await tester.tap(find.text('Scissor lift — 19ft'));
@@ -514,7 +527,41 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('Scissor lift — 19ft'), findsOneWidget);
-        expect(find.text('120'), findsOneWidget);
+        expect(find.text(r'$120.00 /day · your default'), findsOneWidget);
+        expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+        expect(find.byKey(const Key('day_method_chip')), findsNothing);
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+        expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping a recent Job row opens the compact screen with the amount '
+      'filled, and editing the amount keeps it compact',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await seedRecent(
+          itemName: 'Dumpster — 30 yd',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await openRecents(tester);
+
+        await tester.tap(find.text('Dumpster — 30 yd'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(r'$400.00 job · your default'), findsOneWidget);
+        expect(find.text('400'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('amount_field')), '450');
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+        expect(find.byKey(const Key('job_method_chip')), findsNothing);
+        expect(find.byKey(const Key('amount_field')), findsOneWidget);
       },
     );
 
