@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
+import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -275,6 +276,36 @@ void main() {
       );
     });
 
+    test('a call that starts while the cleared session\'s call is still '
+        'running is not cut off when the old call finishes', () async {
+      final perCallWrapper = _PerCallRpcWrapper();
+      // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
+      final raceResolver = CurrentCompanyResolverImpl(
+        supabaseWrapper: perCallWrapper,
+      );
+
+      final userA = raceResolver.resolve();
+      raceResolver.clearCache();
+      final userB = raceResolver.resolve();
+      expect(perCallWrapper.pending, hasLength(2));
+
+      perCallWrapper.pending[0].complete('company-a');
+      expect((await userA).getRightOrNull(), 'company-a');
+
+      final later = raceResolver.resolve();
+      expect(
+        perCallWrapper.pending,
+        hasLength(2),
+        reason: 'the second call is still running, so a new caller joins it',
+      );
+
+      perCallWrapper.pending[1].complete('company-b');
+      expect((await userB).getRightOrNull(), 'company-b');
+      expect((await later).getRightOrNull(), 'company-b');
+      expect((await raceResolver.resolve()).getRightOrNull(), 'company-b');
+      expect(perCallWrapper.pending, hasLength(2));
+    });
+
     test(
       'a failed call caches nothing, so the next call retries the RPC',
       () async {
@@ -388,4 +419,17 @@ class _CompanyTestAppModule extends Module {
 
   @override
   List<Module> get imports => [CompanyLibraryModule(appBootstrap)];
+}
+
+class _PerCallRpcWrapper extends FakeSupabaseWrapper {
+  _PerCallRpcWrapper() : super(clock: FakeClockImpl());
+
+  final List<Completer<String?>> pending = [];
+
+  @override
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) {
+    final completer = Completer<String?>();
+    pending.add(completer);
+    return completer.future.then((value) => value as T);
+  }
 }

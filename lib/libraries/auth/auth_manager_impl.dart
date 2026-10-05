@@ -56,6 +56,7 @@ class AuthManagerImpl implements AuthManager {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
+          _currentCompanyResolver.clearCache();
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
         }
       },
