@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/presentation/widgets/material
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -43,6 +44,9 @@ class CostItemFormScreen extends StatefulWidget {
   /// not-a-module-file reasoning as [yourRatesBlocFactory].
   final Clock clock;
 
+  /// The estimate the equipment sheet adds to, loaded by the details page.
+  final CostEstimate? estimate;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -52,6 +56,7 @@ class CostItemFormScreen extends StatefulWidget {
     this.presentAsSheet = false,
     this.initialRateEntry,
     required this.clock,
+    this.estimate,
   });
 
   @override
