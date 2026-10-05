@@ -127,9 +127,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void _notifyTotalFromData(EquipmentCostFormData data) {
     final isDay = data.method == EquipmentPricingMethod.day;
     final hasFieldError = isDay
-        ? data.fieldErrors.containsKey('duration') ||
-              data.fieldErrors.containsKey('dailyRate')
-        : data.fieldErrors.containsKey('jobAmount');
+        ? data.fieldErrors.containsKey(EquipmentFormField.duration) ||
+              data.fieldErrors.containsKey(EquipmentFormField.dailyRate)
+        : data.fieldErrors.containsKey(EquipmentFormField.jobAmount);
     if (hasFieldError) {
       widget.onTotalChanged?.call(0);
       return;
@@ -154,26 +154,29 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   String? _durationErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
-    return switch (data.fieldErrors['duration']) {
-      'durationNotPositive' => l10n.equipmentDurationNotPositiveError,
-      'durationNotHalfDay' => l10n.equipmentDurationNotHalfDayError,
-      'durationTooLarge' => l10n.equipmentDurationTooLargeError,
+    return switch (data.fieldErrors[EquipmentFormField.duration]) {
+      EquipmentFieldError.durationNotPositive =>
+        l10n.equipmentDurationNotPositiveError,
+      EquipmentFieldError.durationNotHalfDay =>
+        l10n.equipmentDurationNotHalfDayError,
+      EquipmentFieldError.durationTooLarge =>
+        l10n.equipmentDurationTooLargeError,
       _ => null,
     };
   }
 
   String? _rateErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
-    return switch (data.fieldErrors['dailyRate']) {
-      'rateOutOfRange' => l10n.equipmentRateOutOfRangeError,
+    return switch (data.fieldErrors[EquipmentFormField.dailyRate]) {
+      EquipmentFieldError.rateOutOfRange => l10n.equipmentRateOutOfRangeError,
       _ => null,
     };
   }
 
   String? _amountErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
-    return switch (data.fieldErrors['jobAmount']) {
-      'rateOutOfRange' => l10n.equipmentAmountOutOfRangeError,
+    return switch (data.fieldErrors[EquipmentFormField.jobAmount]) {
+      EquipmentFieldError.rateOutOfRange => l10n.equipmentAmountOutOfRangeError,
       _ => null,
     };
   }
