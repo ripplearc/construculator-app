@@ -205,9 +205,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (!context.mounted) return;
-    if (result is YourRatesRecentsDismissed) return;
-    final entry = result is YourRatesRecentsPicked ? result.entry : null;
-    await CoreQuickSheet.show(
+    switch (result) {
+      case YourRatesRecentsDismissed():
+        return;
+      case YourRatesRecentsPicked(:final entry):
+        await _openEquipmentForm(context, entry);
+      case YourRatesRecentsNewEquipmentCost():
+        await _openEquipmentForm(context, null);
+    }
+  }
+
+  Future<void> _openEquipmentForm(BuildContext context, YourRateEntry? entry) {
+    return CoreQuickSheet.show(
       context: context,
       child: BlocProvider<EquipmentCostFormBloc>(
         create: (_) => widget.equipmentCostFormBlocFactory(),
