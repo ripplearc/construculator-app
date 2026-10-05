@@ -430,7 +430,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return data.fieldErrors.containsKey(field);
   }
 
-  bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
+  bool _isSavableRate(EquipmentCostFormData data) =>
       (data.rateStatus == RateStatus.sampleRateUnverified ||
           data.rateStatus == RateStatus.ownRateUnconfirmed) &&
       data.itemTypeError == null &&
@@ -625,7 +625,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       method: method,
       blocFactory: widget.yourRatesBlocFactory,
     );
-    if (entry == null || !mounted) return;
+    if (entry == null || !mounted || !context.mounted) return;
     if (_equipmentNameController.text.trim().isEmpty) {
       _equipmentNameController.text = entry.itemName;
     }
@@ -636,10 +636,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       entry.rate.amount,
     );
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentSavedRateRecalledEvent(
-        method: method,
-        rate: entry.rate.amount,
-      ),
+      EquipmentSavedRateRecalledEvent(method: method, rate: entry.rate.amount),
     );
   }
 

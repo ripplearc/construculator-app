@@ -1809,20 +1809,8 @@ void main() {
         await tester.enterText(find.byKey(const Key('rate_field')), '150');
         await tester.pump();
 
-        // A freshly typed rate is RateStatus.ownRateUnconfirmed, not
-        // ownRateConfirmed (see EquipmentCostFormBloc's rate-update
-        // handler) — the badge only renders for ownRateConfirmed/
-        // sampleRateUnverified, so neither badge variant shows here.
         expect(find.byKey(const Key('rate_status_badge')), findsNothing);
         expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
-        // "Save as my rate" shows for a freshly typed, not-yet-saved rate
-        // (CA-1151) — sampleRateUnverified or ownRateUnconfirmed, but not
-        // ownRateConfirmed: a rate recalled from Your Rates (CA-1146) is
-        // already saved there, so re-offering to save it again is
-        // redundant (see _offersSaveAsMyRate's own doc comment). This link
-        // never sets an entryLabel, so per YourRatesRepository.save's
-        // collision rule, saving into a name and basis that already has a
-        // row opens the label dialog instead of replacing the saved price.
         expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
       },
     );
@@ -2095,25 +2083,24 @@ void main() {
         },
       );
 
-      testWidgets(
-        'clearing the recalled Rate brings the look-up button back',
-        (tester) async {
-          await seedRate(
-            itemName: 'Scissor lift',
-            amount: 145,
-            method: EquipmentPricingMethod.day,
-          );
-          await tester.pumpWidget(makeWidget());
-          await tester.pumpAndSettle();
-          await recallRate(tester, 'Scissor lift');
-          expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
+      testWidgets('clearing the recalled Rate brings the look-up button back', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await recallRate(tester, 'Scissor lift');
+        expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
 
-          await tester.enterText(find.byKey(const Key('rate_field')), '');
-          await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '');
+        await tester.pump();
 
-          expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
-        },
-      );
+        expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
+      });
 
       testWidgets('typing over the recalled Rate replaces its value', (
         tester,
@@ -2209,24 +2196,23 @@ void main() {
         },
       );
 
-      testWidgets(
-        'no rate tag on a job price reused from Your rates',
-        (tester) async {
-          await seedRate(
-            itemName: 'Dumpster',
-            amount: 400,
-            method: EquipmentPricingMethod.job,
-          );
-          await tester.pumpWidget(makeWidget());
-          await tester.pumpAndSettle();
-          await tester.tap(find.byKey(const Key('job_method_chip')));
-          await tester.pump();
+      testWidgets('no rate tag on a job price reused from Your rates', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
 
-          await recallRate(tester, 'Dumpster');
+        await recallRate(tester, 'Dumpster');
 
-          expect(find.byKey(const Key('rate_status_badge')), findsNothing);
-        },
-      );
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      });
 
       testWidgets(
         'the line total is the job amount alone — no quantity or per-unit '
@@ -2297,9 +2283,8 @@ void main() {
       );
 
       testWidgets(
-        'switching back to Day after recalling a day rate preserves the '
-        'value but makes it editable again rather than silently reusing the '
-        'confirmed state',
+        'switching back to Day after recalling a day rate restores the rate as '
+        'confirmed, still editable, with no save link',
         (tester) async {
           await seedRate(
             itemName: 'Scissor lift',
@@ -2319,6 +2304,11 @@ void main() {
           expect(textFieldReadOnly(tester, const Key('rate_field')), isFalse);
           expect(
             find.text(l10n.equipmentRateStatusYourRateBadge),
+            findsNothing,
+          );
+          expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+          expect(
+            find.byKey(const Key('save_as_my_rate_helper_text')),
             findsNothing,
           );
         },

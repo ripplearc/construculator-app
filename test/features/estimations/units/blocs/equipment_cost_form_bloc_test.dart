@@ -221,8 +221,64 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'Add stays disabled for a recalled day rate until Duration is typed '
-        '(only Duration is editable, but it is still required)',
+        'sending the same method again after a recall keeps the confirmed '
+        'status',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.day,
+              rate: 145,
+            ),
+          )
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.rateStatus,
+            'rateStatus',
+            RateStatus.ownRateConfirmed,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a recall for the other method switches to it and keeps the status of '
+        'the method it left',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+            ),
+          ),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.method,
+                'method',
+                EquipmentPricingMethod.job,
+              )
+              .having((s) => s.data.jobAmount, 'jobAmount', 400)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              )
+              .having(
+                (s) => s.data.otherMethodRateStatus,
+                'otherMethodRateStatus',
+                RateStatus.ownRateUnconfirmed,
+              )
+              .having((s) => s.data.dailyRate, 'dailyRate', 100),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Add stays disabled for a recalled day rate until Duration is typed',
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
