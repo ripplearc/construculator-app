@@ -225,30 +225,26 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
                         );
                       },
                     ),
-                    if (selected != null) ...[
-                      const SizedBox(height: CoreSpacing.space4),
-                      // Figma node 66342:169086: a 1px `#eaecf0` rule directly above
-                      // the confirm button, separating it from the scrolling results
-                      // above.
-                      Container(height: 1, color: colorTheme.lineLight),
-                      const SizedBox(height: CoreSpacing.space4),
-                      CoreButton(
-                        key: const Key('your_rates_use_button'),
-                        label: l10n.yourRatesUseButtonLabel(
-                          DisplayFormatter.currency.format(
-                            selected.rate.amount,
-                          ),
-                          _unitSuffix(context, widget.method),
-                        ),
-                        size: CoreButtonSize.medium,
-                        onPressed: _onConfirm,
-                      ),
-                    ],
                   ],
                 ),
               ),
             ),
           ),
+          if (selected != null) ...[
+            const CoreDivider(),
+            Padding(
+              padding: const EdgeInsets.all(CoreSpacing.space4),
+              child: CoreButton(
+                key: const Key('your_rates_use_button'),
+                label: l10n.yourRatesUseButtonLabel(
+                  DisplayFormatter.currency.format(selected.rate.amount),
+                  _unitSuffix(context, widget.method),
+                ),
+                size: CoreButtonSize.medium,
+                onPressed: _onConfirm,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -275,6 +271,7 @@ class _SearchField extends StatelessWidget {
     final colorTheme = context.colorTheme;
     return Container(
       key: const Key('your_rates_search_field'),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         border: Border.all(color: colorTheme.lineMid),
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
@@ -391,7 +388,7 @@ class _YourRateRow extends StatelessWidget {
                 child: Opacity(
                   opacity: selected ? 1 : 0,
                   child: CoreIconWidget(
-                    icon: CoreIcons.check,
+                    icon: CoreIcons.checkMark,
                     color: colorTheme.textLink,
                     size: CoreSpacing.space5,
                   ),
