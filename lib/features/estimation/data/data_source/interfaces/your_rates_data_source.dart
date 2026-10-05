@@ -5,9 +5,10 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// contractor's personal saved-rate book.
 ///
 /// Method names are explicit about their operation (fetch from network) and
-/// scope. Reads rely entirely on RLS to scope rows to the caller's own
-/// company; no method here takes an explicit company id filter for that
-/// reason.
+/// scope. RLS limits the rows a caller can read to the companies they belong
+/// to. A caller who belongs to more than one company gets the rows of all of
+/// them, and no method here narrows a read to one company yet.
+// TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Add an explicit company id filter to the reads.
 abstract class YourRatesDataSource {
   /// Fetches all your_rates rows visible to the caller, optionally filtered
   /// to one [category], ordered by saved_at descending (most recently saved
@@ -17,27 +18,14 @@ abstract class YourRatesDataSource {
   /// by item name do so themselves against the returned list. See
   /// `YourRatesRepositoryImpl.search` for why.
   ///
-  /// Throws an exception if the fetch operation fails.
-  Future<List<YourRateEntryDto>> fetchRates({String? category});
-
-  /// Fetches rows in the exact (category, itemName) grouping.
-  ///
-  /// [itemName] is matched case-sensitively and exactly — deliberately
-  /// different from `YourRatesRepository.search`'s case-insensitive
-  /// substring matching. This method identifies the grouping the collision
-  /// rule in `YourRatesRepository.save` operates on, and that grouping is
-  /// defined by the backend's own unique index on the exact column value;
-  /// `search` is a separate, fuzzier lookup for humans finding an item by
-  /// name, not the identity check `save` and `getByItemName` need.
-  ///
-  /// Used both by `YourRatesRepository.save`'s duplicate detection and by
-  /// `YourRatesRepository.getByItemName`.
+  /// [limit], when provided, caps the row count at the database level. Only
+  /// safe to pass when the caller does no further client-side filtering of
+  /// the result: passing it alongside a text-search filter would cap the
+  /// candidate set before that filter runs, dropping matches that fall
+  /// outside the row window.
   ///
   /// Throws an exception if the fetch operation fails.
-  Future<List<YourRateEntryDto>> fetchGrouping({
-    required String category,
-    required String itemName,
-  });
+  Future<List<YourRateEntryDto>> fetchRates({String? category, int? limit});
 
   /// Inserts a new row, letting the server generate its id.
   ///

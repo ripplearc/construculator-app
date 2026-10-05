@@ -53,28 +53,6 @@ void main() {
       expect(dto.updatedAt, isNull);
     });
 
-    test(
-      'fromJson leaves description null when the server omits it '
-      '(no your_rates.description column yet)',
-      () {
-        expect(fullJson.containsKey('description'), isFalse);
-
-        final dto = YourRateEntryDto.fromJson(fullJson);
-
-        expect(dto.description, isNull);
-      },
-    );
-
-    test('fromJson reads description when present, for forward-compatibility '
-        'once the backend column lands', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..['description'] = 'Quoted for the whole dig, machine + operator';
-
-      final dto = YourRateEntryDto.fromJson(json);
-
-      expect(dto.description, 'Quoted for the whole dig, machine + operator');
-    });
-
     test('toJson excludes id, createdAt, and updatedAt', () {
       final dto = YourRateEntryDto.fromJson(fullJson);
 
@@ -94,15 +72,6 @@ void main() {
         'entry_label': 'Supplier A',
         'saved_at': '2026-01-01T00:00:00.000Z',
       });
-    });
-
-    test('toJson excludes description even when set: your_rates has no '
-        'matching column yet', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..['description'] = 'Quoted for the whole dig, machine + operator';
-      final dto = YourRateEntryDto.fromJson(json);
-
-      expect(dto.toJson().containsKey('description'), isFalse);
     });
 
     test('toEntity converts every field correctly', () {
@@ -132,18 +101,6 @@ void main() {
       expect(entity.equipmentMethod, isNull);
     });
 
-    test('toEntity carries description through when the server sends it', () {
-      final json = Map<String, dynamic>.from(fullJson)
-        ..['description'] = 'Quoted for the whole dig, machine + operator';
-
-      final entity = YourRateEntryDto.fromJson(json).toEntity();
-
-      expect(
-        entity.description,
-        'Quoted for the whole dig, machine + operator',
-      );
-    });
-
     test('fromEntity converts every field correctly', () {
       final entity = YourRateEntry(
         id: 'rate-1',
@@ -155,7 +112,6 @@ void main() {
         savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
         equipmentMethod: EquipmentPricingMethod.day,
         entryLabel: 'Supplier A',
-        description: 'Quoted for the whole dig, machine + operator',
       );
 
       final dto = YourRateEntryDto.fromEntity(entity);
@@ -169,7 +125,6 @@ void main() {
       expect(dto.unit, 'days');
       expect(dto.equipmentMethod, 'day');
       expect(dto.entryLabel, 'Supplier A');
-      expect(dto.description, 'Quoted for the whole dig, machine + operator');
       expect(dto.savedAt, '2026-01-01T00:00:00.000Z');
     });
 
@@ -195,23 +150,25 @@ void main() {
       expect(dto.savedAt, endsWith('Z'));
     });
 
-    test('fromEntity leaves unit and equipmentMethod null for a material entry', () {
-      final entity = YourRateEntry(
-        id: 'rate-2',
-        companyId: 'company-1',
-        itemName: 'Cement',
-        category: CostItemType.material,
-        rate: const Money(amount: 12.5),
-        savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
-      );
+    test(
+      'fromEntity leaves unit and equipmentMethod null for a material entry',
+      () {
+        final entity = YourRateEntry(
+          id: 'rate-2',
+          companyId: 'company-1',
+          itemName: 'Cement',
+          category: CostItemType.material,
+          rate: const Money(amount: 12.5),
+          savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
+        );
 
-      final dto = YourRateEntryDto.fromEntity(entity);
+        final dto = YourRateEntryDto.fromEntity(entity);
 
-      expect(dto.unit, isNull);
-      expect(dto.equipmentMethod, isNull);
-      expect(dto.entryLabel, isNull);
-      expect(dto.description, isNull);
-    });
+        expect(dto.unit, isNull);
+        expect(dto.equipmentMethod, isNull);
+        expect(dto.entryLabel, isNull);
+      },
+    );
 
     test('round-trips entity -> dto -> entity', () {
       final entity = YourRateEntry(
@@ -224,7 +181,6 @@ void main() {
         savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
         equipmentMethod: EquipmentPricingMethod.day,
         entryLabel: 'Supplier A',
-        description: 'Quoted for the whole dig, machine + operator',
       );
 
       final roundTripped = YourRateEntryDto.fromEntity(entity).toEntity();
