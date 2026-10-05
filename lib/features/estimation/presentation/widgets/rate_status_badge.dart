@@ -5,8 +5,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Which color treatment a [RateStatusBadge] renders.
 enum RateStatusBadgeVariant {
   /// Peach fill, peach stroke, burnt-orange text. Used by the Rate/Amount
-  /// field's "Sample rate" badge and the delivery row's "Estimated" badge —
-  /// same component, different label text.
+  /// field's "Sample rate" badge.
   orange,
 
   /// Mint fill, no stroke, dark-green text. Used by the Rate/Amount field's
@@ -26,10 +25,7 @@ enum RateStatusBadgeVariant {
 /// used here rather than `bodySmallMedium` (w500) since 590 sits much
 /// closer to 600 than 500.
 ///
-/// One widget, not two: the orange variant is visually identical between
-/// the Rate/Amount field's "Sample rate" badge and the delivery row's
-/// "Estimated" badge — only the label text differs, so callers pass their
-/// own [label].
+/// One widget for both variants: callers pass their own [label].
 ///
 /// a11y note: `#CD5000` text on `#FFF0E9` fill measures ~3.98:1 contrast,
 /// short of WCAG AA's 4.5:1 minimum for 12px text (it would only need 3:1
