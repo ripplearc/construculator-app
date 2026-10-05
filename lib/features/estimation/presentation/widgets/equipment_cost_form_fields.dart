@@ -547,9 +547,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space4,
-        vertical: CoreSpacing.space3,
+      padding: EdgeInsets.fromLTRB(
+        CoreSpacing.space4,
+        0,
+        CoreSpacing.space4,
+        _deliveryExpanded ? CoreSpacing.space3 : 0,
       ),
       decoration: BoxDecoration(
         color: colorTheme.backgroundGrayLight,
@@ -681,7 +683,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                       turns: _deliveryExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 150),
                       child: CoreIconWidget(
-                        icon: CoreIcons.arrowDropDown,
+                        icon: CoreIcons.arrowDown,
                         color: colorTheme.iconGrayMid,
                         size: 20,
                       ),
