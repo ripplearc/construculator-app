@@ -139,17 +139,12 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (suffix != null)
-                  Flexible(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 24),
-                      child: IntrinsicWidth(child: textField),
-                    ),
-                  )
+                  Flexible(child: IntrinsicWidth(child: textField))
                 else
                   Expanded(child: textField),
                 if (suffix != null &&
                     !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
-                  const SizedBox(width: CoreSpacing.space2),
+                  const SizedBox(width: CoreSpacing.space1),
                   suffix,
                 ],
               ],
