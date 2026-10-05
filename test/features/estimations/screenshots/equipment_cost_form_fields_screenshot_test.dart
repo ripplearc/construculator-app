@@ -89,7 +89,9 @@ void main() {
       );
     });
 
-    testWidgets('renders the days suffix right next to a typed duration', (tester) async {
+    testWidgets('renders the days suffix right next to a typed duration', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester, theme: theme);
@@ -103,11 +105,16 @@ void main() {
       );
     });
 
-    testWidgets('renders a very long duration without overflowing', (tester) async {
+    testWidgets('renders a very long duration without overflowing', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester, theme: theme);
-      await tester.enterText(find.byKey(const Key('duration_field')), '1234567890' * 3);
+      await tester.enterText(
+        find.byKey(const Key('duration_field')),
+        '1234567890' * 3,
+      );
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
@@ -122,6 +129,8 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester, theme: theme);
       await tester.enterText(find.byKey(const Key('duration_field')), '0');
+      await tester.pumpAndSettle();
+      FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
