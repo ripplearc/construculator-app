@@ -227,7 +227,7 @@ void main() {
     });
 
     group('EquipmentRateUpdatedEvent — bound/NaN checks', () {
-      for (final bad in ['0', '0.009', '1000000', 'NaN', 'Infinity'])
+      for (final bad in ['0', '0.009', '1000000', 'NaN', 'Infinity']) {
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
           'rejects a daily rate of "$bad" with rateOutOfRange',
           build: () => bloc,
@@ -242,6 +242,7 @@ void main() {
                 .having((s) => s.data.isValid, 'isValid', false),
           ],
         );
+      }
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'accepts a daily rate within bounds with no field error',
@@ -339,7 +340,7 @@ void main() {
         ],
       );
 
-      for (final step in ['0.5', '1', '1.5', '2', '2.5', '10'])
+      for (final step in ['0.5', '1', '1.5', '2', '2.5', '10']) {
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
           'accepts a valid half-day step duration of $step with no field '
           'error',
@@ -353,6 +354,7 @@ void main() {
             ),
           ],
         );
+      }
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'blocks submission with durationTooLarge when duration would '
@@ -419,7 +421,7 @@ void main() {
         ],
       );
 
-      for (final bad in ['NaN', 'Infinity', '-Infinity', '1e400'])
+      for (final bad in ['NaN', 'Infinity', '-Infinity', '1e400']) {
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
           'rejects a delivery fee of "$bad" with a field error instead of '
           'silently corrupting the total',
@@ -435,6 +437,7 @@ void main() {
                 .having((s) => s.data.isValid, 'isValid', false),
           ],
         );
+      }
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'rejects a delivery fee above the maximum with a field error',
@@ -490,7 +493,55 @@ void main() {
           final call = fakeSupabaseWrapper.getMethodCallsFor('insert').single;
           final data = call['data'] as Map;
           expect(data['delivery_fee'], 20.0);
+          expect(data['item_total_cost'], 520.0);
           expect(data.containsKey('delivery_fee_status'), isFalse);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'adds the typed delivery fee to the total of a Job line',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
+            ..add(const EquipmentRateUpdatedEvent('400'))
+            ..add(const EquipmentDeliveryFeeUpdatedEvent('20'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        skip: 4,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
+        verify: (_) {
+          final data =
+              fakeSupabaseWrapper.getMethodCallsFor('insert').single['data']
+                  as Map;
+          expect(data['delivery_fee'], 20.0);
+          expect(data['item_total_cost'], 420.0);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a second Submitted while Submitting does not insert twice',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
         },
       );
 

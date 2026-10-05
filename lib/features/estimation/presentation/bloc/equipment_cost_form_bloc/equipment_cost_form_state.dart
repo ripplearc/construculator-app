@@ -2,19 +2,37 @@ part of 'equipment_cost_form_bloc.dart';
 
 /// The equipment form fields that can carry a validation error.
 enum EquipmentFormField {
+  /// The equipment name.
   itemType,
+
+  /// The number of days, on a Day line.
   duration,
+
+  /// The rate per day, on a Day line.
   dailyRate,
+
+  /// The fixed price, on a Job line.
   jobAmount,
+
+  /// The optional delivery fee.
   deliveryFee,
 }
 
 /// Why a value entered in an [EquipmentFormField] can't be used.
 enum EquipmentFieldError {
+  /// The duration is zero or below.
   durationNotPositive,
+
+  /// The duration is above what the database column can hold.
   durationTooLarge,
+
+  /// The duration is not a whole or half day.
   durationNotHalfDay,
+
+  /// The rate or amount is below $0.01 or above $999,999.99.
   rateOutOfRange,
+
+  /// The delivery fee is not $0 and is outside $0.01 to $999,999.99.
   deliveryFeeOutOfRange,
 }
 
@@ -64,11 +82,15 @@ class EquipmentCostFormData extends Equatable {
   /// within bounds.
   final bool isValid;
 
-  /// Validation error by field, present only for invalid fields.
+  /// Validation error by field, present only for a value that was entered and
+  /// cannot be used. An empty field never has an entry: the disabled Add
+  /// button names what is missing, so an empty field is never shown as an
+  /// error.
   final Map<EquipmentFormField, EquipmentFieldError> fieldErrors;
 
   /// Validation error key for the item type field, or null when valid.
-  EquipmentFieldError? get itemTypeError => fieldErrors[EquipmentFormField.itemType];
+  EquipmentFieldError? get itemTypeError =>
+      fieldErrors[EquipmentFormField.itemType];
 
   /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
