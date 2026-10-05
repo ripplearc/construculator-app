@@ -1604,7 +1604,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String yourRatesNoMatchState(String query) {
-    return 'No saved rate matches \"$query\".';
+    return 'No matches for “$query”';
   }
 
   @override
@@ -1617,8 +1617,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourRatesLookupButton => 'Search saved rates';
 
   @override
-  String get yourRatesDisclaimerText =>
-      'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.';
+  String get yourRatesLoadError => 'Couldn’t open your saved prices.';
+
+  @override
+  String get yourRatesTryAgain => 'Try again';
+
+  @override
+  String get yourRatesClearSearchSemanticLabel => 'Clear search';
 
   @override
   String yourRatesUseButtonLabel(String amount, String unit) {
