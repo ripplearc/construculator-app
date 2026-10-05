@@ -7,26 +7,13 @@ import 'package:rxdart/rxdart.dart';
 part 'your_rates_event.dart';
 part 'your_rates_state.dart';
 
-/// Number of recent entries [YourRatesLoaded] carries per
-/// [YourRatesRefreshRecents.category].
 const int _recentsLimit = 4;
 
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
-/// Returns an [EventTransformer] that cancels any in-flight processing when
-/// a new event of the same type arrives, so a slow response to a stale
-/// event can never overwrite the result of a more recent one.
-///
-/// Mirrors `GlobalSearchBloc`/`ProjectSearchBloc`'s `_debounce` helper in
-/// this codebase — bloc's default transformer processes events
-/// concurrently, which would otherwise let an out-of-order response for an
-/// earlier, shorter query clobber the current search results.
 EventTransformer<E> _restartable<E>() =>
     (events, mapper) => events.switchMap(mapper);
 
-/// As [_restartable], but also debounces by [duration] first — for events
-/// fired on every keystroke, so typing quickly doesn't trigger a repository
-/// call per character.
 EventTransformer<E> _debounceRestartable<E>(Duration duration) =>
     (events, mapper) => events.debounceTime(duration).switchMap(mapper);
 
@@ -61,10 +48,14 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     Emitter<YourRatesState> emit,
   ) async {
     emit(const YourRatesLoading());
-    final result = await _repository.search('', category: event.category);
+    final result = await _repository.search(
+      '',
+      category: event.category,
+      limit: _recentsLimit,
+    );
     result.fold(
       (failure) => emit(YourRatesError(failure)),
-      (entries) => emit(YourRatesLoaded(entries.take(_recentsLimit).toList())),
+      (entries) => emit(YourRatesLoaded(entries)),
     );
   }
 
