@@ -104,10 +104,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // Only reached in fromCostFile mode: the quantity field there never drives
-  // a real total, and a fromCostFile toggle is a widget prop change, not a
-  // bloc event, so the BlocConsumer listener below won't fire for it on its
-  // own.
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
@@ -120,10 +116,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
-  //
-  // Reads from the bloc's validated data rather than the raw controller
-  // text, so an invalid duration/rate (or a Day/Job switch) can never
-  // multiply into a total the form itself says is wrong.
   void _notifyTotalFromData(EquipmentCostFormData data) {
     final isDay = data.method == EquipmentPricingMethod.day;
     final hasFieldError = isDay
@@ -249,9 +241,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           final data = _dataOf(state);
           widget.onSaveEnabledChanged?.call(data.isValid);
           _mirrorMethodIntoChips(data.method);
-          if (!widget.fromCostFile) {
-            _notifyTotalFromData(data);
-          }
+          _notifyTotalFromData(data);
         },
         builder: (_, state) {
           final data = _dataOf(state);

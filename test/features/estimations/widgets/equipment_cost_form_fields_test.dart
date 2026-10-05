@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
@@ -134,6 +135,34 @@ void main() {
       expect(find.byKey(const Key('amount_field')), findsOneWidget);
     });
 
+    testWidgets('chips follow a method change that does not come from a tap', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      final bloc = BlocProvider.of<EquipmentCostFormBloc>(
+        tester.element(find.byType(EquipmentCostFormFields)),
+      );
+
+      bloc.add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<CoreChip>(find.byKey(const Key('job_method_chip')))
+            .selected
+            .value,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<CoreChip>(find.byKey(const Key('day_method_chip')))
+            .selected
+            .value,
+        isFalse,
+      );
+    });
+
     testWidgets('tapping Day after Job restores duration+rate fields', (
       tester,
     ) async {
@@ -234,11 +263,7 @@ void main() {
     );
   });
 
-  group('EquipmentCostFormFields — no errors on untouched fields (B1)', () {
-    // #650 stopped the bloc from ever putting a missing field into
-    // fieldErrors (only a value that was actually typed and is invalid
-    // gets an entry), so switching method or typing into one field can no
-    // longer surface an error under a different, still-empty field.
+  group('EquipmentCostFormFields — no errors on untouched fields', () {
     testWidgets('tapping Job on a fresh form shows no error text', (
       tester,
     ) async {
@@ -331,6 +356,21 @@ void main() {
 
       expect(find.text(l10n.equipmentDurationNotHalfDayError), findsOneWidget);
       expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
+    });
+
+    testWidgets('shows the too-large error for a duration above the limit', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('duration_field')),
+        '100000000',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentDurationTooLargeError), findsOneWidget);
     });
 
     testWidgets('clears the duration error once a valid value is typed', (
