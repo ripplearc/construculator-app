@@ -295,7 +295,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   hideSuffixWhenEmpty: true,
                   suffix: Text(
                     l10n.equipmentDurationSuffix,
-                    style: textTheme.bodyMediumRegular.copyWith(
+                    style: textTheme.bodySmallRegular.copyWith(
                       color: colorTheme.textBody,
                     ),
                   ),
