@@ -158,6 +158,37 @@ void main() {
         ],
       );
 
+      // ignore: no_direct_instantiation, reason: needs a debounce far longer than the test, which Modular's registration can't supply per-test
+      YourRatesBloc longDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        queryDebounce: const Duration(days: 1),
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'an empty query lists every saved rate at once, without the debounce',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            for (var i = 0; i < 6; i++)
+              row(id: 'r$i', savedAt: '2026-01-0${i + 1}T00:00:00.000Z'),
+          ]);
+        },
+        build: longDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.length,
+            'results',
+            6,
+          ),
+        ],
+      );
+
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then Error on failure',
         setUp: () {

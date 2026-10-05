@@ -2487,9 +2487,9 @@
   "@yourRatesEmptyState": {
     "description": "Shown in the Look-up-a-rate sheet's recents view (empty search query) when there's no saved entry for the current pricing method"
   },
-  "yourRatesNoMatchState": "No saved rate matches \"{query}\".",
+  "yourRatesNoMatchState": "No matches for “{query}”",
   "@yourRatesNoMatchState": {
-    "description": "Shown in the Look-up-a-rate sheet when a non-empty search query matches no saved entry, distinct from yourRatesEmptyState which covers the no-query/recents case",
+    "description": "Shown in the Look-up-a-rate sheet, in place of the rows, when a non-empty search query matches no saved entry (storyboard CUJ 6, frame Lookup no match). The query is in curly quotes",
     "placeholders": {
       "query": {
         "type": "String",
@@ -2509,9 +2509,17 @@
   "@yourRatesLookupButton": {
     "description": "Accessible label for the search-icon button on the Rate/Amount field that opens the Look-up-a-rate sheet"
   },
-  "yourRatesDisclaimerText": "Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.",
-  "@yourRatesDisclaimerText": {
-    "description": "Explanatory note shown near the top of the Look-up-a-rate sheet, below the search field (Figma node 66342:169078, the sheet's <Alert> instance)"
+  "yourRatesLoadError": "Couldn’t open your saved prices.",
+  "@yourRatesLoadError": {
+    "description": "Error row in the Look-up-a-rate sheet when the phone could not read Your rates (storyboard CUJ 6, frame Look-up saved prices not read). Never replaced by the no-saved-rates text, because no search ran"
+  },
+  "yourRatesTryAgain": "Try again",
+  "@yourRatesTryAgain": {
+    "description": "Text button on the right of the Look-up-a-rate sheet's error row; searches Your rates again"
+  },
+  "yourRatesClearSearchSemanticLabel": "Clear search",
+  "@yourRatesClearSearchSemanticLabel": {
+    "description": "Screen reader label of the clear (x) button in the Look-up-a-rate sheet's search box"
   },
   "yourRatesUseButtonLabel": "Use {amount} {unit}",
   "@yourRatesUseButtonLabel": {
