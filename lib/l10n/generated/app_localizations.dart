@@ -2881,7 +2881,7 @@ abstract class AppLocalizations {
     String baseCostAmount,
   );
 
-  /// Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame "Delivery $8500" (e.g. "Delivery is $8,500.00 against $580.00 for 4 days of excavator. Add it anyway?"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.
+  /// Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame "Delivery $8500" (e.g. "Delivery is $8,500.00 against $580.00 for four days of excavator. Add it anyway?"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.
   ///
   /// In en, this message translates to:
   /// **'Delivery is {feeAmount} against {baseCostAmount} for {durationPhrase} of {equipmentType}. Add it anyway?'**
@@ -2895,7 +2895,7 @@ abstract class AppLocalizations {
   /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 1 (the storyboard calls out this case specially, as "one day")
   ///
   /// In en, this message translates to:
-  /// **'1 day'**
+  /// **'one day'**
   String get equipmentDeliveryFeeOutsizedDialogOneDay;
 
   /// Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 0.5 (the storyboard calls out this case specially)
@@ -2907,7 +2907,7 @@ abstract class AppLocalizations {
   /// Duration phrase used in the Day-pricing outsized-fee dialog body for any duration other than exactly 1 or 0.5; durationText is the pre-formatted duration count
   ///
   /// In en, this message translates to:
-  /// **'{durationText} days'**
+  /// **'{durationText, select, 2{two} 3{three} 4{four} 5{five} 6{six} 7{seven} 8{eight} 9{nine} 10{ten} other{{durationText}}} days'**
   String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText);
 
   /// Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet
