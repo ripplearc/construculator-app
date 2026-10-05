@@ -23,7 +23,8 @@ import 'package:construculator/libraries/errors/failures.dart';
 abstract class YourRatesRepository {
   /// Searches saved rate entries by item name, optionally scoped to one
   /// [category] and one [companyId] — the real company-scoping mechanism for
-  /// a caller in more than one company.
+  /// a caller in more than one company. A null [companyId] adds no filter and
+  /// returns the rows of every company the caller belongs to.
   ///
   /// The [query] is split into words. An entry matches when any word is in
   /// its item name, ignoring case, so `mini excavator 1.5t` finds
@@ -47,7 +48,8 @@ abstract class YourRatesRepository {
   });
 
   /// Looks up the rate entry for one item within one category, optionally
-  /// scoped to one [companyId].
+  /// scoped to one [companyId]. A null [companyId] adds no filter and matches
+  /// the rows of every company the caller belongs to.
   ///
   /// The name is matched without regard to capital letters or extra spaces.
   /// Multiple entries can share the same name, distinguished by
