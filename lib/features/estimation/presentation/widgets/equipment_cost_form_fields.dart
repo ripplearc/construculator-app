@@ -572,7 +572,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         onTap: () => unawaited(_openRateLookup(context, data.method)),
         child: SizedBox(
           width: CoreSpacing.space12,
-          height: CoreSpacing.space12,
+          height: CoreSpacing.space9,
           child: Center(
             child: Container(
               width: CoreSpacing.space9,
