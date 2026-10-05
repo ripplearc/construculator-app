@@ -1081,7 +1081,6 @@ class _OutsizedFeeDialog extends StatelessWidget {
             DisplayFormatter.currency.format(fee),
             DisplayFormatter.currency.format(baseCost),
           );
-    // TODO: [CA-1251] use the white surface from Figma once CoreUI has it. https://ripplearc.youtrack.cloud/issue/CA-1251
     return Dialog(
       backgroundColor: sheetSurface(context),
       shape: RoundedRectangleBorder(
@@ -1199,7 +1198,7 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     return Dialog(
-      backgroundColor: colorTheme.pageBackground,
+      backgroundColor: sheetSurface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(CoreSpacing.space5),
       ),
