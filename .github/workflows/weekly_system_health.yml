@@ -96,31 +96,23 @@ jobs:
         run: bash scripts/ci/generate_env_file.sh
 
       - name: Reattach device
-        # This lab machine is WSL2, and the phone's USB bus drops out of the
-        # WSL VM between runs. usbipd re-attaches it and a fresh adb server
-        # picks it back up. Only this one machine uses usbipd; a future
-        # native Linux or macOS lab host has no PERF_USBIPD_BUSID set, so the
-        # `if:` below skips this step entirely, and it stays in the workflow
-        # rather than in capture_perf_run.sh.
+        # This lab machine is a WSL2 laptop, and the phone drops off the WSL VM
+        # between runs. The script re-attaches it. It starts usbipd.exe from the
+        # exe's own directory, because WSL cannot start a Windows program from a
+        # working directory under /home/ayana, such as this workspace. It also
+        # waits out a slow wake from standby and finds the phone by its serial,
+        # so a changed USB port or a second phone cannot misdirect it.
+        # Only this one machine uses usbipd; a future native Linux or macOS lab
+        # host has no PERF_USBIPD_BUSID set, so the `if:` below skips this step
+        # entirely, and it stays in the workflow rather than in
+        # capture_perf_run.sh.
         if: vars.PERF_USBIPD_BUSID != ''
-        env:
-          USBIPD_BUSID: ${{ vars.PERF_USBIPD_BUSID }}
-          DEVICE_ID: ${{ steps.params.outputs.device_id }}
         run: |
-          USBIPD="/mnt/c/Program Files/usbipd-win/usbipd.exe"
-          if [ ! -x "$USBIPD" ]; then
-            echo "No usbipd on this runner; skipping reattach."
-          else
-            echo "Reattaching busid $USBIPD_BUSID to WSL..."
-            "$USBIPD" attach --wsl --busid "$USBIPD_BUSID" \
-              || echo "usbipd attach exited non-zero. Normal if the phone is already attached."
-            adb kill-server
-            adb start-server
-            adb devices -l
-            timeout 30 adb -s "$DEVICE_ID" wait-for-device
-          fi
+          bash scripts/perf/ensure_lab_device_attached.sh \
+            --device-id "${{ steps.params.outputs.device_id }}"
 
       - name: Capture performance run
+        id: capture
         run: |
           bash scripts/perf/capture_perf_run.sh \
             --device-id "${{ steps.params.outputs.device_id }}" \
@@ -150,8 +142,10 @@ jobs:
 
       - name: Upload performance run
         # Keep the freshly captured run even when publishing to the trend store
-        # failed — it can be filed manually afterwards from the artifact.
-        if: always()
+        # failed — it can be filed manually afterwards from the artifact. It is
+        # skipped when capture never started (for example the phone could not be
+        # attached), so that failure is not buried under a missing-files error.
+        if: always() && steps.capture.conclusion != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: perf-run-${{ steps.params.outputs.run_id }}

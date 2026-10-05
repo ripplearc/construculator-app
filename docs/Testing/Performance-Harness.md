@@ -14,6 +14,7 @@ assumes those definitions and describes the machinery.
 ## At a Glance
 
 - Workflow: `.github/workflows/weekly_system_health.yml`
+- Phone attach: `scripts/perf/ensure_lab_device_attached.sh` (WSL lab host only)
 - Capture: `scripts/perf/capture_perf_run.sh` (raw artifacts)
 - Report: `scripts/perf/build_perf_report.dart` (`perf-run.json`)
 - Publish: `scripts/perf/publish_perf_run.sh` (trend store)
@@ -52,7 +53,9 @@ skew the first run of every series.
 
 ### Scheduled
 
-Runs automatically every Monday at 03:00 UTC against the default branch.
+Runs automatically every Monday at 03:00 UTC against the default branch. If the
+lab machine is asleep at that time, GitHub keeps the job queued and the runner
+starts it as soon as the machine wakes up.
 
 ### On demand
 
@@ -230,6 +233,49 @@ to spot and recover one.
 The capture script checks the device against `flutter devices --machine` before
 building. Confirm the device is attached and unlocked, and that `PERF_DEVICE_ID`
 matches its id exactly.
+
+### `Reattach device` step fails
+
+The lab machine is a laptop that runs Linux inside WSL2, and the phone drops off
+WSL between runs. This step attaches it again with `usbipd` and waits until `adb`
+lists it.
+
+The step failed on the runs of 2026-09-28 and 2026-10-05 for a reason that is
+easy to miss. WSL cannot start a Windows program such as `usbipd.exe` when the
+working directory is under `/home/ayana`, and every runner workspace is. The
+call failed with `usbipd.exe: Invalid argument`, the old step ignored that
+failure, and `adb` then found no phone. Run from `/`, `/tmp` or `/mnt/c` the same
+command works. Check it by hand with
+`cd /home/ayana/actions-runner && "/mnt/c/Program Files/usbipd-win/usbipd.exe" --version`.
+
+`scripts/perf/ensure_lab_device_attached.sh` fixes this by starting `usbipd.exe`
+from the exe's own Windows directory. It also retries for up to five minutes,
+because both failed runs started right after the laptop woke from standby, when
+Windows may still be reconnecting. It finds the phone by its serial number, which
+is the `device_id`. It does not use the bus id, because a bus id is only a USB
+port, and the lab's second Pixel takes over that port when plugged into it. The
+`PERF_USBIPD_BUSID` variable now only switches the step on.
+
+When the step still fails, the error says which stage did not work:
+
+| Message | What it means | What to do |
+|---|---|---|
+| `Windows interop is not ready` | WSL could not start `usbipd.exe`. The message ends with the error WSL gave. | Check that Windows is awake and signed in, then re-run. If the error is `Invalid argument`, the working directory is the cause (see above). |
+| `not on the Windows USB bus` | Windows does not see the phone. | Check the cable and port, then run `usbipd list` on Windows. |
+| `usbipd has not shared it` | The one-time bind is missing, for example after a Windows or usbipd update. | Run `usbipd bind --busid <id>` in an elevated Windows shell. |
+| `adb still reports it unauthorized` | The phone still does not trust this host's adb key after the wait. A freshly attached phone reads this way for a few seconds, and the script waits that out. | Unlock the phone and accept the USB debugging prompt. |
+
+To check the host by hand, run the script on the lab machine:
+
+```bash
+bash scripts/perf/ensure_lab_device_attached.sh --device-id "$PERF_DEVICE_ID"
+```
+
+Its own tests run in `scripts/run_check.sh --pre` against fake `usbipd` and `adb`.
+
+If scheduled runs still start before the laptop has finished waking, set it to
+never sleep while on AC power and to do nothing when the lid closes. Windows
+power settings are not managed by this repository.
 
 ### No `start_up_info.json` produced
 
