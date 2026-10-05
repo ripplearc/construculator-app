@@ -1596,10 +1596,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String equipmentSaveAsMyRateHelperText(
     String amount,
     String unit,
+    String yourRates,
+    String article,
     String itemName,
   ) {
-    return 'Saves $amount $unit to Your rates — it auto-fills next time you add $itemName.';
+    String _temp0 = intl.Intl.selectLogic(article, {'an': 'an', 'other': 'a'});
+    return 'Saves $amount $unit to $yourRates — it auto-fills next time you add $_temp0 $itemName.';
   }
+
+  @override
+  String equipmentSavedToYourRatesHint(
+    String yourRates,
+    String article,
+    String itemName,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(article, {'an': 'an', 'other': 'a'});
+    return 'Saved to $yourRates — auto-fills next time you add $_temp0 $itemName.';
+  }
+
+  @override
+  String get yourRatesName => 'Your rates';
 
   @override
   String get yourRatesLookupTitle => 'Look up a rate';
@@ -1660,11 +1676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourRatesEntryLabelSave => 'Save';
 
   @override
-  String get yourRatesSaveFailedError =>
-      'Couldn\'t save this rate. Please try again.';
-
-  @override
-  String get yourRatesSaveSucceededMessage => 'Rate saved to Your rates';
+  String get yourRatesSaveFailedError => 'Your rate was not saved. Try again.';
 
   @override
   String get equipmentNoteLabel => 'Note';
