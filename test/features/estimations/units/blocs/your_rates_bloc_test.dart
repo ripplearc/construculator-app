@@ -252,11 +252,31 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'emits a SaveSucceeded for each of two saves in a row',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [
+          isA<YourRatesSaveSucceeded>(),
+          isA<YourRatesSaveSucceeded>(),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveCollision carrying the submitted entry when the grouping '
         'already has a labeled row',
         setUp: () {
           fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
-            row(id: 'existing', itemName: 'Excavator', entryLabel: 'Supplier A'),
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
           ]);
         },
         build: () => bloc,
@@ -274,7 +294,11 @@ void main() {
         'emits SaveSucceeded when a labeled retry follows a collision',
         setUp: () {
           fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
-            row(id: 'existing', itemName: 'Excavator', entryLabel: 'Supplier A'),
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
           ]);
         },
         build: () => bloc,

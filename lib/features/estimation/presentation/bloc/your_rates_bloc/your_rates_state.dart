@@ -30,8 +30,12 @@ class YourRatesError extends YourRatesState {
 }
 
 /// State after [YourRatesSaveRequested] succeeds outright (no collision).
+///
+/// Not const on purpose: every success must be a new object, because bloc
+/// skips an emit that equals the current state, and a second save in one form
+/// would otherwise show nothing.
 class YourRatesSaveSucceeded extends YourRatesState {
-  const YourRatesSaveSucceeded();
+  YourRatesSaveSucceeded();
 }
 
 /// State after [YourRatesSaveRequested] is rejected because it collides
