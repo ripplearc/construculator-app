@@ -1873,9 +1873,42 @@ void main() {
       expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
     });
 
-    testWidgets('picking a Your-rates entry fills name and rate', (
-      tester,
-    ) async {
+    testWidgets('picking a Your-rates entry fills the rate and keeps a typed '
+        'name', (tester) async {
+      await seedRate(
+        itemName: 'Mini excavator - 1.5 ton',
+        amount: 145,
+        method: EquipmentPricingMethod.day,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'mini excavator 1.5t',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mini excavator - 1.5 ton'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<UnderlineTextField>(
+              find.byKey(const Key('equipment_name_field')),
+            )
+            .controller
+            .text,
+        'mini excavator 1.5t',
+      );
+      expect(find.text('145'), findsOneWidget);
+    });
+
+    testWidgets('picking a Your-rates entry fills the name when the name box '
+        'is empty', (tester) async {
       await seedRate(
         itemName: 'Mini excavator',
         amount: 145,
@@ -1892,8 +1925,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Mini excavator'), findsOneWidget);
-      // Not '145.0': the field expects a plain typed-style number, matching
-      // what a user would have typed directly (N6).
       expect(find.text('145'), findsOneWidget);
     });
 

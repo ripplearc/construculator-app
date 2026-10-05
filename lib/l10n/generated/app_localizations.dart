@@ -2970,10 +2970,10 @@ abstract class AppLocalizations {
   /// **'No saved rates yet for this pricing method.'**
   String get yourRatesEmptyState;
 
-  /// Shown in the Look-up-a-rate sheet when a non-empty search query matches no saved entry, distinct from yourRatesEmptyState which covers the no-query/recents case
+  /// Shown in the Look-up-a-rate sheet, in place of the rows, when a non-empty search query matches no saved entry (storyboard CUJ 6, frame Lookup no match). The query is in curly quotes
   ///
   /// In en, this message translates to:
-  /// **'No saved rate matches \"{query}\".'**
+  /// **'No matches for “{query}”'**
   String yourRatesNoMatchState(String query);
 
   /// Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows
@@ -2994,11 +2994,23 @@ abstract class AppLocalizations {
   /// **'Search saved rates'**
   String get yourRatesLookupButton;
 
-  /// Explanatory note shown near the top of the Look-up-a-rate sheet, below the search field (Figma node 66342:169078, the sheet's <Alert> instance)
+  /// Error row in the Look-up-a-rate sheet when the phone could not read Your rates (storyboard CUJ 6, frame Look-up saved prices not read). Never replaced by the no-saved-rates text, because no search ran
   ///
   /// In en, this message translates to:
-  /// **'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.'**
-  String get yourRatesDisclaimerText;
+  /// **'Couldn’t open your saved prices.'**
+  String get yourRatesLoadError;
+
+  /// Text button on the right of the Look-up-a-rate sheet's error row; searches Your rates again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get yourRatesTryAgain;
+
+  /// Screen reader label of the clear (x) button in the Look-up-a-rate sheet's search box
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get yourRatesClearSearchSemanticLabel;
 
   /// Label for the primary button that confirms the currently-selected result row and closes the Look-up-a-rate sheet; amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the selected entry's pricing method
   ///

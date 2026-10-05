@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -41,18 +44,7 @@ void main() {
     seededRows = [];
   });
 
-  // Seeds a `your_rates` row directly on the fake backend rather than going
-  // through `YourRatesRepository.save()`: `YourRateEntryDto.toJson()`
-  // deliberately omits `description` today, since the real `your_rates`
-  // table has no matching column yet (see that DTO's class doc comment) —
-  // a save() round-trip would silently drop it, same as production. Seeding
-  // the row directly is how this test exercises the row's description
-  // rendering ahead of that backend column landing.
-  void seedRate({
-    required String itemName,
-    required double amount,
-    String? description,
-  }) {
+  void seedRate({required String itemName, required double amount}) {
     seededRows = [
       ...seededRows,
       {
@@ -64,7 +56,6 @@ void main() {
         'rate_currency': 'USD',
         'equipment_method': 'job',
         'saved_at': DateTime(2026, 1, 1).toIso8601String(),
-        'description': ?description,
       },
     ];
     fakeSupabase.addTableData(table, seededRows);
@@ -114,16 +105,12 @@ void main() {
       );
     });
 
-    testWidgets('displays result rows, one with a description', (tester) async {
+    testWidgets('displays result rows', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      seedRate(
-        itemName: 'Mini excavator — 1.5 ton',
-        amount: 520,
-        description: 'Quoted for the whole dig, machine + operator',
-      );
+      seedRate(itemName: 'Mini excavator — 1.5 ton', amount: 520);
       seedRate(itemName: 'Excavator + operator — half day', amount: 340);
 
       await pumpSheet(tester: tester, theme: theme);
@@ -136,6 +123,86 @@ void main() {
       );
     });
 
+    testWidgets('shows the no-match line and no Use button', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      seedRate(itemName: 'Mini excavator — 1.5 ton', amount: 520);
+
+      await pumpSheet(tester: tester, theme: theme);
+      await tester.tap(find.text('Mini excavator — 1.5 ton'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(CoreSearchBox.textFieldKey),
+        'stump grinder',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(YourRatesLookupSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/no_match$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('shows the error row when the saved prices cannot be read', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+
+      await pumpSheet(tester: tester, theme: theme);
+
+      await expectLater(
+        find.byType(YourRatesLookupSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/error$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('shows the loading indicator while the rates are read', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.completer = Completer<void>();
+      addTearDown(() => fakeSupabase.completer?.complete());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<YourRatesBloc>(
+              create: (_) => Modular.get<YourRatesBloc>(),
+              child: const YourRatesLookupSheet(
+                method: EquipmentPricingMethod.job,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await expectLater(
+        find.byType(YourRatesLookupSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/loading$suffix.png',
+        ),
+      );
+    });
+
     testWidgets(
       'shows the check, highlight, and confirm button once a row is selected',
       (tester) async {
@@ -143,11 +210,7 @@ void main() {
         tester.view.devicePixelRatio = ratio;
         addTearDown(tester.view.reset);
 
-        seedRate(
-          itemName: 'Mini excavator — 1.5 ton',
-          amount: 520,
-          description: 'Quoted for the whole dig, machine + operator',
-        );
+        seedRate(itemName: 'Mini excavator — 1.5 ton', amount: 520);
 
         await pumpSheet(tester: tester, theme: theme);
         await tester.tap(find.text('Mini excavator — 1.5 ton'));

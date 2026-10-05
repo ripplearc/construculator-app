@@ -371,22 +371,29 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       button: true,
       label: context.l10n.yourRatesLookupButton,
       excludeSemantics: true,
+      // TODO: [CA-1252](https://ripplearc.youtrack.cloud/issue/CA-1252) Replace with CoreUI's outlined icon button once it exists.
       child: GestureDetector(
         key: const Key('lookup_rate_button'),
         behavior: HitTestBehavior.opaque,
         onTap: () => unawaited(_openRateLookup(context, data.method)),
-        child: Container(
-          width: CoreSpacing.space10,
-          height: CoreSpacing.space10,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border.all(color: colorTheme.textLink),
-            borderRadius: BorderRadius.circular(CoreSpacing.space2),
-          ),
-          child: CoreIconWidget(
-            icon: CoreIcons.search,
-            color: colorTheme.iconGrayMid,
-            size: 20,
+        child: SizedBox(
+          width: CoreSpacing.space12,
+          height: CoreSpacing.space9,
+          child: Center(
+            child: Container(
+              width: CoreSpacing.space9,
+              height: CoreSpacing.space9,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border.all(color: colorTheme.lineMid),
+                borderRadius: BorderRadius.circular(CoreSpacing.space2),
+              ),
+              child: CoreIconWidget(
+                icon: CoreIcons.search,
+                color: colorTheme.iconGrayMid,
+                size: 20,
+              ),
+            ),
           ),
         ),
       ),
@@ -403,7 +410,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (entry == null || !mounted) return;
-    _equipmentNameController.text = entry.itemName;
+    if (_equipmentNameController.text.trim().isEmpty) {
+      _equipmentNameController.text = entry.itemName;
+    }
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
