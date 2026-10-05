@@ -377,5 +377,53 @@ void main() {
         );
       });
     });
+
+    group('fetchItemTotalCostsByEstimateId', () {
+      test('returns the totals of that estimate only', () async {
+        seedItemTable([
+          {'estimate_id': testEstimateId, 'item_total_cost': 580},
+          {'estimate_id': testEstimateId, 'item_total_cost': 2993.62},
+          {'estimate_id': 'estimate-other', 'item_total_cost': 99},
+        ]);
+
+        final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+          testEstimateId,
+        );
+
+        expect(totals, [580.0, 2993.62]);
+      });
+
+      test('returns an empty list when the estimate has no items', () async {
+        final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+          testEstimateId,
+        );
+
+        expect(totals, isEmpty);
+      });
+
+      test('asks only for the total column of the estimate\'s items', () async {
+        await dataSource.fetchItemTotalCostsByEstimateId(testEstimateId);
+
+        expect(
+          fakeSupabaseWrapper.getMethodCallsFor('select').single,
+          equals({
+            'method': 'select',
+            'table': DatabaseConstants.costItemsTable,
+            'columns': DatabaseConstants.itemTotalCostColumn,
+            'filterColumn': DatabaseConstants.estimateIdColumn,
+            'filterValue': testEstimateId,
+          }),
+        );
+      });
+
+      test('rethrows when the select fails', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+
+        await expectLater(
+          () => dataSource.fetchItemTotalCostsByEstimateId(testEstimateId),
+          throwsException,
+        );
+      });
+    });
   });
 }
