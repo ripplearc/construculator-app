@@ -269,9 +269,36 @@ void main() {
         );
       });
 
+      test('counts calendar days across a spring clock change', () {
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 7, 16),
+            now: DateTime(2026, 3, 9, 9),
+          ),
+          2,
+        );
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 8, 10),
+            now: DateTime(2026, 3, 9, 9),
+          ),
+          1,
+        );
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 5, 10),
+            now: DateTime(2026, 3, 12, 9),
+          ),
+          7,
+        );
+      });
+
       test('counts whole calendar days across a week and a month edge', () {
         expect(
-          DisplayFormatter.calendarDaysSince(DateTime(2026, 1, 8, 23), now: now),
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 8, 23),
+            now: now,
+          ),
           7,
         );
         expect(

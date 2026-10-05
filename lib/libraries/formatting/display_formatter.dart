@@ -71,8 +71,9 @@ class DisplayFormatter {
   }
 
   /// Counts the calendar days from [savedAt] to [now], both read in local
-  /// time, so 4 pm yesterday seen at 9 am today is 1 day, not 0. A [savedAt]
-  /// later than [now] counts as 0.
+  /// time, so 4 pm yesterday seen at 9 am today is 1 day, not 0. The two
+  /// dates are compared as UTC dates, so a clock change between them does not
+  /// make a day 23 or 25 hours long. A [savedAt] later than [now] counts as 0.
   ///
   /// [now] is caller-supplied rather than read from [DateTime.now] so this
   /// stays a pure function of its inputs; callers should source it from a
@@ -80,11 +81,9 @@ class DisplayFormatter {
   static int calendarDaysSince(DateTime savedAt, {required DateTime now}) {
     final savedDay = savedAt.toLocal();
     final today = now.toLocal();
-    final days = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    ).difference(DateTime(savedDay.year, savedDay.month, savedDay.day)).inDays;
+    final days = DateTime.utc(today.year, today.month, today.day)
+        .difference(DateTime.utc(savedDay.year, savedDay.month, savedDay.day))
+        .inDays;
     return days < 0 ? 0 : days;
   }
 

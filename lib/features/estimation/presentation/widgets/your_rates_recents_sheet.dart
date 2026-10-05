@@ -1,10 +1,10 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -94,7 +94,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                       child: CoreLoadingIndicator(),
                     );
                   }
-                  // TODO: [CA-1249] show a failure state with a Retry when the load fails, instead of the empty list. https://ripplearc.youtrack.cloud/issue/CA-1249
+                  // TODO: [CA-1249] When the load fails, show the error line "Couldn’t open your saved prices.", the grey line and a "Try again" button instead of the empty list. https://ripplearc.youtrack.cloud/issue/CA-1249
                   final entries = switch (state) {
                     YourRatesLoaded(:final recents) => recents,
                     _ => const <YourRateEntry>[],
