@@ -1548,14 +1548,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get equipmentDeliveryFeeOutsizedDialogOneDay => '1 day';
+  String get equipmentDeliveryFeeOutsizedDialogOneDay => 'one day';
 
   @override
   String get equipmentDeliveryFeeOutsizedDialogHalfDay => 'half a day';
 
   @override
   String equipmentDeliveryFeeOutsizedDialogDurationDays(String durationText) {
-    return '$durationText days';
+    String _temp0 = intl.Intl.selectLogic(durationText, {
+      '2': 'two',
+      '3': 'three',
+      '4': 'four',
+      '5': 'five',
+      '6': 'six',
+      '7': 'seven',
+      '8': 'eight',
+      '9': 'nine',
+      '10': 'ten',
+      'other': '$durationText',
+    });
+    return '$_temp0 days';
   }
 
   @override

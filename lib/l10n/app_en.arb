@@ -2408,7 +2408,7 @@
   },
   "equipmentDeliveryFeeOutsizedDialogBodyDay": "Delivery is {feeAmount} against {baseCostAmount} for {durationPhrase} of {equipmentType}. Add it anyway?",
   "@equipmentDeliveryFeeOutsizedDialogBodyDay": {
-    "description": "Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame \"Delivery $8500\" (e.g. \"Delivery is $8,500.00 against $580.00 for 4 days of excavator. Add it anyway?\"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.",
+    "description": "Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame \"Delivery $8500\" (e.g. \"Delivery is $8,500.00 against $580.00 for four days of excavator. Add it anyway?\"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.",
     "placeholders": {
       "feeAmount": {
         "type": "String",
@@ -2420,7 +2420,7 @@
       },
       "durationPhrase": {
         "type": "String",
-        "example": "4 days"
+        "example": "four days"
       },
       "equipmentType": {
         "type": "String",
@@ -2428,7 +2428,7 @@
       }
     }
   },
-  "equipmentDeliveryFeeOutsizedDialogOneDay": "1 day",
+  "equipmentDeliveryFeeOutsizedDialogOneDay": "one day",
   "@equipmentDeliveryFeeOutsizedDialogOneDay": {
     "description": "Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 1 (the storyboard calls out this case specially, as \"one day\")"
   },
@@ -2436,7 +2436,7 @@
   "@equipmentDeliveryFeeOutsizedDialogHalfDay": {
     "description": "Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 0.5 (the storyboard calls out this case specially)"
   },
-  "equipmentDeliveryFeeOutsizedDialogDurationDays": "{durationText} days",
+  "equipmentDeliveryFeeOutsizedDialogDurationDays": "{durationText, select, 2{two} 3{three} 4{four} 5{five} 6{six} 7{seven} 8{eight} 9{nine} 10{ten} other{{durationText}}} days",
   "@equipmentDeliveryFeeOutsizedDialogDurationDays": {
     "description": "Duration phrase used in the Day-pricing outsized-fee dialog body for any duration other than exactly 1 or 0.5; durationText is the pre-formatted duration count",
     "placeholders": {

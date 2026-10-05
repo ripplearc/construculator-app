@@ -1408,7 +1408,7 @@ void main() {
       );
     });
 
-    testWidgets('says "1 day", not "1 days", for a one-day duration', (
+    testWidgets('says "one day", not "one days", for a one-day duration', (
       tester,
     ) async {
       await tester.pumpWidget(makeWidget());
