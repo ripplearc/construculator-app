@@ -24,6 +24,7 @@ import 'package:construculator/features/estimation/presentation/bloc/rename_esti
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
@@ -75,6 +76,7 @@ class EstimationModule extends Module {
   @override
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
+    CompanyLibraryModule(appBootstrap),
     EstimationLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     ClockModule(),
@@ -166,7 +168,9 @@ class EstimationModule extends Module {
     i.add<EquipmentCostFormBloc>(
       () => EquipmentCostFormBloc(repository: i.get(), clock: i.get()),
     );
-    i.add<YourRatesBloc>(() => YourRatesBloc(repository: i.get()));
+    i.add<YourRatesBloc>(
+      () => YourRatesBloc(repository: i.get(), companyResolver: i.get()),
+    );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );
