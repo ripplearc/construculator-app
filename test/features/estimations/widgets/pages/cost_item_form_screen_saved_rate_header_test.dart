@@ -14,6 +14,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
@@ -40,36 +41,40 @@ void main() {
       YourRateEntry(
         id: 'rate-1',
         companyId: 'company-1',
-        itemName: 'Scissor lift — 19ft',
+        itemName: method == EquipmentPricingMethod.day
+            ? 'Scissor lift — 19ft'
+            : 'Dumpster — 30 yd',
         category: CostItemType.equipment,
         rate: Money(amount: amount),
         savedAt: DateTime(2026, 1, 1),
         equipmentMethod: method,
       );
 
-  Future<void> pumpSheet(WidgetTester tester, {YourRateEntry? entry}) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: CoreTheme.light(),
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<EquipmentCostFormBloc>(
-            create: (_) => Modular.get<EquipmentCostFormBloc>(),
-            child: CostItemFormScreen(
-              type: CostItemType.equipment,
-              estimationId: 'test-estimation-id',
-              router: FakeAppRouter(),
-              yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
-              clock: FakeClockImpl(),
-              presentAsSheet: true,
-              initialRateEntry: entry,
-            ),
+  Widget sheetApp({ThemeData? theme, YourRateEntry? entry}) {
+    return MaterialApp(
+      theme: theme ?? CoreTheme.light(),
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: BlocProvider<EquipmentCostFormBloc>(
+          create: (_) => Modular.get<EquipmentCostFormBloc>(),
+          child: CostItemFormScreen(
+            type: CostItemType.equipment,
+            estimationId: 'test-estimation-id',
+            router: FakeAppRouter(),
+            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+            clock: FakeClockImpl(),
+            presentAsSheet: true,
+            initialRateEntry: entry,
           ),
         ),
       ),
     );
+  }
+
+  Future<void> pumpSheet(WidgetTester tester, {YourRateEntry? entry}) async {
+    await tester.pumpWidget(sheetApp(entry: entry));
     await tester.pumpAndSettle();
   }
 
@@ -107,9 +112,72 @@ void main() {
         entry: savedRate(EquipmentPricingMethod.job, 400),
       );
 
-      expect(find.text('Scissor lift — 19ft'), findsOneWidget);
+      expect(find.text('Dumpster — 30 yd'), findsOneWidget);
       expect(find.text(r'$400.00 job · your default'), findsOneWidget);
       expect(find.byKey(SheetHeader.backButtonKey), findsOneWidget);
     });
+
+    testWidgets('typing a new amount keeps the saved price in the header', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        entry: savedRate(EquipmentPricingMethod.job, 400),
+      );
+
+      await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      await tester.pump();
+
+      expect(find.text(r'$400.00 job · your default'), findsOneWidget);
+      expect(find.text(r'$450.00 job · your default'), findsNothing);
+      expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+    });
+
+    testWidgets('clearing the amount keeps the saved price in the header', (
+      tester,
+    ) async {
+      await pumpSheet(
+        tester,
+        entry: savedRate(EquipmentPricingMethod.job, 400),
+      );
+
+      await tester.enterText(find.byKey(const Key('amount_field')), '');
+      await tester.pump();
+
+      expect(find.text(r'$400.00 job · your default'), findsOneWidget);
+      expect(find.text(r'$0.00 job · your default'), findsNothing);
+    });
+
+    testWidgets('the very first frame already shows the saved name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        sheetApp(entry: savedRate(EquipmentPricingMethod.day, 120)),
+      );
+
+      expect(find.text('Scissor lift — 19ft'), findsOneWidget);
+      expect(find.text('New equipment cost'), findsNothing);
+      expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+    });
+  });
+
+  group('CostItemFormScreen – saved rate accessibility', () {
+    testWidgets(
+      'a11y: the sheet subtitle meets text contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => sheetApp(
+            theme: theme,
+            entry: savedRate(EquipmentPricingMethod.day, 120),
+          ),
+          find.byKey(SheetHeader.subtitleKey),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
+    );
   });
 }

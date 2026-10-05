@@ -171,7 +171,9 @@ void main() {
         YourRateEntry(
           id: 'rate-1',
           companyId: 'company-1',
-          itemName: 'Scissor lift — 19ft',
+          itemName: method == EquipmentPricingMethod.day
+              ? 'Scissor lift — 19ft'
+              : 'Dumpster — 30 yd',
           category: CostItemType.equipment,
           rate: Money(amount: amount),
           savedAt: DateTime(2026, 1, 1),
@@ -225,13 +227,15 @@ void main() {
       if (savedRate != null) await tester.pumpAndSettle();
     }
 
-    Future<void> expectSheetGolden(WidgetTester tester, String name) =>
-        expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile(
-            'goldens/cost_item_form_screen/${size.width}x${size.height}/$name$suffix.png',
-          ),
-        );
+    Future<void> expectSheetGolden(
+      WidgetTester tester,
+      String name,
+    ) => expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile(
+        'goldens/cost_item_form_screen/${size.width}x${size.height}/$name$suffix.png',
+      ),
+    );
 
     testWidgets('renders equipment cost form as a sheet over the estimate', (
       tester,

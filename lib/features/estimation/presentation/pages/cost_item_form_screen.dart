@@ -5,10 +5,10 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_ite
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
@@ -147,24 +147,31 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   Widget _buildSheetHeader(BuildContext context) {
     final title = _screenTitle(context);
     if (widget.type != CostItemType.equipment) return SheetHeader(title: title);
+    final entry = widget.initialRateEntry;
     return BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
       builder: (context, state) {
         final data = state.formData;
-        if (!data.recalledFromRecents) {
-          return SheetHeader(title: title);
+        if (data.recalledFromRecents) {
+          return SheetHeader(
+            title: data.equipmentType,
+            subtitle: recalledRateSubtitle(
+              context,
+              rate: data.recalledRate ?? 0,
+              method: data.method,
+            ),
+          );
         }
-        final l10n = context.l10n;
-        final isDay = data.method == EquipmentPricingMethod.day;
-        final amount = DisplayFormatter.currency.format(
-          (isDay ? data.dailyRate : data.jobAmount) ?? 0,
-        );
-        return SheetHeader(
-          title: data.equipmentType,
-          subtitle: l10n.equipmentRecalledRateSubtitle(
-            amount,
-            isDay ? l10n.yourRatesDaySuffix : l10n.yourRatesJobSuffix,
-          ),
-        );
+        if (entry != null) {
+          return SheetHeader(
+            title: entry.itemName,
+            subtitle: recalledRateSubtitle(
+              context,
+              rate: entry.rate.amount,
+              method: entry.equipmentMethod ?? EquipmentPricingMethod.day,
+            ),
+          );
+        }
+        return SheetHeader(title: title);
       },
     );
   }

@@ -65,6 +65,7 @@ class EquipmentCostFormBloc
               ? d.otherMethodRateStatus
               : d.rateStatus,
           recalledFromRecents: e.fromRecents,
+          recalledRate: e.fromRecents ? e.rate : d.recalledRate,
         );
         return e.method == EquipmentPricingMethod.day
             ? recalled.copyWith(dailyRate: e.rate)
@@ -162,16 +163,7 @@ class EquipmentCostFormBloc
     );
   }
 
-  EquipmentCostFormData _current() {
-    return switch (state) {
-      EquipmentCostFormEditing(:final data) => data,
-      EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
-      EquipmentCostFormSubmitting(:final data) => data,
-      EquipmentCostFormSuccess(:final data) => data,
-      EquipmentCostFormFailure(:final data) => data,
-      EquipmentCostFormInitial() => const EquipmentCostFormData(),
-    };
-  }
+  EquipmentCostFormData _current() => state.formData;
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
     final errors = <EquipmentFormField, EquipmentFieldError>{};

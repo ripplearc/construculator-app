@@ -5,7 +5,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
-import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -125,9 +125,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _noteController.addListener(_onDescriptionChanged);
     final initialEntry = widget.initialRateEntry;
     if (initialEntry != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _applySavedRate(initialEntry, fromRecents: true);
-      });
+      _applySavedRate(initialEntry, fromRecents: true);
     }
   }
 
@@ -313,16 +311,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     // Delivery is added after the rate math, never inside it.
     widget.onTotalChanged?.call(base + delivery);
   }
-
-  EquipmentCostFormData _dataOf(EquipmentCostFormState state) =>
-      switch (state) {
-        EquipmentCostFormEditing(:final data) => data,
-        EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
-        EquipmentCostFormSubmitting(:final data) => data,
-        EquipmentCostFormSuccess(:final data) => data,
-        EquipmentCostFormFailure(:final data) => data,
-        EquipmentCostFormInitial() => const EquipmentCostFormData(),
-      };
 
   List<String>? _errorList(String? text) => text == null ? null : [text];
 
@@ -787,13 +775,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     BuildContext context,
     EquipmentCostFormData data,
   ) {
-    final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    final isDay = data.method == EquipmentPricingMethod.day;
-    final amount = DisplayFormatter.currency.format(
-      (isDay ? data.dailyRate : data.jobAmount) ?? 0,
-    );
     return [
       Text(
         data.equipmentType,
@@ -804,9 +787,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       ),
       const SizedBox(height: CoreSpacing.space1),
       Text(
-        l10n.equipmentRecalledRateSubtitle(
-          amount,
-          _rateUnitSuffix(context, data.method),
+        recalledRateSubtitle(
+          context,
+          rate: data.recalledRate ?? 0,
+          method: data.method,
         ),
         key: const Key('recalled_rate_subtitle'),
         style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
@@ -824,7 +808,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         listener: _handleYourRatesSaveState,
         child: BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
           listener: (_, state) {
-            final data = _dataOf(state);
+            final data = state.formData;
             if (state is EquipmentCostFormOutsizedFeeConfirm) {
               _showOutsizedFeeDialog(data);
             }
@@ -833,8 +817,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             _notifyTotalFromData(data);
           },
           builder: (_, state) {
-            final data = _dataOf(state);
+            final data = state.formData;
             final isDay = data.method == EquipmentPricingMethod.day;
+            if (widget.initialRateEntry != null && !data.recalledFromRecents) {
+              return const SizedBox.shrink();
+            }
             if (data.recalledFromRecents) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -914,8 +901,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   _rateSaveFooter(context, data),
                 ] else ...[
                   _amountField(context, data),
-                  _saveAsMyRateHelperText(context, data) ??
-                      const SizedBox.shrink(),
+                  _rateSaveFooter(context, data),
                 ],
                 const SizedBox(height: CoreSpacing.space5),
                 _buildDeliveryFeeSection(context, data),

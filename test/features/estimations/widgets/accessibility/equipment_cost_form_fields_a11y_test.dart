@@ -85,8 +85,8 @@ void main() {
     // equivalent check on the not-yet-recalled form's Duration-adjacent
     // field.
     testWidgets(
-      'a11y: the recalled-rate Subtitle meets text contrast guidelines in '
-      'both themes',
+      'a11y: the recalled-rate Subtitle in the form body meets text contrast '
+      'guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
@@ -112,8 +112,8 @@ void main() {
     );
 
     testWidgets(
-      'a11y: the recalled-rate Duration field meets tap target and label '
-      'guidelines in both themes',
+      'a11y: the recalled-rate Duration field meets text contrast guidelines '
+      'in both themes',
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
