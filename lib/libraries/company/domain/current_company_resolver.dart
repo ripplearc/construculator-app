@@ -17,11 +17,12 @@ abstract class CurrentCompanyResolver {
   /// failed). Callers must treat that identically to "a user with zero
   /// saved rates," never as an error state.
   ///
-  /// The first successful call (network reached, whether or not an id came
-  /// back) caches its result for the rest of the login session: every later
-  /// call, online or offline, returns the cached value without hitting the
-  /// network again. A call that fails before any call has succeeded returns
-  /// a [Failure] and caches nothing, so the next call retries.
+  /// Only a non-null id is cached, for the rest of the login session: every
+  /// later call, online or offline, returns it without hitting the network
+  /// again. A `Right(null)` answer is not cached, so the next call asks the
+  /// backend again and can pick up a company that was created in the
+  /// meantime. A call that fails returns a [Failure] and caches nothing, so
+  /// the next call retries.
   Future<Either<Failure, String?>> resolve();
 
   /// Clears the cached result, so the next [resolve] call hits the network
