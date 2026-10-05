@@ -1875,6 +1875,7 @@ void main() {
       final searchResult = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return searchResult.fold(
         (_) => throw StateError('seed search failed'),
@@ -2023,6 +2024,7 @@ void main() {
       final saved = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return saved.fold(
         (_) => throw StateError('seed search failed'),
@@ -2075,6 +2077,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.length), 1);
       expect(saved.fold((_) => null, (e) => e.single.rate.amount), 150);
@@ -2135,6 +2138,7 @@ void main() {
         final saved = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(saved.fold((_) => null, (e) => e.length), 2);
       },
@@ -2367,6 +2371,7 @@ void main() {
         final beforeLabel = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(beforeLabel.fold((_) => null, (e) => e.single.rate.amount), 150);
 
@@ -2382,6 +2387,7 @@ void main() {
         final afterLabel = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           afterLabel.fold(
@@ -2461,6 +2467,7 @@ void main() {
       final saved = await Modular.get<YourRatesRepository>().search(
         'backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.single.itemName), 'backhoe');
     });
@@ -2491,6 +2498,7 @@ void main() {
       final saved = await repository.search(
         'Dumpster',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(
         saved.fold((_) => null, (e) => e.single.equipmentMethod),
@@ -2537,6 +2545,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       // Still just the one seeded row — the cancelled retry never reached
       // the repository.
@@ -2577,6 +2586,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.length), 1);
     });

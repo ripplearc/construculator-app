@@ -4,6 +4,8 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,11 @@ void main() {
 
   setUp(() async {
     fakeSupabase.reset();
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     await loadAppFontsAll();
   });
 
@@ -250,7 +257,7 @@ void main() {
       fakeSupabase.addTableData('your_rates', [
         {
           'id': 'rate-1',
-          'company_id': '',
+          'company_id': 'company-1',
           'category': 'equipment',
           'item_name': 'Mini excavator',
           'rate_amount': 120,
