@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -166,6 +167,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         fullWidth: false,
         onPressed: () => CoreQuickSheet.show(
           context: context,
+          backgroundColor: sheetSurface(context),
           child: BlocProvider<EquipmentCostFormBloc>(
             create: (_) => widget.equipmentCostFormBlocFactory(),
             child: CostItemFormScreen(
