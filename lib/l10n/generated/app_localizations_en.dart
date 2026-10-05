@@ -2051,4 +2051,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String addedToEstimateToast(String estimateName) {
     return 'Added to $estimateName';
   }
+
+  @override
+  String get estimateSummaryLoadFailedError =>
+      'Couldn\'t open this estimate. Try again.';
 }
