@@ -2475,23 +2475,29 @@
   "@equipmentSaveAsMyRateLink": {
     "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)"
   },
-  "equipmentSaveAsMyRateHelperText": "Saves {amount} {unit} to Your rates — it auto-fills next time you add {itemName}.",
+  "equipmentSaveAsMyRateHelperText": "Saves {amount} {unit} to {yourRates} — it auto-fills next time you add {article, select, an{an} other{a}} {itemName}.",
   "@equipmentSaveAsMyRateHelperText": {
-    "description": "Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (Figma node 66342:178091/178103, the cuj6-equip-5-verify storyboard frame); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix for the active pricing method, and itemName is the typed equipment name",
+    "description": "Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (storyboard CUJ 6); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix, yourRates is yourRatesName (drawn in bold), article is 'an' when the equipment name starts with a vowel and any other value otherwise, and itemName is the typed equipment name in lower case",
     "placeholders": {
-      "amount": {
-        "type": "String",
-        "example": "$145.00"
-      },
-      "unit": {
-        "type": "String",
-        "example": "/day"
-      },
-      "itemName": {
-        "type": "String",
-        "example": "Mini excavator — 1.5 ton"
-      }
+      "amount": {"type": "String", "example": "$145.00"},
+      "unit": {"type": "String", "example": "/day"},
+      "yourRates": {"type": "String", "example": "Your rates"},
+      "article": {"type": "String", "example": "a"},
+      "itemName": {"type": "String", "example": "mini excavator"}
     }
+  },
+  "equipmentSavedToYourRatesHint": "Saved to {yourRates} — auto-fills next time you add {article, select, an{an} other{a}} {itemName}.",
+  "@equipmentSavedToYourRatesHint": {
+    "description": "Helper row shown below the Rate/Amount field after the rate was saved to Your rates (storyboard CUJ 6, frame Rate saved); the 'Save as my default' link is gone",
+    "placeholders": {
+      "yourRates": {"type": "String", "example": "Your rates"},
+      "article": {"type": "String", "example": "a"},
+      "itemName": {"type": "String", "example": "mini excavator"}
+    }
+  },
+  "yourRatesName": "Your rates",
+  "@yourRatesName": {
+    "description": "The name of the contractor's saved-rate book, drawn in bold inside the save hints"
   },
   "yourRatesLookupTitle": "Look up a rate",
   "@yourRatesLookupTitle": {
@@ -2577,13 +2583,9 @@
   "@yourRatesEntryLabelSave": {
     "description": "Primary button on the entry-label collision dialog; retries the save with the typed label"
   },
-  "yourRatesSaveFailedError": "Couldn't save this rate. Please try again.",
+  "yourRatesSaveFailedError": "Your rate was not saved. Try again.",
   "@yourRatesSaveFailedError": {
-    "description": "Toast/snackbar shown when saving to Your rates fails for a reason other than a label collision"
-  },
-  "yourRatesSaveSucceededMessage": "Rate saved to Your rates",
-  "@yourRatesSaveSucceededMessage": {
-    "description": "Success toast shown after a rate is saved to Your rates, whether on the first attempt or after a label-collision retry"
+    "description": "Error line under the Rate/Amount field when saving to Your rates fails for a reason other than a label collision (storyboard CUJ 6, frame Rate not saved); the 'Save as my default' link stays"
   },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {

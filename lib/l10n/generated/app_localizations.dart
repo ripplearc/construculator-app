@@ -2952,15 +2952,33 @@ abstract class AppLocalizations {
   /// **'Save as my default'**
   String get equipmentSaveAsMyRateLink;
 
-  /// Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (Figma node 66342:178091/178103, the cuj6-equip-5-verify storyboard frame); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix for the active pricing method, and itemName is the typed equipment name
+  /// Helper row (info icon + text) shown below the Rate/Amount field whenever the 'Save as my default' link is offered (storyboard CUJ 6); amount is the pre-formatted currency string, unit is yourRatesDaySuffix/yourRatesJobSuffix, yourRates is yourRatesName (drawn in bold), article is 'an' when the equipment name starts with a vowel and any other value otherwise, and itemName is the typed equipment name in lower case
   ///
   /// In en, this message translates to:
-  /// **'Saves {amount} {unit} to Your rates — it auto-fills next time you add {itemName}.'**
+  /// **'Saves {amount} {unit} to {yourRates} — it auto-fills next time you add {article, select, an{an} other{a}} {itemName}.'**
   String equipmentSaveAsMyRateHelperText(
     String amount,
     String unit,
+    String yourRates,
+    String article,
     String itemName,
   );
+
+  /// Helper row shown below the Rate/Amount field after the rate was saved to Your rates (storyboard CUJ 6, frame Rate saved); the 'Save as my default' link is gone
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {yourRates} — auto-fills next time you add {article, select, an{an} other{a}} {itemName}.'**
+  String equipmentSavedToYourRatesHint(
+    String yourRates,
+    String article,
+    String itemName,
+  );
+
+  /// The name of the contractor's saved-rate book, drawn in bold inside the save hints
+  ///
+  /// In en, this message translates to:
+  /// **'Your rates'**
+  String get yourRatesName;
 
   /// Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button
   ///
@@ -3064,17 +3082,11 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get yourRatesEntryLabelSave;
 
-  /// Toast/snackbar shown when saving to Your rates fails for a reason other than a label collision
+  /// Error line under the Rate/Amount field when saving to Your rates fails for a reason other than a label collision (storyboard CUJ 6, frame Rate not saved); the 'Save as my default' link stays
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t save this rate. Please try again.'**
+  /// **'Your rate was not saved. Try again.'**
   String get yourRatesSaveFailedError;
-
-  /// Success toast shown after a rate is saved to Your rates, whether on the first attempt or after a label-collision retry
-  ///
-  /// In en, this message translates to:
-  /// **'Rate saved to Your rates'**
-  String get yourRatesSaveSucceededMessage;
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///

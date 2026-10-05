@@ -19,6 +19,26 @@ String _formatTrimmedNumber(double value) => value == value.roundToDouble()
     ? value.toStringAsFixed(0)
     : value.toString();
 
+enum _RateSaveStatus { idle, saved, failed }
+
+TextSpan _withBold(
+  String text,
+  String boldPart, {
+  required TextStyle regular,
+  required TextStyle bold,
+}) {
+  final start = text.indexOf(boldPart);
+  if (start < 0) return TextSpan(text: text, style: regular);
+  return TextSpan(
+    style: regular,
+    children: [
+      TextSpan(text: text.substring(0, start)),
+      TextSpan(text: boldPart, style: bold),
+      TextSpan(text: text.substring(start + boldPart.length)),
+    ],
+  );
+}
+
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
@@ -76,12 +96,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   bool _deliveryExpanded = false;
 
-  /// Owned by this widget solely for [YourRatesSaveRequested] — never
-  /// dispatches Refresh/Search on it, so every state it emits is a save
-  /// outcome (see [_handleYourRatesSaveState]). The look-up-a-rate sheet
-  /// gets its own separate, shorter-lived instance instead (see
-  /// [_openRateLookup]).
   late final YourRatesBloc _yourRatesBloc;
+  _RateSaveStatus _rateSaveStatus = _RateSaveStatus.idle;
 
   @override
   void initState() {
@@ -131,6 +147,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onEquipmentNameChanged() {
+    _clearRateSaveStatus();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentCostItemTypeChanged(_equipmentNameController.text),
     );
@@ -143,12 +160,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onDailyRateChanged() {
+    _clearRateSaveStatus();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(_dailyRateController.text),
     );
   }
 
   void _onJobAmountChanged() {
+    _clearRateSaveStatus();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(_jobAmountController.text),
     );
@@ -236,6 +255,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
+    _clearRateSaveStatus();
     _daySelected.value = false;
     _jobSelected.value = false;
     context.read<EquipmentCostFormBloc>().add(
@@ -347,16 +367,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // No mechanism anywhere in this app resolves the caller's real company id
-  // (no companyId on ProjectRepository/Project, no CurrentCompanyRepository).
-  // Per YourRatesRepository.save's own doc comment, companyId only matters
-  // for writes, which the backend validates against the caller's actual
-  // company membership — an empty id fails that check server-side instead
-  // of writing to the wrong company.
-  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace
-  // this stub with a real company id from CurrentCompanyResolver — CA-1180
-  // owns updating this call site specifically, once CurrentCompanyResolver
-  // itself (CA-1179, a CA-1180 dependency) exists.
+  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace this stub with a real company id from CurrentCompanyResolver.
   String get _currentCompanyId => '';
 
   YourRateEntry _buildYourRateEntry(
@@ -367,7 +378,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return YourRateEntry(
       id: '',
       companyId: _currentCompanyId,
-      itemName: _equipmentNameController.text,
+      itemName: _equipmentNameController.text.trim(),
       category: CostItemType.equipment,
       rate: Money(amount: (isDay ? data.dailyRate : data.jobAmount) ?? 0),
       savedAt: widget.clock.now(),
@@ -377,36 +388,24 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _saveAsMyRate(EquipmentCostFormData data) {
+    _clearRateSaveStatus();
     _yourRatesBloc.add(YourRatesSaveRequested(_buildYourRateEntry(data)));
   }
 
-  // Reacts to the dedicated _yourRatesBloc instance this widget owns for
-  // saves only (never dispatches Refresh/Search on it — see initState), so
-  // every state it emits is a save outcome. The collision/failure branching
-  // itself lives in YourRatesBloc, not here — this just maps each resulting
-  // state to its UI effect.
+  void _clearRateSaveStatus() {
+    if (_rateSaveStatus == _RateSaveStatus.idle || !mounted) return;
+    setState(() => _rateSaveStatus = _RateSaveStatus.idle);
+  }
+
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
-    final l10n = context.l10n;
     switch (state) {
       case YourRatesSaveCollision(:final entry):
         unawaited(_promptEntryLabelAndRetry(context, entry));
-      // TODO: CA-1207 — every YourRatesSaveFailed shows this same generic
-      // message, even though YourRatesRepositoryImpl._handleError already
-      // distinguishes timeoutError/connectionError/parsingError/
-      // permissionDenied/notFoundError. Needs that EstimationErrorType
-      // threaded through this state and distinct, actionable copy per type.
+      // TODO: [CA-1207](https://ripplearc.youtrack.cloud/issue/CA-1207) Every YourRatesSaveFailed shows the same line, though the repository already tells a timeout, a lost connection, a parsing error, a refused write and a missing row apart. Thread the error type through this state and write copy for each.
       case YourRatesSaveFailed():
-        CoreToast.showError(
-          context,
-          l10n.yourRatesSaveFailedError,
-          l10n.closeLabel,
-        );
+        setState(() => _rateSaveStatus = _RateSaveStatus.failed);
       case YourRatesSaveSucceeded():
-        CoreToast.showSuccess(
-          context,
-          l10n.yourRatesSaveSucceededMessage,
-          l10n.closeLabel,
-        );
+        setState(() => _rateSaveStatus = _RateSaveStatus.saved);
       case YourRatesLoading():
       case YourRatesLoaded():
       case YourRatesSearchResults():
@@ -429,49 +428,27 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // True when the rate/amount field currently in play (Day pricing reads
-  // dailyRate, Job pricing reads jobAmount) has a validation error. Checked
-  // by [_offersSaveAsMyRate] alongside [EquipmentCostFormData.itemTypeError]
-  // so the link can't fire a save built from an equipment name or rate the
-  // form itself is showing red.
   bool _hasRateFieldError(EquipmentCostFormData data) {
-    final key = data.method == EquipmentPricingMethod.day
-        ? 'dailyRate'
-        : 'jobAmount';
-    return data.fieldErrors.containsKey(key);
+    final field = data.method == EquipmentPricingMethod.day
+        ? EquipmentFormField.dailyRate
+        : EquipmentFormField.jobAmount;
+    return data.fieldErrors.containsKey(field);
   }
 
-  // Shared gate for [_saveAsMyRateLink] and [_saveAsMyRateHelperText], which
-  // always appear together (Figma node 66342:178091's "Buttons" link and its
-  // "Ic_Info_16x16" + text row right below it). True for any rate the
-  // contractor hasn't yet saved to Your rates: RateStatus.missing (nothing
-  // typed) shows the look-up-a-rate search button instead — see the caller —
-  // so this only covers ownRateConfirmed/sampleRateUnverified. Also false
-  // while the rate/amount field itself has a validation error, so neither
-  // the link nor the helper text can offer to save an out-of-range rate.
-  //
-  // `data.itemTypeError` is checked too, but per EquipmentCostFormBloc's own
-  // field-error policy (see its `_validated` doc comment) an empty item type
-  // never populates fieldErrors — only a present-but-unusable value does —
-  // so that check alone never actually excludes a blank name. The
-  // controller-text check below is what really does that job, reading
-  // straight from the same controller [_buildYourRateEntry] uses to build
-  // `itemName`, so the two can never disagree about what "empty" means.
-  bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
+  bool _isSavableRate(EquipmentCostFormData data) =>
       data.rateStatus != RateStatus.missing &&
       data.itemTypeError == null &&
       _equipmentNameController.text.trim().isNotEmpty &&
       !_hasRateFieldError(data);
+
+  bool _offersSaveAsMyRate(EquipmentCostFormData data) =>
+      _isSavableRate(data) && _rateSaveStatus != _RateSaveStatus.saved;
 
   Widget? _saveAsMyRateLink(BuildContext context, EquipmentCostFormData data) {
     if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    // TODO: CA-1207 — nothing on screen changes between this tap and the
-    // eventual success/failure toast. The _droppable() transformer on
-    // YourRatesSaveRequested already stops a double-tap from double-saving,
-    // but gives no visual confirmation the first tap registered.
     return Semantics(
       button: true,
       label: l10n.equipmentSaveAsMyRateLink,
@@ -494,13 +471,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // "/day" for Day pricing, "job" for Job — the Rate/Amount field's own unit
-  // suffix (Figma's "Text Field" component instances for both fields set
-  // `Field unit`/`Show field unit`, mirroring the Duration field's "days"
-  // suffix just above it). Reuses yourRatesDaySuffix/yourRatesJobSuffix
-  // rather than adding a duplicate string, since the Look-up-a-rate sheet's
-  // "Use $520.00 job" button already established this exact Day/Job
-  // vocabulary.
   String _rateUnitSuffix(BuildContext context, EquipmentPricingMethod method) {
     final l10n = context.l10n;
     return method == EquipmentPricingMethod.day
@@ -508,17 +478,64 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         : l10n.yourRatesJobSuffix;
   }
 
-  // Explanatory row (info icon + text) directly below the Rate/Amount field,
-  // shown only alongside [_saveAsMyRateLink] (Figma node 66342:178091's
-  // "Ic_Info_16x16" + text instances at y=442-443, right under the "Save as
-  // my default" link). Styled like [_buildDeliveryFeeSection]'s own helper
-  // text row — the established pattern in this file for a 16px info icon
-  // plus bodySmallRegular/textBody text.
-  Widget? _saveAsMyRateHelperText(
+  Widget _rateSaveFooter(BuildContext context, EquipmentCostFormData data) {
+    if (!_isSavableRate(data)) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: switch (_rateSaveStatus) {
+        _RateSaveStatus.failed => _rateSaveMessage(
+          context,
+          key: const Key('save_as_my_rate_error'),
+          icon: CoreIcons.error,
+          iconColor: context.colorTheme.iconRed,
+          text: Text(
+            context.l10n.yourRatesSaveFailedError,
+            style: context.textTheme.bodySmallRegular.copyWith(
+              color: context.colorTheme.textError,
+            ),
+          ),
+        ),
+        _RateSaveStatus.saved => _rateSaveMessage(
+          context,
+          key: const Key('save_as_my_rate_helper_text'),
+          icon: CoreIcons.info,
+          iconColor: context.colorTheme.iconGrayMid,
+          text: _hintText(context, data, saved: true),
+        ),
+        _RateSaveStatus.idle => _rateSaveMessage(
+          context,
+          key: const Key('save_as_my_rate_helper_text'),
+          icon: CoreIcons.info,
+          iconColor: context.colorTheme.iconGrayMid,
+          text: _hintText(context, data, saved: false),
+        ),
+      },
+    );
+  }
+
+  Widget _rateSaveMessage(
+    BuildContext context, {
+    required Key key,
+    required CoreIconData icon,
+    required Color iconColor,
+    required Widget text,
+  }) {
+    return Row(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CoreIconWidget(icon: icon, color: iconColor, size: 16),
+        const SizedBox(width: CoreSpacing.space1),
+        Expanded(child: text),
+      ],
+    );
+  }
+
+  Widget _hintText(
     BuildContext context,
-    EquipmentCostFormData data,
-  ) {
-    if (!_offersSaveAsMyRate(data)) return null;
+    EquipmentCostFormData data, {
+    required bool saved,
+  }) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
@@ -526,31 +543,27 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final amount = DisplayFormatter.currency.format(
       (isDay ? data.dailyRate : data.jobAmount) ?? 0,
     );
-    return Padding(
-      padding: const EdgeInsets.only(top: CoreSpacing.space2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CoreIconWidget(
-            icon: CoreIcons.info,
-            color: colorTheme.iconGrayMid,
-            size: 16,
-          ),
-          const SizedBox(width: CoreSpacing.space1),
-          Expanded(
-            child: Text(
-              l10n.equipmentSaveAsMyRateHelperText(
-                amount,
-                _rateUnitSuffix(context, data.method),
-                data.equipmentType,
-              ),
-              key: const Key('save_as_my_rate_helper_text'),
-              style: textTheme.bodySmallRegular.copyWith(
-                color: colorTheme.textBody,
-              ),
-            ),
-          ),
-        ],
+    final itemName = data.equipmentType.trim().toLowerCase();
+    final article = RegExp(r'^[aeiou]').hasMatch(itemName) ? 'an' : 'a';
+    final yourRates = l10n.yourRatesName;
+    final text = saved
+        ? l10n.equipmentSavedToYourRatesHint(yourRates, article, itemName)
+        : l10n.equipmentSaveAsMyRateHelperText(
+            amount,
+            _rateUnitSuffix(context, data.method),
+            yourRates,
+            article,
+            itemName,
+          );
+    final regular = textTheme.bodySmallRegular.copyWith(
+      color: colorTheme.textBody,
+    );
+    return Text.rich(
+      _withBold(
+        text,
+        yourRates,
+        regular: regular,
+        bold: textTheme.bodySmallSemiBold.copyWith(color: colorTheme.textBody),
       ),
     );
   }
@@ -772,8 +785,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                         _lookupRateButtonWhenEmpty(context, data),
                     errorTextList: _errorList(_rateErrorText(context, data)),
                   ),
-                  _saveAsMyRateHelperText(context, data) ??
-                      const SizedBox.shrink(),
+                  _rateSaveFooter(context, data),
                 ] else ...[
                   UnderlineTextField(
                     key: const Key('amount_field'),
@@ -796,8 +808,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                         _lookupRateButtonWhenEmpty(context, data),
                     errorTextList: _errorList(_amountErrorText(context, data)),
                   ),
-                  _saveAsMyRateHelperText(context, data) ??
-                      const SizedBox.shrink(),
+                  _rateSaveFooter(context, data),
                 ],
                 const SizedBox(height: CoreSpacing.space5),
                 _buildDeliveryFeeSection(context, data),
