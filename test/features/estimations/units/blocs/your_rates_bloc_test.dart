@@ -230,6 +230,7 @@ void main() {
       // ignore: no_direct_instantiation, reason: needs a debounce far longer than the test, which Modular's registration can't supply per-test
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -303,7 +304,10 @@ void main() {
         setUp: () {
           fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
             row(id: 'mine', itemName: 'Excavator'),
-            {...row(id: 'theirs', itemName: 'Excavator'), 'company_id': 'company-2'},
+            {
+              ...row(id: 'theirs', itemName: 'Excavator'),
+              'company_id': 'company-2',
+            },
           ]);
         },
         build: zeroDebounceBloc,
@@ -339,7 +343,11 @@ void main() {
         },
         expect: () => [
           isA<YourRatesLoading>(),
-          isA<YourRatesSearchResults>().having((s) => s.results, 'results', isEmpty),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results,
+            'results',
+            isEmpty,
+          ),
         ],
         verify: (_) {
           expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
@@ -466,7 +474,8 @@ void main() {
               .getMethodCallsFor('insert')
               .single['data'];
           expect(
-            (inserted as Map<String, dynamic>)[DatabaseConstants.companyIdColumn],
+            (inserted
+                as Map<String, dynamic>)[DatabaseConstants.companyIdColumn],
             'company-1',
           );
         },

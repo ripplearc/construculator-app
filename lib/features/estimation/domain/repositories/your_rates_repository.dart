@@ -23,8 +23,8 @@ import 'package:construculator/libraries/errors/failures.dart';
 abstract class YourRatesRepository {
   /// Searches saved rate entries by item name, optionally scoped to one
   /// [category] and one [companyId] — the real company-scoping mechanism for
-  /// a caller in more than one company. A null [companyId] adds no filter and
-  /// returns the rows of every company the caller belongs to.
+  /// a caller in more than one company. A blank [companyId] returns a
+  /// failure before any read.
   ///
   /// The [query] is split into words. An entry matches when any word is in
   /// its item name, ignoring case, so `mini excavator 1.5t` finds
@@ -43,13 +43,13 @@ abstract class YourRatesRepository {
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
-    String? companyId,
+    required String companyId,
     int? limit,
   });
 
   /// Looks up the rate entry for one item within one category, optionally
-  /// scoped to one [companyId]. A null [companyId] adds no filter and matches
-  /// the rows of every company the caller belongs to.
+  /// scoped to one [companyId]. A blank [companyId] returns a failure before
+  /// any read.
   ///
   /// The name is matched without regard to capital letters or extra spaces.
   /// Multiple entries can share the same name, distinguished by
@@ -62,7 +62,7 @@ abstract class YourRatesRepository {
   Future<Either<Failure, YourRateEntry?>> getByItemName(
     String itemName,
     CostItemType category, {
-    String? companyId,
+    required String companyId,
   });
 
   /// Saves [entry] into the caller's rate book, applying the collision rule

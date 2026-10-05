@@ -18,14 +18,18 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   final YourRatesDataSource dataSource;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
+  static const _blankCompanyFailure = EstimationFailure(
+    errorType: EstimationErrorType.permissionDenied,
+  );
 
   @override
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
-    String? companyId,
+    required String companyId,
     int? limit,
   }) async {
+    if (companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
       final dtos = await dataSource.fetchRates(
         category: category?.toJson(),
@@ -58,8 +62,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, YourRateEntry?>> getByItemName(
     String itemName,
     CostItemType category, {
-    String? companyId,
+    required String companyId,
   }) async {
+    if (companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
       final matches = await _entriesNamed(
         category,
@@ -77,6 +82,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   @override
   Future<Either<Failure, void>> save(YourRateEntry entry) async {
+    if (entry.companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
       final effectiveLabel = _normalizeLabel(entry.entryLabel);
       final normalizedEntry = entry.copyWith(
@@ -135,7 +141,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<List<YourRateEntry>> _entriesNamed(
     CostItemType category,
     String itemName, {
-    String? companyId,
+    required String companyId,
   }) async {
     final nameKey = _nameKey(itemName);
     final dtos = await dataSource.fetchRates(
