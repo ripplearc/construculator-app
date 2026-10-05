@@ -295,16 +295,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   // and the field itself never disagree mid-keystroke, e.g. both read "85"
   // rather than the row jumping ahead to "$85.00"), and the two-decimal
   // formatted value once the field folds.
-  String _deliveryRowText(BuildContext context, double? fee) {
-    final l10n = context.l10n;
+  String _deliveryRowValue(BuildContext context, double? fee) {
     final raw = _deliveryFeeController.text;
-    final value = switch ((_deliveryFocusNode.hasFocus, raw.isEmpty, fee)) {
+    return switch ((_deliveryFocusNode.hasFocus, raw.isEmpty, fee)) {
       (true, false, _) => raw,
-      (_, _, null) => l10n.equipmentDeliveryFeeUnsetText,
+      (_, _, null) => context.l10n.equipmentDeliveryFeeUnsetText,
       (_, _, final fee?) => DisplayFormatter.currency.format(fee),
     };
-    return '${l10n.equipmentDeliveryRowLabel} $value';
   }
+
+  String _deliveryRowText(BuildContext context, double? fee) =>
+      '${context.l10n.equipmentDeliveryRowLabel} '
+      '${_deliveryRowValue(context, fee)}';
 
   // The two badge variants map onto sampleRateUnverified/ownRateConfirmed
   // only. `ownRateUnconfirmed` — a value just typed in, not yet confirmed
@@ -580,28 +582,56 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                           key: const Key('delivery_fee_row'),
                           behavior: HitTestBehavior.opaque,
                           onTap: _toggleDeliveryExpanded,
-                          child: Container(
+                          child: ConstrainedBox(
                             constraints: const BoxConstraints(minHeight: 48),
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _deliveryRowText(context, data.deliveryFee),
-                                    overflow: TextOverflow.ellipsis,
-                                    style: textTheme.bodyLargeRegular.copyWith(
-                                      color: colorTheme.textHeadline,
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: 1,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text:
+                                                '${l10n.equipmentDeliveryRowLabel} ',
+                                            style: textTheme.bodyMediumRegular
+                                                .copyWith(
+                                                  color: colorTheme.textBody,
+                                                ),
+                                          ),
+                                          TextSpan(
+                                            text: _deliveryRowValue(
+                                              context,
+                                              data.deliveryFee,
+                                            ),
+                                            style: textTheme.bodyMediumSemiBold
+                                                .copyWith(
+                                                  color:
+                                                      colorTheme.textHeadline,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '  ·  ',
-                                  style: textTheme.bodyLargeRegular.copyWith(
-                                    color: colorTheme.textHeadline,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: CoreSpacing.space1,
+                                    ),
+                                    child: Text(
+                                      '·',
+                                      style: textTheme.bodySmallRegular
+                                          .copyWith(
+                                            color: colorTheme.textDisable,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -623,7 +653,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                           alignment: Alignment.center,
                           child: Text(
                             l10n.equipmentDeliveryAddNoteLink,
-                            style: textTheme.bodyLargeRegular.copyWith(
+                            style: textTheme.bodyMediumSemiBold.copyWith(
                               color: colorTheme.textLink,
                             ),
                           ),
@@ -653,7 +683,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                       child: CoreIconWidget(
                         icon: CoreIcons.arrowDropDown,
                         color: colorTheme.iconGrayMid,
-                        size: 24,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -671,10 +701,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              prefix: CoreIconWidget(
-                icon: CoreIcons.dollar,
-                color: colorTheme.textHeadline,
-                size: 24,
+              prefix: Text(
+                '\$',
+                style: textTheme.bodyLargeRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
               ),
             ),
             const SizedBox(height: CoreSpacing.space3),
@@ -698,9 +729,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 ///
 /// Modeled on Figma's generic "Confirmation Dialog" component (node
 /// 65354:146175), also used elsewhere for an unrelated archive-confirmation
-/// flow: 340×262, 20px corner radius, 22px padding, 12px gap, a 52×52 light
-/// blue icon circle, an 18px semibold title, a 14px regular body, and a
-/// secondary/primary [CoreButton] pair.
+/// flow: 340×262, 20px corner radius, 22px padding, 12px gap, an 18px semibold title, a 14px regular body, and a
+/// secondary/primary [CoreButton] pair. The storyboard frame draws no icon
+/// circle, so this dialog has none.
 ///
 /// The title/body copy matches the storyboard frame "Delivery $8500"
 /// ("Delivery costs more than the machine" / "Delivery is {fee} against
@@ -752,6 +783,26 @@ class _OutsizedFeeDialog extends StatelessWidget {
     );
   }
 
+  TextSpan _withBoldAmounts(
+    String text,
+    List<String> amounts, {
+    required TextStyle regular,
+    required TextStyle bold,
+  }) {
+    final pattern = RegExp(amounts.map(RegExp.escape).join('|'));
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+      spans.add(TextSpan(text: match.group(0), style: bold));
+      cursor = match.end;
+    }
+    if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor)));
+    return TextSpan(style: regular, children: spans);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -787,22 +838,6 @@ class _OutsizedFeeDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: colorTheme.backgroundBlueLight,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: CoreIconWidget(
-                    icon: CoreIcons.info,
-                    color: colorTheme.iconBlue,
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(height: CoreSpacing.space3),
               Text(
                 l10n.equipmentDeliveryFeeOutsizedDialogTitle,
                 key: const Key('outsized_fee_dialog_title'),
@@ -811,12 +846,21 @@ class _OutsizedFeeDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: CoreSpacing.space3),
-              Text(
-                bodyText,
-                key: const Key('outsized_fee_dialog_body'),
-                style: textTheme.bodyMediumRegular.copyWith(
-                  color: colorTheme.textBody,
+              Text.rich(
+                _withBoldAmounts(
+                  bodyText,
+                  [
+                    DisplayFormatter.currency.format(fee),
+                    DisplayFormatter.currency.format(baseCost),
+                  ],
+                  regular: textTheme.bodyMediumRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                  bold: textTheme.bodyMediumSemiBold.copyWith(
+                    color: colorTheme.textBody,
+                  ),
                 ),
+                key: const Key('outsized_fee_dialog_body'),
               ),
               const SizedBox(height: CoreSpacing.space3),
               Row(
