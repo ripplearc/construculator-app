@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,7 @@ class YourRatesLookupSheet extends StatefulWidget {
   }) {
     return CoreQuickSheet.show<YourRateEntry>(
       context: context,
+      backgroundColor: sheetSurface(context),
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
         child: YourRatesLookupSheet(method: method),
@@ -221,7 +223,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
 /// white fill, 1px `#d0d5dd` (`colorTheme.lineMid`) stroke, 12px corner
 /// radius. [CoreSearchBox] gets the icon behavior right but is borderless
 /// everywhere else it is used, so this wraps it in the bordered box.
-// TODO: [CA-1251](https://ripplearc.youtrack.cloud/issue/CA-1251) CoreSearchBox paints its own page-background fill, so the box is not white as in the frame until the white sheet surface exists in CoreUI.
 class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
@@ -231,6 +232,7 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final theme = Theme.of(context);
     return Container(
       key: const Key('your_rates_search_field'),
       clipBehavior: Clip.antiAlias,
@@ -238,11 +240,22 @@ class _SearchField extends StatelessWidget {
         border: Border.all(color: colorTheme.lineMid),
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
       ),
-      child: CoreSearchBox(
-        hintText: context.l10n.yourRatesSearchHint,
-        controller: controller,
-        onChanged: onChanged,
-        clearSemanticLabel: context.l10n.yourRatesClearSearchSemanticLabel,
+      child: Theme(
+        data: theme.copyWith(
+          extensions: [
+            for (final extension in theme.extensions.values)
+              if (extension is AppColorsExtension)
+                extension.copyWith(pageBackground: sheetSurface(context))
+              else
+                extension,
+          ],
+        ),
+        child: CoreSearchBox(
+          hintText: context.l10n.yourRatesSearchHint,
+          controller: controller,
+          onChanged: onChanged,
+          clearSemanticLabel: context.l10n.yourRatesClearSearchSemanticLabel,
+        ),
       ),
     );
   }
