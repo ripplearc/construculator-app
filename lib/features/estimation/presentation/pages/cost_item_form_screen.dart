@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/widgets/equipmen
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     if (widget.presentAsSheet) {
       return ColoredBox(
         key: const Key('cost_item_form_screen'),
-        color: colorTheme.pageBackground,
+        color: sheetSurface(context),
         child: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
