@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
@@ -1085,10 +1083,14 @@ void main() {
 
       expect(find.text('85'), findsOneWidget);
       expect(find.text('\$85.00'), findsNothing);
-      // The header shows the same raw digits as the field itself while
-      // open (N12): it reads "Delivery 85", never "Delivery $85.00", so
-      // the two never disagree mid-keystroke.
-      expect(find.text('${l10n.equipmentDeliveryRowLabel} 85'), findsOneWidget);
+      expect(
+        find.text('${l10n.equipmentDeliveryRowLabel} \$85'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('${l10n.equipmentDeliveryRowLabel} \$85.00'),
+        findsNothing,
+      );
     });
 
     testWidgets(
@@ -1507,16 +1509,50 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('outsized_fee_dialog_title')), findsNothing);
-      // The fee is preserved, not cleared — the panel stays open and the
-      // value stays put and editable. Focus is back on the field (see
-      // below), so the row reads the raw digits too (N12), not formatted.
       expect(
-        find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+        find.text('${l10n.equipmentDeliveryRowLabel} \$8500'),
         findsOneWidget,
       );
       expect(find.widgetWithText(TextField, '8500'), findsOneWidget);
       // Per the storyboard ("the fee is selected and the pad is up"), focus
       // returns to the field with its value selected, ready to retype.
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, '8500'),
+      );
+      expect(field.focusNode?.hasFocus, isTrue);
+      expect(
+        field.controller?.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 4),
+      );
+    });
+
+    testWidgets('"Go back" opens a folded Delivery panel and selects the fee', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pump();
+
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '8500',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
+      await triggerOutsizedFeeCheck(tester);
+
+      await tester.tap(
+        find.byKey(const Key('outsized_fee_dialog_go_back_button')),
+      );
+      await tester.pumpAndSettle();
+
       final field = tester.widget<TextField>(
         find.widgetWithText(TextField, '8500'),
       );
@@ -1556,7 +1592,7 @@ void main() {
           findsNothing,
         );
         expect(
-          find.text('${l10n.equipmentDeliveryRowLabel} 8500'),
+          find.text('${l10n.equipmentDeliveryRowLabel} \$8500'),
           findsOneWidget,
         );
       },
@@ -1631,6 +1667,28 @@ void main() {
       await tester.pump();
 
       expect(capturedTotal, 775.0);
+    });
+
+    testWidgets('a delivery fee above the accepted bound is left out of the '
+        'total', (tester) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('duration_field')), '2');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '200');
+      await tester.pump();
+      await expandDeliveryField(tester);
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '5000000',
+      );
+      await tester.pump();
+
+      expect(capturedTotal, 400.0);
     });
 
     testWidgets('an unset delivery fee does not affect the total', (
