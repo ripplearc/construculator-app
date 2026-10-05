@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -761,7 +762,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
             DisplayFormatter.currency.format(baseCost),
           );
     return Dialog(
-      backgroundColor: colorTheme.pageBackground,
+      backgroundColor: sheetSurface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(CoreSpacing.space5),
       ),
