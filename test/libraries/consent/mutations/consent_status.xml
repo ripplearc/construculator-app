@@ -2,7 +2,7 @@
 <mutations version="1.0">
     <!-- CONSENT STATUS MUTATION TESTING -->
     <!-- Targets: ConsentStatus.resolve() and gatesAccess, the single
-         definitions of what the five gate outcomes mean and which of them
+         definitions of what the six gate outcomes mean and which of them
          block. Critical path: this decides whether a user reaches the app. -->
 
     <files>
@@ -75,14 +75,14 @@
             <mutation text="ConsentUserUnidentified(:final consentType) =&gt; true"/>
         </regex>
 
-        <!-- RULE 14: An unidentified user is read as consent given -->
-        <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.unidentified_ungated">
-            <mutation text="ConsentSatisfied() || ConsentUnverified() || ConsentUserUnidentified() =&gt; false"/>
-        </regex>
-
         <!-- RULE 13: The ungated states gate -->
         <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.ungated_states_gate">
             <mutation text="ConsentSatisfied() || ConsentUnverified() =&gt; true"/>
+        </regex>
+
+        <!-- RULE 14: An unidentified user is read as consent given -->
+        <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.unidentified_ungated">
+            <mutation text="ConsentSatisfied() || ConsentUnverified() || ConsentUserUnidentified() =&gt; false"/>
         </regex>
     </rules>
 

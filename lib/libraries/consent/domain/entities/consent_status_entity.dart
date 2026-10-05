@@ -11,7 +11,8 @@ import 'package:equatable/equatable.dart';
 /// at all — a missed case must not be something the compiler tolerates.
 ///
 /// [gatesAccess] states which of them block. The split is not simply "errors
-/// gate": it turns on whether there is a prior acceptance to fall back on. See
+/// gate": it turns on whether there is a prior acceptance to fall back on, and
+/// on the type, since only terms and privacy ever gates. See
 /// [ConsentUnverified] and [ConsentIndeterminate].
 sealed class ConsentStatus extends Equatable {
   const ConsentStatus();
@@ -88,7 +89,8 @@ class ConsentSatisfied extends ConsentStatus {
   List<Object?> get props => [acceptedVersion];
 }
 
-/// A newer version has been published than the one the user accepted. Gated.
+/// A newer version has been published than the one the user accepted. Gated
+/// for terms and privacy (see [gatesAccess]).
 ///
 /// The only path that blocks a returning user, and it requires a *successfully
 /// fetched* published version strictly greater than the accepted one — never
@@ -110,7 +112,7 @@ class ConsentOutdated extends ConsentStatus {
 }
 
 /// No acceptance on record — a cold install, cleared data, or a prior
-/// withdrawal. Gated.
+/// withdrawal. Gated for terms and privacy (see [gatesAccess]).
 class ConsentNeverGiven extends ConsentStatus {
   /// The version to present for acceptance.
   final ConsentVersion requiredVersion;
@@ -146,7 +148,8 @@ class ConsentUnverified extends ConsentStatus {
 }
 
 /// The requirement could not be established at all, and there is no prior
-/// acceptance to fall back on. **Gated**, with a retry screen.
+/// acceptance to fall back on. **Gated** for terms and privacy, with a retry
+/// screen (see [gatesAccess]).
 ///
 /// The deliberate exception to the leniency of [ConsentUnverified], and the
 /// two must never be collapsed. Failing open requires something to fall back
@@ -176,7 +179,7 @@ class ConsentIndeterminate extends ConsentStatus {
 }
 
 /// The session is signed in but the repository cannot tell whose it is.
-/// **Gated**, with a retry screen.
+/// **Gated** for terms and privacy, with a retry screen (see [gatesAccess]).
 ///
 /// `AuthGuard` passing does not rule this out: it tests the auth session,
 /// while the internal user id comes from a separate JWT claim. A stale token

@@ -836,8 +836,9 @@ void main() {
       // silently return null -- reporting a successful signup while
       // recording nothing -- and both are reachable for a brand-new user:
       // the session token is minted before createUserProfile runs, so a
-      // missing internal_user_id claim (-> ConsentUserUnidentified) or a local read that hasn't warmed up yet (->
-      // ConsentIndeterminate) are the likely case, not the exception.
+      // missing internal_user_id claim (-> ConsentUserUnidentified) or a
+      // local read that hasn't warmed up yet (-> ConsentIndeterminate) are
+      // the likely case, not the exception.
       blocTest<CreateAccountBloc, CreateAccountState>(
         'fails the signup rather than silently succeeding when the '
         'internal user id could not be identified',
