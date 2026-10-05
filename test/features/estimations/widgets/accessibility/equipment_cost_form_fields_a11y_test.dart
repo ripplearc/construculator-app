@@ -213,10 +213,13 @@ void main() {
         return;
       }
       final repository = Modular.get<YourRatesRepository>();
+      // TODO: [CA-1180] seeded at '' to match the widget's current
+      // _currentCompanyId stub, not a real company id — restore to a
+      // non-empty value once the widget resolves a real one.
       await repository.save(
         YourRateEntry(
           id: '',
-          companyId: 'company-1',
+          companyId: '',
           itemName: 'Backhoe',
           category: CostItemType.equipment,
           rate: const Money(amount: 100),

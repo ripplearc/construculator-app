@@ -23,11 +23,13 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
+    String? companyId,
     int? limit,
   }) async {
     try {
       final dtos = await dataSource.fetchRates(
         category: category?.toJson(),
+        companyId: companyId,
         limit: query.isEmpty ? limit : null,
       );
       final entries = dtos.map((dto) => dto.toEntity()).toList();
@@ -55,10 +57,15 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   @override
   Future<Either<Failure, YourRateEntry?>> getByItemName(
     String itemName,
-    CostItemType category,
-  ) async {
+    CostItemType category, {
+    String? companyId,
+  }) async {
     try {
-      final matches = await _entriesNamed(category, itemName);
+      final matches = await _entriesNamed(
+        category,
+        itemName,
+        companyId: companyId,
+      );
       if (matches.length != 1) {
         return const Right(null);
       }
@@ -81,6 +88,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
           (await _entriesNamed(
                 normalizedEntry.category,
                 normalizedEntry.itemName,
+                companyId: normalizedEntry.companyId,
               ))
               .where(
                 (candidate) =>
@@ -123,10 +131,14 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   Future<List<YourRateEntry>> _entriesNamed(
     CostItemType category,
-    String itemName,
-  ) async {
+    String itemName, {
+    String? companyId,
+  }) async {
     final nameKey = _matchKey(itemName);
-    final dtos = await dataSource.fetchRates(category: category.toJson());
+    final dtos = await dataSource.fetchRates(
+      category: category.toJson(),
+      companyId: companyId,
+    );
     return dtos
         .map((dto) => dto.toEntity())
         .where((entry) => _matchKey(entry.itemName) == nameKey)
