@@ -650,9 +650,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space5,
-        vertical: CoreSpacing.space4,
+      // TODO: [CA-1238] use the CoreUI spacing tokens once they exist, Figma has 14 here. https://ripplearc.youtrack.cloud/issue/CA-1238
+      padding: const EdgeInsets.fromLTRB(
+        CoreSpacing.space5,
+        CoreSpacing.space4,
+        CoreSpacing.space5,
+        14,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -661,7 +664,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ..._fromCostFileFields(context)
           else
             ..._manuallyFields(context),
-          const SizedBox(height: CoreSpacing.space6),
           // TODO: [CA-336](https://ripplearc.youtrack.cloud/issue/CA-336) Add assign task section
           // TODO: [CA-349] Build Preview Cost File UI (fromCostFile mode only)
         ],

@@ -3746,17 +3746,17 @@ abstract class AppLocalizations {
   /// **'Fix the amount to continue'**
   String get fixAmountToContinueButton;
 
-  /// Disabled submit button label while the delivery fee has an error. No Figma frame covers this case.
-  ///
-  /// In en, this message translates to:
-  /// **'Fix the delivery fee to continue'**
-  String get fixDeliveryFeeToContinueButton;
-
   /// Toast shown after an equipment cost line is added; names the estimate it went into
   ///
   /// In en, this message translates to:
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
+
+  /// Error toast when saving an equipment cost line fails. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add this cost. Try again.'**
+  String get addToEstimateFailedError;
 }
 
 class _AppLocalizationsDelegate

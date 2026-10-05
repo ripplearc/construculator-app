@@ -2044,11 +2044,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fixAmountToContinueButton => 'Fix the amount to continue';
 
   @override
-  String get fixDeliveryFeeToContinueButton =>
-      'Fix the delivery fee to continue';
-
-  @override
   String addedToEstimateToast(String estimateName) {
     return 'Added to $estimateName';
   }
+
+  @override
+  String get addToEstimateFailedError => 'Couldn\'t add this cost. Try again.';
 }
