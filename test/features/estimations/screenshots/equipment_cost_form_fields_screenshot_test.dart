@@ -126,13 +126,16 @@ void main() {
       );
     });
 
-    Future<void> expectFieldsGolden(WidgetTester tester, String name, suffix) =>
-        expectLater(
-          find.byType(EquipmentCostFormFields),
-          matchesGoldenFile(
-            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/$name$suffix.png',
-          ),
-        );
+    Future<void> expectFieldsGolden(
+      WidgetTester tester,
+      String name,
+      suffix,
+    ) => expectLater(
+      find.byType(EquipmentCostFormFields),
+      matchesGoldenFile(
+        'goldens/equipment_cost_form_fields/${size.width}x${size.height}/$name$suffix.png',
+      ),
+    );
 
     testWidgets('renders the Delivery panel open with a fee typed', (
       tester,
@@ -209,6 +212,7 @@ void main() {
     });
 
     testWidgets('renders both rate status badge colours', (tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
       tester.view.physicalSize = const Size(390, 120);
       tester.view.devicePixelRatio = 1.0;
       await tester.pumpWidget(
@@ -219,14 +223,14 @@ void main() {
             body: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
-                children: const [
+                children: [
                   RateStatusBadge(
-                    label: 'Sample rate',
+                    label: l10n.equipmentRateStatusSampleRateBadge,
                     variant: RateStatusBadgeVariant.orange,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   RateStatusBadge(
-                    label: 'Your rate',
+                    label: l10n.equipmentRateStatusYourRateBadge,
                     variant: RateStatusBadgeVariant.green,
                   ),
                 ],
@@ -238,7 +242,9 @@ void main() {
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(Row).first,
-        matchesGoldenFile('goldens/rate_status_badge/rate_status_badges$suffix.png'),
+        matchesGoldenFile(
+          'goldens/rate_status_badge/rate_status_badges$suffix.png',
+        ),
       );
     });
 

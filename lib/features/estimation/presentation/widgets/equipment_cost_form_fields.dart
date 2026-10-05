@@ -48,13 +48,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _daySelected = ValueNotifier<bool>(true);
   final _jobSelected = ValueNotifier<bool>(false);
 
-  /// Whether the delivery-fee panel (value field, status chrome, Note field)
-  /// is open below its always-visible summary header. Toggled only by
-  /// tapping the header or its chevron — see [_toggleDeliveryExpanded] —
-  /// and, unlike an ordinary accordion, deliberately does NOT close when the
-  /// value field loses focus: the Figma mock shows the panel staying open
-  /// through typing, folding, and confirming, closing only on an explicit
-  /// header tap.
   bool _deliveryExpanded = false;
 
   @override
@@ -133,9 +126,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
-  // Rebuilds so the delivery row header switches between the raw typed
-  // digits (focused) and the two-decimal formatted value (folded) — see
-  // _deliveryRowText.
   void _onDeliveryFocusChanged() {
     if (!mounted) return;
     setState(() {});
@@ -161,9 +151,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     });
   }
 
-  // "Add note" opens the panel (if closed) focused directly on the Note
-  // field, rather than the delivery-value field [_toggleDeliveryExpanded]
-  // focuses.
   void _openNoteField() {
     if (!_deliveryExpanded) {
       setState(() => _deliveryExpanded = true);
@@ -202,11 +189,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       return;
     }
     bloc.add(const EquipmentOutsizedFeeDeclinedEvent());
-    _deliveryFocusNode.requestFocus();
-    _deliveryFeeController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: _deliveryFeeController.text.length,
-    );
+    setState(() => _deliveryExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _deliveryFocusNode.requestFocus();
+      _deliveryFeeController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _deliveryFeeController.text.length,
+      );
+    });
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
@@ -291,14 +282,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // Shows the raw typed digits while the field has focus (so the row header
-  // and the field itself never disagree mid-keystroke, e.g. both read "85"
-  // rather than the row jumping ahead to "$85.00"), and the two-decimal
-  // formatted value once the field folds.
   String _deliveryRowValue(BuildContext context, double? fee) {
     final raw = _deliveryFeeController.text;
     return switch ((_deliveryFocusNode.hasFocus, raw.isEmpty, fee)) {
-      (true, false, _) => raw,
+      (true, false, _) => '${DisplayFormatter.currency.currencySymbol}$raw',
       (_, _, null) => context.l10n.equipmentDeliveryFeeUnsetText,
       (_, _, final fee?) => DisplayFormatter.currency.format(fee),
     };
@@ -308,12 +295,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       '${context.l10n.equipmentDeliveryRowLabel} '
       '${_deliveryRowValue(context, fee)}';
 
-  // The two badge variants map onto sampleRateUnverified/ownRateConfirmed
-  // only. `ownRateUnconfirmed` — a value just typed in, not yet confirmed
-  // as the user's own rate (see that enum value's own doc comment) — and
-  // `missing` (no rate typed yet) both show no badge at all: absence of a
-  // tag is itself the "not confirmed yet" signal, matching the Figma
-  // component set (node 65685:147068), which has no "in-progress" variant.
   Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
     final l10n = context.l10n;
     return switch (status) {
@@ -331,14 +312,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // Only offered for a sample rate — once a value is typed in, it's already
-  // either RateStatus.ownRateUnconfirmed (the only non-missing status the
-  // bloc's rate-update handler sets today) or, once CA-1151's "save as my
-  // rate" wiring lands, RateStatus.ownRateConfirmed; either way it's
-  // already the user's own value, so offering to save it again is
-  // redundant. No code path sets sampleRateUnverified yet (that's the
-  // lookup-a-rate flow, also CA-1151), so this link renders correctly for
-  // that future state without being exercisable today.
   Widget? _saveAsMyRateLink(BuildContext context, RateStatus status) {
     if (status != RateStatus.sampleRateUnverified) return null;
     final l10n = context.l10n;
@@ -531,14 +504,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
-  // Delivery applies the same way under Day and Job pricing, so this row
-  // sits below the if/else above rather than inside either branch.
-  //
-  // One persistent grey panel, not a collapsed-row/expanded-field swap: the
-  // Figma mock (cuj6-equip-5c/5d/5h/5i) shows the "Delivery <value> · Add
-  // note" header staying visible with its chevron pointed up through
-  // typing, folding, and confirming — only an explicit tap on the header
-  // closes it. See [_deliveryExpanded]'s doc comment.
   Widget _buildDeliveryFeeSection(
     BuildContext context,
     EquipmentCostFormData data,
@@ -725,21 +690,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 }
 
-/// Confirmation dialog shown when a just-entered delivery fee exceeds this
-/// line's own computed base cost (duration × dailyRate under Day pricing, or
-/// jobAmount under Job pricing).
-///
-/// Modeled on Figma's generic "Confirmation Dialog" component (node
-/// 65354:146175), also used elsewhere for an unrelated archive-confirmation
-/// flow: 340×262, 20px corner radius, 22px padding, 12px gap, an 18px semibold title, a 14px regular body, and a
-/// secondary/primary [CoreButton] pair. The storyboard frame draws no icon
-/// circle, so this dialog has none.
-///
-/// The title/body copy matches the storyboard frame "Delivery $8500"
-/// ("Delivery costs more than the machine" / "Delivery is {fee} against
-/// {baseCost} for {duration} of {equipment}. Add it anyway?"). Whole
-/// durations from two to ten days are spelled as words like the storyboard
-/// ("four days"), and larger or fractional counts stay as digits.
 class _OutsizedFeeDialog extends StatelessWidget {
   const _OutsizedFeeDialog({
     required this.fee,
@@ -752,21 +702,12 @@ class _OutsizedFeeDialog extends StatelessWidget {
   final double fee;
   final double baseCost;
 
-  /// Which pricing method [baseCost] was computed from — the dialog body
-  /// names the time period (e.g. "4 days of excavator") for Day pricing,
-  /// matching the storyboard, and omits it for Job pricing, where there's
-  /// no duration to name.
   final EquipmentPricingMethod method;
 
-  /// Entered duration, only meaningful (and only read) under Day pricing.
   final double? duration;
 
-  /// Entered equipment name, only read under Day pricing to name the
-  /// item in the body text; falls back to a generic noun when blank.
   final String equipmentType;
 
-  // Strips a trailing ".0" from a whole-number duration (e.g. `4.0` ->
-  // `"4"`) but keeps a fractional one as typed (e.g. `4.5` -> `"4.5"`).
   String _formatDuration(double value) => value == value.roundToDouble()
       ? value.toStringAsFixed(0)
       : value.toString();
