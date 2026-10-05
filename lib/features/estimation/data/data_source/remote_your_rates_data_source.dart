@@ -7,9 +7,10 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// Remote data source for "Your rates" operations using Supabase.
 ///
 /// This data source handles all remote database operations for the
-/// contractor's personal saved-rate book. RLS limits the rows a caller can
-/// read to the companies they belong to, and a caller in more than one
-/// company gets the rows of all of them.
+/// contractor's personal saved-rate book. The optional `companyId` filter on
+/// [fetchRates] is what actually scopes a read to one company for a caller
+/// who belongs to more than one — RLS alone does not (be#57's README
+/// documents the same split on the backend side of this table).
 class RemoteYourRatesDataSource implements YourRatesDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteYourRatesDataSource');
@@ -19,6 +20,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   @override
   Future<List<YourRateEntryDto>> fetchRates({
     String? category,
+    String? companyId,
     int? limit,
   }) async {
     _logger.debug(
@@ -28,6 +30,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
 
     final filters = <String, dynamic>{
       DatabaseConstants.categoryColumn: ?category,
+      DatabaseConstants.companyIdColumn: ?companyId,
     };
 
     // No server-side text search primitive is available on SupabaseWrapper

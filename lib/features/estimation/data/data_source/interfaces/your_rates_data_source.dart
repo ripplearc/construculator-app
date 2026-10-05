@@ -5,14 +5,18 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// contractor's personal saved-rate book.
 ///
 /// Method names are explicit about their operation (fetch from network) and
-/// scope. RLS limits the rows a caller can read to the companies they belong
-/// to. A caller who belongs to more than one company gets the rows of all of
-/// them, and no method here narrows a read to one company yet.
-// TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Add an explicit company id filter to the reads.
+/// scope. RLS alone does not scope a read to one company, for a caller who
+/// belongs to more than one: the optional `companyId` parameter on
+/// [fetchRates] is what actually scopes a read to one company (be#57's README
+/// documents the same split for the backend side of this table).
 abstract class YourRatesDataSource {
   /// Fetches all your_rates rows visible to the caller, optionally filtered
   /// to one [category], ordered by saved_at descending (most recently saved
   /// first).
+  ///
+  /// [companyId], when provided, is what actually scopes the result to that
+  /// one company — RLS has no equivalent in `FakeSupabaseWrapper`, so this
+  /// is also the only way a test can verify company isolation.
   ///
   /// This performs no server-side text search: callers that need to filter
   /// by item name do so themselves against the returned list. See
@@ -25,7 +29,11 @@ abstract class YourRatesDataSource {
   /// outside the row window.
   ///
   /// Throws an exception if the fetch operation fails.
-  Future<List<YourRateEntryDto>> fetchRates({String? category, int? limit});
+  Future<List<YourRateEntryDto>> fetchRates({
+    String? category,
+    String? companyId,
+    int? limit,
+  });
 
   /// Inserts a new row, letting the server generate its id.
   ///
