@@ -14,11 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Strips a trailing ".0" from a whole number (e.g. `4.0` -> `"4"`) but
-/// keeps a fractional value as typed (e.g. `4.5` -> `"4.5"`). For numeric
-/// text fields, which expect a plain typed-style number rather than one
-/// formatted for display — a duration named in dialog copy, or a rate
-/// amount picked from Your rates.
 String _formatTrimmedNumber(double value) => value == value.roundToDouble()
     ? value.toStringAsFixed(0)
     : value.toString();
