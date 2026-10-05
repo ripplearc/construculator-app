@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -44,6 +45,7 @@ class YourRatesRecentsSheet extends StatefulWidget {
   }) async {
     final result = await CoreQuickSheet.show<YourRatesRecentsResult>(
       context: context,
+      backgroundColor: sheetSurface(context),
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
         child: YourRatesRecentsSheet(clock: clock),
