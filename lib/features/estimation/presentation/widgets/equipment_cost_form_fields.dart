@@ -242,7 +242,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final base = isDay
         ? (data.duration ?? 0) * (data.dailyRate ?? 0)
         : data.jobAmount ?? 0;
-    final hasDeliveryFeeError = data.fieldErrors.containsKey('deliveryFee');
+    final hasDeliveryFeeError = data.fieldErrors.containsKey(
+      EquipmentFormField.deliveryFee,
+    );
     final delivery = hasDeliveryFeeError ? 0.0 : (data.deliveryFee ?? 0);
     // Delivery is added after the rate math, never inside it.
     widget.onTotalChanged?.call(base + delivery);
