@@ -565,7 +565,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       button: true,
       label: context.l10n.yourRatesLookupButton,
       excludeSemantics: true,
-      // TODO: [CA-1252](https://ripplearc.youtrack.cloud/issue/CA-1252) Replace with CoreUI's outlined icon button once it exists.
+      // TODO: [CA-1252] replace with CoreUI's outlined icon button once it exists. https://ripplearc.youtrack.cloud/issue/CA-1252
       child: GestureDetector(
         key: const Key('lookup_rate_button'),
         behavior: HitTestBehavior.opaque,
@@ -755,6 +755,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     label: l10n.equipmentRateLabel,
                     hintText: l10n.equipmentRatePlaceholder,
                     controller: _dailyRateController,
+                    // TODO: [CA-1218] show the rate as currency ($145.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
                     hideSuffixWhenEmpty: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
@@ -808,6 +809,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
+  // Delivery applies the same way under Day and Job pricing, so this row
+  // sits below the if/else above rather than inside either branch.
+  //
+  // One persistent grey panel, not a collapsed-row/expanded-field swap: the
+  // Figma mock (cuj6-equip-5c/5d/5h/5i) shows the "Delivery <value> · Add
+  // note" header staying visible with its chevron pointed up through
+  // typing, folding, and confirming — only an explicit tap on the header
+  // closes it. See [_deliveryExpanded]'s doc comment.
+  // TODO: [CA-1252] replace with CoreUI's details row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1252
   Widget _buildDeliveryFeeSection(
     BuildContext context,
     EquipmentCostFormData data,
@@ -1060,6 +1070,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
             DisplayFormatter.currency.format(fee),
             DisplayFormatter.currency.format(baseCost),
           );
+    // TODO: [CA-1251] use the white surface from Figma once CoreUI has it. https://ripplearc.youtrack.cloud/issue/CA-1251
     return Dialog(
       backgroundColor: sheetSurface(context),
       shape: RoundedRectangleBorder(
