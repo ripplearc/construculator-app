@@ -36,6 +36,11 @@ class UnderlineTextField extends StatefulWidget {
 
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
+  ///
+  /// Nothing is shown while the user is still typing in the field for the
+  /// first time. The error first shows when the field loses focus, and from
+  /// then on it follows this list on every key, so it goes away as soon as
+  /// the value is valid.
   final List<String>? errorTextList;
 
   const UnderlineTextField({
@@ -58,6 +63,8 @@ const double _valueToRuleGap = 10;
 
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
   final _focusNode = FocusNode();
+  bool _wasFocused = false;
+  bool _touched = false;
 
   @override
   void initState() {
@@ -75,7 +82,12 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     }
   }
 
-  void _onFocusChange() => setState(() {});
+  void _onFocusChange() {
+    final hasFocus = _focusNode.hasFocus;
+    if (_wasFocused && !hasFocus) _touched = true;
+    _wasFocused = hasFocus;
+    setState(() {});
+  }
 
   void _onTextChange() => setState(() {});
 
@@ -93,7 +105,8 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
     final errorTextList = widget.errorTextList;
-    final visibleErrorText = errorTextList != null && errorTextList.isNotEmpty
+    final visibleErrorText =
+        _touched && errorTextList != null && errorTextList.isNotEmpty
         ? errorTextList.first
         : null;
     final hasError = visibleErrorText != null;
