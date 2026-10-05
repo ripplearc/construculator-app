@@ -463,10 +463,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       _equipmentNameController.text.trim().isNotEmpty &&
       !_hasRateFieldError(data);
 
-  Widget? _saveAsMyRateLink(
-    BuildContext context,
-    EquipmentCostFormData data,
-  ) {
+  Widget? _saveAsMyRateLink(BuildContext context, EquipmentCostFormData data) {
     if (!_offersSaveAsMyRate(data)) return null;
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
@@ -488,7 +485,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           alignment: Alignment.centerRight,
           child: Text(
             l10n.equipmentSaveAsMyRateLink,
-            style: textTheme.bodySmallSemiBold.copyWith(
+            style: textTheme.bodyLargeSemiBold.copyWith(
               color: colorTheme.textLink,
             ),
           ),
@@ -575,7 +572,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         onTap: () => unawaited(_openRateLookup(context, data.method)),
         child: SizedBox(
           width: CoreSpacing.space12,
-          height: CoreSpacing.space9,
+          height: CoreSpacing.space12,
           child: Center(
             child: Container(
               width: CoreSpacing.space9,
@@ -744,7 +741,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     hideSuffixWhenEmpty: true,
                     suffix: Text(
                       l10n.equipmentDurationSuffix,
-                      style: textTheme.bodyMediumRegular.copyWith(
+                      style: textTheme.bodySmallRegular.copyWith(
                         color: colorTheme.textBody,
                       ),
                     ),
@@ -758,12 +755,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     label: l10n.equipmentRateLabel,
                     hintText: l10n.equipmentRatePlaceholder,
                     controller: _dailyRateController,
+                    hideSuffixWhenEmpty: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     suffix: Text(
                       _rateUnitSuffix(context, data.method),
-                      style: textTheme.bodyMediumRegular.copyWith(
+                      style: textTheme.bodySmallRegular.copyWith(
                         color: colorTheme.textBody,
                       ),
                     ),
@@ -781,12 +779,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     label: l10n.equipmentAmountLabel,
                     hintText: l10n.equipmentAmountPlaceholder,
                     controller: _jobAmountController,
+                    hideSuffixWhenEmpty: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     suffix: Text(
                       _rateUnitSuffix(context, data.method),
-                      style: textTheme.bodyMediumRegular.copyWith(
+                      style: textTheme.bodySmallRegular.copyWith(
                         color: colorTheme.textBody,
                       ),
                     ),
