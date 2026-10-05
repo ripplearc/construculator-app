@@ -89,7 +89,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     Emitter<YourRatesState> emit,
   ) async {
     emit(const YourRatesLoading());
-    // TODO: [CA-1249] show a failure state in the sheet; today YourRatesError reads as an empty list. https://ripplearc.youtrack.cloud/issue/CA-1249
+    // TODO: [CA-1249] The Your recents sheet shows an empty list for YourRatesError; show its error message instead. https://ripplearc.youtrack.cloud/issue/CA-1249
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
       onNoCompany: () => emit(const YourRatesLoaded([])),
