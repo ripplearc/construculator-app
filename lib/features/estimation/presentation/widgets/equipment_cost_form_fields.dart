@@ -234,10 +234,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   Future<void> _showOutsizedFeeDialog(EquipmentCostFormData data) async {
     final fee = data.deliveryFee;
     if (fee == null) return;
-    final isDay = data.method == EquipmentPricingMethod.day;
-    final baseCost = isDay
-        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
-        : (data.jobAmount ?? 0);
+    final baseCost = data.baseCost;
     final bloc = context.read<EquipmentCostFormBloc>();
 
     // Tapping outside the dialog pops it with a null result, which is
@@ -291,26 +288,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _jobSelected.value = method == EquipmentPricingMethod.job;
   }
 
-  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
   void _notifyTotalFromData(EquipmentCostFormData data) {
     final isDay = data.method == EquipmentPricingMethod.day;
     final hasFieldError = isDay
         ? data.fieldErrors.containsKey(EquipmentFormField.duration) ||
               data.fieldErrors.containsKey(EquipmentFormField.dailyRate)
         : data.fieldErrors.containsKey(EquipmentFormField.jobAmount);
-    if (hasFieldError) {
-      widget.onTotalChanged?.call(0);
-      return;
-    }
-    final base = isDay
-        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
-        : data.jobAmount ?? 0;
-    final hasDeliveryFeeError = data.fieldErrors.containsKey(
-      EquipmentFormField.deliveryFee,
-    );
-    final delivery = hasDeliveryFeeError ? 0.0 : (data.deliveryFee ?? 0);
-    // Delivery is added after the rate math, never inside it.
-    widget.onTotalChanged?.call(base + delivery);
+    widget.onTotalChanged?.call(hasFieldError ? 0 : data.lineTotal);
   }
 
   List<String>? _errorList(String? text) => text == null ? null : [text];

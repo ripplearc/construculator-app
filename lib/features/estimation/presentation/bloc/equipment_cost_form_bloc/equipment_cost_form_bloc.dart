@@ -124,9 +124,7 @@ class EquipmentCostFormBloc
   bool _isOutsizedFee(EquipmentCostFormData draft) {
     final fee = draft.deliveryFee;
     if (fee == null) return false;
-    final baseCost = draft.method == EquipmentPricingMethod.day
-        ? (draft.duration ?? 0) * (draft.dailyRate ?? 0)
-        : (draft.jobAmount ?? 0);
+    final baseCost = draft.baseCost;
     return baseCost > 0 && fee > baseCost;
   }
 
@@ -244,9 +242,6 @@ class EquipmentCostFormBloc
     final dailyRate = draft.dailyRate;
     final jobAmount = draft.jobAmount;
     final deliveryFee = draft.deliveryFee;
-    final total = isDay
-        ? (duration ?? 0) * (dailyRate ?? 0) + (deliveryFee ?? 0)
-        : (jobAmount ?? 0) + (deliveryFee ?? 0);
     return EquipmentCostItem(
       id: '',
       estimateId: estimateId,
@@ -257,7 +252,7 @@ class EquipmentCostFormBloc
         if (!isDay) 'job_amount': jobAmount ?? 0,
         'delivery_fee': ?deliveryFee,
       },
-      itemTotalCost: total,
+      itemTotalCost: draft.lineTotal,
       createdAt: now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223

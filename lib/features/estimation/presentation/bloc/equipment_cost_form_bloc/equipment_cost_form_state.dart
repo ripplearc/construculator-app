@@ -33,6 +33,37 @@ enum EquipmentFieldError {
   rateOutOfRange,
 }
 
+/// What stops the equipment form from being submitted, in the order the form
+/// shows its fields from top to bottom.
+enum EquipmentSubmitBlocker {
+  /// The equipment name is empty.
+  missingName,
+
+  /// The Day duration is empty.
+  missingDuration,
+
+  /// The Day duration is zero or below.
+  durationNotAboveZero,
+
+  /// The Day duration has an error other than zero or below.
+  invalidDuration,
+
+  /// The Day rate is empty.
+  missingRate,
+
+  /// The Day rate has an error.
+  invalidRate,
+
+  /// The Job amount is empty.
+  missingAmount,
+
+  /// The Job amount has an error.
+  invalidAmount,
+
+  /// The delivery fee has an error.
+  invalidDeliveryFee,
+}
+
 /// Base sealed class for all equipment cost form states.
 sealed class EquipmentCostFormState {
   const EquipmentCostFormState();
@@ -107,6 +138,51 @@ class EquipmentCostFormData extends Equatable {
   /// Validation error key for the item type field, or null when valid.
   EquipmentFieldError? get itemTypeError =>
       fieldErrors[EquipmentFormField.itemType];
+
+  /// The cost before delivery: duration x daily rate for Day, the amount for
+  /// Job, rounded to the cent (half a cent rounds up). Empty fields count as
+  /// zero.
+  double get baseCost => _roundToCents(
+    method == EquipmentPricingMethod.day
+        ? (duration ?? 0) * (dailyRate ?? 0)
+        : (jobAmount ?? 0),
+  );
+
+  /// [baseCost] plus the delivery fee: a line is the sum of its rounded
+  /// parts. Delivery is added after the rate math, never inside it, and a fee
+  /// with an error is left out.
+  double get lineTotal =>
+      baseCost +
+      (fieldErrors.containsKey(EquipmentFormField.deliveryFee)
+          ? 0
+          : _roundToCents(deliveryFee ?? 0));
+
+  /// The first field, from top to bottom, that is empty or has an error, or
+  /// null when the form can be submitted.
+  EquipmentSubmitBlocker? get submitBlocker {
+    if (!isItemTypeValid) return EquipmentSubmitBlocker.missingName;
+    if (method == EquipmentPricingMethod.day) {
+      final durationError = fieldErrors[EquipmentFormField.duration];
+      if (duration == null) return EquipmentSubmitBlocker.missingDuration;
+      if (durationError == EquipmentFieldError.durationNotPositive) {
+        return EquipmentSubmitBlocker.durationNotAboveZero;
+      }
+      if (durationError != null) return EquipmentSubmitBlocker.invalidDuration;
+      if (dailyRate == null) return EquipmentSubmitBlocker.missingRate;
+      if (fieldErrors.containsKey(EquipmentFormField.dailyRate)) {
+        return EquipmentSubmitBlocker.invalidRate;
+      }
+    } else {
+      if (jobAmount == null) return EquipmentSubmitBlocker.missingAmount;
+      if (fieldErrors.containsKey(EquipmentFormField.jobAmount)) {
+        return EquipmentSubmitBlocker.invalidAmount;
+      }
+    }
+    if (fieldErrors.containsKey(EquipmentFormField.deliveryFee)) {
+      return EquipmentSubmitBlocker.invalidDeliveryFee;
+    }
+    return null;
+  }
 
   /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
@@ -226,6 +302,8 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
   /// The failure returned by [CostItemRepository.createCostItem].
   final Failure failure;
 }
+
+double _roundToCents(double amount) => (amount * 100).round() / 100;
 
 const Object _unset = Object();
 
