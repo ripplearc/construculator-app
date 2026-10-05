@@ -2971,5 +2971,50 @@
   "@addsToEstimateInvalidDeliveryFeeNote": {
     "description": "Summary card note while the delivery fee has an error. No Figma frame covers this case.",
     "context": "N/A"
+  },
+  "addToEstimateButton": "Add to estimate",
+  "@addToEstimateButton": {
+    "description": "Label of the full-width submit button on the equipment cost sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "enterEquipmentNameToContinueButton": "Enter an equipment name to continue",
+  "@enterEquipmentNameToContinueButton": {
+    "description": "Disabled submit button label while the equipment name is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "enterDurationToContinueButton": "Enter a duration to continue",
+  "@enterDurationToContinueButton": {
+    "description": "Disabled submit button label while the Day duration is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "enterRateToContinueButton": "Enter a rate to continue",
+  "@enterRateToContinueButton": {
+    "description": "Disabled submit button label while the Day rate is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "enterAmountToContinueButton": "Enter an amount to continue",
+  "@enterAmountToContinueButton": {
+    "description": "Disabled submit button label while the Job amount is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "fixDurationToContinueButton": "Fix the duration to continue",
+  "@fixDurationToContinueButton": {
+    "description": "Disabled submit button label while the Day duration is zero or has an error",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "fixRateToContinueButton": "Fix the rate to continue",
+  "@fixRateToContinueButton": {
+    "description": "Disabled submit button label while the Day rate has an error. No Figma frame covers this case.",
+    "context": "N/A"
+  },
+  "fixAmountToContinueButton": "Fix the amount to continue",
+  "@fixAmountToContinueButton": {
+    "description": "Disabled submit button label while the Job amount has an error. No Figma frame covers this case.",
+    "context": "N/A"
+  },
+  "fixDeliveryFeeToContinueButton": "Fix the delivery fee to continue",
+  "@fixDeliveryFeeToContinueButton": {
+    "description": "Disabled submit button label while the delivery fee has an error. No Figma frame covers this case.",
+    "context": "N/A"
   }
 }
