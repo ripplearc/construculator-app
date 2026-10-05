@@ -14,13 +14,6 @@ import 'package:equatable/equatable.dart';
 /// request bodies. Reading `id`/`created_at`/`updated_at` back always goes
 /// through [fromJson] against the server's response, never through a value
 /// this DTO itself produced.
-///
-/// [description] is not yet a `your_rates` column — the "Look up a rate"
-/// design (Figma "Estimate V2" canvas, D3) shows a secondary description
-/// line under some saved rates (e.g. "Quoted for the whole dig, machine +
-/// operator"), but the backend has no matching field yet. [fromJson] reads
-/// it defensively (so this DTO needs no change once the column exists) and
-/// [toJson] omits it, since the current schema would reject it.
 class YourRateEntryDto extends Equatable {
   /// Unique identifier for the rate entry; server-generated.
   final String id;
@@ -49,11 +42,8 @@ class YourRateEntryDto extends Equatable {
   final String? equipmentMethod;
 
   /// Optional label distinguishing this entry within its
-  /// (company, category, item name) grouping.
+  /// (company, category, item name, pricing method) grouping.
   final String? entryLabel;
-
-  /// Optional free-text note describing what this rate covers.
-  final String? description;
 
   /// ISO 8601 timestamp for when this rate was saved, client-supplied.
   final String savedAt;
@@ -76,7 +66,6 @@ class YourRateEntryDto extends Equatable {
     this.unit,
     this.equipmentMethod,
     this.entryLabel,
-    this.description,
     this.createdAt,
     this.updatedAt,
   });
@@ -93,11 +82,6 @@ class YourRateEntryDto extends Equatable {
       unit: json['unit'] as String?,
       equipmentMethod: json['equipment_method'] as String?,
       entryLabel: json['entry_label'] as String?,
-      // The `your_rates` table has no `description` column yet (backend
-      // follow-up needed — see YourRateEntry.description doc comment). Read
-      // defensively so this DTO keeps working unchanged once that column
-      // exists, without requiring a matching app-repo change.
-      description: json['description'] as String?,
       savedAt: json['saved_at'] as String,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
@@ -107,10 +91,6 @@ class YourRateEntryDto extends Equatable {
   /// Converts this DTO to the writable JSON body for an insert or update
   /// request. See the class doc comment for why `id`/`created_at`/
   /// `updated_at` are deliberately excluded.
-  ///
-  /// [description] is deliberately NOT included: `your_rates` has no
-  /// matching column yet, so sending it would be rejected by the schema.
-  /// Add it here once the backend column lands.
   Map<String, dynamic> toJson() => {
     'company_id': companyId,
     'category': category,
@@ -139,7 +119,6 @@ class YourRateEntryDto extends Equatable {
           ? EquipmentPricingMethod.fromJson(equipmentMethod)
           : null,
       entryLabel: entryLabel,
-      description: description,
     );
   }
 
@@ -158,7 +137,6 @@ class YourRateEntryDto extends Equatable {
       unit: entry.unit?.toJson(),
       equipmentMethod: entry.equipmentMethod?.toJson(),
       entryLabel: entry.entryLabel,
-      description: entry.description,
       savedAt: entry.savedAt.toUtc().toIso8601String(),
     );
   }
@@ -174,7 +152,6 @@ class YourRateEntryDto extends Equatable {
     unit,
     equipmentMethod,
     entryLabel,
-    description,
     savedAt,
     createdAt,
     updatedAt,

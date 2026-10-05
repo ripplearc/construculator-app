@@ -20,8 +20,9 @@ class DatabaseConstants {
   static const String searchHistoryTable = 'search_history';
   static const String tagsTable = 'tags';
 
-  /// The contractor's personal saved-rate book: rows visible to the caller
-  /// are scoped entirely by RLS to their own company.
+  /// The contractor's personal saved-rate book: RLS limits the rows a caller
+  /// can read to the companies they belong to, and a caller in more than one
+  /// company reads the rows of all of them.
   static const String yourRatesTable = 'your_rates';
 
   /// View exposing exactly one row per consent type: the highest version whose
@@ -144,8 +145,7 @@ class DatabaseConstants {
   static const String itemTypeColumn = 'item_type';
 
   // Your Rates columns (id and created_at/updated_at use the shared columns
-  // above; company_id is intentionally not filtered on here — see
-  // YourRatesRepository's doc comment for why)
+  // above)
   static const String categoryColumn = 'category';
   static const String itemNameColumn = 'item_name';
   static const String savedAtColumn = 'saved_at';

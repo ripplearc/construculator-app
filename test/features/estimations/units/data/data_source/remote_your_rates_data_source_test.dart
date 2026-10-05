@@ -72,7 +72,11 @@ void main() {
       test('returns every row when no category is given', () async {
         seed([
           row(id: 'r1', savedAt: '2026-01-01T00:00:00.000Z'),
-          row(id: 'r2', category: 'material', savedAt: '2026-01-02T00:00:00.000Z'),
+          row(
+            id: 'r2',
+            category: 'material',
+            savedAt: '2026-01-02T00:00:00.000Z',
+          ),
         ]);
 
         final result = await dataSource.fetchRates();
@@ -82,8 +86,16 @@ void main() {
 
       test('filters by category when given', () async {
         seed([
-          row(id: 'r1', category: 'equipment', savedAt: '2026-01-01T00:00:00.000Z'),
-          row(id: 'r2', category: 'material', savedAt: '2026-01-02T00:00:00.000Z'),
+          row(
+            id: 'r1',
+            category: 'equipment',
+            savedAt: '2026-01-01T00:00:00.000Z',
+          ),
+          row(
+            id: 'r2',
+            category: 'material',
+            savedAt: '2026-01-02T00:00:00.000Z',
+          ),
         ]);
 
         final result = await dataSource.fetchRates(category: 'equipment');
@@ -101,10 +113,11 @@ void main() {
 
         final result = await dataSource.fetchRates();
 
-        expect(
-          result.map((dto) => dto.id).toList(),
-          ['newest', 'middle', 'oldest'],
-        );
+        expect(result.map((dto) => dto.id).toList(), [
+          'newest',
+          'middle',
+          'oldest',
+        ]);
       });
 
       test('uses correct table and filter parameters', () async {
@@ -120,6 +133,25 @@ void main() {
         expect(calls.first['ascending'], isFalse);
       });
 
+      test('passes limit through to selectMatch when given', () async {
+        await dataSource.fetchRates(limit: 3);
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.single['limit'], 3);
+      });
+
+      test('caps the rows returned at the limit, newest first', () async {
+        seed([
+          row(id: 'oldest', savedAt: '2026-01-01T00:00:00.000Z'),
+          row(id: 'newest', savedAt: '2026-01-03T00:00:00.000Z'),
+          row(id: 'middle', savedAt: '2026-01-02T00:00:00.000Z'),
+        ]);
+
+        final result = await dataSource.fetchRates(limit: 2);
+
+        expect(result.map((dto) => dto.id).toList(), ['newest', 'middle']);
+      });
+
       test('propagates exceptions from supabase wrapper', () async {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
 
@@ -127,64 +159,30 @@ void main() {
       });
     });
 
-    group('fetchGrouping', () {
-      test('returns only rows matching category and item name', () async {
-        seed([
-          row(id: 'r1', itemName: 'Excavator', savedAt: '2026-01-01T00:00:00.000Z'),
-          row(id: 'r2', itemName: 'Bulldozer', savedAt: '2026-01-01T00:00:00.000Z'),
-          row(
-            id: 'r3',
-            category: 'material',
-            itemName: 'Excavator',
-            savedAt: '2026-01-01T00:00:00.000Z',
-          ),
-        ]);
-
-        final result = await dataSource.fetchGrouping(
-          category: 'equipment',
-          itemName: 'Excavator',
-        );
-
-        expect(result.map((dto) => dto.id).toList(), ['r1']);
-      });
-
-      test('uses correct table and filter parameters', () async {
-        await dataSource.fetchGrouping(
-          category: 'equipment',
-          itemName: 'Excavator',
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.length, 1);
-        expect(calls.first['table'], DatabaseConstants.yourRatesTable);
-        expect(calls.first['filters'], {
-          DatabaseConstants.categoryColumn: 'equipment',
-          DatabaseConstants.itemNameColumn: 'Excavator',
-        });
-      });
-    });
-
     group('insertRate', () {
-      test('inserts into the your_rates table and returns the created row', () async {
-        final dto = YourRateEntryDto(
-          id: '',
-          companyId: 'company-1',
-          category: 'equipment',
-          itemName: 'Excavator',
-          rateAmount: 250.0,
-          rateCurrency: 'USD',
-          savedAt: '2026-01-01T00:00:00.000Z',
-        );
+      test(
+        'inserts into the your_rates table and returns the created row',
+        () async {
+          final dto = YourRateEntryDto(
+            id: '',
+            companyId: 'company-1',
+            category: 'equipment',
+            itemName: 'Excavator',
+            rateAmount: 250.0,
+            rateCurrency: 'USD',
+            savedAt: '2026-01-01T00:00:00.000Z',
+          );
 
-        final result = await dataSource.insertRate(dto);
+          final result = await dataSource.insertRate(dto);
 
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('insert');
-        expect(calls.length, 1);
-        expect(calls.first['table'], DatabaseConstants.yourRatesTable);
-        expect(calls.first['data'], dto.toJson());
-        expect(result.itemName, 'Excavator');
-        expect(result.id, isNotEmpty);
-      });
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('insert');
+          expect(calls.length, 1);
+          expect(calls.first['table'], DatabaseConstants.yourRatesTable);
+          expect(calls.first['data'], dto.toJson());
+          expect(result.itemName, 'Excavator');
+          expect(result.id, isNotEmpty);
+        },
+      );
 
       test('propagates exceptions from supabase wrapper', () async {
         fakeSupabaseWrapper.shouldThrowOnInsert = true;
@@ -208,7 +206,9 @@ void main() {
 
     group('updateRate', () {
       test('updates the row identified by id', () async {
-        seed([row(id: 'r1', rateAmount: 250.0, savedAt: '2026-01-01T00:00:00.000Z')]);
+        seed([
+          row(id: 'r1', rateAmount: 250.0, savedAt: '2026-01-01T00:00:00.000Z'),
+        ]);
         final dto = YourRateEntryDto(
           id: 'r1',
           companyId: 'company-1',

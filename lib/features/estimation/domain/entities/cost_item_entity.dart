@@ -770,9 +770,9 @@ class YourRateEntry extends Equatable {
 
   /// The company this rate entry belongs to.
   ///
-  /// Reads never filter by this client-side — row visibility is enforced
-  /// entirely by RLS, scoped to the caller's own company. It matters only
-  /// for writes, where the backend checks it against the caller's actual
+  /// RLS limits the rows a caller can read to the companies they belong to,
+  /// so a caller in more than one company reads the rows of all of them.
+  /// For writes, the backend checks this value against the caller's actual
   /// company membership.
   final String companyId;
 
@@ -797,15 +797,9 @@ class YourRateEntry extends Equatable {
   final EquipmentPricingMethod? equipmentMethod;
 
   /// Optional label distinguishing this entry from others in the same
-  /// [companyId]/[category]/[itemName] grouping (e.g. "Supplier A" vs
-  /// "Supplier B").
+  /// [companyId]/[category]/[itemName]/[equipmentMethod] grouping (e.g.
+  /// "Supplier A" vs "Supplier B").
   final String? entryLabel;
-
-  /// Optional free-text note describing what this rate covers, shown as a
-  /// secondary line under [itemName] in the "Look up a rate" list (e.g.
-  /// "Quoted for the whole dig, machine + operator"). Not every entry has
-  /// one.
-  final String? description;
 
   const YourRateEntry({
     required this.id,
@@ -817,7 +811,6 @@ class YourRateEntry extends Equatable {
     this.unit,
     this.equipmentMethod,
     this.entryLabel,
-    this.description,
   });
 
   @override
@@ -831,7 +824,6 @@ class YourRateEntry extends Equatable {
     savedAt,
     equipmentMethod,
     entryLabel,
-    description,
   ];
 
   /// Creates a copy of this [YourRateEntry] with the given fields replaced.
@@ -848,7 +840,6 @@ class YourRateEntry extends Equatable {
     DateTime? savedAt,
     Object? equipmentMethod,
     Object? entryLabel,
-    Object? description,
   }) {
     return YourRateEntry(
       id: id ?? this.id,
@@ -865,9 +856,6 @@ class YourRateEntry extends Equatable {
       entryLabel: entryLabel == clearField
           ? null
           : (entryLabel as String?) ?? this.entryLabel,
-      description: description == clearField
-          ? null
-          : (description as String?) ?? this.description,
     );
   }
 }

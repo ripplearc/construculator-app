@@ -55,6 +55,7 @@ void main() {
       CostItemType category = CostItemType.equipment,
       double amount = 250.0,
       String? entryLabel,
+      EquipmentPricingMethod method = EquipmentPricingMethod.day,
       DateTime? savedAt,
     }) {
       return YourRateEntry(
@@ -64,9 +65,7 @@ void main() {
         category: category,
         rate: Money(amount: amount),
         savedAt: savedAt ?? DateTime.parse('2026-01-05T00:00:00.000Z'),
-        equipmentMethod: category == CostItemType.equipment
-            ? EquipmentPricingMethod.day
-            : null,
+        equipmentMethod: category == CostItemType.equipment ? method : null,
         entryLabel: entryLabel,
       );
     }
@@ -98,52 +97,144 @@ void main() {
     }
 
     group('search', () {
-      test('empty query returns all rows for category, most recent first', () async {
+      test(
+        'empty query returns all rows for category, most recent first',
+        () async {
+          seed([
+            row(id: 'r1', savedAt: '2026-01-01T00:00:00.000Z'),
+            row(id: 'r2', savedAt: '2026-01-03T00:00:00.000Z'),
+            row(id: 'r3', savedAt: '2026-01-02T00:00:00.000Z'),
+          ]);
+
+          final result = await repository.search(
+            '',
+            category: CostItemType.equipment,
+          );
+
+          expect(result.isRight(), true);
+          final entries = result.getRightOrNull()!;
+          expect(entries.map((e) => e.id).toList(), ['r2', 'r3', 'r1']);
+        },
+      );
+
+      test(
+        'empty query with no category returns rows across categories',
+        () async {
+          seed([
+            row(
+              id: 'r1',
+              category: 'equipment',
+              savedAt: '2026-01-01T00:00:00.000Z',
+            ),
+            row(
+              id: 'r2',
+              category: 'material',
+              savedAt: '2026-01-02T00:00:00.000Z',
+            ),
+          ]);
+
+          final result = await repository.search('');
+
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull()!.length, 2);
+        },
+      );
+
+      test(
+        'non-empty query filters by case-insensitive item name substring',
+        () async {
+          seed([
+            row(id: 'r1', itemName: 'Excavator'),
+            row(id: 'r2', itemName: 'Bulldozer'),
+            row(id: 'r3', itemName: 'Mini excavator'),
+          ]);
+
+          final result = await repository.search(
+            'exc',
+            category: CostItemType.equipment,
+          );
+
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull()!.map((e) => e.itemName).toSet(), {
+            'Excavator',
+            'Mini excavator',
+          });
+        },
+      );
+
+      test(
+        'matches a row when any typed word is in its name, ignoring case',
+        () async {
+          seed([
+            row(id: 'r1', itemName: 'Mini excavator - 1.5 ton'),
+            row(id: 'r2', itemName: 'Bulldozer'),
+          ]);
+
+          final result = await repository.search(
+            'MINI Excavator 1.5t',
+            category: CostItemType.equipment,
+          );
+
+          expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['r1']);
+        },
+      );
+
+      test('treats a query of only spaces like an empty query', () async {
+        seed([row(id: 'r1'), row(id: 'r2', itemName: 'Bulldozer')]);
+
+        final result = await repository.search(
+          '   ',
+          category: CostItemType.equipment,
+        );
+
+        expect(result.getRightOrNull(), hasLength(2));
+      });
+
+      test('caps an empty query at the limit, newest first', () async {
         seed([
           row(id: 'r1', savedAt: '2026-01-01T00:00:00.000Z'),
           row(id: 'r2', savedAt: '2026-01-03T00:00:00.000Z'),
           row(id: 'r3', savedAt: '2026-01-02T00:00:00.000Z'),
         ]);
 
-        final result = await repository.search('', category: CostItemType.equipment);
-
-        expect(result.isRight(), true);
-        final entries = result.getRightOrNull()!;
-        expect(entries.map((e) => e.id).toList(), ['r2', 'r3', 'r1']);
-      });
-
-      test('empty query with no category returns rows across categories', () async {
-        seed([
-          row(id: 'r1', category: 'equipment', savedAt: '2026-01-01T00:00:00.000Z'),
-          row(id: 'r2', category: 'material', savedAt: '2026-01-02T00:00:00.000Z'),
-        ]);
-
-        final result = await repository.search('');
-
-        expect(result.isRight(), true);
-        expect(result.getRightOrNull()!.length, 2);
-      });
-
-      test('non-empty query filters by case-insensitive item name substring', () async {
-        seed([
-          row(id: 'r1', itemName: 'Excavator'),
-          row(id: 'r2', itemName: 'Bulldozer'),
-          row(id: 'r3', itemName: 'Mini excavator'),
-        ]);
-
-        final result = await repository.search('exc', category: CostItemType.equipment);
-
-        expect(result.isRight(), true);
-        expect(
-          result.getRightOrNull()!.map((e) => e.itemName).toSet(),
-          {'Excavator', 'Mini excavator'},
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          limit: 2,
         );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'r2',
+          'r3',
+        ]);
       });
+
+      test(
+        'ignores the limit once a query is given, so every match is returned',
+        () async {
+          seed([
+            row(id: 'r1', itemName: 'Excavator 1'),
+            row(id: 'r2', itemName: 'Excavator 2'),
+            row(id: 'r3', itemName: 'Bulldozer'),
+          ]);
+
+          final result = await repository.search(
+            'excavator',
+            category: CostItemType.equipment,
+            limit: 1,
+          );
+
+          expect(result.getRightOrNull(), hasLength(2));
+        },
+      );
 
       test('maps a generic exception to unexpectedError failure', () async {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
 
-        final result = await repository.search('', category: CostItemType.equipment);
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+        );
 
         expect(result.isLeft(), true);
         expect(
@@ -158,17 +249,34 @@ void main() {
     });
 
     group('getByItemName', () {
-      test('returns the entry when exactly one row matches the grouping', () async {
-        seed([row(id: 'r1', itemName: 'Excavator')]);
+      test(
+        'returns the entry when exactly one row matches the grouping',
+        () async {
+          seed([row(id: 'r1', itemName: 'Excavator')]);
 
-        final result = await repository.getByItemName(
-          'Excavator',
-          CostItemType.equipment,
-        );
+          final result = await repository.getByItemName(
+            'Excavator',
+            CostItemType.equipment,
+          );
 
-        expect(result.isRight(), true);
-        expect(result.getRightOrNull()?.id, 'r1');
-      });
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull()?.id, 'r1');
+        },
+      );
+
+      test(
+        'matches the name without regard to capital letters or extra spaces',
+        () async {
+          seed([row(id: 'r1', itemName: 'Mini excavator')]);
+
+          final result = await repository.getByItemName(
+            '  MINI   Excavator ',
+            CostItemType.equipment,
+          );
+
+          expect(result.getRightOrNull()?.id, 'r1');
+        },
+      );
 
       test('returns Right(null) when no row matches', () async {
         final result = await repository.getByItemName(
@@ -180,20 +288,23 @@ void main() {
         expect(result.getRightOrNull(), isNull);
       });
 
-      test('returns Right(null) when multiple rows match the grouping', () async {
-        seed([
-          row(id: 'r1', itemName: 'Excavator', entryLabel: 'Supplier A'),
-          row(id: 'r2', itemName: 'Excavator', entryLabel: 'Supplier B'),
-        ]);
+      test(
+        'returns Right(null) when multiple rows match the grouping',
+        () async {
+          seed([
+            row(id: 'r1', itemName: 'Excavator', entryLabel: 'Supplier A'),
+            row(id: 'r2', itemName: 'Excavator', entryLabel: 'Supplier B'),
+          ]);
 
-        final result = await repository.getByItemName(
-          'Excavator',
-          CostItemType.equipment,
-        );
+          final result = await repository.getByItemName(
+            'Excavator',
+            CostItemType.equipment,
+          );
 
-        expect(result.isRight(), true);
-        expect(result.getRightOrNull(), isNull);
-      });
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull(), isNull);
+        },
+      );
     });
 
     group('save', () {
@@ -256,28 +367,25 @@ void main() {
         },
       );
 
-      test(
-        'rejects an unlabeled save when the grouping has one labeled row '
-        '(the case a naive 23505 catch would miss)',
-        () async {
-          seed([row(id: 'existing', entryLabel: 'Supplier A')]);
-          final entry = buildEntry();
+      test('rejects an unlabeled save when the grouping has one labeled row '
+          '(the case a naive 23505 catch would miss)', () async {
+        seed([row(id: 'existing', entryLabel: 'Supplier A')]);
+        final entry = buildEntry();
 
-          final result = await repository.save(entry);
+        final result = await repository.save(entry);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.duplicateEntry,
-            ),
-          );
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
 
       test(
         'rejects an unlabeled save when the grouping has multiple labeled rows',
@@ -302,65 +410,167 @@ void main() {
         },
       );
 
+      test('rejects an empty-string label the same as null when the grouping '
+          'has a labeled row', () async {
+        seed([row(id: 'existing', entryLabel: 'Supplier A')]);
+        final entry = buildEntry(entryLabel: '');
+
+        final result = await repository.save(entry);
+
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+      });
+
+      test('treats a whitespace-only label as null when matching an existing '
+          'unlabeled row', () async {
+        seed([row(id: 'existing', entryLabel: null, rateAmount: 100.0)]);
+        final entry = buildEntry(entryLabel: '   ', amount: 999.0);
+
+        final result = await repository.save(entry);
+
+        expect(result.isRight(), true);
+        final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+        expect(updateCalls.length, 1);
+        expect(updateCalls.first['filterValue'], 'existing');
+        // The normalized (null) label is what gets persisted, not the
+        // literal whitespace.
+        expect(updateCalls.first['data']['entry_label'], isNull);
+      });
+
       test(
-        'rejects an empty-string label the same as null when the grouping '
-        'has a labeled row',
+        'saves a Job price next to a Day price of the same name, leaving the '
+        'Day row alone',
         () async {
-          seed([row(id: 'existing', entryLabel: 'Supplier A')]);
-          final entry = buildEntry(entryLabel: '');
+          seed([
+            row(id: 'day-row', itemName: 'Mini excavator', rateAmount: 145),
+          ]);
+          final entry = buildEntry(
+            itemName: 'Mini excavator',
+            amount: 520,
+            method: EquipmentPricingMethod.job,
+          );
 
           final result = await repository.save(entry);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.duplicateEntry,
+          expect(result.isRight(), true);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      test(
+        'saves a Day price next to a Job price of the same name, leaving the '
+        'Job row alone',
+        () async {
+          seed([
+            row(
+              id: 'job-row',
+              itemName: 'Mini excavator',
+              rateAmount: 520,
+              equipmentMethod: 'job',
+            ),
+          ]);
+
+          final result = await repository.save(
+            buildEntry(itemName: 'Mini excavator', amount: 145),
+          );
+
+          expect(result.isRight(), true);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      test(
+        'overwrites only the row of the same pricing method when both exist',
+        () async {
+          seed([
+            row(id: 'day-row', itemName: 'Mini excavator', rateAmount: 145),
+            row(
+              id: 'job-row',
+              itemName: 'Mini excavator',
+              rateAmount: 520,
+              equipmentMethod: 'job',
+            ),
+          ]);
+
+          final result = await repository.save(
+            buildEntry(
+              itemName: 'Mini excavator',
+              amount: 150,
+              method: EquipmentPricingMethod.job,
             ),
           );
+
+          expect(result.isRight(), true);
+          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(updateCalls, hasLength(1));
+          expect(updateCalls.first['filterValue'], 'job-row');
           expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         },
       );
 
       test(
-        'treats a whitespace-only label as null when matching an existing '
-        'unlabeled row',
+        'replaces the saved row when the name differs only by capital letters '
+        'or extra spaces',
         () async {
-          seed([row(id: 'existing', entryLabel: null, rateAmount: 100.0)]);
-          final entry = buildEntry(entryLabel: '   ', amount: 999.0);
+          seed([
+            row(id: 'existing', itemName: 'Mini excavator', rateAmount: 145),
+          ]);
+
+          final result = await repository.save(
+            buildEntry(itemName: '  mini   EXCAVATOR ', amount: 160),
+          );
+
+          expect(result.isRight(), true);
+          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(updateCalls, hasLength(1));
+          expect(updateCalls.first['filterValue'], 'existing');
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        },
+      );
+
+      test('saves the name trimmed', () async {
+        final result = await repository.save(
+          buildEntry(itemName: '  Backhoe  '),
+        );
+
+        expect(result.isRight(), true);
+        final data = fakeSupabaseWrapper
+            .getMethodCallsFor('insert')
+            .single['data'];
+        expect(data['item_name'], 'Backhoe');
+      });
+
+      test(
+        'scopes the collision check to category, name and pricing method',
+        () async {
+          seed([
+            row(id: 'other-category', category: 'material', entryLabel: null),
+            row(id: 'other-item', itemName: 'Bulldozer', entryLabel: null),
+            row(id: 'other-method', equipmentMethod: 'job', entryLabel: null),
+          ]);
+          final entry = buildEntry();
 
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['filterValue'], 'existing');
-          // The normalized (null) label is what gets persisted, not the
-          // literal whitespace.
-          expect(updateCalls.first['data']['entry_label'], isNull);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
         },
       );
 
-      test('scopes the collision check to category and item name only', () async {
-        seed([
-          row(id: 'other-category', category: 'material', entryLabel: null),
-          row(id: 'other-item', itemName: 'Bulldozer', entryLabel: null),
-        ]);
-        final entry = buildEntry();
-
-        final result = await repository.save(entry);
-
-        // Neither seeded row shares this entry's (category, itemName)
-        // grouping, so this is a fresh insert, not a collision.
-        expect(result.isRight(), true);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
-      });
-
       test('maps an RLS violation (42501) to permissionDenied', () async {
         fakeSupabaseWrapper.shouldThrowOnInsert = true;
-        fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.insertExceptionType =
+            SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
 
         final result = await repository.save(buildEntry());
@@ -377,12 +587,13 @@ void main() {
       });
 
       test(
-        'maps a unique-index violation (23505) on insert to duplicateEntry as a '
-        'defense-in-depth fallback',
+        'maps a unique-constraint violation (23505) on insert to duplicateEntry',
         () async {
           fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.uniqueViolation;
 
           final result = await repository.save(buildEntry());
 
@@ -416,7 +627,8 @@ void main() {
 
       test('maps a connection error to connectionError', () async {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-        fakeSupabaseWrapper.selectMatchExceptionType = SupabaseExceptionType.socket;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.socket;
 
         final result = await repository.save(buildEntry());
 
@@ -433,7 +645,8 @@ void main() {
 
       test('maps a timeout to timeoutError', () async {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-        fakeSupabaseWrapper.selectMatchExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.timeout;
 
         final result = await repository.save(buildEntry());
 

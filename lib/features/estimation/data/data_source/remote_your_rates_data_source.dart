@@ -7,8 +7,9 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// Remote data source for "Your rates" operations using Supabase.
 ///
 /// This data source handles all remote database operations for the
-/// contractor's personal saved-rate book. Reads rely entirely on RLS to
-/// scope rows to the caller's own company.
+/// contractor's personal saved-rate book. RLS limits the rows a caller can
+/// read to the companies they belong to, and a caller in more than one
+/// company gets the rows of all of them.
 class RemoteYourRatesDataSource implements YourRatesDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteYourRatesDataSource');
@@ -16,7 +17,10 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
   RemoteYourRatesDataSource({required this._supabaseWrapper});
 
   @override
-  Future<List<YourRateEntryDto>> fetchRates({String? category}) async {
+  Future<List<YourRateEntryDto>> fetchRates({
+    String? category,
+    int? limit,
+  }) async {
     _logger.debug(
       'Fetching your rates'
       '${category != null ? ', category: $category' : ''}',
@@ -36,26 +40,7 @@ class RemoteYourRatesDataSource implements YourRatesDataSource {
       filters: filters,
       orderBy: DatabaseConstants.savedAtColumn,
       ascending: false,
-    );
-
-    return response.map(YourRateEntryDto.fromJson).toList();
-  }
-
-  @override
-  Future<List<YourRateEntryDto>> fetchGrouping({
-    required String category,
-    required String itemName,
-  }) async {
-    _logger.debug(
-      'Fetching your rates grouping: category=$category, itemName=$itemName',
-    );
-
-    final response = await _supabaseWrapper.selectMatch(
-      table: DatabaseConstants.yourRatesTable,
-      filters: {
-        DatabaseConstants.categoryColumn: category,
-        DatabaseConstants.itemNameColumn: itemName,
-      },
+      limit: limit,
     );
 
     return response.map(YourRateEntryDto.fromJson).toList();

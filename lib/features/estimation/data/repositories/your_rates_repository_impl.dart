@@ -23,20 +23,29 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
+    int? limit,
   }) async {
     try {
-      final dtos = await dataSource.fetchRates(category: category?.toJson());
+      final dtos = await dataSource.fetchRates(
+        category: category?.toJson(),
+        limit: query.isEmpty ? limit : null,
+      );
       final entries = dtos.map((dto) => dto.toEntity()).toList();
 
-      if (query.isEmpty) {
+      final words = query
+          .toLowerCase()
+          .split(RegExp(r'\s+'))
+          .where((word) => word.isNotEmpty)
+          .toList();
+      if (words.isEmpty) {
         return Right(entries);
       }
 
-      final lowerQuery = query.toLowerCase();
       return Right(
-        entries
-            .where((entry) => entry.itemName.toLowerCase().contains(lowerQuery))
-            .toList(),
+        entries.where((entry) {
+          final name = entry.itemName.toLowerCase();
+          return words.any(name.contains);
+        }).toList(),
       );
     } catch (e) {
       return Left(_handleError(e, 'searching your rates'));
@@ -49,19 +58,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     CostItemType category,
   ) async {
     try {
-      final dtos = await dataSource.fetchGrouping(
-        category: category.toJson(),
-        itemName: itemName,
-      );
-
-      // Multiple entries can legally share a grouping (Decision 55); a
-      // single-entry return would be a guess in that case, so only an exact
-      // one-row match resolves. See YourRatesRepository.getByItemName's doc
-      // comment for the full reasoning.
-      if (dtos.length != 1) {
+      final matches = await _entriesNamed(category, itemName);
+      if (matches.length != 1) {
         return const Right(null);
       }
-      return Right(dtos.single.toEntity());
+      return Right(matches.single);
     } catch (e) {
       return Left(_handleError(e, 'getting your rate by item name'));
     }
@@ -70,35 +71,35 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   @override
   Future<Either<Failure, void>> save(YourRateEntry entry) async {
     try {
-      // A blank label ('' or whitespace-only) means the same thing as no
-      // label at all. Normalizing here — rather than trusting entry.entryLabel
-      // == null directly — matters because a UI text field naturally hands
-      // back '' for an empty input, not null; without this, such a save
-      // would silently skip the rejection rule below instead of triggering
-      // it.
       final effectiveLabel = _normalizeLabel(entry.entryLabel);
       final normalizedEntry = entry.copyWith(
+        itemName: entry.itemName.trim(),
         entryLabel: effectiveLabel ?? clearField,
       );
 
-      final existingDtos = await dataSource.fetchGrouping(
-        category: normalizedEntry.category.toJson(),
-        itemName: normalizedEntry.itemName,
-      );
+      final existing =
+          (await _entriesNamed(
+                normalizedEntry.category,
+                normalizedEntry.itemName,
+              ))
+              .where(
+                (candidate) =>
+                    candidate.equipmentMethod ==
+                    normalizedEntry.equipmentMethod,
+              )
+              .toList();
 
-      if (existingDtos.isEmpty) {
-        await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
+      if (existing.isEmpty) {
+        await dataSource.insertRate(
+          YourRateEntryDto.fromEntity(normalizedEntry),
+        );
         return const Right(null);
       }
 
-      final existing = existingDtos.map((dto) => dto.toEntity()).toList();
-
-      // Matches when both this entry's and the existing row's labels are
-      // null: Dart's `==` on null does the right thing here without any
-      // special-casing.
       final sameLabel = existing
           .where(
-            (candidate) => _normalizeLabel(candidate.entryLabel) == effectiveLabel,
+            (candidate) =>
+                _normalizeLabel(candidate.entryLabel) == effectiveLabel,
           )
           .firstOrNull;
 
@@ -110,15 +111,6 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         return const Right(null);
       }
 
-      // The grouping is already populated, nothing in it shares this
-      // entry's label, and this entry itself has no label: rejecting here
-      // is what stops a second unlabeled save from either silently
-      // overwriting an unrelated labeled entry or landing as an ambiguous
-      // extra row. The DB's unique index (on the grouping columns plus
-      // COALESCE(entry_label, '')) still catches an exact concurrent
-      // double-unlabeled race as a defense-in-depth backstop, but it can't
-      // catch THIS case on its own — a NULL-labeled row and a labeled one
-      // don't collide at the index level at all.
       if (effectiveLabel == null) {
         return const Left(
           EstimationFailure(errorType: EstimationErrorType.duplicateEntry),
@@ -132,7 +124,21 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
-  // Treats a blank label ('' or whitespace-only) the same as no label.
+  Future<List<YourRateEntry>> _entriesNamed(
+    CostItemType category,
+    String itemName,
+  ) async {
+    final nameKey = _nameKey(itemName);
+    final dtos = await dataSource.fetchRates(category: category.toJson());
+    return dtos
+        .map((dto) => dto.toEntity())
+        .where((entry) => _nameKey(entry.itemName) == nameKey)
+        .toList();
+  }
+
+  static String _nameKey(String name) =>
+      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
   static String? _normalizeLabel(String? label) {
     final trimmed = label?.trim();
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
@@ -181,11 +187,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
             errorType: EstimationErrorType.permissionDenied,
           );
         case PostgresErrorCode.uniqueViolation:
-          // Defense-in-depth only: save()'s read-then-decide checks above
-          // reject every rejectable case before it ever reaches the
-          // database. This branch exists solely to still return a sensible
-          // failure if the unique index catches a genuine concurrent-write
-          // race that slips past those checks.
+          // The unique constraint on (company, category, name, method, label)
+          // in be#57 catches a concurrent save that slips past save()'s
+          // read-then-decide checks.
           return const EstimationFailure(
             errorType: EstimationErrorType.duplicateEntry,
           );
