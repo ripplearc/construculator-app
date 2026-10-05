@@ -670,10 +670,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  EquipmentPricingMethod _methodOfForm() =>
-      _daySelected.value
-          ? EquipmentPricingMethod.day
-          : EquipmentPricingMethod.job;
+  EquipmentPricingMethod _methodOfForm() => _daySelected.value
+      ? EquipmentPricingMethod.day
+      : EquipmentPricingMethod.job;
 
   @override
   Widget build(BuildContext context) {
@@ -746,7 +745,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       hideSuffixWhenEmpty: true,
       suffix: Text(
         l10n.equipmentDurationSuffix,
-        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
+        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
       ),
       errorTextList: _errorList(_durationErrorText(context, data)),
     );
@@ -766,10 +765,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       label: l10n.equipmentAmountLabel,
       hintText: l10n.equipmentAmountPlaceholder,
       controller: _jobAmountController,
+      hideSuffixWhenEmpty: true,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       suffix: Text(
         _rateUnitSuffix(context, data.method),
-        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
+        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
       ),
       labelTrailing: showRateChrome
           ? _rateStatusBadge(context, data.rateStatus)
@@ -809,9 +809,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           _rateUnitSuffix(context, data.method),
         ),
         key: const Key('recalled_rate_subtitle'),
-        style: textTheme.bodyMediumRegular.copyWith(
-          color: colorTheme.textBody,
-        ),
+        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
       ),
     ];
   }
