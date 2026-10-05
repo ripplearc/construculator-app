@@ -170,7 +170,10 @@ void main() {
 
   Future<void> tapLink(WidgetTester tester, Key key) async {
     final link = find.byKey(key);
-    final scrollable = find.byType(Scrollable).first;
+    final scrollable = find.ancestor(
+      of: link,
+      matching: find.byType(Scrollable),
+    );
     await tester.scrollUntilVisible(link, 100, scrollable: scrollable);
     await tester.tap(link);
     await tester.pumpAndSettle();
@@ -178,7 +181,10 @@ void main() {
 
   Future<void> tapContinueButton(WidgetTester tester) async {
     final button = find.text(l10n().agreeAndContinueButton);
-    final scrollable = find.byType(Scrollable).first;
+    final scrollable = find.ancestor(
+      of: button,
+      matching: find.byType(Scrollable),
+    );
     await tester.scrollUntilVisible(button, 100, scrollable: scrollable);
     await tester.tap(button);
     await tester.pumpAndSettle();
@@ -524,7 +530,7 @@ void main() {
       expect(isContinueButtonEnabled(tester), isTrue);
     });
 
-    testWidgets('tapping the terms link opens the terms document', (
+    testWidgets('tapping terms opens the terms-and-privacy document', (
       tester,
     ) async {
       await renderPage(tester);
@@ -534,7 +540,7 @@ void main() {
       expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
     });
 
-    testWidgets('tapping the privacy link opens the privacy document', (
+    testWidgets('tapping privacy opens the terms-and-privacy document', (
       tester,
     ) async {
       await renderPage(tester);

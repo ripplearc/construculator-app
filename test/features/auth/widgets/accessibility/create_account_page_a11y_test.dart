@@ -223,6 +223,27 @@ void main() {
       },
     );
 
+    testWidgets(
+      'meets a11y guidelines for privacy policy link in both themes',
+      (tester) async {
+        await renderPage(tester);
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: CreateAccountPage(
+              email: testEmail,
+              router: router,
+              urlLauncher: urlLauncher,
+            ),
+          ),
+          find.byKey(const Key('privacy_policy_link')),
+        );
+      },
+    );
+
     testWidgets('meets a11y guidelines for role selector in both themes', (
       tester,
     ) async {

@@ -19,14 +19,6 @@ class ConsentPrompt extends StatelessWidget {
   /// Opens a consent document externally.
   final void Function(String url) onOpenDocument;
 
-  /// Whether the terms/privacy links can actually open a document.
-  ///
-  /// This screen, unlike signup, cannot be dismissed. A dead link a user
-  /// cannot tell is dead is worse than no link, so a caller whose
-  /// [onOpenDocument] cannot open anything passes false and the links are
-  /// hidden rather than rendered inert.
-  final bool documentLinksAvailable;
-
   /// Whether an acceptance is in flight; replaces the action with a spinner.
   final bool isSubmitting;
 
@@ -38,7 +30,6 @@ class ConsentPrompt extends StatelessWidget {
     super.key,
     required this.version,
     required this.onOpenDocument,
-    this.documentLinksAvailable = true,
     this.isSubmitting = false,
     this.hasSubmitFailed = false,
   });
@@ -79,21 +70,13 @@ class ConsentPrompt extends StatelessWidget {
                   color: colors.textHeadline,
                 ),
               ),
-              if (documentLinksAvailable) ...[
-                const SizedBox(height: CoreSpacing.space6),
-                // TODO: https://ripplearc.youtrack.cloud/issue/CA-963 - The
-                // seeded document_url is a provisional ripplearc.com URL;
-                // replace it with the published document's URL. Both links
-                // open it until we know whether terms and privacy are one
-                // document or two (two needs a second field on
-                // ConsentVersion).
-                ConsentDocumentLinks(
-                  termsLabel: l10n.consentGateTermsLink,
-                  privacyLabel: l10n.consentGatePrivacyLink,
-                  onTermsPressed: () => onOpenDocument(version.documentUrl),
-                  onPrivacyPressed: () => onOpenDocument(version.documentUrl),
-                ),
-              ],
+              const SizedBox(height: CoreSpacing.space6),
+              ConsentDocumentLinks(
+                termsLabel: l10n.consentGateTermsLink,
+                privacyLabel: l10n.consentGatePrivacyLink,
+                onTermsPressed: () => onOpenDocument(version.documentUrl),
+                onPrivacyPressed: () => onOpenDocument(version.documentUrl),
+              ),
               const SizedBox(height: CoreSpacing.space8),
               if (isSubmitting)
                 const Center(

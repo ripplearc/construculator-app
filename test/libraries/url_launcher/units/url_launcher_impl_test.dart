@@ -51,6 +51,15 @@ void main() {
       expect(launchedUris, isEmpty);
     });
 
+    test('rejects a non-web URL without reaching the platform', () async {
+      final launcher = launcherThatOpens(opens: true);
+
+      final opened = await launcher.openExternal('file:///etc/hosts');
+
+      expect(opened, isFalse);
+      expect(launchedUris, isEmpty);
+    });
+
     test('rejects an unparsable URL without reaching the platform', () async {
       final launcher = launcherThatOpens(opens: true);
 

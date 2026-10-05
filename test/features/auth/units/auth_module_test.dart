@@ -83,7 +83,7 @@ void main() {
       Modular.get<ConsentRepository>().dispose();
     });
 
-    test('the create account route resolves the real URL launcher', () {
+    test('binds the real URL launcher', () {
       expect(Modular.get<UrlLauncher>(), isA<UrlLauncherImpl>());
     });
   });

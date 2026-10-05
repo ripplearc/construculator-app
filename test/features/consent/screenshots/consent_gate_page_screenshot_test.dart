@@ -43,10 +43,7 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  Future<void> pumpPage(
-    WidgetTester tester, {
-    bool documentLinksAvailable = true,
-  }) async {
+  Future<void> pumpPage(WidgetTester tester) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
     addTearDown(tester.view.reset);
@@ -63,7 +60,6 @@ void main() {
           child: ConsentGatePage(
             router: Modular.get<AppRouter>(),
             onOpenDocument: (_) {},
-            documentLinksAvailable: documentLinksAvailable,
           ),
         ),
       ),
@@ -136,26 +132,6 @@ void main() {
         find.byType(ConsentGatePage),
         matchesGoldenFile(
           'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_submit_failed.png',
-        ),
-      );
-    });
-
-    testWidgets('renders the prompt with the document links hidden', (
-      tester,
-    ) async {
-      // What a caller with no way to open documents gets: the links are
-      // hidden rather than rendered dead. Every other golden here renders
-      // them, as production does.
-      repository.resolveTo(
-        ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
-      );
-
-      await pumpPage(tester, documentLinksAvailable: false);
-
-      await expectLater(
-        find.byType(ConsentGatePage),
-        matchesGoldenFile(
-          'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_links_hidden.png',
         ),
       );
     });

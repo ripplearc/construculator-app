@@ -13,6 +13,10 @@ typedef LaunchExternalApplication = Future<bool> Function(Uri url);
 class UrlLauncherImpl implements UrlLauncher {
   static final _logger = AppLogger().tag('UrlLauncherImpl');
 
+  /// Only web documents open; a `file:` or `intent:` URL in a server row
+  /// would otherwise reach the platform as-is.
+  static const _webSchemes = {'http', 'https'};
+
   final LaunchExternalApplication _launch;
 
   /// [launch] stands in for the plugin in tests; production omits it.
@@ -22,8 +26,8 @@ class UrlLauncherImpl implements UrlLauncher {
   @override
   Future<bool> openExternal(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) {
-      _logger.warning('Cannot open "$url": not an absolute URL');
+    if (uri == null || !_webSchemes.contains(uri.scheme)) {
+      _logger.warning('Cannot open "$url": not a web URL');
       return false;
     }
     try {

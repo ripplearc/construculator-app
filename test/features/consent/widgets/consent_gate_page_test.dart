@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:construculator/features/consent/presentation/bloc/consent_gate_bloc/consent_gate_bloc.dart';
 import 'package:construculator/features/consent/presentation/pages/consent_gate_page.dart';
-import 'package:construculator/features/consent/presentation/widgets/consent_document_links.dart';
 import 'package:construculator/features/consent/testing/consent_test_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
@@ -51,7 +50,6 @@ void main() {
   Widget buildPage({
     ThemeData? theme,
     List<String> openedUrls = const [],
-    bool documentLinksAvailable = true,
   }) {
     return MaterialApp(
       theme: theme ?? createTestTheme(),
@@ -64,7 +62,6 @@ void main() {
         child: ConsentGatePage(
           router: router,
           onOpenDocument: openedUrls.add,
-          documentLinksAvailable: documentLinksAvailable,
         ),
       ),
     );
@@ -159,63 +156,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
-    });
-  });
-
-  group('when the launcher cannot open a document', () {
-    // A caller with no way to open documents passes
-    // documentLinksAvailable: false. A link that announces as a link to a
-    // screen reader and gives tap feedback but opens nothing is undetectable
-    // to the user, so the gate hides the links rather than rendering them
-    // dead.
-    setUp(
-      () => repository.resolveTo(
-        ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
-      ),
-    );
-
-    testWidgets('hides both document links', (tester) async {
-      await tester.pumpWidget(buildPage(documentLinksAvailable: false));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ConsentDocumentLinks), findsNothing);
-      expect(find.byKey(const Key('consentGateTermsLink')), findsNothing);
-      expect(find.byKey(const Key('consentGatePrivacyLink')), findsNothing);
-    });
-
-    testWidgets('leaves the way off the screen intact', (tester) async {
-      // Hiding the links must not take the accept path with them; this is a
-      // gate the user cannot otherwise leave.
-      await tester.pumpWidget(buildPage(documentLinksAvailable: false));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('consentGateTitle')), findsOneWidget);
-      expect(find.byKey(const Key('consentGateAcceptButton')), findsOneWidget);
-
-      await tester.tap(find.byKey(const Key('consentGateAcceptButton')));
-      await tester.pumpAndSettle();
-
-      expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
-    });
-
-    testWidgets('keeps them hidden while an acceptance is in flight', (
-      tester,
-    ) async {
-      // The flag forwards to all three ConsentPrompt call sites in the page,
-      // not only the blocked one, so hiding must not depend on the state.
-      final inFlight = Completer<void>();
-      repository.acceptanceCompleter = inFlight;
-
-      await tester.pumpWidget(buildPage(documentLinksAvailable: false));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('consentGateAcceptButton')));
-      await tester.pump();
-
-      expect(find.byType(ConsentDocumentLinks), findsNothing);
-
-      inFlight.complete();
-      await tester.pumpAndSettle();
     });
   });
 
