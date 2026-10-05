@@ -29,6 +29,12 @@ abstract class CostItemDataSource {
     String? itemType,
   });
 
+  /// Fetches only the `item_total_cost` of every live cost item of an
+  /// estimate. Soft-deleted items are hidden by the database policy.
+  ///
+  /// Returns an empty list if the estimate has no items.
+  Future<List<double>> fetchItemTotalCostsByEstimateId(String estimateId);
+
   /// Creates a new cost item in the remote database.
   ///
   /// Parameters:
