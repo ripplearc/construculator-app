@@ -2042,4 +2042,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fixAmountToContinueButton => 'Fix the amount to continue';
+
+  @override
+  String get fixDeliveryFeeToContinueButton =>
+      'Fix the delivery fee to continue';
+
+  @override
+  String addedToEstimateToast(String estimateName) {
+    return 'Added to $estimateName';
+  }
 }
