@@ -10,11 +10,7 @@ part 'equipment_cost_form_state.dart';
 
 const double _minRate = 0.01;
 const double _maxRate = 999999.99;
-// cost_items.duration is numeric(10,2) in construculator-backend #58; a
-// larger value fails the insert with a generic decimal-overflow error
-// instead of this field-level message. Product has not set a practical
-// business limit (CA-1142 N13), so this is the database's own ceiling.
-const double _maxDuration = 99999999.99;
+const double _durationColumnMax = 99999999.99;
 
 /// BLoC for managing the equipment cost form: item type, Day/Job pricing,
 /// delivery fee, validation, and submission to [CostItemRepository].
@@ -23,12 +19,8 @@ class EquipmentCostFormBloc
   final CostItemRepository _repository;
   final Clock _clock;
 
-  EquipmentCostFormBloc({
-    required CostItemRepository repository,
-    required Clock clock,
-  }) : _repository = repository,
-       _clock = clock,
-       super(const EquipmentCostFormInitial()) {
+  EquipmentCostFormBloc({required this._repository, required this._clock})
+    : super(const EquipmentCostFormInitial()) {
     on<EquipmentCostItemTypeChanged>(
       (e, emit) => _emit(emit, (d) => d.copyWith(equipmentType: e.value)),
     );
@@ -162,17 +154,6 @@ class EquipmentCostFormBloc
     };
   }
 
-  // Determines whether required fields are present (for isValid, which
-  // gates the Add button) and builds fieldErrors for rendering.
-  //
-  // An empty/missing field is never added to fieldErrors: per product
-  // decision, an empty field never renders a red error — the disabled Add
-  // button already names what's missing, and on a phone, focus leaves a
-  // field constantly during normal use, so a blur-triggered error there
-  // would turn fields red during ordinary interaction. fieldErrors only
-  // ever holds "a value was entered but it can't be used" messages (e.g. a
-  // typed duration of 0), which the widget layer is expected to show on
-  // blur and clear on the first valid keystroke.
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
     final errors = <EquipmentFormField, EquipmentFieldError>{};
     final hasItemType = draft.equipmentType.trim().isNotEmpty;
@@ -212,7 +193,7 @@ class EquipmentCostFormBloc
           EquipmentFieldError.durationNotPositive;
       return false;
     }
-    if (duration > _maxDuration) {
+    if (duration > _durationColumnMax) {
       errors[EquipmentFormField.duration] =
           EquipmentFieldError.durationTooLarge;
       return false;
@@ -281,7 +262,7 @@ class EquipmentCostFormBloc
         if (isDay) 'daily_rate': dailyRate ?? 0,
         if (isDay) 'duration': duration ?? 0,
         if (!isDay) 'job_amount': jobAmount ?? 0,
-        if (deliveryFee != null) 'delivery_fee': deliveryFee,
+        'delivery_fee': ?deliveryFee,
       },
       itemTotalCost: total,
       createdAt: now,
