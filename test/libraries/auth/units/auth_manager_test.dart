@@ -1314,6 +1314,33 @@ void main() {
       );
 
       test(
+        'a signed-out event that does not come from logout() clears the '
+        'current-company cache too',
+        () async {
+          await authManager.loginWithEmail(testEmail, testPassword);
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-a',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-a',
+          );
+
+          await supabaseWrapper.signOut();
+
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+            'company-b',
+          );
+          expect(
+            (await currentCompanyResolver.resolve()).getRightOrNull(),
+            'company-b',
+          );
+        },
+      );
+
+      test(
         'logout does not clear the current-company cache on failure',
         () async {
           await authManager.loginWithEmail(testEmail, testPassword);
