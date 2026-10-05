@@ -3742,6 +3742,12 @@ abstract class AppLocalizations {
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
 
+  /// Error toast when saving an equipment cost line fails. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add this cost. Try again.'**
+  String get addToEstimateFailedError;
+
   /// Error toast when the estimate's name and total cannot be loaded before opening the equipment cost sheet. No Figma frame covers this case.
   ///
   /// In en, this message translates to:
