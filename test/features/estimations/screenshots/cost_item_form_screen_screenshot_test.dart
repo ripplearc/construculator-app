@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -197,6 +198,10 @@ void main() {
                             Modular.get<YourRatesBloc>(),
                         clock: FakeClockImpl(),
                         presentAsSheet: true,
+                        estimate: CostEstimate.defaultEstimate(
+                          estimateName: 'Bedroom 2',
+                          totalCost: 2993.62,
+                        ),
                       ),
                     ),
                   ),
