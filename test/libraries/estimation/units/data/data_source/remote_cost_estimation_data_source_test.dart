@@ -648,6 +648,69 @@ void main() {
       );
     });
 
+    group('getEstimationById', () {
+      test('should return the DTO for the matching row', () async {
+        fakeSupabaseWrapper.addTableData(tableName, [
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: estimateId1,
+            estimateName: estimateName1,
+          ),
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-2',
+            estimateName: 'Other Estimate',
+          ),
+        ]);
+
+        final result = await dataSource.getEstimationById(estimateId1);
+
+        expect(result?.id, equals(estimateId1));
+        expect(result?.estimateName, equals(estimateName1));
+      });
+
+      test('should return null when no row has the ID', () async {
+        fakeSupabaseWrapper.addTableData(tableName, [
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-2',
+          ),
+        ]);
+
+        final result = await dataSource.getEstimationById(estimateId1);
+
+        expect(result, isNull);
+      });
+
+      test('should filter by the id column on the estimates table', () async {
+        await dataSource.getEstimationById(estimateId1);
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'selectSingle',
+        );
+        expect(methodCalls, hasLength(1));
+        expect(
+          methodCalls.first,
+          equals({
+            'method': 'selectSingle',
+            'table': tableName,
+            'columns': '*',
+            'filterColumn': DatabaseConstants.idColumn,
+            'filterValue': estimateId1,
+          }),
+        );
+      });
+
+      test('should rethrow exception when selectSingle throws', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelect = true;
+        fakeSupabaseWrapper.selectExceptionType =
+            SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.selectErrorMessage = errorMsgDbConnection;
+
+        await expectLater(
+          () => dataSource.getEstimationById(estimateId1),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
+      });
+    });
+
     group('renameEstimation', () {
       const String newEstimateName = 'Updated Estimate Name';
 

@@ -21,6 +21,11 @@ abstract class CostEstimationDataSource {
     bool ascending = false,
   });
 
+  /// Used to fetch one cost estimation by its ID.
+  ///
+  /// Returns the matching [CostEstimateDto], or null when no row has this ID.
+  Future<CostEstimateDto?> getEstimationById(String estimationId);
+
   /// Used to create a new cost estimation
   ///
   /// Returns a [CostEstimateDto] with the created cost estimation.
