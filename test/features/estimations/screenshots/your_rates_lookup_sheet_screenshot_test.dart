@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +44,15 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     seededRows = [];
+    // CurrentCompanyResolverImpl caches its result for the resolver's own
+    // lifetime, which outlives a single test here (it's a lazy singleton
+    // shared across this file's setUpAll'd Modular instance) — clear it so
+    // each test starts from a fresh, un-resolved session.
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
   });
 
   void seedRate({required String itemName, required double amount}) {
