@@ -735,11 +735,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 ///
 /// The title/body copy matches the storyboard frame "Delivery $8500"
 /// ("Delivery costs more than the machine" / "Delivery is {fee} against
-/// {baseCost} for {duration} of {equipment}. Add it anyway?"). The
-/// storyboard spells its one example duration as a word ("four days");
-/// this uses digits instead so arbitrary durations don't need a
-/// number-to-words conversion — flagging that choice for the owner to
-/// override if the word form matters.
+/// {baseCost} for {duration} of {equipment}. Add it anyway?"). Whole
+/// durations from two to ten days are spelled as words like the storyboard
+/// ("four days"), and larger or fractional counts stay as digits.
 class _OutsizedFeeDialog extends StatelessWidget {
   const _OutsizedFeeDialog({
     required this.fee,
@@ -771,9 +769,6 @@ class _OutsizedFeeDialog extends StatelessWidget {
       ? value.toStringAsFixed(0)
       : value.toString();
 
-  // "1 day"/"half a day"/"N days" — the storyboard names a single day and a
-  // half day specially; everything else stays in digit form (see this
-  // class's doc comment for why digits rather than spelled-out numbers).
   String _formatDurationPhrase(BuildContext context, double value) {
     final l10n = context.l10n;
     if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
