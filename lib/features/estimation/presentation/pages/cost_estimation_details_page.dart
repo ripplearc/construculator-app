@@ -218,6 +218,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openEquipmentForm(BuildContext context, YourRateEntry? entry) {
     return CoreQuickSheet.show(
       context: context,
+      backgroundColor: sheetSurface(context),
       child: BlocProvider<EquipmentCostFormBloc>(
         create: (_) => widget.equipmentCostFormBlocFactory(),
         child: CostItemFormScreen(
