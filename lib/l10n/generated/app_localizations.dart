@@ -3693,6 +3693,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
+
+  /// Error toast when the estimate's name and total cannot be loaded before opening the equipment cost sheet. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this estimate. Try again.'**
+  String get estimateSummaryLoadFailedError;
 }
 
 class _AppLocalizationsDelegate
