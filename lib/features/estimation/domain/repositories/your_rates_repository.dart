@@ -58,15 +58,15 @@ abstract class YourRatesRepository {
   /// for its (category, name, [YourRateEntry.equipmentMethod]) grouping:
   ///
   /// - No existing row in the grouping: inserts [entry] as a new row.
-  /// - An existing row shares the exact same [YourRateEntry.entryLabel]
-  ///   (including both being null): silently overwrites that row's field
+  /// - The grouping has existing rows and [entry].entryLabel is null: rejected
+  ///   with an `EstimationErrorType.duplicateEntry` failure, whatever the
+  ///   existing rows' labels are. An unlabeled save never replaces a saved
+  ///   price silently; the caller asks the user to name the new price.
+  /// - The grouping has existing rows, [entry].entryLabel is non-null, and an
+  ///   existing row has the exact same label: overwrites that row's field
   ///   values.
-  /// - The grouping has existing rows, none sharing the same label, and
-  ///   [entry].entryLabel is null: rejected with an
-  ///   `EstimationErrorType.duplicateEntry` failure — an unlabeled save into
-  ///   an already-populated grouping can't tell which row it should replace.
-  /// - The grouping has existing rows, none sharing the same label, and
-  ///   [entry].entryLabel is non-null: inserts [entry] as a new, distinct
+  /// - The grouping has existing rows, [entry].entryLabel is non-null, and no
+  ///   existing row has the same label: inserts [entry] as a new, distinct
   ///   row.
   ///
   /// A row of the same name with the other pricing method is not in the

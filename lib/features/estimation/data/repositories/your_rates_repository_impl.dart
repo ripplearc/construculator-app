@@ -96,6 +96,12 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         return const Right(null);
       }
 
+      if (effectiveLabel == null) {
+        return const Left(
+          EstimationFailure(errorType: EstimationErrorType.duplicateEntry),
+        );
+      }
+
       final sameLabel = existing
           .where(
             (candidate) =>
@@ -109,12 +115,6 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
           YourRateEntryDto.fromEntity(normalizedEntry),
         );
         return const Right(null);
-      }
-
-      if (effectiveLabel == null) {
-        return const Left(
-          EstimationFailure(errorType: EstimationErrorType.duplicateEntry),
-        );
       }
 
       await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));

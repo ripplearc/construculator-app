@@ -319,21 +319,24 @@ void main() {
         expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
       });
 
-      test(
-        'overwrites the existing row when an unlabeled entry collides with an unlabeled row',
-        () async {
-          seed([row(id: 'existing', rateAmount: 100.0)]);
-          final entry = buildEntry(amount: 300.0);
+      test('rejects an unlabeled save when the grouping has an unlabeled row, '
+          'leaving the saved price alone', () async {
+        seed([row(id: 'existing', rateAmount: 100.0)]);
 
-          final result = await repository.save(entry);
+        final result = await repository.save(buildEntry(amount: 300.0));
 
-          expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['filterValue'], 'existing');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
 
       test(
         'overwrites the matching row when a labeled entry collides with the same label',
@@ -429,20 +432,25 @@ void main() {
         expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
       });
 
-      test('treats a whitespace-only label as null when matching an existing '
-          'unlabeled row', () async {
+      test('treats a whitespace-only label as no label and rejects it when the '
+          'grouping has an unlabeled row', () async {
         seed([row(id: 'existing', entryLabel: null, rateAmount: 100.0)]);
-        final entry = buildEntry(entryLabel: '   ', amount: 999.0);
 
-        final result = await repository.save(entry);
+        final result = await repository.save(
+          buildEntry(entryLabel: '   ', amount: 999.0),
+        );
 
-        expect(result.isRight(), true);
-        final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-        expect(updateCalls.length, 1);
-        expect(updateCalls.first['filterValue'], 'existing');
-        // The normalized (null) label is what gets persisted, not the
-        // literal whitespace.
-        expect(updateCalls.first['data']['entry_label'], isNull);
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
       });
 
       test(
@@ -493,10 +501,16 @@ void main() {
         'overwrites only the row of the same pricing method when both exist',
         () async {
           seed([
-            row(id: 'day-row', itemName: 'Mini excavator', rateAmount: 145),
+            row(
+              id: 'day-row',
+              itemName: 'Mini excavator',
+              entryLabel: 'Supplier A',
+              rateAmount: 145,
+            ),
             row(
               id: 'job-row',
               itemName: 'Mini excavator',
+              entryLabel: 'Supplier A',
               rateAmount: 520,
               equipmentMethod: 'job',
             ),
@@ -505,6 +519,7 @@ void main() {
           final result = await repository.save(
             buildEntry(
               itemName: 'Mini excavator',
+              entryLabel: 'Supplier A',
               amount: 150,
               method: EquipmentPricingMethod.job,
             ),
@@ -518,25 +533,50 @@ void main() {
         },
       );
 
-      test(
-        'replaces the saved row when the name differs only by capital letters '
-        'or extra spaces',
-        () async {
-          seed([
-            row(id: 'existing', itemName: 'Mini excavator', rateAmount: 145),
-          ]);
+      test('rejects an unlabeled save when the name differs only by capital '
+          'letters or extra spaces from a saved unlabeled row', () async {
+        seed([
+          row(id: 'existing', itemName: 'Mini excavator', rateAmount: 145),
+        ]);
 
-          final result = await repository.save(
-            buildEntry(itemName: '  mini   EXCAVATOR ', amount: 160),
-          );
+        final result = await repository.save(
+          buildEntry(itemName: '  mini   EXCAVATOR ', amount: 160),
+        );
 
-          expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls, hasLength(1));
-          expect(updateCalls.first['filterValue'], 'existing');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
+
+      test('rejects a second unlabeled save after a labeled save added a row, '
+          'leaving the unlabeled price alone', () async {
+        seed([
+          row(id: 'unlabeled', rateAmount: 145),
+          row(id: 'labeled', entryLabel: 'Supplier A', rateAmount: 160),
+        ]);
+
+        final result = await repository.save(buildEntry(amount: 170));
+
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
 
       test('saves the name trimmed', () async {
         final result = await repository.save(
