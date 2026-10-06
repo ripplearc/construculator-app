@@ -105,6 +105,15 @@ const Schema schema = Schema([
     ],
   ),
 
+  // Never uploaded or synced: `company_users` has no sync access, so the
+  // device keeps the one company id the resolver looked up. Every save
+  // replaces the single row, which is tagged with the user it was looked up
+  // for.
+  Table.localOnly('current_company', [
+    Column.text('user_id'),
+    Column.text('company_id'),
+  ]),
+
   // On-demand stream: call `db.syncStream('user_cost_estimates')` when the
   // user enters the cost estimation feature. Membership and the
   // `get_cost_estimations` permission are derived from the JWT server-side,
