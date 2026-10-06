@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
@@ -6,12 +7,17 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 
 /// Implementation of [YourRatesRepository] over the phone's own database.
 class YourRatesRepositoryImpl implements YourRatesRepository {
-  YourRatesRepositoryImpl({required this.dataSource});
+  YourRatesRepositoryImpl({
+    required this.dataSource,
+    required this.refusalDataSource,
+  });
 
   final YourRatesDataSource dataSource;
+  final YourRateRefusalDataSource refusalDataSource;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
@@ -26,7 +32,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }) async {
     if (companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
-      final dtos = await dataSource.loadRates(
+      final dtos = await _loadRatesAsLastAccepted(
         category: category?.toJson(),
         companyId: companyId,
       );
@@ -107,6 +113,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         await dataSource.insertRate(
           YourRateEntryDto.fromEntity(normalizedEntry),
         );
+        await _forgetRefusalOf(normalizedEntry);
         return const Right(null);
       }
 
@@ -129,6 +136,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       }
 
       await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
+      await _forgetRefusalOf(normalizedEntry);
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e));
@@ -145,13 +153,44 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
+  Future<void> _forgetRefusalOf(YourRateEntry entry) => refusalDataSource
+      .deleteRefusalByItem(entry.itemName, entry.equipmentMethod?.toJson());
+
+  Future<List<YourRateEntryDto>> _loadRatesAsLastAccepted({
+    String? category,
+    String? companyId,
+  }) async {
+    final dtos = await dataSource.loadRates(
+      category: category,
+      companyId: companyId,
+    );
+    final refusals = {
+      for (final refusal in await refusalDataSource.loadAllRefusals())
+        refusal.id: refusal,
+    };
+    final lastAccepted = <YourRateEntryDto>[];
+    for (final dto in dtos) {
+      final refusal =
+          refusals[YourRateRefusalKey.of(dto.itemName, dto.equipmentMethod)];
+      if (refusal == null || refusal.refusedAmount != dto.rateAmount) {
+        lastAccepted.add(dto);
+        continue;
+      }
+      final acceptedAmount = refusal.acceptedAmount;
+      if (acceptedAmount != null) {
+        lastAccepted.add(dto.withRateAmount(acceptedAmount));
+      }
+    }
+    return lastAccepted;
+  }
+
   Future<List<YourRateEntry>> _entriesNamed(
     CostItemType category,
     String itemName, {
     required String companyId,
   }) async {
     final nameKey = _matchKey(itemName);
-    final dtos = await dataSource.loadRates(
+    final dtos = await _loadRatesAsLastAccepted(
       category: category.toJson(),
       companyId: companyId,
     );

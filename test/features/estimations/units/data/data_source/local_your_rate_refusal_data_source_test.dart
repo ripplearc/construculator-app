@@ -37,6 +37,24 @@ void main() {
 
     tearDown(Modular.destroy);
 
+    group('loadAllRefusals', () {
+      test('returns every refusal kept on the phone', () async {
+        database.seedRefusal(refusal());
+        database.seedRefusal(refusal(itemName: 'Excavator', method: 'day'));
+
+        final found = await dataSource.loadAllRefusals();
+
+        expect(found.map((refusal) => refusal.itemName), [
+          'Dumpster — 30 yd',
+          'Excavator',
+        ]);
+      });
+
+      test('returns nothing when the server refused nothing', () async {
+        expect(await dataSource.loadAllRefusals(), isEmpty);
+      });
+    });
+
     group('loadRefusalByItem', () {
       test(
         'returns null when the server refused nothing for the item',
