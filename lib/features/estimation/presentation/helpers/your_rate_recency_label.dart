@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -6,12 +8,13 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 extension YourRateRecencyLabel on YourRateEntry {
   static const _daysInWeek = 7;
   static const _daysInMonth = 30;
+  static const _maxWeeks = 3;
 
   /// How long ago this rate was last added to an estimate ("Used 3 days
   /// ago"), or saved when it never was ("Saved 3 days ago").
   ///
   /// Counts calendar days up to [now]: under 7 days reads today, yesterday or
-  /// N days ago; under 30 days reads whole weeks, where one is "last week";
+  /// N days ago; under 30 days reads whole weeks up to 3, where one is "last week";
   /// from 30 days reads whole months, where one is "last month".
   String recencyLabel(AppLocalizations l10n, {required DateTime now}) {
     final days = DisplayFormatter.calendarDaysSince(recencyAt, now: now);
@@ -30,7 +33,7 @@ extension YourRateRecencyLabel on YourRateEntry {
           : l10n.yourRatesSavedDaysAgo(days);
     }
     if (days < _daysInMonth) {
-      final weeks = days ~/ _daysInWeek;
+      final weeks = min(days ~/ _daysInWeek, _maxWeeks);
       return isUsed
           ? l10n.yourRatesUsedWeeksAgo(weeks)
           : l10n.yourRatesSavedWeeksAgo(weeks);
