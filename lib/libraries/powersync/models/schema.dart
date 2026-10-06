@@ -114,6 +114,31 @@ const Schema schema = Schema([
     Column.text('company_id'),
   ]),
 
+  // On-demand stream: call `db.syncStream('user_rates')` before reading. The
+  // backend's `item_name_key` column is generated server-side and not synced.
+  Table(
+    'your_rates',
+    [
+      Column.text('company_id'),
+      Column.text('category'),
+      Column.text('item_name'),
+      Column.real('rate_amount'),
+      Column.text('rate_currency'),
+      Column.text('unit'),
+      Column.text('equipment_method'),
+      Column.text('entry_label'),
+      Column.text('saved_at'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+    ],
+    indexes: [
+      Index('by_company_category', [
+        IndexedColumn('company_id'),
+        IndexedColumn('category'),
+      ]),
+    ],
+  ),
+
   // On-demand stream: call `db.syncStream('user_cost_estimates')` when the
   // user enters the cost estimation feature. Membership and the
   // `get_cost_estimations` permission are derived from the JWT server-side,
