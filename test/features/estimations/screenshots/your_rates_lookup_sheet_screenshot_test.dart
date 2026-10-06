@@ -74,8 +74,9 @@ void main() {
         home: Scaffold(
           body: BlocProvider<YourRatesBloc>(
             create: (_) => Modular.get<YourRatesBloc>(),
-            child: const YourRatesLookupSheet(
+            child: YourRatesLookupSheet(
               method: EquipmentPricingMethod.job,
+              clock: FakeClockImpl(DateTime(2026, 1, 15)),
             ),
           ),
         ),
@@ -186,8 +187,9 @@ void main() {
           home: Scaffold(
             body: BlocProvider<YourRatesBloc>(
               create: (_) => Modular.get<YourRatesBloc>(),
-              child: const YourRatesLookupSheet(
+              child: YourRatesLookupSheet(
                 method: EquipmentPricingMethod.job,
+                clock: FakeClockImpl(DateTime(2026, 1, 15)),
               ),
             ),
           ),

@@ -631,6 +631,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final entry = await YourRatesLookupSheet.show(
       context: context,
       method: method,
+      clock: widget.clock,
       blocFactory: widget.yourRatesBlocFactory,
     );
     if (entry == null || !mounted) return;
