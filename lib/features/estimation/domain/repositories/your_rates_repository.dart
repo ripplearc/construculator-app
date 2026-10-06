@@ -6,16 +6,14 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
-/// RLS alone does not scope a read to one company, for a user who belongs to
-/// more than one: the optional `companyId` parameter some methods below
-/// accept is what actually scopes a read to one company, the same role it
-/// plays in `your_rates`' backend README (be#57). RLS still gates access to
-/// rows the caller has no membership in at all; `companyId` is what narrows
-/// among the companies the caller does belong to. It also makes company
-/// isolation testable, since `FakeSupabaseWrapper` has no concept of RLS and
-/// so cannot otherwise catch a cross-company read in a test. [save] always
-/// writes a [YourRateEntry.companyId] the backend checks against the
-/// caller's actual company membership.
+/// Reads and writes go through the phone's own database, so they work with
+/// no signal. A save is kept on the phone at once and uploaded when a signal
+/// returns.
+///
+/// The phone holds the rates of every company the user belongs to, so the
+/// optional `companyId` parameter some methods below accept is what narrows a
+/// read to one company. [save] always writes a [YourRateEntry.companyId] the
+/// backend checks against the caller's actual company membership.
 ///
 /// Names match without regard to capital letters or extra spaces, so
 /// `Mini excavator` and ` MINI  excavator ` are one name. A name saved with a
@@ -36,9 +34,9 @@ abstract class YourRatesRepository {
   /// method on this interface — this empty-query form is the primitive
   /// `YourRatesBloc` uses to build its recents list.
   ///
-  /// [limit] caps the row count at the database level. Only applied when
+  /// [limit] caps the row count before any name matching. Only applied when
   /// [query] is empty: a non-empty query is matched client-side against the
-  /// fetched rows, and a database-level cap applied before that match would
+  /// loaded rows, and a cap applied before that match would
   /// drop matches outside the row window.
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
