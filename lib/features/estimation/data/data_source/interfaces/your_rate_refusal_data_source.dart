@@ -6,6 +6,11 @@ import 'package:construculator/features/estimation/data/models/your_rate_refusal
 /// whether the "Not kept" message was shown. Every call names the user, the
 /// company and the category, so one user's refusal is never read as another's.
 abstract class YourRateRefusalDataSource {
+  /// Every refusal kept on the phone.
+  ///
+  /// Throws an exception if the read fails.
+  Future<List<YourRateRefusalDto>> loadAllRefusals();
+
   /// The refusal kept for the item called [itemName] of [category] in
   /// [companyId] for [userId] priced by [equipmentMethod], or null if the server has not
   /// refused it.

@@ -93,6 +93,23 @@ class YourRateEntryDto extends Equatable {
     );
   }
 
+  /// This entry priced at [amount] instead.
+  YourRateEntryDto withRateAmount(double amount) => YourRateEntryDto(
+    id: id,
+    companyId: companyId,
+    category: category,
+    itemName: itemName,
+    rateAmount: amount,
+    rateCurrency: rateCurrency,
+    unit: unit,
+    equipmentMethod: equipmentMethod,
+    entryLabel: entryLabel,
+    savedAt: savedAt,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    lastUsedAt: lastUsedAt,
+  );
+
   /// Converts this DTO to the writable JSON body for an insert or update
   /// request. See the class doc comment for why `id`/`created_at`/
   /// `updated_at` are deliberately excluded.
