@@ -25,13 +25,7 @@ EventTransformer<YourRatesSearched> _searchTransformer(Duration debounce) =>
         )
         .switchMap(mapper);
 
-/// Returns an [EventTransformer] that ignores a new event of the same type
-/// while one is already being processed, instead of queuing or restarting.
-///
-/// Used for [YourRatesSaveRequested] so a fast double-tap on "Save as my
-/// rate" can't fire a second save (and a second collision dialog) while the
-/// first save is still in flight.
-EventTransformer<E> _droppable<E>() =>
+EventTransformer<E> _ignoreWhileInFlight<E>() =>
     (events, mapper) => events.exhaustMap(mapper);
 
 /// BLoC for the contractor's personal saved-rate book: recents per category
@@ -59,7 +53,10 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       _onSearched,
       transformer: _searchTransformer(queryDebounce),
     );
-    on<YourRatesSaveRequested>(_onSaveRequested, transformer: _droppable());
+    on<YourRatesSaveRequested>(
+      _onSaveRequested,
+      transformer: _ignoreWhileInFlight(),
+    );
   }
 
   Future<void> _onRefreshRecents(
@@ -99,11 +96,14 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   ) async {
     final result = await _repository.save(event.entry);
     result.fold((failure) {
-      if (failure is EstimationFailure &&
-          failure.errorType == EstimationErrorType.duplicateEntry) {
-        emit(YourRatesSaveCollision(event.entry));
-      } else {
-        emit(YourRatesSaveFailed(failure));
+      final errorType = failure is EstimationFailure ? failure.errorType : null;
+      switch (errorType) {
+        case EstimationErrorType.duplicateEntry:
+          emit(YourRatesSaveCollision(event.entry));
+        case EstimationErrorType.duplicateLabel:
+          emit(YourRatesSaveLabelTaken(event.entry));
+        default:
+          emit(YourRatesSaveFailed(failure));
       }
     }, (_) => emit(YourRatesSaveSucceeded()));
   }

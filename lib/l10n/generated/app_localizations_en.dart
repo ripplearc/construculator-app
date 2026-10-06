@@ -1670,6 +1670,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'A name is required to save this rate';
 
   @override
+  String get yourRatesEntryLabelTakenError =>
+      'You already use this name. Pick another.';
+
+  @override
   String get yourRatesEntryLabelCancel => 'Cancel';
 
   @override

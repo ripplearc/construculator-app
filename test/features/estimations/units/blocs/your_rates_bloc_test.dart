@@ -291,6 +291,34 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveLabelTaken carrying the submitted entry when the label is '
+        'already used, and writes nothing',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(YourRatesSaveRequested(entry(entryLabel: 'supplier  a'))),
+        expect: () => [
+          isA<YourRatesSaveLabelTaken>().having(
+            (s) => s.entry.entryLabel,
+            'entry.entryLabel',
+            'supplier  a',
+          ),
+        ],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveSucceeded when a labeled retry follows a collision',
         setUp: () {
           fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [

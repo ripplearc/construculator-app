@@ -47,6 +47,15 @@ class YourRatesSaveCollision extends YourRatesState {
   final YourRateEntry entry;
 }
 
+/// State after a labeled [YourRatesSaveRequested] is rejected because the same
+/// name and pricing method already have that label. Nothing was written, and
+/// [entry] is the entry the caller submitted, so the user can pick another
+/// label for it.
+class YourRatesSaveLabelTaken extends YourRatesState {
+  const YourRatesSaveLabelTaken(this.entry);
+  final YourRateEntry entry;
+}
+
 /// State after [YourRatesSaveRequested] fails for any other reason.
 class YourRatesSaveFailed extends YourRatesState {
   const YourRatesSaveFailed(this.failure);

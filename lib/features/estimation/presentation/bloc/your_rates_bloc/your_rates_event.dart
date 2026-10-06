@@ -21,8 +21,9 @@ class YourRatesSearched extends YourRatesEvent {
 }
 
 /// Fired to save [entry] via [YourRatesRepository.save]. Resolves to
-/// [YourRatesSaveSucceeded], [YourRatesSaveCollision] (a label is needed —
-/// see [YourRatesRepository.save]'s collision rule), or [YourRatesSaveFailed].
+/// [YourRatesSaveSucceeded], [YourRatesSaveCollision] (a label is needed),
+/// [YourRatesSaveLabelTaken] (the label is already used), or
+/// [YourRatesSaveFailed]. See [YourRatesRepository.save] for the rule.
 class YourRatesSaveRequested extends YourRatesEvent {
   const YourRatesSaveRequested(this.entry);
   final YourRateEntry entry;

@@ -400,7 +400,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
     switch (state) {
       case YourRatesSaveCollision(:final entry):
-        unawaited(_promptEntryLabelAndRetry(context, entry));
+        unawaited(_promptEntryLabel(context, entry));
+      case YourRatesSaveLabelTaken():
+        break;
       // TODO: [CA-1207](https://ripplearc.youtrack.cloud/issue/CA-1207) Every YourRatesSaveFailed shows the same line, though the repository already tells a timeout, a lost connection, a parsing error, a refused write and a missing row apart. Thread the error type through this state and write copy for each.
       case YourRatesSaveFailed():
         setState(() => _rateSaveStatus = _RateSaveStatus.failed);
@@ -414,17 +416,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     }
   }
 
-  Future<void> _promptEntryLabelAndRetry(
-    BuildContext context,
-    YourRateEntry entry,
-  ) async {
-    final label = await showDialog<String>(
+  Future<void> _promptEntryLabel(BuildContext context, YourRateEntry entry) {
+    return showDialog<void>(
       context: context,
-      builder: (_) => const _EntryLabelDialog(),
-    );
-    if (label == null || !mounted) return;
-    _yourRatesBloc.add(
-      YourRatesSaveRequested(entry.copyWith(entryLabel: label)),
+      builder: (_) => BlocProvider.value(
+        value: _yourRatesBloc,
+        child: _EntryLabelDialog(entry: entry),
+      ),
     );
   }
 
@@ -483,17 +481,30 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return Padding(
       padding: const EdgeInsets.only(top: CoreSpacing.space2),
       child: switch (_rateSaveStatus) {
-        _RateSaveStatus.failed => _rateSaveMessage(
-          context,
-          key: const Key('save_as_my_rate_error'),
-          icon: CoreIcons.error,
-          iconColor: context.colorTheme.iconRed,
-          text: Text(
-            context.l10n.yourRatesSaveFailedError,
-            style: context.textTheme.bodySmallRegular.copyWith(
-              color: context.colorTheme.textError,
+        _RateSaveStatus.failed => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _rateSaveMessage(
+              context,
+              key: const Key('save_as_my_rate_helper_text'),
+              icon: CoreIcons.info,
+              iconColor: context.colorTheme.iconGrayMid,
+              text: _hintText(context, data, saved: false),
             ),
-          ),
+            const SizedBox(height: CoreSpacing.space1),
+            _rateSaveMessage(
+              context,
+              key: const Key('save_as_my_rate_error'),
+              icon: CoreIcons.error,
+              iconColor: context.colorTheme.iconRed,
+              text: Text(
+                context.l10n.yourRatesSaveFailedError,
+                style: context.textTheme.bodySmallRegular.copyWith(
+                  color: context.colorTheme.textError,
+                ),
+              ),
+            ),
+          ],
         ),
         _RateSaveStatus.saved => _rateSaveMessage(
           context,
@@ -820,14 +831,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
-  // Delivery applies the same way under Day and Job pricing, so this row
-  // sits below the if/else above rather than inside either branch.
-  //
-  // One persistent grey panel, not a collapsed-row/expanded-field swap: the
-  // Figma mock (cuj6-equip-5c/5d/5h/5i) shows the "Delivery <value> · Add
-  // note" header staying visible with its chevron pointed up through
-  // typing, folding, and confirming — only an explicit tap on the header
-  // closes it. See [_deliveryExpanded]'s doc comment.
   // TODO: [CA-1252] replace with CoreUI's details row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1252
   Widget _buildDeliveryFeeSection(
     BuildContext context,
@@ -1153,21 +1156,10 @@ class _OutsizedFeeDialog extends StatelessWidget {
   }
 }
 
-/// Prompts for the freeform label required to save a rate that collides
-/// with an existing "Your rates" entry for the same equipment (Decision 55):
-/// [YourRatesRepository.save] rejects an unlabeled save into an
-/// already-populated (companyId, category, itemName) grouping rather than
-/// guessing which row to overwrite.
-///
-/// Returns the typed label via `Navigator.pop`, or null if cancelled.
-///
-/// Shares [_OutsizedFeeDialog]'s 340-wide "Confirmation Dialog" shell
-/// (Figma node 65354:146175) — see that class's doc comment for the full
-/// component spec. Unlike that class, this one's padding uses
-/// [CoreSpacing.space6] rather than repeating the same literal 22px value —
-/// see the comment above the `Padding` below for why.
 class _EntryLabelDialog extends StatefulWidget {
-  const _EntryLabelDialog();
+  const _EntryLabelDialog({required this.entry});
+
+  final YourRateEntry entry;
 
   @override
   State<_EntryLabelDialog> createState() => _EntryLabelDialogState();
@@ -1189,7 +1181,24 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
       setState(() => _error = context.l10n.yourRatesEntryLabelRequiredError);
       return;
     }
-    Navigator.of(context).pop(label);
+    context.read<YourRatesBloc>().add(
+      YourRatesSaveRequested(widget.entry.copyWith(entryLabel: label)),
+    );
+  }
+
+  void _handleSaveState(BuildContext context, YourRatesState state) {
+    switch (state) {
+      case YourRatesSaveLabelTaken():
+        setState(() => _error = context.l10n.yourRatesEntryLabelTakenError);
+      case YourRatesSaveSucceeded() || YourRatesSaveFailed():
+        Navigator.of(context).pop();
+      case YourRatesLoading() ||
+          YourRatesLoaded() ||
+          YourRatesSearchResults() ||
+          YourRatesError() ||
+          YourRatesSaveCollision():
+        break;
+    }
   }
 
   @override
@@ -1197,73 +1206,71 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    return Dialog(
-      backgroundColor: sheetSurface(context),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(CoreSpacing.space5),
-      ),
-      // CoreSpacing has no token that lands exactly on _OutsizedFeeDialog's
-      // literal 22px padding (space5=20, space6=24 — both 2px off), so this
-      // dialog uses the nearest token, space6, instead of also hardcoding
-      // 22. The 340 width just below has no spacing-token equivalent at
-      // all (it isn't a padding/gap value), so it stays literal.
-      child: Padding(
-        padding: const EdgeInsets.all(CoreSpacing.space6),
-        child: SizedBox(
-          width: 340,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.yourRatesEntryLabelDialogTitle,
-                key: const Key('entry_label_dialog_title'),
-                style: textTheme.titleMediumSemiBold.copyWith(
-                  color: colorTheme.textHeadline,
-                ),
-              ),
-              const SizedBox(height: CoreSpacing.space3),
-              Text(
-                l10n.yourRatesEntryLabelDialogBody,
-                style: textTheme.bodyMediumRegular.copyWith(
-                  color: colorTheme.textBody,
-                ),
-              ),
-              const SizedBox(height: CoreSpacing.space3),
-              CoreTextField(
-                key: const Key('entry_label_field'),
-                hintText: l10n.yourRatesEntryLabelHint,
-                controller: _controller,
-                errorTextList: switch (_error) {
-                  final error? => [error],
-                  null => null,
-                },
-              ),
-              const SizedBox(height: CoreSpacing.space3),
-              Row(
-                children: [
-                  Expanded(
-                    child: CoreButton(
-                      key: const Key('entry_label_dialog_cancel_button'),
-                      label: l10n.yourRatesEntryLabelCancel,
-                      variant: CoreButtonVariant.secondary,
-                      size: CoreButtonSize.medium,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+    return BlocListener<YourRatesBloc, YourRatesState>(
+      listener: _handleSaveState,
+      child: Dialog(
+        backgroundColor: sheetSurface(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space5),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(CoreSpacing.space6),
+          child: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.yourRatesEntryLabelDialogTitle,
+                  key: const Key('entry_label_dialog_title'),
+                  style: textTheme.titleMediumSemiBold.copyWith(
+                    color: colorTheme.textHeadline,
                   ),
-                  const SizedBox(width: CoreSpacing.space3),
-                  Expanded(
-                    child: CoreButton(
-                      key: const Key('entry_label_dialog_save_button'),
-                      label: l10n.yourRatesEntryLabelSave,
-                      variant: CoreButtonVariant.primary,
-                      size: CoreButtonSize.medium,
-                      onPressed: _submit,
-                    ),
+                ),
+                const SizedBox(height: CoreSpacing.space3),
+                Text(
+                  l10n.yourRatesEntryLabelDialogBody,
+                  style: textTheme.bodyMediumRegular.copyWith(
+                    color: colorTheme.textBody,
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: CoreSpacing.space3),
+                CoreTextField(
+                  key: const Key('entry_label_field'),
+                  hintText: l10n.yourRatesEntryLabelHint,
+                  controller: _controller,
+                  errorTextList: switch (_error) {
+                    final error? => [error],
+                    null => null,
+                  },
+                ),
+                const SizedBox(height: CoreSpacing.space3),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CoreButton(
+                        key: const Key('entry_label_dialog_cancel_button'),
+                        label: l10n.yourRatesEntryLabelCancel,
+                        variant: CoreButtonVariant.secondary,
+                        size: CoreButtonSize.medium,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: CoreSpacing.space3),
+                    Expanded(
+                      child: CoreButton(
+                        key: const Key('entry_label_dialog_save_button'),
+                        label: l10n.yourRatesEntryLabelSave,
+                        variant: CoreButtonVariant.primary,
+                        size: CoreButtonSize.medium,
+                        onPressed: _submit,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

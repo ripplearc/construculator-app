@@ -2575,6 +2575,10 @@
   "@yourRatesEntryLabelRequiredError": {
     "description": "Validation error shown when the contractor tries to save an entry label that is empty or whitespace-only"
   },
+  "yourRatesEntryLabelTakenError": "You already use this name. Pick another.",
+  "@yourRatesEntryLabelTakenError": {
+    "description": "Error line under the label field of the Name this rate dialog when the typed label is already used for the same equipment and pricing method."
+  },
   "yourRatesEntryLabelCancel": "Cancel",
   "@yourRatesEntryLabelCancel": {
     "description": "Secondary button on the entry-label collision dialog; dismisses without saving"

@@ -3070,6 +3070,12 @@ abstract class AppLocalizations {
   /// **'A name is required to save this rate'**
   String get yourRatesEntryLabelRequiredError;
 
+  /// Error line under the label field of the Name this rate dialog when the typed label is already used for the same equipment and pricing method.
+  ///
+  /// In en, this message translates to:
+  /// **'You already use this name. Pick another.'**
+  String get yourRatesEntryLabelTakenError;
+
   /// Secondary button on the entry-label collision dialog; dismisses without saving
   ///
   /// In en, this message translates to:
