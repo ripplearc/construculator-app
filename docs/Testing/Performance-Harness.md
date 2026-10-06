@@ -236,6 +236,11 @@ matches its id exactly.
 
 ### `Reattach device` step fails
 
+A `#RunPerf` comment runs the workflow from the default branch but checks out
+the PR branch. A PR branch made before this step was added has no
+`scripts/perf/ensure_lab_device_attached.sh`, so the step fails with
+`No such file`. Rebase the PR branch onto the default branch and comment again.
+
 The lab machine is a laptop that runs Linux inside WSL2, and the phone drops off
 WSL between runs. This step attaches it again with `usbipd` and waits until `adb`
 lists it.
@@ -268,7 +273,7 @@ When the step still fails, the error says which stage did not work:
 To check the host by hand, run the script on the lab machine:
 
 ```bash
-bash scripts/perf/ensure_lab_device_attached.sh --device-id "$PERF_DEVICE_ID"
+bash scripts/perf/ensure_lab_device_attached.sh --device-id <adb serial>
 ```
 
 Its own tests run in `scripts/run_check.sh --pre` against fake `usbipd` and `adb`.

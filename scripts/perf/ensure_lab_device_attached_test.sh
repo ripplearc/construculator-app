@@ -117,7 +117,7 @@ set_state() { echo "$2" >"${WORK_DIR}/state/$1"; }
 run_target() {
   OUTPUT="$(FAKE_DIR="${WORK_DIR}/state" FAKE_SERIAL="$SERIAL" \
     FAKE_OTHER_SERIAL="$OTHER_PIXEL_SERIAL" \
-    USBIPD_BIN="${USBIPD_OVERRIDE:-${WORK_DIR}/usbipd}" ADB_BIN="${WORK_DIR}/adb" \
+    USBIPD_BIN="${USBIPD_OVERRIDE:-${WORK_DIR}/usbipd}" ADB_BIN="${ADB_OVERRIDE:-${WORK_DIR}/adb}" \
     ATTACH_TIMEOUT_SECONDS="${TIMEOUT:-4}" ATTACH_POLL_SECONDS=1 ADB_SETTLE_SECONDS="${SETTLE:-2}" ADB_APPEAR_SECONDS=1 \
     "$TARGET" --device-id "$SERIAL" 2>&1)"
   STATUS=$?
@@ -249,6 +249,17 @@ STATUS=0
 OUTPUT="$("$TARGET" 2>&1)"; STATUS=$?
 check "missing --device-id is rejected" \
   "$([[ "$STATUS" -eq 1 && "$(has "$OUTPUT" "--device-id is required")" == yes ]] && echo yes || echo no)"
+
+reset_state
+STATUS=0
+OUTPUT="$("$TARGET" --device-id 2>&1)"; STATUS=$?
+check "--device-id without a value is rejected with a clear message" \
+  "$([[ "$STATUS" -eq 1 && "$(has "$OUTPUT" "--device-id needs a value")" == yes ]] && echo yes || echo no)"
+
+reset_state
+ADB_OVERRIDE="${WORK_DIR}/no-such-adb" run_target
+check "missing adb is reported by name" \
+  "$([[ "$STATUS" -eq 1 && "$(has "$OUTPUT" "adb not found")" == yes ]] && echo yes || echo no)"
 
 echo
 if [[ "$FAILURES" -eq 0 ]]; then

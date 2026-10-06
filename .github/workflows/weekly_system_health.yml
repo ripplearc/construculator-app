@@ -107,9 +107,11 @@ jobs:
         # entirely, and it stays in the workflow rather than in
         # capture_perf_run.sh.
         if: vars.PERF_USBIPD_BUSID != ''
+        env:
+          DEVICE_ID: ${{ steps.params.outputs.device_id }}
         run: |
           bash scripts/perf/ensure_lab_device_attached.sh \
-            --device-id "${{ steps.params.outputs.device_id }}"
+            --device-id "$DEVICE_ID"
 
       - name: Capture performance run
         id: capture

@@ -42,7 +42,9 @@ DEVICE_ID=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    --device-id) DEVICE_ID="$2"; shift 2 ;;
+    --device-id)
+      [[ $# -ge 2 ]] || { echo "❌ --device-id needs a value" >&2; exit 1; }
+      DEVICE_ID="$2"; shift 2 ;;
     *) echo "❌ Unknown option: $1" >&2; exit 1 ;;
   esac
 done
@@ -58,6 +60,7 @@ if [[ ! -x "$USBIPD_BIN" ]]; then
 fi
 
 command -v python3 >/dev/null || { echo "❌ python3 not found on PATH" >&2; exit 1; }
+command -v "$ADB_BIN" >/dev/null || { echo "❌ adb not found: $ADB_BIN" >&2; exit 1; }
 
 USBIPD_DIR="$(dirname "$USBIPD_BIN")"
 
