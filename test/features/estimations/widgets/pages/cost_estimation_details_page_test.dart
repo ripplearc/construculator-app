@@ -554,6 +554,7 @@ void main() {
           category: CostItemType.equipment,
           rate: Money(amount: amount),
           savedAt: clock.now().subtract(const Duration(days: 10)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 10)),
           equipmentMethod: method,
         ),
       );
