@@ -1726,6 +1726,56 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String yourRatesUsedMonthsAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Used $count months ago',
+      one: 'Used last month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get yourRatesSavedToday => 'Saved today';
+
+  @override
+  String get yourRatesSavedYesterday => 'Saved yesterday';
+
+  @override
+  String yourRatesSavedDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Saved $count days ago',
+      one: 'Saved $count day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String yourRatesSavedWeeksAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Saved $count weeks ago',
+      one: 'Saved last week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String yourRatesSavedMonthsAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Saved $count months ago',
+      one: 'Saved last month',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get yourRatesNewEquipmentCostAction => 'New equipment cost';
 
   @override

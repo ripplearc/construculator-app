@@ -134,7 +134,8 @@ void main() {
           'rate_amount': 90,
           'rate_currency': 'USD',
           'equipment_method': 'day',
-          'saved_at': DateTime(2026, 1, 14, 16).toIso8601String(),
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+          'last_used_at': DateTime(2026, 1, 14, 16).toIso8601String(),
         },
       ]);
       await openSheet(tester);
@@ -144,6 +145,77 @@ void main() {
           of: find.byKey(const Key('your_rate_row_yesterday-rate')),
           matching: find.text('Used yesterday'),
         ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a rate never added to an estimate reads "Saved …", not '
+        '"Used …"', (tester) async {
+      clock.set(DateTime(2026, 1, 15, 9));
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'never-added-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 15, 8).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      final row = find.byKey(const Key('your_rate_row_never-added-rate'));
+      expect(
+        find.descendant(of: row, matching: find.text('Saved today')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.textContaining('Used')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('puts a rate used after a newer save above that save', (
+      tester,
+    ) async {
+      clock.set(DateTime(2026, 1, 15, 9));
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'saved-later-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 10).toIso8601String(),
+        },
+        {
+          'id': 'used-today-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Excavator',
+          'rate_amount': 250,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2025, 12, 1).toIso8601String(),
+          'last_used_at': DateTime(2026, 1, 15, 8).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      final usedToday = find.byKey(const Key('your_rate_row_used-today-rate'));
+      final savedLater = find.byKey(
+        const Key('your_rate_row_saved-later-rate'),
+      );
+      expect(
+        tester.getTopLeft(usedToday).dy,
+        lessThan(tester.getTopLeft(savedLater).dy),
+      );
+      expect(
+        find.descendant(of: usedToday, matching: find.text('Used today')),
         findsOneWidget,
       );
     });

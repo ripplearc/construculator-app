@@ -1,8 +1,8 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -239,13 +239,6 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
-String _recencyLabel(AppLocalizations l10n, int days) {
-  if (days <= 0) return l10n.yourRatesUsedToday;
-  if (days == 1) return l10n.yourRatesUsedYesterday;
-  if (days < 7) return l10n.yourRatesUsedDaysAgo(days);
-  return l10n.yourRatesUsedWeeksAgo(days ~/ 7);
-}
-
 // TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _RecentRateRow extends StatelessWidget {
   final YourRateEntry entry;
@@ -263,10 +256,7 @@ class _RecentRateRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    final recency = _recencyLabel(
-      context.l10n,
-      DisplayFormatter.calendarDaysSince(entry.savedAt, now: now),
-    );
+    final recency = entry.recencyLabel(context.l10n, now: now);
     final unitSuffix = _unitSuffixFor(context, entry.equipmentMethod);
     final priceLabel =
         '${DisplayFormatter.currency.format(entry.rate.amount)} $unitSuffix';

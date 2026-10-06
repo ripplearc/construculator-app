@@ -54,6 +54,7 @@ void main() {
     required double amount,
     required EquipmentPricingMethod method,
     required DateTime savedAt,
+    DateTime? lastUsedAt,
   }) {
     seededRows = [
       ...seededRows,
@@ -66,6 +67,7 @@ void main() {
         'rate_currency': 'USD',
         'equipment_method': method.name,
         'saved_at': savedAt.toIso8601String(),
+        'last_used_at': lastUsedAt?.toIso8601String(),
       },
     ];
     fakeSupabase.addTableData(table, seededRows);
@@ -124,13 +126,15 @@ void main() {
           itemName: 'Scissor lift — 19ft',
           amount: 120,
           method: EquipmentPricingMethod.day,
-          savedAt: clock.now().subtract(const Duration(days: 10)),
+          savedAt: clock.now().subtract(const Duration(days: 60)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 10)),
         );
         seedRate(
           itemName: 'Dumpster — 30 yd',
           amount: 400,
           method: EquipmentPricingMethod.job,
-          savedAt: clock.now().subtract(const Duration(days: 20)),
+          savedAt: clock.now().subtract(const Duration(days: 60)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 20)),
         );
 
         await pumpSheet(tester: tester, theme: theme);
