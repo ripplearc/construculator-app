@@ -23,8 +23,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// signal. The kept id answers only that one call: the next call asks the
 /// backend again. A missing id is never kept.
 ///
-/// PowerSync's own sign-out clear also empties the device table; the clear in
-/// [clearCache] covers the case where that clear has not run.
+/// PowerSync's sign-out clear skips local-only tables, so [clearCache] is the
+/// only thing that empties the device table.
 class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   final SupabaseWrapper _supabaseWrapper;
   final LocalCurrentCompanyDataSource _localDataSource;
