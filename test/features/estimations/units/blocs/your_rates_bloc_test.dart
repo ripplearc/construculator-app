@@ -258,7 +258,7 @@ void main() {
           bloc.add(YourRatesSaveRequested(entry()));
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
 
-          bloc.add(YourRatesSaveRequested(entry()));
+          bloc.add(YourRatesSaveRequested(entry(entryLabel: 'Supplier A')));
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
         },
         expect: () => [
