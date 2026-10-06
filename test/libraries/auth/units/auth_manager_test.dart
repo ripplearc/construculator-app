@@ -1284,11 +1284,11 @@ void main() {
         'logout clears the current-company cache so the next user is '
         'resolved fresh',
         () async {
-          await authManager.loginWithEmail(testEmail, testPassword);
           supabaseWrapper.setRpcResponse(
             DatabaseConstants.getMyCompanyIdRpcFunction,
             'company-a',
           );
+          await authManager.loginWithEmail(testEmail, testPassword);
           expect(
             (await currentCompanyResolver.resolve()).getRightOrNull(),
             'company-a',
@@ -1316,6 +1316,23 @@ void main() {
           );
         },
       );
+
+      test('signing in keeps the company id on the device without anything '
+          'else asking for it', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await pumpEventQueue();
+
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(
+          await deviceStore.loadCompanyId(supabaseWrapper.currentUser!.id),
+          'company-a',
+        );
+      });
 
       test('logout clears the company id kept on the device', () async {
         await authManager.loginWithEmail(testEmail, testPassword);

@@ -32,7 +32,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   bool _hasResolved = false;
   String? _cachedCompanyId;
-  String? _cachedForUserId;
+  String? _sessionUserId;
   Future<Either<Failure, String?>>? _inFlight;
   int _cacheGeneration = 0;
 
@@ -44,7 +44,12 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   @override
   Future<Either<Failure, String?>> resolve() {
-    if (_hasResolved && _cachedForUserId == _supabaseWrapper.currentUser?.id) {
+    final userId = _supabaseWrapper.currentUser?.id;
+    if (_sessionUserId != userId) {
+      _resetSession();
+      _sessionUserId = userId;
+    }
+    if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
     return _inFlight ??= _fetch(_cacheGeneration);
@@ -65,7 +70,6 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
       if (requestGeneration == _cacheGeneration) {
         if (companyId != null) {
           _cachedCompanyId = companyId;
-          _cachedForUserId = userId;
           _hasResolved = true;
         }
         await _keepOnDevice(userId: userId, companyId: companyId);
@@ -86,6 +90,13 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
         _inFlight = null;
       }
     }
+  }
+
+  void _resetSession() {
+    _hasResolved = false;
+    _cachedCompanyId = null;
+    _inFlight = null;
+    _cacheGeneration++;
   }
 
   Future<void> _keepOnDevice({
@@ -129,11 +140,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   @override
   Future<void> clearCache() async {
-    _hasResolved = false;
-    _cachedCompanyId = null;
-    _cachedForUserId = null;
-    _inFlight = null;
-    _cacheGeneration++;
+    _resetSession();
     try {
       await _localDataSource.clearCompanyId();
     } catch (_) {
