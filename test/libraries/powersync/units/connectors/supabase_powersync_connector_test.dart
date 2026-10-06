@@ -105,7 +105,6 @@ void main() {
           fakeDatabase.setNextTransaction(
             FakeCrudTransaction([
               CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
-                'id': 'proj-1',
                 'name': 'Test',
               }),
             ]),
@@ -118,6 +117,25 @@ void main() {
           expect(calls.first['table'], equals('projects'));
           expect(calls.first['data'], containsPair('id', 'proj-1'));
           expect(calls.first['onConflict'], equals('id'));
+        },
+      );
+
+      test(
+        'PUT sends the row id, which PowerSync keeps outside opData',
+        () async {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                'item_name': 'Excavator',
+              }),
+            ]),
+          );
+
+          await connector.uploadData(fakeDatabase);
+
+          final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+          expect(data, containsPair('id', 'rate-1'));
+          expect(data, containsPair('item_name', 'Excavator'));
         },
       );
 
@@ -292,6 +310,48 @@ void main() {
             throwsA(isA<supabase.PostgrestException>()),
           );
           expect(transaction.isCompleted, isFalse);
+        });
+
+        test(
+          'a refused your_rates change does not stop the operations after it',
+          () async {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.postgrestErrorCode = PostgresErrorCode.checkViolation;
+            fakeSupabase.addTableData('projects', [
+              {'id': 'proj-1', 'name': 'Old'},
+            ]);
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                'item_name': 'Excavator',
+              }),
+              CrudEntry(2, UpdateType.patch, 'projects', 'proj-1', null, {
+                'name': 'New',
+              }),
+            ]);
+            fakeDatabase.setNextTransaction(transaction);
+
+            await connector.uploadData(fakeDatabase);
+
+            expect(fakeSupabase.getMethodCallsFor('update'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          },
+        );
+
+        test('a refused your_rates update completes the transaction', () async {
+          fakeSupabase.shouldThrowOnUpdate = true;
+          fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'your_rates', 'rate-1', null, {
+              'rate_amount': -5,
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await connector.uploadData(fakeDatabase);
+
+          expect(transaction.isCompleted, isTrue);
         });
 
         test(

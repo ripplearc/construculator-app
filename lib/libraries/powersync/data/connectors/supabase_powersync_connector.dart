@@ -72,18 +72,40 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       'Processing CRUD transaction with ${transaction.crud.length} operations',
     );
 
-    CrudEntry? failingOperation;
     try {
       for (final operation in transaction.crud) {
-        failingOperation = operation;
-        await _processOperation(operation);
+        await _processOperationUnlessRefused(operation);
       }
 
       await transaction.complete();
       _logger.debug('Transaction completed successfully');
     } catch (error) {
-      await _handleUploadError(error, transaction, failingOperation);
+      await _handleUploadError(error, transaction);
     }
+  }
+
+  Future<void> _processOperationUnlessRefused(CrudEntry operation) async {
+    try {
+      await _processOperation(operation);
+    } on supabase.PostgrestException catch (error) {
+      if (!_isRefusedRateChange(error, operation)) rethrow;
+      _logger.warning(
+        'The server refused a your_rates change (code ${error.code}): '
+        '${error.message}. Skipping it so the queue is not blocked.',
+      );
+      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
+      // https://ripplearc.youtrack.cloud/issue/CA-1273
+    }
+  }
+
+  bool _isRefusedRateChange(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) {
+    if (operation.table != DatabaseConstants.yourRatesTable) return false;
+    final code = PostgresErrorCode.fromCode(error.code);
+    return code == PostgresErrorCode.checkViolation ||
+        code == PostgresErrorCode.uniqueViolation;
   }
 
   // Applies a single local CRUD operation to the corresponding Supabase table,
@@ -104,7 +126,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.upsert(
           table: operation.table,
-          data: putData,
+          data: {...putData, 'id': operation.id},
           onConflict: 'id',
         );
       case UpdateType.patch:
@@ -132,25 +154,12 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code
   // 42501) is non-retryable, so the transaction is completed to unblock the
   // upload queue. Any other error is treated as transient and rethrown so
-  // PowerSync retries the transaction automatically.
+  // PowerSync retries the transaction automatically. A refused your_rates
+  // change never gets here: _processOperationUnlessRefused skips it.
   Future<void> _handleUploadError(
     Object error,
     CrudTransaction transaction,
-    CrudEntry? failingOperation,
   ) async {
-    if (_isRefusedRateChange(error, failingOperation)) {
-      _logger.warning(
-        'The server refused a your_rates change: $error. '
-        'Marking transaction as complete to unblock upload queue.',
-      );
-
-      await transaction.complete();
-
-      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
-      // https://ripplearc.youtrack.cloud/issue/CA-1273
-      return;
-    }
-
     if (error is supabase.PostgrestException && error.code == '42501') {
       _logger.warning(
         'RLS denial detected (code 42501): ${error.message}. '
@@ -171,18 +180,5 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       'PowerSync will retry automatically.',
     );
     throw error;
-  }
-
-  // The server refuses a saved rate for a value that is not valid, or because
-  // another phone already saved the same name, method and label. Neither can
-  // succeed on a retry, so neither may hold up the rest of the queue.
-  bool _isRefusedRateChange(Object error, CrudEntry? failingOperation) {
-    if (failingOperation?.table != DatabaseConstants.yourRatesTable) {
-      return false;
-    }
-    if (error is! supabase.PostgrestException) return false;
-    final code = PostgresErrorCode.fromCode(error.code);
-    return code == PostgresErrorCode.checkViolation ||
-        code == PostgresErrorCode.uniqueViolation;
   }
 }

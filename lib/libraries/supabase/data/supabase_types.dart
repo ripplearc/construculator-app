@@ -172,12 +172,4 @@ enum SupabaseAuthErrorCode {
 /// [timeout] corresponds to the timeout error code
 /// [type] corresponds to the type error code when there is type mismatch
 /// [unknown] corresponds to the unknown error code
-enum SupabaseExceptionType {
-  auth,
-  postgrest,
-  socket,
-  network,
-  timeout,
-  type,
-  unknown,
-}
+enum SupabaseExceptionType { auth, postgrest, socket, network, timeout, type, unknown }
