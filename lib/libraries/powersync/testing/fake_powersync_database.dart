@@ -31,6 +31,10 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   /// Number of times [disconnectAndClear] has been called.
   int disconnectAndClearCallCount = 0;
 
+  /// The `clearLocal` argument of the most recent [disconnectAndClear] call,
+  /// or null if it has not been called.
+  bool? lastClearLocal;
+
   /// When set, the next [connect] call throws this error, allowing tests to
   /// exercise connection-failure handling.
   Object? connectError;
@@ -62,6 +66,7 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
     lastConnector = null;
     disconnectCallCount = 0;
     disconnectAndClearCallCount = 0;
+    lastClearLocal = null;
     connectError = null;
     disconnectAndClearError = null;
     connectGate = null;
@@ -97,6 +102,7 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   @override
   Future<void> disconnectAndClear({bool clearLocal = true}) async {
     disconnectAndClearCallCount++;
+    lastClearLocal = clearLocal;
     final error = disconnectAndClearError;
     if (error != null) {
       throw error;
