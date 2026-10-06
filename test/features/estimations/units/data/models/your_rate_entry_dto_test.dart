@@ -71,6 +71,7 @@ void main() {
         'equipment_method': 'day',
         'entry_label': 'Supplier A',
         'saved_at': '2026-01-01T00:00:00.000Z',
+        'last_used_at': null,
       });
     });
 
@@ -170,6 +171,52 @@ void main() {
       },
     );
 
+    test('fromEntity serializes lastUsedAt as UTC and null as null', () {
+      final localUsedAt = DateTime(2026, 3, 16, 8, 15);
+      final used = YourRateEntry(
+        id: 'rate-4',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0, currency: 'USD'),
+        savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
+        lastUsedAt: localUsedAt,
+      );
+      final neverUsed = used.copyWith(lastUsedAt: clearField);
+
+      expect(
+        YourRateEntryDto.fromEntity(used).lastUsedAt,
+        localUsedAt.toUtc().toIso8601String(),
+      );
+      expect(YourRateEntryDto.fromEntity(neverUsed).lastUsedAt, isNull);
+    });
+
+    test('reads last_used_at and writes it back, null when never used', () {
+      final json = {
+        'id': 'rate-5',
+        'company_id': 'company-1',
+        'category': 'equipment',
+        'item_name': 'Excavator',
+        'rate_amount': 250.0,
+        'rate_currency': 'USD',
+        'saved_at': '2026-01-01T00:00:00.000Z',
+        'last_used_at': '2026-02-01T00:00:00.000Z',
+      };
+
+      final used = YourRateEntryDto.fromJson(json);
+      final neverUsed = YourRateEntryDto.fromJson(
+        {...json}..remove('last_used_at'),
+      );
+
+      expect(
+        used.toEntity().lastUsedAt,
+        DateTime.parse('2026-02-01T00:00:00.000Z'),
+      );
+      expect(used.toJson()['last_used_at'], '2026-02-01T00:00:00.000Z');
+      expect(neverUsed.toEntity().lastUsedAt, isNull);
+      expect(neverUsed.toJson()['last_used_at'], isNull);
+    });
+
     test('round-trips entity -> dto -> entity', () {
       final entity = YourRateEntry(
         id: 'rate-1',
@@ -181,6 +228,7 @@ void main() {
         savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
         equipmentMethod: EquipmentPricingMethod.day,
         entryLabel: 'Supplier A',
+        lastUsedAt: DateTime.parse('2026-02-01T00:00:00.000Z'),
       );
 
       final roundTripped = YourRateEntryDto.fromEntity(entity).toEntity();
