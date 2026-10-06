@@ -52,6 +52,23 @@ void main() {
 
     group('EquipmentCostItemTypeChanged', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is not valid when the item type is only spaces',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('   '))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.isItemTypeValid, 'isItemTypeValid', false)
+              .having((s) => s.data.isValid, 'isValid', false),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'emits Editing with no red error but isItemTypeValid false when '
         'value is empty (empty fields never show a red error)',
         build: () => bloc,
@@ -528,7 +545,7 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'a second Submitted while Submitting does not insert twice',
+        'a second Submitted after Success does not insert twice',
         build: () => bloc,
         act: (bloc) {
           bloc
@@ -542,6 +559,26 @@ void main() {
         },
         verify: (_) {
           expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'ignores Submitted while a submit is already in flight',
+        build: () => bloc,
+        seed: () => const EquipmentCostFormSubmitting(
+          EquipmentCostFormData(
+            equipmentType: testEquipmentType,
+            duration: 5,
+            dailyRate: 100,
+            isValid: true,
+          ),
+        ),
+        act: (bloc) => bloc.add(
+          const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+        ),
+        expect: () => const <EquipmentCostFormState>[],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         },
       );
 
