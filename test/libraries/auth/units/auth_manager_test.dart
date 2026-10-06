@@ -13,6 +13,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
+import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
+import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
@@ -26,6 +28,8 @@ import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+
+import '../../../utils/fake_current_company_database.dart';
 
 void main() {
   late FakeAuthNotifier authNotifier;
@@ -1313,6 +1317,39 @@ void main() {
         },
       );
 
+      test('logout clears the company id kept on the device', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        final userId = supabaseWrapper.currentUser!.id;
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        await currentCompanyResolver.resolve();
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(await deviceStore.loadCompanyId(userId), 'company-a');
+
+        await authManager.logout();
+
+        expect(await deviceStore.loadCompanyId(userId), isNull);
+      });
+
+      test('a signed-out event that does not come from logout() clears the '
+          'company id kept on the device', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        final userId = supabaseWrapper.currentUser!.id;
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        await currentCompanyResolver.resolve();
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+
+        await supabaseWrapper.signOut();
+        await pumpEventQueue();
+
+        expect(await deviceStore.loadCompanyId(userId), isNull);
+      });
+
       test(
         'a signed-out event that does not come from logout() clears the '
         'current-company cache too',
@@ -1381,8 +1418,16 @@ class _TestAppModule extends Module {
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
     i.addSingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
+    i.addSingleton<LocalCurrentCompanyDataSource>(
+      () => PowerSyncLocalCurrentCompanyDataSource(
+        database: FakeCurrentCompanyDatabase(),
+      ),
+    );
     i.addSingleton<CurrentCompanyResolver>(
-      () => CurrentCompanyResolverImpl(supabaseWrapper: i()),
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: i(),
+        localDataSource: i(),
+      ),
     );
     i.add<AuthManager>(
       () => AuthManagerImpl(

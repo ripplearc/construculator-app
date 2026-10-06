@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- CURRENT COMPANY RESOLVER IMPL MUTATION TESTING -->
-    <!-- Targets: resolve()'s session cache and _handleError's exception mapping -->
+    <!-- Targets: resolve()'s session cache, the id kept on the device, the offline fallback and _handleError's exception mapping -->
 
     <files>
         <file>lib/libraries/company/data/current_company_resolver_impl.dart</file>
@@ -28,8 +28,8 @@
         </regex>
 
         <!-- RULE 3: clearCache doesn't actually drop the resolved flag -->
-        <regex pattern="void clearCache\(\) \{\n    _hasResolved = false;" dotAll="true" id="resolver.cache.clear_no_op">
-            <mutation text="void clearCache() {\n    _hasResolved = true;"/>
+        <regex pattern="Future&lt;void&gt; clearCache\(\) async \{\n    _hasResolved = false;" dotAll="true" id="resolver.cache.clear_no_op">
+            <mutation text="Future&lt;void&gt; clearCache() async {\n    _hasResolved = true;"/>
         </regex>
 
         <!-- RULE 3b: clearCache doesn't bump the generation, so a fetch
@@ -92,18 +92,66 @@
         </regex>
 
         <!-- RULE 14: a stale fetch (one already running when clearCache was
-             called) writes its result into the cache anyway, letting the
-             previous caller's company id leak into the next caller's
-             session -->
-        <regex pattern="if \(requestGeneration == _cacheGeneration &amp;&amp; companyId != null\) \{" dotAll="true" id="resolver.cache.ignore_stale_generation">
-            <mutation text="if (companyId != null) {"/>
+             called) writes its result into the cache and onto the device
+             anyway, letting the previous caller's company id leak into the
+             next caller's session -->
+        <regex pattern="if \(requestGeneration == _cacheGeneration\) \{\n        if \(companyId != null\) \{" dotAll="true" id="resolver.cache.ignore_stale_generation">
+            <mutation text="if (true) {\n        if (companyId != null) {"/>
         </regex>
 
         <!-- RULE 15: a null company id (signup step not done yet) gets
              cached as resolved, so the app keeps answering "no company"
              even after a real id becomes available later in the session -->
-        <regex pattern="if \(requestGeneration == _cacheGeneration &amp;&amp; companyId != null\) \{" dotAll="true" id="resolver.cache.cache_null_forever">
-            <mutation text="if (requestGeneration == _cacheGeneration) {"/>
+        <regex pattern="if \(companyId != null\) \{\n          _cachedCompanyId = companyId;" dotAll="true" id="resolver.cache.cache_null_forever">
+            <mutation text="if (true) {\n          _cachedCompanyId = companyId;"/>
+        </regex>
+
+        <!-- RULE 16: the id is never kept on the device -->
+        <regex pattern="await _keepOnDevice\(userId: userId, companyId: companyId\);" dotAll="true" id="resolver.device.never_keep">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 17: a missing id is kept on the device (as an empty save)
+             instead of clearing what was kept -->
+        <regex pattern="if \(companyId == null\) \{\n        await _localDataSource\.clearCompanyId\(\);" dotAll="true" id="resolver.device.missing_id_not_cleared">
+            <mutation text="if (false) {\n        await _localDataSource.clearCompanyId();"/>
+        </regex>
+
+        <!-- RULE 18: nothing is kept when nobody is signed in -->
+        <regex pattern="if \(userId == null\) return;" dotAll="true" id="resolver.device.keep_without_user">
+            <mutation text="if (false) return;"/>
+        </regex>
+
+        <!-- RULE 19: no fallback to the kept id when there is no signal -->
+        <regex pattern="if \(userId == null \|\| !isUnreachable\) return null;" dotAll="true" id="resolver.fallback.never_fall_back">
+            <mutation text="return null;"/>
+        </regex>
+
+        <!-- RULE 20: fall back to the kept id on every failure, not only
+             when the backend cannot be reached -->
+        <regex pattern="if \(userId == null \|\| !isUnreachable\) return null;" dotAll="true" id="resolver.fallback.always_fall_back">
+            <mutation text="if (userId == null) return null;"/>
+        </regex>
+
+        <!-- RULE 21: a timeout does not count as unreachable -->
+        <regex pattern="failure\.errorType == CompanyErrorType\.timeoutError" dotAll="true" id="resolver.fallback.timeout_not_unreachable">
+            <mutation text="false"/>
+        </regex>
+
+        <!-- RULE 22: a connection error does not count as unreachable -->
+        <regex pattern="failure\.errorType == CompanyErrorType\.connectionError" dotAll="true" id="resolver.fallback.connection_not_unreachable">
+            <mutation text="false"/>
+        </regex>
+
+        <!-- RULE 24: sign-out leaves the id on the device -->
+        <regex pattern="await _localDataSource\.clearCompanyId\(\);\n    \} catch \(e\) \{\n      _logger\.error\('Failed to clear" dotAll="true" id="resolver.device.sign_out_keeps_id">
+            <mutation text="\n    } catch (e) {\n      _logger.error('Failed to clear"/>
+        </regex>
+
+        <!-- RULE 25: the session cache answers for whoever is signed in now,
+             not only the user it was resolved for -->
+        <regex pattern="_cachedForUserId == _supabaseWrapper\.currentUser\?\.id" dotAll="true" id="resolver.cache.ignore_user_change">
+            <mutation text="true"/>
         </regex>
     </rules>
 
