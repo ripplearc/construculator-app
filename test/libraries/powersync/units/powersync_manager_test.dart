@@ -111,6 +111,16 @@ void main() {
       expect(fakeDatabase.disconnectAndClearCallCount, 1);
     });
 
+    test('keeps local-only tables when it clears on sign-out', () async {
+      signIn();
+      startManager();
+
+      fakeSupabase.setCurrentUser(null);
+      await settle();
+
+      expect(fakeDatabase.lastClearLocal, isFalse);
+    });
+
     test('does not establish duplicate connections', () async {
       startManager();
 
