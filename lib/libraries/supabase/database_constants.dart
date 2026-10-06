@@ -149,6 +149,7 @@ class DatabaseConstants {
   static const String categoryColumn = 'category';
   static const String itemNameColumn = 'item_name';
   static const String savedAtColumn = 'saved_at';
+  static const String lastUsedAtColumn = 'last_used_at';
 
   // Consent columns (id and user_id use the shared columns above; these
   // tables timestamp with published_at and recorded_at, not created_at)

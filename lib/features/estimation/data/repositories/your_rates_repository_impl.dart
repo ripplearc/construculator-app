@@ -26,11 +26,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     int? limit,
   }) async {
     try {
-      final dtos = await dataSource.fetchRates(
-        category: category?.toJson(),
-        limit: query.isEmpty ? limit : null,
-      );
-      final entries = dtos.map((dto) => dto.toEntity()).toList();
+      final dtos = await dataSource.fetchRates(category: category?.toJson());
+      final entries = dtos.map((dto) => dto.toEntity()).toList()
+        ..sort(_mostRecentlyUsedFirst);
 
       final words = query
           .toLowerCase()
@@ -38,7 +36,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
           .where((word) => word.isNotEmpty)
           .toList();
       if (words.isEmpty) {
-        return Right(entries);
+        return Right(limit == null ? entries : entries.take(limit).toList());
       }
 
       return Right(
@@ -50,6 +48,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     } catch (e) {
       return Left(_handleError(e, 'searching your rates'));
     }
+  }
+
+  static int _mostRecentlyUsedFirst(YourRateEntry a, YourRateEntry b) {
+    final byRecency = b.recencyAt.compareTo(a.recencyAt);
+    return byRecency != 0 ? byRecency : b.savedAt.compareTo(a.savedAt);
   }
 
   @override
