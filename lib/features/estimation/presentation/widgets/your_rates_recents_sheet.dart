@@ -239,7 +239,7 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
-// TODO: [CA-1204] replace with CoreUI's list-row component once it exists; it also removes the 11 px and 1 px values below, which have no CoreSpacing token. https://ripplearc.youtrack.cloud/issue/CA-1204
+// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists; it also removes the 11 px and 1 px values below, which have no CoreSpacing token.
 class _RecentRateRow extends StatelessWidget {
   static const double _rowVerticalPadding = 11;
   static const double _nameToRecencyGap = 1;

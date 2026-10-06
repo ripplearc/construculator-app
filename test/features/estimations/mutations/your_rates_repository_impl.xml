@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/data/repositories/your_rates_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+        <regex pattern="AppLogger" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="final byRecency = b\.recencyAt\.compareTo\(a\.recencyAt\);" dotAll="false" id="your_rates_repo.order.reverse_recency">
+            <mutation text="final byRecency = a.recencyAt.compareTo(b.recencyAt);"/>
+        </regex>
+        <regex pattern="b\.savedAt\.compareTo\(a\.savedAt\)" dotAll="false" id="your_rates_repo.order.reverse_tiebreak">
+            <mutation text="a.savedAt.compareTo(b.savedAt)"/>
+        </regex>
+        <regex pattern="byRecency != 0 \? byRecency : " dotAll="false" id="your_rates_repo.order.drop_tiebreak">
+            <mutation text="byRecency != 0 ? byRecency : 0 * "/>
+        </regex>
+        <regex pattern="\.\.sort\(_mostRecentlyUsedFirst\)" dotAll="false" id="your_rates_repo.order.skip_sort">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="limit == null \? entries : entries\.take\(limit\)\.toList\(\)" dotAll="false" id="your_rates_repo.limit.ignore">
+            <mutation text="entries"/>
+        </regex>
+        <regex pattern="entries\.take\(limit\)" dotAll="false" id="your_rates_repo.limit.off_by_one">
+            <mutation text="entries.take(limit + 1)"/>
+        </regex>
+        <regex pattern="if \(words\.isEmpty\) \{" dotAll="false" id="your_rates_repo.search.negate_empty">
+            <mutation text="if (words.isNotEmpty) {"/>
+        </regex>
+        <regex pattern="words\.any\(name\.contains\)" dotAll="false" id="your_rates_repo.search.any_to_every">
+            <mutation text="words.every(name.contains)"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="your_rates_repo" expected-return="0">flutter test test/features/estimations/units/data/repositories/your_rates_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>
