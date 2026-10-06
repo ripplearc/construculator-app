@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -85,7 +86,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
 
     try {
       for (final operation in transaction.crud) {
-        await _processOperationUnlessRefused(operation);
+        await _processOperationUnlessRefused(database, operation);
       }
 
       await transaction.complete();
@@ -95,7 +96,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
-  Future<void> _processOperationUnlessRefused(CrudEntry operation) async {
+  Future<void> _processOperationUnlessRefused(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
     try {
       await _processOperation(operation);
     } on supabase.PostgrestException catch (error) {
@@ -107,8 +111,75 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         'The server refused a your_rates change (code ${error.code}): '
         '${error.message}. Skipping it so the queue is not blocked.',
       );
-      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
-      // https://ripplearc.youtrack.cloud/issue/CA-1273
+      await _recordRefusalWithoutBlocking(database, operation);
+    }
+  }
+
+  Future<void> _recordRefusalWithoutBlocking(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    try {
+      await _recordRefusal(database, operation);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not record the refused your_rates change; '
+        'the user will not be told it was not kept',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _recordRefusal(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    final refusedAmount = _refusedRateAmount(operation);
+    if (refusedAmount == null) return;
+    final item = await database.getOptional(
+      'SELECT ${DatabaseConstants.itemNameColumn}, '
+      '${DatabaseConstants.equipmentMethodColumn} '
+      'FROM ${DatabaseConstants.yourRatesTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?',
+      [operation.id],
+    );
+    if (item == null) return;
+
+    final itemName = item[DatabaseConstants.itemNameColumn] as String;
+    final method = item[DatabaseConstants.equipmentMethodColumn] as String?;
+    await database.execute(
+      'INSERT OR REPLACE INTO ${DatabaseConstants.yourRateRefusalsTable} '
+      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.itemNameColumn}, '
+      '${DatabaseConstants.equipmentMethodColumn}, '
+      '${DatabaseConstants.refusedAmountColumn}, '
+      '${DatabaseConstants.acceptedAmountColumn}, '
+      '${DatabaseConstants.shownAtColumn}) VALUES (?, ?, ?, ?, ?, NULL)',
+      [
+        YourRateRefusalKey.of(itemName, method),
+        itemName,
+        method,
+        refusedAmount,
+        await _lastAcceptedAmountOrNull(operation),
+      ],
+    );
+  }
+
+  double? _refusedRateAmount(CrudEntry operation) =>
+      (operation.opData?[DatabaseConstants.rateAmountColumn] as num?)
+          ?.toDouble();
+
+  Future<double?> _lastAcceptedAmountOrNull(CrudEntry operation) async {
+    try {
+      final rows = await _supabaseWrapper.selectMatch(
+        table: operation.table,
+        filters: {DatabaseConstants.idColumn: operation.id},
+      );
+      return (rows.firstOrNull?[DatabaseConstants.rateAmountColumn] as num?)
+          ?.toDouble();
+    } catch (error) {
+      _logger.warning('Could not read the last accepted price: $error');
+      return null;
     }
   }
 
@@ -175,6 +246,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     final code = PostgresErrorCode.fromCode(error.code);
     return code == PostgresErrorCode.checkViolation ||
         code == PostgresErrorCode.uniqueViolation ||
+        code == PostgresErrorCode.rlsViolation ||
         (operation.op == UpdateType.patch &&
             code == PostgresErrorCode.noDataFound);
   }
