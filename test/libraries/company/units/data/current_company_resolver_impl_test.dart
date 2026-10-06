@@ -318,6 +318,7 @@ void main() {
 
     test('a different user signing in while another user\'s lookup is still '
         'running gets their own lookup and their own id', () async {
+      // ignore: no_direct_instantiation, reason: a test-local wrapper that holds each rpc call open
       final perCallWrapper = _PerCallRpcWrapper();
       final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
       await localDataSource.clearCompanyId();
