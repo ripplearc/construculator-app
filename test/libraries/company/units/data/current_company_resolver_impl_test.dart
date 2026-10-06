@@ -669,6 +669,151 @@ void main() {
         );
       });
     });
+    group('resolveAfterSignIn', () {
+      int callsTo(String function) => supabaseWrapper
+          .getMethodCallsFor('rpc')
+          .where((call) => call['functionName'] == function)
+          .length;
+
+      void answerEnsureWith(String? companyId) {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          companyId,
+        );
+      }
+
+      void answerLookupWith(String? companyId) {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          companyId,
+        );
+      }
+
+      test('returns the id the ensure call made for an account with no '
+          'company', () async {
+        answerEnsureWith('new-company');
+
+        final result = await resolver.resolveAfterSignIn();
+
+        expect(result.getRightOrNull(), 'new-company');
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 0);
+      });
+
+      test('asks the server to ensure the company once, and later lookups '
+          'reuse the id', () async {
+        answerEnsureWith('new-company');
+
+        await resolver.resolveAfterSignIn();
+        await resolver.resolveAfterSignIn();
+        final lookup = await resolver.resolve();
+
+        expect(lookup.getRightOrNull(), 'new-company');
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 0);
+      });
+
+      test('keeps the new id on the device', () async {
+        answerEnsureWith('new-company');
+
+        await resolver.resolveAfterSignIn();
+
+        final store = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(await store.loadCompanyId(_userOne.id), 'new-company');
+      });
+
+      test('returns the same id when signing in again as an account that '
+          'already has a company', () async {
+        answerEnsureWith('existing-company');
+        final first = await resolver.resolveAfterSignIn();
+        await resolver.clearCache();
+
+        final second = await resolver.resolveAfterSignIn();
+
+        expect(first.getRightOrNull(), 'existing-company');
+        expect(second.getRightOrNull(), 'existing-company');
+      });
+
+      test('returns Right(null) and does not cache it when the account has '
+          'no profile yet', () async {
+        answerEnsureWith(null);
+        answerLookupWith('company-after-signup');
+
+        final signIn = await resolver.resolveAfterSignIn();
+        final later = await resolver.resolve();
+
+        expect(signIn.getRightOrNull(), isNull);
+        expect(signIn.isRight(), isTrue);
+        expect(later.getRightOrNull(), 'company-after-signup');
+      });
+
+      test('tries the plain lookup after a failed ensure call, and returns '
+          'its failure when that fails too', () async {
+        supabaseWrapper.shouldThrowOnRpc = true;
+        supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+        final signIn = await resolver.resolveAfterSignIn();
+
+        expect(signIn.isLeft(), isTrue);
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 1);
+      });
+
+      test(
+        'returns the lookup answer when only the ensure call fails',
+        () async {
+          answerLookupWith('existing-company');
+
+          final result = await resolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'existing-company');
+          expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        },
+      );
+
+      test('a plain lookup started while sign-in runs gets the lookup answer '
+          'when the ensure call fails', () async {
+        answerLookupWith('existing-company');
+
+        final signIn = resolver.resolveAfterSignIn();
+        final lookup = resolver.resolve();
+
+        expect((await lookup).getRightOrNull(), 'existing-company');
+        expect((await signIn).getRightOrNull(), 'existing-company');
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 1);
+      });
+
+      test(
+        'finds the kept id with no signal after an earlier sign-in',
+        () async {
+          answerEnsureWith('new-company');
+          await resolver.resolveAfterSignIn();
+          await resolver.clearCache();
+          final store = Modular.get<LocalCurrentCompanyDataSource>();
+          await store.saveCompanyId(
+            userId: _userOne.id,
+            companyId: 'new-company',
+          );
+
+          supabaseWrapper.shouldThrowOnRpc = true;
+          supabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
+          final result = await resolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'new-company');
+        },
+      );
+
+      test('a different user signing in gets their own ensure call', () async {
+        answerEnsureWith('company-one');
+        await resolver.resolveAfterSignIn();
+
+        supabaseWrapper.setCurrentUser(_userTwo);
+        answerEnsureWith('company-two');
+        final result = await resolver.resolveAfterSignIn();
+
+        expect(result.getRightOrNull(), 'company-two');
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 2);
+      });
+    });
   });
 }
 

@@ -1317,6 +1317,66 @@ void main() {
         },
       );
 
+      test('signing in asks the server to ensure the user has a company, and '
+          'keeps the id it returns', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          'new-company',
+        );
+
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await pumpEventQueue();
+
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'new-company',
+        );
+        expect(
+          supabaseWrapper
+              .getMethodCallsFor('rpc')
+              .map((call) => call['functionName']),
+          [DatabaseConstants.ensureMyCompanyRpcFunction],
+        );
+      });
+
+      test('signing in twice does not ask the server to ensure the company '
+          'a second time', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          'new-company',
+        );
+
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await pumpEventQueue();
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await pumpEventQueue();
+
+        expect(
+          supabaseWrapper
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.ensureMyCompanyRpcFunction,
+              ),
+          hasLength(1),
+        );
+      });
+
+      test('a failed ensure call does not block signing in', () async {
+        supabaseWrapper.shouldThrowOnRpc = true;
+        supabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
+
+        final result = await authManager.loginWithEmail(
+          testEmail,
+          testPassword,
+        );
+        await pumpEventQueue();
+
+        expect(result.isSuccess, isTrue);
+        expect(authManager.isAuthenticated(), isTrue);
+      });
+
       test('signing in keeps the company id on the device without anything '
           'else asking for it', () async {
         supabaseWrapper.setRpcResponse(

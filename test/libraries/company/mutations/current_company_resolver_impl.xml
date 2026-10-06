@@ -153,6 +153,21 @@
         <regex pattern="if \(_sessionUserId != userId\) \{" dotAll="true" id="resolver.cache.ignore_user_change">
             <mutation text="if (false) {"/>
         </regex>
+
+        <!-- RULE 26: sign-in never asks the server to create the company -->
+        <regex pattern="_fetch\(_cacheGeneration, createIfMissing: true\)" dotAll="true" id="resolver.signin.skip_ensure">
+            <mutation text="_fetch(_cacheGeneration)"/>
+        </regex>
+
+        <!-- RULE 27: a failed ensure call is rethrown instead of falling back to the lookup -->
+        <regex pattern="_handleError\(e\);\n      \}\n    \}" dotAll="true" id="resolver.signin.ensure_failure_rethrown">
+            <mutation text="_handleError(e);\n        rethrow;\n      }\n    }"/>
+        </regex>
+
+        <!-- RULE 28: the ensure call returns before the lookup is tried when it answers null -->
+        <regex pattern="return await _supabaseWrapper\.rpc&lt;String\?&gt;\(\n          DatabaseConstants\.ensureMyCompanyRpcFunction," dotAll="true" id="resolver.signin.ensure_wrong_rpc">
+            <mutation text="return await _supabaseWrapper.rpc&lt;String?&gt;(\n          DatabaseConstants.getMyCompanyIdRpcFunction,"/>
+        </regex>
     </rules>
 
     <commands>
