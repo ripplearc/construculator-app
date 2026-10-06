@@ -53,6 +53,7 @@ class ProjectErrorMapper {
         case PostgresErrorCode.connectionDoesNotExist:
           return ProjectErrorType.connectionError;
         case PostgresErrorCode.uniqueViolation:
+        case PostgresErrorCode.checkViolation:
           return ProjectErrorType.unexpectedDatabaseError;
         case PostgresErrorCode.rlsViolation:
           return ProjectErrorType.permissionDenied;

@@ -1,5 +1,7 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -70,15 +72,17 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       'Processing CRUD transaction with ${transaction.crud.length} operations',
     );
 
+    CrudEntry? failingOperation;
     try {
       for (final operation in transaction.crud) {
+        failingOperation = operation;
         await _processOperation(operation);
       }
 
       await transaction.complete();
       _logger.debug('Transaction completed successfully');
     } catch (error) {
-      await _handleUploadError(error, transaction);
+      await _handleUploadError(error, transaction, failingOperation);
     }
   }
 
@@ -132,7 +136,21 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   Future<void> _handleUploadError(
     Object error,
     CrudTransaction transaction,
+    CrudEntry? failingOperation,
   ) async {
+    if (_isRefusedRateChange(error, failingOperation)) {
+      _logger.warning(
+        'The server refused a your_rates change: $error. '
+        'Marking transaction as complete to unblock upload queue.',
+      );
+
+      await transaction.complete();
+
+      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
+      // https://ripplearc.youtrack.cloud/issue/CA-1273
+      return;
+    }
+
     if (error is supabase.PostgrestException && error.code == '42501') {
       _logger.warning(
         'RLS denial detected (code 42501): ${error.message}. '
@@ -153,5 +171,18 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       'PowerSync will retry automatically.',
     );
     throw error;
+  }
+
+  // The server refuses a saved rate for a value that is not valid, or because
+  // another phone already saved the same name, method and label. Neither can
+  // succeed on a retry, so neither may hold up the rest of the queue.
+  bool _isRefusedRateChange(Object error, CrudEntry? failingOperation) {
+    if (failingOperation?.table != DatabaseConstants.yourRatesTable) {
+      return false;
+    }
+    if (error is! supabase.PostgrestException) return false;
+    final code = PostgresErrorCode.fromCode(error.code);
+    return code == PostgresErrorCode.checkViolation ||
+        code == PostgresErrorCode.uniqueViolation;
   }
 }
