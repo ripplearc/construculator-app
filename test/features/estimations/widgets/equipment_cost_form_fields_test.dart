@@ -1818,12 +1818,9 @@ void main() {
         // "Save as my rate" shows for any non-missing rate (CA-1151), not
         // just an unverified sample rate — including one already confirmed.
         // This link never sets an entryLabel, so per
-        // YourRatesRepository.save's collision rule, re-saving is a
-        // harmless idempotent overwrite only when the (companyId, category,
-        // itemName) grouping is a single row with a null entryLabel; any
-        // other existing row for the same equipment name instead triggers
-        // the same label-collision dialog a first save into a populated
-        // grouping would.
+        // YourRatesRepository.save's collision rule, saving into a name and
+        // basis that already has a row opens the label dialog instead of
+        // replacing the saved price.
         expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
       },
     );
@@ -2203,7 +2200,7 @@ void main() {
 
     testWidgets(
       'changing the rate after a save brings the link back, and a second '
-      'save shows the saved hint again',
+      'save asks for a label and keeps the saved price',
       (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
@@ -2219,13 +2216,37 @@ void main() {
         await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
-        expect(hintText(tester), startsWith('Saved to ${l10n.yourRatesName}'));
-        final saved = await Modular.get<YourRatesRepository>().search(
+        expect(
+          find.byKey(const Key('entry_label_dialog_title')),
+          findsOneWidget,
+        );
+        final repository = Modular.get<YourRatesRepository>();
+        final beforeLabel = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
         );
-        expect(saved.fold((_) => null, (e) => e.single.rate.amount), 160);
+        expect(beforeLabel.fold((_) => null, (e) => e.single.rate.amount), 150);
+
+        await tester.enterText(
+          find.byKey(const Key('entry_label_field')),
+          'Supplier B',
+        );
+        await tester.tap(
+          find.byKey(const Key('entry_label_dialog_save_button')),
+        );
+        await tester.pumpAndSettle();
+
+        final afterLabel = await repository.search(
+          'Backhoe',
+          category: CostItemType.equipment,
+        );
+        expect(
+          afterLabel.fold(
+            (_) => null,
+            (e) => e.map((entry) => entry.rate.amount).toSet(),
+          ),
+          {150, 160},
+        );
       },
     );
 
