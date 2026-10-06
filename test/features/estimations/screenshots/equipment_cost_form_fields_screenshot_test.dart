@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/presentation/widgets/equipmen
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
@@ -21,13 +23,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
 
   setUpAll(() {
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -36,6 +41,7 @@ void main() {
 
   setUp(() async {
     fakeSupabase.reset();
+    database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
@@ -238,7 +244,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await pumpWidget(tester: tester, theme: theme);
       await typeSavableRate(tester);
       await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
@@ -254,7 +260,7 @@ void main() {
     testWidgets('renders the Name this rate dialog', (tester) async {
       tester.view.physicalSize = const Size(390, 800);
       tester.view.devicePixelRatio = 1.0;
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'rate-1',
           'company_id': 'company-1',

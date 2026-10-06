@@ -8,19 +8,24 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   group('YourRatesBloc', () {
     late YourRatesBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    late FakeYourRatesDatabase database;
 
     Map<String, dynamic> row({
       required String id,
@@ -45,7 +50,19 @@ void main() {
       };
     }
 
+    YourRateEntry entry({String? entryLabel}) => YourRateEntry(
+      id: '',
+      companyId: 'company-1',
+      itemName: 'Excavator',
+      category: CostItemType.equipment,
+      rate: const Money(amount: 250.0),
+      savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
+      equipmentMethod: EquipmentPricingMethod.day,
+      entryLabel: entryLabel,
+    );
+
     setUpAll(() {
+      database = FakeYourRatesDatabase();
       Modular.init(
         EstimationModule(
           FakeAppBootstrapFactory.create(
@@ -53,6 +70,7 @@ void main() {
           ),
         ),
       );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });
@@ -63,6 +81,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      database.reset();
       // CurrentCompanyResolverImpl caches its result for the resolver's own
       // lifetime, which outlives a single test here (it's a lazy singleton
       // shared across this file's setUpAll'd Modular instance) — clear it so
@@ -83,11 +102,104 @@ void main() {
       expect(bloc.state, isA<YourRatesLoading>());
     });
 
+    group('with no signal', () {
+      final user = FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00Z');
+
+      Future<void> goOffline() async {
+        await Modular.get<CurrentCompanyResolver>().clearCache();
+        database.keepCompanyOnPhone(userId: user.id, companyId: 'company-1');
+        fakeSupabaseWrapper
+          ..setCurrentUser(user)
+          ..shouldThrowOnRpc = true
+          ..rpcExceptionType = SupabaseExceptionType.socket;
+      }
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'recents still show the saved prices',
+        setUp: () async {
+          await goOffline();
+          database.seedRows([
+            row(id: 'r1', savedAt: '2026-01-01T00:00:00.000Z'),
+            row(id: 'r2', savedAt: '2026-01-05T00:00:00.000Z'),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having(
+            (s) => s.recents.map((e) => e.id).toList(),
+            'recents',
+            ['r2', 'r1'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'search still finds the saved prices',
+        setUp: () async {
+          await goOffline();
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('excav', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.map((e) => e.itemName).toList(),
+            'results',
+            ['Excavator'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a price saved now is in the next recents list at once',
+        setUp: goOffline,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+        },
+        expect: () => [
+          isA<YourRatesSaveSucceeded>(),
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having(
+            (s) => s.recents.map((e) => e.itemName).toList(),
+            'recents',
+            [entry().itemName],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a second unlabeled price under a name that already has a labeled '
+        'price still asks for a label',
+        setUp: () async {
+          await goOffline();
+          database.seedRows([row(id: 'r1', entryLabel: 'Supplier A')]);
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveCollision>()],
+        verify: (_) {
+          expect(database.insertedRows, isEmpty);
+        },
+      );
+    });
+
     group('YourRatesRefreshRecents', () {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then Loaded with at most 4 recents, most recent first',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(id: 'r1', savedAt: '2026-01-01T00:00:00.000Z'),
             row(id: 'r2', savedAt: '2026-01-05T00:00:00.000Z'),
             row(id: 'r3', savedAt: '2026-01-03T00:00:00.000Z'),
@@ -111,7 +223,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then Error on failure',
         setUp: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+          database.getAllError = StateError('database locked');
         },
         build: () => bloc,
         act: (bloc) =>
@@ -121,7 +233,7 @@ void main() {
           isA<YourRatesError>().having(
             (s) => (s.failure as EstimationFailure).errorType,
             'errorType',
-            EstimationErrorType.unexpectedError,
+            EstimationErrorType.unexpectedDatabaseError,
           ),
         ],
       );
@@ -130,7 +242,7 @@ void main() {
         'never returns another company\'s rows, even though both share the '
         'same item name',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(id: 'mine', savedAt: '2026-01-01T00:00:00.000Z'),
             {...row(id: 'theirs'), 'company_id': 'company-2'},
           ]);
@@ -165,7 +277,7 @@ void main() {
           isA<YourRatesLoaded>().having((s) => s.recents, 'recents', isEmpty),
         ],
         verify: (_) {
-          expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+          expect(database.getAllCalls, isEmpty);
         },
       );
 
@@ -205,7 +317,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then SearchResults matching the query',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(id: 'r1', itemName: 'Excavator'),
             row(id: 'r2', itemName: 'Bulldozer'),
           ]);
@@ -237,7 +349,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'an empty query lists every saved rate at once, without the debounce',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             for (var i = 0; i < 6; i++)
               row(id: 'r$i', savedAt: '2026-01-0${i + 1}T00:00:00.000Z'),
           ]);
@@ -262,7 +374,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Loading then Error on failure',
         setUp: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+          database.getAllError = StateError('database locked');
         },
         build: zeroDebounceBloc,
         act: (bloc) async {
@@ -276,7 +388,7 @@ void main() {
         'debounces rapid successive searches into a single result for the '
         'latest query',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(id: 'r1', itemName: 'Excavator'),
             row(id: 'r2', itemName: 'Bulldozer'),
           ]);
@@ -302,7 +414,7 @@ void main() {
         'never returns another company\'s rows, even though both share the '
         'same item name',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(id: 'mine', itemName: 'Excavator'),
             {
               ...row(id: 'theirs', itemName: 'Excavator'),
@@ -350,7 +462,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+          expect(database.getAllCalls, isEmpty);
         },
       );
 
@@ -370,17 +482,6 @@ void main() {
     });
 
     group('YourRatesSaveRequested', () {
-      YourRateEntry entry({String? entryLabel}) => YourRateEntry(
-        id: '',
-        companyId: 'company-1',
-        itemName: 'Excavator',
-        category: CostItemType.equipment,
-        rate: const Money(amount: 250.0),
-        savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
-        equipmentMethod: EquipmentPricingMethod.day,
-        entryLabel: entryLabel,
-      );
-
       blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveSucceeded when there is no collision',
         build: () => bloc,
@@ -408,7 +509,7 @@ void main() {
         'emits SaveCollision carrying the submitted entry when the grouping '
         'already has a labeled row',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(
               id: 'existing',
               itemName: 'Excavator',
@@ -430,7 +531,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveSucceeded when a labeled retry follows a collision',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(
               id: 'existing',
               itemName: 'Excavator',
@@ -455,7 +556,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits SaveFailed for a non-collision failure',
         setUp: () {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          database.executeError = StateError('disk full');
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
@@ -470,12 +571,8 @@ void main() {
             bloc.add(YourRatesSaveRequested(entry().copyWith(companyId: ''))),
         expect: () => [isA<YourRatesSaveSucceeded>()],
         verify: (_) {
-          final inserted = fakeSupabaseWrapper
-              .getMethodCallsFor('insert')
-              .single['data'];
           expect(
-            (inserted
-                as Map<String, dynamic>)[DatabaseConstants.companyIdColumn],
+            database.insertedRows.single[DatabaseConstants.companyIdColumn],
             'company-1',
           );
         },
@@ -515,20 +612,18 @@ void main() {
         'fast double-tap can only ever produce one save outcome',
         build: () => bloc,
         act: (bloc) async {
-          fakeSupabaseWrapper.completer = Completer();
-          fakeSupabaseWrapper.shouldDelayOperations = true;
+          database.getAllGate = Completer();
 
           bloc.add(YourRatesSaveRequested(entry()));
           bloc.add(YourRatesSaveRequested(entry()));
 
-          fakeSupabaseWrapper.shouldDelayOperations = false;
-          fakeSupabaseWrapper.completer!.complete();
+          database.getAllGate!.complete();
 
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
         },
         expect: () => [isA<YourRatesSaveSucceeded>()],
         verify: (_) {
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert').length, 1);
+          expect(database.insertedRows, hasLength(1));
         },
       );
     });

@@ -59,13 +59,14 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.updatedAtColumn} = ? '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
-  Future<SyncStreamHandle>? _streamHandle;
+  SyncStreamHandle? _streamHandle;
+  Future<SyncStreamHandle>? _activating;
 
   /// Creates a data source over [_database], stamping writes from [_clock].
   LocalYourRatesDataSource({required this._database, required this._clock});
 
   @override
-  Future<List<YourRateEntryDto>> fetchRates({
+  Future<List<YourRateEntryDto>> loadRates({
     String? category,
     String? companyId,
     int? limit,
@@ -141,18 +142,18 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   /// Releases the `user_rates` subscription. The database itself belongs to
   /// `PowerSyncModule` and stays open.
   Future<void> dispose() async {
-    final handle = _streamHandle;
+    final handle = _streamHandle ?? await _activating;
     _streamHandle = null;
-    (await handle)?.unsubscribe();
+    handle?.unsubscribe();
   }
 
-  Future<SyncStreamHandle> _ensureSyncing() async {
-    final pending = _streamHandle ??= _database.syncStream(_streamName);
+  Future<void> _ensureSyncing() async {
+    if (_streamHandle != null) return;
+    final activating = _activating ??= _database.syncStream(_streamName);
     try {
-      return await pending;
-    } catch (_) {
-      _streamHandle = null;
-      rethrow;
+      _streamHandle = await activating;
+    } finally {
+      _activating = null;
     }
   }
 
