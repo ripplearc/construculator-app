@@ -1190,7 +1190,9 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
     switch (state) {
       case YourRatesSaveLabelTaken():
         setState(() => _error = context.l10n.yourRatesEntryLabelTakenError);
-      case YourRatesSaveSucceeded() || YourRatesSaveFailed():
+      case YourRatesSaveSucceeded() ||
+          YourRatesSaveFailed() ||
+          YourRatesSaveNoCompany():
         Navigator.of(context).pop();
       case YourRatesLoading() ||
           YourRatesLoaded() ||
