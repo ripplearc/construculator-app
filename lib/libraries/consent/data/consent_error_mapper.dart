@@ -98,6 +98,7 @@ class ConsentErrorMapper {
         case PostgresErrorCode.connectionDoesNotExist:
           return ConsentErrorType.connectionError;
         case PostgresErrorCode.uniqueViolation:
+        case PostgresErrorCode.checkViolation:
         case PostgresErrorCode.noDataFound:
           return ConsentErrorType.unexpectedDatabaseError;
         case PostgresErrorCode.unknownError:

@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:powersync/powersync.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -243,6 +244,55 @@ void main() {
             expect(transaction.isCompleted, isTrue);
           },
         );
+
+        for (final (name, code) in [
+          (
+            'a value that is not valid (23514)',
+            PostgresErrorCode.checkViolation,
+          ),
+          (
+            'a duplicate from another phone (23505)',
+            PostgresErrorCode.uniqueViolation,
+          ),
+        ]) {
+          test(
+            'your_rates refused for $name completes the transaction',
+            () async {
+              fakeSupabase.shouldThrowOnUpsert = true;
+              fakeSupabase.upsertExceptionType =
+                  SupabaseExceptionType.postgrest;
+              fakeSupabase.postgrestErrorCode = code;
+              final transaction = FakeCrudTransaction([
+                CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                  'id': 'rate-1',
+                }),
+              ]);
+              fakeDatabase.setNextTransaction(transaction);
+
+              await connector.uploadData(fakeDatabase);
+
+              expect(transaction.isCompleted, isTrue);
+            },
+          );
+        }
+
+        test('a duplicate on another table is still retried', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'id': 'proj-1',
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await expectLater(
+            connector.uploadData(fakeDatabase),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+          expect(transaction.isCompleted, isFalse);
+        });
 
         test(
           'non-RLS error is rethrown and transaction is not completed',
