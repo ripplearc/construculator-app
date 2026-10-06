@@ -1,5 +1,7 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -72,7 +74,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
 
     try {
       for (final operation in transaction.crud) {
-        await _processOperation(operation);
+        await _processOperationUnlessRefused(operation);
       }
 
       await transaction.complete();
@@ -80,6 +82,81 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     } catch (error) {
       await _handleUploadError(error, transaction);
     }
+  }
+
+  Future<void> _processOperationUnlessRefused(CrudEntry operation) async {
+    try {
+      await _processOperation(operation);
+    } on supabase.PostgrestException catch (error) {
+      if (!_isRefusedRateChange(error, operation)) rethrow;
+      if (await _overwroteRateWithSameKey(error, operation)) return;
+      _logger.warning(
+        'The server refused a your_rates change (code ${error.code}): '
+        '${error.message}. Skipping it so the queue is not blocked.',
+      );
+      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
+      // https://ripplearc.youtrack.cloud/issue/CA-1273
+    }
+  }
+
+  Future<bool> _overwroteRateWithSameKey(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) async {
+    final rate = operation.opData;
+    if (operation.op != UpdateType.put || rate == null) return false;
+    if (PostgresErrorCode.fromCode(error.code) !=
+        PostgresErrorCode.uniqueViolation) {
+      return false;
+    }
+
+    final saved = await _supabaseWrapper.selectMatch(
+      table: operation.table,
+      filters: {
+        DatabaseConstants.companyIdColumn:
+            rate[DatabaseConstants.companyIdColumn],
+        DatabaseConstants.categoryColumn:
+            rate[DatabaseConstants.categoryColumn],
+      },
+    );
+    final sameKey = saved
+        .where((row) => _hasSameRateKey(row, rate))
+        .firstOrNull;
+    if (sameKey == null) return false;
+
+    _logger.info(
+      'Another phone saved this your_rates entry first; '
+      'this change overwrites it, so the last change received wins',
+    );
+    await _supabaseWrapper.update(
+      table: operation.table,
+      data: rate,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: sameKey[DatabaseConstants.idColumn],
+    );
+    return true;
+  }
+
+  bool _hasSameRateKey(Map<String, dynamic> saved, Map<String, dynamic> rate) {
+    return _serverNameKey(saved[DatabaseConstants.itemNameColumn]) ==
+            _serverNameKey(rate[DatabaseConstants.itemNameColumn]) &&
+        saved[DatabaseConstants.equipmentMethodColumn] ==
+            rate[DatabaseConstants.equipmentMethodColumn] &&
+        saved[DatabaseConstants.entryLabelColumn] ==
+            rate[DatabaseConstants.entryLabelColumn];
+  }
+
+  String? _serverNameKey(Object? name) =>
+      (name as String?)?.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
+  bool _isRefusedRateChange(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) {
+    if (operation.table != DatabaseConstants.yourRatesTable) return false;
+    final code = PostgresErrorCode.fromCode(error.code);
+    return code == PostgresErrorCode.checkViolation ||
+        code == PostgresErrorCode.uniqueViolation;
   }
 
   // Applies a single local CRUD operation to the corresponding Supabase table,
@@ -100,7 +177,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.upsert(
           table: operation.table,
-          data: putData,
+          data: {...putData, 'id': operation.id},
           onConflict: 'id',
         );
       case UpdateType.patch:
@@ -128,7 +205,8 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code
   // 42501) is non-retryable, so the transaction is completed to unblock the
   // upload queue. Any other error is treated as transient and rethrown so
-  // PowerSync retries the transaction automatically.
+  // PowerSync retries the transaction automatically. A refused your_rates
+  // change never gets here: _processOperationUnlessRefused skips it.
   Future<void> _handleUploadError(
     Object error,
     CrudTransaction transaction,

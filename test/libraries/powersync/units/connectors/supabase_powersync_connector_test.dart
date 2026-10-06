@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:powersync/powersync.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -104,7 +105,6 @@ void main() {
           fakeDatabase.setNextTransaction(
             FakeCrudTransaction([
               CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
-                'id': 'proj-1',
                 'name': 'Test',
               }),
             ]),
@@ -117,6 +117,25 @@ void main() {
           expect(calls.first['table'], equals('projects'));
           expect(calls.first['data'], containsPair('id', 'proj-1'));
           expect(calls.first['onConflict'], equals('id'));
+        },
+      );
+
+      test(
+        'PUT sends the row id, which PowerSync keeps outside opData',
+        () async {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                'item_name': 'Excavator',
+              }),
+            ]),
+          );
+
+          await connector.uploadData(fakeDatabase);
+
+          final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+          expect(data, containsPair('id', 'rate-1'));
+          expect(data, containsPair('item_name', 'Excavator'));
         },
       );
 
@@ -243,6 +262,169 @@ void main() {
             expect(transaction.isCompleted, isTrue);
           },
         );
+
+        for (final (name, code) in [
+          (
+            'a value that is not valid (23514)',
+            PostgresErrorCode.checkViolation,
+          ),
+          (
+            'a duplicate from another phone (23505)',
+            PostgresErrorCode.uniqueViolation,
+          ),
+        ]) {
+          test(
+            'your_rates refused for $name completes the transaction',
+            () async {
+              fakeSupabase.shouldThrowOnUpsert = true;
+              fakeSupabase.upsertExceptionType =
+                  SupabaseExceptionType.postgrest;
+              fakeSupabase.postgrestErrorCode = code;
+              final transaction = FakeCrudTransaction([
+                CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                  'id': 'rate-1',
+                }),
+              ]);
+              fakeDatabase.setNextTransaction(transaction);
+
+              await connector.uploadData(fakeDatabase);
+
+              expect(transaction.isCompleted, isTrue);
+            },
+          );
+        }
+
+        test('a duplicate on another table is still retried', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'id': 'proj-1',
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await expectLater(
+            connector.uploadData(fakeDatabase),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+          expect(transaction.isCompleted, isFalse);
+        });
+
+        test(
+          'a refused your_rates change does not stop the operations after it',
+          () async {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.postgrestErrorCode = PostgresErrorCode.checkViolation;
+            fakeSupabase.addTableData('projects', [
+              {'id': 'proj-1', 'name': 'Old'},
+            ]);
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+                'item_name': 'Excavator',
+              }),
+              CrudEntry(2, UpdateType.patch, 'projects', 'proj-1', null, {
+                'name': 'New',
+              }),
+            ]);
+            fakeDatabase.setNextTransaction(transaction);
+
+            await connector.uploadData(fakeDatabase);
+
+            expect(fakeSupabase.getMethodCallsFor('update'), hasLength(1));
+            expect(transaction.isCompleted, isTrue);
+          },
+        );
+
+        group('the same your_rates entry saved on two phones', () {
+          Map<String, dynamic> serverRate({
+            String? label,
+            String method = 'day',
+          }) => {
+            'id': 'server-1',
+            'company_id': 'company-1',
+            'category': 'equipment',
+            'item_name': 'Mini excavator',
+            'rate_amount': 100.0,
+            'equipment_method': method,
+            'entry_label': label,
+          };
+
+          Future<FakeCrudTransaction> uploadSecondPhone({
+            String name = '  MINI   excavator ',
+            String method = 'day',
+            String? label,
+          }) async {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'phone-2-id', null, {
+                'company_id': 'company-1',
+                'category': 'equipment',
+                'item_name': name,
+                'rate_amount': 400.0,
+                'equipment_method': method,
+                'entry_label': label,
+              }),
+            ]);
+            fakeDatabase.setNextTransaction(transaction);
+            await connector.uploadData(fakeDatabase);
+            return transaction;
+          }
+
+          test('the later upload overwrites the earlier one', () async {
+            fakeSupabase.addTableData('your_rates', [serverRate()]);
+
+            final transaction = await uploadSecondPhone();
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+            expect(update['data'], containsPair('rate_amount', 400.0));
+            expect(update['data'], isNot(contains('id')));
+            expect(transaction.isCompleted, isTrue);
+          });
+
+          test('a different pricing method is not overwritten', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate(method: 'job'),
+            ]);
+
+            final transaction = await uploadSecondPhone();
+
+            expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+            expect(transaction.isCompleted, isTrue);
+          });
+
+          test('a different label is not overwritten', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate(label: '20 ton'),
+            ]);
+
+            final transaction = await uploadSecondPhone(label: '35 ton');
+
+            expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+            expect(transaction.isCompleted, isTrue);
+          });
+        });
+
+        test('a refused your_rates update completes the transaction', () async {
+          fakeSupabase.shouldThrowOnUpdate = true;
+          fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'your_rates', 'rate-1', null, {
+              'rate_amount': -5,
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await connector.uploadData(fakeDatabase);
+
+          expect(transaction.isCompleted, isTrue);
+        });
 
         test(
           'non-RLS error is rethrown and transaction is not completed',
