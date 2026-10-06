@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 
@@ -22,17 +23,17 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// The id of every row an `UPDATE` has changed since the last [reset].
   final List<Object?> updatedRowIds = [];
 
-  static const _writableColumns = [
-    DatabaseConstants.companyIdColumn,
-    DatabaseConstants.categoryColumn,
-    DatabaseConstants.itemNameColumn,
-    DatabaseConstants.rateAmountColumn,
-    DatabaseConstants.rateCurrencyColumn,
-    DatabaseConstants.unitColumn,
-    DatabaseConstants.equipmentMethodColumn,
-    DatabaseConstants.entryLabelColumn,
-    DatabaseConstants.savedAtColumn,
-  ];
+  static final _statementTable = RegExp(
+    r'(?:FROM|INTO|UPDATE)\s+(\w+)',
+    caseSensitive: false,
+  );
+  static final _insertColumns = RegExp(r'\(([^)]*)\)\s*VALUES');
+  static final _updateAssignments = RegExp(r'SET\s+(.+?)\s+WHERE');
+  static final _assignedColumns = RegExp(r'(\w+)\s*=\s*\?');
+  static final _nullableFilterColumns = RegExp(
+    r'\?\s+IS\s+NULL\s+OR\s+(\w+)\s*=\s*\?',
+  );
+  static final _singleFilterColumn = RegExp(r'WHERE\s+(\w+)\s*=\s*\?\s*$');
 
   /// While set, every read waits for it to complete, so a test can hold a
   /// read open and look at the loading state.
@@ -71,20 +72,25 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
             },
       ];
     }
+    _requireYourRatesTable(sql);
     await getAllGate?.future;
-    if (parameters.length == 1) {
-      return [
-        for (final row in _rows)
-          if (row[DatabaseConstants.idColumn] == parameters.single) {...row},
-      ];
+
+    final filters = <String, Object?>{};
+    final nullableFilters = _nullableFilterColumns.allMatches(sql).toList();
+    if (nullableFilters.isNotEmpty) {
+      for (var i = 0; i < nullableFilters.length; i++) {
+        filters[nullableFilters[i].group(1)!] = parameters[i * 2 + 1];
+      }
+    } else {
+      filters[_singleFilterColumn.firstMatch(sql)!.group(1)!] =
+          parameters.single;
     }
-    final [companyId, _, category, _] = parameters;
+    _requireKnownColumns(filters.keys, sql);
     return [
       for (final row in _rows)
-        if ((companyId == null ||
-                row[DatabaseConstants.companyIdColumn] == companyId) &&
-            (category == null ||
-                row[DatabaseConstants.categoryColumn] == category))
+        if (filters.entries.every(
+          (filter) => filter.value == null || row[filter.key] == filter.value,
+        ))
           {...row},
     ];
   }
@@ -104,27 +110,59 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
           companyId: parameters[2] as String,
         );
       }
-    } else if (sql.startsWith('INSERT')) {
+      return;
+    }
+    _requireYourRatesTable(sql);
+    if (sql.startsWith('INSERT')) {
+      final columns = _insertColumns
+          .firstMatch(sql)!
+          .group(1)!
+          .split(',')
+          .map((column) => column.trim())
+          .toList();
+      _requireKnownColumns(columns, sql);
       final inserted = <String, Object?>{
-        DatabaseConstants.idColumn: parameters[0],
-        for (var i = 0; i < _writableColumns.length; i++)
-          _writableColumns[i]: parameters[i + 1],
-        DatabaseConstants.createdAtColumn: parameters[10],
-        DatabaseConstants.updatedAtColumn: parameters[11],
+        for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
       };
       _rows.add(inserted);
       insertedRows.add(inserted);
     } else if (sql.startsWith('UPDATE')) {
+      final assigned = _assignedColumns
+          .allMatches(_updateAssignments.firstMatch(sql)!.group(1)!)
+          .map((match) => match.group(1)!)
+          .toList();
+      final filterColumn = _singleFilterColumn.firstMatch(sql)!.group(1)!;
+      _requireKnownColumns([...assigned, filterColumn], sql);
       final row = _rows.firstWhere(
-        (candidate) => candidate[DatabaseConstants.idColumn] == parameters.last,
+        (candidate) => candidate[filterColumn] == parameters.last,
         orElse: () => const {},
       );
       if (row.isEmpty) return;
-      updatedRowIds.add(parameters.last);
-      for (var i = 0; i < _writableColumns.length; i++) {
-        row[_writableColumns[i]] = parameters[i];
+      updatedRowIds.add(row[DatabaseConstants.idColumn]);
+      for (var i = 0; i < assigned.length; i++) {
+        row[assigned[i]] = parameters[i];
       }
-      row[DatabaseConstants.updatedAtColumn] = parameters[9];
+    }
+  }
+
+  void _requireYourRatesTable(String sql) {
+    final table = _statementTable.firstMatch(sql)?.group(1);
+    if (table != DatabaseConstants.yourRatesTable) {
+      throw StateError('no such table $table in: $sql');
+    }
+  }
+
+  void _requireKnownColumns(Iterable<String> columns, String sql) {
+    final known = {
+      DatabaseConstants.idColumn,
+      ...schema.tables
+          .firstWhere((table) => table.name == DatabaseConstants.yourRatesTable)
+          .columns
+          .map((column) => column.name),
+    };
+    final unknown = columns.where((column) => !known.contains(column));
+    if (unknown.isNotEmpty) {
+      throw StateError('no such column ${unknown.join(', ')} in: $sql');
     }
   }
 

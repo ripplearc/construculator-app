@@ -7,7 +7,7 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 /// The `companyId` parameter on [loadRates] is what narrows a read to one
 /// company: the phone holds the rates of every company the user belongs to.
 abstract class YourRatesDataSource {
-  /// Fetches all your_rates rows visible to the caller, optionally filtered
+  /// Loads all your_rates rows visible to the caller, optionally filtered
   /// to one [category], ordered by saved_at descending (most recently saved
   /// first).
   ///

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -25,6 +27,7 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   static final _logger = AppLogger().tag('LocalYourRatesDataSource');
 
   static const _streamName = 'user_rates';
+  static const _firstSyncWait = Duration(seconds: 3);
 
   static const _selectSql =
       'SELECT * FROM ${DatabaseConstants.yourRatesTable} '
@@ -151,9 +154,21 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
     if (_streamHandle != null) return;
     final activating = _activating ??= _database.syncStream(_streamName);
     try {
-      _streamHandle = await activating;
+      final handle = await activating;
+      _streamHandle = handle;
+      await _waitForFirstRows(handle);
     } finally {
       _activating = null;
+    }
+  }
+
+  Future<void> _waitForFirstRows(SyncStreamHandle handle) async {
+    try {
+      await handle.waitForFirstSync().timeout(_firstSyncWait);
+    } on TimeoutException {
+      _logger.info(
+        'Your rates have not synced yet; reading what the phone holds',
+      );
     }
   }
 
