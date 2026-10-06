@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -16,16 +17,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
 
   setUpAll(() {
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -34,6 +39,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    database.reset();
     // CurrentCompanyResolverImpl caches its result for the resolver's own
     // lifetime, which outlives a single test here (it's a lazy singleton
     // shared across this file's setUpAll'd Modular instance) — clear it so
@@ -220,7 +226,10 @@ void main() {
       // reuses the same widget State across both pumps (see the
       // delivery-fee Confirm-link test above), so the dialog opened on the
       // first theme may still be showing on the second — only open it once.
-      if (find.byKey(const Key('entry_label_dialog_title')).evaluate().isNotEmpty) {
+      if (find
+          .byKey(const Key('entry_label_dialog_title'))
+          .evaluate()
+          .isNotEmpty) {
         return;
       }
       final repository = Modular.get<YourRatesRepository>();

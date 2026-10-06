@@ -4,20 +4,19 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   group('YourRatesRepositoryImpl', () {
     late YourRatesRepositoryImpl repository;
-    late FakeSupabaseWrapper fakeSupabaseWrapper;
+    late FakeYourRatesDatabase database;
 
     const testCompanyId = 'company-1';
 
@@ -71,6 +70,7 @@ void main() {
     }
 
     setUpAll(() {
+      database = FakeYourRatesDatabase();
       Modular.init(
         EstimationModule(
           FakeAppBootstrapFactory.create(
@@ -78,8 +78,7 @@ void main() {
           ),
         ),
       );
-      fakeSupabaseWrapper =
-          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
       repository =
           Modular.get<YourRatesRepository>() as YourRatesRepositoryImpl;
     });
@@ -89,11 +88,11 @@ void main() {
     });
 
     setUp(() {
-      fakeSupabaseWrapper.reset();
+      database.reset();
     });
 
     void seed(List<Map<String, dynamic>> rows) {
-      fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, rows);
+      rows.forEach(database.seedRow);
     }
 
     group('search', () {
@@ -234,42 +233,11 @@ void main() {
         },
       );
 
-      test('passes companyId through to the data source when given', () async {
-        await repository.search(
-          '',
-          category: CostItemType.equipment,
-          companyId: testCompanyId,
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.first['filters'], {
-          DatabaseConstants.categoryColumn: 'equipment',
-          DatabaseConstants.companyIdColumn: testCompanyId,
-        });
-      });
-
-      test(
-        "companyId actually keeps a second company's rows out of the result, "
-        'not just out of the filter map',
-        () async {
-          seed([
-            row(id: 'mine', companyId: testCompanyId, itemName: 'Excavator'),
-            row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator'),
-          ]);
-
-          final result = await repository.search(
-            '',
-            category: CostItemType.equipment,
-            companyId: testCompanyId,
-          );
-
-          expect(result.isRight(), true);
-          expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['mine']);
-        },
-      );
-
-      test('maps a generic exception to unexpectedError failure', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+      test("keeps a second company's rows out of the result", () async {
+        seed([
+          row(id: 'mine', companyId: testCompanyId, itemName: 'Excavator'),
+          row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator'),
+        ]);
 
         final result = await repository.search(
           '',
@@ -277,16 +245,55 @@ void main() {
           companyId: testCompanyId,
         );
 
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.unexpectedError,
-          ),
-        );
+        expect(result.isRight(), true);
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['mine']);
       });
+
+      test(
+        'reports a read the phone cannot do as a database failure',
+        () async {
+          database.getAllError = StateError('database locked');
+
+          final result = await repository.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+          );
+
+          expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.unexpectedDatabaseError,
+            ),
+          );
+        },
+      );
+    });
+
+    test('reports a stored row it cannot read as a parsing failure', () async {
+      seed([
+        row(id: 'broken').map(
+          (key, value) => MapEntry(key, key == 'rate_amount' ? 'abc' : value),
+        ),
+      ]);
+
+      final result = await repository.search(
+        '',
+        category: CostItemType.equipment,
+        companyId: testCompanyId,
+      );
+
+      expect(
+        result.getLeftOrNull(),
+        isA<EstimationFailure>().having(
+          (f) => f.errorType,
+          'errorType',
+          EstimationErrorType.parsingError,
+        ),
+      );
     });
 
     group('getByItemName', () {
@@ -320,20 +327,6 @@ void main() {
           expect(result.getRightOrNull()?.id, 'r1');
         },
       );
-
-      test('passes companyId through to the data source when given', () async {
-        await repository.getByItemName(
-          'Excavator',
-          CostItemType.equipment,
-          companyId: testCompanyId,
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.first['filters'], {
-          DatabaseConstants.categoryColumn: 'equipment',
-          DatabaseConstants.companyIdColumn: testCompanyId,
-        });
-      });
 
       test('companyId actually keeps a same-name row in a second company from '
           'being returned', () async {
@@ -394,7 +387,7 @@ void main() {
             EstimationErrorType.permissionDenied,
           ),
         );
-        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+        expect(database.getAllCalls, isEmpty);
       });
 
       test('getByItemName returns a failure and reads nothing', () async {
@@ -405,7 +398,7 @@ void main() {
         );
 
         expect(result.isLeft(), true);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+        expect(database.getAllCalls, isEmpty);
       });
 
       test('save returns a failure and reads and writes nothing', () async {
@@ -414,22 +407,38 @@ void main() {
         );
 
         expect(result.isLeft(), true);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        expect(database.getAllCalls, isEmpty);
+        expect(database.insertedRows, isEmpty);
+        expect(database.updatedRowIds, isEmpty);
       });
     });
 
     group('save', () {
+      test(
+        'a saved rate is found by the next search, with no signal',
+        () async {
+          await repository.save(buildEntry(itemName: 'Skid steer'));
+
+          final result = await repository.search(
+            'skid',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+          );
+
+          expect(result.getRightOrNull()!.map((e) => e.itemName), [
+            'Skid steer',
+          ]);
+        },
+      );
+
       test('inserts a new row when the grouping is empty', () async {
         final entry = buildEntry();
 
         final result = await repository.save(entry);
 
         expect(result.isRight(), true);
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('insert');
-        expect(calls.length, 1);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        expect(database.insertedRows, hasLength(1));
+        expect(database.updatedRowIds, isEmpty);
       });
 
       test(
@@ -441,10 +450,10 @@ void main() {
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['filterValue'], 'existing');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          final updatedIds = database.updatedRowIds;
+          expect(updatedIds.length, 1);
+          expect(updatedIds.first, 'existing');
+          expect(database.insertedRows, isEmpty);
         },
       );
 
@@ -460,9 +469,9 @@ void main() {
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['filterValue'], 'same-label');
+          final updatedIds = database.updatedRowIds;
+          expect(updatedIds.length, 1);
+          expect(updatedIds.first, 'same-label');
         },
       );
 
@@ -475,30 +484,32 @@ void main() {
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
-          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+          expect(database.insertedRows, hasLength(1));
+          expect(database.updatedRowIds, isEmpty);
         },
       );
 
-      test('rejects an unlabeled save when the grouping has one labeled row '
-          '(the case a naive 23505 catch would miss)', () async {
-        seed([row(id: 'existing', entryLabel: 'Supplier A')]);
-        final entry = buildEntry();
+      test(
+        'rejects an unlabeled save when the grouping has one labeled row',
+        () async {
+          seed([row(id: 'existing', entryLabel: 'Supplier A')]);
+          final entry = buildEntry();
 
-        final result = await repository.save(entry);
+          final result = await repository.save(entry);
 
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.duplicateEntry,
-          ),
-        );
-        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
-      });
+          expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.duplicateEntry,
+            ),
+          );
+          expect(database.insertedRows, isEmpty);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
 
       test(
         'rejects an unlabeled save when the grouping has multiple labeled rows',
@@ -539,7 +550,7 @@ void main() {
             EstimationErrorType.duplicateEntry,
           ),
         );
-        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(database.insertedRows, isEmpty);
       });
 
       test('treats a whitespace-only label as null when matching an existing '
@@ -550,12 +561,17 @@ void main() {
         final result = await repository.save(entry);
 
         expect(result.isRight(), true);
-        final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-        expect(updateCalls.length, 1);
-        expect(updateCalls.first['filterValue'], 'existing');
+        final updatedIds = database.updatedRowIds;
+        expect(updatedIds.length, 1);
+        expect(updatedIds.first, 'existing');
         // The normalized (null) label is what gets persisted, not the
         // literal whitespace.
-        expect(updateCalls.first['data']['entry_label'], isNull);
+        final stored = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(stored.getRightOrNull()!.single.entryLabel, isNull);
       });
 
       test(
@@ -574,8 +590,8 @@ void main() {
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
-          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+          expect(database.insertedRows, hasLength(1));
+          expect(database.updatedRowIds, isEmpty);
         },
       );
 
@@ -597,8 +613,8 @@ void main() {
           );
 
           expect(result.isRight(), true);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
-          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+          expect(database.insertedRows, hasLength(1));
+          expect(database.updatedRowIds, isEmpty);
         },
       );
 
@@ -624,10 +640,10 @@ void main() {
           );
 
           expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls, hasLength(1));
-          expect(updateCalls.first['filterValue'], 'job-row');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          final updatedIds = database.updatedRowIds;
+          expect(updatedIds, hasLength(1));
+          expect(updatedIds.first, 'job-row');
+          expect(database.insertedRows, isEmpty);
         },
       );
 
@@ -644,10 +660,10 @@ void main() {
           );
 
           expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls, hasLength(1));
-          expect(updateCalls.first['filterValue'], 'existing');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          final updatedIds = database.updatedRowIds;
+          expect(updatedIds, hasLength(1));
+          expect(updatedIds.first, 'existing');
+          expect(database.insertedRows, isEmpty);
         },
       );
 
@@ -657,10 +673,7 @@ void main() {
         );
 
         expect(result.isRight(), true);
-        final data = fakeSupabaseWrapper
-            .getMethodCallsFor('insert')
-            .single['data'];
-        expect(data['item_name'], 'Backhoe');
+        expect(database.insertedRows.single['item_name'], 'Backhoe');
       });
 
       test(
@@ -676,21 +689,9 @@ void main() {
           final result = await repository.save(entry);
 
           expect(result.isRight(), true);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+          expect(database.insertedRows, hasLength(1));
         },
       );
-
-      test("scopes the collision lookup to the entry's companyId", () async {
-        final entry = buildEntry();
-
-        await repository.save(entry);
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.first['filters'], {
-          DatabaseConstants.categoryColumn: entry.category.toJson(),
-          DatabaseConstants.companyIdColumn: entry.companyId,
-        });
-      });
 
       test('an unlabeled row in a second company does not collide with this '
           "entry's own save, so it inserts rather than overwriting", () async {
@@ -707,37 +708,14 @@ void main() {
         final result = await repository.save(entry);
 
         expect(result.isRight(), true);
-        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
-        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
-      });
-
-      test('maps an RLS violation (42501) to permissionDenied', () async {
-        fakeSupabaseWrapper.shouldThrowOnInsert = true;
-        fakeSupabaseWrapper.insertExceptionType =
-            SupabaseExceptionType.postgrest;
-        fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
-
-        final result = await repository.save(buildEntry());
-
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.permissionDenied,
-          ),
-        );
+        expect(database.insertedRows, hasLength(1));
+        expect(database.updatedRowIds, isEmpty);
       });
 
       test(
-        'maps a unique-constraint violation (23505) on insert to duplicateEntry',
+        'reports a write the phone cannot do as a database failure',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.uniqueViolation;
+          database.executeError = StateError('disk full');
 
           final result = await repository.save(buildEntry());
 
@@ -747,63 +725,11 @@ void main() {
             isA<EstimationFailure>().having(
               (f) => f.errorType,
               'errorType',
-              EstimationErrorType.duplicateEntry,
+              EstimationErrorType.unexpectedDatabaseError,
             ),
           );
         },
       );
-
-      test('maps a generic exception to unexpectedError', () async {
-        fakeSupabaseWrapper.shouldThrowOnInsert = true;
-
-        final result = await repository.save(buildEntry());
-
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.unexpectedError,
-          ),
-        );
-      });
-
-      test('maps a connection error to connectionError', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-        fakeSupabaseWrapper.selectMatchExceptionType =
-            SupabaseExceptionType.socket;
-
-        final result = await repository.save(buildEntry());
-
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.connectionError,
-          ),
-        );
-      });
-
-      test('maps a timeout to timeoutError', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-        fakeSupabaseWrapper.selectMatchExceptionType =
-            SupabaseExceptionType.timeout;
-
-        final result = await repository.save(buildEntry());
-
-        expect(result.isLeft(), true);
-        expect(
-          result.getLeftOrNull(),
-          isA<EstimationFailure>().having(
-            (f) => f.errorType,
-            'errorType',
-            EstimationErrorType.timeoutError,
-          ),
-        );
-      });
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -16,25 +17,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const size = Size(390, 500);
   const ratio = 1.0;
-  const table = 'your_rates';
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late List<Map<String, dynamic>> seededRows;
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
     await loadAppFonts();
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -43,6 +47,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    database.reset();
     seededRows = [];
     // CurrentCompanyResolverImpl caches its result for the resolver's own
     // lifetime, which outlives a single test here (it's a lazy singleton
@@ -56,20 +61,18 @@ void main() {
   });
 
   void seedRate({required String itemName, required double amount}) {
-    seededRows = [
-      ...seededRows,
-      {
-        'id': 'rate-${seededRows.length + 1}',
-        'company_id': 'company-1',
-        'category': 'equipment',
-        'item_name': itemName,
-        'rate_amount': amount,
-        'rate_currency': 'USD',
-        'equipment_method': 'job',
-        'saved_at': DateTime(2026, 1, 1).toIso8601String(),
-      },
-    ];
-    fakeSupabase.addTableData(table, seededRows);
+    final newRow = {
+      'id': 'rate-${seededRows.length + 1}',
+      'company_id': 'company-1',
+      'category': 'equipment',
+      'item_name': itemName,
+      'rate_amount': amount,
+      'rate_currency': 'USD',
+      'equipment_method': 'job',
+      'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+    };
+    seededRows = [...seededRows, newRow];
+    database.seedRows([newRow]);
   }
 
   Future<void> pumpSheet({
@@ -166,7 +169,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
 
       await pumpSheet(tester: tester, theme: theme);
 
@@ -185,8 +188,8 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      fakeSupabase.completer = Completer<void>();
-      addTearDown(() => fakeSupabase.completer?.complete());
+      database.getAllGate = Completer<void>();
+      addTearDown(() => database.getAllGate?.complete());
 
       await tester.pumpWidget(
         MaterialApp(

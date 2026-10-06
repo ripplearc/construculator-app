@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -61,13 +64,13 @@ void main() {
 
     tearDown(Modular.destroy);
 
-    group('fetchRates', () {
+    group('loadRates', () {
       test(
         'returns the rows that sync delivered, with no network call',
         () async {
           database.seedRow(row(id: 'a'));
 
-          final rates = await dataSource.fetchRates();
+          final rates = await dataSource.loadRates();
 
           expect(rates.map((rate) => rate.id), ['a']);
         },
@@ -79,7 +82,7 @@ void main() {
           database.seedRow(row(id: 'mine'));
           database.seedRow(row(id: 'theirs', companyId: 'company-2'));
 
-          final rates = await dataSource.fetchRates(companyId: 'company-1');
+          final rates = await dataSource.loadRates(companyId: 'company-1');
 
           expect(rates.map((rate) => rate.id), ['mine']);
         },
@@ -89,7 +92,7 @@ void main() {
         database.seedRow(row(id: 'equipment-row'));
         database.seedRow(row(id: 'labor-row', category: 'labor'));
 
-        final rates = await dataSource.fetchRates(category: 'labor');
+        final rates = await dataSource.loadRates(category: 'labor');
 
         expect(rates.map((rate) => rate.id), ['labor-row']);
       });
@@ -98,7 +101,7 @@ void main() {
         database.seedRow(row(id: 'older', savedAt: '2026-09-01T00:00:00.000Z'));
         database.seedRow(row(id: 'newer', savedAt: '2026-09-02T00:00:00.000Z'));
 
-        final rates = await dataSource.fetchRates();
+        final rates = await dataSource.loadRates();
 
         expect(rates.map((rate) => rate.id), ['newer', 'older']);
       });
@@ -113,7 +116,7 @@ void main() {
             row(id: 'local', savedAt: '2026-09-02T09:00:00.000Z'),
           );
 
-          final rates = await dataSource.fetchRates();
+          final rates = await dataSource.loadRates();
 
           expect(rates.map((rate) => rate.id), ['local', 'synced']);
         },
@@ -130,7 +133,7 @@ void main() {
           row(id: 'newest', savedAt: '2026-09-03T00:00:00.000Z'),
         );
 
-        final rates = await dataSource.fetchRates(limit: 2);
+        final rates = await dataSource.loadRates(limit: 2);
 
         expect(rates.map((rate) => rate.id), ['newest', 'middle']);
       });
@@ -138,7 +141,7 @@ void main() {
       test('reports a read the phone cannot do', () async {
         database.getAllError = StateError('database locked');
 
-        await expectLater(dataSource.fetchRates(), throwsStateError);
+        await expectLater(dataSource.loadRates(), throwsStateError);
       });
     });
 
@@ -146,7 +149,7 @@ void main() {
       test('gives the new row an id and shows it in the next read', () async {
         final saved = await dataSource.insertRate(newDto());
 
-        final rates = await dataSource.fetchRates();
+        final rates = await dataSource.loadRates();
         expect(saved.id, isNotEmpty);
         expect(rates.map((rate) => rate.id), [saved.id]);
       });
@@ -185,7 +188,7 @@ void main() {
 
         await dataSource.updateRate(saved.id, newDto(rateAmount: 400));
 
-        final rates = await dataSource.fetchRates();
+        final rates = await dataSource.loadRates();
         expect(rates.single.rateAmount, 400);
       });
 
@@ -212,15 +215,42 @@ void main() {
 
     group('sync stream', () {
       test('is activated once however many reads and writes follow', () async {
-        await dataSource.fetchRates();
+        await dataSource.loadRates();
         await dataSource.insertRate(newDto());
-        await dataSource.fetchRates();
+        await dataSource.loadRates();
 
         expect(database.syncStreamCalls, ['user_rates']);
       });
 
+      test('is waited on for its first rows before the first read', () async {
+        database.firstSyncGate = Completer();
+
+        final read = dataSource.loadRates();
+        await pumpEventQueue();
+        expect(database.getAllCalls, isEmpty);
+
+        database.firstSyncGate!.complete();
+        await read;
+
+        expect(database.getAllCalls, hasLength(1));
+      });
+
+      test('is not waited on for ever when it cannot sync', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          var finished = false;
+          dataSource.loadRates().then((_) => finished = true);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(finished, isFalse);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(finished, isTrue);
+        });
+      });
+
       test('is released when the data source is disposed', () async {
-        await dataSource.fetchRates();
+        await dataSource.loadRates();
 
         await (dataSource as LocalYourRatesDataSource).dispose();
 
@@ -229,10 +259,10 @@ void main() {
 
       test('is retried on the next call after activating it failed', () async {
         database.syncStreamError = StateError('not ready');
-        await expectLater(dataSource.fetchRates(), throwsStateError);
+        await expectLater(dataSource.loadRates(), throwsStateError);
         database.syncStreamError = null;
 
-        final rates = await dataSource.fetchRates();
+        final rates = await dataSource.loadRates();
 
         expect(rates, isEmpty);
         expect(database.syncStreamCalls, ['user_rates', 'user_rates']);

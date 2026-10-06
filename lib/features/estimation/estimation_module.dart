@@ -2,9 +2,9 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/remote_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
@@ -30,6 +30,7 @@ import 'package:construculator/libraries/estimation/data/repositories/cost_estim
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -80,6 +81,7 @@ class EstimationModule extends Module {
     EstimationLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     ClockModule(),
+    PowerSyncModule(appBootstrap),
   ];
 
   @override
@@ -96,10 +98,13 @@ class EstimationModule extends Module {
       ),
     );
 
+    i.addLazySingleton<LocalYourRatesDataSource>(
+      () => LocalYourRatesDataSource(database: i.get(), clock: i.get()),
+      config: BindConfig(onDispose: (dataSource) => dataSource.dispose()),
+    );
+
     i.addLazySingleton<YourRatesDataSource>(
-      () => RemoteYourRatesDataSource(
-        supabaseWrapper: appBootstrap.supabaseWrapper,
-      ),
+      () => i.get<LocalYourRatesDataSource>(),
     );
 
     i.addLazySingleton<CostEstimationRepository>(

@@ -7,15 +7,13 @@ import 'package:equatable/equatable.dart';
 /// column names exactly (`company_id`, `item_name`, `rate_amount`,
 /// `rate_currency`, `equipment_method`, `entry_label`, `saved_at`).
 ///
-/// [toJson] deliberately returns only the writable columns — it excludes
-/// `id`, `created_at`, and `updated_at`, since those are server-managed (`id`
-/// is server-generated on insert; `created_at`/`updated_at` are never this
-/// DTO's concern to set). This is safe to reuse for both insert and update
-/// request bodies. Reading `id`/`created_at`/`updated_at` back always goes
-/// through [fromJson] against the server's response, never through a value
-/// this DTO itself produced.
+/// [toJson] returns only the columns a caller chooses to write: it excludes
+/// `id`, `created_at`, and `updated_at`, which the local data source sets
+/// itself when it saves a row. Reading those three back always goes through
+/// [fromJson] against the stored row.
 class YourRateEntryDto extends Equatable {
-  /// Unique identifier for the rate entry; server-generated.
+  /// Unique identifier for the rate entry; generated on the phone when the
+  /// rate is first saved.
   final String id;
 
   /// ID of the company this rate entry belongs to.
@@ -48,10 +46,10 @@ class YourRateEntryDto extends Equatable {
   /// ISO 8601 timestamp for when this rate was saved, client-supplied.
   final String savedAt;
 
-  /// ISO 8601 timestamp when the row was created; server-managed.
+  /// ISO 8601 timestamp when the row was created, stamped on the phone.
   final String? createdAt;
 
-  /// ISO 8601 timestamp when the row was last updated; server-managed.
+  /// ISO 8601 timestamp when the row was last updated, stamped on the phone.
   final String? updatedAt;
 
   /// Creates a new [YourRateEntryDto] instance.

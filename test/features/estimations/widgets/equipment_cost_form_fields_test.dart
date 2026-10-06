@@ -11,6 +11,7 @@ import 'package:construculator/features/estimation/presentation/widgets/underlin
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -21,19 +22,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late AppLocalizations l10n;
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
 
   setUpAll(() {
     CoreToast.disableTimers();
     l10n = lookupAppLocalizations(const Locale('en'));
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -43,6 +48,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    database.reset();
     // CurrentCompanyResolverImpl caches its result for the resolver's own
     // lifetime, which outlives a single test here (it's a lazy singleton
     // shared across this file's setUpAll'd Modular instance) — clear it so
@@ -1877,7 +1883,9 @@ void main() {
       saveResult.fold((f) => throw StateError('seed save failed: $f'), (_) {});
       final searchResult = await repository.search(
         itemName,
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       return searchResult.fold(
         (_) => throw StateError('seed search failed'),
         (entries) => entries.firstWhere((e) => e.itemName == itemName),
@@ -2024,7 +2032,9 @@ void main() {
       );
       final saved = await repository.search(
         itemName,
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       return saved.fold(
         (_) => throw StateError('seed search failed'),
         (entries) => entries.first,
@@ -2075,7 +2085,9 @@ void main() {
       final repository = Modular.get<YourRatesRepository>();
       final saved = await repository.search(
         'Backhoe',
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       expect(saved.fold((_) => null, (e) => e.length), 1);
       expect(saved.fold((_) => null, (e) => e.single.rate.amount), 150);
       expect(
@@ -2134,7 +2146,9 @@ void main() {
         final repository = Modular.get<YourRatesRepository>();
         final saved = await repository.search(
           'Backhoe',
-          category: CostItemType.equipment, companyId: 'company-1');
+          category: CostItemType.equipment,
+          companyId: 'company-1',
+        );
         expect(saved.fold((_) => null, (e) => e.length), 2);
       },
     );
@@ -2166,7 +2180,7 @@ void main() {
       'when saving fails the error line shows under the Rate row and the '
       'link stays',
       (tester) async {
-        fakeSupabase.shouldThrowOnInsert = true;
+        database.executeError = StateError('disk full');
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
         await typeSavableRate(tester);
@@ -2187,7 +2201,7 @@ void main() {
       'tapping the link again removes the error line while it runs and shows '
       'the saved hint when it works',
       (tester) async {
-        fakeSupabase.shouldThrowOnInsert = true;
+        database.executeError = StateError('disk full');
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
         await typeSavableRate(tester);
@@ -2195,15 +2209,13 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('save_as_my_rate_error')), findsOneWidget);
 
-        fakeSupabase.shouldThrowOnInsert = false;
-        fakeSupabase.completer = Completer();
-        fakeSupabase.shouldDelayOperations = true;
+        database.executeError = null;
+        database.getAllGate = Completer();
         await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
         await tester.pump();
         expect(find.byKey(const Key('save_as_my_rate_error')), findsNothing);
 
-        fakeSupabase.shouldDelayOperations = false;
-        fakeSupabase.completer!.complete();
+        database.getAllGate!.complete();
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
@@ -2233,7 +2245,9 @@ void main() {
         expect(hintText(tester), startsWith('Saved to ${l10n.yourRatesName}'));
         final saved = await Modular.get<YourRatesRepository>().search(
           'Backhoe',
-          category: CostItemType.equipment, companyId: 'company-1');
+          category: CostItemType.equipment,
+          companyId: 'company-1',
+        );
         expect(saved.fold((_) => null, (e) => e.single.rate.amount), 160);
       },
     );
@@ -2305,7 +2319,9 @@ void main() {
 
       final saved = await Modular.get<YourRatesRepository>().search(
         'backhoe',
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       expect(saved.fold((_) => null, (e) => e.single.itemName), 'backhoe');
     });
 
@@ -2334,7 +2350,9 @@ void main() {
       final repository = Modular.get<YourRatesRepository>();
       final saved = await repository.search(
         'Dumpster',
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       expect(
         saved.fold((_) => null, (e) => e.single.equipmentMethod),
         EquipmentPricingMethod.job,
@@ -2379,7 +2397,9 @@ void main() {
       final repository = Modular.get<YourRatesRepository>();
       final saved = await repository.search(
         'Backhoe',
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       // Still just the one seeded row — the cancelled retry never reached
       // the repository.
       expect(saved.fold((_) => null, (e) => e.length), 1);
@@ -2398,8 +2418,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('rate_field')), '150');
       await tester.pump();
 
-      fakeSupabase.completer = Completer();
-      fakeSupabase.shouldDelayOperations = true;
+      database.getAllGate = Completer();
 
       // Both taps fire before the first save's (delayed) repository call
       // resolves, so the second must be dropped by YourRatesBloc's
@@ -2408,17 +2427,18 @@ void main() {
       await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
       await tester.pump();
 
-      fakeSupabase.shouldDelayOperations = false;
-      fakeSupabase.completer!.complete();
+      database.getAllGate!.complete();
       await tester.pumpAndSettle();
 
-      expect(fakeSupabase.getMethodCallsFor('insert').length, 1);
+      expect(database.insertedRows, hasLength(1));
       expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
 
       final repository = Modular.get<YourRatesRepository>();
       final saved = await repository.search(
         'Backhoe',
-        category: CostItemType.equipment, companyId: 'company-1');
+        category: CostItemType.equipment,
+        companyId: 'company-1',
+      );
       expect(saved.fold((_) => null, (e) => e.length), 1);
     });
 

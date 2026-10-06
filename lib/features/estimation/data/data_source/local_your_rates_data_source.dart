@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -25,6 +27,7 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   static final _logger = AppLogger().tag('LocalYourRatesDataSource');
 
   static const _streamName = 'user_rates';
+  static const _firstSyncWait = Duration(seconds: 3);
 
   static const _selectSql =
       'SELECT * FROM ${DatabaseConstants.yourRatesTable} '
@@ -59,13 +62,14 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.updatedAtColumn} = ? '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
-  Future<SyncStreamHandle>? _streamHandle;
+  SyncStreamHandle? _streamHandle;
+  Future<SyncStreamHandle>? _activating;
 
   /// Creates a data source over [_database], stamping writes from [_clock].
   LocalYourRatesDataSource({required this._database, required this._clock});
 
   @override
-  Future<List<YourRateEntryDto>> fetchRates({
+  Future<List<YourRateEntryDto>> loadRates({
     String? category,
     String? companyId,
     int? limit,
@@ -141,18 +145,30 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   /// Releases the `user_rates` subscription. The database itself belongs to
   /// `PowerSyncModule` and stays open.
   Future<void> dispose() async {
-    final handle = _streamHandle;
+    final handle = _streamHandle ?? await _activating;
     _streamHandle = null;
-    (await handle)?.unsubscribe();
+    handle?.unsubscribe();
   }
 
-  Future<SyncStreamHandle> _ensureSyncing() async {
-    final pending = _streamHandle ??= _database.syncStream(_streamName);
+  Future<void> _ensureSyncing() async {
+    if (_streamHandle != null) return;
+    final activating = _activating ??= _database.syncStream(_streamName);
     try {
-      return await pending;
-    } catch (_) {
-      _streamHandle = null;
-      rethrow;
+      final handle = await activating;
+      _streamHandle = handle;
+      await _waitForFirstRows(handle);
+    } finally {
+      _activating = null;
+    }
+  }
+
+  Future<void> _waitForFirstRows(SyncStreamHandle handle) async {
+    try {
+      await handle.waitForFirstSync().timeout(_firstSyncWait);
+    } on TimeoutException {
+      _logger.info(
+        'Your rates have not synced yet; reading what the phone holds',
+      );
     }
   }
 
