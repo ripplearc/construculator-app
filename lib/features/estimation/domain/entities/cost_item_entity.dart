@@ -794,6 +794,7 @@ class YourRateEntry extends Equatable {
 
   /// When a cost line was last added with this rate, stamped by the phone
   /// that added the line. Null until the rate is first added to an estimate.
+  // TODO: [CA-1266](https://ripplearc.youtrack.cloud/issue/CA-1266) Set this when a line is added with the rate; nothing writes it yet. The backend column is [CA-1265](https://ripplearc.youtrack.cloud/issue/CA-1265).
   final DateTime? lastUsedAt;
 
   /// Pricing method this rate applies to, for equipment rates: by the day or
