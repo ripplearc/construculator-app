@@ -3118,29 +3118,65 @@ abstract class AppLocalizations {
   /// **'Recent — tap to reuse'**
   String get yourRatesRecentsSectionHeading;
 
-  /// Recency subtitle on a 'Your recents' row for a rate saved earlier today
+  /// Recency subtitle on a 'Your recents' row for a rate last added to an estimate today
   ///
   /// In en, this message translates to:
   /// **'Used today'**
   String get yourRatesUsedToday;
 
-  /// Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day
+  /// Recency subtitle on a 'Your recents' row for a rate last added to an estimate yesterday, by calendar day
   ///
   /// In en, this message translates to:
   /// **'Used yesterday'**
   String get yourRatesUsedYesterday;
 
-  /// Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago
+  /// Recency subtitle on a 'Your recents' row for a rate last added to an estimate two to six calendar days ago
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{Used {count} day ago} other{Used {count} days ago}}'**
   String yourRatesUsedDaysAgo(int count);
 
-  /// Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'
+  /// Recency subtitle on a 'Your recents' row for a rate last added to an estimate seven to twenty-nine days ago; count is whole weeks, so one reads 'last week'
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{Used last week} other{Used {count} weeks ago}}'**
   String yourRatesUsedWeeksAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate last added to an estimate thirty or more days ago; count is whole thirty-day months, so one reads 'last month'
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Used last month} other{Used {count} months ago}}'**
+  String yourRatesUsedMonthsAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved today and never added to an estimate
+  ///
+  /// In en, this message translates to:
+  /// **'Saved today'**
+  String get yourRatesSavedToday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved yesterday and never added to an estimate
+  ///
+  /// In en, this message translates to:
+  /// **'Saved yesterday'**
+  String get yourRatesSavedYesterday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago and never added to an estimate
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Saved {count} day ago} other{Saved {count} days ago}}'**
+  String yourRatesSavedDaysAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved seven to twenty-nine days ago and never added to an estimate; count is whole weeks
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Saved last week} other{Saved {count} weeks ago}}'**
+  String yourRatesSavedWeeksAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved thirty or more days ago and never added to an estimate; count is whole thirty-day months
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Saved last month} other{Saved {count} months ago}}'**
+  String yourRatesSavedMonthsAgo(int count);
 
   /// Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate
   ///
