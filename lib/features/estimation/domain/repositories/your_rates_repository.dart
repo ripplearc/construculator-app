@@ -61,13 +61,18 @@ abstract class YourRatesRepository {
   /// - The grouping has existing rows and [entry].entryLabel is null: rejected
   ///   with an `EstimationErrorType.duplicateEntry` failure, whatever the
   ///   existing rows' labels are. An unlabeled save never replaces a saved
-  ///   price silently; the caller asks the user to name the new price.
+  ///   price. The caller asks the user to name the new price.
   /// - The grouping has existing rows, [entry].entryLabel is non-null, and an
-  ///   existing row has the exact same label: overwrites that row's field
-  ///   values.
+  ///   existing row has the same label: rejected with an
+  ///   `EstimationErrorType.duplicateLabel` failure and nothing is written.
+  ///   Labels are compared without regard to capital letters or extra spaces,
+  ///   like names. The caller asks the user for a different label.
   /// - The grouping has existing rows, [entry].entryLabel is non-null, and no
   ///   existing row has the same label: inserts [entry] as a new, distinct
   ///   row.
+  ///
+  /// So `save` never changes a saved row. It only inserts a row or reports why
+  /// it did not.
   ///
   /// A row of the same name with the other pricing method is not in the
   /// grouping: a Day price and a Job price for one name are two rows, and

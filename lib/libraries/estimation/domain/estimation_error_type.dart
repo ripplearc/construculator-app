@@ -13,6 +13,9 @@
 ///   unlabeled "Your rates" save into an already-populated name grouping —
 ///   see `YourRatesRepository.save`), rather than an error the operation can
 ///   retry or recover from on its own
+/// - [duplicateLabel]: a labeled "Your rates" save used a label that the same
+///   name and pricing method already have. Nothing is replaced, and the caller
+///   asks the user for a different label
 enum EstimationErrorType {
   connectionError,
   parsingError,
@@ -23,4 +26,5 @@ enum EstimationErrorType {
   notFoundError,
   permissionDenied,
   duplicateEntry,
+  duplicateLabel,
 }

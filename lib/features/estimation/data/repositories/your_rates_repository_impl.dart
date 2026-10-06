@@ -102,19 +102,16 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         );
       }
 
-      final sameLabel = existing
-          .where(
-            (candidate) =>
-                _normalizeLabel(candidate.entryLabel) == effectiveLabel,
-          )
-          .firstOrNull;
+      final labelKey = _matchKey(effectiveLabel);
+      final labelAlreadyUsed = existing.any((candidate) {
+        final savedLabel = candidate.entryLabel;
+        return savedLabel != null && _matchKey(savedLabel) == labelKey;
+      });
 
-      if (sameLabel != null) {
-        await dataSource.updateRate(
-          sameLabel.id,
-          YourRateEntryDto.fromEntity(normalizedEntry),
+      if (labelAlreadyUsed) {
+        return const Left(
+          EstimationFailure(errorType: EstimationErrorType.duplicateLabel),
         );
-        return const Right(null);
       }
 
       await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
@@ -128,16 +125,16 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     CostItemType category,
     String itemName,
   ) async {
-    final nameKey = _nameKey(itemName);
+    final nameKey = _matchKey(itemName);
     final dtos = await dataSource.fetchRates(category: category.toJson());
     return dtos
         .map((dto) => dto.toEntity())
-        .where((entry) => _nameKey(entry.itemName) == nameKey)
+        .where((entry) => _matchKey(entry.itemName) == nameKey)
         .toList();
   }
 
-  static String _nameKey(String name) =>
-      name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  static String _matchKey(String text) =>
+      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
   static String? _normalizeLabel(String? label) {
     final trimmed = label?.trim();

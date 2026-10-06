@@ -339,22 +339,74 @@ void main() {
       });
 
       test(
-        'overwrites the matching row when a labeled entry collides with the same label',
+        'rejects a labeled save whose label the grouping already has, leaving '
+        'the saved price alone',
         () async {
           seed([
             row(id: 'other-label', entryLabel: 'Supplier A', rateAmount: 100.0),
             row(id: 'same-label', entryLabel: 'Supplier B', rateAmount: 200.0),
           ]);
-          final entry = buildEntry(entryLabel: 'Supplier B', amount: 999.0);
 
-          final result = await repository.save(entry);
+          final result = await repository.save(
+            buildEntry(entryLabel: 'Supplier B', amount: 999.0),
+          );
 
-          expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['filterValue'], 'same-label');
+          expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.duplicateLabel,
+            ),
+          );
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
         },
       );
+
+      test(
+        'treats a label that differs only by capital letters or extra spaces '
+        'as the same label',
+        () async {
+          seed([
+            row(id: 'existing', entryLabel: 'Supplier A', rateAmount: 100),
+          ]);
+
+          final result = await repository.save(
+            buildEntry(entryLabel: '  supplier   a ', amount: 150),
+          );
+
+          expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.duplicateLabel,
+            ),
+          );
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      test('saves a label that another pricing method of the same name already '
+          'has', () async {
+        seed([row(id: 'day-row', entryLabel: 'Supplier A', rateAmount: 145)]);
+
+        final result = await repository.save(
+          buildEntry(
+            entryLabel: 'Supplier A',
+            amount: 520,
+            method: EquipmentPricingMethod.job,
+          ),
+        );
+
+        expect(result.isRight(), true);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
 
       test(
         'inserts a new distinct row when a labeled entry has no matching label',
@@ -494,42 +546,6 @@ void main() {
           expect(result.isRight(), true);
           expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
           expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
-        },
-      );
-
-      test(
-        'overwrites only the row of the same pricing method when both exist',
-        () async {
-          seed([
-            row(
-              id: 'day-row',
-              itemName: 'Mini excavator',
-              entryLabel: 'Supplier A',
-              rateAmount: 145,
-            ),
-            row(
-              id: 'job-row',
-              itemName: 'Mini excavator',
-              entryLabel: 'Supplier A',
-              rateAmount: 520,
-              equipmentMethod: 'job',
-            ),
-          ]);
-
-          final result = await repository.save(
-            buildEntry(
-              itemName: 'Mini excavator',
-              entryLabel: 'Supplier A',
-              amount: 150,
-              method: EquipmentPricingMethod.job,
-            ),
-          );
-
-          expect(result.isRight(), true);
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls, hasLength(1));
-          expect(updateCalls.first['filterValue'], 'job-row');
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         },
       );
 
