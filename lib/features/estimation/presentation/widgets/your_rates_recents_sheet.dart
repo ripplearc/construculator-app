@@ -14,7 +14,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// "Your recents" sheet (Figma node `66342:177929`, "phone ·
 /// cuj6-equip-1-recents" on the "Estimate V2" canvas): the pre-form step
 /// opened by "+ Add equipment cost" — a tap-to-reuse list of the
-/// contractor's most recently saved equipment rates. Day- and job-priced
+/// contractor's most recently used equipment rates. Day- and job-priced
 /// rows share one list with no heading or color split between them; only
 /// the trailing "/day" vs "job" word differs. A trailing "+ New equipment
 /// cost" row opens the form blank instead.
@@ -239,7 +239,7 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
-// TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
+// TODO: [CA-1204] replace with CoreUI's list-row component once it exists; it also removes the 11 px and 1 px values below, which have no CoreSpacing token. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _RecentRateRow extends StatelessWidget {
   static const double _rowVerticalPadding = 11;
   static const double _nameToRecencyGap = 1;

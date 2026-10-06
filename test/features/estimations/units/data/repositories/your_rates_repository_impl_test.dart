@@ -211,6 +211,31 @@ void main() {
         ]);
       });
 
+      test('orders rows with the same last use by their save date', () async {
+        seed([
+          row(
+            id: 'saved-earlier',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+          row(
+            id: 'saved-later',
+            savedAt: '2026-01-02T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'saved-later',
+          'saved-earlier',
+        ]);
+      });
+
       test('puts a rate used after a newer save above that save', () async {
         seed([
           row(id: 'saved-later', savedAt: '2026-01-05T00:00:00.000Z'),
@@ -401,6 +426,19 @@ void main() {
         expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
       });
+
+      test(
+        'leaves last_used_at out of the saved body, so a new save records no use',
+        () async {
+          await repository.save(buildEntry(amount: 300.0));
+
+          final body =
+              fakeSupabaseWrapper.getMethodCallsFor('insert').single['data']
+                  as Map<String, dynamic>;
+          expect(body.containsKey('last_used_at'), isFalse);
+          expect(body['rate_amount'], 300.0);
+        },
+      );
 
       test(
         'rejects a labeled save whose label the grouping already has, leaving '

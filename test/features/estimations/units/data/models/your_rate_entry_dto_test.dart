@@ -71,7 +71,6 @@ void main() {
         'equipment_method': 'day',
         'entry_label': 'Supplier A',
         'saved_at': '2026-01-01T00:00:00.000Z',
-        'last_used_at': null,
       });
     });
 
@@ -214,7 +213,7 @@ void main() {
       );
       expect(used.toJson()['last_used_at'], '2026-02-01T00:00:00.000Z');
       expect(neverUsed.toEntity().lastUsedAt, isNull);
-      expect(neverUsed.toJson()['last_used_at'], isNull);
+      expect(neverUsed.toJson().containsKey('last_used_at'), isFalse);
     });
 
     test('round-trips entity -> dto -> entity', () {

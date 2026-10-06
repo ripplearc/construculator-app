@@ -49,7 +49,8 @@ class YourRateEntryDto extends Equatable {
   final String savedAt;
 
   /// ISO 8601 timestamp for when a cost line was last added with this rate;
-  /// null until the first use. Client-supplied.
+  /// null until the first use. Client-supplied. [toJson] leaves it out when
+  /// null, so saving a rate never clears a use already recorded on the row.
   final String? lastUsedAt;
 
   /// ISO 8601 timestamp when the row was created; server-managed.
@@ -107,7 +108,7 @@ class YourRateEntryDto extends Equatable {
     'equipment_method': equipmentMethod,
     'entry_label': entryLabel,
     'saved_at': savedAt,
-    'last_used_at': lastUsedAt,
+    'last_used_at': ?lastUsedAt,
   };
 
   /// Converts this DTO to a domain [YourRateEntry] entity.

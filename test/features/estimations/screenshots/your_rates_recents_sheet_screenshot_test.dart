@@ -231,6 +231,14 @@ void main() {
         expect(find.text('Used today'), findsOneWidget);
         expect(find.text('Saved 3 days ago'), findsOneWidget);
         expect(find.text('Used last month'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Mini excavator')).dy,
+          lessThan(tester.getTopLeft(find.text('Scissor lift — 19ft')).dy),
+        );
+        expect(
+          tester.getTopLeft(find.text('Scissor lift — 19ft')).dy,
+          lessThan(tester.getTopLeft(find.text('Dumpster — 30 yd')).dy),
+        );
 
         await expectLater(
           find.byType(YourRatesRecentsSheet),
