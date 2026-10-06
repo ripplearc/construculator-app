@@ -307,7 +307,8 @@ void main() {
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
     });
 
-    testWidgets('keeps the message when Try again fails again', (tester) async {
+    testWidgets('keeps the message when Try again fails again, and the button '
+        'works again', (tester) async {
       await openFailedSheet(tester);
 
       await tester.tap(find.byKey(tryAgainKey));
@@ -315,6 +316,13 @@ void main() {
 
       expect(find.byKey(errorKey), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsNothing);
+
+      fakeSupabase.shouldThrowOnSelectMatch = false;
+      await tester.tap(find.byKey(tryAgainKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(errorKey), findsNothing);
+      expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
     });
 
     testWidgets('while Try again runs, the label stays, there is no spinner '

@@ -117,6 +117,47 @@ void main() {
       );
     });
 
+    group('YourRatesRefreshRecents after a failed read', () {
+      const failure = EstimationFailure(
+        errorType: EstimationErrorType.unexpectedError,
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits Retrying then Loaded when the read works the second time',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(id: 'r1'),
+          ]);
+        },
+        build: () => bloc,
+        seed: () => const YourRatesError(failure),
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits Retrying then Error when the read fails again',
+        setUp: () {
+          fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        },
+        build: () => bloc,
+        seed: () => const YourRatesError(failure),
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesError>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits Loading, not Retrying, when the last read worked',
+        build: () => bloc,
+        seed: () => const YourRatesLoaded([]),
+        act: (bloc) =>
+            bloc.add(const YourRatesRefreshRecents(CostItemType.equipment)),
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+    });
+
     group('YourRatesSearched', () {
       // These tests build their own bloc (bypassing the shared Modular
       // instance from setUp) with queryDebounce: Duration.zero, so they don't
