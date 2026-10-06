@@ -2530,6 +2530,7 @@ void main() {
         final saved = await Modular.get<YourRatesRepository>().search(
           'Mini excavator',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(saved.fold((_) => null, (e) => e.single.rate.amount), 145);
       },
@@ -2564,6 +2565,7 @@ void main() {
         final saved = await Modular.get<YourRatesRepository>().search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           saved.fold(
@@ -2609,6 +2611,7 @@ void main() {
         final unchanged = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(unchanged.fold((_) => null, (e) => e.single.rate.amount), 100);
 
@@ -2625,6 +2628,7 @@ void main() {
         final both = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           both.fold(
