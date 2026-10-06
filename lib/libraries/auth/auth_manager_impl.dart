@@ -56,7 +56,7 @@ class AuthManagerImpl implements AuthManager {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
-          _currentCompanyResolver.clearCache();
+          unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
         }
       },
@@ -372,7 +372,7 @@ class AuthManagerImpl implements AuthManager {
         ),
       );
       await _analyticsRepository.reset();
-      _currentCompanyResolver.clearCache();
+      await _currentCompanyResolver.clearCache();
 
       _logger.info('Logout successful');
       return AuthResult.success(null);
