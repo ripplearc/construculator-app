@@ -28,8 +28,8 @@
         </regex>
 
         <!-- RULE 3: clearCache doesn't actually drop the resolved flag -->
-        <regex pattern="Future&lt;void&gt; clearCache\(\) async \{\n    _hasResolved = false;" dotAll="true" id="resolver.cache.clear_no_op">
-            <mutation text="Future&lt;void&gt; clearCache() async {\n    _hasResolved = true;"/>
+        <regex pattern="void _resetSession\(\) \{\n    _hasResolved = false;" dotAll="true" id="resolver.cache.clear_no_op">
+            <mutation text="void _resetSession() {\n    _hasResolved = true;"/>
         </regex>
 
         <!-- RULE 3b: clearCache doesn't bump the generation, so a fetch
@@ -144,14 +144,14 @@
         </regex>
 
         <!-- RULE 24: sign-out leaves the id on the device -->
-        <regex pattern="await _localDataSource\.clearCompanyId\(\);\n    \} catch \(e\) \{\n      _logger\.error\('Failed to clear" dotAll="true" id="resolver.device.sign_out_keeps_id">
-            <mutation text="\n    } catch (e) {\n      _logger.error('Failed to clear"/>
+        <regex pattern="_resetSession\(\);\n    try \{\n      await _localDataSource\.clearCompanyId\(\);" dotAll="true" id="resolver.device.sign_out_keeps_id">
+            <mutation text="_resetSession();\n    try {"/>
         </regex>
 
-        <!-- RULE 25: the session cache answers for whoever is signed in now,
-             not only the user it was resolved for -->
-        <regex pattern="_cachedForUserId == _supabaseWrapper\.currentUser\?\.id" dotAll="true" id="resolver.cache.ignore_user_change">
-            <mutation text="true"/>
+        <!-- RULE 25: a different signed-in user is served the previous
+             user's session (cached id or lookup already in flight) -->
+        <regex pattern="if \(_sessionUserId != userId\) \{" dotAll="true" id="resolver.cache.ignore_user_change">
+            <mutation text="if (false) {"/>
         </regex>
     </rules>
 

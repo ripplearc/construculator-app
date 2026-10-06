@@ -48,6 +48,7 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
+            unawaited(_currentCompanyResolver.resolve());
             _emitAuthStateChanged(
               AuthStatus.authenticated,
               _mapSupabaseUserToCredential(user),

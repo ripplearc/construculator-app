@@ -316,6 +316,32 @@ void main() {
       expect(perCallWrapper.pending, hasLength(2));
     });
 
+    test('a different user signing in while another user\'s lookup is still '
+        'running gets their own lookup and their own id', () async {
+      final perCallWrapper = _PerCallRpcWrapper();
+      final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
+      await localDataSource.clearCompanyId();
+      // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
+      final app = CurrentCompanyResolverImpl(
+        supabaseWrapper: perCallWrapper,
+        localDataSource: localDataSource,
+      );
+
+      perCallWrapper.setCurrentUser(_userOne);
+      final first = app.resolve();
+      perCallWrapper.setCurrentUser(_userTwo);
+      final second = app.resolve();
+      expect(perCallWrapper.pending, hasLength(2));
+
+      perCallWrapper.pending[0].complete('company-1');
+      perCallWrapper.pending[1].complete('company-2');
+
+      expect((await first).getRightOrNull(), 'company-1');
+      expect((await second).getRightOrNull(), 'company-2');
+      expect(await localDataSource.loadCompanyId(_userOne.id), isNull);
+      expect(await localDataSource.loadCompanyId(_userTwo.id), 'company-2');
+    });
+
     test(
       'a failed call caches nothing, so the next call retries the RPC',
       () async {
