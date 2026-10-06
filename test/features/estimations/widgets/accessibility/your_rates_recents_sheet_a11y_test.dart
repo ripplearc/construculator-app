@@ -94,5 +94,20 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'a11y: "Try again" on the failed-read message meets tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('your_rates_recents_try_again_button')),
+        );
+      },
+    );
   });
 }

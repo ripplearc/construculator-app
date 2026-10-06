@@ -63,7 +63,12 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     YourRatesRefreshRecents event,
     Emitter<YourRatesState> emit,
   ) async {
-    emit(const YourRatesLoading());
+    final current = state;
+    emit(
+      current is YourRatesError
+          ? YourRatesRetrying(current.failure)
+          : const YourRatesLoading(),
+    );
     final result = await _repository.search(
       '',
       category: event.category,

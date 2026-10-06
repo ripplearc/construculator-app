@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
@@ -255,6 +257,95 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result, isA<YourRatesRecentsDismissed>());
+    });
+  });
+
+  group('YourRatesRecentsSheet – saved prices cannot be read', () {
+    const errorKey = Key('your_rates_recents_load_error');
+    const tryAgainKey = Key('your_rates_recents_try_again_button');
+
+    Future<void> openFailedSheet(WidgetTester tester) async {
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+      await openSheet(tester);
+    }
+
+    testWidgets('shows the error line, the grey line and Try again instead of '
+        'an empty list', (tester) async {
+      await openFailedSheet(tester);
+
+      expect(find.byKey(errorKey), findsOneWidget);
+      expect(find.text('Couldn’t open your saved prices.'), findsOneWidget);
+      expect(
+        find.text('You can still search, or add a new equipment cost.'),
+        findsOneWidget,
+      );
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byKey(const Key('your_rates_recents_list')), findsNothing);
+      expect(find.textContaining('No saved rates'), findsNothing);
+    });
+
+    testWidgets('New equipment cost still opens the empty form', (
+      tester,
+    ) async {
+      await openFailedSheet(tester);
+
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+    });
+
+    testWidgets('Try again replaces the message with the recent list when the '
+        'read works', (tester) async {
+      await openFailedSheet(tester);
+      fakeSupabase.shouldThrowOnSelectMatch = false;
+
+      await tester.tap(find.byKey(tryAgainKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(errorKey), findsNothing);
+      expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
+    });
+
+    testWidgets('keeps the message when Try again fails again', (tester) async {
+      await openFailedSheet(tester);
+
+      await tester.tap(find.byKey(tryAgainKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(errorKey), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_day-rate')), findsNothing);
+    });
+
+    testWidgets('while Try again runs, the label stays, there is no spinner '
+        'and a second tap reads nothing', (tester) async {
+      await openFailedSheet(tester);
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+      final readsBefore = fakeSupabase.getMethodCallsFor('selectMatch').length;
+
+      await tester.tap(find.byKey(tryAgainKey));
+      await tester.pump();
+      await tester.tap(find.byKey(tryAgainKey));
+      await tester.pump();
+
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+      expect(
+        fakeSupabase.getMethodCallsFor('selectMatch').length,
+        readsBefore + 1,
+      );
+
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('does not show the message when the read works', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      expect(find.byKey(errorKey), findsNothing);
     });
   });
 }

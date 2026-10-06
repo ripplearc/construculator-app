@@ -1653,6 +1653,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourRatesTryAgain => 'Try again';
 
   @override
+  String get yourRatesRecentsLoadErrorHint =>
+      'You can still search, or add a new equipment cost.';
+
+  @override
   String get yourRatesClearSearchSemanticLabel => 'Clear search';
 
   @override

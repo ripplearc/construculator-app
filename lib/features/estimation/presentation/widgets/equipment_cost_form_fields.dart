@@ -413,6 +413,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       case YourRatesSaveSucceeded():
         setState(() => _rateSaveStatus = _RateSaveStatus.saved);
       case YourRatesLoading():
+      case YourRatesRetrying():
       case YourRatesLoaded():
       case YourRatesSearchResults():
       case YourRatesError():
