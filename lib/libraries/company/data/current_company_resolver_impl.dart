@@ -35,6 +35,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   String? _cachedCompanyId;
   String? _sessionUserId;
   Future<Either<Failure, String?>>? _inFlight;
+  bool _isEnsurePending = false;
   int _cacheGeneration = 0;
 
   /// Creates a [CurrentCompanyResolverImpl].
@@ -49,7 +50,10 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
-    return _inFlight ??= _fetch(_cacheGeneration);
+    return _inFlight ??= _fetch(
+      _cacheGeneration,
+      createIfMissing: _isEnsurePending,
+    );
   }
 
   @override
@@ -58,6 +62,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
+    _isEnsurePending = true;
     return _inFlight ??= _fetch(_cacheGeneration, createIfMissing: true);
   }
 
@@ -69,6 +74,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     try {
       _logger.debug('Resolving current company id');
       final companyId = await _lookUpCompanyId(
+        requestGeneration: requestGeneration,
         createIfMissing: createIfMissing,
       );
 
@@ -101,14 +107,28 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     }
   }
 
-  Future<String?> _lookUpCompanyId({required bool createIfMissing}) async {
+  Future<String?> _lookUpCompanyId({
+    required int requestGeneration,
+    required bool createIfMissing,
+  }) async {
     if (createIfMissing) {
       try {
-        return await _supabaseWrapper.rpc<String?>(
+        final companyId = await _supabaseWrapper.rpc<String?>(
           DatabaseConstants.ensureMyCompanyRpcFunction,
         );
+        if (requestGeneration == _cacheGeneration) {
+          _isEnsurePending = false;
+        }
+        return companyId;
+      } on TimeoutException {
+        rethrow;
+      } on SocketException {
+        rethrow;
       } catch (e) {
-        _handleError(e);
+        _logger.warning(
+          'Could not ensure the company exists, falling back to the lookup: '
+          '$e',
+        );
       }
     }
     return _supabaseWrapper.rpc<String?>(
@@ -126,6 +146,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   void _resetSession() {
     _hasResolved = false;
+    _isEnsurePending = false;
     _cachedCompanyId = null;
     _inFlight = null;
     _cacheGeneration++;

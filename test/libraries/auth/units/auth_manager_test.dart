@@ -1339,8 +1339,8 @@ void main() {
         );
       });
 
-      test('signing in twice does not ask the server to ensure the company '
-          'a second time', () async {
+      test('signing in again in the same session does not ask the server to '
+          'ensure the company a second time', () async {
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.ensureMyCompanyRpcFunction,
           'new-company',
@@ -1363,9 +1363,12 @@ void main() {
         );
       });
 
-      test('a failed ensure call does not block signing in', () async {
-        supabaseWrapper.shouldThrowOnRpc = true;
-        supabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
+      test('signing in still succeeds and the user still resolves their '
+          'company when the ensure step fails', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'existing-company',
+        );
 
         final result = await authManager.loginWithEmail(
           testEmail,
@@ -1374,7 +1377,10 @@ void main() {
         await pumpEventQueue();
 
         expect(result.isSuccess, isTrue);
-        expect(authManager.isAuthenticated(), isTrue);
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'existing-company',
+        );
       });
 
       test('signing in keeps the company id on the device without anything '

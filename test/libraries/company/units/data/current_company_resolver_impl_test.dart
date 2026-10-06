@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
@@ -669,6 +670,7 @@ void main() {
         );
       });
     });
+
     group('resolveAfterSignIn', () {
       int callsTo(String function) => supabaseWrapper
           .getMethodCallsFor('rpc')
@@ -721,18 +723,6 @@ void main() {
         expect(await store.loadCompanyId(_userOne.id), 'new-company');
       });
 
-      test('returns the same id when signing in again as an account that '
-          'already has a company', () async {
-        answerEnsureWith('existing-company');
-        final first = await resolver.resolveAfterSignIn();
-        await resolver.clearCache();
-
-        final second = await resolver.resolveAfterSignIn();
-
-        expect(first.getRightOrNull(), 'existing-company');
-        expect(second.getRightOrNull(), 'existing-company');
-      });
-
       test('returns Right(null) and does not cache it when the account has '
           'no profile yet', () async {
         answerEnsureWith(null);
@@ -757,51 +747,6 @@ void main() {
         expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 1);
       });
 
-      test(
-        'returns the lookup answer when only the ensure call fails',
-        () async {
-          answerLookupWith('existing-company');
-
-          final result = await resolver.resolveAfterSignIn();
-
-          expect(result.getRightOrNull(), 'existing-company');
-          expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
-        },
-      );
-
-      test('a plain lookup started while sign-in runs gets the lookup answer '
-          'when the ensure call fails', () async {
-        answerLookupWith('existing-company');
-
-        final signIn = resolver.resolveAfterSignIn();
-        final lookup = resolver.resolve();
-
-        expect((await lookup).getRightOrNull(), 'existing-company');
-        expect((await signIn).getRightOrNull(), 'existing-company');
-        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
-        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 1);
-      });
-
-      test(
-        'finds the kept id with no signal after an earlier sign-in',
-        () async {
-          answerEnsureWith('new-company');
-          await resolver.resolveAfterSignIn();
-          await resolver.clearCache();
-          final store = Modular.get<LocalCurrentCompanyDataSource>();
-          await store.saveCompanyId(
-            userId: _userOne.id,
-            companyId: 'new-company',
-          );
-
-          supabaseWrapper.shouldThrowOnRpc = true;
-          supabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
-          final result = await resolver.resolveAfterSignIn();
-
-          expect(result.getRightOrNull(), 'new-company');
-        },
-      );
-
       test('a different user signing in gets their own ensure call', () async {
         answerEnsureWith('company-one');
         await resolver.resolveAfterSignIn();
@@ -812,6 +757,115 @@ void main() {
 
         expect(result.getRightOrNull(), 'company-two');
         expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 2);
+      });
+
+      group('when only the ensure call can fail', () {
+        late _ScriptedRpcWrapper scripted;
+        late CurrentCompanyResolver scriptedResolver;
+
+        setUp(() async {
+          // ignore: no_direct_instantiation, reason: a test-local wrapper that answers or fails each rpc function separately
+          scripted = _ScriptedRpcWrapper()..setCurrentUser(_userOne);
+          await Modular.get<LocalCurrentCompanyDataSource>().clearCompanyId();
+          scriptedResolver = _resolverOver(scripted);
+        });
+
+        test('a server with no ensure step yet still answers from the '
+            'lookup', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              Exception('function not found');
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          final result = await scriptedResolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'existing-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+          ]);
+        });
+
+        test('with no signal it goes straight to the kept id without a '
+            'second doomed call', () async {
+          await Modular.get<LocalCurrentCompanyDataSource>().saveCompanyId(
+            userId: _userOne.id,
+            companyId: 'kept-company',
+          );
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              const SocketException('offline');
+
+          final result = await scriptedResolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'kept-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+          ]);
+        });
+
+        test('a plain lookup that starts while sign-in runs gets the lookup '
+            'answer when the ensure call fails', () async {
+          scripted.hold = Completer<void>();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              Exception('function not found');
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          final signIn = scriptedResolver.resolveAfterSignIn();
+          final lookup = scriptedResolver.resolve();
+          scripted.hold!.complete();
+
+          expect((await lookup).getRightOrNull(), 'existing-company');
+          expect((await signIn).getRightOrNull(), 'existing-company');
+        });
+
+        test('a later lookup creates the company after sign-in could not '
+            'reach the server', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              const SocketException('offline');
+          await scriptedResolver.resolveAfterSignIn();
+          scripted.calls.clear();
+
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              'new-company';
+          final later = await scriptedResolver.resolve();
+
+          expect(later.getRightOrNull(), 'new-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+          ]);
+        });
+
+        test('stops trying to create the company once the server has '
+            'answered, even with no company yet', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] = null;
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] = null;
+          await scriptedResolver.resolveAfterSignIn();
+          scripted.calls.clear();
+
+          await scriptedResolver.resolve();
+
+          expect(scripted.calls, [DatabaseConstants.getMyCompanyIdRpcFunction]);
+        });
+
+        test('an ensure call still running when the session is cleared does '
+            'not leak its id to the next user', () async {
+          scripted.hold = Completer<void>();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              'company-a';
+
+          final stale = scriptedResolver.resolveAfterSignIn();
+          await scriptedResolver.clearCache();
+          scripted.hold!.complete();
+          expect((await stale).getRightOrNull(), 'company-a');
+
+          scripted.hold = null;
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'company-b';
+          final next = await scriptedResolver.resolve();
+
+          expect(next.getRightOrNull(), 'company-b');
+        });
       });
     });
   });
@@ -868,6 +922,30 @@ class _CompanyTestAppModule extends Module {
       ),
       key: 'failingReads',
     );
+  }
+}
+
+CurrentCompanyResolver _resolverOver(FakeSupabaseWrapper wrapper) =>
+    // ignore: no_direct_instantiation, reason: needs a wrapper that answers or fails each rpc function separately, which Modular's shared fake cannot do
+    CurrentCompanyResolverImpl(
+      supabaseWrapper: wrapper,
+      localDataSource: Modular.get<LocalCurrentCompanyDataSource>(),
+    );
+
+class _ScriptedRpcWrapper extends FakeSupabaseWrapper {
+  _ScriptedRpcWrapper() : super(clock: FakeClockImpl());
+
+  final Map<String, Object?> answers = {};
+  final List<String> calls = [];
+  Completer<void>? hold;
+
+  @override
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
+    calls.add(functionName);
+    await hold?.future;
+    final answer = answers[functionName];
+    if (answer is Exception) throw answer;
+    return answer as T;
   }
 }
 

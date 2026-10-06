@@ -39,8 +39,9 @@ abstract class CurrentCompanyResolver {
   /// Same result, caching and device-kept id as [resolve], and a [resolve]
   /// that starts while this runs joins it. If the creating call fails (no
   /// signal, server error) it falls back to the plain lookup, so signing in
-  /// is never blocked and the no-company state still applies. Does nothing
-  /// extra once an id is cached for the signed-in user.
+  /// is never blocked and the no-company state still applies. Until the server
+  /// has answered the creating call once, every later [resolve] tries it
+  /// again. Does nothing extra once an id is cached for the signed-in user.
   Future<Either<Failure, String?>> resolveAfterSignIn();
 
   /// Clears the cached result and the id kept on the device, so the next
