@@ -159,14 +159,24 @@
             <mutation text="_fetch(_cacheGeneration)"/>
         </regex>
 
-        <!-- RULE 27: a failed ensure call is rethrown instead of falling back to the lookup -->
-        <regex pattern="_handleError\(e\);\n      \}\n    \}" dotAll="true" id="resolver.signin.ensure_failure_rethrown">
-            <mutation text="_handleError(e);\n        rethrow;\n      }\n    }"/>
+        <!-- RULE 27: a failed ensure call no longer falls back to the lookup -->
+        <regex pattern="DatabaseConstants\.ensureMyCompanyRpcFunction,\n        \);\n        if \(requestGeneration == _cacheGeneration\) \{\n          _isEnsurePending = false;\n        \}\n        return companyId;" dotAll="true" id="resolver.signin.ensure_never_settles">
+            <mutation text="DatabaseConstants.ensureMyCompanyRpcFunction,\n        );\n        return companyId;"/>
         </regex>
 
-        <!-- RULE 28: the ensure call returns before the lookup is tried when it answers null -->
-        <regex pattern="return await _supabaseWrapper\.rpc&lt;String\?&gt;\(\n          DatabaseConstants\.ensureMyCompanyRpcFunction," dotAll="true" id="resolver.signin.ensure_wrong_rpc">
-            <mutation text="return await _supabaseWrapper.rpc&lt;String?&gt;(\n          DatabaseConstants.getMyCompanyIdRpcFunction,"/>
+        <!-- RULE 27b: a connectivity failure on the ensure call is no longer rethrown, so a doomed second call is made -->
+        <regex pattern="\} on TimeoutException \{\n        rethrow;\n      \} on SocketException \{\n        rethrow;\n      \}" dotAll="true" id="resolver.signin.ensure_offline_second_call">
+            <mutation text="} on TimeoutException {\n        _logger.debug('x');\n      } on SocketException {\n        _logger.debug('x');\n      }"/>
+        </regex>
+
+        <!-- RULE 27c: a later lookup never retries the ensure call -->
+        <regex pattern="createIfMissing: _isEnsurePending," dotAll="true" id="resolver.signin.no_retry">
+            <mutation text="createIfMissing: false,"/>
+        </regex>
+
+        <!-- RULE 28: sign-in asks the lookup RPC instead of the ensure RPC -->
+        <regex pattern="_supabaseWrapper\.rpc&lt;String\?&gt;\(\n          DatabaseConstants\.ensureMyCompanyRpcFunction," dotAll="true" id="resolver.signin.ensure_wrong_rpc">
+            <mutation text="_supabaseWrapper.rpc&lt;String?&gt;(\n          DatabaseConstants.getMyCompanyIdRpcFunction,"/>
         </regex>
     </rules>
 
