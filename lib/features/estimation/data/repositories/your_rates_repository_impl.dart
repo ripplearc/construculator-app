@@ -5,14 +5,12 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 
 /// Implementation of [YourRatesRepository] over the phone's own database.
 class YourRatesRepositoryImpl implements YourRatesRepository {
   YourRatesRepositoryImpl({required this.dataSource});
 
   final YourRatesDataSource dataSource;
-  static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
   );
@@ -49,7 +47,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         }).toList(),
       );
     } catch (e) {
-      return Left(_handleError(e, 'searching your rates'));
+      return Left(_handleError(e));
     }
   }
 
@@ -71,7 +69,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       }
       return Right(matches.single);
     } catch (e) {
-      return Left(_handleError(e, 'getting your rate by item name'));
+      return Left(_handleError(e));
     }
   }
 
@@ -129,7 +127,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
       return const Right(null);
     } catch (e) {
-      return Left(_handleError(e, 'saving your rate'));
+      return Left(_handleError(e));
     }
   }
 
@@ -157,9 +155,8 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 
-  Failure _handleError(Object error, String operation) {
+  Failure _handleError(Object error) {
     if (error is FormatException || error is TypeError) {
-      _logger.error('Parsing error $operation: $error');
       return const EstimationFailure(
         errorType: EstimationErrorType.parsingError,
       );

@@ -67,6 +67,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// would).
   Object? writeTransactionError;
 
+  /// While set, every [SyncStreamHandle.waitForFirstSync] waits for it to
+  /// complete, so a test can hold a first sync open.
+  Completer<void>? firstSyncGate;
+
   /// When set, every [syncStream] call throws this error on every call until
   /// explicitly cleared (`syncStreamError = null`) or [reset] is called — it
   /// does NOT self-clear after one use.
@@ -167,7 +171,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     if (error != null) {
       throw error;
     }
-    return _FakeSyncStreamHandle(() => syncStreamUnsubscribes.add(name));
+    return _FakeSyncStreamHandle(
+      () => syncStreamUnsubscribes.add(name),
+      () async => firstSyncGate?.future,
+    );
   }
 
   /// Clears recorded calls, scripted results, errors, and watch seeds, and
@@ -186,6 +193,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     executeError = null;
     writeTransactionError = null;
     syncStreamError = null;
+    firstSyncGate = null;
     _closeWatchControllers();
   }
 
@@ -214,9 +222,13 @@ class _FakeWriteContext implements WriteContext {
 
 class _FakeSyncStreamHandle implements SyncStreamHandle {
   final void Function() _onUnsubscribe;
+  final Future<void> Function() _onWaitForFirstSync;
 
-  _FakeSyncStreamHandle(this._onUnsubscribe);
+  _FakeSyncStreamHandle(this._onUnsubscribe, this._onWaitForFirstSync);
 
   @override
   void unsubscribe() => _onUnsubscribe();
+
+  @override
+  Future<void> waitForFirstSync() => _onWaitForFirstSync();
 }

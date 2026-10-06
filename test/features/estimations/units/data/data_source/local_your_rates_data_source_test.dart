@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -217,6 +220,33 @@ void main() {
         await dataSource.loadRates();
 
         expect(database.syncStreamCalls, ['user_rates']);
+      });
+
+      test('is waited on for its first rows before the first read', () async {
+        database.firstSyncGate = Completer();
+
+        final read = dataSource.loadRates();
+        await pumpEventQueue();
+        expect(database.getAllCalls, isEmpty);
+
+        database.firstSyncGate!.complete();
+        await read;
+
+        expect(database.getAllCalls, hasLength(1));
+      });
+
+      test('is not waited on for ever when it cannot sync', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          var finished = false;
+          dataSource.loadRates().then((_) => finished = true);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(finished, isFalse);
+
+          async.elapse(const Duration(seconds: 2));
+          expect(finished, isTrue);
+        });
       });
 
       test('is released when the data source is disposed', () async {
