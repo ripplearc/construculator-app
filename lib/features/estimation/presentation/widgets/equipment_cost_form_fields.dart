@@ -1277,6 +1277,7 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
       case YourRatesSaveSucceeded() || YourRatesSaveFailed():
         Navigator.of(context).pop();
       case YourRatesLoading() ||
+          YourRatesRetrying() ||
           YourRatesLoaded() ||
           YourRatesSearchResults() ||
           YourRatesError() ||
