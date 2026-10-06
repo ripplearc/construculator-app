@@ -35,6 +35,8 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   String? _cachedCompanyId;
   String? _sessionUserId;
   Future<Either<Failure, String?>>? _inFlight;
+  static const _functionNotFoundCode = 'PGRST202';
+
   bool _isEnsurePending = false;
   int _cacheGeneration = 0;
 
@@ -125,15 +127,25 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
       } on SocketException {
         rethrow;
       } catch (e) {
-        _logger.warning(
-          'Could not ensure the company exists, falling back to the lookup: '
-          '$e',
-        );
+        _logEnsureFailure(e);
       }
     }
     return _supabaseWrapper.rpc<String?>(
       DatabaseConstants.getMyCompanyIdRpcFunction,
     );
+  }
+
+  void _logEnsureFailure(Object error) {
+    final isFunctionNotDeployedYet =
+        error is supabase.PostgrestException &&
+        error.code == _functionNotFoundCode;
+    if (isFunctionNotDeployedYet) {
+      _logger.warning(
+        'ensure_my_company is not on the server yet, using the lookup',
+      );
+      return;
+    }
+    _logger.error('Could not ensure the company exists: $error');
   }
 
   void _startSessionForCurrentUser() {
