@@ -89,6 +89,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       await _processOperation(operation);
     } on supabase.PostgrestException catch (error) {
       if (!_isRefusedRateChange(error, operation)) rethrow;
+      if (await _overwroteRateWithSameKey(error, operation)) return;
       _logger.warning(
         'The server refused a your_rates change (code ${error.code}): '
         '${error.message}. Skipping it so the queue is not blocked.',
@@ -97,6 +98,56 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       // https://ripplearc.youtrack.cloud/issue/CA-1273
     }
   }
+
+  Future<bool> _overwroteRateWithSameKey(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) async {
+    final rate = operation.opData;
+    if (operation.op != UpdateType.put || rate == null) return false;
+    if (PostgresErrorCode.fromCode(error.code) !=
+        PostgresErrorCode.uniqueViolation) {
+      return false;
+    }
+
+    final saved = await _supabaseWrapper.selectMatch(
+      table: operation.table,
+      filters: {
+        DatabaseConstants.companyIdColumn:
+            rate[DatabaseConstants.companyIdColumn],
+        DatabaseConstants.categoryColumn:
+            rate[DatabaseConstants.categoryColumn],
+      },
+    );
+    final sameKey = saved
+        .where((row) => _hasSameRateKey(row, rate))
+        .firstOrNull;
+    if (sameKey == null) return false;
+
+    _logger.info(
+      'Another phone saved this your_rates entry first; '
+      'this change overwrites it, so the last change received wins',
+    );
+    await _supabaseWrapper.update(
+      table: operation.table,
+      data: rate,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: sameKey[DatabaseConstants.idColumn],
+    );
+    return true;
+  }
+
+  bool _hasSameRateKey(Map<String, dynamic> saved, Map<String, dynamic> rate) {
+    return _serverNameKey(saved[DatabaseConstants.itemNameColumn]) ==
+            _serverNameKey(rate[DatabaseConstants.itemNameColumn]) &&
+        saved[DatabaseConstants.equipmentMethodColumn] ==
+            rate[DatabaseConstants.equipmentMethodColumn] &&
+        saved[DatabaseConstants.entryLabelColumn] ==
+            rate[DatabaseConstants.entryLabelColumn];
+  }
+
+  String? _serverNameKey(Object? name) =>
+      (name as String?)?.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
   bool _isRefusedRateChange(
     supabase.PostgrestException error,

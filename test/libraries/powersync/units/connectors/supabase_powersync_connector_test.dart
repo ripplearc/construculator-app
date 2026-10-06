@@ -338,6 +338,78 @@ void main() {
           },
         );
 
+        group('the same your_rates entry saved on two phones', () {
+          Map<String, dynamic> serverRate({
+            String? label,
+            String method = 'day',
+          }) => {
+            'id': 'server-1',
+            'company_id': 'company-1',
+            'category': 'equipment',
+            'item_name': 'Mini excavator',
+            'rate_amount': 100.0,
+            'equipment_method': method,
+            'entry_label': label,
+          };
+
+          Future<FakeCrudTransaction> uploadSecondPhone({
+            String name = '  MINI   excavator ',
+            String method = 'day',
+            String? label,
+          }) async {
+            fakeSupabase.shouldThrowOnUpsert = true;
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+            final transaction = FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'your_rates', 'phone-2-id', null, {
+                'company_id': 'company-1',
+                'category': 'equipment',
+                'item_name': name,
+                'rate_amount': 400.0,
+                'equipment_method': method,
+                'entry_label': label,
+              }),
+            ]);
+            fakeDatabase.setNextTransaction(transaction);
+            await connector.uploadData(fakeDatabase);
+            return transaction;
+          }
+
+          test('the later upload overwrites the earlier one', () async {
+            fakeSupabase.addTableData('your_rates', [serverRate()]);
+
+            final transaction = await uploadSecondPhone();
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+            expect(update['data'], containsPair('rate_amount', 400.0));
+            expect(update['data'], isNot(contains('id')));
+            expect(transaction.isCompleted, isTrue);
+          });
+
+          test('a different pricing method is not overwritten', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate(method: 'job'),
+            ]);
+
+            final transaction = await uploadSecondPhone();
+
+            expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+            expect(transaction.isCompleted, isTrue);
+          });
+
+          test('a different label is not overwritten', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate(label: '20 ton'),
+            ]);
+
+            final transaction = await uploadSecondPhone(label: '35 ton');
+
+            expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+            expect(transaction.isCompleted, isTrue);
+          });
+        });
+
         test('a refused your_rates update completes the transaction', () async {
           fakeSupabase.shouldThrowOnUpdate = true;
           fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
