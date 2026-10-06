@@ -13,7 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Supabase-backed [CurrentCompanyResolver].
 ///
-/// Calls the [DatabaseConstants.getMyCompanyIdRpcFunction] RPC (CA-710)
+/// Calls the [DatabaseConstants.getMyCompanyIdRpcFunction] RPC (CA-710), or
+/// [DatabaseConstants.ensureMyCompanyRpcFunction] at sign-in (CA-1262),
 /// directly — there is exactly one caller-scoped value to fetch, so no
 /// separate remote data-source layer sits in front of [SupabaseWrapper].
 ///
@@ -44,23 +45,31 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   @override
   Future<Either<Failure, String?>> resolve() {
-    final userId = _supabaseWrapper.currentUser?.id;
-    if (_sessionUserId != userId) {
-      _resetSession();
-      _sessionUserId = userId;
-    }
+    _startSessionForCurrentUser();
     if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
     return _inFlight ??= _fetch(_cacheGeneration);
   }
 
-  Future<Either<Failure, String?>> _fetch(int requestGeneration) async {
+  @override
+  Future<Either<Failure, String?>> resolveAfterSignIn() {
+    _startSessionForCurrentUser();
+    if (_hasResolved) {
+      return Future.value(Right(_cachedCompanyId));
+    }
+    return _inFlight ??= _fetch(_cacheGeneration, createIfMissing: true);
+  }
+
+  Future<Either<Failure, String?>> _fetch(
+    int requestGeneration, {
+    bool createIfMissing = false,
+  }) async {
     final userId = _supabaseWrapper.currentUser?.id;
     try {
       _logger.debug('Resolving current company id');
-      final companyId = await _supabaseWrapper.rpc<String?>(
-        DatabaseConstants.getMyCompanyIdRpcFunction,
+      final companyId = await _lookUpCompanyId(
+        createIfMissing: createIfMissing,
       );
 
       // A stale fetch (clearCache ran while this one was in flight) must
@@ -89,6 +98,29 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
       if (requestGeneration == _cacheGeneration) {
         _inFlight = null;
       }
+    }
+  }
+
+  Future<String?> _lookUpCompanyId({required bool createIfMissing}) async {
+    if (createIfMissing) {
+      try {
+        return await _supabaseWrapper.rpc<String?>(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+        );
+      } catch (e) {
+        _handleError(e);
+      }
+    }
+    return _supabaseWrapper.rpc<String?>(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+    );
+  }
+
+  void _startSessionForCurrentUser() {
+    final userId = _supabaseWrapper.currentUser?.id;
+    if (_sessionUserId != userId) {
+      _resetSession();
+      _sessionUserId = userId;
     }
   }
 
