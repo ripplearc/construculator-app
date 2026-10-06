@@ -241,6 +241,9 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
 
 // TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _RecentRateRow extends StatelessWidget {
+  static const double _rowVerticalPadding = 11;
+  static const double _nameToRecencyGap = 1;
+
   final YourRateEntry entry;
   final DateTime now;
   final VoidCallback onTap;
@@ -270,7 +273,7 @@ class _RecentRateRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: CoreSpacing.space7,
-            vertical: CoreSpacing.space3,
+            vertical: _rowVerticalPadding,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -285,7 +288,7 @@ class _RecentRateRow extends StatelessWidget {
                         color: colorTheme.textHeadline,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: _nameToRecencyGap),
                     Text(
                       recency,
                       style: textTheme.bodySmallRegular.copyWith(
