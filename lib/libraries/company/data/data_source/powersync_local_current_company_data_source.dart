@@ -6,8 +6,9 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// Keeps the company id in a local-only PowerSync table.
 ///
 /// The table is never uploaded or synced, so the id is read from the phone's
-/// own SQLite database with no signal. PowerSync's sign-out clear
-/// (`disconnectAndClear`) empties local-only tables too.
+/// own SQLite database with no signal. PowerSync's sign-out clear leaves
+/// local-only tables alone (`PowerSyncManagerImpl` passes `clearLocal: false`),
+/// so [clearCompanyId] is the only thing that empties this one.
 ///
 /// Failures are logged here, at the storage boundary, and rethrown for the
 /// caller to translate.
