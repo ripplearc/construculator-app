@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -249,6 +251,52 @@ void main() {
       test('degrees keep two decimals', () {
         expect(formatter.format(const Angle(26.5651)), '26.57°');
         expect(formatter.format(const Angle(90)), '90°');
+      });
+
+      group('degrees, minutes and seconds, as a survey sheet writes them', () {
+        String dms(double degrees) => formatter.format(
+          Angle(degrees, spelling: AngleSpelling.degreesMinutesSeconds),
+        );
+        double degreesOf(double radians) => radians * 180 / math.pi;
+
+        test(
+          'S107: a whole-degree answer keeps its minutes, zero included',
+          () {
+            expect(dms(0), "0°00'");
+            expect(dms(degreesOf(math.asin(0.5))), "30°00'");
+          },
+        );
+
+        test('S107: seconds show when there are some, both spellings', () {
+          final arctangent = degreesOf(math.atan(12 / 23));
+          expect(formatter.format(Angle(arctangent)), '27.55°');
+          expect(dms(arctangent), '27°33\'10"');
+        });
+
+        test('S108 and walkthrough 16.3: the answer, written both ways', () {
+          expect(dms(degreesOf(math.atan(0.12))), '6°50\'34"');
+          expect(dms(degreesOf(math.asin(12 / 23))), '31°26\'56"');
+          expect(dms(38 + 30 / 60 + 45 / 3600), '38°30\'45"');
+        });
+
+        test('pads minutes and seconds to two digits, never degrees', () {
+          expect(dms(45.0333), "45°02'");
+          expect(dms(5 + 5 / 60 + 5 / 3600), '5°05\'05"');
+          expect(dms(120), "120°00'");
+        });
+
+        test('rounds to the nearest second and carries into the degree', () {
+          expect(dms(29.99999), "30°00'");
+          expect(dms(29.5 / 3600 + 10), '10°00\'30"');
+        });
+
+        test('a negative angle carries the prototype\'s minus sign', () {
+          expect(dms(-30.5), "−30°30'");
+        });
+
+        test('a negative angle that rounds to zero reads 0°00\'', () {
+          expect(dms(-0.00001), "0°00'");
+        });
       });
 
       test('a scalar keeps two decimals and groups: 78 × 56 = 4,368', () {

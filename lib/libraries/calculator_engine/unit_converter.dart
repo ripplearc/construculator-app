@@ -8,9 +8,10 @@ import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 /// same quantity re-spelled through `spelledIn`. Which spellings are offered
 /// depends on the one the value already wears: from feet the trade wants
 /// inches, yards and metres; from inches the ft-in compound and millimetres.
-/// An angle's other spelling (degrees ⇄ D:M:S, the prototype's
-/// `angleConversions` chip) arrives with the angle ticket; until then an
-/// [Angle] offers nothing.
+/// An angle answer offers its other spelling, degrees ⇄ D:M:S (the
+/// prototype's `angleConversions` chip; scenario S108), and a scalar
+/// nothing: a pitch result is a ratio with its own three-way cycle on the
+/// Pitch key, not a conversion.
 class UnitConverter {
   /// The smallest area, in acres, for which an acre reading is offered: a
   /// wall of 180ft² would read 0.0041acre, which is noise, not information.
@@ -53,7 +54,13 @@ class UnitConverter {
       (_weightOffersByTypedUnit[value.unit] ?? const [])
           .map(value.spelledIn)
           .toList(growable: false),
-    Angle() || Scalar() => const [],
+    Angle() => [
+      value.spelledAs(switch (value.spelling) {
+        AngleSpelling.degrees => AngleSpelling.degreesMinutesSeconds,
+        AngleSpelling.degreesMinutesSeconds => AngleSpelling.degrees,
+      }),
+    ],
+    Scalar() => const [],
   };
 
   static const Map<Unit, List<Unit>> _lengthOffersByTypedUnit = {
