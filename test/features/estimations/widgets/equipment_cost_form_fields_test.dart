@@ -1999,6 +1999,46 @@ void main() {
       expect(find.text('Dumpster'), findsNothing);
       expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
     });
+
+    testWidgets(
+      'Show job prices switches the form to Job behind the sheet, and using '
+      'the lone job price fills the Amount field',
+      (tester) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('lookup_rate_button')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(CoreSearchBox.textFieldKey),
+          'dumpster',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byKey(const Key('your_rates_other_method_action')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<ChoiceChipToggle>(find.byKey(const Key('job_method_chip')))
+              .selected
+              .value,
+          isTrue,
+        );
+        await tester.tap(find.byKey(const Key('your_rates_use_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('amount_field')), findsOneWidget);
+        expect(find.text('400'), findsOneWidget);
+      },
+    );
   });
 
   // CA-1146: CUJ 6 Sub-flows B (saved day rate) and C (saved job price).

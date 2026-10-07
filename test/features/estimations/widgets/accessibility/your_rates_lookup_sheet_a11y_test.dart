@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -51,7 +52,10 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeWidget(ThemeData theme) {
+  Widget makeWidget(
+    ThemeData theme, {
+    EquipmentPricingMethod method = EquipmentPricingMethod.job,
+  }) {
     return MaterialApp(
       theme: theme,
       locale: const Locale('en'),
@@ -61,7 +65,8 @@ void main() {
         body: BlocProvider<YourRatesBloc>(
           create: (_) => Modular.get<YourRatesBloc>(),
           child: YourRatesLookupSheet(
-            method: EquipmentPricingMethod.job,
+            method: method,
+            onSwitchMethod: (_) {},
             clock: clock,
           ),
         ),
@@ -78,6 +83,25 @@ void main() {
         tester,
         makeWidget,
         find.byKey(const Key('your_rate_row_rate-1')),
+      );
+    });
+
+    testWidgets('a11y: the other-method action meets tap target and label '
+        'guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeWidget(theme, method: EquipmentPricingMethod.day),
+        find.byKey(const Key('your_rates_other_method_action')),
+        setupAfterPump: (tester) async {
+          await tester.enterText(
+            find.byKey(CoreSearchBox.textFieldKey),
+            'dumpster',
+          );
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pumpAndSettle();
+        },
       );
     });
   });
