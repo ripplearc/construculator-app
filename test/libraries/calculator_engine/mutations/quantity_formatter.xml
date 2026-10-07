@@ -31,7 +31,7 @@
         </regex>
 
         <!-- RULE 4: twelve inches no longer carry into a foot -->
-        <regex pattern="if \(inches == 12\) \{" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
+        <regex pattern="if \(wholeInches == 12\) \{" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
             <mutation text="if (false) {"/>
         </regex>
 
