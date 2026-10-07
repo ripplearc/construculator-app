@@ -97,6 +97,40 @@
         <regex pattern="if \(numerator == 0\) return \(text: '', carry: 0\);" dotAll="true" id="quantity_formatter.fraction.zero_carries">
             <mutation text="if (numerator == 0) return (text: '', carry: 1);"/>
         </regex>
+
+        <!-- RULE 17: the angle is truncated to whole seconds instead of
+             rounded, so 29.99999° reads 29°59'59" -->
+        <regex pattern="final totalSeconds = _jsMathRound\(\s*degrees\.abs\(\) \* secondsPerDegree,?\s*\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
+            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree).floor();"/>
+        </regex>
+
+        <!-- RULE 18: minutes are taken from the whole count instead of the
+             remainder after the degrees -->
+        <regex pattern="final minutes = totalSeconds % secondsPerDegree ~/ secondsPerMinute;" dotAll="true" id="quantity_formatter.dms.minutes_not_remainder">
+            <mutation text="final minutes = totalSeconds ~/ secondsPerMinute;"/>
+        </regex>
+
+        <!-- RULE 19: the minus sign is dropped -->
+        <regex pattern="final sign = degrees &lt; 0 &amp;&amp; totalSeconds &gt; 0 \? minusSign : '';" dotAll="true" id="quantity_formatter.dms.no_sign">
+            <mutation text="final sign = '';"/>
+            <mutation text="final sign = degrees &lt; 0 ? minusSign : '';"/>
+        </regex>
+
+        <!-- RULE 20: zero seconds are written as 00" -->
+        <regex pattern="final secondsText = seconds == 0 \? '' : '\$\{_twoDigits\(seconds\)\}&quot;';" dotAll="true" id="quantity_formatter.dms.always_seconds">
+            <mutation text="final secondsText = '${_twoDigits(seconds)}&quot;';"/>
+        </regex>
+
+        <!-- RULE 21: segments are no longer padded, so 45°02' reads 45°2' -->
+        <regex pattern="String _twoDigits\(int value\) =&gt; value\.toString\(\)\.padLeft\(2, '0'\);" dotAll="true" id="quantity_formatter.dms.no_padding">
+            <mutation text="String _twoDigits(int value) =&gt; value.toString();"/>
+        </regex>
+
+        <!-- RULE 22: the spelling is ignored and a D:M:S angle reads in
+             degrees -->
+        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
+            <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; '${_jsRoundedNumber(value.degrees, resultDecimals, group)}°',"/>
+        </regex>
     </rules>
 
     <commands>

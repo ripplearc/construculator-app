@@ -135,6 +135,18 @@ void main() {
         expect(angle.dimension, Dimension.angle);
         expect(angle, const Angle(26.57));
       });
+
+      test('is written in degrees unless re-spelled, and keeps them', () {
+        const angle = Angle(26.57);
+        expect(angle.spelling, AngleSpelling.degrees);
+        final respelled = angle.spelledAs(AngleSpelling.degreesMinutesSeconds);
+        expect(respelled.degrees, 26.57);
+        expect(
+          respelled,
+          const Angle(26.57, spelling: AngleSpelling.degreesMinutesSeconds),
+        );
+        expect(respelled, isNot(angle));
+      });
     });
 
     group('Scalar', () {

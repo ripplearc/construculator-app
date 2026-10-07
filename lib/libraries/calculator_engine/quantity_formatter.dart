@@ -36,6 +36,14 @@ import 'package:equatable/equatable.dart';
 /// question was asked in (500bf ÷ 4 reads 125bf, not 10.42ft³), and tons take
 /// a space before the word ("0.04 ton") where lbs and kg do not.
 ///
+/// An angle reads in decimal degrees (27.55°) or, re-spelled, the way a
+/// survey sheet writes it (Section 6, "Rounding at display"; scenario
+/// S107): the whole seconds nearest the exact angle, degrees unpadded,
+/// minutes always present and padded to two digits, seconds only when there
+/// are some, so 30°30' is a reading where 30°30'00" would be a claim about
+/// precision. The port of the prototype's `degToDMS`, with the formatter's
+/// own rule for a value that rounds to zero: 0°00', never −0°00'.
+///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
 /// quantity alike.
@@ -52,6 +60,15 @@ class QuantityFormatter extends Equatable {
   /// Millimetres in one inch, for stored sizes under Metric.
   static const double millimetresPerInch = 25.4;
 
+  /// Seconds of arc in one degree.
+  static const int secondsPerDegree = 3600;
+
+  /// Seconds of arc in one minute.
+  static const int secondsPerMinute = 60;
+
+  /// The minus sign a D:M:S spelling carries, the prototype's U+2212.
+  static const String minusSign = '−';
+
   /// The settings this formatter renders by.
   final CalculatorPreferences preferences;
 
@@ -67,8 +84,7 @@ class QuantityFormatter extends Equatable {
         Area() => _area(value, groupThousands),
         Volume() => _volume(value, groupThousands),
         Weight() => _weight(value, groupThousands),
-        Angle() =>
-          '${_jsRoundedNumber(value.degrees, resultDecimals, groupThousands)}°',
+        Angle() => _angle(value, groupThousands),
         Scalar() => _scalar(value.value, groupThousands),
       };
 
@@ -190,6 +206,26 @@ class QuantityFormatter extends Equatable {
       _ => '$number${value.unit.suffix}',
     };
   }
+
+  String _angle(Angle value, bool group) => switch (value.spelling) {
+    AngleSpelling.degrees =>
+      '${_jsRoundedNumber(value.degrees, resultDecimals, group)}°',
+    AngleSpelling.degreesMinutesSeconds => _degreesMinutesSeconds(
+      value.degrees,
+    ),
+  };
+
+  String _degreesMinutesSeconds(double degrees) {
+    final totalSeconds = _jsMathRound(degrees.abs() * secondsPerDegree);
+    final wholeDegrees = totalSeconds ~/ secondsPerDegree;
+    final minutes = totalSeconds % secondsPerDegree ~/ secondsPerMinute;
+    final seconds = totalSeconds % secondsPerMinute;
+    final sign = degrees < 0 && totalSeconds > 0 ? minusSign : '';
+    final secondsText = seconds == 0 ? '' : '${_twoDigits(seconds)}"';
+    return "$sign$wholeDegrees°${_twoDigits(minutes)}'$secondsText";
+  }
+
+  String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
   String _scalar(double value, bool group) {
     if (value == 0) return '0';
