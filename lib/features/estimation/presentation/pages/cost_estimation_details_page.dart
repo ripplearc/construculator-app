@@ -121,6 +121,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
+        enableDrag: false,
         blocFactory: widget.materialCostFormBlocFactory,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
@@ -132,9 +133,12 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   // Opens the add-cost sheet for [type] over the estimate, then reports how
   // it ended: a toast naming the estimate after an add, an error toast after
-  // a failed save, nothing when the sheet was just closed.
+  // a failed save, nothing when the sheet was just closed. A sheet that asks
+  // before closing passes `enableDrag: false` and handles the swipe itself,
+  // because the built-in swipe closes the sheet without asking.
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
+    bool enableDrag = true,
     required B Function() blocFactory,
     required _SheetOutcome Function(S state) outcomeOf,
   }) async {
@@ -158,6 +162,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         await CoreQuickSheet.show<void>(
           context: context,
           backgroundColor: sheetSurface(context),
+          enableDrag: enableDrag,
           child: BlocProvider<B>.value(
             value: formBloc,
             child: CostItemFormScreen(

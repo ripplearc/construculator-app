@@ -22,6 +22,9 @@ class MaterialCostFormBloc
   final LastUsedUnitRepository _lastUsedUnitRepository;
   final Clock _clock;
 
+  /// The values the form opened with, to tell when the user has changed any.
+  MaterialCostFormData _opened = const MaterialCostFormData();
+
   MaterialCostFormBloc({
     required this._repository,
     required this._lastUsedUnitRepository,
@@ -46,11 +49,13 @@ class MaterialCostFormBloc
     MaterialCostFormStarted event,
     Emitter<MaterialCostFormState> emit,
   ) async {
-    final unit = await _lastUsedUnitRepository.getLastUnit(
+    final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
-    if (unit == null) return;
-    _emit(emit, (d) => d.unit == null ? d.copyWith(unit: unit) : d);
+    _opened = MaterialCostFormData(unit: rememberedUnit);
+    if (rememberedUnit != null && _current().unit == null) {
+      _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
+    }
   }
 
   void _onRateUpdated(
@@ -77,7 +82,12 @@ class MaterialCostFormBloc
         state is MaterialCostFormSuccess) {
       return;
     }
-    emit(MaterialCostFormEditing(_validated(update(_current()))));
+    final updated = _validated(update(_current()));
+    emit(
+      MaterialCostFormEditing(
+        updated.copyWith(hasUnsavedChanges: _differsFromOpened(updated)),
+      ),
+    );
   }
 
   Future<void> _onSubmitted(
@@ -139,6 +149,12 @@ class MaterialCostFormBloc
       quantityProvenance: QuantityProvenance.manual,
     );
   }
+
+  bool _differsFromOpened(MaterialCostFormData data) =>
+      data.itemName != _opened.itemName ||
+      data.quantity != _opened.quantity ||
+      data.unit != _opened.unit ||
+      data.rate != _opened.rate;
 
   MaterialCostFormData _current() {
     return switch (state) {

@@ -5,7 +5,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The header row of a bottom sheet: a back arrow on the left, then a title
 /// with an optional line under it.
 ///
-/// The back arrow closes the sheet. Every sheet in the equipment flow uses
+/// The back arrow closes the sheet, unless the sheet holds a [PopScope] that
+/// asks first. Every sheet in the equipment flow uses
 /// this one header, so the arrow and the text spacing match in all of them.
 class SheetHeader extends StatelessWidget {
   /// Key of the back arrow, so tests and screen readers can find it.
@@ -35,7 +36,7 @@ class SheetHeader extends StatelessWidget {
           padding: const EdgeInsets.all(CoreSpacing.space3),
           size: CoreIconSize.size24,
           semanticLabel: context.l10n.backLabel,
-          onTap: () => Navigator.of(context).pop(),
+          onTap: () => Navigator.of(context).maybePop(),
         ),
         Expanded(
           child: Padding(

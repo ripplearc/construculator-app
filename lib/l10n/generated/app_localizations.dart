@@ -3813,6 +3813,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New material cost'**
   String get newMaterialCostSheetTitle;
+
+  /// Title of the question asked when the material sheet is closed with something typed in it
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this line?'**
+  String get discardLineDialogTitle;
+
+  /// Body of the discard question, naming the material typed so far
+  ///
+  /// In en, this message translates to:
+  /// **'{material} has not been added to the estimate.'**
+  String discardLineDialogBody(String material);
+
+  /// Body of the discard question while no material name is typed
+  ///
+  /// In en, this message translates to:
+  /// **'This line has not been added to the estimate.'**
+  String get discardLineDialogBodyUnnamed;
+
+  /// Outlined button that closes the material sheet and drops what was typed
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardLineDiscardButton;
+
+  /// Filled button that closes the discard question and stays on the material sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get discardLineKeepEditingButton;
 }
 
 class _AppLocalizationsDelegate

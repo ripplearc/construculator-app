@@ -3132,5 +3132,35 @@
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "discardLineDialogTitle": "Discard this line?",
+  "@discardLineDialogTitle": {
+    "description": "Title of the question asked when the material sheet is closed with something typed in it",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "discardLineDialogBody": "{material} has not been added to the estimate.",
+  "@discardLineDialogBody": {
+    "description": "Body of the discard question, naming the material typed so far",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135",
+    "placeholders": {
+      "material": {
+        "type": "String"
+      }
+    }
+  },
+  "discardLineDialogBodyUnnamed": "This line has not been added to the estimate.",
+  "@discardLineDialogBodyUnnamed": {
+    "description": "Body of the discard question while no material name is typed",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "discardLineDiscardButton": "Discard",
+  "@discardLineDiscardButton": {
+    "description": "Outlined button that closes the material sheet and drops what was typed",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "discardLineKeepEditingButton": "Keep editing",
+  "@discardLineKeepEditingButton": {
+    "description": "Filled button that closes the discard question and stays on the material sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
   }
 }

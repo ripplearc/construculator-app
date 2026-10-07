@@ -4,6 +4,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/project/project_module.dart';
@@ -1056,7 +1057,7 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
       });
 
-      testWidgets('closing after a failed save leaves no error behind'
+      testWidgets('discarding after a failed save leaves no error behind'
           ' on the page', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
@@ -1074,6 +1075,8 @@ void main() {
         );
 
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
