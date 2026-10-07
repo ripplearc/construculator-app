@@ -63,6 +63,8 @@ void main() {
         unitPrice: 100.0,
         quantity: 50.0,
         unitMeasurement: 'pieces',
+        rateStatus: 'missing',
+        quantityProvenance: 'manual',
         productLink: 'https://example.com/concrete',
         description: 'High quality concrete mix',
       );
@@ -78,6 +80,8 @@ void main() {
         currency: 'USD',
         unitPrice: const Money(amount: 100.0, currency: 'USD'),
         quantity: const Quantity(value: 50.0, unit: Unit.pieces),
+        rateStatus: RateStatus.missing,
+        quantityProvenance: QuantityProvenance.manual,
         productLink: 'https://example.com/concrete',
         description: 'High quality concrete mix',
       );
@@ -144,6 +148,175 @@ void main() {
           final dto = CostItemDto.fromEntity(testEntity);
 
           expect(dto, testDto);
+        });
+      });
+
+      group('v2 fields', () {
+        final v2Json = CostItemTestDataMapFactory.createMaterialItemData(
+          wastePercent: 12.5,
+          rateStatus: 'sample_rate_unverified',
+          quantityProvenance: 'from_calculator',
+          calculatorFormula: '47.24in x 94.49in',
+        );
+
+        final v2Entity = MaterialCostItem(
+          id: 'item-material-1',
+          estimateId: 'estimate-123',
+          itemName: 'Test Material',
+          description: 'Test description',
+          calculation: const {'unit_price': 100.0, 'quantity': 5.0},
+          itemTotalCost: 500.0,
+          createdAt: DateTime.parse('2024-01-01T00:00:00.000Z'),
+          updatedAt: DateTime.parse('2024-01-01T00:00:00.000Z'),
+          currency: 'USD',
+          unitPrice: const Money(amount: 100.0, currency: 'USD'),
+          quantity: const Quantity(value: 5.0, unit: Unit.pieces),
+          wastePercent: 12.5,
+          rateStatus: RateStatus.sampleRateUnverified,
+          quantityProvenance: QuantityProvenance.fromCalculator,
+          calculatorFormula: '47.24in x 94.49in',
+        );
+
+        test(
+          'fromJson reads waste_percent, quantity_provenance and formula',
+          () {
+            final dto = CostItemDto.fromJson(v2Json);
+
+            expect(dto.wastePercent, 12.5);
+            expect(dto.rateStatus, 'sample_rate_unverified');
+            expect(dto.quantityProvenance, 'from_calculator');
+            expect(dto.calculatorFormula, '47.24in x 94.49in');
+          },
+        );
+
+        test('toEntity maps every v2 field', () {
+          expect(CostItemDto.fromJson(v2Json).toEntity(), v2Entity);
+        });
+
+        test('fromEntity writes every v2 field', () {
+          final json = CostItemDto.fromEntity(v2Entity).toJson();
+
+          expect(json['waste_percent'], 12.5);
+          expect(json['rate_status'], 'sample_rate_unverified');
+          expect(json['quantity_provenance'], 'from_calculator');
+          expect(json['calculator_formula'], '47.24in x 94.49in');
+        });
+
+        test('JSON -> DTO -> Entity -> DTO -> JSON round-trips', () {
+          final dto = CostItemDto.fromJson(v2Json);
+          final dtoAgain = CostItemDto.fromEntity(dto.toEntity());
+
+          expect(dtoAgain, dto);
+          expect(dtoAgain.toJson(), v2Json);
+        });
+
+        test('Entity -> DTO -> Entity round-trips', () {
+          final entityAgain = CostItemDto.fromEntity(v2Entity).toEntity();
+
+          expect(entityAgain, v2Entity);
+        });
+
+        test('reads an integer waste_percent as a double', () {
+          final dto = CostItemDto.fromJson({...v2Json, 'waste_percent': 10});
+
+          expect(dto.wastePercent, 10.0);
+        });
+
+        test('an explicit zero waste_percent stays zero', () {
+          final json = CostItemTestDataMapFactory.createMaterialItemData(
+            wastePercent: 0.0,
+          );
+
+          final entity =
+              CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+          expect(entity.wastePercent, 0.0);
+        });
+
+        test('an absent waste_percent stays unset', () {
+          final entity =
+              CostItemDto.fromJson(
+                    CostItemTestDataMapFactory.createMaterialItemData(),
+                  ).toEntity()
+                  as MaterialCostItem;
+
+          expect(entity.wastePercent, isNull);
+        });
+
+        test(
+          'missing provenance and rate status read as manual and missing',
+          () {
+            final json = {
+              ...CostItemTestDataMapFactory.createMaterialItemData(),
+              'quantity_provenance': null,
+              'rate_status': null,
+            };
+
+            final entity =
+                CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+            expect(entity.quantityProvenance, QuantityProvenance.manual);
+            expect(entity.rateStatus, RateStatus.missing);
+          },
+        );
+
+        test('an unknown quantity_provenance reads as manual', () {
+          final json = {...v2Json, 'quantity_provenance': 'telepathy'};
+
+          final entity =
+              CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+          expect(entity.quantityProvenance, QuantityProvenance.manual);
+          expect(entity.calculatorFormula, isNull);
+        });
+
+        test(
+          'a row with a formula but manual provenance drops the formula',
+          () {
+            final json = {...v2Json, 'quantity_provenance': 'manual'};
+
+            final entity =
+                CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+            expect(entity.quantityProvenance, QuantityProvenance.manual);
+            expect(entity.calculatorFormula, isNull);
+          },
+        );
+
+        test('a calculator row with no formula keeps its provenance', () {
+          final json = {...v2Json, 'calculator_formula': null};
+
+          final entity =
+              CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+          expect(entity.quantityProvenance, QuantityProvenance.fromCalculator);
+          expect(entity.calculatorFormula, isNull);
+        });
+
+        test('toJson no longer writes a brand key', () {
+          expect(
+            CostItemDto.fromJson(v2Json).toJson().containsKey('brand'),
+            isFalse,
+          );
+        });
+
+        test('a stored brand value is ignored when reading', () {
+          final dto = CostItemDto.fromJson({...v2Json, 'brand': 'Acme'});
+
+          expect(dto, CostItemDto.fromJson(v2Json));
+        });
+
+        test('product_link is unchanged', () {
+          final json = {...v2Json, 'product_link': 'ProClassic'};
+
+          final entity =
+              CostItemDto.fromJson(json).toEntity() as MaterialCostItem;
+
+          expect(entity.productLink, 'ProClassic');
+          expect(
+            CostItemDto.fromEntity(entity).toJson()['product_link'],
+            'ProClassic',
+          );
         });
       });
     });
@@ -510,6 +683,8 @@ void main() {
           currency: 'USD',
           unitPrice: const Money(amount: 100.0, currency: 'USD'),
           quantity: const Quantity(value: 50.0, unit: Unit.pieces),
+          rateStatus: RateStatus.ownRateConfirmed,
+          quantityProvenance: QuantityProvenance.manual,
         );
 
         final dto = CostItemDto.fromEntity(entity);
