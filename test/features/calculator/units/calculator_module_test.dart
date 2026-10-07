@@ -1,5 +1,6 @@
 import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/features/calculator/domain/repositories/recents_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -48,6 +49,11 @@ void main() {
           repository,
           same(Modular.get<CalculatorPreferencesRepository>()),
         );
+      });
+
+      test('binds one recents repository over PowerSync', () {
+        final repository = Modular.get<RecentsRepository>();
+        expect(repository, same(Modular.get<RecentsRepository>()));
       });
 
       test('binds one trade stores repository over PowerSync', () {

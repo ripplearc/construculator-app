@@ -20,6 +20,9 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
   /// Thrown by the next read when set.
   Object? readError;
 
+  /// Thrown by the next write when set.
+  Object? writeError;
+
   /// Thrown when a watch is cancelled while set, so a caller's dispose
   /// path can be tested against a database that fails to let go.
   Object? cancelError;
@@ -73,6 +76,8 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
     List<Object?> parameters = const [],
   ]) async {
     executed.add(sql);
+    final error = writeError;
+    if (error != null) throw error;
     final insert = RegExp(
       r'^INSERT INTO (\w+) \((.+)\) VALUES',
     ).firstMatch(sql);
