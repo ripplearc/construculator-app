@@ -1,9 +1,11 @@
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
+import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
@@ -112,6 +114,13 @@ final class TapeUnitRefused extends TapeOutcome {
 ///
 /// The tape is a value; every key returns a new tape or a refusal. Brackets
 /// and the strip's other answers are not the tape's yet.
+///
+/// The tape carries the calculator settings (Appendix C) so that one value
+/// decides how its chips are read, re-spelled and rendered: the ton
+/// definition is what a typed "78 ton" weighs and what a weight re-spells
+/// at, and every setting is what [formatter] renders a chip by. A setting
+/// never changes a stored value (rule 4.14): [withPreferences] is the same
+/// chips under new settings, and the caller re-renders them.
 class Tape extends Equatable {
   /// The label of the result = lands.
   static const String calcKey = 'Calc';
@@ -120,18 +129,32 @@ class Tape extends Equatable {
   /// one can be active.
   final List<TapeChip> chips;
 
-  /// How many pounds make a ton: the one setting the tape's reading and
-  /// writing of values share, so a "78 ton" typed at 2,240 lb is never
-  /// re-spelled at 2,000.
-  final int poundsPerTon;
+  /// The settings the chips are read, re-spelled and rendered by.
+  final CalculatorPreferences preferences;
 
   const Tape({
     this.chips = const [],
-    this.poundsPerTon = QuantityParser.defaultPoundsPerTon,
+    this.preferences = CalculatorPreferences.defaults,
   });
+
+  /// How many pounds make a ton, as the parser and the ladder read it, so
+  /// a "78 ton" typed at 2,240 lb is never re-spelled at 2,000.
+  int get poundsPerTon => preferences.poundsPerTon;
 
   /// Reads finished entries as quantities.
   QuantityParser get parser => QuantityParser(poundsPerTon: poundsPerTon);
+
+  /// Renders a chip's value under the settings.
+  QuantityFormatter get formatter =>
+      QuantityFormatter(preferences: preferences);
+
+  /// The same chips under new settings. A result keeps its value and
+  /// renders anew; an entry keeps its typed unit and is read again under
+  /// the new ton definition, as the setting's own definition says
+  /// (Appendix C: "results re-render; your entries keep their typed
+  /// units").
+  Tape withPreferences(CalculatorPreferences preferences) =>
+      Tape(chips: chips, preferences: preferences);
 
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
@@ -379,8 +402,8 @@ class Tape extends Equatable {
   }
 
   Tape _with(List<TapeChip> chips) =>
-      Tape(chips: chips, poundsPerTon: poundsPerTon);
+      Tape(chips: chips, preferences: preferences);
 
   @override
-  List<Object?> get props => [chips, poundsPerTon];
+  List<Object?> get props => [chips, preferences];
 }
