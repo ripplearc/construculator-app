@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
+import 'package:powersync/sqlite_async.dart';
 import 'package:sqlite3/common.dart';
 
 /// A [FakePowerSyncDatabase] that applies the statements
@@ -9,8 +10,9 @@ import 'package:sqlite3/common.dart';
 /// Unlike the consent fake this one executes the writes, because the
 /// behaviour under test is a round trip: what an insert wrote is what the
 /// next read and the open watch see. The SQL shapes recognised are exactly
-/// the five the data source builds; anything else is a [StateError], so a
-/// changed query fails loudly rather than reading nothing.
+/// the ones the trade-stores and recents data sources build; anything else
+/// is a [StateError], so a changed query fails loudly rather than reading
+/// nothing.
 class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
   /// Rows by table name, column names as in `schema.dart`.
   final Map<String, List<Map<String, Object?>>> tables = {};
@@ -29,6 +31,35 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
 
   /// Closes the change stream, ending any [watch] this fake handed out.
   Future<void> closeChanges() => _changes.close();
+
+  /// Tables changed inside the open transaction, announced once it ends.
+  Set<String>? _pending;
+
+  /// Runs [callback] against this fake, holding every change notice until
+  /// the callback returns so a watch sees the transaction land whole, as
+  /// PowerSync re-runs a watch only after a commit.
+  @override
+  Future<T> writeTransaction<T>(
+    Future<T> Function(SqliteWriteContext tx) callback, {
+    Duration? lockTimeout,
+  }) async {
+    final pending = _pending = {};
+    try {
+      return await callback(_FakeWriteContext(this));
+    } finally {
+      _pending = null;
+      pending.forEach(_changes.add);
+    }
+  }
+
+  void _changed(String table) {
+    final pending = _pending;
+    if (pending != null) {
+      pending.add(table);
+    } else {
+      _changes.add(table);
+    }
+  }
 
   @override
   Future<ResultSet> getAll(
@@ -50,7 +81,7 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
       _rows(insert.group(1)!).add({
         for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
       });
-      _changes.add(insert.group(1)!);
+      _changed(insert.group(1)!);
       return _empty();
     }
     final update = RegExp(
@@ -68,13 +99,16 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
       for (var i = 0; i < columns.length; i++) {
         row[columns[i]] = parameters[i];
       }
-      _changes.add(update.group(1)!);
+      _changed(update.group(1)!);
       return _empty();
     }
-    final delete = RegExp(r'^DELETE FROM (\w+) WHERE id = \?$').firstMatch(sql);
+    final delete = RegExp(
+      r'^DELETE FROM (\w+) WHERE (\w+) = \?$',
+    ).firstMatch(sql);
     if (delete != null) {
-      _rows(delete.group(1)!).removeWhere((r) => r['id'] == parameters.first);
-      _changes.add(delete.group(1)!);
+      final column = delete.group(2)!;
+      _rows(delete.group(1)!).removeWhere((r) => r[column] == parameters.first);
+      _changed(delete.group(1)!);
       return _empty();
     }
     throw StateError('Unexpected statement: $sql');
@@ -144,4 +178,26 @@ class FakeTradeStoresDatabase extends FakePowerSyncDatabase {
   }
 
   ResultSet _empty() => ResultSet(const [], null, const []);
+}
+
+/// The write context a [FakeTradeStoresDatabase] transaction hands its
+/// callback: every statement goes back to the fake, whose change notices
+/// are held until the transaction ends.
+class _FakeWriteContext implements SqliteWriteContext {
+  final FakeTradeStoresDatabase _database;
+
+  _FakeWriteContext(this._database);
+
+  @override
+  Future<ResultSet> execute(
+    String sql, [
+    List<Object?> parameters = const [],
+  ]) => _database.execute(sql, parameters);
+
+  @override
+  Future<ResultSet> getAll(String sql, [List<Object?> parameters = const []]) =>
+      _database.getAll(sql, parameters);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

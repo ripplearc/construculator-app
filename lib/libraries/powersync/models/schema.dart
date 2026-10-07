@@ -185,4 +185,20 @@ const Schema schema = Schema([
     Column.real('pounds_per_cubic_yard'),
     Column.integer('position'),
   ]),
+
+  // The remembered values the memory drawers offer back (UX Design Doc
+  // term 2.11, rule 4.16): one row per value, under the function key that
+  // filed it or the one shared angle drawer, newest first by `position`.
+  // Local-only and never synced: a recent belongs to the phone it was
+  // typed on. A value is its dimension, its canonical magnitude (ticks,
+  // square ticks, cubic feet, hundredths of a pound, degrees or a bare
+  // number) and the unit it was spelled in, empty for an angle or a bare
+  // number.
+  Table.localOnly('calculator_recents', [
+    Column.text('drawer'),
+    Column.integer('position'),
+    Column.text('dimension'),
+    Column.real('magnitude'),
+    Column.text('unit'),
+  ]),
 ]);
