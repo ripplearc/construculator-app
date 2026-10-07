@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/added_line_highlight_cubit/added_line_highlight_cubit.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
@@ -22,6 +23,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -1055,6 +1057,83 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsNothing);
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      String? highlightedLine(WidgetTester tester) =>
+          BlocProvider.of<AddedLineHighlightCubit>(
+            tester.element(find.byType(Scaffold).first),
+          ).state;
+
+      testWidgets('marks the line just added', (tester) async {
+        await openMaterialSheet(tester);
+        expect(highlightedLine(tester), isNull);
+        await fillValidMaterialForm(tester);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(highlightedLine(tester), isNotNull);
+      });
+
+      testWidgets('moves the mark to the next line added, even for the same '
+          'material', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        final first = highlightedLine(tester);
+
+        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tester.pumpAndSettle();
+        await fillValidMaterialForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(highlightedLine(tester), isNotNull);
+        expect(highlightedLine(tester), isNot(first));
+        expect(
+          fakeSupabase
+              .getMethodCallsFor('insert')
+              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
+          hasLength(2),
+        );
+      });
+
+      testWidgets('marks nothing when the save fails or the sheet is just '
+          'closed', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        expect(highlightedLine(tester), isNull);
+
+        fakeSupabase.shouldThrowOnInsert = false;
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(ConfirmationDialog.secondaryButtonKey),
+        );
+        await tester.pumpAndSettle();
+
+        expect(highlightedLine(tester), isNull);
+      });
+
+      testWidgets('is not brought back when the screen is opened again', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        expect(highlightedLine(tester), isNotNull);
+
+        await tester.pumpWidget(const SizedBox());
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        expect(highlightedLine(tester), isNull);
       });
 
       testWidgets('discarding after a failed save leaves no error behind'
