@@ -179,7 +179,11 @@ class EstimationModule extends Module {
       ),
     );
     i.add<MaterialCostFormBloc>(
-      () => MaterialCostFormBloc(lastUsedUnitRepository: i.get()),
+      () => MaterialCostFormBloc(
+        repository: i.get(),
+        lastUsedUnitRepository: i.get(),
+        clock: i.get(),
+      ),
     );
     i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
     i.add<EquipmentCostFormBloc>(

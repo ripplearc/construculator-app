@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
@@ -21,19 +23,19 @@ MaterialCostFormData _dataOf(MaterialCostFormState state) =>
 void main() {
   group('MaterialCostFormBloc', () {
     late MaterialCostFormBloc bloc;
+    late FakeSupabaseWrapper fakeSupabase;
     late FakeStorageService storage;
     late FakeAuthRepository auth;
     late LastUsedUnitRepository lastUsedUnits;
 
     setUpAll(() {
       final clock = FakeClockImpl();
+      fakeSupabase = FakeSupabaseWrapper(clock: clock);
       storage = FakeStorageService();
       auth = FakeAuthRepository(clock: clock);
       Modular.init(
         EstimationModule(
-          FakeAppBootstrapFactory.create(
-            supabaseWrapper: FakeSupabaseWrapper(clock: clock),
-          ),
+          FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
         ),
       );
       Modular.replaceInstance<StorageService>(storage);
@@ -46,6 +48,7 @@ void main() {
     });
 
     setUp(() {
+      fakeSupabase.reset();
       storage.reset();
       auth.reset();
       auth.setCurrentCredentials(
@@ -122,6 +125,230 @@ void main() {
           expect(_dataOf(b.state).itemName, 'Paint');
           expect(_dataOf(b.state).unit, Unit.bags);
         },
+      );
+    });
+
+    group('submit', () {
+      const estimateId = 'estimate-1';
+      const filledEvents = <MaterialCostFormEvent>[
+        MaterialCostItemTypeChanged('  Interior paint '),
+        MaterialQuantityUpdated('7'),
+        MaterialUnitSelected(Unit.liters),
+        MaterialRateUpdated('2.55'),
+      ];
+
+      Map<String, dynamic> insertedRow() =>
+          fakeSupabase.getMethodCallsFor('insert').single['data']
+              as Map<String, dynamic>;
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves a valid line and reports success',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        skip: 4,
+        expect: () => [
+          isA<MaterialCostFormSubmitting>(),
+          isA<MaterialCostFormSuccess>().having(
+            (s) => s.createdItem.itemName,
+            'itemName',
+            'Interior paint',
+          ),
+        ],
+        verify: (_) {
+          final row = insertedRow();
+          expect(row['estimate_id'], estimateId);
+          expect(row['item_name'], 'Interior paint');
+          expect(row['item_type'], 'material');
+          expect(row['quantity'], 7.0);
+          expect(row['unit_measurement'], 'liters');
+          expect(row['unit_price'], 2.55);
+          expect(row['item_total_cost'], 17.85);
+          expect(row['calculation'], {'unit_price': 2.55, 'quantity': 7.0});
+          expect(row['rate_status'], 'own_rate_confirmed');
+          expect(row['quantity_provenance'], 'manual');
+          expect(row['currency'], 'USD');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'rounds the line total to the cent',
+        build: () => bloc,
+        act: (b) {
+          b
+            ..add(const MaterialCostItemTypeChanged('Nails'))
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialUnitSelected(Unit.boxes))
+            ..add(const MaterialRateUpdated('0.335'))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) => expect(insertedRow()['item_total_cost'], 1.01),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'remembers the unit as the last one used for materials',
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) async => expect(
+          await lastUsedUnits.getLastUnit(CostItemType.material),
+          Unit.liters,
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves nothing and stays on the form when a value is missing',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId)),
+        verify: (b) {
+          expect(b.state, isA<MaterialCostFormEditing>());
+          expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps every value and the last unit when saving fails',
+        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        build: () => bloc,
+        act: (b) {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (b) async {
+          final failure = b.state as MaterialCostFormFailure;
+          expect(failure.data.itemName, '  Interior paint ');
+          expect(failure.data.quantity, 7);
+          expect(failure.data.unit, Unit.liters);
+          expect(failure.data.rate, 2.55);
+          expect(
+            await lastUsedUnits.getLastUnit(CostItemType.material),
+            isNull,
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves on a second try after a failure',
+        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          fakeSupabase.shouldThrowOnInsert = false;
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (b) => expect(b.state, isA<MaterialCostFormSuccess>()),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves once when Add is tapped twice while the first save runs',
+        setUp: () {
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
+          fakeSupabase.completer!.complete();
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        verify: (_) =>
+            expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'ignores edits made while the save is in flight, so the saved line and '
+        'the form stay the same',
+        setUp: () {
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
+          b
+            ..add(const MaterialCostItemTypeChanged('Other name'))
+            ..add(const MaterialQuantityUpdated('99'))
+            ..add(const MaterialRateUpdated('1'))
+            ..add(const MaterialUnitSelected(Unit.bags))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          fakeSupabase.completer!.complete();
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        verify: (b) {
+          final data = (b.state as MaterialCostFormSuccess).data;
+          expect(data.itemName, '  Interior paint ');
+          expect(data.quantity, 7);
+          expect(data.rate, 2.55);
+          expect(data.unit, Unit.liters);
+          expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'emits nothing for an edit made while the save is in flight',
+        setUp: () {
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSubmitting);
+          b.add(const MaterialCostItemTypeChanged('Other name'));
+          fakeSupabase.completer!.complete();
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+        },
+        skip: 4,
+        expect: () => [
+          isA<MaterialCostFormSubmitting>(),
+          isA<MaterialCostFormSuccess>(),
+        ],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'ignores edits after the line was saved',
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+          b.add(const MaterialCostItemTypeChanged('Other name'));
+        },
+        verify: (b) {
+          expect(b.state, isA<MaterialCostFormSuccess>());
+          expect(
+            (b.state as MaterialCostFormSuccess).data.itemName,
+            '  Interior paint ',
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'does not save again after it succeeded',
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormSuccess);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) =>
+            expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
       );
     });
 
