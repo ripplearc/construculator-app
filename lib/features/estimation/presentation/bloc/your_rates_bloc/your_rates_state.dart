@@ -10,6 +10,13 @@ class YourRatesLoading extends YourRatesState {
   const YourRatesLoading();
 }
 
+/// State while [YourRatesRefreshRecents] runs again after a [YourRatesError].
+/// Lets the recents sheet leave its error message on screen, with the button
+/// disabled, instead of flashing a spinner.
+class YourRatesRetrying extends YourRatesState {
+  const YourRatesRetrying();
+}
+
 /// State after [YourRatesRefreshRecents] succeeds: up to [_recentsLimit]
 /// most-recently-saved entries for the requested category.
 class YourRatesLoaded extends YourRatesState {

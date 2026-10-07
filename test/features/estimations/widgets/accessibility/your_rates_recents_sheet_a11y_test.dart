@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -94,5 +95,36 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'a11y: "Try again" on the failed-read message meets tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('your_rates_recents_try_again_button')),
+        );
+      },
+    );
+
+    testWidgets('a11y: the failed-read message is a live region so a screen '
+        'reader reads it when the sheet opens', (tester) async {
+      await setupA11yTest(tester);
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('Couldn’t open your saved prices.')),
+        isSemantics(isLiveRegion: true),
+      );
+      handle.dispose();
+    });
   });
 }

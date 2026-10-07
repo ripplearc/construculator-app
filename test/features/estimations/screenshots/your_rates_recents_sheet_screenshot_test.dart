@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -144,5 +146,52 @@ void main() {
         );
       },
     );
+
+    testWidgets('displays the error message when saved prices cannot be read', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+
+      await pumpSheet(tester: tester, theme: theme);
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/load_error$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('displays the disabled Try again button while it retries', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+      await pumpSheet(tester: tester, theme: theme);
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+
+      await tester.tap(
+        find.byKey(const Key('your_rates_recents_try_again_button')),
+      );
+      await tester.pump();
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/load_error_retrying$suffix.png',
+        ),
+      );
+
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+    });
   });
 }

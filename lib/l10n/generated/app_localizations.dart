@@ -3028,17 +3028,23 @@ abstract class AppLocalizations {
   /// **'Search saved rates'**
   String get yourRatesLookupButton;
 
-  /// Error row in the Look-up-a-rate sheet when the phone could not read Your rates (storyboard CUJ 6, frame Look-up saved prices not read). Never replaced by the no-saved-rates text, because no search ran
+  /// Error line in the Look-up-a-rate sheet and the Your recents sheet when the phone could not read Your rates (storyboard CUJ 6, frames Saved prices not read and Look-up, saved prices not read). Never replaced by the no-saved-rates text, because nothing was read
   ///
   /// In en, this message translates to:
   /// **'Couldn’t open your saved prices.'**
   String get yourRatesLoadError;
 
-  /// Text button on the right of the Look-up-a-rate sheet's error row; searches Your rates again
+  /// Text button on the right of the Look-up-a-rate sheet's error row, and the secondary button under the Your recents sheet's error message; reads Your rates again
   ///
   /// In en, this message translates to:
   /// **'Try again'**
   String get yourRatesTryAgain;
+
+  /// Grey line under the Your recents sheet's error line when the phone could not read Your rates (storyboard CUJ 6, frame Saved prices not read)
+  ///
+  /// In en, this message translates to:
+  /// **'You can still search, or add a new equipment cost.'**
+  String get yourRatesRecentsLoadErrorHint;
 
   /// Screen reader label of the clear (x) button in the Look-up-a-rate sheet's search box
   ///

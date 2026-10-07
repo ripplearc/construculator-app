@@ -59,10 +59,12 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   @override
   void initState() {
     super.initState();
-    context.read<YourRatesBloc>().add(
-      const YourRatesRefreshRecents(CostItemType.equipment),
-    );
+    _loadRecents();
   }
+
+  void _loadRecents() => context.read<YourRatesBloc>().add(
+    const YourRatesRefreshRecents(CostItemType.equipment),
+  );
 
   void _onRowTap(YourRateEntry entry) =>
       Navigator.of(context).pop(YourRatesRecentsPicked(entry));
@@ -96,7 +98,17 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                       child: CoreLoadingIndicator(),
                     );
                   }
-                  // TODO: [CA-1249] When the load fails, show the error line "Couldn’t open your saved prices.", the grey line and a "Try again" button instead of the empty list. https://ripplearc.youtrack.cloud/issue/CA-1249
+                  final loadError = switch (state) {
+                    YourRatesError() => _RecentsLoadError(
+                      isRetrying: false,
+                      onTryAgain: _loadRecents,
+                    ),
+                    YourRatesRetrying() => _RecentsLoadError(
+                      isRetrying: true,
+                      onTryAgain: _loadRecents,
+                    ),
+                    _ => null,
+                  };
                   final entries = switch (state) {
                     YourRatesLoaded(:final recents) => recents,
                     _ => const <YourRateEntry>[],
@@ -104,6 +116,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      ?loadError,
                       if (entries.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
@@ -147,6 +160,76 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RecentsLoadError extends StatelessWidget {
+  final bool isRetrying;
+  final VoidCallback onTryAgain;
+
+  const _RecentsLoadError({required this.isRetrying, required this.onTryAgain});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Padding(
+      key: const Key('your_rates_recents_load_error'),
+      padding: const EdgeInsets.fromLTRB(
+        CoreSpacing.space5,
+        CoreSpacing.space3,
+        CoreSpacing.space5,
+        CoreSpacing.space3,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            liveRegion: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CoreIconWidget(
+                      icon: CoreIcons.error,
+                      size: CoreSpacing.space4,
+                      color: colorTheme.iconRed,
+                    ),
+                    const SizedBox(width: CoreSpacing.space1),
+                    Expanded(
+                      child: Text(
+                        l10n.yourRatesLoadError,
+                        style: textTheme.bodySmallRegular.copyWith(
+                          color: colorTheme.textError,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: CoreSpacing.space2),
+                Text(
+                  l10n.yourRatesRecentsLoadErrorHint,
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space3),
+          CoreButton(
+            key: const Key('your_rates_recents_try_again_button'),
+            label: l10n.yourRatesTryAgain,
+            variant: CoreButtonVariant.secondary,
+            fullWidth: false,
+            isDisabled: isRetrying,
+            onPressed: onTryAgain,
+          ),
+        ],
+      ),
     );
   }
 }
