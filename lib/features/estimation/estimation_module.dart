@@ -7,9 +7,11 @@ import 'package:construculator/features/estimation/data/data_source/remote_cost_
 import 'package:construculator/features/estimation/data/data_source/remote_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
+import 'package:construculator/features/estimation/data/repositories/last_used_unit_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
@@ -34,6 +36,7 @@ import 'package:construculator/libraries/estimation/estimation_library_module.da
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/storage/storage_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,6 +84,7 @@ class EstimationModule extends Module {
     EstimationLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     ClockModule(),
+    StorageModule(),
   ];
 
   @override
@@ -118,6 +122,10 @@ class EstimationModule extends Module {
 
     i.addLazySingleton<CostItemRepository>(
       () => CostItemRepositoryImpl(dataSource: i.get()),
+    );
+
+    i.addLazySingleton<LastUsedUnitRepository>(
+      () => LastUsedUnitRepositoryImpl(storage: i.get(), authRepository: i.get()),
     );
 
     i.addLazySingleton<YourRatesRepository>(
@@ -170,7 +178,9 @@ class EstimationModule extends Module {
         costItemRepository: i.get(),
       ),
     );
-    i.add<MaterialCostFormBloc>(() => MaterialCostFormBloc());
+    i.add<MaterialCostFormBloc>(
+      () => MaterialCostFormBloc(lastUsedUnitRepository: i.get()),
+    );
     i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
     i.add<EquipmentCostFormBloc>(
       () => EquipmentCostFormBloc(repository: i.get(), clock: i.get()),

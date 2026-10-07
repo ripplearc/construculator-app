@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,7 +14,11 @@ const double _quantityColumnLimit = 1e14;
 /// and the validation that decides when Add is enabled.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
-  MaterialCostFormBloc() : super(const MaterialCostFormInitial()) {
+  final LastUsedUnitRepository _lastUsedUnitRepository;
+
+  MaterialCostFormBloc({required this._lastUsedUnitRepository})
+    : super(const MaterialCostFormInitial()) {
+    on<MaterialCostFormStarted>(_onStarted);
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(emit, (d) => d.copyWith(itemName: e.value)),
     );
@@ -26,6 +31,17 @@ class MaterialCostFormBloc
     );
     on<MaterialRateUpdated>(_onRateUpdated);
     // TODO(CA-294): register MaterialCostFormSubmitted and wire to CostItemRepository.createCostItem
+  }
+
+  Future<void> _onStarted(
+    MaterialCostFormStarted event,
+    Emitter<MaterialCostFormState> emit,
+  ) async {
+    final unit = await _lastUsedUnitRepository.getLastUnit(
+      CostItemType.material,
+    );
+    if (unit == null) return;
+    _emit(emit, (d) => d.unit == null ? d.copyWith(unit: unit) : d);
   }
 
   void _onRateUpdated(
