@@ -266,10 +266,10 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'moreOptions does nothing',
+        'the bracket key does nothing until the engine is wired in',
         build: () => bloc,
         act: (bloc) => bloc.add(
-          const CalculatorControlActioned(ControlAction.moreOptions),
+          const CalculatorControlActioned(ControlAction.paren),
         ),
         expect: () => [],
       );
