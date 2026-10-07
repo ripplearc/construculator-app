@@ -224,27 +224,6 @@ void main() {
       expect(find.text(l10n.addMaterialCostButton), findsOneWidget);
     });
 
-    testWidgets('tapping add material cost button navigates to cost item form', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      await tester.tap(find.byKey(const Key('add_material_cost_button')));
-      await tester.pump();
-
-      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-      expect(
-        fakeRouter.navigationHistory,
-        contains(RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null)),
-      );
-      expect(find.byType(BottomSheet), findsNothing);
-    });
-
     testWidgets('displays preview button in bottom bar', (
       WidgetTester tester,
     ) async {
@@ -936,6 +915,193 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Added to Kitchen'), findsOneWidget);
+      });
+    });
+
+    group('New material cost sheet', () {
+      Future<void> openMaterialSheet(WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> fillValidMaterialForm(WidgetTester tester) async {
+        await tester.enterText(
+          find.byKey(const Key('material_name_field')),
+          'Interior paint',
+        );
+        await tester.enterText(
+          find.byKey(const Key('material_quantity_field')),
+          '3',
+        );
+        await tester.tap(find.byKey(const Key('material_unit_pill')));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
+        await tester.tap(find.byKey(const Key('unit_option_liters')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('material_rate_field')),
+          '52',
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
+
+      testWidgets('tapping Add material cost opens the sheet over the page', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text('New material cost'), findsOneWidget);
+        expect(find.text('Enter a material name to continue'), findsOneWidget);
+        expect(
+          (Modular.get<AppRouter>() as FakeAppRouter).navigationHistory,
+          isNot(
+            contains(
+              RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null),
+            ),
+          ),
+        );
+      });
+
+      testWidgets('does not open the sheet and shows an error when the '
+          'estimate cannot be loaded', (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text(l10n.estimateSummaryLoadFailedError), findsOneWidget);
+      });
+
+      testWidgets('shows the estimate total before and after the line', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+
+        await fillValidMaterialForm(tester);
+
+        expect(find.text(r'$156.00'), findsOneWidget);
+        expect(find.text(r'$3,149.62'), findsOneWidget);
+      });
+
+      testWidgets('adding saves the line, closes the sheet and shows the '
+          'toast', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+        final saved =
+            fakeSupabase
+                    .getMethodCallsFor('insert')
+                    .where(
+                      (c) => c['table'] == DatabaseConstants.costItemsTable,
+                    )
+                    .single['data']
+                as Map<String, dynamic>;
+        expect(saved['estimate_id'], testEstimationId);
+        expect(saved['item_name'], 'Interior paint');
+        expect(saved['item_total_cost'], 156);
+      });
+
+      testWidgets('closing the sheet without adding shows no toast', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.textContaining('Added to'), findsNothing);
+        expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+      });
+
+      testWidgets('keeps the sheet open with its values and shows an error '
+          'when the save fails, then adds on a second try', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text('Interior paint'), findsOneWidget);
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+
+        fakeSupabase.shouldThrowOnInsert = false;
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('closing after a failed save leaves no error behind'
+          ' on the page', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(
+            of: find.byKey(AddToEstimateFooter.errorKey),
+            matching: find.text(l10n.addToEstimateFailedError),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
+      });
+
+      testWidgets('a second tap on Add while saving does not save twice', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tap(addButton(), warnIfMissed: false);
+        await tester.pump();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(
+          fakeSupabase
+              .getMethodCallsFor('insert')
+              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
+          hasLength(1),
+        );
       });
     });
   });
