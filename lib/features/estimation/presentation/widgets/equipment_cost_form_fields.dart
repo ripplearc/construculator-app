@@ -367,9 +367,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  // TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Replace this stub with a real company id from CurrentCompanyResolver.
-  String get _currentCompanyId => '';
-
   YourRateEntry _buildYourRateEntry(
     EquipmentCostFormData data, {
     String? entryLabel,
@@ -377,8 +374,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final isDay = data.method == EquipmentPricingMethod.day;
     return YourRateEntry(
       id: '',
-      companyId: _currentCompanyId,
-      itemName: _equipmentNameController.text.trim(),
+      // Resolved by YourRatesBloc from CurrentCompanyResolver before saving
+      // — same throwaway-until-stamped treatment as id above.
+      companyId: '',
+      itemName: _equipmentNameController.text,
       category: CostItemType.equipment,
       rate: Money(amount: (isDay ? data.dailyRate : data.jobAmount) ?? 0),
       savedAt: widget.clock.now(),
