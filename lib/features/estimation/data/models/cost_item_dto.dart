@@ -67,8 +67,9 @@ class CostItemDto extends Equatable {
   /// Delivery fee for equipment items; null means unquoted.
   final double? deliveryFee;
 
-  /// Confidence level of the equipment rate: 'sample_rate_unverified',
-  /// 'own_rate_unconfirmed', 'own_rate_confirmed', or 'missing'.
+  /// Confidence level of the equipment or material rate:
+  /// 'sample_rate_unverified', 'own_rate_unconfirmed', 'own_rate_confirmed', or
+  /// 'missing'.
   final String? rateStatus;
 
   /// Labor calculation method: 'per_hour', 'per_day', or 'per_unit'.
@@ -92,8 +93,14 @@ class CostItemDto extends Equatable {
   /// ISO 4217 currency code for this cost item's monetary values.
   final String currency;
 
-  /// Optional brand or manufacturer name for this cost item.
-  final String? brand;
+  /// Percentage of extra material allowed for waste on material items.
+  final double? wastePercent;
+
+  /// Origin of a material item's quantity: 'manual' or 'from_calculator'.
+  final String? quantityProvenance;
+
+  /// Formula the calculator computed a material item's quantity from.
+  final String? calculatorFormula;
 
   /// Creates a new [CostItemDto] instance.
   const CostItemDto({
@@ -123,7 +130,9 @@ class CostItemDto extends Equatable {
     this.laborUnitType,
     this.laborUnitValue,
     this.crewSize,
-    this.brand,
+    this.wastePercent,
+    this.quantityProvenance,
+    this.calculatorFormula,
   });
 
   /// Creates a [CostItemDto] from a JSON map.
@@ -177,7 +186,11 @@ class CostItemDto extends Equatable {
           : null,
       crewSize: json['crew_size'] as int?,
       currency: json['currency'] as String,
-      brand: json['brand'] as String?,
+      wastePercent: json['waste_percent'] != null
+          ? (json['waste_percent'] as num).toDouble()
+          : null,
+      quantityProvenance: json['quantity_provenance'] as String?,
+      calculatorFormula: json['calculator_formula'] as String?,
     );
   }
 
@@ -217,7 +230,9 @@ class CostItemDto extends Equatable {
     'labor_unit_value': laborUnitValue,
     'crew_size': crewSize,
     'currency': currency,
-    'brand': brand,
+    'waste_percent': wastePercent,
+    'quantity_provenance': quantityProvenance,
+    'calculator_formula': calculatorFormula,
   };
 
   /// Converts this DTO to a domain [CostItem] entity.
@@ -243,6 +258,9 @@ class CostItemDto extends Equatable {
     switch (type) {
       case CostItemType.material:
         final unit = Unit.fromJson(unitMeasurement ?? 'pieces');
+        final provenance = QuantityProvenance.fromJson(
+          quantityProvenance ?? 'manual',
+        );
         return MaterialCostItem(
           id: id,
           estimateId: estimateId,
@@ -254,7 +272,12 @@ class CostItemDto extends Equatable {
           currency: currency,
           unitPrice: Money(amount: unitPrice ?? 0.0, currency: currency),
           quantity: Quantity(value: quantity ?? 0.0, unit: unit),
-          brand: brand,
+          wastePercent: wastePercent,
+          rateStatus: RateStatus.fromJson(rateStatus ?? 'missing'),
+          quantityProvenance: provenance,
+          calculatorFormula: provenance == QuantityProvenance.fromCalculator
+              ? calculatorFormula
+              : null,
           productLink: productLink,
           description: description,
         );
@@ -280,7 +303,6 @@ class CostItemDto extends Equatable {
             laborUnitValue: laborUnitValue,
           ),
           crewSize: crewSize,
-          brand: brand,
           productLink: productLink,
           description: description,
         );
@@ -306,7 +328,6 @@ class CostItemDto extends Equatable {
               : null,
           deliveryFee: _moneyOrNull(deliveryFee, currency),
           rateStatus: RateStatus.fromJson(rateStatus ?? 'missing'),
-          brand: brand,
           productLink: productLink,
           description: description,
         );
@@ -335,7 +356,6 @@ class CostItemDto extends Equatable {
       createdAt: item.createdAt.toIso8601String(),
       updatedAt: item.updatedAt.toIso8601String(),
       currency: item.currency,
-      brand: item.brand,
       productLink: item.productLink,
       description: item.description,
       unitPrice: switch (item) {
@@ -372,7 +392,20 @@ class CostItemDto extends Equatable {
       },
       rateStatus: switch (item) {
         EquipmentCostItem() => item.rateStatus.toJson(),
-        MaterialCostItem() || LaborCostItem() => null,
+        MaterialCostItem() => item.rateStatus.toJson(),
+        LaborCostItem() => null,
+      },
+      wastePercent: switch (item) {
+        MaterialCostItem() => item.wastePercent,
+        EquipmentCostItem() || LaborCostItem() => null,
+      },
+      quantityProvenance: switch (item) {
+        MaterialCostItem() => item.quantityProvenance.toJson(),
+        EquipmentCostItem() || LaborCostItem() => null,
+      },
+      calculatorFormula: switch (item) {
+        MaterialCostItem() => item.calculatorFormula,
+        EquipmentCostItem() || LaborCostItem() => null,
       },
       laborCalcMethod: switch (item) {
         LaborCostItem() => item.laborCalcMethod.toJson(),
@@ -429,6 +462,8 @@ class CostItemDto extends Equatable {
     laborUnitValue,
     crewSize,
     currency,
-    brand,
+    wastePercent,
+    quantityProvenance,
+    calculatorFormula,
   ];
 }
