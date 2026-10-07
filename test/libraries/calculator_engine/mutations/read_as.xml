@@ -85,9 +85,9 @@
         </regex>
         <!-- RULE 8b (R2): a rise the 1/64in rounding leaves at 0 has no
              answer under Pitch, so its reading is not offered -->
-        <regex pattern="return parser\.ticksOf\(Token\(digits: raw, unit: Unit\.inch\)\) &gt; 0;" dotAll="true" id="read_as.pitch.rise_rounds_to_nothing">
+        <regex pattern="return length is Length &amp;&amp; length\.ticks &gt; 0;" dotAll="true" id="read_as.pitch.rise_rounds_to_nothing">
             <mutation text="return true;"/>
-            <mutation text="return parser.ticksOf(Token(digits: raw, unit: Unit.inch)) &gt;= 0;"/>
+            <mutation text="return length is Length &amp;&amp; length.ticks &gt;= 0;"/>
         </regex>
         <regex pattern="if \(_isAPitch\(_readAsDegreesMinutesSeconds\(raw\)\?\.tokens\.single\.value\)\)\s*NumberReading\.degreesMinutesSeconds," dotAll="true" id="read_as.pitch.whole_number_dms">
             <mutation text="NumberReading.degreesMinutesSeconds,"/>
