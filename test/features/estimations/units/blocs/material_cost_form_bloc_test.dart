@@ -1,7 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -15,15 +21,24 @@ MaterialCostFormData _dataOf(MaterialCostFormState state) =>
 void main() {
   group('MaterialCostFormBloc', () {
     late MaterialCostFormBloc bloc;
+    late FakeStorageService storage;
+    late FakeAuthRepository auth;
+    late LastUsedUnitRepository lastUsedUnits;
 
     setUpAll(() {
+      final clock = FakeClockImpl();
+      storage = FakeStorageService();
+      auth = FakeAuthRepository(clock: clock);
       Modular.init(
         EstimationModule(
           FakeAppBootstrapFactory.create(
-            supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+            supabaseWrapper: FakeSupabaseWrapper(clock: clock),
           ),
         ),
       );
+      Modular.replaceInstance<StorageService>(storage);
+      Modular.replaceInstance<AuthRepository>(auth);
+      lastUsedUnits = Modular.get<LastUsedUnitRepository>();
     });
 
     tearDownAll(() {
@@ -31,11 +46,83 @@ void main() {
     });
 
     setUp(() {
+      storage.reset();
+      auth.reset();
+      auth.setCurrentCredentials(
+        UserCredential(
+          id: 'account-1',
+          email: 'a@example.com',
+          metadata: const {},
+          createdAt: DateTime(2026),
+        ),
+      );
       bloc = Modular.get<MaterialCostFormBloc>();
     });
 
     test('initial state is MaterialCostFormInitial', () {
       expect(bloc.state, isA<MaterialCostFormInitial>());
+    });
+
+    group('default unit', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'selects the unit this account used last for materials',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.bags),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'ignores the unit remembered for another category',
+        setUp: () => lastUsedUnits.saveLastUnit(CostItemType.labor, Unit.hours),
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        expect: () => <MaterialCostFormState>[],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'leaves the unit empty when none is remembered',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        expect: () => <MaterialCostFormState>[],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'leaves the unit empty when the remembered unit cannot be read',
+        setUp: () async {
+          await lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags);
+          storage.shouldThrowOnRead = true;
+        },
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        expect: () => <MaterialCostFormState>[],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a unit the user already picked',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialUnitSelected(Unit.liters))
+          ..add(const MaterialCostFormStarted()),
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.liters),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the name already typed',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(const MaterialCostFormStarted()),
+        verify: (b) {
+          expect(_dataOf(b.state).itemName, 'Paint');
+          expect(_dataOf(b.state).unit, Unit.bags);
+        },
+      );
     });
 
     group('material name', () {
@@ -54,6 +141,13 @@ void main() {
           final data = _dataOf(b.state);
           expect(data.isItemNameValid, isFalse);
           expect(data.fieldErrors, isEmpty);
+          expect(
+            data.blocker,
+            const MaterialFormBlocker(
+              MaterialFormField.itemName,
+              MaterialBlockerKind.missing,
+            ),
+          );
         },
       );
 
@@ -190,6 +284,13 @@ void main() {
           ..add(const MaterialRateUpdated('52')),
         verify: (b) {
           expect(_dataOf(b.state).isValid, isFalse);
+          expect(
+            _dataOf(b.state).blocker,
+            const MaterialFormBlocker(
+              MaterialFormField.unit,
+              MaterialBlockerKind.missing,
+            ),
+          );
         },
       );
 
@@ -217,11 +318,9 @@ void main() {
             'isValid',
             false,
           ),
-          isA<MaterialCostFormEditing>().having(
-            (s) => s.data.isValid,
-            'isValid',
-            true,
-          ),
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.data.isValid, 'isValid', true)
+              .having((s) => s.data.blocker, 'blocker', isNull),
         ],
       );
 
@@ -252,19 +351,61 @@ void main() {
               if (entry.key != missing) b.add(entry.value);
             }
           },
-          verify: (b) => expect(_dataOf(b.state).isValid, isFalse),
+          verify: (b) {
+            expect(_dataOf(b.state).isValid, isFalse);
+            expect(
+              _dataOf(b.state).blocker,
+              MaterialFormBlocker(missing, MaterialBlockerKind.missing),
+            );
+          },
         );
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'stays disabled when the rate is out of range and the rest is set',
+        'reports the first missing field reading top to bottom',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialRateUpdated('52'))
+          ..add(const MaterialUnitSelected(Unit.liters)),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.itemName,
+            MaterialBlockerKind.missing,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'reports an invalid value as invalid, not missing',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialQuantityUpdated('0')),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.quantity,
+            MaterialBlockerKind.invalid,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'names an invalid rate when everything else is set',
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialCostItemTypeChanged('Interior paint'))
           ..add(const MaterialQuantityUpdated('2'))
           ..add(const MaterialUnitSelected(Unit.liters))
           ..add(const MaterialRateUpdated('1000000')),
-        verify: (b) => expect(_dataOf(b.state).isValid, isFalse),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.rate,
+            MaterialBlockerKind.invalid,
+          ),
+        ),
       );
     });
 
