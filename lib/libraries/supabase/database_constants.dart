@@ -232,4 +232,21 @@ class DatabaseConstants {
   /// default it replaces; the server's one-live-row-per-default index reads
   /// it, so the upload connector knows it too.
   static const String seedKey = 'seed';
+
+  /// Local-only PowerSync table of the remembered values the memory
+  /// drawers offer back, one row per value.
+  static const String calculatorRecentsTable = 'calculator_recents';
+
+  /// The drawer a remembered value sits in: a function key id, or the
+  /// shared angle drawer.
+  static const String drawerColumn = 'drawer';
+
+  /// A remembered value's place in its drawer, newest first from zero.
+  static const String positionColumn = 'position';
+
+  /// A remembered value's dimension: a `Dimension` name.
+  static const String dimensionColumn = 'dimension';
+
+  /// A remembered value's magnitude in its dimension's canonical unit.
+  static const String magnitudeColumn = 'magnitude';
 }
