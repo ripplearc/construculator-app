@@ -20,7 +20,8 @@ enum MaterialFieldError {
   /// The quantity is zero, negative or not a number.
   quantityNotPositive,
 
-  /// The quantity is larger than the database column can hold.
+  /// The quantity is larger than the database column can hold, or is so large
+  /// that quantity times rate no longer fits the line total column.
   quantityTooLarge,
 
   /// The rate is below $0.01 or above $999,999.99.
@@ -118,7 +119,7 @@ class MaterialCostFormData extends Equatable {
     final rate = this.rate;
     if (quantity == null || rate == null) return 0;
     if (!quantity.isFinite || !rate.isFinite) return 0;
-    return (quantity * rate * 100).round() / 100;
+    return (quantity * rate * 100).roundToDouble() / 100;
   }
 
   /// Whether the name field contains a non-empty value.
