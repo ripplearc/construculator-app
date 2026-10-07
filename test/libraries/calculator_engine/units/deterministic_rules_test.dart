@@ -206,8 +206,8 @@ void main() {
     group('a right triangle from Rise and Run', () {
       test('S41: Rise 12ft and Run 15ft give Diagonal 19.21ft', () {
         final answers = rules.answersFor({'Rise': feet12, 'Run': feet15});
-        expect(texts(answers), ['Diagonal: 19.21ft']);
-        expect(answers.single.sources, ['Rise', 'Run']);
+        expect(texts(answers).first, 'Diagonal: 19.21ft');
+        expect(answers.first.sources, ['Rise', 'Run']);
       });
 
       test('Rise alone, Run alone, or a run of nothing give no diagonal', () {
@@ -241,7 +241,7 @@ void main() {
           'Rise': feet12,
           'Run': feet15,
         });
-        expect(answers.map((answer) => answer.key), [
+        expect(answers.map((answer) => answer.key).take(4), [
           'Area',
           'Diagonal',
           'Perimeter',
@@ -256,7 +256,7 @@ void main() {
 
       test('S60: Rise 3.1m and Run 4.2m give Diagonal 5.22m', () {
         final answers = rules.answersFor({'Rise': rise, 'Run': run});
-        expect(texts(answers), ['Diagonal: 5.22m']);
+        expect(texts(answers).first, 'Diagonal: 5.22m');
       });
 
       test('two metric sides answer in metres', () {
@@ -402,6 +402,102 @@ void main() {
           );
         },
       );
+    });
+
+    group('an arc from a chord and a segment height', () {
+      const run9ft10 = Length(
+        9 * Length.ticksPerFoot + 10 * Length.ticksPerInch,
+        unit: Unit.footInch,
+      );
+      const rise3ft6 = Length(
+        3 * Length.ticksPerFoot + 6 * Length.ticksPerInch,
+        unit: Unit.footInch,
+      );
+
+      test(
+        'S36: Run 9ft 10in and Rise 3ft 6in give the arc after the diagonal',
+        () {
+          final answers = rules.answersFor({'Run': run9ft10, 'Rise': rise3ft6});
+          expect(texts(answers), [
+            'Diagonal: 10.44ft',
+            'Arc angle: 141.78°',
+            'Arc radius: 5.2ft',
+            'Arc length: 12.88ft',
+          ]);
+          expect(answers[1].sources, ['Run', 'Rise']);
+        },
+      );
+
+      test('a Chord is the arc-first vocabulary and skips the triangle', () {
+        final answers = rules.answersFor({'Chord': run9ft10, 'Rise': rise3ft6});
+        expect(texts(answers), [
+          'Arc angle: 141.78°',
+          'Arc radius: 5.2ft',
+          'Arc length: 12.88ft',
+        ]);
+        expect(answers.first.sources, ['Chord', 'Rise']);
+      });
+
+      test('a Chord outranks a Run on the same tape', () {
+        final answers = rules.answersFor({
+          'Chord': run9ft10,
+          'Run': feet20,
+          'Rise': rise3ft6,
+        });
+        expect(
+          answers.firstWhere((answer) => answer.key == 'Arc angle').sources,
+          ['Chord', 'Rise'],
+        );
+      });
+
+      test('a height above half the chord is the major arc', () {
+        const chord4 = Length(4 * Length.ticksPerFoot, unit: Unit.foot);
+        const rise3 = Length(3 * Length.ticksPerFoot, unit: Unit.foot);
+        final answers = rules.answersFor({'Chord': chord4, 'Rise': rise3});
+        expect(texts(answers), [
+          'Arc angle: 225.24°',
+          'Arc radius: 2.17ft',
+          'Arc length: 8.52ft',
+        ]);
+      });
+
+      test('a height of exactly half the chord is a half circle', () {
+        const chord4 = Length(4 * Length.ticksPerFoot, unit: Unit.foot);
+        const rise2 = Length(2 * Length.ticksPerFoot, unit: Unit.foot);
+        expect(texts(rules.answersFor({'Chord': chord4, 'Rise': rise2})), [
+          'Arc angle: 180°',
+          'Arc radius: 2ft',
+          'Arc length: 6.28ft',
+        ]);
+      });
+
+      test(
+        'a height of nothing, a chord of nothing, or no height is no arc',
+        () {
+          const nothing = Length(0, unit: Unit.foot);
+          expect(rules.answersFor({'Chord': run9ft10}), isEmpty);
+          expect(
+            rules.answersFor({'Chord': run9ft10, 'Rise': nothing}),
+            isEmpty,
+          );
+          expect(
+            rules.answersFor({'Chord': nothing, 'Rise': rise3ft6}),
+            isEmpty,
+          );
+        },
+      );
+
+      test('a metric arc answers in metres', () {
+        final answers = rules.answersFor({
+          'Chord': const Length(10079, unit: Unit.metre),
+          'Rise': const Length(2520, unit: Unit.metre),
+        });
+        expect(texts(answers), [
+          'Arc angle: 106.27°',
+          'Arc radius: 2.5m',
+          'Arc length: 4.64m',
+        ]);
+      });
     });
 
     group('named values come from the tape', () {

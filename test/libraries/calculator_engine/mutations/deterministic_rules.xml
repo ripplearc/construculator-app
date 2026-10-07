@@ -127,6 +127,34 @@
         <regex pattern="final missingHalf = diameter == null" dotAll="true" id="deterministic_rules.circle.wrong_missing_half">
             <mutation text="final missingHalf = diameter != null"/>
         </regex>
+
+        <!-- RULE 22: a tall segment is never the major arc -->
+        <regex pattern="final angle = h &gt; c / 2 \? fullTurn - minorAngle : minorAngle;" dotAll="true" id="deterministic_rules.arc.never_major">
+            <mutation text="final angle = minorAngle;"/>
+            <mutation text="final angle = h &gt;= c / 2 ? fullTurn - minorAngle : minorAngle;"/>
+        </regex>
+
+        <!-- RULE 23: the radius forgets the height's own square -->
+        <regex pattern="final radius = \(h \* h \+ c \* c / 4\) / \(2 \* h\);" dotAll="true" id="deterministic_rules.arc.wrong_radius">
+            <mutation text="final radius = (c * c / 4) / (2 * h);"/>
+        </regex>
+
+        <!-- RULE 24: the central angle is the half angle -->
+        <regex pattern="final minorAngle =\s*2 \* math\.asin\(math\.min\(1, c / \(2 \* radius\)\)\) \* 180 / math\.pi;" dotAll="true" id="deterministic_rules.arc.half_angle">
+            <mutation text="final minorAngle = math.asin(math.min(1, c / (2 * radius))) * 180 / math.pi;"/>
+        </regex>
+
+        <!-- RULE 25: a Run is never read as the chord -->
+        <regex pattern="final chordKey = lengths\.containsKey\(DimensionKey\.chord\)\s*\? DimensionKey\.chord\s*: DimensionKey\.run;" dotAll="true" id="deterministic_rules.arc.chord_only">
+            <mutation text="final chordKey = DimensionKey.chord;"/>
+            <mutation text="final chordKey = DimensionKey.run;"/>
+        </regex>
+
+        <!-- RULE 26: a height of nothing still makes an arc -->
+        <regex pattern="if \(chord\.ticks &lt;= 0 \|\| height\.ticks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.arc.no_height_guard">
+            <mutation text="if (chord.ticks &lt;= 0) return const [];"/>
+            <mutation text="if (height.ticks &lt;= 0) return const [];"/>
+        </regex>
     </rules>
 
     <commands>
