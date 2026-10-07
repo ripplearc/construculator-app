@@ -5,6 +5,7 @@ import 'package:construculator/features/calculator/data/repositories/calculator_
 import 'package:construculator/features/calculator/data/repositories/trade_stores_repository_impl.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
@@ -46,6 +47,9 @@ class CalculatorModule extends Module {
     i.addLazySingleton<TradeStoresRepository>(
       () => TradeStoresRepositoryImpl(dataSource: i()),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+    i.add<WatchMaterialCountsUseCase>(
+      () => WatchMaterialCountsUseCase(repository: i()),
     );
   }
 
