@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE TRADES MUTATION TESTING -->
+    <!-- Targets: Trades, the sheet and piece counts of UX Design Doc
+         Section 9. Critical path: the count is what the user orders; a
+         count over the wrong face, a size that divides by nothing, or a
+         recount that forgets its area is a wrong order that still looks
+         like one. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/trades.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the face is the width alone -->
+        <regex pattern="double get squareTicks =&gt; width\.ticks \* height\.ticks\.toDouble\(\);" dotAll="true" id="trades.piece.face_is_width">
+            <mutation text="double get squareTicks =&gt; width.ticks.toDouble();"/>
+        </regex>
+
+        <!-- RULE 2: the count multiplies instead of divides -->
+        <regex pattern="double get count =&gt; area\.squareTicks / size\.squareTicks;" dotAll="true" id="trades.count.multiply">
+            <mutation text="double get count =&gt; area.squareTicks * size.squareTicks;"/>
+        </regex>
+
+        <!-- RULE 3: a recount forgets the area or the trade -->
+        <regex pattern="TradeCount\(trade: trade, area: area, size: size\);" dotAll="true" id="trades.recount.forgets">
+            <mutation text="TradeCount(trade: trade, area: const Area(0), size: size);"/>
+            <mutation text="TradeCount(trade: Trade.drywall, area: area, size: size);"/>
+        </regex>
+
+        <!-- RULE 4: a size with no face is counted -->
+        <regex pattern="if \(size\.squareTicks &gt; 0\)" dotAll="true" id="trades.counts.no_face_guard">
+            <mutation text="if (size.squareTicks &gt;= 0)"/>
+        </regex>
+
+        <!-- RULE 5: the masonry result key is the drywall one -->
+        <regex pattern="masonry\('Masonry', 'Number of pieces'\);" dotAll="true" id="trades.trade.wrong_result_key">
+            <mutation text="masonry('Masonry', 'Number of sheets');"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="trades" expected-return="0">flutter test test/libraries/calculator_engine/units/trades_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
