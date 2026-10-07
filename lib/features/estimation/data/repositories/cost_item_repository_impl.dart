@@ -27,7 +27,22 @@ class CostItemRepositoryImpl implements CostItemRepository {
     }
   }
 
-  Left<Failure, CostItem> _handleError(Object error, String operation) {
+  @override
+  Future<Either<Failure, double>> getEstimateItemsTotal(
+    String estimateId,
+  ) async {
+    try {
+      final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+        estimateId,
+      );
+      final cents = totals.fold<int>(0, (sum, t) => sum + (t * 100).round());
+      return Right(cents / 100);
+    } catch (e) {
+      return _handleError(e, 'summing cost items');
+    }
+  }
+
+  Left<Failure, T> _handleError<T>(Object error, String operation) {
     if (error is TimeoutException) {
       _logger.error(
         'Timeout error $operation: message=${error.message}, duration=${error.duration}',

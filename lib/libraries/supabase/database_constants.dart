@@ -144,6 +144,7 @@ class DatabaseConstants {
 
   // Cost Estimation Logs columns
   static const String estimateIdColumn = 'estimate_id';
+  static const String itemTotalCostColumn = 'item_total_cost';
   static const String activityColumn = 'activity';
   static const String userColumn = 'user';
   static const String activityDetailsColumn = 'activity_details';
