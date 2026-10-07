@@ -106,6 +106,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
+        enableDrag: false,
         blocFactory: widget.materialCostFormBlocFactory,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
@@ -117,6 +118,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
+    bool enableDrag = true,
     required B Function() blocFactory,
     required _SheetOutcome Function(S state) outcomeOf,
     YourRateEntry? entry,
@@ -127,6 +129,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       await CoreQuickSheet.show<void>(
         context: context,
         backgroundColor: sheetSurface(context),
+        enableDrag: enableDrag,
         child: MultiBlocProvider(
           providers: [
             BlocProvider<B>.value(value: formBloc),
