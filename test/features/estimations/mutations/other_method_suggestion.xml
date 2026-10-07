@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/presentation/helpers/other_method_suggestion.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="entry\.equipmentMethod == active" dotAll="false" id="suggestion.active_match.negate">
+            <mutation text="entry.equipmentMethod != active"/>
+        </regex>
+        <regex pattern="entry\.equipmentMethod != null" dotAll="false" id="suggestion.method_present.negate">
+            <mutation text="entry.equipmentMethod == null"/>
+        </regex>
+        <regex pattern="if \(other\.isEmpty\) return null;" dotAll="false" id="suggestion.nothing_found.skip">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="count: other\.length" dotAll="false" id="suggestion.count.constant">
+            <mutation text="count: 1"/>
+        </regex>
+        <regex pattern="lowest: amounts\.reduce\(min\)" dotAll="false" id="suggestion.lowest.use_max">
+            <mutation text="lowest: amounts.reduce(max)"/>
+        </regex>
+        <regex pattern="highest: amounts\.reduce\(max\)" dotAll="false" id="suggestion.highest.use_min">
+            <mutation text="highest: amounts.reduce(min)"/>
+        </regex>
+        <regex pattern="method: active == EquipmentPricingMethod\.day" dotAll="false" id="suggestion.method.flip">
+            <mutation text="method: active != EquipmentPricingMethod.day"/>
+        </regex>
+        <regex pattern="return method == EquipmentPricingMethod\.job" dotAll="false" id="suggestion.message.direction.negate">
+            <mutation text="return method != EquipmentPricingMethod.job"/>
+        </regex>
+        <regex pattern="\? l10n\.yourRatesShowJobPrices" dotAll="false" id="suggestion.label.swap">
+            <mutation text="? l10n.yourRatesShowDayRates"/>
+        </regex>
+        <regex pattern="query,\s+count," dotAll="true" id="suggestion.message.drop_count">
+            <mutation text="query, 1,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="other_method_suggestion" expected-return="0">flutter test test/features/estimations/units/presentation/helpers/other_method_suggestion_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>
