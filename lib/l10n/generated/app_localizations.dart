@@ -3753,6 +3753,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix the quantity to continue'**
   String get fixQuantityToContinueButton;
+
+  /// Placeholder inside the unit button on the material form while no unit is picked
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unitPillEmptyLabel;
+
+  /// Screen reader label of the unit button while no unit is picked
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a unit'**
+  String get unitPillEmptySemanticLabel;
+
+  /// Screen reader label of the unit button once a unit is picked
+  ///
+  /// In en, this message translates to:
+  /// **'Unit: {unit}. Tap to change'**
+  String unitPillSemanticLabel(String unit);
 }
 
 class _AppLocalizationsDelegate

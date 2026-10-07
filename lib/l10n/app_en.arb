@@ -3077,5 +3077,25 @@
   "@fixQuantityToContinueButton": {
     "description": "Disabled submit button label while the material quantity holds a value that cannot be used",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "unitPillEmptyLabel": "Unit",
+  "@unitPillEmptyLabel": {
+    "description": "Placeholder inside the unit button on the material form while no unit is picked",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "unitPillEmptySemanticLabel": "Choose a unit",
+  "@unitPillEmptySemanticLabel": {
+    "description": "Screen reader label of the unit button while no unit is picked",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "unitPillSemanticLabel": "Unit: {unit}. Tap to change",
+  "@unitPillSemanticLabel": {
+    "description": "Screen reader label of the unit button once a unit is picked",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
   }
 }
