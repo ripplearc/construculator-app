@@ -99,10 +99,13 @@ void main() {
       test('[Feet] on decimal feet shows the compound instead of raising', () {
         expect(
           press(const [Token(digits: '18.67', unit: Unit.foot)], Unit.foot),
-          const UnitKeyConverted(Length(14339, unit: Unit.footInch), [
-            Token(digits: '18', unit: Unit.foot),
-            Token(digits: '8.05', unit: Unit.inch),
-          ]),
+          const UnitKeyConverted(
+            Length.exact(Rational(5601, 25), unit: Unit.footInch),
+            [
+              Token(digits: '18', unit: Unit.foot),
+              Token(digits: '8.05', unit: Unit.inch),
+            ],
+          ),
         );
       });
 

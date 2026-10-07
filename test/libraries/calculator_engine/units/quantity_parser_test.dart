@@ -36,31 +36,53 @@ void main() {
         expect(quantity, const Length(28, unit: Unit.inch));
       });
 
-      test('converts a metre on entry to the nearest tick', () {
+      test('keeps a metre exactly: 5000/127 in, 2,520 ticks to view', () {
         final quantity = parser.parse(const [
           Token(digits: '1', unit: Unit.metre),
         ]);
-        expect(quantity, const Length(2520, unit: Unit.metre));
+        expect(
+          quantity,
+          const Length.exact(Rational(5000, 127), unit: Unit.metre),
+        );
+        expect((quantity! as Length).ticks, 2520);
       });
 
-      test('rounds each token of a compound on its own before adding', () {
-        // 0.3m is 755.9 ticks and 3cm 75.6: rounded apart they add to 832,
-        // where the exact sum 831.5 would round to 831.
+      test('keeps a decimal foot exactly: 17.32 ft is 5196/25 in', () {
+        final quantity = parser.parse(const [
+          Token(digits: '17.32', unit: Unit.foot),
+        ]);
+        expect(
+          quantity,
+          const Length.exact(Rational(5196, 25), unit: Unit.foot),
+        );
+        expect((quantity! as Length).ticks, 13302);
+      });
+
+      test('adds the tokens of a compound exactly', () {
+        // 0.3 m + 3 cm is 33 cm: 1650/127 in, where ticks rounded apart would
+        // have added to 832 and the exact sum rounds to 831.
         final quantity = parser.parse(const [
           Token(digits: '0.3', unit: Unit.metre),
           Token(digits: '3', unit: Unit.centimetre),
         ]);
-        expect(quantity, const Length(756 + 76, unit: Unit.metre));
+        expect(
+          quantity,
+          const Length.exact(Rational(1650, 127), unit: Unit.metre),
+        );
+        expect((quantity! as Length).ticks, 831);
       });
 
-      test('adds a metric token to an imperial one in ticks', () {
+      test('adds a metric token to an imperial one exactly', () {
         // The entry buffer keeps a compound in one system, so this only pins
-        // that the sum is over ticks: 768 for the foot, 504 for the 20cm.
+        // the sum: 12 in for the foot, 1000/127 in for the 20 cm.
         final quantity = parser.parse(const [
           Token(digits: '1', unit: Unit.foot),
           Token(digits: '20', unit: Unit.centimetre),
         ]);
-        expect(quantity, const Length(1272, unit: Unit.footInch));
+        expect(
+          quantity,
+          const Length.exact(Rational(2524, 127), unit: Unit.footInch),
+        );
       });
 
       test('reads a fraction over zero as no value at all', () {
@@ -197,35 +219,50 @@ void main() {
       });
     });
 
-    group('ticksOf', () {
-      test('rounds a length token to whole ticks', () {
+    group('inchesOf', () {
+      test('is the exact inches of a length token', () {
         expect(
-          parser.ticksOf(const Token(digits: '22', unit: Unit.foot)),
-          16896,
+          parser.inchesOf(const Token(digits: '22', unit: Unit.foot)),
+          const Rational(264),
         );
         expect(
-          parser.ticksOf(const Token(digits: '1', unit: Unit.metre)),
-          2520,
+          parser.inchesOf(const Token(digits: '1', unit: Unit.metre)),
+          const Rational(5000, 127),
+        );
+        expect(
+          parser.inchesOf(
+            const Token(digits: '7', denominator: '16', unit: Unit.inch),
+          ),
+          const Rational(7, 16),
         );
       });
 
       test('is a programming error on a token that is not a length', () {
         expect(
-          () => parser.ticksOf(const Token(digits: '5', unit: Unit.pound)),
+          () => parser.inchesOf(const Token(digits: '5', unit: Unit.pound)),
           throwsArgumentError,
         );
         expect(
-          () => parser.ticksOf(const Token(digits: '5')),
+          () => parser.inchesOf(const Token(digits: '5')),
           throwsArgumentError,
         );
       });
 
       test('is a programming error on a fraction over zero', () {
         expect(
-          () => parser.ticksOf(
+          () => parser.inchesOf(
             const Token(digits: '7', denominator: '0', unit: Unit.inch),
           ),
           throwsArgumentError,
+        );
+      });
+
+      test('a number too long to keep exactly is no value at all', () {
+        expect(
+          parser.parse(const [
+            Token(digits: '1.0000000000000000001', unit: Unit.foot),
+          ]),
+          isNull,
         );
       });
     });

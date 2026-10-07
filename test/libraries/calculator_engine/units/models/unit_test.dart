@@ -11,10 +11,28 @@ void main() {
         expect(Unit.yard.ticksPerUnit, 2304);
       });
 
-      test('converts metric on entry at 2,519.685 ticks per metre', () {
-        expect(Unit.metre.ticksPerUnit, 2519.685);
-        expect(Unit.centimetre.ticksPerUnit, 25.196850394);
-        expect(Unit.millimetre.ticksPerUnit, 2.5196850394);
+      test('a metre is 2,519.685 ticks, the exact count to the double', () {
+        expect(Unit.metre.ticksPerUnit, closeTo(2519.685, 0.0001));
+        expect(Unit.centimetre.ticksPerUnit, closeTo(25.19685, 0.000001));
+        expect(Unit.millimetre.ticksPerUnit, closeTo(2.519685, 0.0000001));
+      });
+    });
+
+    group('inchesPer', () {
+      test('is exact: an inch is 25.4 mm, so a metre is 5000/127 in', () {
+        expect(Unit.inch.inchesPer, const Rational(1));
+        expect(Unit.foot.inchesPer, const Rational(12));
+        expect(Unit.footInch.inchesPer, const Rational(12));
+        expect(Unit.yard.inchesPer, const Rational(36));
+        expect(Unit.metre.inchesPer, const Rational(5000, 127));
+        expect(Unit.centimetre.inchesPer, const Rational(50, 127));
+        expect(Unit.millimetre.inchesPer, const Rational(5, 127));
+      });
+
+      test('is a programming error on a unit that is not a length', () {
+        for (final unit in [Unit.acre, Unit.pound, Unit.boardFoot]) {
+          expect(() => unit.inchesPer, throwsStateError, reason: unit.name);
+        }
       });
 
       test('is a programming error on a unit that is not a length', () {

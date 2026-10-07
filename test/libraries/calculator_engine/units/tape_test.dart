@@ -316,7 +316,7 @@ void main() {
         final retyped = press(cleared, '6 . 2 2 2 yd');
         expect(
           retyped.active!.value(parser),
-          const Length(14335, unit: Unit.yard),
+          const Length.exact(Rational(27999, 125), unit: Unit.yard),
         );
         expect(
           retyped.active,
