@@ -12,6 +12,7 @@ part 'material_cost_form_state.dart';
 const double _minRate = 0.01;
 const double _maxRate = 999999.99;
 const double _quantityColumnLimit = 1e14;
+const double _lineTotalColumnLimit = 1e16;
 
 /// BLoC for managing the material cost form: name, quantity, unit and rate,
 /// and the validation that decides when Add is enabled.
@@ -127,7 +128,7 @@ class MaterialCostFormBloc
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
       calculation: {'unit_price': rate, 'quantity': quantity},
-      itemTotalCost: (quantity * rate * 100).round() / 100,
+      itemTotalCost: draft.lineTotal,
       createdAt: now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
@@ -153,11 +154,38 @@ class MaterialCostFormBloc
     final errors = <MaterialFormField, MaterialFieldError>{};
     final hasQuantity = _validateQuantity(draft.quantity, errors);
     final hasRate = _validateRate(draft.rate, errors);
+    final fitsLineTotal = switch ((
+      hasQuantity,
+      hasRate,
+      draft.quantity,
+      draft.rate,
+    )) {
+      (true, true, final quantity?, final rate?) => _validateLineTotal(
+        quantity,
+        rate,
+        errors,
+      ),
+      _ => true,
+    };
     return draft.copyWith(
       isValid:
-          draft.isItemNameValid && hasQuantity && draft.unit != null && hasRate,
+          draft.isItemNameValid &&
+          hasQuantity &&
+          draft.unit != null &&
+          hasRate &&
+          fitsLineTotal,
       fieldErrors: errors,
     );
+  }
+
+  bool _validateLineTotal(
+    double quantity,
+    double rate,
+    Map<MaterialFormField, MaterialFieldError> errors,
+  ) {
+    if (quantity * rate < _lineTotalColumnLimit) return true;
+    errors[MaterialFormField.quantity] = MaterialFieldError.quantityTooLarge;
+    return false;
   }
 
   bool _validateQuantity(

@@ -3694,7 +3694,7 @@ abstract class AppLocalizations {
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
 
-  /// Error toast when saving an equipment cost line fails. No Figma frame covers this case.
+  /// Message shown when saving a cost line fails: a toast on the equipment sheet, and a line above the Add button on the material sheet. No Figma frame covers this case.
   ///
   /// In en, this message translates to:
   /// **'Couldn\'t add this cost. Try again.'**
@@ -3705,6 +3705,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t open this estimate. Try again.'**
   String get estimateSummaryLoadFailedError;
+
+  /// Summary card note while the material quantity is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a quantity before it can total'**
+  String get addsToEstimateNeedsQuantityNote;
+
+  /// Summary card note while the material quantity is zero or below
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a quantity above zero before it can total'**
+  String get addsToEstimateNeedsQuantityAboveZeroNote;
+
+  /// Summary card note while the material quantity is too large or not a number
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a valid quantity before it can total'**
+  String get addsToEstimateInvalidQuantityNote;
+
+  /// Summary card note while no unit is picked for the material
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a unit before it can total'**
+  String get addsToEstimateNeedsUnitNote;
+
+  /// Disabled submit button label while the material name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a material name to continue'**
+  String get enterMaterialNameToContinueButton;
+
+  /// Disabled submit button label while the material quantity is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a quantity to continue'**
+  String get enterQuantityToContinueButton;
+
+  /// Disabled submit button label while no unit is picked for the material
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a unit to continue'**
+  String get enterUnitToContinueButton;
+
+  /// Disabled submit button label while the material quantity holds a value that cannot be used
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the quantity to continue'**
+  String get fixQuantityToContinueButton;
 }
 
 class _AppLocalizationsDelegate

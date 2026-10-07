@@ -14,6 +14,7 @@ void main() {
     WidgetTester tester, {
     AddToEstimateBlock? block,
     bool isSubmitting = false,
+    String? errorMessage,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -28,6 +29,7 @@ void main() {
             estimateTotal: 2993.62,
             block: block,
             isSubmitting: isSubmitting,
+            errorMessage: errorMessage,
             onAdd: () => addCount++,
           ),
         ),
@@ -81,5 +83,32 @@ void main() {
     expect(find.text('Needs a rate before it can total'), findsOneWidget);
     expect(find.text('Add to estimate'), findsNothing);
     expect(addCount, 0);
+  });
+
+  testWidgets('shows no error line unless a message is given', (tester) async {
+    await pumpFooter(tester);
+
+    expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
+  });
+
+  testWidgets('shows the error message between the card and the button', (
+    tester,
+  ) async {
+    await pumpFooter(tester, errorMessage: 'Could not add.');
+
+    final card = tester.getRect(find.byKey(AddToEstimateFooter.panelKey));
+    final error = tester.getRect(find.byKey(AddToEstimateFooter.errorKey));
+    final button = tester.getRect(find.byKey(AddToEstimateFooter.buttonKey));
+    expect(find.text('Could not add.'), findsOneWidget);
+    expect(error.top, greaterThanOrEqualTo(card.bottom));
+    expect(error.bottom, lessThanOrEqualTo(button.top));
+  });
+
+  testWidgets('keeps the button usable when it shows an error', (tester) async {
+    await pumpFooter(tester, errorMessage: 'Could not add.');
+
+    await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+
+    expect(addCount, 1);
   });
 }
