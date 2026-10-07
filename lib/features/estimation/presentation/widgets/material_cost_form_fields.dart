@@ -1,231 +1,227 @@
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
-import 'package:construculator/features/estimation/presentation/widgets/unit_of_measurement_field.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
+import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Form fields for adding a material cost item.
-class MaterialCostFormFields extends StatefulWidget {
-  /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
-  final bool fromCostFile;
-  final ValueChanged<double>? onTotalChanged;
-  final ValueChanged<bool>? onSaveEnabledChanged;
+/// Longest name a person can type; a longer one can only arrive from a cost
+/// file.
+const int _maxNameLength = 80;
 
-  const MaterialCostFormFields({
-    super.key,
-    required this.fromCostFile,
-    this.onTotalChanged,
-    this.onSaveEnabledChanged,
-  });
+/// The quantity row is 90 dp tall in Figma: the unit button's 48 dp tap area
+/// takes 5 dp from the gap above it and 5 dp from the space below it.
+const double _quantityValueGap = 3;
+const double _quantityBottomPadding = 7;
+
+/// The material name, quantity with its unit, and rate rows of the "New
+/// material cost" sheet.
+///
+// TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it.
+// TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint.
+class MaterialCostFormFields extends StatefulWidget {
+  const MaterialCostFormFields({super.key});
 
   @override
   State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
 }
 
 class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
-  bool _showOtherDetails = false;
-  final _materialTypeController = TextEditingController();
-  final _perUnitCostController = TextEditingController();
+  final _nameController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _productLinkController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _materialTypeController.addListener(_notifySaveEnabled);
-    _perUnitCostController.addListener(_notifyTotal);
-    _quantityController.addListener(_notifyTotal);
-  }
-
-  @override
-  void didUpdateWidget(covariant MaterialCostFormFields oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.fromCostFile != widget.fromCostFile) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _notifyTotal();
-        _notifySaveEnabled();
-      });
-    }
-  }
+  final _rateController = TextEditingController();
+  final _nameFocus = FocusNode();
+  final _quantityFocus = FocusNode();
+  final _rateFocus = FocusNode();
 
   @override
   void dispose() {
-    _materialTypeController.dispose();
-    _perUnitCostController.dispose();
+    _nameController.dispose();
     _quantityController.dispose();
-    _productLinkController.dispose();
+    _rateController.dispose();
+    _nameFocus.dispose();
+    _quantityFocus.dispose();
+    _rateFocus.dispose();
     super.dispose();
-  }
-
-  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal https://ripplearc.youtrack.cloud/issue/CA-800
-  void _notifySaveEnabled() {
-    if (widget.fromCostFile) {
-      widget.onSaveEnabledChanged?.call(false);
-      return;
-    }
-    final value = _materialTypeController.text;
-    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
-    context.read<MaterialCostFormBloc>().add(
-      MaterialCostItemTypeChanged(value),
-    );
-  }
-
-  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
-  void _notifyTotal() {
-    if (widget.fromCostFile) {
-      widget.onTotalChanged?.call(0);
-      return;
-    }
-    final rawPrice = double.tryParse(_perUnitCostController.text) ?? 0;
-    final rawQty = double.tryParse(_quantityController.text) ?? 0;
-    final price = rawPrice.isFinite ? rawPrice : 0.0;
-    final qty = rawQty.isFinite ? rawQty : 0.0;
-    widget.onTotalChanged?.call(price * qty);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.fromCostFile)
-            ..._fromCostFileFields(context)
-          else
-            ..._manuallyFields(context),
-          const SizedBox(height: CoreSpacing.space5),
-          _buildOtherMaterialDetails(context),
-          const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section https://ripplearc.youtrack.cloud/issue/CA-336
-        ],
+    final l10n = context.l10n;
+    final bloc = context.read<MaterialCostFormBloc>();
+    return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+      buildWhen: (previous, current) =>
+          previous.data.unit != current.data.unit ||
+          _isSaving(previous) != _isSaving(current),
+      builder: (context, state) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SheetFieldRow(
+              label: l10n.materialNameLabel,
+              onTap: _nameFocus.requestFocus,
+              child: _SheetTextField(
+                key: const Key('material_name_field'),
+                readOnly: _isSaving(state),
+                controller: _nameController,
+                focusNode: _nameFocus,
+                label: l10n.materialNameLabel,
+                hintText: l10n.materialNamePlaceholder,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(_maxNameLength),
+                ],
+                onChanged: (value) =>
+                    bloc.add(MaterialCostItemTypeChanged(value)),
+              ),
+            ),
+            SheetFieldRow(
+              label: l10n.materialQuantityLabel,
+              valueGap: _quantityValueGap,
+              bottomPadding: _quantityBottomPadding,
+              onTap: _quantityFocus.requestFocus,
+              child: Row(
+                spacing: CoreSpacing.space2,
+                children: [
+                  IntrinsicWidth(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: CoreSpacing.space12,
+                      ),
+                      child: _SheetTextField(
+                        key: const Key('material_quantity_field'),
+                        readOnly: _isSaving(state),
+                        controller: _quantityController,
+                        focusNode: _quantityFocus,
+                        label: l10n.materialQuantityLabel,
+                        hintText: l10n.materialQuantityPlaceholder,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [_decimalLimitFormatter(decimals: 4)],
+                        onChanged: (value) =>
+                            bloc.add(MaterialQuantityUpdated(value)),
+                      ),
+                    ),
+                  ),
+                  UnitPill(
+                    key: const Key('material_unit_pill'),
+                    unit: state.data.unit,
+                    isEnabled: !_isSaving(state),
+                    onUnitSelected: (unit) =>
+                        bloc.add(MaterialUnitSelected(unit)),
+                  ),
+                ],
+              ),
+            ),
+            SheetFieldRow(
+              label: l10n.materialRateLabel,
+              valueGap: CoreSpacing.space2,
+              onTap: _rateFocus.requestFocus,
+              child: _SheetTextField(
+                key: const Key('material_rate_field'),
+                readOnly: _isSaving(state),
+                controller: _rateController,
+                focusNode: _rateFocus,
+                label: l10n.materialRateLabel,
+                hintText: l10n.materialRatePlaceholder,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [_decimalLimitFormatter(decimals: 2)],
+                onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  List<Widget> _fromCostFileFields(BuildContext context) {
-    final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    return [
-      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource https://ripplearc.youtrack.cloud/issue/CA-298
-      CoreTextField(
-        key: const Key('cost_file_field'),
-        hintText: l10n.costFilePlaceholder,
-        readOnly: true,
-        enabled: false,
-        suffix: CoreIconWidget(
-          icon: CoreIcons.arrowDropDown,
-          color: colorTheme.iconGrayMid,
-          size: 24,
-        ),
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-298] Populate material type from selected cost file https://ripplearc.youtrack.cloud/issue/CA-298
-      CoreTextField(
-        key: const Key('material_type_field'),
-        hintText: l10n.materialTypeLabel,
-        readOnly: true,
-        enabled: false,
-        suffix: CoreIconWidget(
-          icon: CoreIcons.arrowDropDown,
-          color: colorTheme.iconGrayMid,
-          size: 24,
-        ),
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('quantity_field'),
-        label: l10n.quantityLabel,
-        controller: _quantityController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ),
-    ];
-  }
+  bool _isSaving(MaterialCostFormState state) =>
+      state is MaterialCostFormSubmitting || state is MaterialCostFormSuccess;
 
-  List<Widget> _manuallyFields(BuildContext context) {
-    final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    return [
-      BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
-        builder: (_, state) {
-          final hasError =
-              state is MaterialCostFormEditing && !state.data.isItemNameValid;
-          return CoreTextField(
-            key: const Key('material_type_field'),
-            label: l10n.materialTypeLabel,
-            controller: _materialTypeController,
-            errorTextList: hasError ? [l10n.materialTypeRequiredError] : null,
-          );
-        },
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('per_unit_cost_field'),
-        label: l10n.perUnitCostLabel,
-        controller: _perUnitCostController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        suffix: CoreIconWidget(
-          icon: CoreIcons.dollar,
-          color: colorTheme.textHeadline,
-          size: 24,
-        ),
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-312] Wire selectedUnit and onUnitSelected to BLoC state
-      UnitOfMeasurementField(
-        key: const Key('uom_field'),
-        fromCostFile: false,
-        selectedUnit: null,
-        onUnitSelected: (_) {},
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('quantity_field'),
-        label: l10n.quantityLabel,
-        controller: _quantityController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ),
-    ];
+  TextInputFormatter _decimalLimitFormatter({required int decimals}) {
+    final allowed = RegExp('^\\d*\\.?\\d{0,$decimals}\$');
+    return TextInputFormatter.withFunction((previous, next) {
+      // A phone set to a comma-decimal language shows a comma key.
+      final text = next.text.replaceAll(',', '.');
+      return allowed.hasMatch(text) ? next.copyWith(text: text) : previous;
+    });
   }
+}
 
-  Widget _buildOtherMaterialDetails(BuildContext context) {
-    final l10n = context.l10n;
+/// A borderless single-line text input that sits in a [SheetFieldRow].
+///
+/// The input draws 24 dp tall as in Figma, but reports a 48 dp tall tap target
+/// so assistive technology can hit it.
+///
+// TODO: [CA-1158] replace with CoreUI's underline-style text field once it exists. https://ripplearc.youtrack.cloud/issue/CA-1158
+class _SheetTextField extends StatelessWidget {
+  static const double _drawnHeight = CoreSpacing.space6;
+  static const double _tapHeight = CoreSpacing.space12;
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String label;
+  final String hintText;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String> onChanged;
+  final bool readOnly;
+
+  const _SheetTextField({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    required this.label,
+    required this.hintText,
+    required this.onChanged,
+    required this.readOnly,
+    this.keyboardType,
+    this.inputFormatters,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_showOtherDetails) ...[
-          // TODO: [CA-332] Add brand dropdown to other material details https://ripplearc.youtrack.cloud/issue/CA-332
-          CoreTextField(
-            key: const Key('brand_field'),
-            hintText: l10n.brandLabel,
-            readOnly: true,
-            enabled: false,
-            suffix: CoreIconWidget(
-              icon: CoreIcons.arrowDropDown,
-              color: colorTheme.iconGrayMid,
-              size: 24,
+    final textTheme = context.textTheme;
+    return SizedBox(
+      height: _drawnHeight,
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        minHeight: _tapHeight,
+        maxHeight: _tapHeight,
+        child: Semantics(
+          label: label,
+          child: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            readOnly: readOnly,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            onChanged: onChanged,
+            maxLines: 1,
+            cursorColor: colorTheme.textHeadline,
+            style: textTheme.bodyLargeRegular.copyWith(
+              color: colorTheme.textHeadline,
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: (_tapHeight - _drawnHeight) / 2,
+              ),
+              hintText: hintText,
+              hintStyle: textTheme.bodyLargeRegular.copyWith(
+                color: colorTheme.textDisable,
+              ),
             ),
           ),
-          const SizedBox(height: CoreSpacing.space3),
-          CoreTextField(
-            key: const Key('product_link_field'),
-            label: l10n.productLinkLabel,
-            controller: _productLinkController,
-          ),
-          const SizedBox(height: CoreSpacing.space3),
-        ],
-        CoreButton(
-          key: const Key('other_material_details_button'),
-          label: l10n.otherMaterialDetailsButton,
-          variant: CoreButtonVariant.secondary,
-          size: CoreButtonSize.medium,
-          onPressed: () =>
-              setState(() => _showOtherDetails = !_showOtherDetails),
         ),
-      ],
+      ),
     );
   }
 }
