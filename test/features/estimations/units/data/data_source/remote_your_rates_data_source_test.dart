@@ -133,6 +133,31 @@ void main() {
         expect(calls.first['ascending'], isFalse);
       });
 
+      test('includes company_id in filters when companyId is given', () async {
+        await dataSource.fetchRates(category: 'labor', companyId: 'company-1');
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: 'labor',
+          DatabaseConstants.companyIdColumn: 'company-1',
+        });
+      });
+
+      test(
+        'omits company_id from filters when companyId is not given',
+        () async {
+          await dataSource.fetchRates(category: 'labor');
+
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+          expect(
+            (calls.first['filters'] as Map).containsKey(
+              DatabaseConstants.companyIdColumn,
+            ),
+            isFalse,
+          );
+        },
+      );
+
       test('passes limit through to selectMatch when given', () async {
         await dataSource.fetchRates(limit: 3);
 
