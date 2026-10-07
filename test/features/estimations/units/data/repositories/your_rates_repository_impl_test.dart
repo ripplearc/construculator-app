@@ -32,6 +32,7 @@ void main() {
       String? equipmentMethod = 'day',
       String? entryLabel,
       String savedAt = '2026-01-01T00:00:00.000Z',
+      String? lastUsedAt,
     }) {
       return {
         'id': id,
@@ -44,6 +45,7 @@ void main() {
         'equipment_method': equipmentMethod,
         'entry_label': entryLabel,
         'saved_at': savedAt,
+        'last_used_at': lastUsedAt,
         'created_at': savedAt,
         'updated_at': savedAt,
       };
@@ -209,6 +211,93 @@ void main() {
         ]);
       });
 
+      test('orders rows with the same last use by their save date', () async {
+        seed([
+          row(
+            id: 'saved-earlier',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+          row(
+            id: 'saved-later',
+            savedAt: '2026-01-02T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'saved-later',
+          'saved-earlier',
+        ]);
+      });
+
+      test('puts a rate used after a newer save above that save', () async {
+        seed([
+          row(id: 'saved-later', savedAt: '2026-01-05T00:00:00.000Z'),
+          row(
+            id: 'used-later',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-06T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'used-later',
+          'saved-later',
+        ]);
+      });
+
+      test('lets a save newer than the last use sit above that use', () async {
+        seed([
+          row(
+            id: 'used-earlier',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-02T00:00:00.000Z',
+          ),
+          row(id: 'saved-later', savedAt: '2026-01-03T00:00:00.000Z'),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'saved-later',
+          'used-earlier',
+        ]);
+      });
+
+      test('applies the limit after ordering by last use', () async {
+        seed([
+          row(id: 'r1', savedAt: '2026-01-03T00:00:00.000Z'),
+          row(id: 'r2', savedAt: '2026-01-02T00:00:00.000Z'),
+          row(
+            id: 'r3',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          limit: 1,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['r3']);
+      });
+
       test(
         'ignores the limit once a query is given, so every match is returned',
         () async {
@@ -337,6 +426,19 @@ void main() {
         expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
       });
+
+      test(
+        'leaves last_used_at out of the saved body, so a new save records no use',
+        () async {
+          await repository.save(buildEntry(amount: 300.0));
+
+          final body =
+              fakeSupabaseWrapper.getMethodCallsFor('insert').single['data']
+                  as Map<String, dynamic>;
+          expect(body.containsKey('last_used_at'), isFalse);
+          expect(body['rate_amount'], 300.0);
+        },
+      );
 
       test(
         'rejects a labeled save whose label the grouping already has, leaving '

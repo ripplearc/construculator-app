@@ -792,6 +792,11 @@ class YourRateEntry extends Equatable {
   /// server-side.
   final DateTime savedAt;
 
+  /// When a cost line was last added with this rate, stamped by the phone
+  /// that added the line. Null until the rate is first added to an estimate.
+  // TODO: [CA-1266](https://ripplearc.youtrack.cloud/issue/CA-1266) Set this when a line is added with the rate; nothing writes it yet. The backend column is [CA-1265](https://ripplearc.youtrack.cloud/issue/CA-1265).
+  final DateTime? lastUsedAt;
+
   /// Pricing method this rate applies to, for equipment rates: by the day or
   /// by the job. Null for non-equipment categories.
   final EquipmentPricingMethod? equipmentMethod;
@@ -808,10 +813,15 @@ class YourRateEntry extends Equatable {
     required this.category,
     required this.rate,
     required this.savedAt,
+    this.lastUsedAt,
     this.unit,
     this.equipmentMethod,
     this.entryLabel,
   });
+
+  /// The moment recents order by: the last use, or the save when the rate was
+  /// never added to an estimate.
+  DateTime get recencyAt => lastUsedAt ?? savedAt;
 
   @override
   List<Object?> get props => [
@@ -822,6 +832,7 @@ class YourRateEntry extends Equatable {
     rate,
     unit,
     savedAt,
+    lastUsedAt,
     equipmentMethod,
     entryLabel,
   ];
@@ -838,6 +849,7 @@ class YourRateEntry extends Equatable {
     Money? rate,
     Object? unit,
     DateTime? savedAt,
+    Object? lastUsedAt,
     Object? equipmentMethod,
     Object? entryLabel,
   }) {
@@ -849,6 +861,9 @@ class YourRateEntry extends Equatable {
       rate: rate ?? this.rate,
       unit: unit == clearField ? null : (unit as Unit?) ?? this.unit,
       savedAt: savedAt ?? this.savedAt,
+      lastUsedAt: lastUsedAt == clearField
+          ? null
+          : (lastUsedAt as DateTime?) ?? this.lastUsedAt,
       equipmentMethod: equipmentMethod == clearField
           ? null
           : (equipmentMethod as EquipmentPricingMethod?) ??

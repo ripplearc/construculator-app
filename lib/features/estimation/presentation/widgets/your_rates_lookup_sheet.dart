@@ -1,9 +1,11 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -35,7 +37,14 @@ class YourRatesLookupSheet extends StatefulWidget {
   /// Restricts results to this pricing method — see the class doc comment.
   final EquipmentPricingMethod method;
 
-  const YourRatesLookupSheet({super.key, required this.method});
+  /// Dates the "Used …" and "Saved …" line under each saved rate.
+  final Clock clock;
+
+  const YourRatesLookupSheet({
+    super.key,
+    required this.method,
+    required this.clock,
+  });
 
   @override
   State<YourRatesLookupSheet> createState() => _YourRatesLookupSheetState();
@@ -45,6 +54,7 @@ class YourRatesLookupSheet extends StatefulWidget {
   static Future<YourRateEntry?> show({
     required BuildContext context,
     required EquipmentPricingMethod method,
+    required Clock clock,
     required YourRatesBloc Function() blocFactory,
   }) {
     return CoreQuickSheet.show<YourRateEntry>(
@@ -52,7 +62,7 @@ class YourRatesLookupSheet extends StatefulWidget {
       backgroundColor: sheetSurface(context),
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
-        child: YourRatesLookupSheet(method: method),
+        child: YourRatesLookupSheet(method: method, clock: clock),
       ),
     );
   }
@@ -211,6 +221,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
           key: Key('your_rate_row_${entry.id}'),
           entry: entry,
           method: widget.method,
+          now: widget.clock.now(),
           selected: entry.id == selected?.id,
           onTap: () => _onRowTap(entry),
         );
@@ -315,10 +326,15 @@ class _LoadErrorRow extends StatelessWidget {
   }
 }
 
-// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists.
+// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists; it also removes the 13 px, 11 px and 2 px values below, which have no CoreSpacing token.
 class _YourRateRow extends StatelessWidget {
+  static const double _rowVerticalPadding = 13;
+  static const double _columnGap = 11;
+  static const double _nameToRecencyGap = 2;
+
   final YourRateEntry entry;
   final EquipmentPricingMethod method;
+  final DateTime now;
   final bool selected;
   final VoidCallback onTap;
 
@@ -326,6 +342,7 @@ class _YourRateRow extends StatelessWidget {
     super.key,
     required this.entry,
     required this.method,
+    required this.now,
     required this.selected,
     required this.onTap,
   });
@@ -335,13 +352,14 @@ class _YourRateRow extends StatelessWidget {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final nameColor = selected ? colorTheme.textLink : colorTheme.textHeadline;
+    final recency = entry.recencyLabel(context.l10n, now: now);
     final priceLabel =
         '${DisplayFormatter.currency.format(entry.rate.amount)} '
         '${_unitSuffix(context, method)}';
     return Semantics(
       button: true,
       selected: selected,
-      label: '${entry.itemName}. $priceLabel',
+      label: '${entry.itemName}. $recency. $priceLabel',
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
@@ -349,34 +367,45 @@ class _YourRateRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: CoreSpacing.space2,
-            vertical: CoreSpacing.space3,
+            vertical: _rowVerticalPadding,
           ),
           decoration: BoxDecoration(
             color: selected ? colorTheme.backgroundBlueLight : null,
             borderRadius: BorderRadius.circular(CoreSpacing.space3),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Opacity(
-                  opacity: selected ? 1 : 0,
-                  child: CoreIconWidget(
-                    icon: CoreIcons.checkMark,
-                    color: colorTheme.textLink,
-                    size: CoreSpacing.space5,
-                  ),
+              Opacity(
+                opacity: selected ? 1 : 0,
+                child: CoreIconWidget(
+                  icon: CoreIcons.checkMark,
+                  color: colorTheme.textLink,
+                  size: CoreSpacing.space5,
                 ),
               ),
-              const SizedBox(width: CoreSpacing.space3),
+              const SizedBox(width: _columnGap),
               Expanded(
-                child: Text(
-                  entry.itemName,
-                  style: textTheme.bodyLargeSemiBold.copyWith(color: nameColor),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.itemName,
+                      style: textTheme.bodyLargeSemiBold.copyWith(
+                        color: nameColor,
+                      ),
+                    ),
+                    const SizedBox(height: _nameToRecencyGap),
+                    Text(
+                      recency,
+                      style: textTheme.bodySmallRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: CoreSpacing.space3),
+              const SizedBox(width: _columnGap),
               Text.rich(
                 TextSpan(
                   children: [

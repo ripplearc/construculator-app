@@ -1,8 +1,8 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -14,7 +14,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// "Your recents" sheet (Figma node `66342:177929`, "phone ·
 /// cuj6-equip-1-recents" on the "Estimate V2" canvas): the pre-form step
 /// opened by "+ Add equipment cost" — a tap-to-reuse list of the
-/// contractor's most recently saved equipment rates. Day- and job-priced
+/// contractor's most recently used equipment rates. Day- and job-priced
 /// rows share one list with no heading or color split between them; only
 /// the trailing "/day" vs "job" word differs. A trailing "+ New equipment
 /// cost" row opens the form blank instead.
@@ -239,15 +239,11 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
 
-String _recencyLabel(AppLocalizations l10n, int days) {
-  if (days <= 0) return l10n.yourRatesUsedToday;
-  if (days == 1) return l10n.yourRatesUsedYesterday;
-  if (days < 7) return l10n.yourRatesUsedDaysAgo(days);
-  return l10n.yourRatesUsedWeeksAgo(days ~/ 7);
-}
-
-// TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
+// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists; it also removes the 11 px and 1 px values below, which have no CoreSpacing token.
 class _RecentRateRow extends StatelessWidget {
+  static const double _rowVerticalPadding = 11;
+  static const double _nameToRecencyGap = 1;
+
   final YourRateEntry entry;
   final DateTime now;
   final VoidCallback onTap;
@@ -263,10 +259,7 @@ class _RecentRateRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    final recency = _recencyLabel(
-      context.l10n,
-      DisplayFormatter.calendarDaysSince(entry.savedAt, now: now),
-    );
+    final recency = entry.recencyLabel(context.l10n, now: now);
     final unitSuffix = _unitSuffixFor(context, entry.equipmentMethod);
     final priceLabel =
         '${DisplayFormatter.currency.format(entry.rate.amount)} $unitSuffix';
@@ -280,7 +273,7 @@ class _RecentRateRow extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: CoreSpacing.space7,
-            vertical: CoreSpacing.space3,
+            vertical: _rowVerticalPadding,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -295,7 +288,7 @@ class _RecentRateRow extends StatelessWidget {
                         color: colorTheme.textHeadline,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: _nameToRecencyGap),
                     Text(
                       recency,
                       style: textTheme.bodySmallRegular.copyWith(

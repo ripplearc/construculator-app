@@ -16,9 +16,9 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late AppLocalizations l10n;
+  final clock = FakeClockImpl(DateTime(2026, 1, 15));
 
   setUpAll(() {
-    final clock = FakeClockImpl(DateTime(2026, 1, 15));
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
@@ -72,6 +72,7 @@ void main() {
                     await YourRatesLookupSheet.show(
                       context: context,
                       method: method,
+                      clock: clock,
                       blocFactory: () => Modular.get<YourRatesBloc>(),
                     ),
                   );
@@ -151,6 +152,7 @@ void main() {
     String method = 'day',
     double amount = 100,
     DateTime? savedAt,
+    DateTime? lastUsedAt,
   }) => {
     'id': id,
     'company_id': 'company-1',
@@ -160,6 +162,7 @@ void main() {
     'rate_currency': 'USD',
     'equipment_method': method,
     'saved_at': (savedAt ?? DateTime(2026, 1, 1)).toIso8601String(),
+    'last_used_at': lastUsedAt?.toIso8601String(),
   };
 
   Future<void> search(WidgetTester tester, String query) async {
@@ -207,6 +210,63 @@ void main() {
         expect(find.byKey(const Key('your_rates_empty_state')), findsNothing);
       },
     );
+
+    testWidgets('dates each saved rate: Used when added to an estimate, Saved '
+        'when never added', (tester) async {
+      fakeSupabase.reset();
+      fakeSupabase.addTableData('your_rates', [
+        row(
+          'used-rate',
+          'Mini excavator',
+          savedAt: DateTime(2025, 12, 1),
+          lastUsedAt: DateTime(2026, 1, 8),
+        ),
+        row('saved-rate', 'Scissor lift', savedAt: DateTime(2026, 1, 12)),
+      ]);
+
+      await openSheet(tester, []);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_used-rate')),
+          matching: find.text('Used last week'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_saved-rate')),
+          matching: find.text('Saved 3 days ago'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('lists a rate used after a newer save above that save', (
+      tester,
+    ) async {
+      fakeSupabase.reset();
+      fakeSupabase.addTableData('your_rates', [
+        row('saved-later', 'Scissor lift', savedAt: DateTime(2026, 1, 10)),
+        row(
+          'used-later',
+          'Mini excavator',
+          savedAt: DateTime(2025, 12, 1),
+          lastUsedAt: DateTime(2026, 1, 14),
+        ),
+      ]);
+
+      await openSheet(tester, []);
+
+      expect(
+        tester.getTopLeft(find.byKey(const Key('your_rate_row_used-later'))).dy,
+        lessThan(
+          tester
+              .getTopLeft(find.byKey(const Key('your_rate_row_saved-later')))
+              .dy,
+        ),
+      );
+    });
 
     testWidgets('does not show the sample-rate notice', (tester) async {
       await openSheet(tester, []);

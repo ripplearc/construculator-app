@@ -42,6 +42,10 @@ void main() {
         'equipment_method': 'day',
         'saved_at': clock
             .now()
+            .subtract(const Duration(days: 60))
+            .toIso8601String(),
+        'last_used_at': clock
+            .now()
             .subtract(const Duration(days: 10))
             .toIso8601String(),
       },

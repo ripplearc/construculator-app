@@ -2619,15 +2619,15 @@
   },
   "yourRatesUsedToday": "Used today",
   "@yourRatesUsedToday": {
-    "description": "Recency subtitle on a 'Your recents' row for a rate saved earlier today"
+    "description": "Recency subtitle on a 'Your recents' row for a rate last added to an estimate today"
   },
   "yourRatesUsedYesterday": "Used yesterday",
   "@yourRatesUsedYesterday": {
-    "description": "Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day"
+    "description": "Recency subtitle on a 'Your recents' row for a rate last added to an estimate yesterday, by calendar day"
   },
   "yourRatesUsedDaysAgo": "{count, plural, one{Used {count} day ago} other{Used {count} days ago}}",
   "@yourRatesUsedDaysAgo": {
-    "description": "Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago",
+    "description": "Recency subtitle on a 'Your recents' row for a rate last added to an estimate two to six calendar days ago",
     "placeholders": {
       "count": {
         "type": "int"
@@ -2636,7 +2636,51 @@
   },
   "yourRatesUsedWeeksAgo": "{count, plural, =1{Used last week} other{Used {count} weeks ago}}",
   "@yourRatesUsedWeeksAgo": {
-    "description": "Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'",
+    "description": "Recency subtitle on a 'Your recents' row for a rate last added to an estimate seven to twenty-nine days ago; count is whole weeks, so one reads 'last week'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesUsedMonthsAgo": "{count, plural, =1{Used last month} other{Used {count} months ago}}",
+  "@yourRatesUsedMonthsAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate last added to an estimate thirty or more days ago; count is whole thirty-day months, so one reads 'last month'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesSavedToday": "Saved today",
+  "@yourRatesSavedToday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved today and never added to an estimate"
+  },
+  "yourRatesSavedYesterday": "Saved yesterday",
+  "@yourRatesSavedYesterday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved yesterday and never added to an estimate"
+  },
+  "yourRatesSavedDaysAgo": "{count, plural, one{Saved {count} day ago} other{Saved {count} days ago}}",
+  "@yourRatesSavedDaysAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago and never added to an estimate",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesSavedWeeksAgo": "{count, plural, =1{Saved last week} other{Saved {count} weeks ago}}",
+  "@yourRatesSavedWeeksAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved seven to twenty-nine days ago and never added to an estimate; count is whole weeks",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesSavedMonthsAgo": "{count, plural, =1{Saved last month} other{Saved {count} months ago}}",
+  "@yourRatesSavedMonthsAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved thirty or more days ago and never added to an estimate; count is whole thirty-day months",
     "placeholders": {
       "count": {
         "type": "int"
