@@ -64,6 +64,9 @@ class CostEstimationDetailsPage extends StatefulWidget {
       _CostEstimationDetailsPageState();
 }
 
+/// How an add-cost sheet's form ended up, read from its bloc state.
+enum _SheetOutcome { editing, submitting, added, failed }
+
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
   late final EstimateSummaryBloc _summaryBloc;
@@ -81,21 +84,39 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<void> _openEquipmentSheet(YourRateEntry? entry) async {
+  Future<void> _openEquipmentSheet(YourRateEntry? entry) =>
+      _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
+        type: CostItemType.equipment,
+        entry: entry,
+        blocFactory: widget.equipmentCostFormBlocFactory,
+        outcomeOf: (state) => switch (state) {
+          EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
+          EquipmentCostFormSuccess() => _SheetOutcome.added,
+          EquipmentCostFormFailure() => _SheetOutcome.failed,
+          _ => _SheetOutcome.editing,
+        },
+      );
+
+  Future<void> _openCostSheet<B extends BlocBase<S>, S>({
+    required CostItemType type,
+    required B Function() blocFactory,
+    required _SheetOutcome Function(S state) outcomeOf,
+    YourRateEntry? entry,
+  }) async {
     final l10n = context.l10n;
-    final formBloc = widget.equipmentCostFormBlocFactory();
+    final formBloc = blocFactory();
     try {
       await CoreQuickSheet.show<void>(
         context: context,
         backgroundColor: sheetSurface(context),
         child: MultiBlocProvider(
           providers: [
-            BlocProvider<EquipmentCostFormBloc>.value(value: formBloc),
+            BlocProvider<B>.value(value: formBloc),
             BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
           ],
           child: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
             builder: (context, summary) => CostItemFormScreen(
-              type: CostItemType.equipment,
+              type: type,
               estimationId: widget.estimationId,
               router: widget.router,
               presentAsSheet: true,
@@ -110,18 +131,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         ),
       );
       final wasSavingWhenDismissed =
-          formBloc.state is EquipmentCostFormSubmitting;
+          outcomeOf(formBloc.state) == _SheetOutcome.submitting;
       if (wasSavingWhenDismissed) {
         await formBloc.stream.firstWhere(
-          (s) => s is! EquipmentCostFormSubmitting,
+          (s) => outcomeOf(s) != _SheetOutcome.submitting,
           orElse: () => formBloc.state,
         );
       }
       if (!mounted) return;
       final summary = _summaryBloc.state;
       _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
-      switch (formBloc.state) {
-        case EquipmentCostFormSuccess() when summary is EstimateSummaryLoaded:
+      switch (outcomeOf(formBloc.state)) {
+        case _SheetOutcome.added when summary is EstimateSummaryLoaded:
           CoreToast.showCustomToast(
             context,
             (_) => AddedToEstimateToast(
@@ -129,7 +150,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             ),
             duration: const Duration(seconds: 4),
           );
-        case EquipmentCostFormFailure() when wasSavingWhenDismissed:
+        case _SheetOutcome.failed when wasSavingWhenDismissed:
           CoreToast.showError(
             context,
             l10n.addToEstimateFailedError,
