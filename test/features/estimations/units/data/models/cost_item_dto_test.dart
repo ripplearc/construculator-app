@@ -293,6 +293,31 @@ void main() {
           expect(entity.calculatorFormula, isNull);
         });
 
+        test('equipment and labor lines never write material-only fields', () {
+          final equipmentEntity = CostItemDto.fromJson(
+            CostItemTestDataMapFactory.createEquipmentItemData(),
+          ).toEntity();
+          final laborEntity = CostItemDto.fromJson(
+            CostItemTestDataMapFactory.createLaborItemData(),
+          ).toEntity();
+
+          for (final entity in [equipmentEntity, laborEntity]) {
+            final dto = CostItemDto.fromEntity(entity);
+
+            expect(dto.wastePercent, isNull);
+            expect(dto.quantityProvenance, isNull);
+            expect(dto.calculatorFormula, isNull);
+          }
+        });
+
+        test('a labor line writes no rate_status', () {
+          final entity = CostItemDto.fromJson(
+            CostItemTestDataMapFactory.createLaborItemData(),
+          ).toEntity();
+
+          expect(CostItemDto.fromEntity(entity).rateStatus, isNull);
+        });
+
         test('toJson no longer writes a brand key', () {
           expect(
             CostItemDto.fromJson(v2Json).toJson().containsKey('brand'),
@@ -500,18 +525,15 @@ void main() {
           });
         });
 
-        test(
-          'round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent',
-          () {
-            final dto = CostItemDto.fromJson(testJson);
-            final entity = dto.toEntity();
-            final dtoAgain = CostItemDto.fromEntity(entity);
-            final jsonAgain = dtoAgain.toJson();
+        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
+          final dto = CostItemDto.fromJson(testJson);
+          final entity = dto.toEntity();
+          final dtoAgain = CostItemDto.fromEntity(entity);
+          final jsonAgain = dtoAgain.toJson();
 
-            expect(dtoAgain, dto);
-            expect(jsonAgain, testJson);
-          },
-        );
+          expect(dtoAgain, dto);
+          expect(jsonAgain, testJson);
+        });
       });
 
       group('job pricing', () {
@@ -584,18 +606,15 @@ void main() {
           });
         });
 
-        test(
-          'round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent',
-          () {
-            final dto = CostItemDto.fromJson(testJson);
-            final entity = dto.toEntity();
-            final dtoAgain = CostItemDto.fromEntity(entity);
-            final jsonAgain = dtoAgain.toJson();
+        test('round-trip: JSON -> DTO -> Entity -> DTO -> JSON is consistent', () {
+          final dto = CostItemDto.fromJson(testJson);
+          final entity = dto.toEntity();
+          final dtoAgain = CostItemDto.fromEntity(entity);
+          final jsonAgain = dtoAgain.toJson();
 
-            expect(dtoAgain, dto);
-            expect(jsonAgain, testJson);
-          },
-        );
+          expect(dtoAgain, dto);
+          expect(jsonAgain, testJson);
+        });
       });
     });
 

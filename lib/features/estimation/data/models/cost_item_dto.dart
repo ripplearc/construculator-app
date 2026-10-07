@@ -67,8 +67,9 @@ class CostItemDto extends Equatable {
   /// Delivery fee for equipment items; null means unquoted.
   final double? deliveryFee;
 
-  /// Confidence level of the equipment or material rate: 'sample_rate_unverified',
-  /// 'own_rate_unconfirmed', 'own_rate_confirmed', or 'missing'.
+  /// Confidence level of the equipment or material rate:
+  /// 'sample_rate_unverified', 'own_rate_unconfirmed', 'own_rate_confirmed', or
+  /// 'missing'.
   final String? rateStatus;
 
   /// Labor calculation method: 'per_hour', 'per_day', or 'per_unit'.
