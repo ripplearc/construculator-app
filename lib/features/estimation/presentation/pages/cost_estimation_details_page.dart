@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
@@ -34,6 +35,11 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
+  /// Builds a [MaterialCostFormBloc] for the material cost sheet the FAB
+  /// launches. Same not-a-module-file reasoning as
+  /// [equipmentCostFormBlocFactory].
+  final MaterialCostFormBloc Function() materialCostFormBlocFactory;
+
   /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
   /// total for the equipment cost sheet. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
@@ -53,6 +59,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
+    required this.materialCostFormBlocFactory,
     required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -111,6 +118,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         },
       );
 
+  Future<void> _openMaterialSheet() =>
+      _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
+        type: CostItemType.material,
+        blocFactory: widget.materialCostFormBlocFactory,
+        outcomeOf: (state) => switch (state) {
+          MaterialCostFormSubmitting() => _SheetOutcome.submitting,
+          MaterialCostFormSuccess() => _SheetOutcome.added,
+          MaterialCostFormFailure() => _SheetOutcome.failed,
+          _ => _SheetOutcome.editing,
+        },
+      );
+
   // Opens the add-cost sheet for [type] over the estimate, then reports how
   // it ended: a toast naming the estimate after an add, an error toast after
   // a failed save, nothing when the sheet was just closed.
@@ -134,6 +153,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         return;
       }
       final formBloc = blocFactory();
+      var wasSavingWhenClosed = false;
       try {
         await CoreQuickSheet.show<void>(
           context: context,
@@ -151,7 +171,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             ),
           ),
         );
-        if (outcomeOf(formBloc.state) == _SheetOutcome.submitting) {
+        wasSavingWhenClosed =
+            outcomeOf(formBloc.state) == _SheetOutcome.submitting;
+        if (wasSavingWhenClosed) {
           await formBloc.stream.firstWhere(
             (s) => outcomeOf(s) != _SheetOutcome.submitting,
             orElse: () => formBloc.state,
@@ -172,6 +194,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             duration: const Duration(seconds: 4),
           );
         case _SheetOutcome.failed:
+          // A failure the user saw in the sheet was already reported there.
+          if (!wasSavingWhenClosed) break;
           CoreToast.showError(
             context,
             l10n.addToEstimateFailedError,
@@ -318,9 +342,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => widget.router.pushNamed(
-          '$fullAddMaterialCostRoute/${widget.estimationId}',
-        ),
+        onPressed: _openMaterialSheet,
       ),
     };
   }
