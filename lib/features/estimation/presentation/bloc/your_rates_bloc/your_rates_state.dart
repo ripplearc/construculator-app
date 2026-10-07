@@ -62,3 +62,10 @@ class YourRatesSaveFailed extends YourRatesState {
   const YourRatesSaveFailed(this.failure);
   final Failure failure;
 }
+
+/// State after [YourRatesSaveRequested] when the signed-in user has no company
+/// to save under. Separate from [YourRatesSaveFailed] because trying again can
+/// never fix it.
+class YourRatesSaveNoCompany extends YourRatesState {
+  const YourRatesSaveNoCompany();
+}

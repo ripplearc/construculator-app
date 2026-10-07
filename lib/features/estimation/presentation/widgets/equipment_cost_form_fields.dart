@@ -404,6 +404,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         break;
       // TODO: [CA-1207](https://ripplearc.youtrack.cloud/issue/CA-1207) Every YourRatesSaveFailed shows the same line, though the repository already tells a timeout, a lost connection, a parsing error, a refused write and a missing row apart. Thread the error type through this state and write copy for each.
       case YourRatesSaveFailed():
+      case YourRatesSaveNoCompany():
         setState(() => _rateSaveStatus = _RateSaveStatus.failed);
       case YourRatesSaveSucceeded():
         setState(() => _rateSaveStatus = _RateSaveStatus.saved);
@@ -1189,7 +1190,9 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
     switch (state) {
       case YourRatesSaveLabelTaken():
         setState(() => _error = context.l10n.yourRatesEntryLabelTakenError);
-      case YourRatesSaveSucceeded() || YourRatesSaveFailed():
+      case YourRatesSaveSucceeded() ||
+          YourRatesSaveFailed() ||
+          YourRatesSaveNoCompany():
         Navigator.of(context).pop();
       case YourRatesLoading() ||
           YourRatesLoaded() ||

@@ -2301,6 +2301,26 @@ void main() {
     );
 
     testWidgets(
+      'when the account has no company the error line shows under the Rate row '
+      'and the link stays',
+      (tester) async {
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          null,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await typeSavableRate(tester);
+
+        await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.yourRatesSaveFailedError), findsOneWidget);
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'when saving fails the error line shows under the Rate row and the '
       'link stays',
       (tester) async {
