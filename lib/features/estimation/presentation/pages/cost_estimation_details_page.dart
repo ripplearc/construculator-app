@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/added_line_highlight_cubit/added_line_highlight_cubit.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
@@ -76,6 +77,11 @@ enum _SheetOutcome { editing, submitting, added, failed }
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
   late final EstimateSummaryBloc _summaryBloc;
+
+  /// Marks the line just added; provided to the whole screen so the cost list
+  /// can read it once it exists.
+  // TODO: [CA-151] have the bound cost list read this cubit to highlight the line and clear it on tap.
+  final _addedLineHighlight = AddedLineHighlightCubit();
   var _isOpeningSheet = false;
 
   @override
@@ -88,6 +94,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   @override
   void dispose() {
     unawaited(_summaryBloc.close());
+    unawaited(_addedLineHighlight.close());
     super.dispose();
   }
 
@@ -123,6 +130,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         type: CostItemType.material,
         enableDrag: false,
         blocFactory: widget.materialCostFormBlocFactory,
+        addedItemIdOf: (state) =>
+            state is MaterialCostFormSuccess ? state.createdItem.id : null,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
           MaterialCostFormSuccess() => _SheetOutcome.added,
@@ -140,6 +149,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     required CostItemType type,
     bool enableDrag = true,
     required B Function() blocFactory,
+    String? Function(S state)? addedItemIdOf,
     required _SheetOutcome Function(S state) outcomeOf,
   }) async {
     if (_isOpeningSheet) return;
@@ -191,6 +201,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
       switch (outcomeOf(formBloc.state)) {
         case _SheetOutcome.added:
+          final addedItemId = addedItemIdOf?.call(formBloc.state);
+          if (addedItemId != null) _addedLineHighlight.highlight(addedItemId);
           CoreToast.showCustomToast(
             context,
             (_) => AddedToEstimateToast(
@@ -216,7 +228,13 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      BlocProvider<AddedLineHighlightCubit>.value(
+        value: _addedLineHighlight,
+        child: Builder(builder: _buildScaffold),
+      );
+
+  Widget _buildScaffold(BuildContext context) {
     final textTheme = context.textTheme;
     final colorTheme = context.colorTheme;
     final l10n = context.l10n;
