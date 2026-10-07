@@ -1918,4 +1918,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get featureUnavailableMessage =>
       'This feature is not available in this version of the app.';
+
+  @override
+  String get addsToEstimateLabel => 'Adds to this estimate';
+
+  @override
+  String addsToEstimateTotalBeforeSuffix(String amount) {
+    return ' total  $amount →';
+  }
+
+  @override
+  String get addsToEstimateIncludesDelivery => 'incl. delivery';
+
+  @override
+  String get addsToEstimateNeedsNameNote => 'Needs a name before it can total';
+
+  @override
+  String get addsToEstimateNeedsDurationNote =>
+      'Needs a duration before it can total';
+
+  @override
+  String get addsToEstimateNeedsDurationAboveZeroNote =>
+      'Needs a duration above zero before it can total';
+
+  @override
+  String get addsToEstimateNeedsRateNote => 'Needs a rate before it can total';
+
+  @override
+  String get addsToEstimateNeedsAmountNote =>
+      'Needs an amount before it can total';
+
+  @override
+  String get addsToEstimateInvalidDurationNote =>
+      'Needs a valid duration before it can total';
+
+  @override
+  String get addsToEstimateInvalidRateNote =>
+      'Needs a valid rate before it can total';
+
+  @override
+  String get addsToEstimateInvalidAmountNote =>
+      'Needs a valid amount before it can total';
+
+  @override
+  String get addsToEstimateInvalidDeliveryFeeNote =>
+      'Needs a valid delivery fee before it can total';
 }
