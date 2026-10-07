@@ -17,6 +17,7 @@ export 'quantity_formatter.dart';
 export 'quantity_parser.dart';
 export 'quantity_speller.dart';
 export 'tape.dart';
+export 'trades.dart';
 export 'trig.dart';
 export 'unit_converter.dart';
 export 'unit_ladder.dart';
