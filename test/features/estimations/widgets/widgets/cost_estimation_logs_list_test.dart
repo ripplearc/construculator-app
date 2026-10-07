@@ -853,7 +853,32 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n().noOlderLogEvents), findsOneWidget);
+      expect(find.text(l10n().earlierLogEventsNotRecorded), findsNothing);
     });
+
+    testWidgets(
+      'says early events were not recorded when the oldest entry is another kind',
+      (tester) async {
+        seedLogs([
+          LogTestDataFactory.createLogData(
+            id: 'log-1',
+            estimateId: estimateId,
+            activity: 'costFileUploaded',
+            activityDetails: {'fileName': 'materials.xlsx'},
+            firstName: 'Liam',
+          ),
+        ]);
+
+        await pumpLogsList(tester);
+
+        expect(
+          find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+          findsOneWidget,
+        );
+        expect(find.text(l10n().earlierLogEventsNotRecorded), findsOneWidget);
+        expect(find.text(l10n().noOlderLogEvents), findsNothing);
+      },
+    );
 
     testWidgets('hides the marker while older pages remain', (tester) async {
       final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
@@ -870,6 +895,8 @@ void main() {
         find.byKey(CostEstimationLogsList.endOfListMarkerKey),
         findsNothing,
       );
+      expect(find.text(l10n().noOlderLogEvents), findsNothing);
+      expect(find.text(l10n().earlierLogEventsNotRecorded), findsNothing);
     });
 
     testWidgets('shows the marker after the final page is paginated in', (

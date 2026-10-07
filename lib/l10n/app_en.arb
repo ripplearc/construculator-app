@@ -1459,6 +1459,10 @@
   "@noOlderLogEvents": {
     "description": "End-of-list marker shown when every activity log has been loaded"
   },
+  "earlierLogEventsNotRecorded": "Earlier events for this estimate were not recorded.",
+  "@earlierLogEventsNotRecorded": {
+    "description": "End-of-list marker shown when every activity log has been loaded but the oldest one is not the estimate's creation, so its early history is missing"
+  },
   "appTitle": "Construculator",
   "@appTitle": {
     "description": "Application title displayed in app bar",

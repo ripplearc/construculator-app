@@ -1732,6 +1732,12 @@ abstract class AppLocalizations {
   /// **'No older events'**
   String get noOlderLogEvents;
 
+  /// End-of-list marker shown when every activity log has been loaded but the oldest one is not the estimate's creation, so its early history is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier events for this estimate were not recorded.'**
+  String get earlierLogEventsNotRecorded;
+
   /// Application title displayed in app bar
   ///
   /// In en, this message translates to:

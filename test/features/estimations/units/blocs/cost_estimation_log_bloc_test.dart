@@ -835,6 +835,96 @@ void main() {
       );
     });
 
+    group('isHistoryComplete', () {
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'is true when the last page ends on "Estimate created"',
+        build: () {
+          seedLogTable([
+            LogTestDataFactory.createLogData(
+              id: 'log-1',
+              estimateId: testEstimateId,
+              activity: 'costEstimationCreated',
+              loggedAt: '2025-02-01T10:00:00.000Z',
+            ),
+            LogTestDataFactory.createLogData(
+              id: 'log-2',
+              estimateId: testEstimateId,
+              activity: 'costEstimationRenamed',
+              loggedAt: '2025-02-02T10:00:00.000Z',
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.isHistoryComplete,
+            'isHistoryComplete',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'is false when the oldest entry of the last page is another kind',
+        build: () {
+          seedLogTable([
+            LogTestDataFactory.createLogData(
+              id: 'log-1',
+              estimateId: testEstimateId,
+              activity: 'costEstimationRenamed',
+              loggedAt: '2025-02-01T10:00:00.000Z',
+            ),
+            LogTestDataFactory.createLogData(
+              id: 'log-2',
+              estimateId: testEstimateId,
+              activity: 'costEstimationCreated',
+              loggedAt: '2025-02-02T10:00:00.000Z',
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.hasReachedEnd, 'hasReachedEnd', true)
+              .having((s) => s.isHistoryComplete, 'isHistoryComplete', false),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'is false while older pages remain',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 1,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<CostEstimationLogLoaded>()
+              .having(
+                (s) => s.logs.last.activity,
+                'oldest loaded entry',
+                CostEstimationActivityType.costEstimationCreated,
+              )
+              .having((s) => s.isHistoryComplete, 'isHistoryComplete', false),
+        ],
+      );
+    });
+
     group('hasReachedEnd', () {
       final logs = expectedLatestLogsForEstimate(
         totalCount: 2,
