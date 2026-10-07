@@ -994,7 +994,7 @@ void main() {
       );
 
       blocTest<CostEstimationLogBloc, CostEstimationLogState>(
-        'should load the next page after a failed reload from where the list on screen ends',
+        'should load the next page after a failed reload from where the list on screen ends, keeping the failure mark',
         build: () {
           seedLogTable(
             LogTestDataFactory.createLogDataList(
@@ -1017,17 +1017,16 @@ void main() {
         },
         skip: skipOneFetchInitialCycle + 2,
         expect: () => [
-          isA<CostEstimationLogLoaded>().having(
-            (s) => s.isLoadingMore,
-            'isLoadingMore',
-            true,
-          ),
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', true)
+              .having((s) => s.hasRefreshFailed, 'hasRefreshFailed', true),
           CostEstimationLogLoaded(
             logs: expectedLatestLogsForEstimate(
               totalCount: defaultPageSize + 5,
               takeCount: defaultPageSize + 5,
               estimateId: testEstimateId,
             ),
+            hasRefreshFailed: true,
           ),
         ],
       );

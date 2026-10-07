@@ -98,6 +98,7 @@ class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
     this.isRepeatFailure = false,
     super.hasMore,
     super.isLoadingMore = false,
+    super.hasRefreshFailed,
   });
 
   @override
@@ -107,6 +108,7 @@ class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
     logs,
     hasMore,
     isLoadingMore,
+    hasRefreshFailed,
   ];
 }
 

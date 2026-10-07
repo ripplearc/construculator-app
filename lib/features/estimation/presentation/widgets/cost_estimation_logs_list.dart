@@ -331,7 +331,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  // The error icon and what failed, in the error colour.
   Widget _buildFailureMessage(BuildContext context, String message) {
     final appColors = context.colorTheme;
 

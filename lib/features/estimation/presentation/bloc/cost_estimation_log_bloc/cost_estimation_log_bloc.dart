@@ -143,6 +143,7 @@ class CostEstimationLogBloc
         logs: currentState.logs.toList(),
         hasMore: currentState.hasMore,
         isLoadingMore: true,
+        hasRefreshFailed: currentState.hasRefreshFailed,
       ),
     );
 
@@ -167,6 +168,7 @@ class CostEstimationLogBloc
           logs: currentState.logs.toList(),
           isRepeatFailure: currentState is CostEstimationLogLoadMoreError,
           hasMore: currentState.hasMore,
+          hasRefreshFailed: currentState.hasRefreshFailed,
         ),
       ),
       (newLogs) {
@@ -177,6 +179,7 @@ class CostEstimationLogBloc
             logs: allLogs,
             hasMore: hasMore,
             isLoadingMore: false,
+            hasRefreshFailed: currentState.hasRefreshFailed,
           ),
         );
       },
