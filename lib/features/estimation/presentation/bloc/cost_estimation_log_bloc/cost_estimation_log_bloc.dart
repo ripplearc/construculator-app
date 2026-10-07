@@ -15,6 +15,7 @@ part 'cost_estimation_log_state.dart';
 ///
 /// This BLoC handles:
 /// - Fetching initial logs for an estimation
+/// - Reloading on pull-down while the loaded logs stay on screen
 /// - Loading more logs with pagination
 /// - Error handling and state management
 /// - Event concurrency via transformers (restartable for FetchInitial)
@@ -34,6 +35,7 @@ class CostEstimationLogBloc
   CostEstimationLogBloc({required this._repository})
     : super(const CostEstimationLogInitial()) {
     on<CostEstimationLogFetchInitial>(_onFetchInitial);
+    on<CostEstimationLogRefresh>(_onRefresh);
     on<CostEstimationLogLoadMore>(_onLoadMore);
   }
 
@@ -58,15 +60,62 @@ class CostEstimationLogBloc
           isRepeatFailure: isRetryAfterFailure,
         ),
       ),
-      (logs) {
-        if (logs.isEmpty) {
-          emit(const CostEstimationLogEmpty());
-        } else {
-          final hasMore = _repository.hasMoreLogs(event.estimateId);
-          emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
-        }
-      },
+      (logs) => _emitFirstPage(logs, event.estimateId, emit),
     );
+  }
+
+  // Reloads the first page without passing through Loading, so the logs on
+  // screen stay put while it runs and after it fails (CUJ 11 screen 13).
+  // With nothing on screen to keep, it is a first load.
+  Future<void> _onRefresh(
+    CostEstimationLogRefresh event,
+    Emitter<CostEstimationLogState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! CostEstimationLogWithData) {
+      return _onFetchInitial(
+        CostEstimationLogFetchInitial(estimateId: event.estimateId),
+        emit,
+      );
+    }
+
+    _currentEstimateId = event.estimateId;
+    await _inFlightLoadMore?.cancel();
+    _inFlightLoadMore = null;
+
+    emit(
+      CostEstimationLogLoaded(
+        logs: currentState.logs.toList(),
+        hasMore: currentState.hasMore,
+        isRefreshing: true,
+      ),
+    );
+
+    final result = await _repository.fetchInitialLogs(event.estimateId);
+
+    result.fold(
+      (_) => emit(
+        CostEstimationLogLoaded(
+          logs: currentState.logs.toList(),
+          hasMore: currentState.hasMore,
+          hasRefreshFailed: true,
+        ),
+      ),
+      (logs) => _emitFirstPage(logs, event.estimateId, emit),
+    );
+  }
+
+  void _emitFirstPage(
+    List<CostEstimationLog> logs,
+    String estimateId,
+    Emitter<CostEstimationLogState> emit,
+  ) {
+    if (logs.isEmpty) {
+      emit(const CostEstimationLogEmpty());
+    } else {
+      final hasMore = _repository.hasMoreLogs(estimateId);
+      emit(CostEstimationLogLoaded(logs: logs, hasMore: hasMore));
+    }
   }
 
   Future<void> _onLoadMore(
@@ -83,7 +132,9 @@ class CostEstimationLogBloc
       return;
     }
 
-    if (currentState.isLoadingMore || !currentState.hasMore) {
+    if (currentState.isLoadingMore ||
+        currentState.isRefreshing ||
+        !currentState.hasMore) {
       return;
     }
 

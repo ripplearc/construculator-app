@@ -44,8 +44,8 @@
             <mutation text="if (_currentEstimateId == event.estimateId) { return; }"/>
         </regex>
 
-        <!-- RULE 7: Skip isLoadingMore/hasMore guard -->
-        <regex pattern="if \(currentState\.isLoadingMore \|\| !currentState\.hasMore\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.skip_progress_guard">
+        <!-- RULE 7: Skip isLoadingMore/isRefreshing/hasMore guard -->
+        <regex pattern="if \(currentState\.isLoadingMore \|\|\s*currentState\.isRefreshing \|\|\s*!currentState\.hasMore\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.skip_progress_guard">
             <mutation text="// skip loading/hasMore guard"/>
         </regex>
 
@@ -97,6 +97,31 @@
         <!-- RULE 17: Remember a failure even after a first load succeeds -->
         <regex pattern="_lastFirstLoadFailed = result\.isLeft\(\);" dotAll="true" id="log_bloc.fetch.keep_last_failure">
             <mutation text="_lastFirstLoadFailed = true;"/>
+        </regex>
+
+        <!-- RULE 18: Let load more run while a reload runs -->
+        <regex pattern="currentState\.isRefreshing \|\|\s*" dotAll="true" id="log_bloc.loadmore.skip_refreshing_guard">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 19: Always reload through the first-load path -->
+        <regex pattern="if \(currentState is! CostEstimationLogWithData\) \{\s*return _onFetchInitial\(" dotAll="true" id="log_bloc.refresh.always_first_load">
+            <mutation text="if (true) { return _onFetchInitial("/>
+        </regex>
+
+        <!-- RULE 20: Never mark the logs on screen as reloading -->
+        <regex pattern="isRefreshing: true," dotAll="true" id="log_bloc.refresh.skip_refreshing_mark">
+            <mutation text="isRefreshing: false,"/>
+        </regex>
+
+        <!-- RULE 21: Never mark a failed reload -->
+        <regex pattern="hasRefreshFailed: true," dotAll="true" id="log_bloc.refresh.skip_failed_mark">
+            <mutation text="hasRefreshFailed: false,"/>
+        </regex>
+
+        <!-- RULE 22: Drop the older pages after a failed reload -->
+        <regex pattern="hasMore: currentState\.hasMore,\s*hasRefreshFailed: true," dotAll="true" id="log_bloc.refresh.drop_has_more">
+            <mutation text="hasMore: false, hasRefreshFailed: true,"/>
         </regex>
     </rules>
 

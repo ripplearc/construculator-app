@@ -1447,6 +1447,14 @@
   "@loadMoreLogsErrorRepeat": {
     "description": "Message shown when a retried load of older activity logs fails again"
   },
+  "refreshLogsError": "Couldn't refresh Logs.",
+  "@refreshLogsError": {
+    "description": "Message shown above the activity logs list when a pull-down reload fails and the list already on screen is kept"
+  },
+  "refreshLogsErrorHint": "The list below may be out of date. Pull down to try again.",
+  "@refreshLogsErrorHint": {
+    "description": "Line under the failed reload message, telling the contractor the kept list may be stale and how to retry"
+  },
   "loadingLogs": "Loading Logs",
   "@loadingLogs": {
     "description": "Label under the spinner while the first page of activity logs loads"
