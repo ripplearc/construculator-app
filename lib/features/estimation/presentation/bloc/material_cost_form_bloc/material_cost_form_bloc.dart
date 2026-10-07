@@ -1,5 +1,8 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,10 +17,15 @@ const double _quantityColumnLimit = 1e14;
 /// and the validation that decides when Add is enabled.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
+  final CostItemRepository _repository;
   final LastUsedUnitRepository _lastUsedUnitRepository;
+  final Clock _clock;
 
-  MaterialCostFormBloc({required this._lastUsedUnitRepository})
-    : super(const MaterialCostFormInitial()) {
+  MaterialCostFormBloc({
+    required this._repository,
+    required this._lastUsedUnitRepository,
+    required this._clock,
+  }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialCostItemTypeChanged>(
       (e, emit) => _emit(emit, (d) => d.copyWith(itemName: e.value)),
@@ -30,7 +38,7 @@ class MaterialCostFormBloc
       (e, emit) => _emit(emit, (d) => d.copyWith(unit: e.unit)),
     );
     on<MaterialRateUpdated>(_onRateUpdated);
-    // TODO(CA-294): register MaterialCostFormSubmitted and wire to CostItemRepository.createCostItem
+    on<MaterialCostFormSubmitted>(_onSubmitted);
   }
 
   Future<void> _onStarted(
@@ -64,12 +72,79 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
     MaterialCostFormData Function(MaterialCostFormData) update,
   ) {
+    if (state is MaterialCostFormSubmitting ||
+        state is MaterialCostFormSuccess) {
+      return;
+    }
     emit(MaterialCostFormEditing(_validated(update(_current()))));
+  }
+
+  Future<void> _onSubmitted(
+    MaterialCostFormSubmitted event,
+    Emitter<MaterialCostFormState> emit,
+  ) async {
+    if (state is MaterialCostFormSubmitting ||
+        state is MaterialCostFormSuccess) {
+      return;
+    }
+    final draft = _validated(_current());
+    final quantity = draft.quantity;
+    final rate = draft.rate;
+    final unit = draft.unit;
+    if (!draft.isValid || quantity == null || rate == null || unit == null) {
+      emit(MaterialCostFormEditing(draft));
+      return;
+    }
+    emit(MaterialCostFormSubmitting(draft));
+    final result = await _repository.createCostItem(
+      _buildCostItem(
+        draft,
+        event.estimateId,
+        quantity: quantity,
+        rate: rate,
+        unit: unit,
+      ),
+    );
+    await result.fold(
+      (failure) async => emit(MaterialCostFormFailure(draft, failure)),
+      (created) async {
+        await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
+        emit(MaterialCostFormSuccess(draft, created));
+      },
+    );
+  }
+
+  MaterialCostItem _buildCostItem(
+    MaterialCostFormData draft,
+    String estimateId, {
+    required double quantity,
+    required double rate,
+    required Unit unit,
+  }) {
+    final now = _clock.now();
+    return MaterialCostItem(
+      id: '',
+      estimateId: estimateId,
+      itemName: draft.itemName.trim(),
+      calculation: {'unit_price': rate, 'quantity': quantity},
+      itemTotalCost: (quantity * rate * 100).round() / 100,
+      createdAt: now,
+      updatedAt: now,
+      // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
+      currency: 'USD',
+      unitPrice: Money(amount: rate),
+      quantity: Quantity(value: quantity, unit: unit),
+      rateStatus: draft.rateStatus,
+      quantityProvenance: QuantityProvenance.manual,
+    );
   }
 
   MaterialCostFormData _current() {
     return switch (state) {
       MaterialCostFormEditing(:final data) => data,
+      MaterialCostFormSubmitting(:final data) => data,
+      MaterialCostFormSuccess(:final data) => data,
+      MaterialCostFormFailure(:final data) => data,
       MaterialCostFormInitial() => const MaterialCostFormData(),
     };
   }

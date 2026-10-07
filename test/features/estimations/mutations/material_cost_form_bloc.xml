@@ -61,6 +61,39 @@
         <regex pattern="errors\[MaterialFormField\.quantity\] =\s*MaterialFieldError\.quantityNotPositive" dotAll="true" id="bloc.quantity.error_kind">
             <mutation text="errors[MaterialFormField.quantity] = MaterialFieldError.quantityTooLarge"/>
         </regex>
+        <regex pattern="state is MaterialCostFormSubmitting \|\|" dotAll="false" id="bloc.submit.skip_in_flight_guard">
+            <mutation text="false ||"/>
+        </regex>
+        <regex pattern="state is MaterialCostFormSuccess\) \{" dotAll="false" id="bloc.submit.skip_success_guard">
+            <mutation text="false) {"/>
+        </regex>
+        <regex pattern="if \(!draft\.isValid\) \{" dotAll="false" id="bloc.submit.skip_validity_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="\* 100\)\.round\(\) / 100" dotAll="false" id="bloc.submit.total_rounding">
+            <mutation text="* 100).floor() / 100"/>
+        </regex>
+        <regex pattern="quantity \* rate" dotAll="false" id="bloc.submit.total_operator">
+            <mutation text="quantity + rate"/>
+        </regex>
+        <regex pattern="QuantityProvenance\.manual" dotAll="false" id="bloc.submit.provenance">
+            <mutation text="QuantityProvenance.fromCalculator"/>
+        </regex>
+        <regex pattern="draft\.itemName\.trim\(\)" dotAll="false" id="bloc.submit.trim_name">
+            <mutation text="draft.itemName"/>
+        </regex>
+        <regex pattern="CostItemType\.material,\s+draft\.unit!" dotAll="true" id="bloc.submit.remember_unit_category">
+            <mutation text="CostItemType.labor, draft.unit!"/>
+        </regex>
+        <regex pattern="'unit_price': rate" dotAll="false" id="bloc.submit.calculation_rate">
+            <mutation text="'unit_price': 0.0"/>
+        </regex>
+        <regex pattern="d\.unit == null \? d\.copyWith\(unit: unit\) : d" dotAll="false" id="bloc.start.keep_picked_unit">
+            <mutation text="d.copyWith(unit: unit)"/>
+        </regex>
+        <regex pattern="if \(unit == null\) return;" dotAll="false" id="bloc.start.skip_null_unit">
+            <mutation text="if (false) return;"/>
+        </regex>
     </rules>
 
     <commands>
