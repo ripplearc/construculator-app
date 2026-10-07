@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
@@ -34,6 +35,11 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
+  /// Builds a [MaterialCostFormBloc] for the material cost sheet the FAB
+  /// launches. Same not-a-module-file reasoning as
+  /// [equipmentCostFormBlocFactory].
+  final MaterialCostFormBloc Function() materialCostFormBlocFactory;
+
   /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
   /// total for the equipment cost sheet. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
@@ -54,6 +60,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
+    required this.materialCostFormBlocFactory,
     required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -93,6 +100,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
           EquipmentCostFormSuccess() => _SheetOutcome.added,
           EquipmentCostFormFailure() => _SheetOutcome.failed,
+          _ => _SheetOutcome.editing,
+        },
+      );
+
+  Future<void> _openMaterialSheet() =>
+      _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
+        type: CostItemType.material,
+        blocFactory: widget.materialCostFormBlocFactory,
+        outcomeOf: (state) => switch (state) {
+          MaterialCostFormSubmitting() => _SheetOutcome.submitting,
+          MaterialCostFormSuccess() => _SheetOutcome.added,
+          MaterialCostFormFailure() => _SheetOutcome.failed,
           _ => _SheetOutcome.editing,
         },
       );
@@ -296,9 +315,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => widget.router.pushNamed(
-          '$fullAddMaterialCostRoute/${widget.estimationId}',
-        ),
+        onPressed: _openMaterialSheet,
       ),
     };
   }
