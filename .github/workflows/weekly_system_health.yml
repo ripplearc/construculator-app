@@ -115,6 +115,7 @@ jobs:
 
       - name: Capture performance run
         id: capture
+        timeout-minutes: 60
         run: |
           bash scripts/perf/capture_perf_run.sh \
             --device-id "${{ steps.params.outputs.device_id }}" \
