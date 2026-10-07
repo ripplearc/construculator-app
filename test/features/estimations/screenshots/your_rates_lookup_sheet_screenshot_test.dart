@@ -44,7 +44,11 @@ void main() {
     seededRows = [];
   });
 
-  void seedRate({required String itemName, required double amount}) {
+  void seedRate({
+    required String itemName,
+    required double amount,
+    String method = 'job',
+  }) {
     seededRows = [
       ...seededRows,
       {
@@ -54,7 +58,7 @@ void main() {
         'item_name': itemName,
         'rate_amount': amount,
         'rate_currency': 'USD',
-        'equipment_method': 'job',
+        'equipment_method': method,
         'saved_at': DateTime(2026, 1, 1).toIso8601String(),
       },
     ];
@@ -64,6 +68,7 @@ void main() {
   Future<void> pumpSheet({
     required WidgetTester tester,
     required ThemeData theme,
+    EquipmentPricingMethod method = EquipmentPricingMethod.job,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -75,13 +80,20 @@ void main() {
           body: BlocProvider<YourRatesBloc>(
             create: (_) => Modular.get<YourRatesBloc>(),
             child: YourRatesLookupSheet(
-              method: EquipmentPricingMethod.job,
+              method: method,
+              onSwitchMethod: (_) {},
               clock: FakeClockImpl(DateTime(2026, 1, 15)),
             ),
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> searchFor(WidgetTester tester, String query) async {
+    await tester.enterText(find.byKey(CoreSearchBox.textFieldKey), query);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 
@@ -189,6 +201,7 @@ void main() {
               create: (_) => Modular.get<YourRatesBloc>(),
               child: YourRatesLookupSheet(
                 method: EquipmentPricingMethod.job,
+                onSwitchMethod: (_) {},
                 clock: FakeClockImpl(DateTime(2026, 1, 15)),
               ),
             ),
@@ -222,6 +235,164 @@ void main() {
           find.byType(YourRatesLookupSheet),
           matchesGoldenFile(
             'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/selected$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the other-method message for one job price while Day is active (Figma X3b)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(itemName: 'Excavator + operator — half day', amount: 340);
+
+        await pumpSheet(
+          tester: tester,
+          theme: theme,
+          method: EquipmentPricingMethod.day,
+        );
+        await searchFor(tester, 'excavator half day');
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_job_price$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the count and range when several job prices match while Day is active',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(itemName: 'Excavator + operator — half day', amount: 340);
+        seedRate(itemName: 'Excavator + operator — full day', amount: 520);
+        seedRate(itemName: 'Excavator + operator — 3 hours', amount: 400);
+
+        await pumpSheet(
+          tester: tester,
+          theme: theme,
+          method: EquipmentPricingMethod.day,
+        );
+        await searchFor(tester, 'excavator');
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_job_prices_range$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the other-method message for one day rate while Job is active',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(
+          itemName: 'Excavator + operator — half day',
+          amount: 120,
+          method: 'day',
+        );
+
+        await pumpSheet(tester: tester, theme: theme);
+        await searchFor(tester, 'excavator half day');
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_day_rate$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'shows the count and range when several day rates match while Job is active',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(itemName: 'Excavator — half day', amount: 120, method: 'day');
+        seedRate(itemName: 'Excavator — full day', amount: 180, method: 'day');
+
+        await pumpSheet(tester: tester, theme: theme);
+        await searchFor(tester, 'excavator');
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_day_rates_range$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'lists the lone job price selected with its Use button after Show job prices (Figma X6b)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(itemName: 'Excavator + operator — half day', amount: 340);
+
+        await pumpSheet(
+          tester: tester,
+          theme: theme,
+          method: EquipmentPricingMethod.day,
+        );
+        await searchFor(tester, 'excavator half day');
+        await tester.tap(
+          find.byKey(const Key('your_rates_other_method_action')),
+        );
+        await tester.pumpAndSettle();
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_switched_lone_match$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'lists several job prices with none selected after Show job prices',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        seedRate(itemName: 'Excavator + operator — half day', amount: 340);
+        seedRate(itemName: 'Excavator + operator — full day', amount: 520);
+
+        await pumpSheet(
+          tester: tester,
+          theme: theme,
+          method: EquipmentPricingMethod.day,
+        );
+        await searchFor(tester, 'excavator');
+        await tester.tap(
+          find.byKey(const Key('your_rates_other_method_action')),
+        );
+        await tester.pumpAndSettle();
+
+        await expectLater(
+          find.byType(YourRatesLookupSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/other_method_switched_several$suffix.png',
           ),
         );
       },
