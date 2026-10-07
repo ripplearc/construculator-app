@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- RECENTS DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: PowerSyncLocalRecentsDataSource and RecentRowMapper, the
+         local-only store under the recents repository. A weakened guard here
+         leaves an old drawer under a new one, lets a watch miss or repeat a
+         change, answers for ever after dispose, or reads a bad row as a good
+         one. -->
+
+    <files>
+        <file>lib/features/calculator/data/data_source/powersync_local_recents_data_source.dart</file>
+        <file>lib/features/calculator/data/models/recent_row_mapper.dart</file>
+    </files>
+
+    <commands>
+        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_recents_data_source_test.dart test/features/calculator/units/data/models/recent_row_mapper_test.dart</command>
+    </commands>
+
+    <rules>
+        <!-- RULE 1: a replacement keeps the old drawer under the new one -->
+        <regex pattern="await transaction\.execute\(_clearDrawerSql, \[drawer\]\);" dotAll="true" id="recents_data_source.replace.keeps_old_rows">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 2: a watch collapses lists of different length, or repeats
+             an unchanged list -->
+        <regex pattern="if \(a\.length != b\.length\) return false;\s*for \(var i = 0; i &lt; a\.length; i\+\+\) \{\s*if \(a\[i\] != b\[i\]\) return false;\s*\}\s*return true;" dotAll="true" id="recents_data_source.watch.same_list">
+            <mutation text="return true;"/>
+            <mutation text="return false;"/>
+        </regex>
+
+        <!-- RULE 3: a watch taken after dispose never ends -->
+        <regex pattern="\(disposed \? source\.take\(1\) : source\)" dotAll="true" id="recents_data_source.watch.after_dispose_endless">
+            <mutation text="source"/>
+        </regex>
+
+        <!-- RULE 4: an unknown dimension or unit name is read as the first one -->
+        <regex pattern="Dimension\.values\.asNameMap\(\)\[_text\(\s*row,\s*DatabaseConstants\.dimensionColumn,\s*\)\] \?\?\s*\(throw const FormatException\(\s*'Unreadable recent row: \$\{DatabaseConstants\.dimensionColumn\}',\s*\)\);" dotAll="true" id="recents_row_mapper.unknown_dimension_read">
+            <mutation text="Dimension.values.asNameMap()[_text(row, DatabaseConstants.dimensionColumn)] ?? Dimension.length;"/>
+        </regex>
+        <regex pattern="Unit\.values\.asNameMap\(\)\[_text\(row, DatabaseConstants\.unitColumn\)\] \?\?\s*\(throw const FormatException\(\s*'Unreadable recent row: \$\{DatabaseConstants\.unitColumn\}',\s*\)\);" dotAll="true" id="recents_row_mapper.unknown_unit_read">
+            <mutation text="Unit.values.asNameMap()[_text(row, DatabaseConstants.unitColumn)] ?? Unit.inch;"/>
+        </regex>
+
+        <!-- RULE 5: an angle or a bare number is written with a unit -->
+        <regex pattern="Angle\(\) \|\| Scalar\(\) =&gt; '',"  dotAll="true" id="recents_row_mapper.unitless_written_with_unit">
+            <mutation text="Angle() || Scalar() =&gt; 'inch',"/>
+        </regex>
+
+        <!-- RULE 7: a watch whose cancel the database refuses is left open
+             for ever by dispose -->
+        <regex pattern="try \{\s*await watcher\.value\.cancel\(\);\s*\} finally \{\s*await watcher\.key\.close\(\);\s*\}" dotAll="true" id="recents_data_source.dispose.refused_cancel_leaves_open">
+            <mutation text="await watcher.value.cancel();&#10;        await watcher.key.close();"/>
+        </regex>
+
+        <!-- RULE 8: a watch dispose already ended cancels its query a
+             second time, surfacing the refusal again -->
+        <regex pattern="controller\.onCancel = \(\) =&gt; _watchers\.remove\(controller\)\?\.cancel\(\);" dotAll="true" id="recents_data_source.watch.cancel_twice">
+            <mutation text="controller.onCancel = () {&#10;      _watchers.remove(controller);&#10;      return subscription.cancel();&#10;    };"/>
+        </regex>
+
+        <!-- RULE 6: a length's ticks are read as a fraction of the real column -->
+        <regex pattern="Dimension\.length =&gt; Length\(magnitude\.round\(\), unit: _unitOf\(row\)\)," dotAll="true" id="recents_row_mapper.length_ticks_truncated">
+            <mutation text="Dimension.length =&gt; Length(magnitude ~/ 2, unit: _unitOf(row)),"/>
+        </regex>
+    </rules>
+</mutations>
