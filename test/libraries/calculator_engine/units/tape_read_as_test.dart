@@ -98,7 +98,9 @@ void main() {
 
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '8.45in');
-        expect(strip(tape).first, 'Pitch-degrees: 35.16°');
+        // 8.45in is kept exactly (CA-1190): atan(8.45/12) is 35.15°, where the
+        // tick-rounded 541/64in read 35.16°.
+        expect(strip(tape).first, 'Pitch-degrees: 35.15°');
         expect(pill(tape), "Input 8.45in/12in as 8°45'");
 
         tape = press(tape, 'pill');

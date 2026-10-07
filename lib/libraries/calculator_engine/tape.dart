@@ -1042,7 +1042,8 @@ class Tape extends Equatable {
     if (rise == null || rise <= 0 || rise > ReadAsOffer.largestRisePerFoot) {
       return false;
     }
-    return parser.ticksOf(Token(digits: raw, unit: Unit.inch)) > 0;
+    final length = parser.parse([Token(digits: raw, unit: Unit.inch)]);
+    return length is Length && length.ticks > 0;
   }
 
   static bool _isAPitch(double? degrees) =>
