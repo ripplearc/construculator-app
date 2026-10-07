@@ -167,19 +167,39 @@ final class Weight extends Quantity {
   List<Object?> get props => [hundredthsOfPound, unit];
 }
 
-/// A rotation in decimal degrees. Degrees:minutes:seconds is a spelling of
-/// the same number, not a different unit.
+/// How an angle is written on screen: decimal degrees (27.55°) or the way a
+/// survey sheet writes it, degrees, minutes and seconds (27°33'10").
+///
+/// Two spellings of one number, not two units (UX Design Doc Section 6,
+/// "Conversions offered": angle answers offer their D:M:S spelling), which
+/// is why it sits beside the degrees the way a length's unit sits beside
+/// its ticks, and why re-spelling an angle never touches them (rule 4.15).
+enum AngleSpelling {
+  /// Decimal degrees, to two decimals at display.
+  degrees,
+
+  /// Degrees, then minutes and seconds padded to two digits.
+  degreesMinutesSeconds,
+}
+
+/// A rotation in decimal degrees, whichever spelling it wears.
 final class Angle extends Quantity {
   /// The angle in decimal degrees.
   final double degrees;
 
-  const Angle(this.degrees);
+  /// How the angle is written; degrees unless a conversion re-spelled it.
+  final AngleSpelling spelling;
+
+  const Angle(this.degrees, {this.spelling = AngleSpelling.degrees});
 
   @override
   Dimension get dimension => Dimension.angle;
 
+  /// The same angle written the other way.
+  Angle spelledAs(AngleSpelling spelling) => Angle(degrees, spelling: spelling);
+
   @override
-  List<Object?> get props => [degrees];
+  List<Object?> get props => [degrees, spelling];
 }
 
 /// A bare number with no unit: a count, a ratio or a factor.

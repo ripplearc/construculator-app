@@ -196,8 +196,14 @@ void main() {
       });
     });
 
-    test('offers nothing for an angle or a scalar', () {
-      expect(converter.offersFor(const Angle(26.57)), isEmpty);
+    test('offers an angle its other spelling with the same degrees', () {
+      const degrees = Angle(6.84);
+      const dms = Angle(6.84, spelling: AngleSpelling.degreesMinutesSeconds);
+      expect(converter.offersFor(degrees), [dms]);
+      expect(converter.offersFor(dms), [degrees]);
+    });
+
+    test('offers nothing for a scalar', () {
       expect(converter.offersFor(const Scalar(78)), isEmpty);
     });
   });
