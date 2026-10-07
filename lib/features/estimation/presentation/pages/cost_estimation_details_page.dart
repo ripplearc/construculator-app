@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -29,6 +33,11 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
+  /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
+  /// total for the equipment cost sheet. Same not-a-module-file reasoning as
+  /// [equipmentCostFormBlocFactory].
+  final EstimateSummaryBloc Function() estimateSummaryBlocFactory;
+
   /// Backs the equipment form's "Save as my rate" and look-up-a-rate
   /// features. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
@@ -43,6 +52,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
+    required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
     required this.clock,
   });
@@ -54,6 +64,72 @@ class CostEstimationDetailsPage extends StatefulWidget {
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
+  late final EstimateSummaryBloc _summaryBloc;
+  var _isOpeningSheet = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _summaryBloc = widget.estimateSummaryBlocFactory()
+      ..add(EstimateSummaryRequested(widget.estimationId));
+  }
+
+  @override
+  void dispose() {
+    unawaited(_summaryBloc.close());
+    super.dispose();
+  }
+
+  Future<CostEstimate?> _loadEstimate() async {
+    final current = _summaryBloc.state;
+    if (current is! EstimateSummaryLoaded &&
+        current is! EstimateSummaryLoading) {
+      _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
+    }
+    final settled = current is EstimateSummaryLoaded
+        ? current
+        : await _summaryBloc.stream.firstWhere(
+            (s) => s is EstimateSummaryLoaded || s is EstimateSummaryFailure,
+            orElse: () => _summaryBloc.state,
+          );
+    return settled is EstimateSummaryLoaded ? settled.estimate : null;
+  }
+
+  Future<void> _openEquipmentSheet() async {
+    if (_isOpeningSheet) return;
+    _isOpeningSheet = true;
+    try {
+      final l10n = context.l10n;
+      final estimate = await _loadEstimate();
+      if (!mounted) return;
+      if (estimate == null) {
+        CoreToast.showError(
+          context,
+          l10n.estimateSummaryLoadFailedError,
+          l10n.closeLabel,
+        );
+        return;
+      }
+      await CoreQuickSheet.show<void>(
+        context: context,
+        backgroundColor: sheetSurface(context),
+        child: BlocProvider<EquipmentCostFormBloc>(
+          create: (_) => widget.equipmentCostFormBlocFactory(),
+          child: CostItemFormScreen(
+            type: CostItemType.equipment,
+            estimationId: widget.estimationId,
+            router: widget.router,
+            presentAsSheet: true,
+            yourRatesBlocFactory: widget.yourRatesBlocFactory,
+            clock: widget.clock,
+            estimate: estimate,
+          ),
+        ),
+      );
+    } finally {
+      _isOpeningSheet = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,21 +254,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => CoreQuickSheet.show(
-          context: context,
-          backgroundColor: sheetSurface(context),
-          child: BlocProvider<EquipmentCostFormBloc>(
-            create: (_) => widget.equipmentCostFormBlocFactory(),
-            child: CostItemFormScreen(
-              type: CostItemType.equipment,
-              estimationId: widget.estimationId,
-              router: widget.router,
-              presentAsSheet: true,
-              yourRatesBlocFactory: widget.yourRatesBlocFactory,
-              clock: widget.clock,
-            ),
-          ),
-        ),
+        onPressed: _openEquipmentSheet,
       ),
       CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),

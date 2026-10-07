@@ -3027,5 +3027,10 @@
         "example": "Bedroom 2"
       }
     }
+  },
+  "estimateSummaryLoadFailedError": "Couldn't open this estimate. Try again.",
+  "@estimateSummaryLoadFailedError": {
+    "description": "Error toast when the estimate's name and total cannot be loaded before opening the equipment cost sheet. No Figma frame covers this case.",
+    "context": "N/A"
   }
 }
