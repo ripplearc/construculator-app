@@ -55,6 +55,7 @@ void main() {
     WidgetTester tester,
     List<YourRateEntry?> results, {
     EquipmentPricingMethod method = EquipmentPricingMethod.day,
+    List<EquipmentPricingMethod>? switchedTo,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -72,6 +73,7 @@ void main() {
                     await YourRatesLookupSheet.show(
                       context: context,
                       method: method,
+                      onSwitchMethod: (switched) => switchedTo?.add(switched),
                       clock: clock,
                       blocFactory: () => Modular.get<YourRatesBloc>(),
                     ),
@@ -418,6 +420,198 @@ void main() {
 
       expect(find.byKey(const Key('your_rate_row_rate-1')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_rate-0')), findsNothing);
+    });
+  });
+
+  group('YourRatesLookupSheet – a match under the other pricing method', () {
+    const noticeKey = Key('your_rates_other_method_notice');
+    const actionKey = Key('your_rates_other_method_action');
+
+    void seed(List<Map<String, dynamic>> rows) {
+      fakeSupabase.reset();
+      fakeSupabase.addTableData('your_rates', rows);
+    }
+
+    testWidgets(
+      'Day active, only a job price matches: says so in place of the plain '
+      'no-match line, with the action to show job prices',
+      (tester) async {
+        seed([row('job-1', 'Dumpster', method: 'job', amount: 340)]);
+        await openSheet(tester, []);
+
+        await search(tester, 'dumpster');
+
+        expect(
+          find.text(
+            'No day rates for “dumpster”. It has a job price of \$340.00.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.yourRatesShowJobPrices), findsOneWidget);
+        expect(find.byKey(noticeKey), findsOneWidget);
+        expect(find.byKey(const Key('your_rates_empty_state')), findsNothing);
+        expect(find.byKey(const Key('your_rate_row_job-1')), findsNothing);
+      },
+    );
+
+    testWidgets('Job active, only a day rate matches: offers the day rates', (
+      tester,
+    ) async {
+      seed([row('day-1', 'Dumpster', amount: 120)]);
+      await openSheet(tester, [], method: EquipmentPricingMethod.job);
+
+      await search(tester, 'dumpster');
+
+      expect(
+        find.text(
+          'No job prices for “dumpster”. It has a day rate of \$120.00.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.yourRatesShowDayRates), findsOneWidget);
+    });
+
+    testWidgets('several matches give the count and the range', (tester) async {
+      seed([
+        row('job-1', 'Dumpster 10 yd', method: 'job', amount: 340),
+        row('job-2', 'Dumpster 20 yd', method: 'job', amount: 520),
+        row('job-3', 'Dumpster 30 yd', method: 'job', amount: 400),
+      ]);
+      await openSheet(tester, []);
+
+      await search(tester, 'dumpster');
+
+      expect(
+        find.text(
+          'No day rates for “dumpster”. It has 3 job prices, '
+          'from \$340.00 to \$520.00.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping the action switches the caller to the other method '
+        'and keeps the typed words', (tester) async {
+      seed([row('job-1', 'Dumpster', method: 'job', amount: 340)]);
+      final switched = <EquipmentPricingMethod>[];
+      await openSheet(tester, [], switchedTo: switched);
+      await search(tester, 'dumpster');
+
+      await tester.tap(find.byKey(actionKey));
+      await tester.pumpAndSettle();
+
+      expect(switched, [EquipmentPricingMethod.job]);
+      expect(find.byKey(noticeKey), findsNothing);
+      expect(find.text('dumpster'), findsOneWidget);
+    });
+
+    testWidgets('after the switch a lone match is listed as a job price, '
+        'selected, with the Use button naming it', (tester) async {
+      seed([row('job-1', 'Dumpster', method: 'job', amount: 340)]);
+      await openSheet(tester, []);
+      await search(tester, 'dumpster');
+
+      await tester.tap(find.byKey(actionKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rate_row_job-1')), findsOneWidget);
+      expect(
+        find.widgetWithText(
+          CoreButton,
+          l10n.yourRatesUseButtonLabel('\$340.00', 'job'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('after the switch several matches are listed and none is '
+        'selected until one is tapped', (tester) async {
+      seed([
+        row('job-1', 'Dumpster 10 yd', method: 'job', amount: 340),
+        row('job-2', 'Dumpster 20 yd', method: 'job', amount: 520),
+      ]);
+      await openSheet(tester, []);
+      await search(tester, 'dumpster');
+
+      await tester.tap(find.byKey(actionKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rate_row_job-1')), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_job-2')), findsOneWidget);
+      expect(find.byKey(const Key('your_rates_use_button')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('your_rate_row_job-2')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rates_use_button')), findsOneWidget);
+    });
+
+    testWidgets('using the lone match after the switch returns that rate', (
+      tester,
+    ) async {
+      seed([row('job-1', 'Dumpster', method: 'job', amount: 340)]);
+      final results = <YourRateEntry?>[];
+      await openSheet(tester, results);
+      await search(tester, 'dumpster');
+      await tester.tap(find.byKey(actionKey));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(results.single?.id, 'job-1');
+      expect(results.single?.equipmentMethod, EquipmentPricingMethod.job);
+    });
+
+    testWidgets('a match under neither method keeps the plain no-match line', (
+      tester,
+    ) async {
+      seed([row('job-1', 'Dumpster', method: 'job')]);
+      await openSheet(tester, []);
+
+      await search(tester, 'crane');
+
+      expect(find.text(l10n.yourRatesNoMatchState('crane')), findsOneWidget);
+      expect(find.byKey(noticeKey), findsNothing);
+    });
+
+    testWidgets(
+      'a match under the active method lists it and shows no notice',
+      (tester) async {
+        seed([
+          row('day-1', 'Dumpster', amount: 120),
+          row('job-1', 'Dumpster XL', method: 'job', amount: 340),
+        ]);
+        await openSheet(tester, []);
+
+        await search(tester, 'dumpster');
+
+        expect(find.byKey(const Key('your_rate_row_day-1')), findsOneWidget);
+        expect(find.byKey(noticeKey), findsNothing);
+      },
+    );
+
+    testWidgets('no search typed: the empty list stays plain even when the '
+        'other method has rates', (tester) async {
+      seed([row('job-1', 'Dumpster', method: 'job')]);
+
+      await openSheet(tester, []);
+
+      expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
+      expect(find.byKey(noticeKey), findsNothing);
+    });
+
+    testWidgets('a failed read shows the error row, not the notice', (
+      tester,
+    ) async {
+      seed([row('job-1', 'Dumpster', method: 'job')]);
+      await openSheet(tester, []);
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+
+      await search(tester, 'dumpster');
+
+      expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
+      expect(find.byKey(noticeKey), findsNothing);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/other_method_suggestion.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -29,6 +30,12 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// "Try again" button, and never says there are no saved rates (storyboard
 /// CUJ 6, frame "Look-up, saved prices not read").
 ///
+/// When a search matches no rate under [method] but matches rates under the
+/// other method, the sheet says so and offers to show them (storyboard CUJ 6,
+/// frame "A price on the other method"; Figma X3b and X6b). Tapping the
+/// action calls [onSwitchMethod], keeps the typed words and lists the rates
+/// of the other method; a lone match is selected.
+///
 /// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here once a real data source exists, with the YOUR RATES and FROM SAMPLE COST FILE headings and the "Not your own rates" notice under the sample group.
 ///
 /// Returns the picked [YourRateEntry] via `Navigator.pop`, or null if
@@ -37,12 +44,17 @@ class YourRatesLookupSheet extends StatefulWidget {
   /// Restricts results to this pricing method — see the class doc comment.
   final EquipmentPricingMethod method;
 
+  /// Called with the other pricing method when the user taps the action that
+  /// shows the rates saved under it. The caller switches its own form to it.
+  final ValueChanged<EquipmentPricingMethod> onSwitchMethod;
+
   /// Dates the "Used …" and "Saved …" line under each saved rate.
   final Clock clock;
 
   const YourRatesLookupSheet({
     super.key,
     required this.method,
+    required this.onSwitchMethod,
     required this.clock,
   });
 
@@ -54,6 +66,7 @@ class YourRatesLookupSheet extends StatefulWidget {
   static Future<YourRateEntry?> show({
     required BuildContext context,
     required EquipmentPricingMethod method,
+    required ValueChanged<EquipmentPricingMethod> onSwitchMethod,
     required Clock clock,
     required YourRatesBloc Function() blocFactory,
   }) {
@@ -62,7 +75,11 @@ class YourRatesLookupSheet extends StatefulWidget {
       backgroundColor: sheetSurface(context),
       child: BlocProvider<YourRatesBloc>(
         create: (_) => blocFactory(),
-        child: YourRatesLookupSheet(method: method, clock: clock),
+        child: YourRatesLookupSheet(
+          method: method,
+          onSwitchMethod: onSwitchMethod,
+          clock: clock,
+        ),
       ),
     );
   }
@@ -75,6 +92,7 @@ String _unitSuffix(BuildContext context, EquipmentPricingMethod method) =>
 
 class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   final _searchController = TextEditingController();
+  late EquipmentPricingMethod _method = widget.method;
   YourRateEntry? _selectedEntry;
 
   @override
@@ -103,14 +121,21 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
 
   void _onConfirm(YourRateEntry entry) => Navigator.of(context).pop(entry);
 
-  // TODO: [CA-1205](https://ripplearc.youtrack.cloud/issue/CA-1205) A search that comes up empty for the active method gives no hint that a match exists under the other method, even though the unfiltered results this method receives already have it.
+  void _switchMethod(OtherMethodSuggestion suggestion, YourRatesState state) {
+    widget.onSwitchMethod(suggestion.method);
+    setState(() {
+      _method = suggestion.method;
+      _selectedEntry = _entriesOf(state).singleOrNull;
+    });
+  }
+
   List<YourRateEntry> _entriesOf(YourRatesState state) {
     final entries = switch (state) {
       YourRatesLoaded(:final recents) => recents,
       YourRatesSearchResults(:final results) => results,
       _ => const <YourRateEntry>[],
     };
-    return entries.where((e) => e.equipmentMethod == widget.method).toList();
+    return entries.where((e) => e.equipmentMethod == _method).toList();
   }
 
   @override
@@ -163,7 +188,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
                     key: const Key('your_rates_use_button'),
                     label: l10n.yourRatesUseButtonLabel(
                       DisplayFormatter.currency.format(selected.rate.amount),
-                      _unitSuffix(context, widget.method),
+                      _unitSuffix(context, _method),
                     ),
                     size: CoreButtonSize.medium,
                     onPressed: () => _onConfirm(selected),
@@ -195,6 +220,17 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     }
     if (entries.isEmpty) {
       final query = _searchController.text;
+      final suggestion =
+          query.trim().isNotEmpty && state is YourRatesSearchResults
+          ? OtherMethodSuggestion.from(state.results, active: _method)
+          : null;
+      if (suggestion != null) {
+        return _OtherMethodNotice(
+          message: suggestion.message(l10n, query: query),
+          actionLabel: suggestion.actionLabel(l10n),
+          onAction: () => _switchMethod(suggestion, state),
+        );
+      }
       return Padding(
         key: const Key('your_rates_empty_state'),
         padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space6),
@@ -220,7 +256,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
         return _YourRateRow(
           key: Key('your_rate_row_${entry.id}'),
           entry: entry,
-          method: widget.method,
+          method: _method,
           now: widget.clock.now(),
           selected: entry.id == selected?.id,
           onTap: () => _onRowTap(entry),
@@ -301,27 +337,92 @@ class _LoadErrorRow extends StatelessWidget {
             ),
           ),
         ),
-        Semantics(
-          button: true,
+        _TextActionButton(
+          key: const Key('your_rates_try_again_button'),
           label: l10n.yourRatesTryAgain,
-          excludeSemantics: true,
-          child: GestureDetector(
-            key: const Key('your_rates_try_again_button'),
-            behavior: HitTestBehavior.opaque,
-            onTap: onTryAgain,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              alignment: Alignment.center,
-              child: Text(
-                l10n.yourRatesTryAgain,
-                style: textTheme.bodyMediumSemiBold.copyWith(
-                  color: colorTheme.textLink,
-                ),
-              ),
-            ),
-          ),
+          textStyle: textTheme.bodyMediumSemiBold,
+          onTap: onTryAgain,
         ),
       ],
+    );
+  }
+}
+
+class _OtherMethodNotice extends StatelessWidget {
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _OtherMethodNotice({
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const Key('your_rates_other_method_notice'),
+      padding: const EdgeInsets.fromLTRB(
+        // TODO: [CA-1285](https://ripplearc.youtrack.cloud/issue/CA-1285) Use CoreUI's 18 spacing token once it exists.
+        18,
+        CoreSpacing.space5,
+        18,
+        0,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: context.textTheme.bodyLargeRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space3),
+          _TextActionButton(
+            key: const Key('your_rates_other_method_action'),
+            label: actionLabel,
+            textStyle: context.textTheme.bodyLargeSemiBold,
+            onTap: onAction,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TextActionButton extends StatelessWidget {
+  final String label;
+  final TextStyle textStyle;
+  final VoidCallback onTap;
+
+  const _TextActionButton({
+    super.key,
+    required this.label,
+    required this.textStyle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: textStyle.copyWith(color: context.colorTheme.textLink),
+          ),
+        ),
+      ),
     );
   }
 }
