@@ -31,9 +31,6 @@ enum EquipmentFieldError {
 
   /// The rate or amount is below $0.01 or above $999,999.99.
   rateOutOfRange,
-
-  /// The delivery fee is not $0 and is outside $0.01 to $999,999.99.
-  deliveryFeeOutOfRange,
 }
 
 /// Base sealed class for all equipment cost form states.

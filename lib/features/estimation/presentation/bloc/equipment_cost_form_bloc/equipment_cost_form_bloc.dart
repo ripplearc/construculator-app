@@ -65,6 +65,10 @@ class EquipmentCostFormBloc
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
+      final usable = fee != null && fee.isFinite && fee >= 0 && fee <= _maxRate;
+      // Empty text clears the fee. A value that cannot be kept is ignored,
+      // and the delivery field stops the key before it gets here.
+      if (e.value.isNotEmpty && !usable) return;
       _emit(emit, (d) => d.copyWith(deliveryFee: fee));
     });
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
@@ -175,10 +179,8 @@ class EquipmentCostFormBloc
         errors,
       );
     }
-    final hasValidDeliveryFee = _validateDeliveryFee(draft.deliveryFee, errors);
-
     return draft.copyWith(
-      isValid: hasItemType && hasDuration && hasRate && hasValidDeliveryFee,
+      isValid: hasItemType && hasDuration && hasRate,
       fieldErrors: errors,
     );
   }
@@ -223,22 +225,6 @@ class EquipmentCostFormBloc
       errors[field] = EquipmentFieldError.rateOutOfRange;
     }
     return inRange;
-  }
-
-  bool _validateDeliveryFee(
-    double? fee,
-    Map<EquipmentFormField, EquipmentFieldError> errors,
-  ) {
-    if (fee == null) return true;
-    final isFree = fee == 0;
-    final inRange =
-        !fee.isNaN && !fee.isInfinite && fee >= _minRate && fee <= _maxRate;
-    final isValid = isFree || inRange;
-    if (!isValid) {
-      errors[EquipmentFormField.deliveryFee] =
-          EquipmentFieldError.deliveryFeeOutOfRange;
-    }
-    return isValid;
   }
 
   EquipmentCostItem _buildCostItem(
