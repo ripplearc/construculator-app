@@ -67,7 +67,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     }
     final value = _materialTypeController.text;
     widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
-    context.read<MaterialCostFormBloc>().add(MaterialCostItemTypeChanged(value));
+    context.read<MaterialCostFormBloc>().add(
+      MaterialCostItemTypeChanged(value),
+    );
   }
 
   // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
@@ -148,14 +150,13 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     return [
       BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
         builder: (_, state) {
-          final error =
-              state is MaterialCostFormEditing ? state.itemTypeError : null;
+          final hasError =
+              state is MaterialCostFormEditing && !state.data.isItemNameValid;
           return CoreTextField(
             key: const Key('material_type_field'),
             label: l10n.materialTypeLabel,
             controller: _materialTypeController,
-            errorTextList:
-                error != null ? [l10n.materialTypeRequiredError] : null,
+            errorTextList: hasError ? [l10n.materialTypeRequiredError] : null,
           );
         },
       ),
@@ -221,7 +222,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           label: l10n.otherMaterialDetailsButton,
           variant: CoreButtonVariant.secondary,
           size: CoreButtonSize.medium,
-          onPressed: () => setState(() => _showOtherDetails = !_showOtherDetails),
+          onPressed: () =>
+              setState(() => _showOtherDetails = !_showOtherDetails),
         ),
       ],
     );
