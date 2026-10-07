@@ -668,21 +668,12 @@ void main() {
 
   group('EquipmentPricingMethod enum', () {
     test('fromJson creates correct enum from string', () {
-      expect(
-        EquipmentPricingMethod.fromJson('day'),
-        EquipmentPricingMethod.day,
-      );
-      expect(
-        EquipmentPricingMethod.fromJson('job'),
-        EquipmentPricingMethod.job,
-      );
+      expect(EquipmentPricingMethod.fromJson('day'), EquipmentPricingMethod.day);
+      expect(EquipmentPricingMethod.fromJson('job'), EquipmentPricingMethod.job);
     });
 
     test('fromJson returns day for invalid value', () {
-      expect(
-        EquipmentPricingMethod.fromJson('invalid'),
-        EquipmentPricingMethod.day,
-      );
+      expect(EquipmentPricingMethod.fromJson('invalid'), EquipmentPricingMethod.day);
     });
 
     test('round-trip serialization preserves all values', () {
@@ -777,16 +768,19 @@ void main() {
       expect(jobPricedItem.rateStatus, RateStatus.sampleRateUnverified);
     });
 
-    test('deliveryFee null means unquoted, Money(0) means confirmed free', () {
-      final unquoted = dayPricedItem.copyWith(deliveryFee: clearField);
-      final confirmedFree = dayPricedItem.copyWith(
-        deliveryFee: const Money(amount: 0.0),
-      );
+    test(
+      'deliveryFee null means unquoted, Money(0) means confirmed free',
+      () {
+        final unquoted = dayPricedItem.copyWith(deliveryFee: clearField);
+        final confirmedFree = dayPricedItem.copyWith(
+          deliveryFee: const Money(amount: 0.0),
+        );
 
-      expect(unquoted.deliveryFee, isNull);
-      expect(confirmedFree.deliveryFee, const Money(amount: 0.0));
-      expect(confirmedFree.deliveryFee, isNot(unquoted.deliveryFee));
-    });
+        expect(unquoted.deliveryFee, isNull);
+        expect(confirmedFree.deliveryFee, const Money(amount: 0.0));
+        expect(confirmedFree.deliveryFee, isNot(unquoted.deliveryFee));
+      },
+    );
 
     test('day line with a jobAmount throws', () {
       expect(

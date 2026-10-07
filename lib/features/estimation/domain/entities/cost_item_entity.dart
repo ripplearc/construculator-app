@@ -174,10 +174,10 @@ enum EquipmentPricingMethod {
 
 /// Confidence level of a rate value used in a cost item's calculation.
 ///
-/// This is intentionally generic and not equipment-specific: it is introduced
-/// for [EquipmentCostItem.rateStatus] but is designed to be adopted by
-/// Material and Labor cost items in future tickets, so all cost item types
-/// can express the same three-way rate confidence.
+/// This is intentionally generic and not equipment-specific: it is shared by
+/// [EquipmentCostItem.rateStatus] and [MaterialCostItem.rateStatus] and is
+/// designed to be adopted by Labor cost items, so all cost item types can
+/// express the same three-way rate confidence.
 enum RateStatus {
   /// Rate comes from a generic sample/reference rate, not yet verified by the user.
   sampleRateUnverified('sample_rate_unverified'),
@@ -227,18 +227,17 @@ enum QuantityProvenance {
   /// The quantity was measured in the calculator and handed off to the form.
   fromCalculator('from_calculator');
 
+  /// The string stored in JSON for this provenance.
   final String value;
   const QuantityProvenance(this.value);
 
+  /// Serializes this [QuantityProvenance] to its JSON string representation.
   String toJson() => value;
 
   /// Deserializes a [QuantityProvenance] from JSON string.
   ///
   /// Falls back to [QuantityProvenance.manual] for unknown values because a
   /// quantity with no known origin must never claim to be calculator-sourced.
-  ///
-  /// Note: This fallback behavior means validation errors are silent.
-  /// Consider logging unknown values if strict validation is required.
   static QuantityProvenance fromJson(String value) {
     return QuantityProvenance.values.firstWhere(
       (e) => e.value == value,
@@ -520,6 +519,9 @@ class MaterialCostItem extends CostItem {
   ///
   /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
+  ///
+  /// Switching [quantityProvenance] to [QuantityProvenance.manual] also needs
+  /// `calculatorFormula: clearField`, otherwise the constructor assert fails.
   ///
   /// Example:
   /// ```dart
