@@ -2535,6 +2535,34 @@
       }
     }
   },
+  "yourRatesOtherMethodJobPrices": "No day rates for “{query}”. It has {count, plural, =1{a job price of {lowest}} other{{count} job prices, from {lowest} to {highest}}}.",
+  "@yourRatesOtherMethodJobPrices": {
+    "description": "Shown in the Look-up-a-rate sheet, in place of the rows, when Day is the active method, the search matches no day rate and matches only job prices (storyboard CUJ 6, frame A price on the other method; Figma X3b). One match names its amount; several give the count and the range. The query is in curly quotes",
+    "placeholders": {
+      "query": {"type": "String", "example": "excavator half day"},
+      "count": {"type": "int"},
+      "lowest": {"type": "String", "example": "$340.00"},
+      "highest": {"type": "String", "example": "$520.00"}
+    }
+  },
+  "yourRatesOtherMethodDayRates": "No job prices for “{query}”. It has {count, plural, =1{a day rate of {lowest}} other{{count} day rates, from {lowest} to {highest}}}.",
+  "@yourRatesOtherMethodDayRates": {
+    "description": "Shown in the Look-up-a-rate sheet, in place of the rows, when Job is the active method, the search matches no job price and matches only day rates (storyboard CUJ 6, frame A price on the other method, the other way). One match names its amount; several give the count and the range. The query is in curly quotes",
+    "placeholders": {
+      "query": {"type": "String", "example": "excavator half day"},
+      "count": {"type": "int"},
+      "lowest": {"type": "String", "example": "$120.00"},
+      "highest": {"type": "String", "example": "$180.00"}
+    }
+  },
+  "yourRatesShowJobPrices": "Show job prices",
+  "@yourRatesShowJobPrices": {
+    "description": "Text button under the no-day-rates message in the Look-up-a-rate sheet; does what tapping Job on the equipment form does and keeps the typed words (storyboard CUJ 6, frame A price on the other method; Figma X3b)"
+  },
+  "yourRatesShowDayRates": "Show day rates",
+  "@yourRatesShowDayRates": {
+    "description": "Text button under the no-job-prices message in the Look-up-a-rate sheet; does what tapping Day on the equipment form does and keeps the typed words (storyboard CUJ 6, frame A price on the other method, the other way)"
+  },
   "yourRatesDaySuffix": "/day",
   "@yourRatesDaySuffix": {
     "description": "Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows"
