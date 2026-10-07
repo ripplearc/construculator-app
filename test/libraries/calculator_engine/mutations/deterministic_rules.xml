@@ -64,6 +64,27 @@
         <regex pattern="if \(value is Length\) lengths\[key\] = value;" dotAll="true" id="deterministic_rules.named.not_a_length">
             <mutation text="if (value != null) lengths[key] = value as Length;"/>
         </regex>
+
+        <!-- RULE 10: the box answers follow the rectangle facts instead of
+             leading -->
+        <regex pattern="\.\.\._box\(lengths, unit\),\s*\.\.\._rectangle\(lengths, unit\)," dotAll="true" id="deterministic_rules.box.not_leading">
+            <mutation text="..._rectangle(lengths, unit), ..._box(lengths, unit),"/>
+        </regex>
+
+        <!-- RULE 11: the volume forgets the height -->
+        <regex pattern="_feetOf\(length\) \* _feetOf\(width\) \* _feetOf\(height\)," dotAll="true" id="deterministic_rules.volume.two_sides">
+            <mutation text="_feetOf(length) * _feetOf(width),"/>
+        </regex>
+
+        <!-- RULE 12: the wall area counts two walls, not four -->
+        <regex pattern="2 \* \(length\.ticks \+ width\.ticks\) \* height\.ticks\.toDouble\(\)," dotAll="true" id="deterministic_rules.wall_area.two_walls">
+            <mutation text="(length.ticks + width.ticks) * height.ticks.toDouble(),"/>
+        </regex>
+
+        <!-- RULE 13: two sides are enough for a box -->
+        <regex pattern="if \(length == null \|\| width == null \|\| height == null\) return const \[\];" dotAll="true" id="deterministic_rules.box.two_sides">
+            <mutation text="if (length == null || width == null) return const [];"/>
+        </regex>
     </rules>
 
     <commands>

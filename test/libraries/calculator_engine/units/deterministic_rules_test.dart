@@ -77,13 +77,14 @@ void main() {
         expect(answers.first.sources, ['Width', 'Height']);
       });
 
-      test('Length and Width are read before Height', () {
+      test('Length and Width are the rectangle read before Height', () {
         final answers = rules.answersFor({
           'Length': feet22,
           'Width': feet18in8,
           'Height': feet9,
         });
-        expect(answers.first.sources, ['Length', 'Width']);
+        final area = answers.firstWhere((answer) => answer.key == 'Area');
+        expect(area.sources, ['Length', 'Width']);
       });
 
       test('the diagonal is rounded to a whole tick, half up', () {
@@ -128,6 +129,77 @@ void main() {
           rules.answersFor({'Length': feet22, 'Width': const Scalar(18)}),
           isEmpty,
         );
+      });
+    });
+
+    group('a box from Length, Width and Height', () {
+      const feet10 = Length(10 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet8 = Length(8 * Length.ticksPerFoot, unit: Unit.foot);
+
+      test(
+        'S26: 12ft × 10ft × 8ft leads with Volume 960ft³, Wall area 352ft²',
+        () {
+          final answers = rules.answersFor({
+            'Length': feet12,
+            'Width': feet10,
+            'Height': feet8,
+          });
+          expect(texts(answers), [
+            'Volume: 960ft³',
+            'Wall area: 352ft²',
+            'Area: 120ft²',
+            'Diagonal: 15.62ft',
+            'Perimeter: 44ft',
+          ]);
+          expect(
+            answers.first,
+            const Answer(
+              key: 'Volume',
+              value: Volume(960, unit: Unit.foot),
+              sources: ['Length', 'Width', 'Height'],
+            ),
+          );
+          expect(answers[1].sources, ['Length', 'Width', 'Height']);
+        },
+      );
+
+      test(
+        'walkthrough 12.1: 20ft × 10ft × 8ft is 1,600ft³, 480ft², 200ft²',
+        () {
+          final answers = rules.answersFor({
+            'Length': feet20,
+            'Width': feet10,
+            'Height': feet8,
+          });
+          expect(texts(answers).sublist(0, 3), [
+            'Volume: 1,600ft³',
+            'Wall area: 480ft²',
+            'Area: 200ft²',
+          ]);
+        },
+      );
+
+      test('a volume is kept exact and rounded only at display', () {
+        const inch = Length(Length.ticksPerInch, unit: Unit.inch);
+        final volume = rules
+            .answersFor({'Length': inch, 'Width': inch, 'Height': inch})
+            .first
+            .value;
+        expect(volume, const Volume(1 / 1728, unit: Unit.foot));
+        expect(
+          formatter.format(const Volume(1 / 1728, unit: Unit.inch)),
+          '1in³',
+        );
+      });
+
+      test('a metric box answers in cubic metres and square metres', () {
+        const metre = Length(2520, unit: Unit.metre);
+        final answers = rules.answersFor({
+          'Length': metre,
+          'Width': metre,
+          'Height': metre,
+        });
+        expect(texts(answers).sublist(0, 2), ['Volume: 1m³', 'Wall area: 4m²']);
       });
     });
 

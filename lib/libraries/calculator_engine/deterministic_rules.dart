@@ -58,14 +58,20 @@ final class Answer extends Equatable {
 /// Any two of Length, Width and Height give Area, Diagonal and Perimeter,
 /// in that order (Figma 62421:72531: two sides default to Area, never
 /// straight to drywall); Length and Width are read first, then Length and
-/// Height, then Width and Height. Rise and Run give the Diagonal of the
-/// right triangle (rule 4.4, BuildCalc p50: 12ft and 15ft give 19.21ft).
+/// Height, then Width and Height. All three give a box: Volume and Wall
+/// area lead, and the rectangle facts of Length and Width follow (BuildCalc
+/// [Height]: "Calculate Volume, Wall Area and Room Area"). Rise and Run
+/// give the Diagonal of the right triangle (rule 4.4, BuildCalc p50: 12ft
+/// and 15ft give 19.21ft).
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
-/// length read was metric, feet otherwise; an area follows the same vote.
-/// Rounding points are the prototype's: a diagonal is rounded to whole
-/// ticks (JavaScript's `Math.round`, a half tick toward +∞), an area is the
-/// exact product of the ticks and a perimeter their exact sum.
+/// length read was metric, feet otherwise; an area or a volume follows the
+/// same vote. Rounding points are the prototype's: a diagonal is rounded
+/// to whole ticks (JavaScript's `Math.round`, a half tick toward +∞), an
+/// area is the exact product of the ticks and a perimeter their exact sum.
+/// A volume is kept exact and rounded to two decimals only at display, as
+/// the Full Design Doc decides where the prototype pre-rounds it, so the
+/// text is the same 960ft³ and a cost later prices what is shown.
 class DeterministicRules extends Equatable {
   /// The label of the area of two named sides.
   static const String areaKey = 'Area';
@@ -75,6 +81,12 @@ class DeterministicRules extends Equatable {
 
   /// The label of the perimeter of two named sides.
   static const String perimeterKey = 'Perimeter';
+
+  /// The label of the volume of a box.
+  static const String volumeKey = 'Volume';
+
+  /// The label of the area of a box's four walls.
+  static const String wallAreaKey = 'Wall area';
 
   const DeterministicRules();
 
@@ -88,7 +100,11 @@ class DeterministicRules extends Equatable {
       if (value is Length) lengths[key] = value;
     }
     final unit = _entrySystemUnit(lengths.values);
-    return [..._rectangle(lengths, unit), ..._rightTriangle(lengths, unit)];
+    return [
+      ..._box(lengths, unit),
+      ..._rectangle(lengths, unit),
+      ..._rightTriangle(lengths, unit),
+    ];
   }
 
   static const List<(DimensionKey, DimensionKey)> _sidePairs = [
@@ -96,6 +112,36 @@ class DeterministicRules extends Equatable {
     (DimensionKey.length, DimensionKey.height),
     (DimensionKey.width, DimensionKey.height),
   ];
+
+  List<Answer> _box(Map<DimensionKey, Length> lengths, Unit unit) {
+    final length = lengths[DimensionKey.length];
+    final width = lengths[DimensionKey.width];
+    final height = lengths[DimensionKey.height];
+    if (length == null || width == null || height == null) return const [];
+    final sources = [
+      DimensionKey.length.id,
+      DimensionKey.width.id,
+      DimensionKey.height.id,
+    ];
+    return [
+      Answer(
+        key: volumeKey,
+        value: Volume(
+          _feetOf(length) * _feetOf(width) * _feetOf(height),
+          unit: unit,
+        ),
+        sources: sources,
+      ),
+      Answer(
+        key: wallAreaKey,
+        value: Area(
+          2 * (length.ticks + width.ticks) * height.ticks.toDouble(),
+          unit: unit,
+        ),
+        sources: sources,
+      ),
+    ];
+  }
 
   List<Answer> _rectangle(Map<DimensionKey, Length> lengths, Unit unit) {
     for (final (first, second) in _sidePairs) {
@@ -153,6 +199,8 @@ class DeterministicRules extends Equatable {
   // is inside the 19,999,999.99 limit CA-1236 will enforce.
   double _hypotenuse(int a, int b) =>
       math.sqrt(a.toDouble() * a + b.toDouble() * b);
+
+  double _feetOf(Length length) => length.ticks / Length.ticksPerFoot;
 
   int _wholeTicks(double ticks) => (ticks + 0.5).floor();
 
