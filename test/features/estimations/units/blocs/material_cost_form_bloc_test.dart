@@ -54,6 +54,13 @@ void main() {
           final data = _dataOf(b.state);
           expect(data.isItemNameValid, isFalse);
           expect(data.fieldErrors, isEmpty);
+          expect(
+            data.blocker,
+            const MaterialFormBlocker(
+              MaterialFormField.itemName,
+              MaterialBlockerKind.missing,
+            ),
+          );
         },
       );
 
@@ -190,6 +197,13 @@ void main() {
           ..add(const MaterialRateUpdated('52')),
         verify: (b) {
           expect(_dataOf(b.state).isValid, isFalse);
+          expect(
+            _dataOf(b.state).blocker,
+            const MaterialFormBlocker(
+              MaterialFormField.unit,
+              MaterialBlockerKind.missing,
+            ),
+          );
         },
       );
 
@@ -217,11 +231,9 @@ void main() {
             'isValid',
             false,
           ),
-          isA<MaterialCostFormEditing>().having(
-            (s) => s.data.isValid,
-            'isValid',
-            true,
-          ),
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.data.isValid, 'isValid', true)
+              .having((s) => s.data.blocker, 'blocker', isNull),
         ],
       );
 
@@ -252,19 +264,61 @@ void main() {
               if (entry.key != missing) b.add(entry.value);
             }
           },
-          verify: (b) => expect(_dataOf(b.state).isValid, isFalse),
+          verify: (b) {
+            expect(_dataOf(b.state).isValid, isFalse);
+            expect(
+              _dataOf(b.state).blocker,
+              MaterialFormBlocker(missing, MaterialBlockerKind.missing),
+            );
+          },
         );
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'stays disabled when the rate is out of range and the rest is set',
+        'reports the first missing field reading top to bottom',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialRateUpdated('52'))
+          ..add(const MaterialUnitSelected(Unit.liters)),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.itemName,
+            MaterialBlockerKind.missing,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'reports an invalid value as invalid, not missing',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialQuantityUpdated('0')),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.quantity,
+            MaterialBlockerKind.invalid,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'names an invalid rate when everything else is set',
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialCostItemTypeChanged('Interior paint'))
           ..add(const MaterialQuantityUpdated('2'))
           ..add(const MaterialUnitSelected(Unit.liters))
           ..add(const MaterialRateUpdated('1000000')),
-        verify: (b) => expect(_dataOf(b.state).isValid, isFalse),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.rate,
+            MaterialBlockerKind.invalid,
+          ),
+        ),
       );
     });
 
