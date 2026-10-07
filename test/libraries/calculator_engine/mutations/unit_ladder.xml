@@ -41,12 +41,12 @@
         </regex>
 
         <!-- RULE 6: a value under a foot is shown as 0ft 4in -->
-        <regex pattern="value\.ticks &gt;= Length\.ticksPerFoot &amp;&amp;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_under_a_foot">
+        <regex pattern="feet\.compareTo\(const Rational\(1\)\) &gt;= 0 &amp;&amp;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_under_a_foot">
             <mutation text="true &amp;&amp;"/>
         </regex>
 
         <!-- RULE 7: a whole number of feet is shown as a compound -->
-        <regex pattern="final hasLeftoverInches = value\.ticks % Length\.ticksPerFoot != 0;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_whole_feet">
+        <regex pattern="final hasLeftoverInches = !feet\.isWhole;" dotAll="true" id="unit_ladder.foot_inch_or_key.compound_whole_feet">
             <mutation text="final hasLeftoverInches = true;"/>
         </regex>
 
@@ -62,7 +62,7 @@
         </regex>
 
         <!-- RULE 10: the ft-in compound loses its inches -->
-        <regex pattern="digits: _digitsWithoutTrailingZeros\(inches, compoundInchDecimals\),\s*unit: Unit\.inch," dotAll="true" id="quantity_speller.compound.drop_inches">
+        <regex pattern="digits: _digitsWithoutTrailingZeros\(leftover, compoundInchDecimals\),\s*unit: Unit\.inch," dotAll="true" id="quantity_speller.compound.drop_inches">
             <mutation text="digits: '0', unit: Unit.inch,"/>
         </regex>
 
@@ -97,8 +97,8 @@
         </regex>
 
         <!-- RULE 17: the compound's inches are the whole length -->
-        <regex pattern="final inches = \(ticks - feet \* Length\.ticksPerFoot\) / Length\.ticksPerInch;" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
-            <mutation text="final inches = ticks / Length.ticksPerInch;"/>
+        <regex pattern="final leftover = \(inches - Rational\(feet\) \* Unit\.foot\.inchesPer\)\.toDouble\(\);" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
+            <mutation text="final leftover = inches.toDouble();"/>
         </regex>
 
         <!-- RULE 18: the cubic stop points every key at yards, so [Inch] a

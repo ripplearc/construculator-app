@@ -25,6 +25,7 @@ void main() {
       expect(Rational.tryParse('.'), isNull);
       expect(Rational.tryParse('1e5'), isNull);
       expect(Rational.tryParse('1/2'), isNull);
+      expect(Rational.tryParse('10000000000000000'), isNull);
       expect(Rational.tryParse('1.0000000000000000001'), isNull);
     });
 

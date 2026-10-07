@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
@@ -184,10 +185,11 @@ class UnitLadder extends Equatable {
 
   Unit _footInchOrKey(Length value, Unit key, List<Token> tokens) {
     final wasCompound = tokens.length > 1;
-    final hasLeftoverInches = value.ticks % Length.ticksPerFoot != 0;
+    final feet = value.inches / Unit.foot.inchesPer;
+    final hasLeftoverInches = !feet.isWhole;
     if (key == Unit.foot &&
         !wasCompound &&
-        value.ticks >= Length.ticksPerFoot &&
+        feet.compareTo(const Rational(1)) >= 0 &&
         hasLeftoverInches) {
       return Unit.footInch;
     }
