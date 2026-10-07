@@ -2064,4 +2064,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newMaterialCostSheetTitle => 'New material cost';
+
+  @override
+  String get discardLineDialogTitle => 'Discard this line?';
+
+  @override
+  String discardLineDialogBody(String material) {
+    return '$material has not been added to the estimate.';
+  }
+
+  @override
+  String get discardLineDialogBodyUnnamed =>
+      'This line has not been added to the estimate.';
+
+  @override
+  String get discardLineDiscardButton => 'Discard';
+
+  @override
+  String get discardLineKeepEditingButton => 'Keep editing';
 }

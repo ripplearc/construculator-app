@@ -87,6 +87,7 @@ class MaterialCostFormData extends Equatable {
     this.rateStatus = RateStatus.missing,
     this.isValid = false,
     this.fieldErrors = const {},
+    this.hasUnsavedChanges = false,
   });
 
   /// The material name entered by the user.
@@ -111,6 +112,10 @@ class MaterialCostFormData extends Equatable {
   /// cannot be used. An empty field never has an entry: the disabled Add
   /// button names what is missing.
   final Map<MaterialFormField, MaterialFieldError> fieldErrors;
+
+  /// Whether any of name, quantity, unit or rate differs from how the form
+  /// opened. Typing a value and then restoring the original clears it.
+  final bool hasUnsavedChanges;
 
   /// Quantity times rate rounded to the cent, or 0 while either is missing or
   /// unusable.
@@ -153,6 +158,7 @@ class MaterialCostFormData extends Equatable {
     RateStatus? rateStatus,
     bool? isValid,
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
+    bool? hasUnsavedChanges,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -162,6 +168,7 @@ class MaterialCostFormData extends Equatable {
       rateStatus: rateStatus ?? this.rateStatus,
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
+      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
     );
   }
 
@@ -174,6 +181,7 @@ class MaterialCostFormData extends Equatable {
     rateStatus,
     isValid,
     fieldErrors,
+    hasUnsavedChanges,
   ];
 }
 

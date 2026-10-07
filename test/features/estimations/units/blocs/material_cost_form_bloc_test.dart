@@ -468,6 +468,102 @@ void main() {
       );
     });
 
+    group('unsaved changes', () {
+      bool hasChanges(MaterialCostFormBloc b) =>
+          _dataOf(b.state).hasUnsavedChanges;
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'are none until something is typed',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        verify: (b) => expect(b.state.data.hasUnsavedChanges, isFalse),
+      );
+
+      for (final event in <MaterialCostFormEvent>[
+        const MaterialCostItemTypeChanged('Paint'),
+        const MaterialQuantityUpdated('3'),
+        const MaterialUnitSelected(Unit.liters),
+        const MaterialRateUpdated('5'),
+      ]) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'appear when ${event.runtimeType} changes a field',
+          build: () => bloc,
+          act: (b) => b
+            ..add(const MaterialCostFormStarted())
+            ..add(event),
+          verify: (b) => expect(hasChanges(b), isTrue),
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'count a unit picked before the remembered unit finished loading',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) async {
+          b
+            ..add(const MaterialUnitSelected(Unit.liters))
+            ..add(const MaterialCostFormStarted());
+          await b.stream.firstWhere((s) => s.data.unit == Unit.liters);
+        },
+        verify: (b) {
+          expect(b.state.data.unit, Unit.liters);
+          expect(b.state.data.hasUnsavedChanges, isTrue);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'count a name typed before the remembered unit finished loading',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) {
+          b
+            ..add(const MaterialCostItemTypeChanged('Paint'))
+            ..add(const MaterialCostFormStarted());
+        },
+        verify: (b) => expect(b.state.data.hasUnsavedChanges, isTrue),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'disappear when a typed value is cleared again',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(const MaterialCostItemTypeChanged('')),
+        verify: (b) => expect(hasChanges(b), isFalse),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'do not count the remembered unit the form opened with',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b.add(const MaterialCostFormStarted()),
+        verify: (b) {
+          expect(b.state.data.unit, Unit.bags);
+          expect(hasChanges(b), isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'count a different unit, and stop counting when it is put back',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) async {
+          b.add(const MaterialCostFormStarted());
+          await b.stream.firstWhere((s) => s.data.unit == Unit.bags);
+          b.add(const MaterialUnitSelected(Unit.liters));
+          await b.stream.firstWhere((s) => s.data.unit == Unit.liters);
+          expect(b.state.data.hasUnsavedChanges, isTrue);
+          b.add(const MaterialUnitSelected(Unit.bags));
+        },
+        verify: (b) => expect(hasChanges(b), isFalse),
+      );
+    });
+
     group('material name', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'keeps the name as typed',
