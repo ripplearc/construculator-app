@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 
 /// A unit a calculator value can be typed in or shown in.
 ///
@@ -60,19 +61,18 @@ enum Unit {
 
   const Unit(this.suffix, this.dimension);
 
-  /// Ticks of 1/64 inch in one of this unit.
+  /// Inches in one of this unit, exactly: an inch is 25.4 mm, so a metre
+  /// is 5000/127 in and a millimetre 5/127 in.
   ///
-  /// Only length units have a tick count; asking a weight or volume unit for
-  /// one is a programming error, not a value the caller can recover from.
-  double get ticksPerUnit => switch (this) {
-    inch => 64,
-    foot || footInch => 768,
-    yard => 2304,
-    // The design doc's rounded value on purpose, not 100 × the centimetre
-    // constant: the gap is about 0.00004 of a tick and changes no stored value.
-    metre => 2519.685,
-    centimetre => 25.196850394,
-    millimetre => 2.5196850394,
+  /// Only length units have one; asking a weight or volume unit for it is a
+  /// programming error, not a value the caller can recover from.
+  Rational get inchesPer => switch (this) {
+    inch => const Rational(1),
+    foot || footInch => const Rational(12),
+    yard => const Rational(36),
+    metre => const Rational(5000, 127),
+    centimetre => const Rational(50, 127),
+    millimetre => const Rational(5, 127),
     acre ||
     pound ||
     kilogram ||
@@ -80,6 +80,11 @@ enum Unit {
     metricTon ||
     boardFoot => throw StateError('$name is not a length unit'),
   };
+
+  /// Ticks of 1/64 inch in one of this unit, the nearest double to the
+  /// exact count: 2,519.685039… for a metre where the design doc writes
+  /// 2,519.685.
+  double get ticksPerUnit => inchesPer.toDouble() * 64;
 
   /// Hundredths of a pound in one of this unit, given how many pounds the
   /// "Pounds per ton" setting puts in a ton (2,000 by default, 2,240 for the

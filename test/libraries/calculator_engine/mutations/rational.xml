@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE RATIONAL MUTATION TESTING -->
+    <!-- Targets: Rational, the exact number a typed length is kept as.
+         Critical path: every length on the tape passes through it, so a
+         wrong reduction, a half rounded the wrong way, a decimal parsed to
+         the wrong scale or an overflow let through is a wrong length that
+         still looks exact. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/models/rational.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a decimal's fraction digits lose their scale -->
+        <regex pattern="final scale = _powerOfTen\(fraction\.length\);" dotAll="true" id="rational.parse.no_scale">
+            <mutation text="final scale = _powerOfTen(0);"/>
+        </regex>
+
+        <!-- RULE 2: the sign is dropped -->
+        <regex pattern="final signed = match\.group\(1\) == '-' \? -digits : digits;" dotAll="true" id="rational.parse.no_sign">
+            <mutation text="final signed = digits;"/>
+        </regex>
+
+        <!-- RULE 3: a half rounds down -->
+        <regex pattern="return 2 \* remainder &gt;= denominator \? floor \+ 1 : floor;" dotAll="true" id="rational.round.half_down">
+            <mutation text="return 2 * remainder &gt; denominator ? floor + 1 : floor;"/>
+        </regex>
+
+        <!-- RULE 4: a negative fraction floors toward zero -->
+        <regex pattern="return numerator &lt; 0 &amp;&amp; numerator % denominator != 0\s*\? quotient - 1\s*: quotient;" dotAll="true" id="rational.floor.toward_zero">
+            <mutation text="return quotient;"/>
+        </regex>
+
+        <!-- RULE 5: equality compares the written form, so 2520/64 is not
+             315/8 -->
+        <regex pattern="final lowest = reduced;" dotAll="true" id="rational.props.unreduced">
+            <mutation text="final lowest = this;"/>
+        </regex>
+
+        <!-- RULE 6: the overflow guard is off by one or gone -->
+        <regex pattern="if \(result\.numerator\.abs\(\) &gt; maxMagnitude \|\|\s*result\.denominator &gt; maxMagnitude\) \{" dotAll="true" id="rational.checked.no_overflow">
+            <mutation text="if (false) {"/>
+            <mutation text="if (result.numerator.abs() &gt; maxMagnitude) {"/>
+        </regex>
+
+        <!-- RULE 7: division forgets the divisor's sign -->
+        <regex pattern="final sign = other\.numerator &lt; 0 \? -1 : 1;" dotAll="true" id="rational.divide.no_sign">
+            <mutation text="final sign = 1;"/>
+        </regex>
+
+        <!-- RULE 8: subtraction adds -->
+        <regex pattern="numerator \* other\.denominator - other\.numerator \* denominator," dotAll="true" id="rational.subtract.adds">
+            <mutation text="numerator * other.denominator + other.numerator * denominator,"/>
+        </regex>
+
+        <!-- RULE 9: a decimal with too many digits is kept anyway -->
+        <regex pattern="if \(scale == null \|\| digits &gt; maxMagnitude\) return null;" dotAll="true" id="rational.parse.no_length_guard">
+            <mutation text="if (scale == null) return null;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="rational" expected-return="0">flutter test test/libraries/calculator_engine/units/models/rational_test.dart test/libraries/calculator_engine/units/quantity_parser_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

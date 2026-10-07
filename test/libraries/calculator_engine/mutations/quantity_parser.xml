@@ -15,10 +15,19 @@
     </files>
 
     <rules>
-        <!-- RULE 1: ticks are truncated instead of rounded, so 1m reads 2519
-             ticks instead of 2520 -->
-        <regex pattern="return \(token\.value \* unit\.ticksPerUnit\)\.round\(\);" dotAll="true" id="quantity_parser.ticks_of.truncate">
-            <mutation text="return (token.value * unit.ticksPerUnit).truncate();"/>
+        <!-- RULE 1: a token's inches forget its unit, so 22ft reads 22in -->
+        <regex pattern="return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.inches_of.ignore_unit">
+            <mutation text="return exact;"/>
+        </regex>
+
+        <!-- RULE 1b: a compound keeps only its last token -->
+        <regex pattern="inches \+= inchesOf\(token\);" dotAll="true" id="quantity_parser.parse.last_token_only">
+            <mutation text="inches = inchesOf(token);"/>
+        </regex>
+
+        <!-- RULE 1c: a number too long to keep exactly is parsed anyway -->
+        <regex pattern="if \(tokens\.any\(\(token\) =&gt; _exactValueOf\(token\) == null\)\) return null;" dotAll="true" id="quantity_parser.parse.no_exact_guard">
+            <mutation text=""/>
         </regex>
 
         <!-- RULE 2: an open token is read as if it were finished -->
@@ -90,8 +99,8 @@
         </regex>
 
         <!-- RULE 15: a length is always answered in inches -->
-        <regex pattern="return Length\(ticks, unit: _footInchForImperialCompound\(tokens, unit\)\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
-            <mutation text="return Length(ticks, unit: Unit.inch);"/>
+        <regex pattern="return Length\.exact\(\s*inches,\s*unit: _footInchForImperialCompound\(tokens, unit\),?\s*\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
+            <mutation text="return Length.exact(inches, unit: Unit.inch);"/>
         </regex>
 
         <!-- RULE 16: tokens of two dimensions are read as a zero -->
