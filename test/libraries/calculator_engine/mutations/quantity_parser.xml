@@ -25,14 +25,12 @@
             <mutation text="inches = inchesOf(token);"/>
         </regex>
 
-        <!-- RULE 1c: a number too long to keep exactly is parsed anyway -->
-        <regex pattern="if \(tokens\.any\(\(token\) =&gt; _exactValueOf\(token\) == null\)\) return null;" dotAll="true" id="quantity_parser.parse.no_exact_guard">
-            <mutation text=""/>
-        </regex>
 
-        <!-- RULE 2: an open token is read as if it were finished -->
-        <regex pattern="if \(tokens\.isEmpty \|\|\s*tokens\.any\(\(token\) =&gt; !token\.isComplete \|\| !token\.value\.isFinite\)\) \{" dotAll="true" id="quantity_parser.parse.skip_completeness_guard">
-            <mutation text="if (tokens.isEmpty) {"/>
+        <!-- RULE 2: a token with no exact value is read as if it had one.
+             (Dropping the completeness half instead is an equivalent
+             mutant: an open token has no exact value either.) -->
+        <regex pattern="\(token\) =&gt; !token\.isComplete \|\| _exactValueOf\(token\) == null," dotAll="true" id="quantity_parser.parse.skip_completeness_guard">
+            <mutation text="(token) =&gt; !token.isComplete,"/>
         </regex>
 
         <!-- RULE 3: a raised unit is read as a plain length whatever its
@@ -86,11 +84,6 @@
         <!-- RULE 12: acres are offered to a value already in acres -->
         <regex pattern="value\.unit != Unit\.acre\)" dotAll="true" id="unit_converter.area.offer_acre_to_acre">
             <mutation text="true)"/>
-        </regex>
-
-        <!-- RULE 13: a fraction over zero is read as a value -->
-        <regex pattern="!token\.isComplete \|\| !token\.value\.isFinite\)" dotAll="true" id="quantity_parser.parse.skip_finite_guard">
-            <mutation text="!token.isComplete)"/>
         </regex>
 
         <!-- RULE 14: a weight is always answered in pounds -->

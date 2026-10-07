@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
@@ -45,11 +46,11 @@ class QuantitySpeller extends Equatable {
 
   /// The tokens that show [value] in the unit it wears.
   List<Token> spell(Quantity value) => switch (value) {
-    Length(unit: Unit.footInch) => _wholeFeetAndDecimalInches(value.ticks),
+    Length(unit: Unit.footInch) => _wholeFeetAndDecimalInches(value.inches),
     Length() => [
       Token(
         digits: _digitsWithoutTrailingZeros(
-          value.ticks / value.unit.ticksPerUnit,
+          (value.inches / value.unit.inchesPer).toDouble(),
           lengthDecimals,
         ),
         unit: value.unit,
@@ -108,13 +109,13 @@ class QuantitySpeller extends Equatable {
     ],
   };
 
-  List<Token> _wholeFeetAndDecimalInches(int ticks) {
-    final feet = ticks ~/ Length.ticksPerFoot;
-    final inches = (ticks - feet * Length.ticksPerFoot) / Length.ticksPerInch;
+  List<Token> _wholeFeetAndDecimalInches(Rational inches) {
+    final feet = (inches / Unit.foot.inchesPer).floor();
+    final leftover = (inches - Rational(feet) * Unit.foot.inchesPer).toDouble();
     return [
       Token(digits: '$feet', unit: Unit.foot),
       Token(
-        digits: _digitsWithoutTrailingZeros(inches, compoundInchDecimals),
+        digits: _digitsWithoutTrailingZeros(leftover, compoundInchDecimals),
         unit: Unit.inch,
       ),
     ];

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
@@ -77,7 +78,7 @@ class QuantityFormatter extends Equatable {
   /// millimetres under Metric (1200 × 2400), never grouped, and pre-rounded
   /// with `Math.round` as the prototype's `fmtSizeLen` does.
   String formatStoredLength(Length value) {
-    final inches = value.ticks / Length.ticksPerInch;
+    final inches = value.inches.toDouble();
     return switch (preferences.system) {
       MeasurementSystem.imperial =>
         '${_jsRoundedNumber(inches, storedInchDecimals, false)}${Unit.inch.suffix}',
@@ -103,8 +104,8 @@ class QuantityFormatter extends Equatable {
   }
 
   String _length(Length value, bool group) => switch (value.unit) {
-    Unit.inch => _wholeInchesAndFraction(value.ticks, group),
-    Unit.footInch => _feetAndInches(value.ticks),
+    Unit.inch => _wholeInchesAndFraction(value.inches, group),
+    Unit.footInch => _feetAndInches(value.inches),
     Unit.metre => _decimalLength(
       value,
       preferences.metreDisplay.decimals,
@@ -115,36 +116,38 @@ class QuantityFormatter extends Equatable {
   };
 
   String _decimalLength(Length value, int decimals, bool group) =>
-      '${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'
+      '${_localeNumber((value.inches / value.unit.inchesPer).toDouble(), decimals, group)}'
       '${value.unit.suffix}';
 
-  String _wholeInchesAndFraction(int ticks, bool group) {
-    final magnitude = ticks.abs();
-    var whole = magnitude ~/ Length.ticksPerInch;
-    final fraction = _fractionOfInch(magnitude % Length.ticksPerInch);
+  String _wholeInchesAndFraction(Rational inches, bool group) {
+    final negative = inches.numerator < 0;
+    final magnitude = negative ? -inches : inches;
+    var whole = magnitude.floor();
+    final fraction = _fractionOfInch(magnitude - Rational(whole));
     whole += fraction.carry;
-    return '${ticks < 0 ? '-' : ''}${_localeNumber(whole.toDouble(), 0, group)}'
+    return '${negative ? '-' : ''}${_localeNumber(whole.toDouble(), 0, group)}'
         '${fraction.text}${Unit.inch.suffix}';
   }
 
-  String _feetAndInches(int ticks) {
-    final magnitude = ticks.abs();
-    var feet = magnitude ~/ Length.ticksPerFoot;
-    final remainder = magnitude % Length.ticksPerFoot;
-    var inches = remainder ~/ Length.ticksPerInch;
-    final fraction = _fractionOfInch(remainder % Length.ticksPerInch);
-    inches += fraction.carry;
-    if (inches == 12) {
+  String _feetAndInches(Rational inches) {
+    final negative = inches.numerator < 0;
+    final magnitude = negative ? -inches : inches;
+    var feet = (magnitude / Unit.foot.inchesPer).floor();
+    final remainder = magnitude - Rational(feet) * Unit.foot.inchesPer;
+    var wholeInches = remainder.floor();
+    final fraction = _fractionOfInch(remainder - Rational(wholeInches));
+    wholeInches += fraction.carry;
+    if (wholeInches == 12) {
       feet += 1;
-      inches = 0;
+      wholeInches = 0;
     }
-    return '${ticks < 0 ? '-' : ''}${feet}ft $inches${fraction.text}in';
+    return '${negative ? '-' : ''}${feet}ft $wholeInches${fraction.text}in';
   }
 
-  ({String text, int carry}) _fractionOfInch(int remainderTicks) {
+  ({String text, int carry}) _fractionOfInch(Rational remainderInches) {
     final steps = preferences.fractionResolution.denominator;
     var numerator = _jsMathRound(
-      remainderTicks / (Length.ticksPerInch / steps),
+      (remainderInches * Rational(steps)).toDouble(),
     );
     if (numerator == 0) return (text: '', carry: 0);
     if (numerator == steps) return (text: '', carry: 1);

@@ -135,9 +135,6 @@ void main() {
       test('an all-metric answer keeps its metric unit: 2cm × 3cm', () {
         const centimetres = Length(50, unit: Unit.centimetre);
         const millimetres = Length(8, unit: Unit.millimetre);
-        // TODO: [CA-1190] Expect 6cm² once a typed length is kept exactly;
-        // 3800 square ticks read 5.99cm².
-        // https://ripplearc.youtrack.cloud/issue/CA-1190
         expect(
           arithmetic.combine(
             centimetres,
@@ -271,7 +268,9 @@ void main() {
         );
         expect(
           arithmetic.combine(inches(10), Operator.divide, const Scalar(3)),
-          const ArithmeticValue(Length(213, unit: Unit.footInch)),
+          const ArithmeticValue(
+            Length.exact(Rational(10, 3), unit: Unit.footInch),
+          ),
         );
       });
 
@@ -512,14 +511,16 @@ void main() {
       });
     });
 
-    test('a length answer rounds half toward +∞, as the prototype does', () {
+    test('a length scaled by a typed number stays exact', () {
       expect(
         arithmetic.combine(
           const Length(1, unit: Unit.inch),
           Operator.multiply,
           const Scalar(0.5),
         ),
-        const ArithmeticValue(Length(1, unit: Unit.footInch)),
+        const ArithmeticValue(
+          Length.exact(Rational(1, 128), unit: Unit.footInch),
+        ),
       );
       expect(
         arithmetic.combine(
@@ -527,8 +528,75 @@ void main() {
           Operator.multiply,
           const Scalar(0.5),
         ),
-        const ArithmeticValue(Length(0, unit: Unit.footInch)),
+        const ArithmeticValue(
+          Length.exact(Rational(-1, 128), unit: Unit.footInch),
+        ),
       );
+    });
+
+    test(
+      'a length made from an area rounds half toward +∞, as the prototype does',
+      () {
+        const threeSquareTicks = Area(3);
+        const twoTicks = Length(2, unit: Unit.inch);
+        expect(
+          arithmetic.combine(threeSquareTicks, Operator.divide, twoTicks),
+          const ArithmeticValue(Length(2, unit: Unit.footInch)),
+        );
+        expect(
+          arithmetic.combine(const Area(-3), Operator.divide, twoTicks),
+          const ArithmeticValue(Length(-1, unit: Unit.footInch)),
+        );
+      },
+    );
+
+    test('CA-1190: typed lengths stay exact through the arithmetic', () {
+      const formatter = QuantityFormatter();
+      String text(ArithmeticOutcome outcome) => switch (outcome) {
+        ArithmeticValue(:final value) => formatter.format(value),
+        ArithmeticFailed(:final error) => error.name,
+      };
+      const twoCentimetres = Length.exact(
+        Rational(100, 127),
+        unit: Unit.centimetre,
+      );
+      const threeCentimetres = Length.exact(
+        Rational(150, 127),
+        unit: Unit.centimetre,
+      );
+      expect(
+        text(
+          arithmetic.combine(
+            twoCentimetres,
+            Operator.multiply,
+            threeCentimetres,
+          ),
+        ),
+        '6cm²',
+      );
+      const millimetre = Length.exact(Rational(5, 127), unit: Unit.millimetre);
+      final thousandMillimetres = arithmetic.combine(
+        millimetre,
+        Operator.multiply,
+        const Scalar(1000),
+      );
+      expect(
+        thousandMillimetres,
+        const ArithmeticValue(
+          Length.exact(Rational(5000, 127), unit: Unit.millimetre),
+        ),
+      );
+      expect(text(thousandMillimetres), '1,000mm');
+      const tenthOfAFoot = Length.exact(Rational(6, 5), unit: Unit.foot);
+      Quantity sum = tenthOfAFoot;
+      for (var i = 1; i < 1000; i++) {
+        sum =
+            (arithmetic.combine(sum, Operator.add, tenthOfAFoot)
+                    as ArithmeticValue)
+                .value;
+      }
+      expect(sum, const Length.exact(Rational(1200), unit: Unit.footInch));
+      expect(formatter.format(sum), '100ft 0in');
     });
 
     test('is equal to any other table, having no state', () {
