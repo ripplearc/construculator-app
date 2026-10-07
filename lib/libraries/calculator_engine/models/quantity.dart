@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
@@ -17,7 +18,16 @@ sealed class Quantity extends Equatable {
   Dimension get dimension;
 }
 
-/// A distance, exact to 1/64 inch.
+/// A distance, kept exactly as it was typed (UX Design Doc Section 6,
+/// "Precision and storage"): a decimal foot, a feet-inch-fraction compound
+/// and a metric length are all one exact [Rational] of inches, because an
+/// inch is exactly 25.4 mm. Nothing is rounded until it is displayed, so
+/// 17.32 ft × 1 still reads 17.32ft and 2 cm × 3 cm is exactly 6cm².
+///
+/// [ticks], the whole number of 1/64 in nearest the length, is the view
+/// the fraction formatter, the tick limit and the prototype's rounding
+/// points read; a feet-inch-fraction value is a whole number of ticks, so
+/// for it the view is the value.
 final class Length extends Quantity {
   /// Ticks of 1/64 inch in one inch.
   static const int ticksPerInch = 64;
@@ -25,16 +35,34 @@ final class Length extends Quantity {
   /// Ticks of 1/64 inch in one foot.
   static const int ticksPerFoot = 768;
 
-  /// Whole ticks of 1/64 inch. Metric entry is converted on input at
-  /// 2,519.685 ticks per metre, so a metre is exact to the nearest tick.
-  final int ticks;
+  final int _wholeTicks;
+  final Rational? _exactInches;
 
   /// The length unit the value is written in. [Unit.footInch] is the trade
   /// compound; every other length unit renders as a decimal or a fraction.
   final Unit unit;
 
-  const Length(this.ticks, {required this.unit})
-    : assert(
+  /// A length of a whole number of ticks of 1/64 inch, which is every
+  /// feet-inch-fraction value and the prototype's rounding points.
+  const Length(int ticks, {required this.unit})
+    : _wholeTicks = ticks,
+      _exactInches = null,
+      assert(
+        unit == Unit.inch ||
+            unit == Unit.foot ||
+            unit == Unit.footInch ||
+            unit == Unit.yard ||
+            unit == Unit.metre ||
+            unit == Unit.centimetre ||
+            unit == Unit.millimetre,
+        'a length needs a length unit',
+      );
+
+  /// A length of exactly [inches], as the parser keeps a typed value.
+  const Length.exact(Rational inches, {required this.unit})
+    : _wholeTicks = 0,
+      _exactInches = inches,
+      assert(
         unit == Unit.inch ||
             unit == Unit.foot ||
             unit == Unit.footInch ||
@@ -48,11 +76,20 @@ final class Length extends Quantity {
   @override
   Dimension get dimension => Dimension.length;
 
+  /// The exact length in inches.
+  Rational get inches => _exactInches ?? Rational(_wholeTicks, ticksPerInch);
+
+  /// The whole number of ticks of 1/64 inch nearest the length, a half
+  /// tick rounded up as the prototype's `Math.round` does.
+  int get ticks => _exactInches == null
+      ? _wholeTicks
+      : (inches * const Rational(ticksPerInch)).round();
+
   /// The same distance written in another length unit.
-  Length spelledIn(Unit unit) => Length(ticks, unit: unit);
+  Length spelledIn(Unit unit) => Length.exact(inches, unit: unit);
 
   @override
-  List<Object?> get props => [ticks, unit];
+  List<Object?> get props => [inches, unit];
 }
 
 /// A surface. Two lengths multiplied give square ticks; the unit is the

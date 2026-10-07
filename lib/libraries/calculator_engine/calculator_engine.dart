@@ -7,6 +7,7 @@ export 'models/calculator_preferences.dart';
 export 'models/chip.dart';
 export 'models/dimension.dart';
 export 'models/quantity.dart';
+export 'models/rational.dart';
 export 'models/token.dart';
 export 'models/unit.dart';
 export 'quantity_formatter.dart';

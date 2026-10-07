@@ -127,6 +127,37 @@ void main() {
       });
     });
 
+    group('Length, kept exactly', () {
+      test('a whole number of ticks and the same exact inches are equal', () {
+        const fromTicks = Length(2520, unit: Unit.metre);
+        const exact = Length.exact(Rational(315, 8), unit: Unit.metre);
+        expect(fromTicks, exact);
+        expect(fromTicks.inches, const Rational(315, 8));
+        expect(exact.ticks, 2520);
+      });
+
+      test(
+        'a typed decimal foot keeps its value and views the nearest tick',
+        () {
+          const typed = Length.exact(Rational(5196, 25), unit: Unit.foot);
+          expect(typed.inches, const Rational(433, 25) * const Rational(12));
+          expect(typed.ticks, 13302);
+          expect(typed, isNot(const Length(13302, unit: Unit.foot)));
+        },
+      );
+
+      test('re-spelling keeps the exact inches', () {
+        const typed = Length.exact(Rational(5000, 127), unit: Unit.metre);
+        expect(typed.spelledIn(Unit.inch).inches, const Rational(5000, 127));
+        expect(typed.spelledIn(Unit.inch).unit, Unit.inch);
+      });
+
+      test('a half tick rounds up to the view', () {
+        expect(const Length.exact(Rational(1, 128), unit: Unit.inch).ticks, 1);
+        expect(const Length.exact(Rational(-1, 128), unit: Unit.inch).ticks, 0);
+      });
+    });
+
     group('Angle', () {
       test('holds decimal degrees and equals another of the same size', () {
         final degrees = double.parse('26.57');
