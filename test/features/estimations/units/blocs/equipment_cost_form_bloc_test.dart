@@ -405,15 +405,27 @@ void main() {
       );
     });
 
-    group('EquipmentDeliveryFeeUpdatedEvent — bound/NaN checks', () {
+    group('EquipmentDeliveryFeeUpdatedEvent — unusable values', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'accepts a delivery fee of exactly 0 as a valid confirmed-free '
-        'value with no field error',
+        'accepts a delivery fee of exactly 0',
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('0')),
         expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.deliveryFee,
+            'deliveryFee',
+            0,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts a delivery fee within bounds',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('50')),
+        expect: () => [
           isA<EquipmentCostFormEditing>()
-              .having((s) => s.data.deliveryFee, 'deliveryFee', 0)
+              .having((s) => s.data.deliveryFee, 'deliveryFee', 50)
               .having(
                 (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
                 'deliveryFee error',
@@ -422,67 +434,51 @@ void main() {
         ],
       );
 
-      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'rejects a negative delivery fee with a field error',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('-5')),
-        expect: () => [
-          isA<EquipmentCostFormEditing>()
-              .having((s) => s.data.deliveryFee, 'deliveryFee', -5)
-              .having(
-                (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
-                'deliveryFee error',
-                isNotNull,
-              )
-              .having((s) => s.data.isValid, 'isValid', false),
-        ],
-      );
-
-      for (final bad in ['NaN', 'Infinity', '-Infinity', '1e400']) {
+      for (final bad in [
+        '-5',
+        'NaN',
+        'Infinity',
+        '-Infinity',
+        '1e400',
+        '1000000',
+      ]) {
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-          'rejects a delivery fee of "$bad" with a field error instead of '
-          'silently corrupting the total',
+          'ignores a delivery fee of "$bad" and keeps the previous fee with '
+          'no error',
           build: () => bloc,
-          act: (bloc) => bloc.add(EquipmentDeliveryFeeUpdatedEvent(bad)),
+          act: (bloc) {
+            bloc
+              ..add(const EquipmentDeliveryFeeUpdatedEvent('25'))
+              ..add(EquipmentDeliveryFeeUpdatedEvent(bad));
+          },
           expect: () => [
-            isA<EquipmentCostFormEditing>()
-                .having(
-                  (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
-                  'deliveryFee error',
-                  isNotNull,
-                )
-                .having((s) => s.data.isValid, 'isValid', false),
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.deliveryFee,
+              'deliveryFee',
+              25,
+            ),
           ],
+          verify: (bloc) {
+            expect(bloc.state, isA<EquipmentCostFormEditing>());
+            final data = (bloc.state as EquipmentCostFormEditing).data;
+            expect(data.deliveryFee, 25);
+            expect(data.fieldErrors[EquipmentFormField.deliveryFee], isNull);
+          },
         );
       }
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'rejects a delivery fee above the maximum with a field error',
+        'clears the delivery fee when the text is emptied',
         build: () => bloc,
-        act: (bloc) =>
-            bloc.add(const EquipmentDeliveryFeeUpdatedEvent('1000000')),
-        expect: () => [
-          isA<EquipmentCostFormEditing>()
-              .having(
-                (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
-                'deliveryFee error',
-                isNotNull,
-              )
-              .having((s) => s.data.isValid, 'isValid', false),
-        ],
-      );
-
-      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
-        'accepts a delivery fee within bounds with no field error',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('50')),
-        expect: () => [
-          isA<EquipmentCostFormEditing>().having(
-            (s) => s.data.fieldErrors[EquipmentFormField.deliveryFee],
-            'deliveryFee error',
-            isNull,
-          ),
-        ],
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentDeliveryFeeUpdatedEvent('25'))
+            ..add(const EquipmentDeliveryFeeUpdatedEvent(''));
+        },
+        verify: (bloc) {
+          final data = (bloc.state as EquipmentCostFormEditing).data;
+          expect(data.deliveryFee, isNull);
+        },
       );
     });
 
