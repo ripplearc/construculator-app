@@ -10,6 +10,8 @@ class AddToEstimateFooter extends StatelessWidget {
   static const panelKey = Key('adds_to_estimate_panel');
   /// Key of the submit button.
   static const buttonKey = Key('add_to_estimate_button');
+  /// Key of the save-error line.
+  static const errorKey = Key('add_to_estimate_error');
 
   /// The line's own total including delivery. Ignored while [block] is set.
   final double lineTotal;
@@ -29,6 +31,10 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Disables the button while a submit is in flight.
   final bool isSubmitting;
 
+  /// A line above the button that says the last save failed, or null when
+  /// there is nothing to say.
+  final String? errorMessage;
+
   /// Called when the enabled button is tapped.
   final VoidCallback onAdd;
 
@@ -40,6 +46,7 @@ class AddToEstimateFooter extends StatelessWidget {
     required this.estimateTotal,
     this.block,
     this.isSubmitting = false,
+    this.errorMessage,
     required this.onAdd,
   });
 
@@ -64,6 +71,10 @@ class AddToEstimateFooter extends StatelessWidget {
               estimateTotal: estimateTotal,
               block: block,
             ),
+            if (errorMessage case final message?) ...[
+              const SizedBox(height: CoreSpacing.space3),
+              _ErrorLine(message: message),
+            ],
             const SizedBox(height: CoreSpacing.space4),
             CoreButton(
               key: buttonKey,
@@ -73,6 +84,39 @@ class AddToEstimateFooter extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ErrorLine extends StatelessWidget {
+  final String message;
+
+  const _ErrorLine({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        key: AddToEstimateFooter.errorKey,
+        spacing: CoreSpacing.space2,
+        children: [
+          CoreIconWidget(
+            icon: CoreIcons.error,
+            size: CoreIconSize.size16,
+            color: colorTheme.textError,
+          ),
+          Expanded(
+            child: Text(
+              message,
+              style: context.textTheme.bodySmallRegular.copyWith(
+                color: colorTheme.textError,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

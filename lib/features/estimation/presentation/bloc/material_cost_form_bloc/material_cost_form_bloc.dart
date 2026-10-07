@@ -128,7 +128,7 @@ class MaterialCostFormBloc
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
       calculation: {'unit_price': rate, 'quantity': quantity},
-      itemTotalCost: (quantity * (rate * 100).round()).round() / 100,
+      itemTotalCost: draft.lineTotal,
       createdAt: now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
