@@ -3771,6 +3771,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit: {unit}. Tap to change'**
   String unitPillSemanticLabel(String unit);
+
+  /// Label above the material name on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get materialNameLabel;
+
+  /// Placeholder in the material name field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Name the material'**
+  String get materialNamePlaceholder;
+
+  /// Label above the quantity and unit on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get materialQuantityLabel;
+
+  /// Placeholder in the quantity field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'0'**
+  String get materialQuantityPlaceholder;
+
+  /// Label above the rate on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get materialRateLabel;
+
+  /// Placeholder in the rate field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Set your rate'**
+  String get materialRatePlaceholder;
+
+  /// Title of the bottom sheet for adding a material cost to an estimate
+  ///
+  /// In en, this message translates to:
+  /// **'New material cost'**
+  String get newMaterialCostSheetTitle;
 }
 
 class _AppLocalizationsDelegate

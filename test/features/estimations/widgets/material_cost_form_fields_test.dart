@@ -1,8 +1,15 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -12,448 +19,384 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
-import '../helpers/unit_display_name_helper.dart';
 
 void main() {
-  late AppLocalizations l10n;
-  late FakeSupabaseWrapper fakeSupabase;
+  late FakeStorageService storage;
+  late FakeAuthRepository auth;
+  late LastUsedUnitRepository lastUsedUnits;
+  late MaterialCostFormBloc bloc;
+
+  final nameField = find.byKey(const Key('material_name_field'));
+  final quantityField = find.byKey(const Key('material_quantity_field'));
+  final rateField = find.byKey(const Key('material_rate_field'));
+  final unitPill = find.byKey(const Key('material_unit_pill'));
 
   setUpAll(() {
-    l10n = lookupAppLocalizations(const Locale('en'));
-    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-    final bootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: fakeSupabase,
+    final clock = FakeClockImpl();
+    storage = FakeStorageService();
+    auth = FakeAuthRepository(clock: clock);
+    Modular.init(
+      EstimationModule(
+        FakeAppBootstrapFactory.create(
+          supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+        ),
+      ),
     );
-    Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<StorageService>(storage);
+    Modular.replaceInstance<AuthRepository>(auth);
+    lastUsedUnits = Modular.get<LastUsedUnitRepository>();
   });
 
-  tearDownAll(() {
-    Modular.dispose();
-  });
+  tearDownAll(Modular.dispose);
 
   setUp(() {
-    fakeSupabase.reset();
+    storage.reset();
+    auth.reset();
+    auth.setCurrentCredentials(
+      UserCredential(
+        id: 'account-1',
+        email: 'a@example.com',
+        metadata: const {},
+        createdAt: DateTime(2026),
+      ),
+    );
   });
 
-  Widget makeWidget({
-    bool fromCostFile = false,
-    ValueChanged<double>? onTotalChanged,
-    ValueChanged<bool>? onSaveEnabledChanged,
-  }) {
-    return MaterialApp(
-      theme: CoreTheme.light(),
-      locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: BlocProvider<MaterialCostFormBloc>(
-          create: (_) => Modular.get<MaterialCostFormBloc>(),
-          child: MaterialCostFormFields(
-            fromCostFile: fromCostFile,
-            onTotalChanged: onTotalChanged,
-            onSaveEnabledChanged: onSaveEnabledChanged,
+  Future<void> pumpFields(WidgetTester tester) async {
+    bloc = Modular.get<MaterialCostFormBloc>();
+    addTearDown(bloc.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider<MaterialCostFormBloc>.value(
+            value: bloc,
+            child: const MaterialCostFormFields(),
           ),
         ),
       ),
     );
   }
 
-  group('MaterialCostFormFields — manually mode', () {
-    testWidgets('shows material type text field', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+  String textOf(WidgetTester tester, Finder field) => tester
+      .widget<TextField>(
+        find.descendant(of: field, matching: find.byType(TextField)),
+      )
+      .controller!
+      .text;
 
-      expect(find.byKey(const Key('material_type_field')), findsOneWidget);
+  MaterialCostFormData dataOf() => bloc.state.data;
+
+  group('layout from Figma', () {
+    Size rowSize(WidgetTester tester, String label) => tester.getSize(
+      find.ancestor(of: find.text(label), matching: find.byType(SheetFieldRow)),
+    );
+
+    testWidgets('the name row is 73 dp tall with its divider', (tester) async {
+      await pumpFields(tester);
+
+      expect(rowSize(tester, 'Material').height, 72 + 1);
     });
 
-    testWidgets('shows per unit cost field with dollar suffix', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets('the quantity row is 90 dp tall, so the 48 dp tap area of the '
+        'unit button does not stretch it', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('per_unit_cost_field')), findsOneWidget);
+      expect(rowSize(tester, 'Quantity').height, 90 + 1);
     });
 
-    testWidgets('shows UOM dropdown in manual mode', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets('the unit button is drawn 38 dp tall', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('uom_field')), findsOneWidget);
+      final drawn = find.descendant(
+        of: unitPill,
+        matching: find.byType(DecoratedBox),
+      );
+      expect(tester.getSize(drawn.first).height, 38);
     });
 
-    testWidgets('tapping UOM field opens unit selection bottom sheet', (
+    testWidgets('the rate row leaves 8 dp between its label and value', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      await pumpFields(tester);
 
-      await tester.pumpWidget(makeWidget());
+      final label = tester.getRect(find.text('Rate'));
+      final value = tester.getRect(find.text('Set your rate'));
+      expect(value.top - label.bottom, 8);
+    });
+  });
+
+  group('tap areas', () {
+    bool hasFocus(WidgetTester tester, Finder field) => tester
+        .widget<TextField>(
+          find.descendant(of: field, matching: find.byType(TextField)),
+        )
+        .focusNode!
+        .hasFocus;
+
+    for (final entry in {
+      'Material': nameField,
+      'Quantity': quantityField,
+      'Rate': rateField,
+    }.entries) {
+      testWidgets('tapping the ${entry.key} label focuses its field', (
+        tester,
+      ) async {
+        await pumpFields(tester);
+
+        await tester.tap(find.text(entry.key));
+        await tester.pump();
+
+        expect(hasFocus(tester, entry.value), isTrue);
+      });
+
+      testWidgets('tapping above the ${entry.key} text, outside the 24 dp '
+          'the text takes, focuses its field', (tester) async {
+        await pumpFields(tester);
+        final text = tester.getRect(entry.value);
+
+        await tester.tapAt(Offset(text.left + 4, text.top - 10));
+        await tester.pump();
+
+        expect(hasFocus(tester, entry.value), isTrue);
+      });
+    }
+
+    testWidgets('the unit button opens its list from 20 dp below its centre', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      final centre = tester.getCenter(unitPill);
+
+      await tester.tapAt(centre + const Offset(0, 22));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('uom_field')));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.selectUnitTitle), findsOneWidget);
+      expect(find.text('Select unit'), findsOneWidget);
     });
 
-    testWidgets('UOM bottom sheet lists all unit options', (tester) async {
-      // Tall viewport so FractionallySizedBox(0.4) gives 1200px — enough for all 13 ListView items
-      tester.view.physicalSize = const Size(390, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets('the unit button area does not reach the next row', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      final box = tester.getRect(unitPill);
 
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+      expect(box.height, 48);
+    });
+  });
 
-      await tester.tap(find.byKey(const Key('uom_field')));
-      await tester.pumpAndSettle();
+  group('empty form', () {
+    testWidgets('shows the three labels and their placeholders', (
+      tester,
+    ) async {
+      await pumpFields(tester);
 
-      for (final unit in Unit.values) {
-        expect(find.text(unitDisplayName(unit, l10n)), findsOneWidget);
+      for (final text in [
+        'Material',
+        'Quantity',
+        'Rate',
+        'Name the material',
+        '0',
+        'Set your rate',
+        'Unit',
+      ]) {
+        expect(find.text(text), findsOneWidget, reason: text);
       }
     });
+  });
 
-    testWidgets('shows quantity field', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+  group('material name', () {
+    testWidgets('sends what is typed to the form', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('quantity_field')), findsOneWidget);
+      await tester.enterText(nameField, 'Interior paint');
+      await tester.pump();
+
+      expect(dataOf().itemName, 'Interior paint');
     });
 
-    testWidgets('hides cost file field', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('cost_file_field')), findsNothing);
-    });
-
-    testWidgets('brand and product link hidden by default', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('brand_field')), findsNothing);
-      expect(find.byKey(const Key('product_link_field')), findsNothing);
-    });
-
-    testWidgets('tapping other details button reveals brand and product link', (
+    testWidgets('stops typing at 80 characters, with no message', (
       tester,
     ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+      await pumpFields(tester);
 
-      await tester.tap(find.text(l10n.otherMaterialDetailsButton));
-      await tester.pumpAndSettle();
+      await tester.enterText(nameField, 'a' * 100);
+      await tester.pump();
 
-      expect(find.byKey(const Key('brand_field')), findsOneWidget);
-      expect(find.byKey(const Key('product_link_field')), findsOneWidget);
-    });
-
-    testWidgets('tapping other details button again hides brand and product link', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text(l10n.otherMaterialDetailsButton));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.otherMaterialDetailsButton));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('brand_field')), findsNothing);
-      expect(find.byKey(const Key('product_link_field')), findsNothing);
+      expect(textOf(tester, nameField).length, 80);
+      expect(dataOf().itemName.length, 80);
+      expect(find.textContaining('80'), findsNothing);
     });
   });
 
-  group('MaterialCostFormFields — from cost file mode', () {
-    testWidgets('shows cost file dropdown placeholder', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+  group('quantity', () {
+    testWidgets('sends a typed quantity to the form', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('cost_file_field')), findsOneWidget);
+      await tester.enterText(quantityField, '2.5');
+      await tester.pump();
+
+      expect(dataOf().quantity, 2.5);
     });
 
-    testWidgets('shows material type dropdown placeholder', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+    testWidgets('ignores a second decimal point', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('material_type_field')), findsOneWidget);
+      await tester.enterText(quantityField, '1.2');
+      await tester.enterText(quantityField, '1.2.3');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '1.2');
     });
 
-    testWidgets('shows quantity dropdown placeholder', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+    testWidgets('ignores a fifth decimal digit', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('quantity_field')), findsOneWidget);
+      await tester.enterText(quantityField, '1.2345');
+      await tester.enterText(quantityField, '1.23456');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '1.2345');
     });
 
-    testWidgets('hides per unit cost field', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+    testWidgets('reads a comma as the decimal point', (tester) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('per_unit_cost_field')), findsNothing);
+      await tester.enterText(quantityField, '2,5');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '2.5');
+      expect(dataOf().quantity, 2.5);
     });
 
-    testWidgets('hides UOM field', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+    testWidgets('ignores a second decimal separator, comma or point', (
+      tester,
+    ) async {
+      await pumpFields(tester);
 
-      expect(find.byKey(const Key('uom_field')), findsNothing);
+      await tester.enterText(quantityField, '2,5');
+      await tester.enterText(quantityField, '2,5,1');
+      await tester.enterText(quantityField, '2,5.1');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '2.5');
     });
 
-    testWidgets('reveals brand and product link on button tap', (tester) async {
-      await tester.pumpWidget(makeWidget(fromCostFile: true));
-      await tester.pumpAndSettle();
+    testWidgets('ignores letters and signs', (tester) async {
+      await pumpFields(tester);
 
-      await tester.tap(find.text(l10n.otherMaterialDetailsButton));
-      await tester.pumpAndSettle();
+      await tester.enterText(quantityField, '3');
+      await tester.enterText(quantityField, '3x');
+      await tester.enterText(quantityField, '-3');
+      await tester.pump();
 
-      expect(find.byKey(const Key('brand_field')), findsOneWidget);
-      expect(find.byKey(const Key('product_link_field')), findsOneWidget);
+      expect(textOf(tester, quantityField), '3');
+    });
+
+    testWidgets('keeps a typed zero so the form can flag it', (tester) async {
+      await pumpFields(tester);
+
+      await tester.enterText(quantityField, '0');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '0');
+      expect(
+        dataOf().fieldErrors[MaterialFormField.quantity],
+        MaterialFieldError.quantityNotPositive,
+      );
     });
   });
 
-  group('MaterialCostFormFields — item type error', () {
-    testWidgets('shows error text when material type is cleared after typing', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+  group('rate', () {
+    testWidgets('sends a typed rate to the form', (tester) async {
+      await pumpFields(tester);
 
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
-      );
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        '',
-      );
+      await tester.enterText(rateField, '52.5');
       await tester.pump();
 
-      expect(find.text(l10n.materialTypeRequiredError), findsOneWidget);
+      expect(dataOf().rate, 52.5);
     });
 
-    testWidgets('hides error text when material type is non-empty', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets('reads a comma as the decimal point', (tester) async {
+      await pumpFields(tester);
 
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
-      );
+      await tester.enterText(rateField, '52,5');
       await tester.pump();
 
-      expect(find.text(l10n.materialTypeRequiredError), findsNothing);
+      expect(textOf(tester, rateField), '52.5');
+      expect(dataOf().rate, 52.5);
+    });
+
+    testWidgets('ignores a third decimal digit', (tester) async {
+      await pumpFields(tester);
+
+      await tester.enterText(rateField, '52.50');
+      await tester.enterText(rateField, '52.505');
+      await tester.pump();
+
+      expect(textOf(tester, rateField), '52.50');
     });
   });
 
-  group('MaterialCostFormFields — real-time total', () {
-    testWidgets('calls onTotalChanged with perUnitCost × quantity', (
+  group('unit', () {
+    testWidgets('starts empty when no unit was used before', (tester) async {
+      await pumpFields(tester);
+      bloc.add(const MaterialCostFormStarted());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: unitPill, matching: find.text('Unit')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('starts on the unit this account used last', (tester) async {
+      await lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags);
+      await pumpFields(tester);
+      bloc.add(const MaterialCostFormStarted());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: unitPill, matching: find.text('Bags')),
+        findsOneWidget,
+      );
+      expect(dataOf().unit, Unit.bags);
+    });
+
+    testWidgets('changes when another unit is picked from the list', (
       tester,
     ) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
+      await pumpFields(tester);
+
+      await tester.tap(unitPill);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
+      await tester.tap(find.byKey(const Key('unit_option_liters')));
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(const Key('per_unit_cost_field')),
-        '10',
+      expect(dataOf().unit, Unit.liters);
+      expect(
+        find.descendant(of: unitPill, matching: find.text('Liters')),
+        findsOneWidget,
       );
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
-      await tester.pump();
-
-      expect(capturedTotal, 50.0);
     });
 
-    testWidgets('total updates when per unit cost changes', (tester) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('quantity_field')), '4');
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(const Key('per_unit_cost_field')),
-        '25',
-      );
-      await tester.pump();
-
-      expect(capturedTotal, 100.0);
-    });
-
-    testWidgets('calls onTotalChanged with 0 when a field is empty', (
+    testWidgets('does not change the typed quantity when the unit changes', (
       tester,
     ) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
+      await pumpFields(tester);
+      await tester.enterText(quantityField, '3');
+
+      await tester.tap(unitPill);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('unit_option_bags')));
+      await tester.tap(find.byKey(const Key('unit_option_bags')));
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(const Key('per_unit_cost_field')),
-        '20',
-      );
-      await tester.pump();
-
-      expect(capturedTotal, 0.0);
-    });
-
-    testWidgets('calls onTotalChanged with 0 in fromCostFile mode', (
-      tester,
-    ) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(
-          fromCostFile: true,
-          onTotalChanged: (total) => capturedTotal = total,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
-      await tester.pump();
-
-      expect(capturedTotal, 0.0);
-    });
-
-    testWidgets('resets total to 0 when fromCostFile flips on a mounted widget', (
-      tester,
-    ) async {
-      double? capturedTotal;
-      await tester.pumpWidget(
-        makeWidget(onTotalChanged: (total) => capturedTotal = total),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byKey(const Key('per_unit_cost_field')),
-        '10',
-      );
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
-      await tester.pump();
-
-      await tester.pumpWidget(
-        makeWidget(
-          fromCostFile: true,
-          onTotalChanged: (total) => capturedTotal = total,
-        ),
-      );
-      await tester.pump();
-
-      expect(capturedTotal, 0.0);
-    });
-  });
-
-  group('MaterialCostFormFields — save enabled', () {
-    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pumpAndSettle();
-
-      expect(captured, isNull);
-    });
-
-    testWidgets('calls onSaveEnabledChanged(true) when material type has text', (
-      tester,
-    ) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
-      );
-      await tester.pump();
-
-      expect(captured, isTrue);
-    });
-
-    testWidgets(
-        'calls onSaveEnabledChanged(false) when material type is cleared', (
-      tester,
-    ) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
-      );
-      await tester.pump();
-      await tester.enterText(find.byKey(const Key('material_type_field')), '');
-      await tester.pump();
-
-      expect(captured, isFalse);
-    });
-
-    testWidgets(
-        'does not call onSaveEnabledChanged in from cost file mode', (
-      tester,
-    ) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(
-          fromCostFile: true,
-          onSaveEnabledChanged: (v) => captured = v,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(captured, isNull);
-    });
-
-    testWidgets(
-        'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing', (
-      tester,
-    ) async {
-      bool? captured;
-      await tester.pumpWidget(
-        makeWidget(onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
-      );
-      await tester.pump();
-      expect(captured, isTrue);
-
-      await tester.pumpWidget(
-        makeWidget(fromCostFile: true, onSaveEnabledChanged: (v) => captured = v),
-      );
-      await tester.pump();
-
-      expect(captured, isFalse);
-    });
-  });
-
-  group('MaterialCostFormFields — accessibility', () {
-    testWidgets('other details button has semantic label', (tester) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      final semantics = tester.getSemantics(
-        find.byKey(const Key('other_material_details_button')),
-      );
-      expect(semantics.label, contains(l10n.otherMaterialDetailsButton));
+      expect(textOf(tester, quantityField), '3');
+      expect(dataOf().quantity, 3);
     });
   });
 }
