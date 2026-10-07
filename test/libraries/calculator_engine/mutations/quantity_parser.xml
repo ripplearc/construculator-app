@@ -36,6 +36,13 @@
             <mutation text="if (_exactValueOf(token) == null) return null; if (unit.dimension == Dimension.length) {"/>
         </regex>
 
+        <!-- RULE 2: an open token is read as if it were complete; the exact
+             guard no longer covers it, since R3 of 1/2 runs that guard for
+             length tokens only -->
+        <regex pattern="\(token\) =&gt; !token\.isComplete \|\| !token\.value\.isFinite\)" dotAll="true" id="quantity_parser.parse.skip_completeness_guard">
+            <mutation text="(token) =&gt; !token.value.isFinite)"/>
+        </regex>
+
         <!-- RULE 3: a raised unit is read as a plain length whatever its
              power -->
         <regex pattern="if \(tokens\.length == 1 &amp;&amp; first\.power &gt; 1\) return _raised\(first, unit\);" dotAll="true" id="quantity_parser.parse.ignore_power">

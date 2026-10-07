@@ -103,7 +103,7 @@ void main() {
             Length.exact(Rational(5601, 25), unit: Unit.footInch),
             [
               Token(digits: '18', unit: Unit.foot),
-              Token(digits: '8.05', unit: Unit.inch),
+              Token(digits: '8.04', unit: Unit.inch),
             ],
           ),
         );
