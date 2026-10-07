@@ -352,6 +352,33 @@ void main() {
       );
     });
 
+    group('line total', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is zero until both quantity and rate are set',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialQuantityUpdated('3')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 0),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is quantity times rate rounded to the cent',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialRateUpdated('0.335')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 1.01),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is zero when a value is not a finite number',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('Infinity'))
+          ..add(const MaterialRateUpdated('2')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 0),
+      );
+    });
+
     group('material name', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'keeps the name as typed',

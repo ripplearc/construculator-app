@@ -53,11 +53,17 @@ class MaterialFormBlocker extends Equatable {
 /// Base sealed class for all material cost form states.
 sealed class MaterialCostFormState {
   const MaterialCostFormState();
+
+  /// The form values entered so far; empty before the user has typed anything.
+  MaterialCostFormData get data;
 }
 
 /// Initial state before the user has interacted with the form.
 class MaterialCostFormInitial extends MaterialCostFormState {
   const MaterialCostFormInitial();
+
+  @override
+  MaterialCostFormData get data => const MaterialCostFormData();
 }
 
 /// State while the user is filling in the material cost form.
@@ -65,6 +71,7 @@ class MaterialCostFormEditing extends MaterialCostFormState {
   const MaterialCostFormEditing(this.data);
 
   /// The values entered so far and whether they are valid.
+  @override
   final MaterialCostFormData data;
 }
 
@@ -103,6 +110,16 @@ class MaterialCostFormData extends Equatable {
   /// cannot be used. An empty field never has an entry: the disabled Add
   /// button names what is missing.
   final Map<MaterialFormField, MaterialFieldError> fieldErrors;
+
+  /// Quantity times rate rounded to the cent, or 0 while either is missing or
+  /// unusable.
+  double get lineTotal {
+    final quantity = this.quantity;
+    final rate = this.rate;
+    if (quantity == null || rate == null) return 0;
+    if (!quantity.isFinite || !rate.isFinite) return 0;
+    return (quantity * rate * 100).round() / 100;
+  }
 
   /// Whether the name field contains a non-empty value.
   bool get isItemNameValid => itemName.trim().isNotEmpty;
@@ -164,6 +181,7 @@ class MaterialCostFormSubmitting extends MaterialCostFormState {
   const MaterialCostFormSubmitting(this.data);
 
   /// The form data being saved.
+  @override
   final MaterialCostFormData data;
 }
 
@@ -172,6 +190,7 @@ class MaterialCostFormSuccess extends MaterialCostFormState {
   const MaterialCostFormSuccess(this.data, this.createdItem);
 
   /// The form data as it was when saved.
+  @override
   final MaterialCostFormData data;
 
   /// The cost item as saved by [CostItemRepository.createCostItem].
@@ -184,6 +203,7 @@ class MaterialCostFormFailure extends MaterialCostFormState {
   const MaterialCostFormFailure(this.data, this.failure);
 
   /// The form data as it was when saving failed.
+  @override
   final MaterialCostFormData data;
 
   /// The failure returned by [CostItemRepository.createCostItem].

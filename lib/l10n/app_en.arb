@@ -3030,12 +3030,52 @@
   },
   "addToEstimateFailedError": "Couldn't add this cost. Try again.",
   "@addToEstimateFailedError": {
-    "description": "Error toast when saving an equipment cost line fails. No Figma frame covers this case.",
+    "description": "Message shown when saving a cost line fails: a toast on the equipment sheet, and a line above the Add button on the material sheet. No Figma frame covers this case.",
     "context": "N/A"
   },
   "estimateSummaryLoadFailedError": "Couldn't open this estimate. Try again.",
   "@estimateSummaryLoadFailedError": {
     "description": "Error toast when the estimate's name and total cannot be loaded before opening the equipment cost sheet. No Figma frame covers this case.",
     "context": "N/A"
+  },
+  "addsToEstimateNeedsQuantityNote": "Needs a quantity before it can total",
+  "@addsToEstimateNeedsQuantityNote": {
+    "description": "Summary card note while the material quantity is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "addsToEstimateNeedsQuantityAboveZeroNote": "Needs a quantity above zero before it can total",
+  "@addsToEstimateNeedsQuantityAboveZeroNote": {
+    "description": "Summary card note while the material quantity is zero or below",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "addsToEstimateInvalidQuantityNote": "Needs a valid quantity before it can total",
+  "@addsToEstimateInvalidQuantityNote": {
+    "description": "Summary card note while the material quantity is too large or not a number",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "addsToEstimateNeedsUnitNote": "Needs a unit before it can total",
+  "@addsToEstimateNeedsUnitNote": {
+    "description": "Summary card note while no unit is picked for the material",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "enterMaterialNameToContinueButton": "Enter a material name to continue",
+  "@enterMaterialNameToContinueButton": {
+    "description": "Disabled submit button label while the material name is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "enterQuantityToContinueButton": "Enter a quantity to continue",
+  "@enterQuantityToContinueButton": {
+    "description": "Disabled submit button label while the material quantity is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "enterUnitToContinueButton": "Enter a unit to continue",
+  "@enterUnitToContinueButton": {
+    "description": "Disabled submit button label while no unit is picked for the material",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "fixQuantityToContinueButton": "Fix the quantity to continue",
+  "@fixQuantityToContinueButton": {
+    "description": "Disabled submit button label while the material quantity holds a value that cannot be used",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
   }
 }
