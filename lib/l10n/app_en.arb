@@ -3097,5 +3097,40 @@
         "type": "String"
       }
     }
+  },
+  "materialNameLabel": "Material",
+  "@materialNameLabel": {
+    "description": "Label above the material name on the New material cost sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "materialNamePlaceholder": "Name the material",
+  "@materialNamePlaceholder": {
+    "description": "Placeholder in the material name field while it is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "materialQuantityLabel": "Quantity",
+  "@materialQuantityLabel": {
+    "description": "Label above the quantity and unit on the New material cost sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "materialQuantityPlaceholder": "0",
+  "@materialQuantityPlaceholder": {
+    "description": "Placeholder in the quantity field while it is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "materialRateLabel": "Rate",
+  "@materialRateLabel": {
+    "description": "Label above the rate on the New material cost sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "materialRatePlaceholder": "Set your rate",
+  "@materialRatePlaceholder": {
+    "description": "Placeholder in the rate field while it is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
+  },
+  "newMaterialCostSheetTitle": "New material cost",
+  "@newMaterialCostSheetTitle": {
+    "description": "Title of the bottom sheet for adding a material cost to an estimate",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
   }
 }

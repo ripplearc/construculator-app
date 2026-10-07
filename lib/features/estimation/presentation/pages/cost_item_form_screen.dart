@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_ite
 import 'package:construculator/features/estimation/presentation/widgets/equipment_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -82,11 +83,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             children: [
               SheetHeader(title: _screenTitle(context)),
               Flexible(child: _buildBody(context)),
-              EquipmentAddToEstimateFooter(
-                estimateId: widget.estimationId,
-                estimateName: estimate.estimateName,
-                estimateTotal: estimate.totalCost ?? 0,
-              ),
+              _buildSheetFooter(estimate),
             ],
           ),
         ),
@@ -100,6 +97,20 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       bottomNavigationBar: _buildBottomBar(context),
     );
   }
+
+  Widget _buildSheetFooter(CostEstimate estimate) => switch (widget.type) {
+    CostItemType.material => MaterialAddToEstimateFooter(
+      estimateId: widget.estimationId,
+      estimateName: estimate.estimateName,
+      estimateTotal: estimate.totalCost ?? 0,
+    ),
+    CostItemType.labor ||
+    CostItemType.equipment => EquipmentAddToEstimateFooter(
+      estimateId: widget.estimationId,
+      estimateName: estimate.estimateName,
+      estimateTotal: estimate.totalCost ?? 0,
+    ),
+  };
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     final colorTheme = context.colorTheme;
@@ -150,7 +161,10 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   }
 
   String _screenTitle(BuildContext context) => switch (widget.type) {
-    CostItemType.material => context.l10n.addMaterialCostsScreenTitle,
+    CostItemType.material =>
+      widget.presentAsSheet
+          ? context.l10n.newMaterialCostSheetTitle
+          : context.l10n.addMaterialCostsScreenTitle,
     CostItemType.labor => context.l10n.addLabourCostsScreenTitle,
     CostItemType.equipment => context.l10n.addEquipmentCostsScreenTitle,
   };
@@ -201,11 +215,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => MaterialCostFormFields(
-        fromCostFile: _fromCostFile,
-        onTotalChanged: onTotalChanged,
-        onSaveEnabledChanged: onSaveEnabledChanged,
-      ),
+      CostItemType.material => const MaterialCostFormFields(),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,
         onTotalChanged: onTotalChanged,

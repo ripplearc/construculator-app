@@ -2043,4 +2043,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String unitPillSemanticLabel(String unit) {
     return 'Unit: $unit. Tap to change';
   }
+
+  @override
+  String get materialNameLabel => 'Material';
+
+  @override
+  String get materialNamePlaceholder => 'Name the material';
+
+  @override
+  String get materialQuantityLabel => 'Quantity';
+
+  @override
+  String get materialQuantityPlaceholder => '0';
+
+  @override
+  String get materialRateLabel => 'Rate';
+
+  @override
+  String get materialRatePlaceholder => 'Set your rate';
+
+  @override
+  String get newMaterialCostSheetTitle => 'New material cost';
 }
