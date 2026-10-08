@@ -1590,6 +1590,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRateStatusYourRateBadge => '✓ Your rate';
 
   @override
+  String equipmentRecalledRateSubtitle(String amount, String unit) {
+    return '$amount $unit · your default';
+  }
+
+  @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
@@ -1681,6 +1686,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yourRatesSaveFailedError => 'Your rate was not saved. Try again.';
+
+  @override
+  String get yourRatesRecentsTitle => 'Add equipment';
+
+  @override
+  String get yourRatesRecentsSectionHeading => 'Recent — tap to reuse';
+
+  @override
+  String get yourRatesUsedToday => 'Used today';
+
+  @override
+  String get yourRatesUsedYesterday => 'Used yesterday';
+
+  @override
+  String yourRatesUsedDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Used $count days ago',
+      one: 'Used $count day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String yourRatesUsedWeeksAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Used $count weeks ago',
+      one: 'Used last week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get yourRatesNewEquipmentCostAction => 'New equipment cost';
 
   @override
   String get equipmentNoteLabel => 'Note';

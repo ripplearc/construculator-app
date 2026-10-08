@@ -2471,6 +2471,20 @@
   "@equipmentRateStatusYourRateBadge": {
     "description": "Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon"
   },
+  "equipmentRecalledRateSubtitle": "{amount} {unit} · your default",
+  "@equipmentRecalledRateSubtitle": {
+    "description": "Subtitle below the equipment name in the compact confirmation header shown once a rate is recalled from Your Rates (CUJ 6 Sub-flows B/C, Figma nodes 66337:158600 and 66337:159434); amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the recalled rate's pricing method",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$120.00"
+      },
+      "unit": {
+        "type": "String",
+        "example": "/day"
+      }
+    }
+  },
   "equipmentSaveAsMyRateLink": "Save as my default",
   "@equipmentSaveAsMyRateLink": {
     "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)"
@@ -2590,6 +2604,44 @@
   "yourRatesSaveFailedError": "Your rate was not saved. Try again.",
   "@yourRatesSaveFailedError": {
     "description": "Error line under the Rate/Amount field when saving to Your rates fails for a reason other than a label collision (storyboard CUJ 6, frame Rate not saved); the 'Save as my default' link stays"
+  },
+  "yourRatesRecentsTitle": "Add equipment",
+  "@yourRatesRecentsTitle": {
+    "description": "Title of the 'Your recents' sheet opened by the Equipment tab's '+ Add equipment cost' button, before the cost-entry form itself (Figma node 66342:177929)"
+  },
+  "yourRatesRecentsSectionHeading": "Recent — tap to reuse",
+  "@yourRatesRecentsSectionHeading": {
+    "description": "Section heading above the list of recently-saved equipment rates in the 'Your recents' sheet"
+  },
+  "yourRatesUsedToday": "Used today",
+  "@yourRatesUsedToday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved earlier today"
+  },
+  "yourRatesUsedYesterday": "Used yesterday",
+  "@yourRatesUsedYesterday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day"
+  },
+  "yourRatesUsedDaysAgo": "{count, plural, one{Used {count} day ago} other{Used {count} days ago}}",
+  "@yourRatesUsedDaysAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesUsedWeeksAgo": "{count, plural, =1{Used last week} other{Used {count} weeks ago}}",
+  "@yourRatesUsedWeeksAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesNewEquipmentCostAction": "New equipment cost",
+  "@yourRatesNewEquipmentCostAction": {
+    "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"
   },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {

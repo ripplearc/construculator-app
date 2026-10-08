@@ -26,18 +26,11 @@ class EquipmentCostFormBloc
     );
     on<EquipmentMethodSwitchedEvent>((e, emit) {
       _emit(emit, (d) {
-        final rate = e.method == EquipmentPricingMethod.day
-            ? d.dailyRate
-            : d.jobAmount;
-        // A value preserved from before the switch can only have gotten here
-        // by being typed (see EquipmentRateUpdatedEvent below), so it's
-        // unconfirmed too — switching methods must never upgrade it to
-        // ownRateConfirmed on its own.
+        if (e.method == d.method) return d;
         return d.copyWith(
           method: e.method,
-          rateStatus: rate == null
-              ? RateStatus.missing
-              : RateStatus.ownRateUnconfirmed,
+          rateStatus: d.otherMethodRateStatus,
+          otherMethodRateStatus: d.rateStatus,
         );
       });
     });
@@ -62,6 +55,22 @@ class EquipmentCostFormBloc
             ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
             : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
       );
+    });
+    on<EquipmentSavedRateRecalledEvent>((e, emit) {
+      _emit(emit, (d) {
+        final recalled = d.copyWith(
+          method: e.method,
+          rateStatus: RateStatus.ownRateConfirmed,
+          otherMethodRateStatus: e.method == d.method
+              ? d.otherMethodRateStatus
+              : d.rateStatus,
+          recalledFromRecents: e.fromRecents,
+          recalledRate: e.fromRecents ? e.rate : d.recalledRate,
+        );
+        return e.method == EquipmentPricingMethod.day
+            ? recalled.copyWith(dailyRate: e.rate)
+            : recalled.copyWith(jobAmount: e.rate);
+      });
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
@@ -154,16 +163,7 @@ class EquipmentCostFormBloc
     );
   }
 
-  EquipmentCostFormData _current() {
-    return switch (state) {
-      EquipmentCostFormEditing(:final data) => data,
-      EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
-      EquipmentCostFormSubmitting(:final data) => data,
-      EquipmentCostFormSuccess(:final data) => data,
-      EquipmentCostFormFailure(:final data) => data,
-      EquipmentCostFormInitial() => const EquipmentCostFormData(),
-    };
-  }
+  EquipmentCostFormData _current() => state.formData;
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
     final errors = <EquipmentFormField, EquipmentFieldError>{};

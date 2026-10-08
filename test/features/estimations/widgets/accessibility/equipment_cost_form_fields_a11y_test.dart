@@ -34,7 +34,11 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeWidget(ThemeData theme, {bool fromCostFile = false}) {
+  Widget makeWidget(
+    ThemeData theme, {
+    bool fromCostFile = false,
+    YourRateEntry? initialRateEntry,
+  }) {
     return MaterialApp(
       theme: theme,
       locale: const Locale('en'),
@@ -47,6 +51,7 @@ void main() {
             fromCostFile: fromCostFile,
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
             clock: FakeClockImpl(),
+            initialRateEntry: initialRateEntry,
           ),
         ),
       ),
@@ -63,6 +68,68 @@ void main() {
           tester,
           makeWidget,
           find.byKey(const Key('rate_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
+    );
+
+    // CA-1146: once a day rate is recalled from Your Rates (CUJ 6 Sub-flow
+    // B), Figma's B2 confirmation (node 66337:158600) replaces the editable
+    // Rate field with a static Title/Subtitle header — the rate itself is no
+    // longer an editable/read-only text field at all, just plain text, so
+    // its only a11y requirement is text contrast, checked here on the
+    // Subtitle. The Duration field stays the one live, editable control on
+    // this screen and keeps its own normal (not read-only) a11y coverage —
+    // see 'a11y: rate field meets text contrast guidelines...' above for the
+    // equivalent check on the not-yet-recalled form's Duration-adjacent
+    // field.
+    testWidgets(
+      'a11y: the recalled-rate Subtitle in the form body meets text contrast '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final backhoe = YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Backhoe',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
+          );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
+          find.byKey(const Key('recalled_rate_subtitle')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a11y: the recalled-rate Duration field meets text contrast guidelines '
+      'in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final backhoe = YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Backhoe',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
+          );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
+          find.byKey(const Key('duration_field')),
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
         );
@@ -209,7 +276,10 @@ void main() {
       // reuses the same widget State across both pumps (see the
       // delivery-fee Confirm-link test above), so the dialog opened on the
       // first theme may still be showing on the second — only open it once.
-      if (find.byKey(const Key('entry_label_dialog_title')).evaluate().isNotEmpty) {
+      if (find
+          .byKey(const Key('entry_label_dialog_title'))
+          .evaluate()
+          .isNotEmpty) {
         return;
       }
       final repository = Modular.get<YourRatesRepository>();

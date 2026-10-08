@@ -2946,6 +2946,12 @@ abstract class AppLocalizations {
   /// **'✓ Your rate'**
   String get equipmentRateStatusYourRateBadge;
 
+  /// Subtitle below the equipment name in the compact confirmation header shown once a rate is recalled from Your Rates (CUJ 6 Sub-flows B/C, Figma nodes 66337:158600 and 66337:159434); amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the recalled rate's pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} {unit} · your default'**
+  String equipmentRecalledRateSubtitle(String amount, String unit);
+
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:
@@ -3093,6 +3099,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your rate was not saved. Try again.'**
   String get yourRatesSaveFailedError;
+
+  /// Title of the 'Your recents' sheet opened by the Equipment tab's '+ Add equipment cost' button, before the cost-entry form itself (Figma node 66342:177929)
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment'**
+  String get yourRatesRecentsTitle;
+
+  /// Section heading above the list of recently-saved equipment rates in the 'Your recents' sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Recent — tap to reuse'**
+  String get yourRatesRecentsSectionHeading;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved earlier today
+  ///
+  /// In en, this message translates to:
+  /// **'Used today'**
+  String get yourRatesUsedToday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'Used yesterday'**
+  String get yourRatesUsedYesterday;
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Used {count} day ago} other{Used {count} days ago}}'**
+  String yourRatesUsedDaysAgo(int count);
+
+  /// Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Used last week} other{Used {count} weeks ago}}'**
+  String yourRatesUsedWeeksAgo(int count);
+
+  /// Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate
+  ///
+  /// In en, this message translates to:
+  /// **'New equipment cost'**
+  String get yourRatesNewEquipmentCostAction;
 
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///

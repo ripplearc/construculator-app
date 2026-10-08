@@ -168,6 +168,377 @@ void main() {
       );
     });
 
+    group('EquipmentSavedRateRecalledEvent', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'fills dailyRate and marks it ownRateConfirmed for a recalled day '
+        'rate, leaving deliveryFee untouched (still unpriced)',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.day,
+            rate: 145,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.method,
+                'method',
+                EquipmentPricingMethod.day,
+              )
+              .having((s) => s.data.dailyRate, 'dailyRate', 145)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              )
+              .having((s) => s.data.deliveryFee, 'deliveryFee', isNull),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'marks the line as recalled from recents only when the event says so',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+            fromRecents: true,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledFromRecents,
+            'recalledFromRecents',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'keeps the saved price of the recents row while a new amount is typed',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450'))
+          ..add(const EquipmentRateUpdatedEvent('')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledRate,
+            'recalledRate',
+            400,
+          ),
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.recalledRate, 'recalledRate', 400)
+              .having((s) => s.data.jobAmount, 'jobAmount', 450),
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.recalledRate, 'recalledRate', 400)
+              .having((s) => s.data.jobAmount, 'jobAmount', isNull),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a pick from the look-up (fromRecents false) sets no recalled price',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledRate,
+            'recalledRate',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a pick from the look-up (fromRecents false) never marks the line as '
+        'recalled from recents',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledFromRecents,
+            'recalledFromRecents',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'typing over a line recalled from recents downgrades the rate status '
+        'but keeps the recalled-from-recents flag',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateUnconfirmed,
+              )
+              .having(
+                (s) => s.data.recalledFromRecents,
+                'recalledFromRecents',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'keeps the equipment name that was already typed, because picking a '
+        'price never renames the line',
+        build: () => bloc,
+        act: (bloc) {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('mini excavator 1.5t'))
+            ..add(
+              const EquipmentSavedRateRecalledEvent(
+                method: EquipmentPricingMethod.day,
+                rate: 145,
+              ),
+            );
+        },
+        verify: (bloc) {
+          final state = bloc.state;
+          expect(state, isA<EquipmentCostFormEditing>());
+          expect(
+            (state as EquipmentCostFormEditing).data.equipmentType,
+            'mini excavator 1.5t',
+          );
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'sending the same method again after a recall keeps the confirmed '
+        'status',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.day,
+              rate: 145,
+            ),
+          )
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.rateStatus,
+            'rateStatus',
+            RateStatus.ownRateConfirmed,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a recall for the other method switches to it and keeps the status of '
+        'the method it left',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+            ),
+          ),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.method,
+                'method',
+                EquipmentPricingMethod.job,
+              )
+              .having((s) => s.data.jobAmount, 'jobAmount', 400)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              )
+              .having(
+                (s) => s.data.otherMethodRateStatus,
+                'otherMethodRateStatus',
+                RateStatus.ownRateUnconfirmed,
+              )
+              .having((s) => s.data.dailyRate, 'dailyRate', 100),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Add stays disabled for a recalled day rate until Duration is typed',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.day,
+            rate: 145,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.isValid,
+            'isValid',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'fills jobAmount and marks it ownRateConfirmed for a recalled job '
+        'price, with Add already active on arrival (a confirmation, not a '
+        'form — Job pricing needs no duration)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+            ),
+          ),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.jobAmount, 'jobAmount', 400)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              )
+              .having((s) => s.data.isValid, 'isValid', true),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a recalled job amount stays editable: typing over it downgrades '
+        'rateStatus back to ownRateUnconfirmed, the same as any other typed '
+        'value',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.jobAmount, 'jobAmount', 450)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateUnconfirmed,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        // Sub-flow D correctness: a Job quote is a separate catalog entry
+        // from a Day rate, never derived from it. Switching away from a
+        // recalled (ownRateConfirmed) day rate must leave jobAmount
+        // untouched — never a computed "duration x dailyRate" value — and
+        // must not silently carry the day rate's ownRateConfirmed status
+        // over to the job field it was never actually saved under.
+        'switching from a recalled day rate to Job never derives jobAmount '
+        'from it, and starts the job field at missing, not confirmed',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentDurationUpdatedEvent('4'))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.day,
+              rate: 145,
+            ),
+          )
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job)),
+        skip: 2,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.jobAmount, 'jobAmount', isNull)
+              .having((s) => s.data.dailyRate, 'dailyRate', 145)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.missing,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'switching back to Day after recalling a day rate restores the value '
+        'and its confirmed status',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.day,
+              rate: 145,
+            ),
+          )
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 2,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', 145)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateConfirmed,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'switching back restores a typed Day rate as unconfirmed and keeps '
+        'the Job amount typed in between',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentRateUpdatedEvent('300'))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.dailyRate, 'dailyRate', 100)
+              .having((s) => s.data.jobAmount, 'jobAmount', 300)
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateUnconfirmed,
+              ),
+        ],
+      );
+    });
+
     group('EquipmentRateUpdatedEvent — rateStatus', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'sets rateStatus to ownRateUnconfirmed (not confirmed) once a '

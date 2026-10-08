@@ -1,3 +1,5 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -41,6 +43,7 @@ void main() {
     required WidgetTester tester,
     required ThemeData theme,
     bool fromCostFile = false,
+    YourRateEntry? initialRateEntry,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -56,6 +59,7 @@ void main() {
               fromCostFile: fromCostFile,
               yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
               clock: FakeClockImpl(),
+              initialRateEntry: initialRateEntry,
             ),
           ),
         ),
@@ -63,6 +67,20 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  YourRateEntry savedRate(
+    String name,
+    double amount,
+    EquipmentPricingMethod method,
+  ) => YourRateEntry(
+    id: 'rate-1',
+    companyId: 'company-1',
+    itemName: name,
+    category: CostItemType.equipment,
+    rate: Money(amount: amount),
+    savedAt: DateTime(2026, 1, 1),
+    equipmentMethod: method,
+  );
 
   screenshotThemeGroups('EquipmentCostFormFields Screenshot Tests', (
     theme,
@@ -416,5 +434,106 @@ void main() {
         );
       },
     );
+
+    // CA-1146: CUJ 6 Sub-flow B (saved day rate) — Figma's B2 confirmation
+    // (node 66337:158600), a compact Title/Subtitle header with Duration as
+    // the only editable field, replacing the full entry form.
+    testWidgets('renders the recalled-day-rate confirmation (B2)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Scissor lift — 19ft',
+          120,
+          EquipmentPricingMethod.day,
+        ),
+      );
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_day_rate$suffix.png',
+        ),
+      );
+    });
+
+    // CA-1146: CUJ 6 Sub-flow C (saved job price) — Figma's C2 confirmation
+    // (node 66337:159434), the same compact header shape with Amount as the
+    // only editable field, pre-filled from the recalled price.
+    testWidgets('renders the recalled-job-price confirmation (C2)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400,
+          EquipmentPricingMethod.job,
+        ),
+      );
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('keeps the compact saved-rate screen after the amount is edited', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400,
+          EquipmentPricingMethod.job,
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('keeps the full form after a look-up pick', (tester) async {
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        savedRate('Mini excavator — 1.5 ton', 150, EquipmentPricingMethod.day),
+      );
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'mini excavator 1.5t',
+      );
+      await tester.enterText(find.byKey(const Key('duration_field')), '4');
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mini excavator — 1.5 ton'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/rate_applied_from_lookup$suffix.png',
+        ),
+      );
+    });
   });
 }

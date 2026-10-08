@@ -1,8 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -204,26 +207,29 @@ void main() {
       expect(find.text(l10n.addMaterialCostButton), findsOneWidget);
     });
 
-    testWidgets('tapping add material cost button navigates to cost item form', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'tapping add material cost button navigates to cost item form',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      await tester.tap(find.byKey(const Key('add_material_cost_button')));
-      await tester.pump();
+        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tester.pump();
 
-      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-      expect(
-        fakeRouter.navigationHistory,
-        contains(RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null)),
-      );
-      expect(find.byType(BottomSheet), findsNothing);
-    });
+        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+        expect(
+          fakeRouter.navigationHistory,
+          contains(
+            RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null),
+          ),
+        );
+        expect(find.byType(BottomSheet), findsNothing);
+      },
+    );
 
     testWidgets('displays preview button in bottom bar', (
       WidgetTester tester,
@@ -269,67 +275,78 @@ void main() {
       expect(find.text(l10n.addLabourCostButton), findsOneWidget);
     });
 
-    testWidgets('FAB shows add equipment cost after switching to equipments tab', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'FAB shows add equipment cost after switching to equipments tab',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('add_equipment_cost_button')), findsOneWidget);
-      expect(find.text(l10n.addEquipmentCostButton), findsOneWidget);
-    });
-
-    testWidgets('FAB returns to material after switching back to materials tab', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      await tester.tap(find.text(l10n.laboursTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(l10n.materialsTab));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('add_material_cost_button')), findsOneWidget);
-    });
-
-    testWidgets('tapping add labour cost button navigates to labour cost form', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      await tester.tap(find.text(l10n.laboursTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_labour_cost_button')));
-      await tester.pump();
-
-      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-      expect(
-        fakeRouter.navigationHistory,
-        contains(RouteCall('$fullAddLabourCostRoute/$testEstimationId', null)),
-      );
-      expect(find.byType(BottomSheet), findsNothing);
-    });
+        expect(
+          find.byKey(const Key('add_equipment_cost_button')),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.addEquipmentCostButton), findsOneWidget);
+      },
+    );
 
     testWidgets(
-      'tapping add equipment cost button opens the equipment cost sheet '
-      'instead of navigating to a route',
+      'FAB returns to material after switching back to materials tab',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.laboursTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.materialsTab));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('add_material_cost_button')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping add labour cost button navigates to labour cost form',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.laboursTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_labour_cost_button')));
+        await tester.pump();
+
+        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+        expect(
+          fakeRouter.navigationHistory,
+          contains(
+            RouteCall('$fullAddLabourCostRoute/$testEstimationId', null),
+          ),
+        );
+        expect(find.byType(BottomSheet), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping add equipment cost button opens "Your recents" instead of '
+      'navigating to a route',
       (WidgetTester tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
@@ -343,8 +360,9 @@ void main() {
         await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
         expect(find.byType(BottomSheet), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsNothing);
 
         final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
         expect(
@@ -355,6 +373,249 @@ void main() {
             ),
           ),
         );
+      },
+    );
+
+    testWidgets(
+      '"Your recents" has no sample-rate notice and offers "New equipment '
+      'cost"',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('your_rates_disclaimer')), findsNothing);
+        expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping "New equipment cost" on "Your recents" opens the form blank',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(BottomSheet), findsOneWidget);
+      },
+    );
+
+    testWidgets('swiping "Your recents" down opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.fling(
+        find.byKey(const Key('new_equipment_cost_row')),
+        const Offset(0, 600),
+        2000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('tapping outside "Your recents" opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets(
+      'when the saved rates cannot be read, "New equipment cost" still opens '
+      'the blank form',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
+        expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      },
+    );
+
+    testWidgets('the back arrow on "Your recents" opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SheetHeader.backButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('the back action on "Your recents" opens no form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(YourRatesRecentsSheet), findsNothing);
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    Future<void> seedRecent({
+      required String itemName,
+      required double amount,
+      required EquipmentPricingMethod method,
+    }) async {
+      final saveResult = await Modular.get<YourRatesRepository>().save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: itemName,
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: clock.now().subtract(const Duration(days: 10)),
+          equipmentMethod: method,
+        ),
+      );
+      saveResult.fold((f) => throw StateError('seed failed: $f'), (_) {});
+    }
+
+    Future<void> openRecents(WidgetTester tester) async {
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'tapping a recent Day row opens the compact saved-rate screen: name and '
+      'price in the sheet header, Duration as the only field',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await seedRecent(
+          itemName: 'Scissor lift — 19ft',
+          amount: 120,
+          method: EquipmentPricingMethod.day,
+        );
+        await openRecents(tester);
+        expect(find.text('Used last week'), findsOneWidget);
+
+        await tester.tap(find.text('Scissor lift — 19ft'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text('Scissor lift — 19ft'), findsOneWidget);
+        expect(find.text(r'$120.00 /day · your default'), findsOneWidget);
+        expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+        expect(find.byKey(const Key('day_method_chip')), findsNothing);
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+        expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping a recent Job row opens the compact screen with the amount '
+      'filled, and editing the amount keeps it compact',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await seedRecent(
+          itemName: 'Dumpster — 30 yd',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await openRecents(tester);
+
+        await tester.tap(find.text('Dumpster — 30 yd'));
+        await tester.pumpAndSettle();
+
+        expect(find.text(r'$400.00 job · your default'), findsOneWidget);
+        expect(find.text('400'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('amount_field')), '450');
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('equipment_name_field')), findsNothing);
+        expect(find.byKey(const Key('job_method_chip')), findsNothing);
+        expect(find.byKey(const Key('amount_field')), findsOneWidget);
       },
     );
 
@@ -371,6 +632,8 @@ void main() {
         await tester.tap(find.text(l10n.equipmentsTab));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.text('New equipment cost'), findsOneWidget);
@@ -392,10 +655,14 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.pumpAndSettle();
 
-      final sheetHeight = tester.getSize(find.byType(CostItemFormScreen)).height;
-      final screenHeight = tester.view.physicalSize.height /
-          tester.view.devicePixelRatio;
+      final sheetHeight = tester
+          .getSize(find.byType(CostItemFormScreen))
+          .height;
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
       expect(sheetHeight, lessThan(screenHeight * 0.9));
     });
 
@@ -414,15 +681,21 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.byKey(const Key('rate_field')));
       await tester.pumpAndSettle();
 
-      final screenHeight = tester.view.physicalSize.height /
-          tester.view.devicePixelRatio;
+      final screenHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
       final keyboardTop = screenHeight - 300 / tester.view.devicePixelRatio;
-      final rateBottom = tester.getRect(find.byKey(const Key('rate_field'))).bottom;
-      final barTop = tester.getRect(find.byKey(const Key('cost_item_total_label'))).top;
+      final rateBottom = tester
+          .getRect(find.byKey(const Key('rate_field')))
+          .bottom;
+      final barTop = tester
+          .getRect(find.byKey(const Key('cost_item_total_label')))
+          .top;
       expect(tester.takeException(), isNull);
       expect(rateBottom, lessThanOrEqualTo(keyboardTop));
       expect(rateBottom, lessThanOrEqualTo(barTop));
@@ -440,6 +713,8 @@ void main() {
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
       expect(find.byType(CostItemFormScreen), findsOneWidget);
 

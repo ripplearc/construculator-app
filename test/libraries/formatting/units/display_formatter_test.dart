@@ -235,6 +235,82 @@ void main() {
       });
     });
 
+    group('calendarDaysSince', () {
+      final now = DateTime(2026, 1, 15, 9);
+
+      test('is 0 on the same day and for a time later than now', () {
+        expect(DisplayFormatter.calendarDaysSince(now, now: now), 0);
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            now.add(const Duration(days: 1)),
+            now: now,
+          ),
+          0,
+        );
+      });
+
+      test('counts 4 pm yesterday seen at 9 am as 1 day, not 0', () {
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 14, 16),
+            now: now,
+          ),
+          1,
+        );
+      });
+
+      test('counts 11 pm yesterday seen just after midnight as 1 day', () {
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 14, 23),
+            now: DateTime(2026, 1, 15, 0, 5),
+          ),
+          1,
+        );
+      });
+
+      test('counts calendar days across a spring clock change', () {
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 7, 16),
+            now: DateTime(2026, 3, 9, 9),
+          ),
+          2,
+        );
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 8, 10),
+            now: DateTime(2026, 3, 9, 9),
+          ),
+          1,
+        );
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 3, 5, 10),
+            now: DateTime(2026, 3, 12, 9),
+          ),
+          7,
+        );
+      });
+
+      test('counts whole calendar days across a week and a month edge', () {
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2026, 1, 8, 23),
+            now: now,
+          ),
+          7,
+        );
+        expect(
+          DisplayFormatter.calendarDaysSince(
+            DateTime(2025, 12, 31, 10),
+            now: now,
+          ),
+          15,
+        );
+      });
+    });
+
     group('Static formatters', () {
       test('should have consistent static formatters', () {
         expect(DisplayFormatter.currency.decimalDigits, equals(2));

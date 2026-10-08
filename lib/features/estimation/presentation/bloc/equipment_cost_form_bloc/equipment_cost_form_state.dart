@@ -54,6 +54,9 @@ class EquipmentCostFormData extends Equatable {
     this.jobAmount,
     this.deliveryFee,
     this.rateStatus = RateStatus.missing,
+    this.otherMethodRateStatus = RateStatus.missing,
+    this.recalledFromRecents = false,
+    this.recalledRate,
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -71,6 +74,22 @@ class EquipmentCostFormData extends Equatable {
 
   /// Confidence level of the rate used for this line.
   final RateStatus rateStatus;
+
+  /// Rate status of the pricing method that is not selected, so switching
+  /// back to it restores the status it had.
+  final RateStatus otherMethodRateStatus;
+
+  /// Whether the rate was recalled from a Your recents row. It stays true
+  /// while the user edits the recalled line, so the compact saved-rate
+  /// screen is chosen from this flag and not from [rateStatus], which an
+  /// edit changes.
+  final bool recalledFromRecents;
+
+  /// The saved price of the Your recents row this line was opened from. The
+  /// compact screen's header shows it, and it does not change while the user
+  /// types a new amount: the saved default is still this price until the user
+  /// saves a new one. Null when the line was not opened from a recents row.
+  final double? recalledRate;
 
   /// Freeform description/note for this item.
   final String? description;
@@ -103,6 +122,9 @@ class EquipmentCostFormData extends Equatable {
     Object? jobAmount = _unset,
     Object? deliveryFee = _unset,
     RateStatus? rateStatus,
+    RateStatus? otherMethodRateStatus,
+    bool? recalledFromRecents,
+    Object? recalledRate = _unset,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -117,6 +139,12 @@ class EquipmentCostFormData extends Equatable {
           ? this.deliveryFee
           : deliveryFee as double?,
       rateStatus: rateStatus ?? this.rateStatus,
+      otherMethodRateStatus:
+          otherMethodRateStatus ?? this.otherMethodRateStatus,
+      recalledFromRecents: recalledFromRecents ?? this.recalledFromRecents,
+      recalledRate: recalledRate == _unset
+          ? this.recalledRate
+          : recalledRate as double?,
       description: description == _unset
           ? this.description
           : description as String?,
@@ -134,6 +162,9 @@ class EquipmentCostFormData extends Equatable {
     jobAmount,
     deliveryFee,
     rateStatus,
+    otherMethodRateStatus,
+    recalledFromRecents,
+    recalledRate,
     description,
     isValid,
     fieldErrors,
@@ -197,3 +228,15 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
 }
 
 const Object _unset = Object();
+
+extension EquipmentCostFormStateData on EquipmentCostFormState {
+  /// The form data carried by this state, or empty data for the initial state.
+  EquipmentCostFormData get formData => switch (this) {
+    EquipmentCostFormEditing(:final data) => data,
+    EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
+    EquipmentCostFormSubmitting(:final data) => data,
+    EquipmentCostFormSuccess(:final data) => data,
+    EquipmentCostFormFailure(:final data) => data,
+    EquipmentCostFormInitial() => const EquipmentCostFormData(),
+  };
+}

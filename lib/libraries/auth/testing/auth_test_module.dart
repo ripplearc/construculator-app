@@ -8,6 +8,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
@@ -28,6 +30,9 @@ class AuthTestModule extends Module {
     );
     i.add<AuthNotifier>(() => FakeAuthNotifier(), key: 'fakeAuthNotifier');
     i.add<AuthNotifier>(() => AuthNotifierImpl(), key: 'authNotifier');
+    i.addSingleton<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(supabaseWrapper: i()),
+    );
     i.add<AuthManager>(
       () => AuthManagerImpl(
         wrapper: i(),
@@ -35,6 +40,7 @@ class AuthTestModule extends Module {
         authNotifier: i(),
         sentryWrapper: FakeSentryWrapper(),
         analyticsRepository: FakeAnalyticsRepository(),
+        currentCompanyResolver: i(),
       ),
       key: 'authManagerWithFakeDep',
     );

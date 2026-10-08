@@ -58,6 +58,31 @@ class EquipmentDescriptionUpdatedEvent extends EquipmentCostFormEvent {
   final String value;
 }
 
+/// Fired when the user recalls a saved rate from Your Rates (the
+/// Look-up-a-rate sheet or Your recents) — CUJ 6 Sub-flows B and C. Unlike
+/// [EquipmentRateUpdatedEvent], which always lands as
+/// [RateStatus.ownRateUnconfirmed], a recalled rate is already verified: it
+/// was confirmed the moment it was saved to Your Rates, so recalling it is
+/// not the same as a fresh, unconfirmed keystroke.
+class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
+  const EquipmentSavedRateRecalledEvent({
+    required this.method,
+    required this.rate,
+    this.fromRecents = false,
+  });
+
+  /// Which pricing method the recalled entry was saved under. The rate lands
+  /// in [EquipmentCostFormData.dailyRate] or `.jobAmount` accordingly.
+  final EquipmentPricingMethod method;
+
+  /// The recalled rate amount.
+  final double rate;
+
+  /// Whether the rate came from a Your recents row, which opens the compact
+  /// saved-rate screen. A pick from the look-up sheet keeps the full form.
+  final bool fromRecents;
+}
+
 /// Fired when the user submits the equipment cost form.
 class EquipmentCostSubmittedEvent extends EquipmentCostFormEvent {
   const EquipmentCostSubmittedEvent({required this.estimateId});
