@@ -78,16 +78,16 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   Completer<void>? syncStreamActivationGate;
 
   /// Optional deterministic signal, completed the next time [syncStream] is
-  /// invoked — an alternative to `pumpEventQueue()` for tests that need to
+  /// invoked. An alternative to `pumpEventQueue()` for tests that need to
   /// wait for activation without assuming how many queue drains that takes.
   Completer<void>? syncStreamInvokedSignal;
 
   /// Optional deterministic signal, completed the next time [watch] is
-  /// invoked — same rationale as [syncStreamInvokedSignal].
+  /// invoked. Same rationale as [syncStreamInvokedSignal].
   Completer<void>? watchInvokedSignal;
 
   /// Optional deterministic signal, completed the next time a [syncStream]
-  /// handle is unsubscribed — same rationale as [syncStreamInvokedSignal].
+  /// handle is unsubscribed. Same rationale as [syncStreamInvokedSignal].
   Completer<void>? syncStreamUnsubscribeSignal;
 
   /// Scripts [rows] as the result of [getAll] for [sql].

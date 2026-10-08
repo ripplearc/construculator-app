@@ -87,6 +87,10 @@ instances.
   (`lib/libraries/time/interfaces/clock.dart`). If there is no id generator
   interface yet, add one in the same shape as `Clock`, with a fake. Do not call
   `Uuid().v4()` inline. Tests must be able to check the exact insert parameters.
+  This is the standard. `powersync_local_consent_data_source.dart` is the one
+  exception: it calls the PowerSync SDK's `uuid.v4()` because SQLite has no
+  `INSERT ... RETURNING` on that kind of view. Do not copy that pattern. Migrate
+  it to an id generator when that file is next touched.
 - **Use `writeTransaction` when 2+ rows must land as a unit.** It commits every row
   together and rolls back all of them if the callback throws. For a single row, use bare
   `execute()`.
@@ -157,11 +161,13 @@ Hold these five rules when you write it:
 
 **On `dedupe`:** `watch()` re-fires whenever *any* row in the queried table changes, even
 one unrelated to what you're watching. That means a single-row watch can rebuild an
-identical value just because some other row changed. Pass `true` for shapes that support
-value equality, such as a single DTO or a scalar. Leave a bare `.distinct()` off for
-`List<Dto>`. It compares by identity, so it does nothing. If the DTO has value equality,
-use `.distinct(listEquals)` from `package:flutter/foundation.dart`. That compares each
-item.
+identical value just because some other row changed. Make `dedupe` an optional equality
+function `bool Function(T, T)`, and pass it to `.distinct(dedupe)`:
+
+- For a single DTO or a scalar, pass `dedupe: (a, b) => a == b`.
+- For `List<Dto>`, pass `dedupe: listEquals` from `package:flutter/foundation.dart`. It
+  compares each item, so the DTO needs value equality.
+- A bare `.distinct()` on a list compares by identity and does nothing.
 
 > ⚠️ **An empty stream does not mean "no permission."** If the server denies permission,
 > no rows sync down and `watch()` emits `[]`. That looks the same as there simply being no
@@ -182,8 +188,10 @@ and queued" as described in §4. On a local error, return `Left`.
 
 Reuse `code-data`'s exception-to-`Failure` table as it is. Timeout, socket, and
 expected Postgrest codes log a warning. Unknown Postgrest codes and anything
-else log an error. Anything unknown becomes `UnexpectedFailure`. **Always reuse
-an existing `{Feature}Failure` type. Never invent a new one inline.**
+else log an error. Anything unknown becomes `UnexpectedFailure`. **Reuse an
+existing `{Feature}Failure` type. If none fits, add one in its own file under
+`lib/features/{feature}/domain/failures/`, as `code-data` says. Never define one
+inline.**
 
 ### 6.3 Presentation & DI
 

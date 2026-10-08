@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -171,22 +172,48 @@ void main() {
         expect(fakeWrapper.syncStreamUnsubscribeSignal!.isCompleted, isTrue);
       });
 
-      test('can delay activation until the gate completes', () async {
-        fakeWrapper.syncStreamActivationGate = Completer<void>();
+      test('waits for the activation gate before returning a handle', () {
+        fakeAsync((async) {
+          fakeWrapper.syncStreamActivationGate = Completer<void>();
+          var resolved = false;
+          fakeWrapper
+              .syncStream('user_cost_estimates')
+              .then((_) => resolved = true);
+          async.flushMicrotasks();
+          expect(resolved, isFalse);
 
-        // syncStreamCalls is recorded synchronously at the top of syncStream(),
-        // before the internal gate await — no async wait needed to observe it.
-        final future = fakeWrapper.syncStream('user_cost_estimates');
+          fakeWrapper.syncStreamActivationGate!.complete();
+          async.flushMicrotasks();
 
-        expect(fakeWrapper.syncStreamCalls, ['user_cost_estimates']);
-        expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
+          expect(resolved, isTrue);
+        });
+      });
 
-        fakeWrapper.syncStreamActivationGate!.complete();
-        final handle = await future;
+      test('keeps the invoked signal completed across repeated calls', () async {
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
 
-        handle.unsubscribe();
+        await fakeWrapper.syncStream('user_cost_estimates');
+        await fakeWrapper.syncStream('user_cost_estimates');
 
-        expect(fakeWrapper.syncStreamUnsubscribes, ['user_cost_estimates']);
+        expect(fakeWrapper.syncStreamCalls, [
+          'user_cost_estimates',
+          'user_cost_estimates',
+        ]);
+      });
+
+      test('keeps the unsubscribe signal completed across repeated unsubscribes',
+          () async {
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
+        final first = await fakeWrapper.syncStream('user_cost_estimates');
+        final second = await fakeWrapper.syncStream('user_cost_estimates');
+
+        first.unsubscribe();
+        second.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribes, [
+          'user_cost_estimates',
+          'user_cost_estimates',
+        ]);
       });
 
       test('throws the configured error and still records the call', () async {
