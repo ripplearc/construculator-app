@@ -14,8 +14,15 @@ const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 EventTransformer<E> _restartable<E>() =>
     (events, mapper) => events.switchMap(mapper);
 
-EventTransformer<E> _debounceRestartable<E>(Duration duration) =>
-    (events, mapper) => events.debounceTime(duration).switchMap(mapper);
+EventTransformer<YourRatesSearched> _searchTransformer(Duration debounce) =>
+    (events, mapper) => events
+        .debounce(
+          (event) => TimerStream<void>(
+            null,
+            event.query.isEmpty ? Duration.zero : debounce,
+          ),
+        )
+        .switchMap(mapper);
 
 /// BLoC for the contractor's personal saved-rate book: recents per category
 /// and free-text search, backed directly by [YourRatesRepository].
@@ -29,7 +36,8 @@ EventTransformer<E> _debounceRestartable<E>(Duration duration) =>
 class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
 
-  /// Debounce applied to [YourRatesSearched]. Defaults to
+  /// Debounce applied to a [YourRatesSearched] with a non-empty query. An empty
+  /// query (every saved rate) runs at once. Defaults to
   /// [_kQueryDebounceDuration]; overridable so tests can pass [Duration.zero]
   /// instead of waiting out the real debounce window.
   YourRatesBloc({
@@ -39,7 +47,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     on<YourRatesRefreshRecents>(_onRefreshRecents, transformer: _restartable());
     on<YourRatesSearched>(
       _onSearched,
-      transformer: _debounceRestartable(queryDebounce),
+      transformer: _searchTransformer(queryDebounce),
     );
   }
 

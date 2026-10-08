@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -71,6 +72,7 @@ void main() {
                 type: type,
                 estimationId: 'test-estimation-id',
                 router: FakeAppRouter(),
+                yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
               );
             },
           ),
@@ -85,10 +87,7 @@ void main() {
     }
   }
 
-  screenshotThemeGroups('CostItemFormScreen Screenshot Tests', (
-    theme,
-    suffix,
-  ) {
+  screenshotThemeGroups('CostItemFormScreen Screenshot Tests', (theme, suffix) {
     testWidgets('renders labour cost screen in manually mode', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
@@ -155,15 +154,9 @@ void main() {
         type: CostItemType.material,
         theme: theme,
       );
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'x',
-      );
+      await tester.enterText(find.byKey(const Key('material_type_field')), 'x');
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        '',
-      );
+      await tester.enterText(find.byKey(const Key('material_type_field')), '');
       await tester.pumpAndSettle();
 
       await expectLater(
@@ -201,6 +194,8 @@ void main() {
                         type: CostItemType.equipment,
                         estimationId: 'test-estimation-id',
                         router: FakeAppRouter(),
+                        yourRatesBlocFactory: () =>
+                            Modular.get<YourRatesBloc>(),
                         presentAsSheet: true,
                       ),
                     ),

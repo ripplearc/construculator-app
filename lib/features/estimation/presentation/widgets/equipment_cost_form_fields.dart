@@ -1,14 +1,22 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+String _formatTrimmedNumber(double value) => value == value.roundToDouble()
+    ? value.toStringAsFixed(0)
+    : value.toString();
 
 /// Form fields for adding an equipment cost item.
 class EquipmentCostFormFields extends StatefulWidget {
@@ -22,12 +30,19 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// delivery fee. May be null wherever the caller doesn't have one yet.
   final String? estimateId;
 
+  /// Builds a [YourRatesBloc] for the Rate/Amount field's look-up-a-rate
+  /// search button. Injected rather than resolved with `Modular.get` here,
+  /// since this widget isn't a module file. Called once per look-up-a-rate
+  /// sheet open, matching [YourRatesBloc]'s factory registration.
+  final YourRatesBloc Function() yourRatesBlocFactory;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
     this.estimateId,
+    required this.yourRatesBlocFactory,
   });
 
   @override
@@ -342,6 +357,66 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  Widget? _lookupRateButtonWhenEmpty(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    if (data.rateStatus != RateStatus.missing) return null;
+    final colorTheme = context.colorTheme;
+    return Semantics(
+      button: true,
+      label: context.l10n.yourRatesLookupButton,
+      excludeSemantics: true,
+      // TODO: [CA-1252](https://ripplearc.youtrack.cloud/issue/CA-1252) Replace with CoreUI's outlined icon button once it exists.
+      child: GestureDetector(
+        key: const Key('lookup_rate_button'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => unawaited(_openRateLookup(context, data.method)),
+        child: SizedBox(
+          width: CoreSpacing.space12,
+          height: CoreSpacing.space9,
+          child: Center(
+            child: Container(
+              width: CoreSpacing.space9,
+              height: CoreSpacing.space9,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border.all(color: colorTheme.lineMid),
+                borderRadius: BorderRadius.circular(CoreSpacing.space2),
+              ),
+              child: CoreIconWidget(
+                icon: CoreIcons.search,
+                color: colorTheme.iconGrayMid,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openRateLookup(
+    BuildContext context,
+    EquipmentPricingMethod method,
+  ) async {
+    final entry = await YourRatesLookupSheet.show(
+      context: context,
+      method: method,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (entry == null || !mounted) return;
+    if (_equipmentNameController.text.trim().isEmpty) {
+      _equipmentNameController.text = entry.itemName;
+    }
+    (method == EquipmentPricingMethod.day
+            ? _dailyRateController
+            : _jobAmountController)
+        .text = _formatTrimmedNumber(
+      entry.rate.amount,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -486,7 +561,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     decimal: true,
                   ),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                   touched: _touchedFieldKeys.contains('rate_field'),
                   onTouched: () => _touchedFieldKeys.add('rate_field'),
@@ -501,7 +578,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     decimal: true,
                   ),
                   labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
+                  trailingAction:
+                      _saveAsMyRateLink(context, data.rateStatus) ??
+                      _lookupRateButtonWhenEmpty(context, data),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                   touched: _touchedFieldKeys.contains('amount_field'),
                   onTouched: () => _touchedFieldKeys.add('amount_field'),
@@ -719,16 +798,12 @@ class _OutsizedFeeDialog extends StatelessWidget {
 
   final String equipmentType;
 
-  String _formatDuration(double value) => value == value.roundToDouble()
-      ? value.toStringAsFixed(0)
-      : value.toString();
-
   String _formatDurationPhrase(BuildContext context, double value) {
     final l10n = context.l10n;
     if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
     if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
     return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
-      _formatDuration(value),
+      _formatTrimmedNumber(value),
     );
   }
 

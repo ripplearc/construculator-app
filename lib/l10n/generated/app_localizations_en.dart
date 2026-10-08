@@ -1593,6 +1593,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
+  String get yourRatesLookupTitle => 'Look up a rate';
+
+  @override
+  String get yourRatesSearchHint => 'Search or type equipment';
+
+  @override
+  String get yourRatesEmptyState =>
+      'No saved rates yet for this pricing method.';
+
+  @override
+  String yourRatesNoMatchState(String query) {
+    return 'No matches for “$query”';
+  }
+
+  @override
+  String get yourRatesDaySuffix => '/day';
+
+  @override
+  String get yourRatesJobSuffix => 'job';
+
+  @override
+  String get yourRatesLookupButton => 'Search saved rates';
+
+  @override
+  String get yourRatesLoadError => 'Couldn’t open your saved prices.';
+
+  @override
+  String get yourRatesTryAgain => 'Try again';
+
+  @override
+  String get yourRatesClearSearchSemanticLabel => 'Clear search';
+
+  @override
+  String yourRatesUseButtonLabel(String amount, String unit) {
+    return 'Use $amount $unit';
+  }
+
+  @override
   String get equipmentNoteLabel => 'Note';
 
   @override
