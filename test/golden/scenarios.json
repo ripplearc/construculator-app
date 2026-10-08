@@ -9759,8 +9759,8 @@
    "id": "S79",
    "category": "Errors & guards",
    "name": "Equals always answers",
-   "keys": "18ft → [=] with no operator and no suggestion → toast says what = needs → follow its advice: [×] 4 [Yd] [=] → 72ft². After the result, [=] stays quiet (the calculation already answered)",
-   "expected": "= used to be a silent dead key whenever there was no pending operator and no strip suggestion — the most natural \"so what do I get?\" press said nothing. Now it answers: a toast names the lone value and signposts the two real moves (operator, or function keys so the strip can suggest). After a result or error, = stays quiet — repeating the answer would be noise.",
+   "keys": "18ft → [=] with no operator and no suggestion → toast says what = needs → follow its advice: [×] 4 [Yd] [=] → 72ft². After the result, [=] says the answer is already on the tape",
+   "expected": "= used to be a silent dead key whenever there was no pending operator and no strip suggestion — the most natural \"so what do I get?\" press said nothing. Now it answers: a toast names the lone value and signposts the two real moves (operator, or function keys so the strip can suggest). After a result or an error, = still answers (rule 4.12, Appendix D): it says the answer is already on the tape, or that the last step could not be worked out.",
    "steps": [
     {
      "kind": "key",
@@ -9849,12 +9849,21 @@
     },
     {
      "kind": "checkpoint",
-     "description": "= after a result stays quiet",
+     "description": "= after a result says the answer is already worked out",
      "check": {
-      "kind": "toastShown",
-      "equals": false
+      "kind": "all",
+      "checks": [
+       {
+        "kind": "toastShown",
+        "equals": true
+       },
+       {
+        "kind": "toastIncludes",
+        "text": "The answer is on the tape"
+       }
+      ]
      },
-     "source": "r=>!r.toast"
+     "source": "r=>!!r.toast && r.toast.includes('The answer is on the tape')"
     }
    ]
   },
@@ -9862,7 +9871,7 @@
    "id": "S80",
    "category": "Errors & guards",
    "name": "No key is ever silently dead",
-   "keys": "Press keys where they can’t apply — [/] on a finished 18ft, [Inch] after a result, ✕ with nothing typed, [×] on an empty tape — every press explains itself",
+   "keys": "Press keys where they can’t apply — [/] on a finished 18ft, [Inch] after a result (it converts the result), ✕ with nothing typed, [×] on an empty tape — every press explains itself",
    "expected": "The friction audit found whole families of presses that changed nothing and said nothing. Now each answers with a calm signpost (toast only — the values are healthy, so no red): [/] teaches the fraction order, a unit key after a result points at the strip’s conversions, ✕ explains what it clears vs ⌘ and AC, and an operator with no left-hand side asks for a value first.",
    "steps": [
     {
@@ -9961,21 +9970,12 @@
     },
     {
      "kind": "checkpoint",
-     "description": "unit key after a result points at the strip conversions",
+     "description": "unit key after a result with a unit converts it in place (Appendix D)",
      "check": {
-      "kind": "all",
-      "checks": [
-       {
-        "kind": "toastShown",
-        "equals": true
-       },
-       {
-        "kind": "toastIncludes",
-        "text": "conversions are already on the strip"
-       }
-      ]
+      "kind": "value",
+      "equals": "10,368in²"
      },
-     "source": "r=>!!r.toast && r.toast.includes('conversions are already on the strip')"
+     "source": "r=>r.value==='10,368in\\u00b2'"
     },
     {
      "kind": "key",
@@ -11052,12 +11052,25 @@
     },
     {
      "kind": "checkpoint",
-     "description": "while a WIDTH still raises to an area, as it always has",
+     "description": "a WIDTH is refused an area too, like a pitch (Appendix D: Width22ft² is wrong)",
      "check": {
-      "kind": "value",
-      "equals": "6in²"
+      "kind": "all",
+      "checks": [
+       {
+        "kind": "value",
+        "equals": "6in"
+       },
+       {
+        "kind": "toastShown",
+        "equals": true
+       },
+       {
+        "kind": "toastIncludes",
+        "text": "can't hold an area or volume"
+       }
+      ]
      },
-     "source": "r=>r.value==='6in²'"
+     "source": "r=>r.value==='6in' && !!r.toast && r.toast.includes(\"can't hold an area or volume\")"
     },
     {
      "kind": "key",
@@ -19433,7 +19446,7 @@
    "id": "S133",
    "category": "Operators & chaining",
    "name": "A unit pressed right after closing a group is refused, so the chip text never disagrees with its value",
-   "keys": "A unit key pressed straight after ) used to attach to the number the group worked out. The chip still read +(3×4) but its value had become 12ft, and the preview disappeared. The text and the number then disagreed. Groups close to a plain number for now, so the unit is refused with a message that says where a unit can go",
+   "keys": "A unit key pressed straight after ) used to attach to the number the group worked out. The chip still read +(3×4) but its value had become 12ft, and the preview disappeared. The text and the number then disagreed. A closed group already has its value, so the unit is refused with a message that says where a unit can go",
    "expected": "Pressing a unit changes nothing. The chip still reads +(3×4), the preview still reads 14, and a message explains",
    "steps": [
     {
