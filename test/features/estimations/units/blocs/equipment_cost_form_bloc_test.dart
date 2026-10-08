@@ -434,6 +434,20 @@ void main() {
         ],
       );
 
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'accepts the largest delivery fee, 999999.99',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDeliveryFeeUpdatedEvent('999999.99')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.deliveryFee,
+            'deliveryFee',
+            999999.99,
+          ),
+        ],
+      );
+
       for (final bad in [
         '-5',
         'NaN',
