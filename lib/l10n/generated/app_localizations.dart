@@ -3691,6 +3691,54 @@ abstract class AppLocalizations {
     String before,
     String after,
   );
+
+  /// Label of the full-width submit button on the equipment cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add to estimate'**
+  String get addToEstimateButton;
+
+  /// Disabled submit button label while the equipment name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an equipment name to continue'**
+  String get enterEquipmentNameToContinueButton;
+
+  /// Disabled submit button label while the Day duration is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a duration to continue'**
+  String get enterDurationToContinueButton;
+
+  /// Disabled submit button label while the Day rate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a rate to continue'**
+  String get enterRateToContinueButton;
+
+  /// Disabled submit button label while the Job amount is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount to continue'**
+  String get enterAmountToContinueButton;
+
+  /// Disabled submit button label while the Day duration is zero or has an error
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the duration to continue'**
+  String get fixDurationToContinueButton;
+
+  /// Disabled submit button label while the Day rate has an error. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the rate to continue'**
+  String get fixRateToContinueButton;
+
+  /// Disabled submit button label while the Job amount has an error. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the amount to continue'**
+  String get fixAmountToContinueButton;
 }
 
 class _AppLocalizationsDelegate
