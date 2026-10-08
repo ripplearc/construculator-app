@@ -140,7 +140,7 @@ void main() {
       testWidgets('displays cost item added with item name', (tester) async {
         final log = testLog.copyWith(
           activity: CostEstimationActivityType.costItemAdded,
-          activityDetails: {'itemName': 'Concrete Foundation'},
+          activityDetails: {'costItemName': 'Concrete Foundation'},
         );
 
         await tester.pumpWidget(createWidget(log));
@@ -341,7 +341,7 @@ void main() {
       ) async {
         final log = testLog.copyWith(
           activity: CostEstimationActivityType.costItemAdded,
-          activityDetails: {'itemType': 'Material'},
+          activityDetails: {'costItemType': 'Material'},
         );
 
         await tester.pumpWidget(createWidget(log));
@@ -359,7 +359,10 @@ void main() {
       ) async {
         final log = testLog.copyWith(
           activity: CostEstimationActivityType.costItemRemoved,
-          activityDetails: {'itemName': 'Scaffolding', 'itemType': 'Material'},
+          activityDetails: {
+            'costItemName': 'Scaffolding',
+            'costItemType': 'Material',
+          },
         );
 
         await tester.pumpWidget(createWidget(log));

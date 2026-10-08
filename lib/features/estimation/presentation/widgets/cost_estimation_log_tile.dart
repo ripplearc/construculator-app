@@ -140,7 +140,7 @@ class CostEstimationLogTile extends StatelessWidget {
   }
 
   Widget? _buildItemTypeSubtitle(BuildContext context) {
-    final itemType = log.activityDetails['itemType'] as String?;
+    final itemType = log.activityDetails['costItemType'] as String?;
     if (itemType != null) {
       return _buildSubtitleSingleInfo(
         context,

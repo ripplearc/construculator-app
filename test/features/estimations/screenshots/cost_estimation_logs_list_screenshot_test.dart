@@ -136,7 +136,7 @@ void main() {
           activity: 'costFileUploaded',
           activityDetails: {'fileName': 'materials.xlsx'},
           firstName: 'Ava',
-          loggedAt: '2025-03-01T10:00:00.000Z',
+          loggedAt: DateTime(2025, 3, 1, 10).toUtc().toIso8601String(),
         ),
       ]);
 

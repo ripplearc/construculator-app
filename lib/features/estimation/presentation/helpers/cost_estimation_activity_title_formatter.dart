@@ -43,25 +43,25 @@ class CostEstimationActivityTitleFormatter {
       case CostEstimationActivityType.costEstimationDeleted:
         return l10n.activityCostEstimationDeleted;
       case CostEstimationActivityType.costItemAdded:
-        final itemName = details['itemName'] as String?;
+        final itemName = details['costItemName'] as String?;
         if (itemName != null) {
           return l10n.activityCostItemAdded(itemName);
         }
         return l10n.activityCostItemAddedSimple;
       case CostEstimationActivityType.costItemEdited:
-        final itemName = details['itemName'] as String?;
+        final itemName = details['costItemName'] as String?;
         if (itemName != null) {
           return l10n.activityCostItemEdited(itemName);
         }
         return l10n.activityCostItemEditedSimple;
       case CostEstimationActivityType.costItemRemoved:
-        final itemName = details['itemName'] as String?;
+        final itemName = details['costItemName'] as String?;
         if (itemName != null) {
           return l10n.activityCostItemRemoved(itemName);
         }
         return l10n.activityCostItemRemovedSimple;
       case CostEstimationActivityType.costItemDuplicated:
-        final itemName = details['itemName'] as String?;
+        final itemName = details['costItemName'] as String?;
         if (itemName != null) {
           return l10n.activityCostItemDuplicated(itemName);
         }

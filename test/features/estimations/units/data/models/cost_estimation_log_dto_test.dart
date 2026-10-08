@@ -37,7 +37,7 @@ void main() {
         'professional_role': 'Project Manager',
         'profile_photo_url': 'https://example.com/photo.jpg',
       },
-      'activity_details': {
+      'details': {
         'oldName': 'Old Estimation',
         'newName': 'New Estimation',
       },
@@ -70,7 +70,7 @@ void main() {
         'oldName': 'Old Estimation',
         'newName': 'New Estimation',
       },
-      loggedAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
+      loggedAt: DateTime.parse('2025-02-25T14:30:00.000Z').toLocal(),
     );
 
     group('fromJson', () {
@@ -92,7 +92,7 @@ void main() {
           'estimate_id': 'estimate-123',
           'activity': 'cost_item_added',
           'user': testJson['user'],
-          'activity_details': {
+          'details': {
             'costItemId': 'item-123',
             'costItemType': 'material',
             'description': 'Concrete',
@@ -124,7 +124,7 @@ void main() {
           'estimate_id': 'estimate-456',
           'activity': 'cost_estimation_locked',
           'user': testJson['user'],
-          'activity_details': <String, dynamic>{},
+          'details': <String, dynamic>{},
           'logged_at': '2025-02-25T16:00:00.000Z',
         };
 
@@ -189,7 +189,7 @@ void main() {
           activity: CostEstimationActivityType.costItemAdded,
           user: testEntity.user,
           activityDetails: const {},
-          loggedAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
+          loggedAt: DateTime.parse('2025-02-25T14:30:00.000Z').toLocal(),
         );
 
         final entity = dto.toDomain();
@@ -207,6 +207,42 @@ void main() {
           profilePhotoUrl: 'https://example.com/photo.jpg',
         );
         expect(entity.user, expectedUser);
+      });
+
+      test('converts the UTC logged time to local time', () {
+        final entity = testDto.toDomain();
+
+        expect(entity.loggedAt.isUtc, isFalse);
+        expect(
+          entity.loggedAt,
+          DateTime.utc(2025, 2, 25, 14, 30).toLocal(),
+        );
+      });
+
+      test('reads the item name and type from a real server row', () {
+        // Shaped like the row the cost item trigger writes, as the app's own
+        // select (*,user:user_profiles(*)) returns it from Supabase.
+        final serverRow = {
+          'id': '0b6f2d0e-5d8a-4c51-9b3e-2f1c7a9e4d10',
+          'estimate_id': '6a1e9c3b-7f42-4d8e-a5b0-c3d2e1f0a9b8',
+          'activity': 'cost_item_added',
+          'description': 'Cost item added: Deck boards',
+          'user_id': 'user-123',
+          'details': {
+            'costItemId': 'b7c4e2a1-3d5f-4e6a-8b9c-0d1e2f3a4b5c',
+            'costItemName': 'Deck boards',
+            'costItemType': 'material',
+            'description': '',
+          },
+          'logged_at': '2026-10-08T19:40:00.123456+00:00',
+          'deleted_at': null,
+          'user': testJson['user'],
+        };
+
+        final entity = CostEstimationLogDto.fromJson(serverRow).toDomain();
+
+        expect(entity.activityDetails['costItemName'], 'Deck boards');
+        expect(entity.activityDetails['costItemType'], 'material');
       });
 
       test('returns unknown for invalid activity type', () {
@@ -259,7 +295,7 @@ void main() {
           activity: 'task_assigned',
           user: fromDomainUserJson,
           activityDetails: const {},
-          loggedAt: DateTime(2025, 2, 25).toIso8601String(),
+          loggedAt: DateTime(2025, 2, 25).toUtc().toIso8601String(),
         );
 
         final dto = CostEstimationLogDto.fromDomain(entity);

@@ -133,7 +133,7 @@ class DatabaseConstants {
   static const String estimateIdColumn = 'estimate_id';
   static const String activityColumn = 'activity';
   static const String userColumn = 'user';
-  static const String activityDetailsColumn = 'activity_details';
+  static const String detailsColumn = 'details';
   static const String loggedAtColumn = 'logged_at';
 
   // Cost Items columns
