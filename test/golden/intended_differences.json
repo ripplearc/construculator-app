@@ -1,0 +1,23 @@
+{
+ "about": "Checks where the Dart calculator differs from the prototype on purpose. A listed check that fails is reported as an intended difference, not a failure; a listed check that passes is reported as stale, so the list stays honest. An entry with no checkpoint covers the whole scenario. Keep the reason next to each entry (owner's instruction, 7 October 2026).",
+ "differences": [
+  {
+   "scenario": "S04",
+   "reason": "Switches on the prototype's hidden 'strip = toggle' preference. The design has no such setting: the strip always has two rows (UX doc term 2.8, Appendix C)."
+  },
+  {
+   "scenario": "S61",
+   "reason": "Switches on the prototype's hidden 'editStyle = truncate' preference. The design edits in place and keeps the chips after the edited one (UX doc rule 4.8)."
+  },
+  {
+   "scenario": "S87",
+   "checkpoint": "a length into [Slope] is refused, and points at [Pitch]",
+   "reason": "The prototype's toast says '7 [Inch] [Pitch]'. The design says '[Pitch] 7 [Inch]', the function key first (UX doc rule 4.1, Appendix D row 'Slope advice toast'). Fix asked for on the prototype."
+  },
+  {
+   "scenario": "S127",
+   "checkpoint": "the edit is cancelled: 2, +(3×4) and Calc14 are back, no group open, nothing dashed",
+   "reason": "The prototype brings the old bracket back after backspacing an emptied bracket. The design removes the bracket, as on any empty bracket (UX doc Section 7, Editing a bracket; review edit of 26 September). Fix asked for on the prototype."
+  }
+ ]
+}

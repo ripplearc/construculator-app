@@ -6,6 +6,7 @@ import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../scripts/golden/intended.dart';
 import '../../../../scripts/golden/replay.dart';
 import '../../../../scripts/golden/scenario.dart';
 import '../../../../scripts/golden/snapshot.dart';
@@ -16,7 +17,7 @@ import '../../../../scripts/golden/snapshot.dart';
 /// The bloc does not consume the engine yet (that is G3's work), so most
 /// scenarios fail at their first checkpoint — which is what this driver is
 /// for today: the readable diff of what the app shows against what the
-/// prototype showed, and the N/134 the CI job reports. Keys the bloc has no
+/// prototype showed, and the score the CI job reports. Keys the bloc has no
 /// event for (accepting a strip chip, tapping a tape chip, the sheet) are
 /// refused, and the runner reports the scenario as unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
@@ -99,9 +100,13 @@ class BlocScenarioDriver implements ScenarioDriver {
 void main() {
   late BlocScenarioDriver driver;
   late List<Scenario> scenarios;
+  late IntendedDifferences intended;
 
   setUpAll(() {
     scenarios = loadScenarios(File('test/golden/scenarios.json'));
+    intended = loadIntendedDifferences(
+      File('test/golden/intended_differences.json'),
+    );
   });
 
   setUp(() {
@@ -118,19 +123,53 @@ void main() {
       () async {
         final results = <ScenarioResult>[];
         for (final scenario in scenarios) {
-          results.add(await runScenario(scenario, driver));
+          results.add(await runScenario(scenario, driver, intended: intended));
         }
         final report = ReplayReport(results);
         print(report);
-        expect(report.total, 134);
+        expect(report.total, scenarios.length);
         expect(
           report.scoreLine,
           startsWith(
-            '${ReplayReport.scorePrefix} ${report.passed}/134 scenarios pass',
+            '${ReplayReport.scorePrefix} ${report.passed}/${scenarios.length} '
+            'scenarios pass',
           ),
         );
       },
     );
+
+    test('every listed difference names a scenario and a checkpoint that '
+        'exist', () {
+      for (final entry in intended.entries) {
+        final scenario = scenarios.firstWhere(
+          (s) => s.id == entry.scenario,
+          orElse: () => fail('${entry.scenario} is not in scenarios.json'),
+        );
+        if (entry.checkpoint case final description?) {
+          expect(
+            scenario.steps.whereType<CheckpointStep>().map(
+              (c) => c.description,
+            ),
+            contains(description),
+            reason: '${entry.scenario} has no checkpoint "$description"',
+          );
+        }
+        expect(entry.reason, isNotEmpty);
+      }
+    });
+
+    test('a scenario listed whole is reported as differing on purpose, not '
+        'replayed', () async {
+      final s04 = scenarios.firstWhere((s) => s.id == 'S04');
+      final result = await runScenario(s04, driver, intended: intended);
+      expect(result.differsOnPurpose, isTrue);
+      expect(result.passed, isFalse);
+      expect(result.checkpoints, isEmpty);
+      expect(
+        ReplayReport.describeFailure(result).first,
+        'S04 Toggle Path B (pref-gated) — DIFFERS ON PURPOSE',
+      );
+    });
 
     test(
       'S01 against the stub engine produces a readable failure diff',

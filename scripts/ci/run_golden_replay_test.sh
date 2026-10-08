@@ -8,7 +8,7 @@
 # the script's parsing and exit codes are what is under test.
 #
 # Usage:
-#   scripts/ci/run_golden_replay_test.sh
+#   scripts/ci/run_golden_replay_test.sh   # 9 checks
 
 set -uo pipefail
 
@@ -48,14 +48,24 @@ check() {
   fi
 }
 
-stub_flutter 0 "00:01 +5: All tests passed!" "Golden replay: 12/134 scenarios pass (100 failed a checkpoint, 22 hit an unsupported step, 155 checkpoints unported)"
+stub_flutter 0 "00:01 +5: All tests passed!" "Golden replay: 12/134 scenarios pass (100 failed a checkpoint, 22 hit an unsupported step, 155 checkpoints unported, 2 differ on purpose, 0 checkpoints differ on purpose)"
 check "reports the score and passes while the gate is off" 0 "📼 Golden replay: 12/134"
 check "fails under a full pass when the gate is on" 1 "needs 134/134" 1
 
-stub_flutter 0 "Golden replay: 134/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported)"
-check "passes a full pass when the gate is on" 0 "134/134, gate 1" 1
+stub_flutter 0 "Golden replay: 134/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported, 0 differ on purpose, 0 checkpoints differ on purpose)"
+check "passes a full pass when the gate is on" 0 "134/134, 0 differ on purpose, gate 1" 1
 
-stub_flutter 1 "Golden replay: 134/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported)" "Some tests failed."
+stub_flutter 0 "Golden replay: 132/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported, 2 differ on purpose, 1 checkpoints differ on purpose)"
+check "passes when every scenario passes or differs on purpose" 0 "132/134, 2 differ on purpose, gate 1" 1
+
+stub_flutter 0 "Golden replay: 132/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported, 2 differ on purpose, 0 checkpoints differ on purpose)" "Golden replay: stale intended difference: S87 \"a length into [Slope] is refused\" holds; remove it from the list"
+check "warns about a stale list entry while the gate is off" 0 "remove it from test/golden/intended_differences.json"
+check "fails on a stale list entry when the gate is on" 1 "list is stale" 1
+
+stub_flutter 0 "Golden replay: 12/134 scenarios pass (100 failed a checkpoint, 22 hit an unsupported step, 155 checkpoints unported)"
+check "still reads a score line without the differ-on-purpose count" 0 "12/134, 0 differ on purpose"
+
+stub_flutter 1 "Golden replay: 134/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported, 0 differ on purpose, 0 checkpoints differ on purpose)" "Some tests failed."
 check "fails when the test run itself fails" 1 "did not run to a score"
 
 stub_flutter 0 "00:01 +5: All tests passed!"
