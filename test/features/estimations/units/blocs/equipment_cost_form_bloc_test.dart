@@ -661,7 +661,7 @@ void main() {
                 testEstimateId,
               )
               .having(
-                (s) => (s.createdItem as EquipmentCostItem).dailyRate?.amount,
+                (s) => (s.createdItem as EquipmentCostItem).dailyRate!.amount,
                 'dailyRate',
                 100,
               )
@@ -714,7 +714,7 @@ void main() {
           isA<EquipmentCostFormSubmitting>(),
           isA<EquipmentCostFormSuccess>()
               .having(
-                (s) => (s.createdItem as EquipmentCostItem).jobAmount?.amount,
+                (s) => (s.createdItem as EquipmentCostItem).jobAmount!.amount,
                 'jobAmount',
                 3000,
               )
@@ -767,7 +767,7 @@ void main() {
                 isNull,
               )
               .having(
-                (s) => (s.createdItem as EquipmentCostItem).jobAmount?.amount,
+                (s) => (s.createdItem as EquipmentCostItem).jobAmount!.amount,
                 'jobAmount',
                 3000,
               ),
@@ -883,7 +883,7 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormSubmitting>(),
           isA<EquipmentCostFormSuccess>().having(
-            (s) => (s.createdItem as EquipmentCostItem).deliveryFee?.amount,
+            (s) => (s.createdItem as EquipmentCostItem).deliveryFee!.amount,
             'deliveryFee',
             8500,
           ),
