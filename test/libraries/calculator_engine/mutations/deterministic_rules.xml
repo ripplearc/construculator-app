@@ -85,6 +85,48 @@
         <regex pattern="if \(length == null \|\| width == null \|\| height == null\) return const \[\];" dotAll="true" id="deterministic_rules.box.two_sides">
             <mutation text="if (length == null || width == null) return const [];"/>
         </regex>
+
+        <!-- RULE 14: the flats span no longer grows the corner radius -->
+        <regex pattern="PolygonSpan\.flats =&gt; diameter\.ticks / 2 / math\.cos\(math\.pi / sides\)," dotAll="true" id="deterministic_rules.polygon.flats_as_corners">
+            <mutation text="PolygonSpan.flats =&gt; diameter.ticks / 2,"/>
+        </regex>
+
+        <!-- RULE 15: the polygon area uses the diameter as its radius -->
+        <regex pattern="0\.5 \* sides \* cornerRadius \* cornerRadius \* math\.sin\(2 \* math\.pi / sides\)," dotAll="true" id="deterministic_rules.polygon.wrong_area">
+            <mutation text="sides * cornerRadius * cornerRadius * math.sin(2 * math.pi / sides),"/>
+        </regex>
+
+        <!-- RULE 16: two sides make a polygon, and so does a fraction of a
+             side -->
+        <regex pattern="when value &gt;= fewestSides &amp;&amp; value == value\.roundToDouble\(\)\) \{" dotAll="true" id="deterministic_rules.sides.no_guard">
+            <mutation text="when value &gt; fewestSides &amp;&amp; value == value.roundToDouble()) {"/>
+            <mutation text="when value &gt;= fewestSides) {"/>
+        </regex>
+
+        <!-- RULE 17: a radius is not doubled into the span -->
+        <regex pattern="2 \* radius\.ticks," dotAll="true" id="deterministic_rules.circle.radius_as_diameter">
+            <mutation text="radius.ticks,"/>
+        </regex>
+
+        <!-- RULE 18: the circle area uses the diameter -->
+        <regex pattern="value: Area\(math\.pi \* halfTicks \* halfTicks, unit: unit\)," dotAll="true" id="deterministic_rules.circle.area_of_diameter">
+            <mutation text="value: Area(math.pi * span.ticks * halfTicks, unit: unit),"/>
+        </regex>
+
+        <!-- RULE 19: the corner angle is the exterior angle -->
+        <regex pattern="value: Angle\(\(sides - 2\) \* 180 / sides\)," dotAll="true" id="deterministic_rules.polygon.exterior_angle">
+            <mutation text="value: Angle(360 / sides),"/>
+        </regex>
+
+        <!-- RULE 20: the side length forgets the sine -->
+        <regex pattern="final side = span\.ticks \* math\.sin\(math\.pi / sides\);" dotAll="true" id="deterministic_rules.polygon.side_without_sine">
+            <mutation text="final side = span.ticks / sides;"/>
+        </regex>
+
+        <!-- RULE 21: the missing half is always the radius -->
+        <regex pattern="final missingHalf = diameter == null" dotAll="true" id="deterministic_rules.circle.wrong_missing_half">
+            <mutation text="final missingHalf = diameter != null"/>
+        </regex>
     </rules>
 
     <commands>

@@ -280,6 +280,130 @@ void main() {
       });
     });
 
+    group('a circle from a Diameter or a Radius', () {
+      const feet6 = Length(6 * Length.ticksPerFoot, unit: Unit.foot);
+
+      test(
+        'S33: Radius 6ft leads with the diameter, then area and circumference',
+        () {
+          final answers = rules.answersFor({'Radius': feet6});
+          expect(texts(answers), [
+            'Diameter: 12ft',
+            'Circle area: 113.1ft²',
+            'Circumference: 37.7ft',
+          ]);
+          expect(
+            answers.map((answer) => answer.sources),
+            everyElement(['Radius']),
+          );
+        },
+      );
+
+      test('S34 before Sides: Diameter 12ft leads with the radius', () {
+        final answers = rules.answersFor({'Diameter': feet12});
+        expect(texts(answers), [
+          'Radius: 6ft',
+          'Circle area: 113.1ft²',
+          'Circumference: 37.7ft',
+        ]);
+        expect(answers.first.sources, ['Diameter']);
+      });
+
+      test('a Diameter outranks a Radius on the same tape', () {
+        final answers = rules.answersFor({
+          'Diameter': feet12,
+          'Radius': feet20,
+        });
+        expect(texts(answers).first, 'Radius: 6ft');
+      });
+
+      test('a metric radius answers in metres', () {
+        final answers = rules.answersFor({
+          'Radius': const Length(2520, unit: Unit.metre),
+        });
+        expect(texts(answers), [
+          'Diameter: 2m',
+          'Circle area: 3.14m²',
+          'Circumference: 6.28m',
+        ]);
+      });
+    });
+
+    group('a regular polygon from a Diameter and Sides', () {
+      test('S34: Diameter 12ft and 6 sides is the gazebo floor', () {
+        final answers = rules.answersFor({
+          'Diameter': feet12,
+          'Sides': const Scalar(6),
+        });
+        expect(texts(answers), [
+          'Polygon area: 93.53ft²',
+          'Side length: 6ft',
+          'Perimeter: 36ft',
+          'Corner angle: 120°',
+        ]);
+        expect(
+          answers.map((answer) => answer.sources),
+          everyElement(['Diameter', 'Sides']),
+        );
+      });
+
+      test('S34: measured across the flats the same span reads 124.71ft²', () {
+        final across = rules.polygonArea(feet12, 6, across: PolygonSpan.flats);
+        expect(formatter.format(across), '124.71ft²');
+        expect(formatter.format(rules.polygonArea(feet12, 6)), '93.53ft²');
+      });
+
+      test(
+        'a Radius with Sides is a polygon too, with the radius as source',
+        () {
+          const feet6 = Length(6 * Length.ticksPerFoot, unit: Unit.foot);
+          final answers = rules.answersFor({
+            'Radius': feet6,
+            'Sides': const Scalar(4),
+          });
+          expect(texts(answers), [
+            'Polygon area: 72ft²',
+            'Side length: 8.49ft',
+            'Perimeter: 33.94ft',
+            'Corner angle: 90°',
+          ]);
+          expect(answers.first.sources, ['Radius', 'Sides']);
+        },
+      );
+
+      test('fewer than three sides, or a fraction of a side, is a circle', () {
+        expect(
+          texts(
+            rules.answersFor({'Diameter': feet12, 'Sides': const Scalar(2)}),
+          ).first,
+          'Radius: 6ft',
+        );
+        expect(
+          texts(
+            rules.answersFor({'Diameter': feet12, 'Sides': const Scalar(3)}),
+          ).first,
+          'Polygon area: 46.77ft²',
+        );
+        expect(
+          texts(
+            rules.answersFor({'Diameter': feet12, 'Sides': const Scalar(5.5)}),
+          ).first,
+          'Radius: 6ft',
+        );
+      });
+
+      test(
+        'Sides without a span, or a length under Sides, answers nothing',
+        () {
+          expect(rules.answersFor({'Sides': const Scalar(6)}), isEmpty);
+          expect(
+            texts(rules.answersFor({'Diameter': feet12, 'Sides': feet9})).first,
+            'Radius: 6ft',
+          );
+        },
+      );
+    });
+
     group('named values come from the tape', () {
       test('the last readable value under each key', () {
         final tape = press(

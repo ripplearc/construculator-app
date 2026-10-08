@@ -20,12 +20,33 @@ enum DimensionKey {
   rise('Rise'),
 
   /// The run of a right triangle.
-  run('Run');
+  run('Run'),
+
+  /// The diameter of a circle or a regular polygon.
+  diameter('Diameter'),
+
+  /// The radius of a circle.
+  radius('Radius'),
+
+  /// The number of sides of a regular polygon, a bare number.
+  sides('Sides');
 
   /// The chip key the function key writes.
   final String id;
 
   const DimensionKey(this.id);
+}
+
+/// Which span of a regular polygon its diameter measures (UX Design Doc
+/// Section 8, "Regular polygon"; the Across pill of walkthrough 18.2).
+/// BuildCalc silently assumes corner to corner; here the assumption is an
+/// editable dependent key on the result.
+enum PolygonSpan {
+  /// Corner to corner: the diameter of the circumscribed circle.
+  corners,
+
+  /// Flat to flat: the corner radius grows by 1 ÷ cos(π ÷ n).
+  flats,
 }
 
 /// An answer the named values on the tape earn (UX Design Doc Section 8):
@@ -62,7 +83,13 @@ final class Answer extends Equatable {
 /// area lead, and the rectangle facts of Length and Width follow (BuildCalc
 /// [Height]: "Calculate Volume, Wall Area and Room Area"). Rise and Run
 /// give the Diagonal of the right triangle (rule 4.4, BuildCalc p50: 12ft
-/// and 15ft give 19.21ft).
+/// and 15ft give 19.21ft). A Diameter or a Radius gives the missing half
+/// of the pair first (what BuildCalc's first [Circle] press shows), then
+/// the circle's area and circumference; with Sides it gives a regular
+/// polygon instead, measured across the corners: area, side length,
+/// perimeter and corner angle (BuildCalc p129: 12ft and 6 sides is the
+/// gazebo floor), and [polygonArea] recomputes the area for the Across
+/// pill.
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
 /// length read was metric, feet otherwise; an area or a volume follows the
@@ -88,6 +115,30 @@ class DeterministicRules extends Equatable {
   /// The label of the area of a box's four walls.
   static const String wallAreaKey = 'Wall area';
 
+  /// The label of a circle's or polygon's diameter.
+  static const String diameterKey = 'Diameter';
+
+  /// The label of a circle's radius.
+  static const String radiusKey = 'Radius';
+
+  /// The label of a circle's area.
+  static const String circleAreaKey = 'Circle area';
+
+  /// The label of a circle's circumference.
+  static const String circumferenceKey = 'Circumference';
+
+  /// The label of a regular polygon's area.
+  static const String polygonAreaKey = 'Polygon area';
+
+  /// The label of a regular polygon's side.
+  static const String sideLengthKey = 'Side length';
+
+  /// The label of a regular polygon's corner angle.
+  static const String cornerAngleKey = 'Corner angle';
+
+  /// The fewest sides a regular polygon can have.
+  static const int fewestSides = 3;
+
   const DeterministicRules();
 
   /// The answers [namedValues] earn, in the order the strip offers them;
@@ -104,6 +155,112 @@ class DeterministicRules extends Equatable {
       ..._box(lengths, unit),
       ..._rectangle(lengths, unit),
       ..._rightTriangle(lengths, unit),
+      ..._shape(lengths, _sidesOf(namedValues), unit),
+    ];
+  }
+
+  /// The area of a regular polygon of [sides] sides whose [diameter] was
+  /// measured across the corners or across the flats (Section 8:
+  /// R = D ÷ 2, or (D ÷ 2) ÷ cos(π ÷ n) across the flats; area =
+  /// ½ n R² sin(2π ÷ n)), in square ticks. The port of the prototype's
+  /// `polygonArea`, shared with the Across pill so that flipping the pill
+  /// recomputes through the same formula.
+  Area polygonArea(
+    Length diameter,
+    int sides, {
+    PolygonSpan across = PolygonSpan.corners,
+    Unit unit = Unit.foot,
+  }) {
+    final cornerRadius = switch (across) {
+      PolygonSpan.corners => diameter.ticks / 2,
+      PolygonSpan.flats => diameter.ticks / 2 / math.cos(math.pi / sides),
+    };
+    return Area(
+      0.5 * sides * cornerRadius * cornerRadius * math.sin(2 * math.pi / sides),
+      unit: unit,
+    );
+  }
+
+  int? _sidesOf(Map<String, Quantity> namedValues) {
+    if (namedValues[DimensionKey.sides.id] case Scalar(
+      :final value,
+    ) when value >= fewestSides && value == value.roundToDouble()) {
+      return value.toInt();
+    }
+    return null;
+  }
+
+  List<Answer> _shape(
+    Map<DimensionKey, Length> lengths,
+    int? sides,
+    Unit unit,
+  ) {
+    final diameter = lengths[DimensionKey.diameter];
+    final radius = lengths[DimensionKey.radius];
+    final span =
+        diameter ??
+        (radius == null ? null : Length(2 * radius.ticks, unit: radius.unit));
+    if (span == null) return const [];
+    final sources = [
+      diameter == null ? DimensionKey.radius.id : DimensionKey.diameter.id,
+    ];
+    if (sides != null) return _polygon(span, sides, sources, unit);
+    final missingHalf = diameter == null
+        ? Answer(
+            key: diameterKey,
+            value: Length(span.ticks, unit: unit),
+            sources: sources,
+          )
+        : Answer(
+            key: radiusKey,
+            value: Length(_wholeTicks(span.ticks / 2), unit: unit),
+            sources: sources,
+          );
+    final halfTicks = span.ticks / 2;
+    return [
+      missingHalf,
+      Answer(
+        key: circleAreaKey,
+        value: Area(math.pi * halfTicks * halfTicks, unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: circumferenceKey,
+        value: Length(_wholeTicks(math.pi * span.ticks), unit: unit),
+        sources: sources,
+      ),
+    ];
+  }
+
+  List<Answer> _polygon(
+    Length span,
+    int sides,
+    List<String> spanSources,
+    Unit unit,
+  ) {
+    final sources = [...spanSources, DimensionKey.sides.id];
+    final side = span.ticks * math.sin(math.pi / sides);
+    return [
+      Answer(
+        key: polygonAreaKey,
+        value: polygonArea(span, sides, unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: sideLengthKey,
+        value: Length(_wholeTicks(side), unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: perimeterKey,
+        value: Length(_wholeTicks(sides * side), unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: cornerAngleKey,
+        value: Angle((sides - 2) * 180 / sides),
+        sources: sources,
+      ),
     ];
   }
 
