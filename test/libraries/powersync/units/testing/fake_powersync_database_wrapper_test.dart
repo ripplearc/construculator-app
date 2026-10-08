@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -124,6 +127,14 @@ void main() {
 
         await emission;
       });
+
+      test('completes watchInvokedSignal when watch is called', () {
+        fakeWrapper.watchInvokedSignal = Completer<void>();
+
+        fakeWrapper.watch(sql);
+
+        expect(fakeWrapper.watchInvokedSignal!.isCompleted, isTrue);
+      });
     });
 
     group('syncStream', () {
@@ -141,6 +152,68 @@ void main() {
         handle.unsubscribe();
 
         expect(fakeWrapper.syncStreamUnsubscribes, ['user_cost_estimates']);
+      });
+
+      test('completes syncStreamInvokedSignal when syncStream is called', () async {
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
+
+        final future = fakeWrapper.syncStream('user_cost_estimates');
+
+        expect(fakeWrapper.syncStreamInvokedSignal!.isCompleted, isTrue);
+        await future;
+      });
+
+      test('completes syncStreamUnsubscribeSignal on unsubscribe', () async {
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
+        final handle = await fakeWrapper.syncStream('user_cost_estimates');
+
+        handle.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribeSignal!.isCompleted, isTrue);
+      });
+
+      test('waits for the activation gate before returning a handle', () {
+        fakeAsync((async) {
+          fakeWrapper.syncStreamActivationGate = Completer<void>();
+          var resolved = false;
+          fakeWrapper
+              .syncStream('user_cost_estimates')
+              .then((_) => resolved = true);
+          async.flushMicrotasks();
+          expect(resolved, isFalse);
+
+          fakeWrapper.syncStreamActivationGate!.complete();
+          async.flushMicrotasks();
+
+          expect(resolved, isTrue);
+        });
+      });
+
+      test('keeps the invoked signal completed across repeated calls', () async {
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
+
+        await fakeWrapper.syncStream('user_cost_estimates');
+        await fakeWrapper.syncStream('user_cost_estimates');
+
+        expect(fakeWrapper.syncStreamCalls, [
+          'user_cost_estimates',
+          'user_cost_estimates',
+        ]);
+      });
+
+      test('keeps the unsubscribe signal completed across repeated unsubscribes',
+          () async {
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
+        final first = await fakeWrapper.syncStream('user_cost_estimates');
+        final second = await fakeWrapper.syncStream('user_cost_estimates');
+
+        first.unsubscribe();
+        second.unsubscribe();
+
+        expect(fakeWrapper.syncStreamUnsubscribes, [
+          'user_cost_estimates',
+          'user_cost_estimates',
+        ]);
       });
 
       test('throws the configured error and still records the call', () async {
@@ -293,6 +366,10 @@ void main() {
         fakeWrapper.executeError = Exception('y');
         fakeWrapper.writeTransactionError = Exception('w');
         fakeWrapper.syncStreamError = Exception('z');
+        fakeWrapper.syncStreamActivationGate = Completer<void>();
+        fakeWrapper.syncStreamInvokedSignal = Completer<void>();
+        fakeWrapper.watchInvokedSignal = Completer<void>();
+        fakeWrapper.syncStreamUnsubscribeSignal = Completer<void>();
 
         fakeWrapper.reset();
 
@@ -306,6 +383,10 @@ void main() {
         expect(fakeWrapper.executeError, isNull);
         expect(fakeWrapper.writeTransactionError, isNull);
         expect(fakeWrapper.syncStreamError, isNull);
+        expect(fakeWrapper.syncStreamActivationGate, isNull);
+        expect(fakeWrapper.syncStreamInvokedSignal, isNull);
+        expect(fakeWrapper.watchInvokedSignal, isNull);
+        expect(fakeWrapper.syncStreamUnsubscribeSignal, isNull);
         expect(await fakeWrapper.getAll(sql), isEmpty);
 
         final emission = expectLater(
