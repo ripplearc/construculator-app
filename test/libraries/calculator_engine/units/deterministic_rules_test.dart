@@ -105,6 +105,19 @@ void main() {
         );
       });
 
+      test('the diagonal of 10,000,000ft by 10,000,000ft does not wrap', () {
+        const tenMillionFeet = Length(
+          10000000 * Length.ticksPerFoot,
+          unit: Unit.foot,
+        );
+        final answers = rules.answersFor({
+          'Length': tenMillionFeet,
+          'Width': tenMillionFeet,
+        });
+        expect(texts(answers)[1], 'Diagonal: 14,142,135.62ft');
+        expect(texts(answers)[2], 'Perimeter: 40,000,000ft');
+      });
+
       test('one named side is not a rectangle', () {
         expect(rules.answersFor({'Length': feet22}), isEmpty);
         expect(rules.answersFor({'Width': feet22, 'Rise': feet9}), isEmpty);
@@ -135,6 +148,18 @@ void main() {
           }),
           isEmpty,
         );
+      });
+
+      test('S41 at 10,000,000ft a side: the squares do not wrap', () {
+        const tenMillionFeet = Length(
+          10000000 * Length.ticksPerFoot,
+          unit: Unit.foot,
+        );
+        final answers = rules.answersFor({
+          'Rise': tenMillionFeet,
+          'Run': tenMillionFeet,
+        });
+        expect(texts(answers).first, 'Diagonal: 14,142,135.62ft');
       });
 
       test('a rectangle and a triangle on one tape answer in that order', () {
