@@ -100,9 +100,8 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  // Stands in for tapping "Add to estimate", which is still a no-op stub
-  // outside this widget (CA-355): the bloc decides whether the submit needs
-  // the outsized-fee dialog.
+  // Stands in for tapping "Add to estimate", which lives outside this widget:
+  // the bloc decides whether the submit needs the outsized-fee dialog.
   Future<void> triggerOutsizedFeeCheck(WidgetTester tester) async {
     final nameField = find.byKey(const Key('equipment_name_field'));
     if (tester.widget<UnderlineTextField>(nameField).controller.text.isEmpty) {

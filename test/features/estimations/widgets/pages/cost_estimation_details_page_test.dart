@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -16,6 +17,7 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -724,12 +726,12 @@ void main() {
       final rateBottom = tester
           .getRect(find.byKey(const Key('rate_field')))
           .bottom;
-      final barTop = tester
-          .getRect(find.byKey(const Key('cost_item_total_label')))
+      final footerTop = tester
+          .getRect(find.byKey(AddToEstimateFooter.panelKey))
           .top;
       expect(tester.takeException(), isNull);
       expect(rateBottom, lessThanOrEqualTo(keyboardTop));
-      expect(rateBottom, lessThanOrEqualTo(barTop));
+      expect(rateBottom, lessThanOrEqualTo(footerTop));
     });
 
     testWidgets('tapping the back arrow on the equipment sheet closes it', (
@@ -758,6 +760,33 @@ void main() {
     });
 
     group('Add to estimate', () {
+      Future<void> openEquipmentSheet(WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> fillValidDayForm(WidgetTester tester) async {
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Scissor lift',
+        );
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pumpAndSettle();
+      }
+
+      Finder addButton() => find.byKey(AddToEstimateFooter.buttonKey);
+
       testWidgets('does not open the sheet and shows an error when the '
           'estimate cannot be loaded', (tester) async {
         setUpAuthenticatedUser(
@@ -857,6 +886,354 @@ void main() {
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
         await tester.pumpAndSettle();
         expect(find.byType(BottomSheet), findsNothing);
+      });
+
+      testWidgets('starts disabled and names the equipment name as missing', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+
+        expect(find.text('Adds to this estimate'), findsOneWidget);
+        expect(find.text('Needs a name before it can total'), findsOneWidget);
+        expect(
+          find.text('Enter an equipment name to continue'),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('cost_item_total_label')), findsNothing);
+      });
+
+      testWidgets('names the next missing field as the form is filled', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Scissor lift',
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Enter a duration to continue'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pumpAndSettle();
+        expect(find.text('Enter a rate to continue'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pumpAndSettle();
+        expect(find.text('Fix the duration to continue'), findsOneWidget);
+      });
+
+      testWidgets('shows the live line total and the estimate total after', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+
+        await fillValidDayForm(tester);
+
+        expect(find.text(r'$580.00'), findsOneWidget);
+        expect(find.text(r' total  $2,993.62 →'), findsOneWidget);
+        expect(find.text(r'$3,573.62'), findsOneWidget);
+        expect(find.text('Add to estimate'), findsOneWidget);
+      });
+
+      testWidgets('adding saves the line, closes the sheet and shows the '
+          'toast', (tester) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+        final inserts = fakeSupabase
+            .getMethodCallsFor('insert')
+            .where((c) => c['table'] == DatabaseConstants.costItemsTable);
+        expect(inserts, hasLength(1));
+        final saved = inserts.single['data'] as Map<String, dynamic>;
+        expect(saved['estimate_id'], testEstimationId);
+        expect(saved['item_total_cost'], 580);
+      });
+
+      testWidgets('reloads the estimate total after an add', (tester) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        final loadsBefore = fakeSupabase
+            .getMethodCallsFor('selectSingle')
+            .length;
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(
+          fakeSupabase.getMethodCallsFor('selectSingle'),
+          hasLength(loadsBefore + 1),
+        );
+      });
+
+      testWidgets('keeps the sheet open and shows an error when the save '
+          'fails', (tester) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+
+        fakeSupabase.shouldThrowOnInsert = false;
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('a fee larger than the base cost asks before adding', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        await tester.ensureVisible(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '8500',
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsOneWidget,
+        );
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(
+          fakeSupabase
+              .getMethodCallsFor('insert')
+              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
+          isEmpty,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('outsized_fee_dialog_add_it_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('a fee within the base cost adds without asking', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        await tester.ensureVisible(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('outsized_fee_dialog_title')),
+          findsNothing,
+        );
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('shows the delivery fee inside the line total', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        await tester.ensureVisible(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('delivery_fee_row')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('delivery_fee_field')),
+          '85',
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(r'$665.00'), findsOneWidget);
+        expect(find.text('incl. delivery'), findsOneWidget);
+        expect(find.text(r'+$85.00'), findsOneWidget);
+        expect(find.text(r'$3,658.62'), findsOneWidget);
+      });
+
+      testWidgets('a Job line shows the amount as the total', (tester) async {
+        await openEquipmentSheet(tester);
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Dumpster',
+        );
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pumpAndSettle();
+        expect(find.text('Enter an amount to continue'), findsOneWidget);
+
+        await tester.enterText(find.byKey(const Key('amount_field')), '400');
+        await tester.pumpAndSettle();
+
+        expect(find.text(r'$400.00'), findsOneWidget);
+        expect(find.text(r'$3,393.62'), findsOneWidget);
+      });
+
+      testWidgets('closing the sheet without adding reloads the estimate', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        final loadsBefore = fakeSupabase
+            .getMethodCallsFor('selectSingle')
+            .length;
+
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(
+          fakeSupabase.getMethodCallsFor('selectSingle'),
+          hasLength(loadsBefore + 1),
+        );
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+      });
+
+      testWidgets('the next sheet adds the saved line to the estimate total', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+        await fillValidDayForm(tester);
+
+        expect(find.text(r' total  $3,573.62 →'), findsOneWidget);
+        expect(find.text(r'$4,153.62'), findsOneWidget);
+      });
+
+      testWidgets('dismissing the sheet while saving still confirms the add', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('a second tap on Add while saving does not save twice', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tap(addButton(), warnIfMissed: false);
+        await tester.pump();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(
+          fakeSupabase
+              .getMethodCallsFor('insert')
+              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
+          hasLength(1),
+        );
+      });
+
+      testWidgets('a save that fails after the sheet was dismissed still shows '
+          'the error', (tester) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+      });
+
+      testWidgets('the toast names the estimate the sheet was opened from', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        fakeSupabase.addTableData(DatabaseConstants.costEstimatesTable, [
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: testEstimationId,
+            estimateName: 'Kitchen',
+            totalCost: 1,
+          ),
+        ]);
+        fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+          {'estimate_id': testEstimationId, 'item_total_cost': 100},
+        ]);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+        await fillValidDayForm(tester);
+
+        expect(find.text('Kitchen'), findsOneWidget);
+        expect(find.text(r' total  $100.00 →'), findsOneWidget);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Added to Kitchen'), findsOneWidget);
       });
     });
   });

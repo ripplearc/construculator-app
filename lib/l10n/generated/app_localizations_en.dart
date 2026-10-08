@@ -2041,6 +2041,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addToEstimateFailedError => 'Couldn\'t add this cost. Try again.';
+
+  @override
   String get estimateSummaryLoadFailedError =>
       'Couldn\'t open this estimate. Try again.';
 }

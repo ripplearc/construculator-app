@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -112,23 +113,54 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         );
         return;
       }
-      await CoreQuickSheet.show<void>(
-        context: context,
-        backgroundColor: sheetSurface(context),
-        child: BlocProvider<EquipmentCostFormBloc>(
-          create: (_) => widget.equipmentCostFormBlocFactory(),
-          child: CostItemFormScreen(
-            type: CostItemType.equipment,
-            estimationId: widget.estimationId,
-            router: widget.router,
-            presentAsSheet: true,
-            yourRatesBlocFactory: widget.yourRatesBlocFactory,
-            clock: widget.clock,
-            estimate: estimate,
-            initialRateEntry: entry,
+      final formBloc = widget.equipmentCostFormBlocFactory();
+      try {
+        await CoreQuickSheet.show<void>(
+          context: context,
+          backgroundColor: sheetSurface(context),
+          child: BlocProvider<EquipmentCostFormBloc>.value(
+            value: formBloc,
+            child: CostItemFormScreen(
+              type: CostItemType.equipment,
+              estimationId: widget.estimationId,
+              router: widget.router,
+              presentAsSheet: true,
+              yourRatesBlocFactory: widget.yourRatesBlocFactory,
+              clock: widget.clock,
+              estimate: estimate,
+              initialRateEntry: entry,
+            ),
           ),
-        ),
-      );
+        );
+        if (formBloc.state is EquipmentCostFormSubmitting) {
+          await formBloc.stream.firstWhere(
+            (s) => s is! EquipmentCostFormSubmitting,
+            orElse: () => formBloc.state,
+          );
+        }
+      } finally {
+        unawaited(formBloc.close());
+      }
+      if (!mounted) return;
+      _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
+      switch (formBloc.state) {
+        case EquipmentCostFormSuccess():
+          CoreToast.showCustomToast(
+            context,
+            (_) => AddedToEstimateToast(
+              message: l10n.addedToEstimateToast(estimate.estimateName),
+            ),
+            duration: const Duration(seconds: 4),
+          );
+        case EquipmentCostFormFailure():
+          CoreToast.showError(
+            context,
+            l10n.addToEstimateFailedError,
+            l10n.closeLabel,
+          );
+        default:
+          break;
+      }
     } finally {
       _isOpeningSheet = false;
     }

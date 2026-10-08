@@ -3080,6 +3080,11 @@
       }
     }
   },
+  "addToEstimateFailedError": "Couldn't add this cost. Try again.",
+  "@addToEstimateFailedError": {
+    "description": "Error toast when saving an equipment cost line fails. No Figma frame covers this case.",
+    "context": "N/A"
+  },
   "estimateSummaryLoadFailedError": "Couldn't open this estimate. Try again.",
   "@estimateSummaryLoadFailedError": {
     "description": "Error toast when the estimate's name and total cannot be loaded before opening the equipment cost sheet. No Figma frame covers this case.",
