@@ -2047,6 +2047,7 @@ void main() {
       final searchResult = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return searchResult.fold(
         (_) => throw StateError('seed search failed'),
@@ -2064,6 +2065,7 @@ void main() {
       final entries = (await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       )).fold((_) => throw StateError('search failed'), (found) => found);
       final entry = entries.firstWhere((e) => e.itemName == itemName);
       await tester.pumpWidget(const SizedBox());
