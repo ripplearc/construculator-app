@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../scripts/golden/check.dart';
+import '../../../../scripts/golden/intended.dart';
 import '../../../../scripts/golden/replay.dart';
 import '../../../../scripts/golden/scenario.dart';
 import '../../../../scripts/golden/snapshot.dart';
@@ -165,7 +166,7 @@ void main() {
       expect(report.total, 3);
       expect(
         report.scoreLine,
-        'Golden replay: 1/3 scenarios pass (1 failed a checkpoint, 1 hit an unsupported step, 0 checkpoints unported)',
+        'Golden replay: 1/3 scenarios pass (1 failed a checkpoint, 1 hit an unsupported step, 0 checkpoints unported, 0 differ on purpose, 0 checkpoints differ on purpose)',
       );
       final text = report.toString();
       expect(text, startsWith(ReplayReport.scorePrefix));
@@ -257,5 +258,123 @@ void main() {
       describeSnapshot(const Snapshot()),
       contains('depKey=null toast=null'),
     );
+  });
+
+  group('intended differences', () {
+    const listed = IntendedDifference(
+      scenario: 'S01',
+      checkpoint: 'value 1',
+      reason: 'the design says 12 here',
+    );
+    const whole = IntendedDifference(
+      scenario: 'S04',
+      reason: 'a prototype-only preference',
+    );
+    const intended = IntendedDifferences([listed, whole]);
+
+    test('a listed checkpoint that fails is intended and does not stop the '
+        'replay', () async {
+      final driver = _ScriptedDriver(const [twelve, twelve]);
+      final result = await runScenario(
+        scenario(const [KeyStep('d:1'), value1, KeyStep('d:2'), value12]),
+        driver,
+        intended: intended,
+      );
+      expect(driver.pressed, ['d:1', 'd:2']);
+      expect(result.passed, isTrue);
+      expect(result.checkpoints.map((c) => c.outcome), [
+        CheckpointOutcome.intended,
+        CheckpointOutcome.passed,
+      ]);
+      expect(result.intendedCheckpoints.single.difference, listed);
+      expect(result.firstFailure, isNull);
+      final report = ReplayReport([result]);
+      expect(report.passed, 1);
+      expect(report.intendedCheckpoints, 1);
+      expect(report.scoreLine, contains('1 checkpoints differ on purpose'));
+      expect(
+        report.toString(),
+        contains(
+          'S01 a scenario — DIFFERS ON PURPOSE at step 2 "value 1"\n'
+          '  reason:   the design says 12 here',
+        ),
+      );
+    });
+
+    test(
+      'a listed checkpoint that holds is stale, and the report says so',
+      () async {
+        final driver = _ScriptedDriver(const [one, twelve]);
+        final result = await runScenario(
+          scenario(const [KeyStep('d:1'), value1, KeyStep('d:2'), value12]),
+          driver,
+          intended: intended,
+        );
+        expect(result.passed, isTrue);
+        expect(result.checkpoints.first.outcome, CheckpointOutcome.stale);
+        expect(result.staleCheckpoints.single.difference, listed);
+        final report = ReplayReport([result]);
+        expect(report.stale.single.$2.checkpoint.description, 'value 1');
+        expect(
+          report.toString().split('\n')[1],
+          '${ReplayReport.stalePrefix} S01 "value 1" holds; '
+          'remove it from the list',
+        );
+      },
+    );
+
+    test(
+      'a scenario listed whole is not replayed and differs on purpose',
+      () async {
+        final driver = _ScriptedDriver(const [one]);
+        final result = await runScenario(
+          scenario(const [KeyStep('d:1'), value1], id: 'S04'),
+          driver,
+          intended: intended,
+        );
+        expect(driver.resets, 0);
+        expect(driver.pressed, isEmpty);
+        expect(result.differsOnPurpose, isTrue);
+        expect(result.passed, isFalse);
+        expect(result.checkpoints, isEmpty);
+        final report = ReplayReport([result]);
+        expect(report.differing, 1);
+        expect(report.passed, 0);
+        expect(report.scoreLine, contains('1 differ on purpose'));
+        expect(ReplayReport.describeFailure(result), [
+          'S04 a scenario — DIFFERS ON PURPOSE',
+          '  reason:   a prototype-only preference',
+        ]);
+      },
+    );
+
+    test('an unlisted scenario replays as before', () async {
+      final driver = _ScriptedDriver(const [one, twelve]);
+      final result = await runScenario(
+        scenario(const [KeyStep('d:1'), value1], id: 'S02'),
+        driver,
+        intended: intended,
+      );
+      expect(result.passed, isTrue);
+      expect(result.checkpoints.single.outcome, CheckpointOutcome.passed);
+    });
+
+    test('fromJson reads an entry, and the lookups find it', () {
+      final entry = IntendedDifference.fromJson(const {
+        'scenario': 'S87',
+        'checkpoint': 'a length into [Slope] is refused',
+        'reason': 'the function key comes first',
+      });
+      expect(entry.wholeScenario, isFalse);
+      final list = IntendedDifferences([entry, whole]);
+      expect(
+        list.forCheckpoint('S87', 'a length into [Slope] is refused'),
+        entry,
+      );
+      expect(list.forCheckpoint('S87', 'another check'), isNull);
+      expect(list.forScenario('S87'), isNull);
+      expect(list.forScenario('S04'), whole);
+      expect(IntendedDifferences.none.forScenario('S04'), isNull);
+    });
   });
 }
