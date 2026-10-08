@@ -34,7 +34,11 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeWidget(ThemeData theme, {bool fromCostFile = false}) {
+  Widget makeWidget(
+    ThemeData theme, {
+    bool fromCostFile = false,
+    YourRateEntry? initialRateEntry,
+  }) {
     return MaterialApp(
       theme: theme,
       locale: const Locale('en'),
@@ -47,6 +51,7 @@ void main() {
             fromCostFile: fromCostFile,
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
             clock: FakeClockImpl(),
+            initialRateEntry: initialRateEntry,
           ),
         ),
       ),
@@ -69,43 +74,67 @@ void main() {
       },
     );
 
-    testWidgets('a11y: a recalled rate field meets text contrast guidelines', (
-      tester,
-    ) async {
-      await setupA11yTest(tester);
-      final repository = Modular.get<YourRatesRepository>();
-      await repository.save(
-        YourRateEntry(
-          id: '',
-          companyId: 'company-1',
-          itemName: 'Backhoe',
-          category: CostItemType.equipment,
-          rate: const Money(amount: 145),
-          savedAt: DateTime(2026, 1, 1),
-          equipmentMethod: EquipmentPricingMethod.day,
-        ),
-      );
+    // CA-1146: once a day rate is recalled from Your Rates (CUJ 6 Sub-flow
+    // B), Figma's B2 confirmation (node 66337:158600) replaces the editable
+    // Rate field with a static Title/Subtitle header — the rate itself is no
+    // longer an editable/read-only text field at all, just plain text, so
+    // its only a11y requirement is text contrast, checked here on the
+    // Subtitle. The Duration field stays the one live, editable control on
+    // this screen and keeps its own normal (not read-only) a11y coverage —
+    // see 'a11y: rate field meets text contrast guidelines...' above for the
+    // equivalent check on the not-yet-recalled form's Duration-adjacent
+    // field.
+    testWidgets(
+      'a11y: the recalled-rate Subtitle in the form body meets text contrast '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final backhoe = YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Backhoe',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
+          );
 
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        makeWidget,
-        find.byKey(const Key('rate_field')),
-        checkTapTargetSize: false,
-        checkLabeledTapTarget: false,
-        setupAfterPump: (tester) async {
-          final lookupButton = find.byKey(const Key('lookup_rate_button'));
-          if (lookupButton.evaluate().isNotEmpty) {
-            await tester.tap(lookupButton);
-            await tester.pumpAndSettle();
-            await tester.tap(find.text('Backhoe'));
-            await tester.pumpAndSettle();
-            await tester.tap(find.byKey(const Key('your_rates_use_button')));
-            await tester.pumpAndSettle();
-          }
-          expect(find.text('145'), findsOneWidget);
-        },
-      );
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
+          find.byKey(const Key('recalled_rate_subtitle')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a11y: the recalled-rate Duration field meets text contrast guidelines '
+      'in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final backhoe = YourRateEntry(
+            id: '',
+            companyId: 'company-1',
+            itemName: 'Backhoe',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.day,
+          );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: backhoe),
+          find.byKey(const Key('duration_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
+    );
 
     testWidgets(
       'a11y: Day/Job toggle chips meet tap target and label guidelines in both themes',

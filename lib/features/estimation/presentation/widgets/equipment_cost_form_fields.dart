@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
+import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
@@ -46,6 +47,16 @@ class EquipmentCostFormFields extends StatefulWidget {
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
+  /// Whether the recalled rate's name and price are shown at the top of the
+  /// fields. The form sheet turns this off because it shows them in its own
+  /// header.
+  final bool showRecalledRateHeader;
+
+  /// A rate already picked on the Your recents screen before this form
+  /// opened. The form recalls it on the first frame and shows the compact
+  /// saved-rate screen.
+  final YourRateEntry? initialRateEntry;
+
   /// The estimate this item is being added to. Forwarded to
   /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
   /// delivery fee. May be null wherever the caller doesn't have one yet.
@@ -70,6 +81,8 @@ class EquipmentCostFormFields extends StatefulWidget {
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
+    this.showRecalledRateHeader = true,
+    this.initialRateEntry,
     this.estimateId,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -112,6 +125,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
+    final initialEntry = widget.initialRateEntry;
+    if (initialEntry != null) {
+      _applySavedRate(initialEntry, fromRecents: true);
+    }
   }
 
   @override
@@ -296,16 +313,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     // Delivery is added after the rate math, never inside it.
     widget.onTotalChanged?.call(base + delivery);
   }
-
-  EquipmentCostFormData _dataOf(EquipmentCostFormState state) =>
-      switch (state) {
-        EquipmentCostFormEditing(:final data) => data,
-        EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
-        EquipmentCostFormSubmitting(:final data) => data,
-        EquipmentCostFormSuccess(:final data) => data,
-        EquipmentCostFormFailure(:final data) => data,
-        EquipmentCostFormInitial() => const EquipmentCostFormData(),
-      };
 
   List<String>? _errorList(String? text) => text == null ? null : [text];
 
@@ -626,8 +633,16 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       method: method,
       blocFactory: widget.yourRatesBlocFactory,
     );
-    if (entry == null || !mounted || !context.mounted) return;
-    if (_equipmentNameController.text.trim().isEmpty) {
+    if (entry == null || !mounted) return;
+    _applySavedRate(entry, fromRecents: false);
+  }
+
+  void _applySavedRate(YourRateEntry entry, {required bool fromRecents}) {
+    final method = entry.equipmentMethod ?? _methodOfForm();
+    if (fromRecents) {
+      _selectMethod(method);
+      _equipmentNameController.text = entry.itemName;
+    } else if (_equipmentNameController.text.trim().isEmpty) {
       _equipmentNameController.text = entry.itemName;
     }
     (method == EquipmentPricingMethod.day
@@ -637,9 +652,17 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       entry.rate.amount,
     );
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentSavedRateRecalledEvent(method: method, rate: entry.rate.amount),
+      EquipmentSavedRateRecalledEvent(
+        method: method,
+        rate: entry.rate.amount,
+        fromRecents: fromRecents,
+      ),
     );
   }
+
+  EquipmentPricingMethod _methodOfForm() => _daySelected.value
+      ? EquipmentPricingMethod.day
+      : EquipmentPricingMethod.job;
 
   @override
   Widget build(BuildContext context) {
@@ -702,6 +725,88 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
+  Widget _durationField(BuildContext context, EquipmentCostFormData data) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return UnderlineTextField(
+      key: const Key('duration_field'),
+      label: l10n.equipmentDurationLabel,
+      hintText: l10n.equipmentDurationPlaceholder,
+      controller: _durationController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      hideSuffixWhenEmpty: true,
+      suffix: Text(
+        l10n.equipmentDurationSuffix,
+        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
+      ),
+      errorTextList: _errorList(_durationErrorText(context, data)),
+      touched: _touchedFieldKeys.contains('duration_field'),
+      onTouched: () => _touchedFieldKeys.add('duration_field'),
+    );
+  }
+
+  // TODO: [CA-1219] show "Used on this line only. Your default stays ..." and the "Save ... as my default" button once the amount differs from the saved price. https://ripplearc.youtrack.cloud/issue/CA-1219
+  Widget _amountField(
+    BuildContext context,
+    EquipmentCostFormData data, {
+    bool showRateChrome = true,
+  }) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return UnderlineTextField(
+      key: const Key('amount_field'),
+      label: l10n.equipmentAmountLabel,
+      hintText: l10n.equipmentAmountPlaceholder,
+      controller: _jobAmountController,
+      hideSuffixWhenEmpty: true,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      suffix: Text(
+        _rateUnitSuffix(context, data.method),
+        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
+      ),
+      labelTrailing: showRateChrome
+          ? _rateStatusBadge(context, data.rateStatus)
+          : null,
+      trailingAction: showRateChrome
+          ? (_saveAsMyRateLink(context, data) ??
+                _lookupRateButtonWhenEmpty(context, data))
+          : null,
+      errorTextList: _errorList(_amountErrorText(context, data)),
+      touched: _touchedFieldKeys.contains('amount_field'),
+      onTouched: () => _touchedFieldKeys.add('amount_field'),
+    );
+  }
+
+  // TODO: [CA-1218] use the "How many days?" label, show the Job amount as $400.00, and add the divider below this header. https://ripplearc.youtrack.cloud/issue/CA-1218
+  List<Widget> _recalledRateHeader(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return [
+      Text(
+        data.equipmentType,
+        key: const Key('recalled_rate_title'),
+        style: textTheme.titleMediumSemiBold.copyWith(
+          color: colorTheme.textHeadline,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space1),
+      Text(
+        recalledRateSubtitle(
+          context,
+          rate: data.recalledRate ?? 0,
+          method: data.method,
+        ),
+        key: const Key('recalled_rate_subtitle'),
+        style: textTheme.bodyMediumRegular.copyWith(color: colorTheme.textBody),
+      ),
+    ];
+  }
+
   List<Widget> _manuallyFields(BuildContext context) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
@@ -712,7 +817,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         listener: _handleYourRatesSaveState,
         child: BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
           listener: (_, state) {
-            final data = _dataOf(state);
+            final data = state.formData;
             if (state is EquipmentCostFormOutsizedFeeConfirm) {
               _showOutsizedFeeDialog(data);
             }
@@ -721,8 +826,27 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             _notifyTotalFromData(data);
           },
           builder: (_, state) {
-            final data = _dataOf(state);
+            final data = state.formData;
             final isDay = data.method == EquipmentPricingMethod.day;
+            if (widget.initialRateEntry != null && !data.recalledFromRecents) {
+              return const SizedBox.shrink();
+            }
+            if (data.recalledFromRecents) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (widget.showRecalledRateHeader) ...[
+                    ..._recalledRateHeader(context, data),
+                    const SizedBox(height: CoreSpacing.space5),
+                  ],
+                  isDay
+                      ? _durationField(context, data)
+                      : _amountField(context, data, showRateChrome: false),
+                  const SizedBox(height: CoreSpacing.space5),
+                  _buildDeliveryFeeSection(context, data),
+                ],
+              );
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -759,27 +883,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 ),
                 const SizedBox(height: CoreSpacing.space3),
                 if (isDay) ...[
-                  UnderlineTextField(
-                    key: const Key('duration_field'),
-                    label: l10n.equipmentDurationLabel,
-                    hintText: l10n.equipmentDurationPlaceholder,
-                    controller: _durationController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    hideSuffixWhenEmpty: true,
-                    suffix: Text(
-                      l10n.equipmentDurationSuffix,
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                    errorTextList: _errorList(
-                      _durationErrorText(context, data),
-                    ),
-                    touched: _touchedFieldKeys.contains('duration_field'),
-                    onTouched: () => _touchedFieldKeys.add('duration_field'),
-                  ),
+                  _durationField(context, data),
                   const SizedBox(height: CoreSpacing.space3),
                   UnderlineTextField(
                     key: const Key('rate_field'),
@@ -807,29 +911,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                   _rateSaveFooter(context, data),
                 ] else ...[
-                  UnderlineTextField(
-                    key: const Key('amount_field'),
-                    label: l10n.equipmentAmountLabel,
-                    hintText: l10n.equipmentAmountPlaceholder,
-                    controller: _jobAmountController,
-                    hideSuffixWhenEmpty: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    suffix: Text(
-                      _rateUnitSuffix(context, data.method),
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                    labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                    trailingAction:
-                        _saveAsMyRateLink(context, data) ??
-                        _lookupRateButtonWhenEmpty(context, data),
-                    errorTextList: _errorList(_amountErrorText(context, data)),
-                    touched: _touchedFieldKeys.contains('amount_field'),
-                    onTouched: () => _touchedFieldKeys.add('amount_field'),
-                  ),
+                  _amountField(context, data),
                   _rateSaveFooter(context, data),
                 ],
                 const SizedBox(height: CoreSpacing.space5),

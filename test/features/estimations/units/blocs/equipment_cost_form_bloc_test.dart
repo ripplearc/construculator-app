@@ -197,6 +197,119 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'marks the line as recalled from recents only when the event says so',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+            fromRecents: true,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledFromRecents,
+            'recalledFromRecents',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'keeps the saved price of the recents row while a new amount is typed',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450'))
+          ..add(const EquipmentRateUpdatedEvent('')),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledRate,
+            'recalledRate',
+            400,
+          ),
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.recalledRate, 'recalledRate', 400)
+              .having((s) => s.data.jobAmount, 'jobAmount', 450),
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.recalledRate, 'recalledRate', 400)
+              .having((s) => s.data.jobAmount, 'jobAmount', isNull),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a pick from the look-up (fromRecents false) sets no recalled price',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledRate,
+            'recalledRate',
+            isNull,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a pick from the look-up (fromRecents false) never marks the line as '
+        'recalled from recents',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.job,
+            rate: 400,
+          ),
+        ),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.recalledFromRecents,
+            'recalledFromRecents',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'typing over a line recalled from recents downgrades the rate status '
+        'but keeps the recalled-from-recents flag',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450')),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.rateStatus,
+                'rateStatus',
+                RateStatus.ownRateUnconfirmed,
+              )
+              .having(
+                (s) => s.data.recalledFromRecents,
+                'recalledFromRecents',
+                true,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'keeps the equipment name that was already typed, because picking a '
         'price never renames the line',
         build: () => bloc,

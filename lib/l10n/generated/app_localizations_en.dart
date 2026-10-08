@@ -1590,6 +1590,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRateStatusYourRateBadge => '✓ Your rate';
 
   @override
+  String equipmentRecalledRateSubtitle(String amount, String unit) {
+    return '$amount $unit · your default';
+  }
+
+  @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
