@@ -611,9 +611,9 @@ void main() {
       expect(dayPricedItem.itemType, CostItemType.equipment);
       expect(dayPricedItem.pricingMethod, EquipmentPricingMethod.day);
       expect(dayPricedItem.duration, 5.0);
-      expect(dayPricedItem.dailyRate?.amount, 500.0);
+      expect(dayPricedItem.dailyRate, const Money(amount: 500.0));
       expect(dayPricedItem.jobAmount, isNull);
-      expect(dayPricedItem.deliveryFee?.amount, 50.0);
+      expect(dayPricedItem.deliveryFee, const Money(amount: 50.0));
       expect(dayPricedItem.rateStatus, RateStatus.ownRateConfirmed);
       expect(dayPricedItem.productLink, 'https://example.com/excavator');
       expect(dayPricedItem.description, 'Heavy equipment rental');
@@ -621,7 +621,7 @@ void main() {
 
     test('creates a job-priced EquipmentCostItem with all fields', () {
       expect(jobPricedItem.pricingMethod, EquipmentPricingMethod.job);
-      expect(jobPricedItem.jobAmount?.amount, 3000.0);
+      expect(jobPricedItem.jobAmount, const Money(amount: 3000.0));
       expect(jobPricedItem.duration, isNull);
       expect(jobPricedItem.dailyRate, isNull);
       expect(jobPricedItem.deliveryFee, isNull);
@@ -684,7 +684,7 @@ void main() {
       );
 
       expect(updated.duration, 10.0);
-      expect(updated.dailyRate?.amount, 600.0);
+      expect(updated.dailyRate, const Money(amount: 600.0));
     });
 
     test('copyWith can clear nullable fields using clearField', () {
