@@ -1846,10 +1846,10 @@ abstract class AppLocalizations {
   /// **'Labour cost entry'**
   String get addLabourCostsScreenTitle;
 
-  /// App bar title for the add equipment cost form screen
+  /// Header title for the add equipment cost form sheet
   ///
   /// In en, this message translates to:
-  /// **'Equipment cost entry'**
+  /// **'New equipment cost'**
   String get addEquipmentCostsScreenTitle;
 
   /// Label above the manual/cost-file mode toggle on the cost item form screen
@@ -2728,6 +2728,12 @@ abstract class AppLocalizations {
   /// **'Equipment'**
   String get equipmentNameLabel;
 
+  /// Placeholder text for the equipment name field while it is empty (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Name the equipment'**
+  String get equipmentNamePlaceholder;
+
   /// Label for the Day choice chip in the equipment pricing method toggle (manually mode)
   ///
   /// In en, this message translates to:
@@ -2752,6 +2758,12 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get equipmentDurationLabel;
 
+  /// Placeholder text for the duration field while it is empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set the days'**
+  String get equipmentDurationPlaceholder;
+
   /// Static unit text shown beside the duration field on the equipment cost form (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
@@ -2764,11 +2776,23 @@ abstract class AppLocalizations {
   /// **'Rate'**
   String get equipmentRateLabel;
 
+  /// Placeholder text for the rate field while it is empty (Day pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set your rate'**
+  String get equipmentRatePlaceholder;
+
   /// Hint label for the flat job amount field on the equipment cost form (Job pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Amount'**
   String get equipmentAmountLabel;
+
+  /// Placeholder text for the flat job amount field while it is empty (Job pricing, manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Set the amount'**
+  String get equipmentAmountPlaceholder;
 
   /// Rate label inside the calculation method card when per-day method is selected (from cost file mode)
   ///
@@ -2794,31 +2818,31 @@ abstract class AppLocalizations {
   /// **'Labour type is required'**
   String get labourTypeRequiredError;
 
-  /// Validation error shown below the duration field when a typed value is zero or negative (Day pricing, manually mode)
+  /// Validation error shown below the duration field, on blur, when a typed value is zero or negative (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Duration must be more than zero.'**
   String get equipmentDurationNotPositiveError;
 
-  /// Validation error shown below the duration field when a typed value is positive but not a whole or half-day step (Day pricing, manually mode)
+  /// Validation error shown below the duration field, on blur, when a typed value is positive but not a whole or half-day step (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Use whole or half days.'**
   String get equipmentDurationNotHalfDayError;
 
-  /// Validation error shown below the duration field when a typed value exceeds what the database can store (Day pricing, manually mode)
+  /// Validation error shown below the duration field, on blur, when a typed value exceeds what the database can store (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Duration is too large.'**
   String get equipmentDurationTooLargeError;
 
-  /// Validation error shown below the rate field when a typed value is outside the accepted bound (Day pricing, manually mode)
+  /// Validation error shown below the rate field, on blur, when a typed value is outside the accepted bound (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Rate must be between \$0.01 and \$999,999.99'**
   String get equipmentRateOutOfRangeError;
 
-  /// Validation error shown below the amount field when a typed value is outside the accepted bound (Job pricing, manually mode)
+  /// Validation error shown below the amount field, on blur, when a typed value is outside the accepted bound (Job pricing, manually mode)
   ///
   /// In en, this message translates to:
   /// **'Amount must be between \$0.01 and \$999,999.99'**

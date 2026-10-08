@@ -1,5 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,6 +27,7 @@ class EquipmentCostFormFields extends StatefulWidget {
 }
 
 class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
+  final _touchedFieldKeys = <String>{};
   final _equipmentNameController = TextEditingController();
   final _quantityController = TextEditingController();
   final _durationController = TextEditingController();
@@ -176,7 +179,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CoreSpacing.space5,
+        vertical: CoreSpacing.space4,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -249,29 +255,30 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CoreTextField(
+              UnderlineTextField(
                 key: const Key('equipment_name_field'),
                 label: l10n.equipmentNameLabel,
+                hintText: l10n.equipmentNamePlaceholder,
                 controller: _equipmentNameController,
               ),
-              const SizedBox(height: CoreSpacing.space5),
+              const SizedBox(height: CoreSpacing.space3),
               Text(
                 l10n.equipmentBasisLabel,
                 style: textTheme.bodySmallRegular.copyWith(
                   color: colorTheme.textBody,
                 ),
               ),
-              const SizedBox(height: CoreSpacing.space1),
+              const SizedBox(height: CoreSpacing.space2),
               Row(
                 children: [
-                  CoreChip(
+                  ChoiceChipToggle(
                     key: const Key('day_method_chip'),
                     label: l10n.equipmentDayMethodLabel,
                     selected: _daySelected,
                     onTap: () => _selectMethod(EquipmentPricingMethod.day),
                   ),
                   const SizedBox(width: CoreSpacing.space2),
-                  CoreChip(
+                  ChoiceChipToggle(
                     key: const Key('job_method_chip'),
                     label: l10n.equipmentJobMethodLabel,
                     selected: _jobSelected,
@@ -279,43 +286,54 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                 ],
               ),
-              const SizedBox(height: CoreSpacing.space5),
+              const SizedBox(height: CoreSpacing.space3),
               if (isDay) ...[
-                CoreTextField(
+                UnderlineTextField(
                   key: const Key('duration_field'),
                   label: l10n.equipmentDurationLabel,
+                  hintText: l10n.equipmentDurationPlaceholder,
                   controller: _durationController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  hideSuffixWhenEmpty: true,
                   suffix: Text(
                     l10n.equipmentDurationSuffix,
-                    style: textTheme.bodyMediumRegular.copyWith(
+                    style: textTheme.bodySmallRegular.copyWith(
                       color: colorTheme.textBody,
                     ),
                   ),
                   errorTextList: _errorList(_durationErrorText(context, data)),
+                  touched: _touchedFieldKeys.contains('duration_field'),
+                  onTouched: () => _touchedFieldKeys.add('duration_field'),
                 ),
-                const SizedBox(height: CoreSpacing.space5),
-                CoreTextField(
+                const SizedBox(height: CoreSpacing.space3),
+                UnderlineTextField(
                   key: const Key('rate_field'),
                   label: l10n.equipmentRateLabel,
+                  hintText: l10n.equipmentRatePlaceholder,
                   controller: _dailyRateController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   errorTextList: _errorList(_rateErrorText(context, data)),
+                  touched: _touchedFieldKeys.contains('rate_field'),
+                  onTouched: () => _touchedFieldKeys.add('rate_field'),
                 ),
               ] else
-                CoreTextField(
+                UnderlineTextField(
                   key: const Key('amount_field'),
                   label: l10n.equipmentAmountLabel,
+                  hintText: l10n.equipmentAmountPlaceholder,
                   controller: _jobAmountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   errorTextList: _errorList(_amountErrorText(context, data)),
+                  touched: _touchedFieldKeys.contains('amount_field'),
+                  onTouched: () => _touchedFieldKeys.add('amount_field'),
                 ),
+              // TODO: [CA-1144] add the Delivery row below the rate and amount fields. https://ripplearc.youtrack.cloud/issue/CA-1144
             ],
           );
         },

@@ -1,9 +1,14 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The cost estimation details page.
@@ -17,10 +22,16 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// Router used for navigation (e.g. popping this page).
   final AppRouter router;
 
+  /// Builds an [EquipmentCostFormBloc] for the equipment cost sheet the FAB
+  /// launches. Injected rather than resolved with `Modular.get` here, since
+  /// this page isn't a module file.
+  final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
+
   const CostEstimationDetailsPage({
     super.key,
     required this.estimationId,
     required this.router,
+    required this.equipmentCostFormBlocFactory,
   });
 
   @override
@@ -91,7 +102,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       body: CostEstimationDetailsTabView(
         onTabChanged: (tab) => setState(() => _selectedTab = tab),
       ),
-      floatingActionButton: _buildFab(l10n),
+      floatingActionButton: _buildFab(context, l10n),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -134,7 +145,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     );
   }
 
-  Widget _buildFab(AppLocalizations l10n) {
+  Widget _buildFab(BuildContext context, AppLocalizations l10n) {
     return switch (_selectedTab) {
       CostEstimationTab.labour => CoreButton(
         key: const Key('add_labour_cost_button'),
@@ -154,8 +165,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => widget.router.pushNamed(
-          '$fullAddEquipmentCostRoute/${widget.estimationId}',
+        onPressed: () => CoreQuickSheet.show(
+          context: context,
+          backgroundColor: sheetSurface(context),
+          child: BlocProvider<EquipmentCostFormBloc>(
+            create: (_) => widget.equipmentCostFormBlocFactory(),
+            child: CostItemFormScreen(
+              type: CostItemType.equipment,
+              estimationId: widget.estimationId,
+              router: widget.router,
+              presentAsSheet: true,
+            ),
+          ),
         ),
       ),
       CostEstimationTab.material => CoreButton(
