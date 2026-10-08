@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
@@ -25,6 +27,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
@@ -126,6 +129,20 @@ void main() {
         'user_status': 'active',
         'user_preferences': {'': ''},
       },
+    ]);
+  }
+
+  void seedEstimate() {
+    fakeSupabase.addTableData(DatabaseConstants.costEstimatesTable, [
+      EstimationTestDataMapFactory.createFakeEstimationData(
+        id: testEstimationId,
+        estimateName: 'Bedroom 2',
+        totalCost: 1,
+      ),
+    ]);
+    fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+      {'estimate_id': testEstimationId, 'item_total_cost': 2000},
+      {'estimate_id': testEstimationId, 'item_total_cost': 993.62},
     ]);
   }
 
@@ -360,6 +377,7 @@ void main() {
           email: 'test@example.com',
         );
 
+        seedEstimate();
         await pumpAppAtRoute(tester, testEstimationRoute);
 
         await tester.tap(find.text(l10n.equipmentsTab));
@@ -411,6 +429,7 @@ void main() {
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
+        seedEstimate();
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -480,11 +499,12 @@ void main() {
           credentialId: 'test-credential-id',
           email: 'test@example.com',
         );
-        fakeSupabase.shouldThrowOnSelectMatch = true;
+        seedEstimate();
 
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tester.tap(find.text(l10n.equipmentsTab));
         await tester.pumpAndSettle();
+        fakeSupabase.shouldThrowOnSelectMatch = true;
         await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
         await tester.pumpAndSettle();
 
@@ -560,6 +580,7 @@ void main() {
     }
 
     Future<void> openRecents(WidgetTester tester) async {
+      seedEstimate();
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
@@ -635,6 +656,7 @@ void main() {
           email: 'test@example.com',
         );
 
+        seedEstimate();
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tester.tap(find.text(l10n.equipmentsTab));
         await tester.pumpAndSettle();
@@ -657,6 +679,7 @@ void main() {
         email: 'test@example.com',
       );
 
+      seedEstimate();
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
@@ -683,6 +706,7 @@ void main() {
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       addTearDown(tester.view.resetViewInsets);
 
+      seedEstimate();
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
@@ -716,6 +740,7 @@ void main() {
         email: 'test@example.com',
       );
 
+      seedEstimate();
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
@@ -730,6 +755,109 @@ void main() {
 
       expect(find.byType(CostItemFormScreen), findsNothing);
       expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    group('Add to estimate', () {
+      testWidgets('does not open the sheet and shows an error when the '
+          'estimate cannot be loaded', (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text(l10n.estimateSummaryLoadFailedError), findsOneWidget);
+      });
+
+      testWidgets('retries a failed load on the next tap and opens the sheet', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        seedEstimate();
+
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('waits for a slow load instead of ignoring the tap', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        seedEstimate();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pump();
+        expect(find.byType(CostItemFormScreen), findsNothing);
+
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('two taps while the estimate loads open only one sheet', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        seedEstimate();
+        final fab = find.byKey(const Key('add_equipment_cost_button'));
+        await tester.tap(fab);
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(fab);
+        await tester.pump();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BottomSheet), findsOneWidget);
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+        expect(find.byType(BottomSheet), findsNothing);
+      });
     });
   });
 }
