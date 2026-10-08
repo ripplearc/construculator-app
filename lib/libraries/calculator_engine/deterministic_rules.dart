@@ -121,6 +121,8 @@ class DeterministicRules extends Equatable {
     ),
     Answer(
       key: perimeterKey,
+      // Whole-number math wraps only past 6 × 10^15ft, which CA-1236's limit
+      // rules out.
       value: Length(2 * (a + b), unit: unit),
       sources: sources,
     ),
@@ -147,7 +149,10 @@ class DeterministicRules extends Equatable {
       ? Unit.metre
       : Unit.foot;
 
-  double _hypotenuse(int a, int b) => math.sqrt(a * a.toDouble() + b * b);
+  // Both squares in double math: an int square wraps past 3,954,427ft, which
+  // is inside the 19,999,999.99 limit CA-1236 will enforce.
+  double _hypotenuse(int a, int b) =>
+      math.sqrt(a.toDouble() * a + b.toDouble() * b);
 
   int _wholeTicks(double ticks) => (ticks + 0.5).floor();
 
