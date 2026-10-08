@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/calculator/data/models/calculator_preferences_dto.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -47,7 +48,22 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 /// `onUserProfileChanged`; that echo is dropped once, so it cannot bring
 /// the older profile back either. A setting changed while a slow fetch was
 /// running is never put back, and the next save never writes back older
-/// keys.
+/// keys. A fetch that fails is not kept: the next save fetches again and,
+/// if that fails too, answers with the auth library's error type rather
+/// than "no profile".
+///
+/// ## Sign-out and a user switch
+///
+/// A sign-out announces no profile — the dashboard reads a `null` profile
+/// as "create an account" — so it is heard on `onAuthStateChanged` instead.
+/// An unauthenticated state, or an authenticated one for a credential other
+/// than the one the held or in-flight profile belongs to, forgets that
+/// profile: every watcher falls back to the defaults, a fetch still in
+/// flight is dropped, and the next watch or save fetches the profile of
+/// whoever is signed in by then. A save checks the signed-in credential
+/// itself as well, because the auth state is delivered a tick after it
+/// changes, so the previous user's row is never written. A lost connection
+/// says nothing about who is signed in and is ignored.
 class CalculatorPreferencesRepositoryImpl
     implements CalculatorPreferencesRepository {
   static final _logger = AppLogger().tag('CalculatorPreferencesRepositoryImpl');
@@ -57,7 +73,8 @@ class CalculatorPreferencesRepositoryImpl
   final _preferences = StreamController<CalculatorPreferences>.broadcast();
 
   StreamSubscription<User?>? _profileSubscription;
-  Future<void>? _signedInProfileFetch;
+  StreamSubscription<AuthState>? _authStateSubscription;
+  ({String credentialId, Future<AuthErrorType?> result})? _signedInProfileFetch;
   User? _fetchEcho;
   int _profileVersion = 0;
   User? _user;
@@ -87,7 +104,21 @@ class CalculatorPreferencesRepositoryImpl
     CalculatorPreferences preferences,
   ) async {
     _followProfile();
-    if (_user == null) await _loadSignedInProfile();
+    final credentials = _authManager.getCurrentCredentials();
+    if (credentials.isSuccess &&
+        credentials.data?.id != _followedCredentialId) {
+      _forgetProfile();
+    }
+    if (_user == null) {
+      final fetchError = await _loadSignedInProfile();
+      if (fetchError != null) {
+        _logger.warning(
+          'Saving calculator preferences failed: the signed-in profile could '
+          'not be read ($fetchError)',
+        );
+        return Left(AuthFailure(errorType: fetchError));
+      }
+    }
     final user = _user;
     if (user == null) {
       _logger.warning('No signed-in profile to save calculator preferences to');
@@ -101,6 +132,10 @@ class CalculatorPreferencesRepositoryImpl
         ).toJson(),
       },
     );
+    // TODO: [CA-1224] Write the calculator key with a server-side JSON merge:
+    // this sends the whole row built from the last profile seen, so a key
+    // another device changed since then is written back.
+    // https://ripplearc.youtrack.cloud/issue/CA-1224
     final result = await _authManager.updateUserProfile(updated);
     if (!result.isSuccess) {
       final errorType = result.errorType ?? AuthErrorType.serverError;
@@ -118,16 +153,35 @@ class CalculatorPreferencesRepositoryImpl
   void dispose() {
     _isDisposed = true;
     unawaited(_profileSubscription?.cancel());
+    unawaited(_authStateSubscription?.cancel());
     _profileSubscription = null;
+    _authStateSubscription = null;
     unawaited(_preferences.close());
   }
+
+  String? get _followedCredentialId =>
+      _user?.credentialId ?? _signedInProfileFetch?.credentialId;
 
   void _followProfile() {
     if (_isDisposed || _profileSubscription != null) return;
     _profileSubscription = _authNotifier.onUserProfileChanged.listen(
       _onProfileAnnounced,
     );
+    _authStateSubscription = _authNotifier.onAuthStateChanged.listen(
+      _onAuthStateChanged,
+    );
     unawaited(_loadSignedInProfile());
+  }
+
+  void _onAuthStateChanged(AuthState state) {
+    if (state.status == AuthStatus.connectionError) return;
+    if (state.user?.id != _followedCredentialId) _forgetProfile();
+  }
+
+  void _forgetProfile() {
+    _profileVersion++;
+    _signedInProfileFetch = null;
+    _onProfileChanged(null);
   }
 
   void _onProfileAnnounced(User? user) {
@@ -139,20 +193,27 @@ class CalculatorPreferencesRepositoryImpl
     _onProfileChanged(user);
   }
 
-  Future<void> _loadSignedInProfile() {
-    if (_signedInProfileFetch case final inFlight?) return inFlight;
+  Future<AuthErrorType?> _loadSignedInProfile() {
+    if (_signedInProfileFetch case final inFlight?) return inFlight.result;
     final credentialId = _authManager.getCurrentCredentials().data?.id;
     if (credentialId == null || credentialId.isEmpty) return Future.value();
-    return _signedInProfileFetch = _fetchSignedInProfile(credentialId);
+    final fetch = _fetchSignedInProfile(credentialId);
+    _signedInProfileFetch = (credentialId: credentialId, result: fetch);
+    return fetch.whenComplete(() {
+      // A sign-out meanwhile may have put the next user's fetch on record.
+      if (identical(_signedInProfileFetch?.result, fetch)) {
+        _signedInProfileFetch = null;
+      }
+    });
   }
 
-  Future<void> _fetchSignedInProfile(String credentialId) async {
+  Future<AuthErrorType?> _fetchSignedInProfile(String credentialId) async {
     final versionAtStart = _profileVersion;
     final result = await _authManager.getUserProfile(credentialId);
-    _signedInProfileFetch = null;
-    if (!result.isSuccess) return;
+    if (!result.isSuccess) return result.errorType ?? AuthErrorType.serverError;
     _fetchEcho = result.data;
     if (_profileVersion == versionAtStart) _onProfileChanged(result.data);
+    return null;
   }
 
   void _onProfileChanged(User? user) {
