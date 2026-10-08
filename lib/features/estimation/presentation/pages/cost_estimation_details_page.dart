@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -34,8 +37,9 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// [equipmentCostFormBlocFactory].
   final YourRatesBloc Function() yourRatesBlocFactory;
 
-  /// Backs the equipment form's "Save as my rate" timestamp. Same
-  /// not-a-module-file reasoning as [equipmentCostFormBlocFactory].
+  /// Backs the equipment form's "Save as my rate" timestamp and the
+  /// "Your recents" sheet's recency subtitles. Same not-a-module-file
+  /// reasoning as [equipmentCostFormBlocFactory].
   final Clock clock;
 
   const CostEstimationDetailsPage({
@@ -178,21 +182,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => CoreQuickSheet.show(
-          context: context,
-          backgroundColor: sheetSurface(context),
-          child: BlocProvider<EquipmentCostFormBloc>(
-            create: (_) => widget.equipmentCostFormBlocFactory(),
-            child: CostItemFormScreen(
-              type: CostItemType.equipment,
-              estimationId: widget.estimationId,
-              router: widget.router,
-              presentAsSheet: true,
-              yourRatesBlocFactory: widget.yourRatesBlocFactory,
-              clock: widget.clock,
-            ),
-          ),
-        ),
+        onPressed: () => unawaited(_openRecentsThenEquipmentForm(context)),
       ),
       CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),
@@ -206,5 +196,41 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         ),
       ),
     };
+  }
+
+  Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
+    final result = await YourRatesRecentsSheet.show(
+      context: context,
+      clock: widget.clock,
+      blocFactory: widget.yourRatesBlocFactory,
+    );
+    if (!context.mounted) return;
+    switch (result) {
+      case YourRatesRecentsDismissed():
+        return;
+      case YourRatesRecentsPicked(:final entry):
+        await _openEquipmentForm(context, entry);
+      case YourRatesRecentsNewEquipmentCost():
+        await _openEquipmentForm(context, null);
+    }
+  }
+
+  Future<void> _openEquipmentForm(BuildContext context, YourRateEntry? entry) {
+    return CoreQuickSheet.show(
+      context: context,
+      backgroundColor: sheetSurface(context),
+      child: BlocProvider<EquipmentCostFormBloc>(
+        create: (_) => widget.equipmentCostFormBlocFactory(),
+        child: CostItemFormScreen(
+          type: CostItemType.equipment,
+          estimationId: widget.estimationId,
+          router: widget.router,
+          presentAsSheet: true,
+          yourRatesBlocFactory: widget.yourRatesBlocFactory,
+          clock: widget.clock,
+          initialRateEntry: entry,
+        ),
+      ),
+    );
   }
 }

@@ -2100,6 +2100,34 @@ void main() {
 
     group('Sub-flow B: saved day rate', () {
       testWidgets(
+        'an entry saved without a pricing method opens as a Day line',
+        (tester) async {
+          await tester.pumpWidget(
+            makeWidget(
+              initialRateEntry: YourRateEntry(
+                id: 'no-method',
+                companyId: 'company-1',
+                itemName: 'Scissor lift',
+                category: CostItemType.equipment,
+                rate: const Money(amount: 145),
+                savedAt: DateTime(2026, 1, 1),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const Key('duration_field')), findsOneWidget);
+          expect(find.byKey(const Key('amount_field')), findsNothing);
+          expect(
+            find.text(
+              recalledRateSubtitleText(145, EquipmentPricingMethod.day),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
         'shows the equipment name as a Title and the saved rate as a '
         'Subtitle, with Duration as the only field',
         (tester) async {
