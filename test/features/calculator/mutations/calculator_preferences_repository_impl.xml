@@ -4,17 +4,19 @@
     <!-- Targets: CalculatorPreferencesRepositoryImpl, the one path between
          the signed-in profile and the calculator's settings. A weakened
          guard here saves to nobody, drops every other key under
-         user_preferences, or leaves a fresh repository on the defaults for
-         a user who is already signed in. -->
+         user_preferences, leaves a fresh repository on the defaults for a
+         user who is already signed in, or shows and writes the previous
+         user's settings after a sign-out. -->
 
     <files>
         <file>lib/features/calculator/data/repositories/calculator_preferences_repository_impl.dart</file>
     </files>
 
     <rules>
-        <!-- RULE 1: a save with no profile goes ahead anyway -->
-        <regex pattern="if \(user == null\) \{" dotAll="true" id="calculator_preferences_repository.save.skip_no_profile_guard">
-            <mutation text="if (false) {"/>
+        <!-- RULE 1: a save with no profile, or no profile row, is answered as
+             saved (both returns; a dropped guard would not compile) -->
+        <regex pattern="return Left\(UserNotFoundFailure\(\)\);" dotAll="true" id="calculator_preferences_repository.save.answer_missing_profile_as_saved">
+            <mutation text="return Right(preferences);"/>
         </regex>
 
         <!-- RULE 2: the other keys under user_preferences are dropped -->
@@ -66,13 +68,67 @@
 
         <!-- RULE 11: a save before the first fetch finishes starts a second
              fetch -->
-        <regex pattern="if \(_signedInProfileFetch case final inFlight\?\) return inFlight;" dotAll="true" id="calculator_preferences_repository.load.no_shared_fetch">
+        <regex pattern="if \(_signedInProfileFetch case final inFlight\?\) return inFlight\.result;" dotAll="true" id="calculator_preferences_repository.load.no_shared_fetch">
             <mutation text=""/>
         </regex>
 
-        <!-- RULE 12: a failed fetch is kept, so no later save fetches again -->
-        <regex pattern="final result = await _authManager\.getUserProfile\(credentialId\);\s*_signedInProfileFetch = null;" dotAll="true" id="calculator_preferences_repository.fetch.keep_finished_fetch">
-            <mutation text="final result = await _authManager.getUserProfile(credentialId);"/>
+        <!-- RULE 12: a finished fetch is kept, so no later save fetches again
+             after a failure -->
+        <regex pattern="if \(identical\(_signedInProfileFetch\?\.result, fetch\)\) \{\s*_signedInProfileFetch = null;\s*\}" dotAll="true" id="calculator_preferences_repository.fetch.keep_finished_fetch">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 13: a fetch dropped at a user switch clears the next user's
+             fetch from the record when it finishes, so a save fetches again -->
+        <regex pattern="if \(identical\(_signedInProfileFetch\?\.result, fetch\)\) \{\s*_signedInProfileFetch = null;\s*\}" dotAll="true" id="calculator_preferences_repository.fetch.clear_next_users_fetch">
+            <mutation text="_signedInProfileFetch = null;"/>
+        </regex>
+
+        <!-- RULE 14: a sign-out or a user switch on the auth state leaves the
+             previous user's profile in place -->
+        <regex pattern="if \(state\.user\?\.id != _followedCredentialId\) _forgetProfile\(\);" dotAll="true" id="calculator_preferences_repository.auth_state.keep_previous_user">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 15: a save does not check whose profile it holds, so a
+             switch the auth state has not announced yet writes the previous
+             user's row -->
+        <regex pattern="if \(credentials\.isSuccess &amp;&amp;\s*credentials\.data\?\.id != _followedCredentialId\) \{\s*_forgetProfile\(\);\s*\}" dotAll="true" id="calculator_preferences_repository.save.skip_credential_check">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 16: a lost connection is taken for a sign-out -->
+        <regex pattern="if \(state\.status == AuthStatus\.connectionError\) return;" dotAll="true" id="calculator_preferences_repository.auth_state.forget_on_connection_error">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 17: an empty credential id is fetched -->
+        <regex pattern="if \(credentialId == null \|\| credentialId\.isEmpty\) return Future\.value\(\);" dotAll="true" id="calculator_preferences_repository.load.fetch_empty_credential">
+            <mutation text="if (credentialId == null) return Future.value();"/>
+        </regex>
+
+        <!-- RULE 18: a failed fetch is applied as "no profile", so a save
+             answers not found instead of the auth library's error -->
+        <regex pattern="if \(!result\.isSuccess\) return result\.errorType \?\? AuthErrorType\.serverError;" dotAll="true" id="calculator_preferences_repository.fetch.ignore_failure">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 19: the echo is dropped for good, so the same profile
+             announced again later is lost -->
+        <regex pattern="_fetchEcho = null;\s*return;" dotAll="true" id="calculator_preferences_repository.announce.drop_echo_forever">
+            <mutation text="return;"/>
+        </regex>
+
+        <!-- RULE 20: dispose leaves the profile subscription on the auth
+             library -->
+        <regex pattern="unawaited\(_profileSubscription\?\.cancel\(\)\);" dotAll="true" id="calculator_preferences_repository.dispose.keep_profile_subscription">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 21: dispose leaves the auth state subscription on the auth
+             library -->
+        <regex pattern="unawaited\(_authStateSubscription\?\.cancel\(\)\);" dotAll="true" id="calculator_preferences_repository.dispose.keep_auth_state_subscription">
+            <mutation text=""/>
         </regex>
 
     </rules>

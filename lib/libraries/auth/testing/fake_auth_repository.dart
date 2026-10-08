@@ -99,6 +99,12 @@ class FakeAuthRepository implements AuthRepository {
     _userProfiles[credentialId] = user;
   }
 
+  /// Removes the profile stored under [credentialId], as when its row is
+  /// gone by the time it is updated: [updateUserProfile] then answers null.
+  void removeUserProfile(String credentialId) {
+    _userProfiles.remove(credentialId);
+  }
+
   @override
   UserCredential? getCurrentCredentials() {
     if (!_authShouldSucceed) {
