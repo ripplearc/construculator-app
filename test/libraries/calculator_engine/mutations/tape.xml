@@ -111,6 +111,38 @@
         <regex pattern="chip\.copyWith\(entry: buffer, exact: buffer\.isEmpty \? \(\) =&gt; null : null\)," dotAll="true" id="tape.entry.empty_keeps_exact">
             <mutation text="chip.copyWith(entry: buffer),"/>
         </regex>
+
+        <!-- RULE 19: new settings drop the chips, or keep the old settings -->
+        <regex pattern="final next = Tape\(chips: chips,\s*preferences: preferences\);" dotAll="true" id="tape.with_preferences.drops_chips">
+            <mutation text="final next = Tape(preferences: preferences);"/>
+            <mutation text="final next = Tape(chips: chips, preferences: this.preferences);"/>
+        </regex>
+
+        <!-- RULE 22: a new ton definition re-reads every typed ton -->
+        <regex pattern="if \(next\.poundsPerTon == poundsPerTon\) return next;" dotAll="true" id="tape.with_preferences.reread_typed_ton">
+            <mutation text="if (true) return next;"/>
+        </regex>
+
+        <!-- RULE 23: a typed ton is not held at the weight it had -->
+        <regex pattern="return chip\.copyWith\(exact: \(\) =&gt; \(value: value,\s*spelled: chip\.entry\)\);" dotAll="true" id="tape.with_preferences.no_hold">
+            <mutation text="return chip;"/>
+        </regex>
+
+        <!-- RULE 24: a held entry is never let go, so the first setting does
+             not give the first tape back -->
+        <regex pattern="if \(next\.parse\(chip\.entry\.tokens\) == value\) \{" dotAll="true" id="tape.with_preferences.never_let_go">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 20: a key press forgets the settings -->
+        <regex pattern="Tape _with\(List&lt;TapeChip&gt; chips\) =&gt;\s*Tape\(chips: chips, preferences: preferences\);" dotAll="true" id="tape.with.forgets_settings">
+            <mutation text="Tape _with(List&lt;TapeChip&gt; chips) =&gt; Tape(chips: chips);"/>
+        </regex>
+
+        <!-- RULE 21: the formatter ignores the settings -->
+        <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
+            <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
+        </regex>
     </rules>
 
     <commands>
