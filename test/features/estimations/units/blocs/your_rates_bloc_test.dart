@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
@@ -24,6 +26,7 @@ void main() {
       String category = 'equipment',
       String itemName = 'Excavator',
       String savedAt = '2026-01-01T00:00:00.000Z',
+      String? entryLabel,
     }) {
       return {
         'id': id,
@@ -34,7 +37,7 @@ void main() {
         'rate_currency': 'USD',
         'unit': 'days',
         'equipment_method': 'day',
-        'entry_label': null,
+        'entry_label': entryLabel,
         'saved_at': savedAt,
         'created_at': savedAt,
         'updated_at': savedAt,
@@ -226,6 +229,150 @@ void main() {
             ['Bulldozer'],
           ),
         ],
+      );
+    });
+
+    group('YourRatesSaveRequested', () {
+      YourRateEntry entry({String? entryLabel}) => YourRateEntry(
+        id: '',
+        companyId: 'company-1',
+        itemName: 'Excavator',
+        category: CostItemType.equipment,
+        rate: const Money(amount: 250.0),
+        savedAt: DateTime.parse('2026-01-01T00:00:00.000Z'),
+        equipmentMethod: EquipmentPricingMethod.day,
+        entryLabel: entryLabel,
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveSucceeded when there is no collision',
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveSucceeded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits a SaveSucceeded for each of two saves in a row',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+
+          bloc.add(YourRatesSaveRequested(entry(entryLabel: 'Supplier A')));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [
+          isA<YourRatesSaveSucceeded>(),
+          isA<YourRatesSaveSucceeded>(),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveCollision carrying the submitted entry when the grouping '
+        'already has a labeled row',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [
+          isA<YourRatesSaveCollision>().having(
+            (s) => s.entry.itemName,
+            'entry.itemName',
+            'Excavator',
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveLabelTaken carrying the submitted entry when the label is '
+        'already used, and writes nothing',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(YourRatesSaveRequested(entry(entryLabel: 'supplier  a'))),
+        expect: () => [
+          isA<YourRatesSaveLabelTaken>().having(
+            (s) => s.entry.entryLabel,
+            'entry.entryLabel',
+            'supplier  a',
+          ),
+        ],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveSucceeded when a labeled retry follows a collision',
+        setUp: () {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+            row(
+              id: 'existing',
+              itemName: 'Excavator',
+              entryLabel: 'Supplier A',
+            ),
+          ]);
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveCollision);
+
+          bloc.add(YourRatesSaveRequested(entry(entryLabel: 'Supplier B')));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [
+          isA<YourRatesSaveCollision>(),
+          isA<YourRatesSaveSucceeded>(),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'emits SaveFailed for a non-collision failure',
+        setUp: () {
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        },
+        build: () => bloc,
+        act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
+        expect: () => [isA<YourRatesSaveFailed>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'drops a second save fired while the first is still in flight, so a '
+        'fast double-tap can only ever produce one save outcome',
+        build: () => bloc,
+        act: (bloc) async {
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+
+          bloc.add(YourRatesSaveRequested(entry()));
+          bloc.add(YourRatesSaveRequested(entry()));
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [isA<YourRatesSaveSucceeded>()],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert').length, 1);
+        },
       );
     });
   });
