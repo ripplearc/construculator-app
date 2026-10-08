@@ -227,25 +227,27 @@ void main() {
   });
 
   group('EquipmentCostFormFields — item type error', () {
-    testWidgets('shows error text when equipment name is cleared after typing', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'never shows error text when equipment name is cleared after typing '
+      '(empty fields never show a red error, per product decision)',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        'Backhoe',
-      );
-      await tester.pump();
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        '',
-      );
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Backhoe',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          '',
+        );
+        await tester.pump();
 
-      expect(find.text(l10n.equipmentNameRequiredError), findsOneWidget);
-    });
+        expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
+      },
+    );
 
     testWidgets('hides error text when equipment name is non-empty', (
       tester,

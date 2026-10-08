@@ -554,6 +554,10 @@ void main() {
         RateStatus.sampleRateUnverified,
       );
       expect(
+        RateStatus.fromJson('own_rate_unconfirmed'),
+        RateStatus.ownRateUnconfirmed,
+      );
+      expect(
         RateStatus.fromJson('own_rate_confirmed'),
         RateStatus.ownRateConfirmed,
       );

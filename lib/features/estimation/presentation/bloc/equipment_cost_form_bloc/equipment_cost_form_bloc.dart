@@ -1,28 +1,267 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
 
-/// BLoC for managing equipment cost item type input and validation.
+const double _minRate = 0.01;
+const double _maxRate = 999999.99;
+const double _durationColumnMax = 99999999.99;
+
+/// BLoC for managing the equipment cost form: item type, Day/Job pricing,
+/// delivery fee, validation, and submission to [CostItemRepository].
 class EquipmentCostFormBloc
     extends Bloc<EquipmentCostFormEvent, EquipmentCostFormState> {
-  EquipmentCostFormBloc() : super(const EquipmentCostFormInitial()) {
-    on<EquipmentCostItemTypeChanged>(_onItemTypeChanged);
-    // TODO(CA-294): register EquipmentCostFormSubmitted and wire to CostItemRepository.createCostItem
+  final CostItemRepository _repository;
+  final Clock _clock;
+
+  EquipmentCostFormBloc({required this._repository, required this._clock})
+    : super(const EquipmentCostFormInitial()) {
+    on<EquipmentCostItemTypeChanged>(
+      (e, emit) => _emit(emit, (d) => d.copyWith(equipmentType: e.value)),
+    );
+    on<EquipmentMethodSwitchedEvent>((e, emit) {
+      _emit(emit, (d) {
+        final rate = e.method == EquipmentPricingMethod.day
+            ? d.dailyRate
+            : d.jobAmount;
+        // A value preserved from before the switch can only have gotten here
+        // by being typed (see EquipmentRateUpdatedEvent below), so it's
+        // unconfirmed too — switching methods must never upgrade it to
+        // ownRateConfirmed on its own.
+        return d.copyWith(
+          method: e.method,
+          rateStatus: rate == null
+              ? RateStatus.missing
+              : RateStatus.ownRateUnconfirmed,
+        );
+      });
+    });
+    on<EquipmentDurationUpdatedEvent>(
+      (e, emit) =>
+          _emit(emit, (d) => d.copyWith(duration: double.tryParse(e.value))),
+    );
+    on<EquipmentRateUpdatedEvent>((e, emit) {
+      final rate = double.tryParse(e.value);
+      // A manually typed rate is the user's own, not a sampled catalog rate,
+      // but typing it is not the same as confirming it: it only becomes
+      // ownRateConfirmed through an explicit action (e.g. "save as my rate",
+      // CA-1145/CA-1151), or by picking an already-confirmed rate from
+      // Your Rates. A future catalog selection path will need to set
+      // sampleRateUnverified instead before landing here.
+      final rateStatus = rate == null
+          ? RateStatus.missing
+          : RateStatus.ownRateUnconfirmed;
+      _emit(
+        emit,
+        (d) => d.method == EquipmentPricingMethod.day
+            ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
+            : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
+      );
+    });
+    on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
+      final fee = double.tryParse(e.value);
+      final usable = fee != null && fee.isFinite && fee >= 0 && fee <= _maxRate;
+      // Empty text clears the fee. A value that cannot be kept is ignored,
+      // and the delivery field stops the key before it gets here.
+      if (e.value.isNotEmpty && !usable) return;
+      _emit(emit, (d) => d.copyWith(deliveryFee: fee));
+    });
+    on<EquipmentCostSubmittedEvent>(_onSubmitted);
+    on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
+    on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
   }
 
-  void _onItemTypeChanged(
-    EquipmentCostItemTypeChanged event,
+  void _emit(
+    Emitter<EquipmentCostFormState> emit,
+    EquipmentCostFormData Function(EquipmentCostFormData) update,
+  ) {
+    emit(EquipmentCostFormEditing(_validated(update(_current()))));
+  }
+
+  Future<void> _onSubmitted(
+    EquipmentCostSubmittedEvent event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    // A second tap while the first submit is in flight (or has already
+    // succeeded) must not insert a duplicate cost line.
+    if (state is EquipmentCostFormSubmitting ||
+        state is EquipmentCostFormSuccess) {
+      return;
+    }
+    final draft = _validated(_current());
+    if (!draft.isValid) {
+      emit(EquipmentCostFormEditing(draft));
+      return;
+    }
+    if (_isOutsizedFee(draft)) {
+      emit(EquipmentCostFormOutsizedFeeConfirm(draft));
+      return;
+    }
+    await _submit(draft, event.estimateId, emit);
+  }
+
+  bool _isOutsizedFee(EquipmentCostFormData draft) {
+    final fee = draft.deliveryFee;
+    if (fee == null) return false;
+    final baseCost = draft.method == EquipmentPricingMethod.day
+        ? (draft.duration ?? 0) * (draft.dailyRate ?? 0)
+        : (draft.jobAmount ?? 0);
+    return baseCost > 0 && fee > baseCost;
+  }
+
+  void _onOutsizedFeeDeclined(
+    EquipmentOutsizedFeeDeclinedEvent event,
     Emitter<EquipmentCostFormState> emit,
   ) {
-    final current = state is EquipmentCostFormEditing
-        ? state as EquipmentCostFormEditing
-        : const EquipmentCostFormEditing();
-    emit(
-      current.copyWith(
-        equipmentType: event.value,
-        itemTypeError: event.value.trim().isEmpty ? 'itemTypeRequired' : null,
-      ),
+    final current = state;
+    if (current is! EquipmentCostFormOutsizedFeeConfirm) return;
+    emit(EquipmentCostFormEditing(current.data));
+  }
+
+  Future<void> _onOutsizedFeeAccepted(
+    EquipmentOutsizedFeeAcceptedEvent event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    final current = state;
+    if (current is! EquipmentCostFormOutsizedFeeConfirm) return;
+    await _submit(current.data, event.estimateId, emit);
+  }
+
+  Future<void> _submit(
+    EquipmentCostFormData draft,
+    String estimateId,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    emit(EquipmentCostFormSubmitting(draft));
+    final result = await _repository.createCostItem(
+      _buildCostItem(draft, estimateId),
+    );
+    result.fold(
+      (failure) => emit(EquipmentCostFormFailure(draft, failure)),
+      (created) => emit(EquipmentCostFormSuccess(draft, created)),
+    );
+  }
+
+  EquipmentCostFormData _current() {
+    return switch (state) {
+      EquipmentCostFormEditing(:final data) => data,
+      EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
+      EquipmentCostFormSubmitting(:final data) => data,
+      EquipmentCostFormSuccess(:final data) => data,
+      EquipmentCostFormFailure(:final data) => data,
+      EquipmentCostFormInitial() => const EquipmentCostFormData(),
+    };
+  }
+
+  EquipmentCostFormData _validated(EquipmentCostFormData draft) {
+    final errors = <EquipmentFormField, EquipmentFieldError>{};
+    final hasItemType = draft.equipmentType.trim().isNotEmpty;
+
+    final bool hasDuration;
+    final bool hasRate;
+    if (draft.method == EquipmentPricingMethod.day) {
+      hasDuration = _validateDuration(draft.duration, errors);
+      hasRate = _validateRate(
+        draft.dailyRate,
+        EquipmentFormField.dailyRate,
+        errors,
+      );
+    } else {
+      hasDuration = true;
+      hasRate = _validateRate(
+        draft.jobAmount,
+        EquipmentFormField.jobAmount,
+        errors,
+      );
+    }
+    return draft.copyWith(
+      isValid: hasItemType && hasDuration && hasRate,
+      fieldErrors: errors,
+    );
+  }
+
+  bool _validateDuration(
+    double? duration,
+    Map<EquipmentFormField, EquipmentFieldError> errors,
+  ) {
+    if (duration == null) return false;
+    if (!(duration > 0 && duration.isFinite)) {
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationNotPositive;
+      return false;
+    }
+    if (duration > _durationColumnMax) {
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationTooLarge;
+      return false;
+    }
+    if (!_isHalfDayStep(duration)) {
+      errors[EquipmentFormField.duration] =
+          EquipmentFieldError.durationNotHalfDay;
+      return false;
+    }
+    return true;
+  }
+
+  bool _isHalfDayStep(double duration) {
+    final doubled = duration * 2;
+    return (doubled - doubled.roundToDouble()).abs() < 1e-9;
+  }
+
+  bool _validateRate(
+    double? rate,
+    EquipmentFormField field,
+    Map<EquipmentFormField, EquipmentFieldError> errors,
+  ) {
+    if (rate == null) return false;
+    final inRange =
+        !rate.isNaN && !rate.isInfinite && rate >= _minRate && rate <= _maxRate;
+    if (!inRange) {
+      errors[field] = EquipmentFieldError.rateOutOfRange;
+    }
+    return inRange;
+  }
+
+  EquipmentCostItem _buildCostItem(
+    EquipmentCostFormData draft,
+    String estimateId,
+  ) {
+    final now = _clock.now();
+    final isDay = draft.method == EquipmentPricingMethod.day;
+    final duration = draft.duration;
+    final dailyRate = draft.dailyRate;
+    final jobAmount = draft.jobAmount;
+    final deliveryFee = draft.deliveryFee;
+    final total = isDay
+        ? (duration ?? 0) * (dailyRate ?? 0) + (deliveryFee ?? 0)
+        : (jobAmount ?? 0) + (deliveryFee ?? 0);
+    return EquipmentCostItem(
+      id: '',
+      estimateId: estimateId,
+      itemName: draft.equipmentType,
+      calculation: {
+        if (isDay) 'daily_rate': dailyRate ?? 0,
+        if (isDay) 'duration': duration ?? 0,
+        if (!isDay) 'job_amount': jobAmount ?? 0,
+        'delivery_fee': ?deliveryFee,
+      },
+      itemTotalCost: total,
+      createdAt: now,
+      updatedAt: now,
+      // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
+      currency: 'USD',
+      pricingMethod: draft.method,
+      rateStatus: draft.rateStatus,
+      duration: isDay ? duration : null,
+      dailyRate: isDay && dailyRate != null ? Money(amount: dailyRate) : null,
+      jobAmount: !isDay && jobAmount != null ? Money(amount: jobAmount) : null,
+      deliveryFee: deliveryFee != null ? Money(amount: deliveryFee) : null,
+      description: draft.description,
     );
   }
 }
