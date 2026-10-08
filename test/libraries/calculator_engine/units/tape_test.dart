@@ -20,6 +20,8 @@ void main() {
         'cm' => current.pressUnit(Unit.centimetre),
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
+        '+' => current.pressOperator(Operator.add),
+        '=' => current.pressEquals(),
         '/' => current.typeFraction(),
         '⌫' => current.backspace(),
         _ when key.startsWith('[') => current.pressFunctionKey(
@@ -458,22 +460,70 @@ void main() {
         final reread = tape.withPreferences(
           const CalculatorPreferences(metreDisplay: MetreDisplay.oneDecimal),
         );
+        expect(reread.chips, tape.chips);
         expect(reread.formatter.format(diagonal.value), '5.2m');
       });
 
-      test('a typed ton keeps its unit and is read under the new setting', () {
+      test('a typed ton keeps its text and its weight under a new ton', () {
+        const shortTons78 = Weight(78 * 2000 * 100, unit: Unit.ton);
         final tape = press(const Tape(), '7 8 ton');
-        expect(
-          tape.active!.value(tape.parser),
-          const Weight(78 * 2000 * 100, unit: Unit.ton),
-        );
+        expect(tape.active!.value(tape.parser), shortTons78);
         final reread = tape.withPreferences(longTon);
-        expect(reread.active!.entry.text, '78ton');
-        expect(
-          reread.active!.value(reread.parser),
-          const Weight(78 * 2240 * 100, unit: Unit.ton),
-        );
         expect(reread.poundsPerTon, 2240);
+        expect(reread.active!.entry.text, '78ton');
+        expect(reread.active!.value(reread.parser), shortTons78);
+        expect(reread.formatter.format(shortTons78), '69.64 ton');
+      });
+
+      test('a chain typed before the change keeps its sum, and = again', () {
+        final tape = press(const Tape(), '7 8 ton + 1 ton =');
+        expect(texts(tape), ['78ton', '1ton', 'Calc']);
+        final sum = (tape.chips.last as ResultChip).value as Weight;
+        expect(sum.hundredthsOfPound, 79 * 2000 * 100);
+        expect(tape.formatter.format(sum), '79 ton');
+
+        final reread = tape.withPreferences(longTon);
+        expect(texts(reread), texts(tape));
+        expect((reread.chips.last as ResultChip).value, sum);
+        expect(reread.formatter.format(sum), '70.54 ton');
+
+        final again = press(reread, '⌫ =');
+        expect(texts(again), texts(tape));
+        expect((again.chips.last as ResultChip).value, sum);
+      });
+
+      test('a converted ton keeps its pounds beside a typed one', () {
+        final tape = press(const Tape(), '2 0 0 0 lbs ton + 1 ton');
+        expect(texts(tape), ['1ton', '1ton']);
+        final reread = tape.withPreferences(longTon);
+        for (final chip in reread.chips.cast<ValueChip>()) {
+          expect(
+            chip.value(reread.parser),
+            isA<Weight>().having(
+              (weight) => weight.hundredthsOfPound,
+              'pounds',
+              2000 * 100,
+            ),
+          );
+        }
+      });
+
+      test('going back to the first setting gives the first tape', () {
+        final tape = press(const Tape(), '7 8 ton + 1 ton = + 5 0 lbs');
+        final back = tape
+            .withPreferences(longTon)
+            .withPreferences(CalculatorPreferences.defaults);
+        expect(back, tape);
+      });
+
+      test('a frozen entry edited after the change reads the new ton', () {
+        final tape = press(const Tape(), '7 8 ton').withPreferences(longTon);
+        final retyped = press(tape, '⌫ ⌫ ton');
+        expect(retyped.active!.entry.text, '7ton');
+        expect(
+          retyped.active!.value(retyped.parser),
+          const Weight(7 * 2240 * 100, unit: Unit.ton),
+        );
       });
 
       test('keeps the settings through every key', () {

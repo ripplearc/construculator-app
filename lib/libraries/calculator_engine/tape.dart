@@ -148,13 +148,33 @@ class Tape extends Equatable {
   QuantityFormatter get formatter =>
       QuantityFormatter(preferences: preferences);
 
-  /// The same chips under new settings. A result keeps its value and
-  /// renders anew; an entry keeps its typed unit and is read again under
-  /// the new ton definition, as the setting's own definition says
-  /// (Appendix C: "results re-render; your entries keep their typed
-  /// units").
-  Tape withPreferences(CalculatorPreferences preferences) =>
-      Tape(chips: chips, preferences: preferences);
+  /// The same chips under new settings; a setting never changes a stored
+  /// value (rule 4.14). A result keeps its value and renders anew: 22.28
+  /// ton reads 19.89 ton under the long ton, the weight unchanged. An
+  /// entry keeps its text and its value too: a 78 ton typed at 2,000 lb
+  /// still weighs 156,000 lb under 2,240, held through [ValueChip.exact]
+  /// while its text would read otherwise and let go once it reads to the
+  /// same weight again, so going back to the first setting gives the first
+  /// tape. The text stays as typed (Appendix C: "your entries keep their
+  /// typed units"); whether it should re-spell to 69.64 ton is the doc
+  /// owner's call.
+  Tape withPreferences(CalculatorPreferences preferences) {
+    final next = Tape(chips: chips, preferences: preferences);
+    if (next.poundsPerTon == poundsPerTon) return next;
+    return next._with([
+      for (final chip in chips)
+        if (chip is ValueChip) _heldAt(chip, next.parser) else chip,
+    ]);
+  }
+
+  ValueChip _heldAt(ValueChip chip, QuantityParser next) {
+    final value = chip.value(parser);
+    if (value == null || !chip.entry.isComplete) return chip;
+    if (next.parse(chip.entry.tokens) == value) {
+      return chip.copyWith(exact: () => null);
+    }
+    return chip.copyWith(exact: () => (value: value, spelled: chip.entry));
+  }
 
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
