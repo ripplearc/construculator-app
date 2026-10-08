@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE DETERMINISTIC RULES MUTATION TESTING -->
+    <!-- Targets: DeterministicRules, the geometry of UX Design Doc Section 8
+         that the strip offers from named values. Critical path: an answer
+         the user accepts onto the tape and onto a takeoff sheet, so a wrong
+         pair, a diagonal rounded the wrong way, a perimeter missing its
+         factor or a unit from the wrong system is a wrong answer that still
+         looks like one. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/deterministic_rules.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: Length and Height are read before Length and Width -->
+        <regex pattern="\(DimensionKey\.length, DimensionKey\.width\),\s*\(DimensionKey\.length, DimensionKey\.height\)," dotAll="true" id="deterministic_rules.pair.height_first">
+            <mutation text="(DimensionKey.length, DimensionKey.height), (DimensionKey.length, DimensionKey.width),"/>
+        </regex>
+
+        <!-- RULE 2: Width and Height no longer make a rectangle -->
+        <regex pattern="\(DimensionKey\.width, DimensionKey\.height\),\s*\];" dotAll="true" id="deterministic_rules.pair.no_width_height">
+            <mutation text="];"/>
+        </regex>
+
+        <!-- RULE 3: the perimeter loses its factor -->
+        <regex pattern="value: Length\(2 \* \(a \+ b\), unit: unit\)," dotAll="true" id="deterministic_rules.perimeter.no_factor">
+            <mutation text="value: Length(a + b, unit: unit),"/>
+        </regex>
+
+        <!-- RULE 4: the diagonal is truncated instead of rounded -->
+        <regex pattern="int _wholeTicks\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="deterministic_rules.diagonal.truncate">
+            <mutation text="int _wholeTicks(double ticks) =&gt; ticks.floor();"/>
+        </regex>
+
+        <!-- RULE 5: a run of nothing still gives a diagonal, and so does a
+             missing run -->
+        <regex pattern="if \(rise == null \|\| run == null \|\| run\.ticks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.triangle.no_guard">
+            <mutation text="if (rise == null || run == null || run.ticks &lt; 0) return const [];"/>
+            <mutation text="if (rise == null || run == null) return const [];"/>
+        </regex>
+
+        <!-- RULE 6: a mixed tape answers in metres, and an all-metric one in
+             feet -->
+        <regex pattern="lengths\.isNotEmpty &amp;&amp; lengths\.every\(\(length\) =&gt; length\.unit\.isMetric\)" dotAll="true" id="deterministic_rules.unit.wrong_vote">
+            <mutation text="lengths.any((length) =&gt; length.unit.isMetric)"/>
+            <mutation text="false"/>
+        </regex>
+
+        <!-- RULE 7: the area is the sum of the sides -->
+        <regex pattern="value: Area\(a \* b\.toDouble\(\), unit: unit\)," dotAll="true" id="deterministic_rules.area.sum">
+            <mutation text="value: Area(a + b.toDouble(), unit: unit),"/>
+        </regex>
+
+        <!-- RULE 8: the hypotenuse drops a side, or squares one in int math
+             so that it wraps past 3,954,427ft -->
+        <regex pattern="math\.sqrt\(a\.toDouble\(\) \* a \+ b\.toDouble\(\) \* b\);" dotAll="true" id="deterministic_rules.hypotenuse.one_side">
+            <mutation text="math.sqrt(a.toDouble() * a);"/>
+            <mutation text="math.sqrt(a.toDouble() * a + b * b);"/>
+            <mutation text="math.sqrt(a * a + b.toDouble() * b);"/>
+        </regex>
+
+        <!-- RULE 9: a value that is not a length is read as a side -->
+        <regex pattern="if \(value is Length\) lengths\[key\] = value;" dotAll="true" id="deterministic_rules.named.not_a_length">
+            <mutation text="if (value != null) lengths[key] = value as Length;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="deterministic_rules" expected-return="0">flutter test test/libraries/calculator_engine/units/deterministic_rules_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

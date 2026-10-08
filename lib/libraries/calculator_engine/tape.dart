@@ -205,6 +205,16 @@ class Tape extends Equatable {
 
   bool get _hasResult => chips.any((chip) => chip is ResultChip);
 
+  /// The value under each function key, by chip key: the last readable
+  /// value typed under the key wins, a bare number has no key, and a value
+  /// still being typed is not a value yet. What the deterministic rules
+  /// read (the prototype's `getDims`).
+  Map<String, Quantity> get namedValues => {
+    for (final chip in chips)
+      if (chip case ValueChip(:final key?) when chip.isReadable)
+        key: ?chip.value(parser),
+  };
+
   /// A function key opens a new active chip with that name (rule 4.1); on
   /// an empty active chip it renames it instead. A chip holding a compound
   /// left open (18ft 8), a fraction without a unit (7/16) or a bare number
