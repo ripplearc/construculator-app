@@ -1,23 +1,28 @@
 import 'dart:async';
 
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
+import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
+import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_current_company_database.dart';
 
 void main() {
   group('CurrentCompanyResolverImpl', () {
     late FakeSupabaseWrapper supabaseWrapper;
+    late FakeCurrentCompanyDatabase localDatabase;
+    late FakePowerSyncDatabaseWrapper failingWrites;
+    late FakePowerSyncDatabaseWrapper failingReads;
     late CurrentCompanyResolver resolver;
 
     setUpAll(() {
@@ -27,17 +32,16 @@ void main() {
       // shell_routes_test.dart for the same gotcha), so a fresh
       // FakeSupabaseWrapper per test would leave the injector still reading
       // the first test's instance.
-      //
-      // _CompanyTestAppModule only imports CompanyLibraryModule rather than
-      // being that module itself: CompanyLibraryModule only declares
-      // exportedBinds (for a real feature module to import), and
-      // modular_core only runs a root module's own `binds`, not its
-      // `exportedBinds` — so initializing CompanyLibraryModule directly as
-      // root would leave CurrentCompanyResolver unregistered.
       supabaseWrapper = FakeSupabaseWrapper(clock: FakeClockImpl());
+      localDatabase = FakeCurrentCompanyDatabase();
+      failingWrites = FakePowerSyncDatabaseWrapper();
+      failingReads = FakePowerSyncDatabaseWrapper();
       Modular.init(
         _CompanyTestAppModule(
-          FakeAppBootstrapFactory.create(supabaseWrapper: supabaseWrapper),
+          supabaseWrapper: supabaseWrapper,
+          localDatabase: localDatabase,
+          failingWrites: failingWrites,
+          failingReads: failingReads,
         ),
       );
       resolver = Modular.get<CurrentCompanyResolver>();
@@ -45,10 +49,14 @@ void main() {
 
     tearDownAll(() {
       Modular.destroy();
+      localDatabase.dispose();
     });
 
     setUp(() {
       supabaseWrapper.reset();
+      supabaseWrapper.setCurrentUser(_userOne);
+      failingWrites.reset();
+      failingReads.reset();
       // The resolver instance is shared across tests in this file (see
       // setUpAll); clearing its cache here is what makes each test start
       // from a fresh, un-resolved session rather than reusing whatever a
@@ -279,13 +287,15 @@ void main() {
     test('a call that starts while the cleared session\'s call is still '
         'running is not cut off when the old call finishes', () async {
       final perCallWrapper = _PerCallRpcWrapper();
+      final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
       // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
       final raceResolver = CurrentCompanyResolverImpl(
         supabaseWrapper: perCallWrapper,
+        localDataSource: localDataSource,
       );
 
       final userA = raceResolver.resolve();
-      raceResolver.clearCache();
+      await raceResolver.clearCache();
       final userB = raceResolver.resolve();
       expect(perCallWrapper.pending, hasLength(2));
 
@@ -304,6 +314,33 @@ void main() {
       expect((await later).getRightOrNull(), 'company-b');
       expect((await raceResolver.resolve()).getRightOrNull(), 'company-b');
       expect(perCallWrapper.pending, hasLength(2));
+    });
+
+    test('a different user signing in while another user\'s lookup is still '
+        'running gets their own lookup and their own id', () async {
+      // ignore: no_direct_instantiation, reason: a test-local wrapper that holds each rpc call open
+      final perCallWrapper = _PerCallRpcWrapper();
+      final localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
+      await localDataSource.clearCompanyId();
+      // ignore: no_direct_instantiation, reason: needs a wrapper whose rpc calls are held one by one, which Modular's shared fake cannot do
+      final app = CurrentCompanyResolverImpl(
+        supabaseWrapper: perCallWrapper,
+        localDataSource: localDataSource,
+      );
+
+      perCallWrapper.setCurrentUser(_userOne);
+      final first = app.resolve();
+      perCallWrapper.setCurrentUser(_userTwo);
+      final second = app.resolve();
+      expect(perCallWrapper.pending, hasLength(2));
+
+      perCallWrapper.pending[0].complete('company-1');
+      perCallWrapper.pending[1].complete('company-2');
+
+      expect((await first).getRightOrNull(), 'company-1');
+      expect((await second).getRightOrNull(), 'company-2');
+      expect(await localDataSource.loadCompanyId(_userOne.id), isNull);
+      expect(await localDataSource.loadCompanyId(_userTwo.id), 'company-2');
     });
 
     test(
@@ -410,15 +447,283 @@ void main() {
         );
       },
     );
+
+    group('company id kept on the device', () {
+      late LocalCurrentCompanyDataSource localDataSource;
+
+      CurrentCompanyResolver restartedApp() =>
+          Modular.get<CurrentCompanyResolver>(key: 'restartedApp');
+
+      void answerWith(String? companyId) {
+        supabaseWrapper.shouldThrowOnRpc = false;
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          companyId,
+        );
+      }
+
+      void loseSignal([
+        SupabaseExceptionType type = SupabaseExceptionType.socket,
+      ]) {
+        supabaseWrapper.shouldThrowOnRpc = true;
+        supabaseWrapper.rpcExceptionType = type;
+      }
+
+      setUp(() async {
+        localDataSource = Modular.get<LocalCurrentCompanyDataSource>();
+        await localDataSource.clearCompanyId();
+      });
+
+      test(
+        'finds the company id with no signal after a first sign-in',
+        () async {
+          answerWith('company-1');
+          await resolver.resolve();
+
+          loseSignal();
+          final result = await restartedApp().resolve();
+
+          expect(result.getRightOrNull(), 'company-1');
+        },
+      );
+
+      test('finds the company id after the request times out', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        loseSignal(SupabaseExceptionType.timeout);
+        final result = await restartedApp().resolve();
+
+        expect(result.getRightOrNull(), 'company-1');
+      });
+
+      test('asks the network again on the next call after the kept id '
+          'answered, so a user back online gets a fresh answer', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+        loseSignal();
+        final offlineApp = restartedApp();
+        await offlineApp.resolve();
+
+        answerWith('company-2');
+        final result = await offlineApp.resolve();
+
+        expect(result.getRightOrNull(), 'company-2');
+      });
+
+      test('has nothing to find with no signal before any sign-in', () async {
+        loseSignal();
+
+        final result = await restartedApp().resolve();
+
+        expect(
+          result.getLeftOrNull(),
+          const CompanyFailure(errorType: CompanyErrorType.connectionError),
+        );
+      });
+
+      test('sign-out clears it, so no signal then finds nothing', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        await resolver.clearCache();
+        loseSignal();
+        final result = await restartedApp().resolve();
+
+        expect(
+          result.getLeftOrNull(),
+          const CompanyFailure(errorType: CompanyErrorType.connectionError),
+        );
+      });
+
+      test('a second user on the same phone gets their own id', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        supabaseWrapper.setCurrentUser(_userTwo);
+        answerWith('company-2');
+        final secondUserOnline = await restartedApp().resolve();
+        loseSignal();
+        final secondUserOffline = await restartedApp().resolve();
+
+        expect(secondUserOnline.getRightOrNull(), 'company-2');
+        expect(secondUserOffline.getRightOrNull(), 'company-2');
+      });
+
+      test('never returns the first user\'s id to a second user with no '
+          'signal', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        supabaseWrapper.setCurrentUser(_userTwo);
+        loseSignal();
+        final result = await restartedApp().resolve();
+
+        expect(
+          result.getLeftOrNull(),
+          const CompanyFailure(errorType: CompanyErrorType.connectionError),
+        );
+      });
+
+      test('a different user signing in without a sign-out in between gets '
+          'their own id, not the cached one', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        supabaseWrapper.setCurrentUser(_userTwo);
+        answerWith('company-2');
+        final result = await resolver.resolve();
+
+        expect(result.getRightOrNull(), 'company-2');
+      });
+
+      test('does not keep a missing id', () async {
+        answerWith(null);
+
+        await resolver.resolve();
+
+        expect(await localDataSource.loadCompanyId(_userOne.id), isNull);
+      });
+
+      test('forgets a kept id once the backend says there is no company '
+          'for the user', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+        answerWith(null);
+        await restartedApp().resolve();
+
+        expect(await localDataSource.loadCompanyId(_userOne.id), isNull);
+        loseSignal();
+        final result = await restartedApp().resolve();
+
+        expect(result.isLeft(), isTrue);
+      });
+
+      test('does not fall back to the kept id on a server error', () async {
+        answerWith('company-1');
+        await resolver.resolve();
+
+        loseSignal(SupabaseExceptionType.postgrest);
+        final result = await restartedApp().resolve();
+
+        expect(
+          result.getLeftOrNull(),
+          const CompanyFailure(
+            errorType: CompanyErrorType.unexpectedDatabaseError,
+          ),
+        );
+      });
+
+      test('keeps nothing when nobody is signed in', () async {
+        supabaseWrapper.setCurrentUser(null);
+        answerWith('company-1');
+
+        final result = await resolver.resolve();
+        loseSignal();
+        final offline = await restartedApp().resolve();
+
+        expect(result.getRightOrNull(), 'company-1');
+        expect(offline.isLeft(), isTrue);
+      });
+
+      test(
+        'still returns the id when keeping it on the device fails',
+        () async {
+          failingWrites.writeTransactionError = StateError('disk full');
+          answerWith('company-1');
+
+          final result = await Modular.get<CurrentCompanyResolver>(
+            key: 'failingWrites',
+          ).resolve();
+
+          expect(result.getRightOrNull(), 'company-1');
+        },
+      );
+
+      test('sign-out still resets the session when clearing the device '
+          'fails', () async {
+        answerWith('company-1');
+        final app = Modular.get<CurrentCompanyResolver>(key: 'failingWrites');
+        await app.resolve();
+
+        failingWrites.executeError = StateError('disk full');
+        await app.clearCache();
+        loseSignal();
+        final result = await app.resolve();
+
+        expect(result.isLeft(), isTrue);
+      });
+
+      test('returns the connection failure when the kept id cannot be '
+          'read', () async {
+        failingReads.getAllError = StateError('database locked');
+        loseSignal();
+
+        final result = await Modular.get<CurrentCompanyResolver>(
+          key: 'failingReads',
+        ).resolve();
+
+        expect(
+          result.getLeftOrNull(),
+          const CompanyFailure(errorType: CompanyErrorType.connectionError),
+        );
+      });
+    });
   });
 }
 
 class _CompanyTestAppModule extends Module {
-  final AppBootstrap appBootstrap;
-  _CompanyTestAppModule(this.appBootstrap);
+  final FakeSupabaseWrapper supabaseWrapper;
+  final FakeCurrentCompanyDatabase localDatabase;
+  final FakePowerSyncDatabaseWrapper failingWrites;
+  final FakePowerSyncDatabaseWrapper failingReads;
+
+  _CompanyTestAppModule({
+    required this.supabaseWrapper,
+    required this.localDatabase,
+    required this.failingWrites,
+    required this.failingReads,
+  });
 
   @override
-  List<Module> get imports => [CompanyLibraryModule(appBootstrap)];
+  void binds(Injector i) {
+    i.addSingleton<LocalCurrentCompanyDataSource>(
+      () => PowerSyncLocalCurrentCompanyDataSource(database: localDatabase),
+    );
+    i.addSingleton<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: supabaseWrapper,
+        localDataSource: i(),
+      ),
+    );
+    // A new instance per get: an app restart is a new resolver over the same
+    // device storage.
+    i.add<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: supabaseWrapper,
+        localDataSource: i(),
+      ),
+      key: 'restartedApp',
+    );
+    i.add<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: supabaseWrapper,
+        localDataSource: PowerSyncLocalCurrentCompanyDataSource(
+          database: failingWrites,
+        ),
+      ),
+      key: 'failingWrites',
+    );
+    i.add<CurrentCompanyResolver>(
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: supabaseWrapper,
+        localDataSource: PowerSyncLocalCurrentCompanyDataSource(
+          database: failingReads,
+        ),
+      ),
+      key: 'failingReads',
+    );
+  }
 }
 
 class _PerCallRpcWrapper extends FakeSupabaseWrapper {
@@ -433,3 +738,6 @@ class _PerCallRpcWrapper extends FakeSupabaseWrapper {
     return completer.future.then((value) => value as T);
   }
 }
+
+final _userOne = FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00Z');
+final _userTwo = FakeUser(id: 'user-2', createdAt: '2026-01-01T00:00:00Z');

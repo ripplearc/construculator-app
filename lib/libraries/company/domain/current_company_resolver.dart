@@ -23,13 +23,21 @@ abstract class CurrentCompanyResolver {
   /// backend again and can pick up a company that was created in the
   /// meantime. A call that fails returns a [Failure] and caches nothing, so
   /// the next call retries.
+  ///
+  /// A non-null id is also kept on the device. When the backend cannot be
+  /// reached (no signal or a timeout), the id kept for the signed-in user is
+  /// returned instead of a [Failure]. That answer is not cached, so the next
+  /// call asks the backend again. An id kept for another user is never
+  /// returned, and a failure that is not "backend unreachable" never falls
+  /// back. A `Right(null)` answer clears what was kept, so a user with no
+  /// company is asked again next time.
   Future<Either<Failure, String?>> resolve();
 
-  /// Clears the cached result, so the next [resolve] call hits the network
-  /// again.
+  /// Clears the cached result and the id kept on the device, so the next
+  /// [resolve] call hits the network again.
   ///
   /// Callers that hold this resolver across a sign-out/sign-in must call
   /// this on sign-out — otherwise a different signed-in user could see the
-  /// previous user's cached company id.
-  void clearCache();
+  /// previous user's company id.
+  Future<void> clearCache();
 }
