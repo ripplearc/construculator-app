@@ -3609,6 +3609,88 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This feature is not available in this version of the app.'**
   String get featureUnavailableMessage;
+
+  /// Title of the summary card above the Add to estimate button on the equipment cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Adds to this estimate'**
+  String get addsToEstimateLabel;
+
+  /// Right part of the summary card's last row, after the estimate's name: the estimate's running total before this line is added. Starts with a space.
+  ///
+  /// In en, this message translates to:
+  /// **' total  {amount} →'**
+  String addsToEstimateTotalBeforeSuffix(String amount);
+
+  /// Label of the summary card row showing how much of the line total is the delivery fee
+  ///
+  /// In en, this message translates to:
+  /// **'incl. delivery'**
+  String get addsToEstimateIncludesDelivery;
+
+  /// Summary card note while the equipment name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a name before it can total'**
+  String get addsToEstimateNeedsNameNote;
+
+  /// Summary card note while the Day duration is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a duration before it can total'**
+  String get addsToEstimateNeedsDurationNote;
+
+  /// Summary card note while the Day duration is zero
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a duration above zero before it can total'**
+  String get addsToEstimateNeedsDurationAboveZeroNote;
+
+  /// Summary card note while the Day rate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a rate before it can total'**
+  String get addsToEstimateNeedsRateNote;
+
+  /// Summary card note while the Job amount is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Needs an amount before it can total'**
+  String get addsToEstimateNeedsAmountNote;
+
+  /// Summary card note while the Day duration has an error other than zero. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a valid duration before it can total'**
+  String get addsToEstimateInvalidDurationNote;
+
+  /// Summary card note while the Day rate has an error. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a valid rate before it can total'**
+  String get addsToEstimateInvalidRateNote;
+
+  /// Summary card note while the Job amount has an error. No Figma frame covers this case.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs a valid amount before it can total'**
+  String get addsToEstimateInvalidAmountNote;
+
+  /// Shown in place of the line total on the summary card while the line cannot be totalled yet; a dash, never a zero
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get addsToEstimateNoTotalText;
+
+  /// Screen reader label for the summary card's last row, read in place of the arrow between the two totals
+  ///
+  /// In en, this message translates to:
+  /// **'{estimateName} total before {before}, after {after}'**
+  String addsToEstimateTotalSemantics(
+    String estimateName,
+    String before,
+    String after,
+  );
 }
 
 class _AppLocalizationsDelegate

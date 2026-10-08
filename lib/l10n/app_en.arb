@@ -2957,6 +2957,81 @@
   "@featureUnavailableMessage": {
     "description": "Message shown on the defensive fallback page when a deep link points to a feature that this build does not include",
     "context": "N/A"
+  },
+  "addsToEstimateLabel": "Adds to this estimate",
+  "@addsToEstimateLabel": {
+    "description": "Title of the summary card above the Add to estimate button on the equipment cost sheet",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateTotalBeforeSuffix": " total  {amount} →",
+  "@addsToEstimateTotalBeforeSuffix": {
+    "description": "Right part of the summary card's last row, after the estimate's name: the estimate's running total before this line is added. Starts with a space.",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$2,993.62"
+      }
+    }
+  },
+  "addsToEstimateIncludesDelivery": "incl. delivery",
+  "@addsToEstimateIncludesDelivery": {
+    "description": "Label of the summary card row showing how much of the line total is the delivery fee",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateNeedsNameNote": "Needs a name before it can total",
+  "@addsToEstimateNeedsNameNote": {
+    "description": "Summary card note while the equipment name is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateNeedsDurationNote": "Needs a duration before it can total",
+  "@addsToEstimateNeedsDurationNote": {
+    "description": "Summary card note while the Day duration is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateNeedsDurationAboveZeroNote": "Needs a duration above zero before it can total",
+  "@addsToEstimateNeedsDurationAboveZeroNote": {
+    "description": "Summary card note while the Day duration is zero",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateNeedsRateNote": "Needs a rate before it can total",
+  "@addsToEstimateNeedsRateNote": {
+    "description": "Summary card note while the Day rate is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateNeedsAmountNote": "Needs an amount before it can total",
+  "@addsToEstimateNeedsAmountNote": {
+    "description": "Summary card note while the Job amount is empty",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateInvalidDurationNote": "Needs a valid duration before it can total",
+  "@addsToEstimateInvalidDurationNote": {
+    "description": "Summary card note while the Day duration has an error other than zero. No Figma frame covers this case.",
+    "context": "N/A"
+  },
+  "addsToEstimateInvalidRateNote": "Needs a valid rate before it can total",
+  "@addsToEstimateInvalidRateNote": {
+    "description": "Summary card note while the Day rate has an error. No Figma frame covers this case.",
+    "context": "N/A"
+  },
+  "addsToEstimateInvalidAmountNote": "Needs a valid amount before it can total",
+  "@addsToEstimateInvalidAmountNote": {
+    "description": "Summary card note while the Job amount has an error. No Figma frame covers this case.",
+    "context": "N/A"
+  },
+  "addsToEstimateNoTotalText": "—",
+  "@addsToEstimateNoTotalText": {
+    "description": "Shown in place of the line total on the summary card while the line cannot be totalled yet; a dash, never a zero",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "addsToEstimateTotalSemantics": "{estimateName} total before {before}, after {after}",
+  "@addsToEstimateTotalSemantics": {
+    "description": "Screen reader label for the summary card's last row, read in place of the arrow between the two totals",
+    "context": "N/A",
+    "placeholders": {
+      "estimateName": {"type": "String", "example": "Bedroom 2"},
+      "before": {"type": "String", "example": "$2,993.62"},
+      "after": {"type": "String", "example": "$3,598.62"}
+    }
   }
 }
-
