@@ -608,6 +608,26 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   }
 
   @override
+  Future<Either<Failure, CostEstimate>> getEstimation(
+    String estimationId,
+  ) async {
+    try {
+      final dto = await _dataSource.getEstimationById(estimationId);
+      if (dto == null) {
+        _logger.warning('Estimation not found: $estimationId');
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        );
+      }
+      return Right(dto.toDomain());
+    } catch (e) {
+      return Left(
+        _handleError(e, 'getting estimation', estimationId: estimationId),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, CostEstimate>> renameEstimation({
     required String estimationId,
     required String newName,
