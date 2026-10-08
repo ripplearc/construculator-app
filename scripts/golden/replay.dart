@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'check.dart';
+import 'intended.dart';
 import 'scenario.dart';
 import 'snapshot.dart';
 
@@ -33,6 +34,14 @@ enum CheckpointOutcome {
 
   /// A step before it could not be performed, so it was not reached.
   notReached,
+
+  /// The check did not hold, and `intended_differences.json` says the Dart
+  /// answer differs here on purpose; the result carries the reason.
+  intended,
+
+  /// The check held although it is listed as an intended difference: the
+  /// list is stale and the entry should go.
+  stale,
 }
 
 /// One checkpoint's result within a scenario.
@@ -49,15 +58,26 @@ class CheckpointResult extends Equatable {
   /// The snapshot the check was evaluated against, when it was.
   final Snapshot? snapshot;
 
+  /// The listed difference, for an [CheckpointOutcome.intended] or
+  /// [CheckpointOutcome.stale] outcome.
+  final IntendedDifference? difference;
+
   const CheckpointResult({
     required this.stepIndex,
     required this.checkpoint,
     required this.outcome,
     this.snapshot,
+    this.difference,
   });
 
   @override
-  List<Object?> get props => [stepIndex, checkpoint, outcome, snapshot];
+  List<Object?> get props => [
+    stepIndex,
+    checkpoint,
+    outcome,
+    snapshot,
+    difference,
+  ];
 }
 
 /// One scenario's result.
@@ -71,18 +91,40 @@ class ScenarioResult extends Equatable {
   /// The index of the first step the driver could not perform, or `null`.
   final int? unsupportedStepIndex;
 
+  /// The listed difference when the whole scenario differs on purpose; it
+  /// was then not replayed at all.
+  final IntendedDifference? difference;
+
   const ScenarioResult({
     required this.scenario,
     required this.checkpoints,
     this.unsupportedStepIndex,
+    this.difference,
   });
 
   /// The scenario passes when every step was performed and no evaluated
   /// checkpoint failed. Unported checkpoints do not fail it — they are
-  /// reported, since a pass that skipped them is a smaller claim.
+  /// reported, since a pass that skipped them is a smaller claim. Neither
+  /// do intended differences: those are the decided answers.
   bool get passed =>
+      difference == null &&
       unsupportedStepIndex == null &&
       checkpoints.every((c) => c.outcome != CheckpointOutcome.failed);
+
+  /// Whether the whole scenario is a listed difference.
+  bool get differsOnPurpose => difference != null;
+
+  /// The checkpoints that differ on purpose.
+  List<CheckpointResult> get intendedCheckpoints => [
+    for (final c in checkpoints)
+      if (c.outcome == CheckpointOutcome.intended) c,
+  ];
+
+  /// The listed checkpoints that held anyway.
+  List<CheckpointResult> get staleCheckpoints => [
+    for (final c in checkpoints)
+      if (c.outcome == CheckpointOutcome.stale) c,
+  ];
 
   /// The first failed checkpoint, or `null`.
   CheckpointResult? get firstFailure {
@@ -97,18 +139,36 @@ class ScenarioResult extends Equatable {
       checkpoints.where((c) => c.outcome == CheckpointOutcome.unported).length;
 
   @override
-  List<Object?> get props => [scenario, checkpoints, unsupportedStepIndex];
+  List<Object?> get props => [
+    scenario,
+    checkpoints,
+    unsupportedStepIndex,
+    difference,
+  ];
 }
 
 /// Replays one scenario: performs each step, evaluates each checkpoint
 /// against the driver's snapshot, and stops at the first failure or at the
 /// first step the driver cannot perform — everything after either is a
 /// screen the prototype never showed.
+///
+/// A checkpoint listed in [intended] does not stop the replay when it fails:
+/// the Dart answer is the decided one, and the result says why. A scenario
+/// listed whole is not replayed.
 Future<ScenarioResult> runScenario(
   Scenario scenario,
   ScenarioDriver driver, {
   int baseHistory = 0,
+  IntendedDifferences intended = IntendedDifferences.none,
 }) async {
+  final whole = intended.forScenario(scenario.id);
+  if (whole != null) {
+    return ScenarioResult(
+      scenario: scenario,
+      checkpoints: const [],
+      difference: whole,
+    );
+  }
   await driver.reset();
   final results = <CheckpointResult>[];
   int? unsupported;
@@ -144,15 +204,23 @@ Future<ScenarioResult> runScenario(
     }
     final snapshot = driver.snapshot();
     final passed = step.check.holds(snapshot, baseHistory: baseHistory);
+    final listed = intended.forCheckpoint(scenario.id, step.description);
+    final outcome = switch ((passed, listed)) {
+      (true, null) => CheckpointOutcome.passed,
+      (false, null) => CheckpointOutcome.failed,
+      (true, _) => CheckpointOutcome.stale,
+      (false, _) => CheckpointOutcome.intended,
+    };
     results.add(
       CheckpointResult(
         stepIndex: index,
         checkpoint: step,
-        outcome: passed ? CheckpointOutcome.passed : CheckpointOutcome.failed,
+        outcome: outcome,
         snapshot: snapshot,
+        difference: listed,
       ),
     );
-    if (!passed) stopped = true;
+    if (outcome == CheckpointOutcome.failed) stopped = true;
   }
   return ScenarioResult(
     scenario: scenario,
@@ -179,7 +247,21 @@ class ReplayReport {
   /// How many scenarios there are.
   int get total => results.length;
 
-  /// The score line: "Golden replay: 12/134 scenarios pass (…)".
+  /// How many scenarios differ on purpose, as whole scenarios.
+  int get differing => results.where((r) => r.differsOnPurpose).length;
+
+  /// How many checkpoints differ on purpose.
+  int get intendedCheckpoints =>
+      results.fold(0, (sum, r) => sum + r.intendedCheckpoints.length);
+
+  /// The listed checkpoints that held: entries the list no longer needs.
+  List<(ScenarioResult, CheckpointResult)> get stale => [
+    for (final r in results)
+      for (final c in r.staleCheckpoints) (r, c),
+  ];
+
+  /// The score line: "Golden replay: 12/134 scenarios pass (…)". The gate
+  /// in `run_golden_replay.sh` passes when pass + differ on purpose = total.
   String get scoreLine {
     final failed = results.where((r) => r.firstFailure != null).length;
     final unsupported = results
@@ -188,25 +270,60 @@ class ReplayReport {
     final unported = results.fold(0, (sum, r) => sum + r.unported);
     return '$scorePrefix $passed/$total scenarios pass '
         '($failed failed a checkpoint, $unsupported hit an unsupported step, '
-        '$unported checkpoints unported)';
+        '$unported checkpoints unported, $differing differ on purpose, '
+        '$intendedCheckpoints checkpoints differ on purpose)';
   }
 
-  /// The score line followed by a diff for each scenario that did not pass:
-  /// the scenario, the step, what the prototype asked and what the screen
-  /// showed.
+  /// The prefix of the line that names a stale list entry, which the CI
+  /// script also looks for.
+  static const String stalePrefix = 'Golden replay: stale intended difference:';
+
+  /// The score line, one line per stale list entry, then a diff for each
+  /// scenario that did not pass (the scenario, the step, what the prototype
+  /// asked and what the screen showed) and the reason for each intended
+  /// difference.
   @override
   String toString() {
     final lines = [scoreLine];
+    for (final (result, checkpoint) in stale) {
+      lines.add(
+        '$stalePrefix ${result.scenario.id} '
+        '"${checkpoint.checkpoint.description}" holds; remove it from the list',
+      );
+    }
     for (final result in results.where((r) => !r.passed)) {
       lines.add('');
       lines.addAll(describeFailure(result));
     }
+    for (final result in results.where((r) => r.passed)) {
+      for (final checkpoint in result.intendedCheckpoints) {
+        lines.add('');
+        lines.addAll(describeIntended(result, checkpoint));
+      }
+    }
     return lines.join('\n');
   }
+
+  /// The reason one checkpoint differs on purpose.
+  static List<String> describeIntended(
+    ScenarioResult result,
+    CheckpointResult checkpoint,
+  ) => [
+    '${result.scenario.id} ${result.scenario.name} — DIFFERS ON PURPOSE at '
+        'step ${checkpoint.stepIndex + 1} '
+        '"${checkpoint.checkpoint.description}"',
+    '  reason:   ${checkpoint.difference?.reason}',
+  ];
 
   /// The readable diff of one scenario that did not pass.
   static List<String> describeFailure(ScenarioResult result) {
     final scenario = result.scenario;
+    if (result.difference case final difference?) {
+      return [
+        '${scenario.id} ${scenario.name} — DIFFERS ON PURPOSE',
+        '  reason:   ${difference.reason}',
+      ];
+    }
     final failure = result.firstFailure;
     if (failure != null) {
       final snapshot = failure.snapshot ?? const Snapshot();
