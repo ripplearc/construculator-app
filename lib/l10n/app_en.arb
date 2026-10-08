@@ -2605,6 +2605,44 @@
   "@yourRatesSaveFailedError": {
     "description": "Error line under the Rate/Amount field when saving to Your rates fails for a reason other than a label collision (storyboard CUJ 6, frame Rate not saved); the 'Save as my default' link stays"
   },
+  "yourRatesRecentsTitle": "Add equipment",
+  "@yourRatesRecentsTitle": {
+    "description": "Title of the 'Your recents' sheet opened by the Equipment tab's '+ Add equipment cost' button, before the cost-entry form itself (Figma node 66342:177929)"
+  },
+  "yourRatesRecentsSectionHeading": "Recent — tap to reuse",
+  "@yourRatesRecentsSectionHeading": {
+    "description": "Section heading above the list of recently-saved equipment rates in the 'Your recents' sheet"
+  },
+  "yourRatesUsedToday": "Used today",
+  "@yourRatesUsedToday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved earlier today"
+  },
+  "yourRatesUsedYesterday": "Used yesterday",
+  "@yourRatesUsedYesterday": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved yesterday, by calendar day"
+  },
+  "yourRatesUsedDaysAgo": "{count, plural, one{Used {count} day ago} other{Used {count} days ago}}",
+  "@yourRatesUsedDaysAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved two to six calendar days ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesUsedWeeksAgo": "{count, plural, =1{Used last week} other{Used {count} weeks ago}}",
+  "@yourRatesUsedWeeksAgo": {
+    "description": "Recency subtitle on a 'Your recents' row for a rate saved a week or more ago; count is whole weeks, so one reads 'last week'",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yourRatesNewEquipmentCostAction": "New equipment cost",
+  "@yourRatesNewEquipmentCostAction": {
+    "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"
+  },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {
     "description": "Label for the optional note field inside the expanded delivery-fee editor (manually mode)"
