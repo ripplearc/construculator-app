@@ -1832,18 +1832,8 @@ void main() {
         await tester.enterText(find.byKey(const Key('rate_field')), '150');
         await tester.pump();
 
-        // A freshly typed rate is RateStatus.ownRateUnconfirmed, not
-        // ownRateConfirmed (see EquipmentCostFormBloc's rate-update
-        // handler) — the badge only renders for ownRateConfirmed/
-        // sampleRateUnverified, so neither badge variant shows here.
         expect(find.byKey(const Key('rate_status_badge')), findsNothing);
         expect(find.text(l10n.equipmentRateStatusYourRateBadge), findsNothing);
-        // "Save as my rate" shows for any non-missing rate (CA-1151), not
-        // just an unverified sample rate — including one already confirmed.
-        // This link never sets an entryLabel, so per
-        // YourRatesRepository.save's collision rule, saving into a name and
-        // basis that already has a row opens the label dialog instead of
-        // replacing the saved price.
         expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
       },
     );
@@ -1968,6 +1958,33 @@ void main() {
       expect(find.text('145'), findsOneWidget);
     });
 
+    testWidgets('picking a Your-rates entry keeps the name already typed', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Mini excavator — 1.5 ton',
+        amount: 145,
+        method: EquipmentPricingMethod.day,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'mini excavator 1.5t',
+      );
+
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mini excavator — 1.5 ton'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('mini excavator 1.5t'), findsOneWidget);
+      expect(find.text('Mini excavator — 1.5 ton'), findsNothing);
+      expect(find.text('145'), findsOneWidget);
+    });
+
     testWidgets(
       'picking a fractional-amount entry keeps the decimal, unlike a whole number',
       (tester) async {
@@ -2006,6 +2023,319 @@ void main() {
 
       expect(find.text('Dumpster'), findsNothing);
       expect(find.byKey(const Key('your_rates_empty_state')), findsOneWidget);
+    });
+  });
+
+  // CA-1146: CUJ 6 Sub-flows B (saved day rate), C (saved job price) and D
+  // (switching methods, including on a recalled line).
+  group('EquipmentCostFormFields — recalled rate (Sub-flows B, C, D)', () {
+    Future<YourRateEntry> seedRate({
+      required String itemName,
+      required double amount,
+      required EquipmentPricingMethod method,
+    }) async {
+      final repository = Modular.get<YourRatesRepository>();
+      final saveResult = await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: itemName,
+          category: CostItemType.equipment,
+          rate: Money(amount: amount),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: method,
+        ),
+      );
+      saveResult.fold((f) => throw StateError('seed save failed: $f'), (_) {});
+      final searchResult = await repository.search(
+        itemName,
+        category: CostItemType.equipment,
+      );
+      return searchResult.fold(
+        (_) => throw StateError('seed search failed'),
+        (entries) => entries.firstWhere((e) => e.itemName == itemName),
+      );
+    }
+
+    Future<void> recallRate(WidgetTester tester, String itemName) async {
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(itemName));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    bool textFieldReadOnly(WidgetTester tester, Key fieldKey) {
+      return tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(fieldKey),
+              matching: find.byType(TextField),
+            ),
+          )
+          .readOnly;
+    }
+
+    group('Sub-flow B: saved day rate', () {
+      testWidgets(
+        'Rate and Duration stay editable, with no tag and no "Save as my '
+        'rate" link or helper text',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          await tester.pumpWidget(makeWidget());
+          await tester.pumpAndSettle();
+
+          await recallRate(tester, 'Scissor lift');
+
+          expect(textFieldReadOnly(tester, const Key('rate_field')), isFalse);
+          expect(
+            textFieldReadOnly(tester, const Key('duration_field')),
+            isFalse,
+          );
+          expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+          expect(
+            find.byKey(const Key('save_as_my_rate_helper_text')),
+            findsNothing,
+          );
+          expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+        },
+      );
+
+      testWidgets('clearing the recalled Rate brings the look-up button back', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await recallRate(tester, 'Scissor lift');
+        expect(find.byKey(const Key('lookup_rate_button')), findsNothing);
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '');
+        await tester.pump();
+
+        expect(find.byKey(const Key('lookup_rate_button')), findsOneWidget);
+      });
+
+      testWidgets('typing over the recalled Rate replaces its value', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await recallRate(tester, 'Scissor lift');
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '999');
+        await tester.pump();
+
+        expect(find.text('999'), findsOneWidget);
+        expect(find.text('145'), findsNothing);
+      });
+
+      testWidgets(
+        'delivery is still offered and stays unpriced after recalling a day '
+        'rate',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          await tester.pumpWidget(makeWidget());
+          await tester.pumpAndSettle();
+
+          await recallRate(tester, 'Scissor lift');
+
+          expect(find.byKey(const Key('delivery_fee_row')), findsOneWidget);
+          expect(find.text(deliveryRowText()), findsOneWidget);
+        },
+      );
+
+      testWidgets('Add to estimate stays disabled until Duration is entered', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        var saveEnabled = true;
+        await tester.pumpWidget(
+          makeWidget(onSaveEnabledChanged: (enabled) => saveEnabled = enabled),
+        );
+        await tester.pumpAndSettle();
+
+        await recallRate(tester, 'Scissor lift');
+        expect(saveEnabled, isFalse);
+
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        expect(saveEnabled, isTrue);
+      });
+    });
+
+    group('Sub-flow C: saved job price', () {
+      testWidgets(
+        'Amount arrives filled, Add is active on arrival, and the Amount '
+        'field stays editable',
+        (tester) async {
+          await seedRate(
+            itemName: 'Dumpster',
+            amount: 400,
+            method: EquipmentPricingMethod.job,
+          );
+          var saveEnabled = false;
+          await tester.pumpWidget(
+            makeWidget(
+              onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('job_method_chip')));
+          await tester.pump();
+
+          await recallRate(tester, 'Dumpster');
+
+          // A confirmation, not a form: nothing else to fill in before Add
+          // is available.
+          expect(saveEnabled, isTrue);
+          expect(textFieldReadOnly(tester, const Key('amount_field')), isFalse);
+
+          await tester.enterText(find.byKey(const Key('amount_field')), '450');
+          await tester.pump();
+          expect(find.text('450'), findsOneWidget);
+        },
+      );
+
+      testWidgets('no rate tag on a job price reused from Your rates', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pump();
+
+        await recallRate(tester, 'Dumpster');
+
+        expect(find.byKey(const Key('rate_status_badge')), findsNothing);
+      });
+
+      testWidgets(
+        'the line total is the job amount alone — no quantity or per-unit '
+        'rate multiplier',
+        (tester) async {
+          await seedRate(
+            itemName: 'Dumpster',
+            amount: 400,
+            method: EquipmentPricingMethod.job,
+          );
+          double? total;
+          await tester.pumpWidget(
+            makeWidget(onTotalChanged: (value) => total = value),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('job_method_chip')));
+          await tester.pump();
+
+          await recallRate(tester, 'Dumpster');
+
+          expect(total, 400.0);
+        },
+      );
+    });
+
+    group('Sub-flow D: switching methods on a recalled line', () {
+      testWidgets(
+        'switching from a recalled \$145/day rate to Job never shows a '
+        'derived amount, and preserves equipment name, delivery and note',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          await tester.pumpWidget(makeWidget());
+          await tester.pumpAndSettle();
+          await recallRate(tester, 'Scissor lift');
+          await expandDeliveryField(tester);
+          await tester.enterText(
+            find.byKey(const Key('delivery_note_field')),
+            'Bring the ramps',
+          );
+          // Focusing the note field can auto-scroll the sheet's
+          // SingleChildScrollView to keep it visible; settle that before
+          // tapping the chip so its on-screen offset is stable.
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('job_method_chip')));
+          await tester.pump();
+
+          // Never "4 x $145.00" or "$580.00" — the Amount field starts
+          // blank, a separate catalog entry from the Day rate.
+          expect(find.text('580'), findsNothing);
+          expect(find.text('145'), findsNothing);
+          final amountField = tester.widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('amount_field')),
+              matching: find.byType(TextField),
+            ),
+          );
+          expect(amountField.controller!.text, isEmpty);
+          // Equipment name, delivery row and note all preserved.
+          expect(find.text('Scissor lift'), findsOneWidget);
+          expect(find.text('Bring the ramps'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'switching back to Day after recalling a day rate restores the rate as '
+        'confirmed, still editable, with no save link',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          await tester.pumpWidget(makeWidget());
+          await tester.pumpAndSettle();
+          await recallRate(tester, 'Scissor lift');
+
+          await tester.tap(find.byKey(const Key('job_method_chip')));
+          await tester.pump();
+          await tester.tap(find.byKey(const Key('day_method_chip')));
+          await tester.pump();
+
+          expect(find.text('145'), findsOneWidget);
+          expect(textFieldReadOnly(tester, const Key('rate_field')), isFalse);
+          expect(
+            find.text(l10n.equipmentRateStatusYourRateBadge),
+            findsNothing,
+          );
+          expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+          expect(
+            find.byKey(const Key('save_as_my_rate_helper_text')),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 

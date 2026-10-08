@@ -69,6 +69,44 @@ void main() {
       },
     );
 
+    testWidgets('a11y: a recalled rate field meets text contrast guidelines', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      final repository = Modular.get<YourRatesRepository>();
+      await repository.save(
+        YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 145),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        ),
+      );
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('rate_field')),
+        checkTapTargetSize: false,
+        checkLabeledTapTarget: false,
+        setupAfterPump: (tester) async {
+          final lookupButton = find.byKey(const Key('lookup_rate_button'));
+          if (lookupButton.evaluate().isNotEmpty) {
+            await tester.tap(lookupButton);
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Backhoe'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.byKey(const Key('your_rates_use_button')));
+            await tester.pumpAndSettle();
+          }
+          expect(find.text('145'), findsOneWidget);
+        },
+      );
+    });
+
     testWidgets(
       'a11y: Day/Job toggle chips meet tap target and label guidelines in both themes',
       (tester) async {
@@ -209,7 +247,10 @@ void main() {
       // reuses the same widget State across both pumps (see the
       // delivery-fee Confirm-link test above), so the dialog opened on the
       // first theme may still be showing on the second — only open it once.
-      if (find.byKey(const Key('entry_label_dialog_title')).evaluate().isNotEmpty) {
+      if (find
+          .byKey(const Key('entry_label_dialog_title'))
+          .evaluate()
+          .isNotEmpty) {
         return;
       }
       final repository = Modular.get<YourRatesRepository>();
