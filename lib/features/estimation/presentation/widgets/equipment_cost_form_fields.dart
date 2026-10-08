@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
@@ -25,15 +26,22 @@ class EquipmentCostFormFields extends StatefulWidget {
 
 class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _equipmentNameController = TextEditingController();
-  final _unitPriceController = TextEditingController();
   final _quantityController = TextEditingController();
+  final _durationController = TextEditingController();
+  final _dailyRateController = TextEditingController();
+  final _jobAmountController = TextEditingController();
+
+  final _daySelected = ValueNotifier<bool>(true);
+  final _jobSelected = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
-    _equipmentNameController.addListener(_notifySaveEnabled);
-    _unitPriceController.addListener(_notifyTotal);
+    _equipmentNameController.addListener(_onEquipmentNameChanged);
     _quantityController.addListener(_notifyTotal);
+    _durationController.addListener(_onDurationChanged);
+    _dailyRateController.addListener(_onDailyRateChanged);
+    _jobAmountController.addListener(_onJobAmountChanged);
   }
 
   @override
@@ -43,7 +51,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
-        _notifySaveEnabled();
+        if (widget.fromCostFile) {
+          widget.onSaveEnabledChanged?.call(false);
+        } else {
+          _onEquipmentNameChanged();
+        }
       });
     }
   }
@@ -51,35 +63,114 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   @override
   void dispose() {
     _equipmentNameController.dispose();
-    _unitPriceController.dispose();
     _quantityController.dispose();
+    _durationController.dispose();
+    _dailyRateController.dispose();
+    _jobAmountController.dispose();
+    _daySelected.dispose();
+    _jobSelected.dispose();
     super.dispose();
   }
 
-  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal https://ripplearc.youtrack.cloud/issue/CA-800
-  void _notifySaveEnabled() {
-    if (widget.fromCostFile) {
-      widget.onSaveEnabledChanged?.call(false);
-      return;
-    }
-    final value = _equipmentNameController.text;
-    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
-    context
-        .read<EquipmentCostFormBloc>()
-        .add(EquipmentCostItemTypeChanged(value));
+  void _onEquipmentNameChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentCostItemTypeChanged(_equipmentNameController.text),
+    );
   }
 
-  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
+  void _onDurationChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentDurationUpdatedEvent(_durationController.text),
+    );
+  }
+
+  void _onDailyRateChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentRateUpdatedEvent(_dailyRateController.text),
+    );
+  }
+
+  void _onJobAmountChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentRateUpdatedEvent(_jobAmountController.text),
+    );
+  }
+
+  void _selectMethod(EquipmentPricingMethod tapped) {
+    _daySelected.value = false;
+    _jobSelected.value = false;
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentMethodSwitchedEvent(tapped),
+    );
+  }
+
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
+    }
+  }
+
+  void _mirrorMethodIntoChips(EquipmentPricingMethod method) {
+    _daySelected.value = method == EquipmentPricingMethod.day;
+    _jobSelected.value = method == EquipmentPricingMethod.job;
+  }
+
+  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
+  void _notifyTotalFromData(EquipmentCostFormData data) {
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final hasFieldError = isDay
+        ? data.fieldErrors.containsKey(EquipmentFormField.duration) ||
+              data.fieldErrors.containsKey(EquipmentFormField.dailyRate)
+        : data.fieldErrors.containsKey(EquipmentFormField.jobAmount);
+    if (hasFieldError) {
+      widget.onTotalChanged?.call(0);
       return;
     }
-    final rawPrice = double.tryParse(_unitPriceController.text) ?? 0;
-    final rawQty = double.tryParse(_quantityController.text) ?? 0;
-    final price = rawPrice.isFinite ? rawPrice : 0.0;
-    final qty = rawQty.isFinite ? rawQty : 0.0;
-    widget.onTotalChanged?.call(price * qty);
+    final total = isDay
+        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
+        : data.jobAmount ?? 0;
+    widget.onTotalChanged?.call(total);
+  }
+
+  EquipmentCostFormData _dataOf(EquipmentCostFormState state) =>
+      switch (state) {
+        EquipmentCostFormEditing(:final data) => data,
+        EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
+        EquipmentCostFormSubmitting(:final data) => data,
+        EquipmentCostFormSuccess(:final data) => data,
+        EquipmentCostFormFailure(:final data) => data,
+        EquipmentCostFormInitial() => const EquipmentCostFormData(),
+      };
+
+  List<String>? _errorList(String? text) => text == null ? null : [text];
+
+  String? _durationErrorText(BuildContext context, EquipmentCostFormData data) {
+    final l10n = context.l10n;
+    return switch (data.fieldErrors[EquipmentFormField.duration]) {
+      EquipmentFieldError.durationNotPositive =>
+        l10n.equipmentDurationNotPositiveError,
+      EquipmentFieldError.durationNotHalfDay =>
+        l10n.equipmentDurationNotHalfDayError,
+      EquipmentFieldError.durationTooLarge =>
+        l10n.equipmentDurationTooLargeError,
+      _ => null,
+    };
+  }
+
+  String? _rateErrorText(BuildContext context, EquipmentCostFormData data) {
+    final l10n = context.l10n;
+    return switch (data.fieldErrors[EquipmentFormField.dailyRate]) {
+      EquipmentFieldError.rateOutOfRange => l10n.equipmentRateOutOfRangeError,
+      _ => null,
+    };
+  }
+
+  String? _amountErrorText(BuildContext context, EquipmentCostFormData data) {
+    final l10n = context.l10n;
+    return switch (data.fieldErrors[EquipmentFormField.jobAmount]) {
+      EquipmentFieldError.rateOutOfRange => l10n.equipmentAmountOutOfRangeError,
+      _ => null,
+    };
   }
 
   @override
@@ -143,40 +234,91 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   List<Widget> _manuallyFields(BuildContext context) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
     return [
-      BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
+      BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
+        listener: (_, state) {
+          final data = _dataOf(state);
+          widget.onSaveEnabledChanged?.call(data.isValid);
+          _mirrorMethodIntoChips(data.method);
+          _notifyTotalFromData(data);
+        },
         builder: (_, state) {
-          final error =
-              state is EquipmentCostFormEditing ? state.itemTypeError : null;
-          return CoreTextField(
-            key: const Key('equipment_name_field'),
-            label: l10n.equipmentNameLabel,
-            controller: _equipmentNameController,
-            errorTextList:
-                error != null ? [l10n.equipmentNameRequiredError] : null,
+          final data = _dataOf(state);
+          final isDay = data.method == EquipmentPricingMethod.day;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CoreTextField(
+                key: const Key('equipment_name_field'),
+                label: l10n.equipmentNameLabel,
+                controller: _equipmentNameController,
+              ),
+              const SizedBox(height: CoreSpacing.space5),
+              Text(
+                l10n.equipmentBasisLabel,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space1),
+              Row(
+                children: [
+                  CoreChip(
+                    key: const Key('day_method_chip'),
+                    label: l10n.equipmentDayMethodLabel,
+                    selected: _daySelected,
+                    onTap: () => _selectMethod(EquipmentPricingMethod.day),
+                  ),
+                  const SizedBox(width: CoreSpacing.space2),
+                  CoreChip(
+                    key: const Key('job_method_chip'),
+                    label: l10n.equipmentJobMethodLabel,
+                    selected: _jobSelected,
+                    onTap: () => _selectMethod(EquipmentPricingMethod.job),
+                  ),
+                ],
+              ),
+              const SizedBox(height: CoreSpacing.space5),
+              if (isDay) ...[
+                CoreTextField(
+                  key: const Key('duration_field'),
+                  label: l10n.equipmentDurationLabel,
+                  controller: _durationController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  suffix: Text(
+                    l10n.equipmentDurationSuffix,
+                    style: textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
+                  ),
+                  errorTextList: _errorList(_durationErrorText(context, data)),
+                ),
+                const SizedBox(height: CoreSpacing.space5),
+                CoreTextField(
+                  key: const Key('rate_field'),
+                  label: l10n.equipmentRateLabel,
+                  controller: _dailyRateController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  errorTextList: _errorList(_rateErrorText(context, data)),
+                ),
+              ] else
+                CoreTextField(
+                  key: const Key('amount_field'),
+                  label: l10n.equipmentAmountLabel,
+                  controller: _jobAmountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  errorTextList: _errorList(_amountErrorText(context, data)),
+                ),
+            ],
           );
         },
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-1143] replace with the Day/Job pricing toggle (duration+rate
-      // vs. flat job amount) backed by EquipmentCostItem.pricingMethod. https://ripplearc.youtrack.cloud/issue/CA-1143
-      CoreTextField(
-        key: const Key('unit_price_field'),
-        label: l10n.unitPriceLabel,
-        controller: _unitPriceController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        suffix: CoreIconWidget(
-          icon: CoreIcons.dollar,
-          color: colorTheme.textHeadline,
-          size: 24,
-        ),
-      ),
-      const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('quantity_field'),
-        label: l10n.quantityLabel,
-        controller: _quantityController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
     ];
   }

@@ -1451,10 +1451,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentTypeLabel => 'Equipment type*';
 
   @override
-  String get equipmentNameLabel => 'Equipment name*';
+  String get equipmentNameLabel => 'Equipment';
 
   @override
-  String get unitPriceLabel => 'Unit price*';
+  String get equipmentDayMethodLabel => 'Day';
+
+  @override
+  String get equipmentJobMethodLabel => 'Job';
+
+  @override
+  String get equipmentBasisLabel => 'Basis';
+
+  @override
+  String get equipmentDurationLabel => 'Duration';
+
+  @override
+  String get equipmentDurationSuffix => 'days';
+
+  @override
+  String get equipmentRateLabel => 'Rate';
+
+  @override
+  String get equipmentAmountLabel => 'Amount';
 
   @override
   String get rateDayLabel => 'Rate/Day:';
@@ -1469,7 +1487,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labourTypeRequiredError => 'Labour type is required';
 
   @override
-  String get equipmentNameRequiredError => 'Equipment name is required';
+  String get equipmentDurationNotPositiveError =>
+      'Duration must be more than zero.';
+
+  @override
+  String get equipmentDurationNotHalfDayError => 'Use whole or half days.';
+
+  @override
+  String get equipmentDurationTooLargeError => 'Duration is too large.';
+
+  @override
+  String get equipmentRateOutOfRangeError =>
+      'Rate must be between \$0.01 and \$999,999.99';
+
+  @override
+  String get equipmentAmountOutOfRangeError =>
+      'Amount must be between \$0.01 and \$999,999.99';
 
   @override
   String get projectSettingsNavigationError =>
