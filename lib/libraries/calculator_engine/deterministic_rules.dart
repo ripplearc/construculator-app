@@ -29,7 +29,10 @@ enum DimensionKey {
   radius('Radius'),
 
   /// The number of sides of a regular polygon, a bare number.
-  sides('Sides');
+  sides('Sides'),
+
+  /// The chord of an arc; Run is read as the chord when no Chord is named.
+  chord('Chord');
 
   /// The chip key the function key writes.
   final String id;
@@ -89,7 +92,12 @@ final class Answer extends Equatable {
 /// polygon instead, measured across the corners: area, side length,
 /// perimeter and corner angle (BuildCalc p129: 12ft and 6 sides is the
 /// gazebo floor), and [polygonArea] recomputes the area for the Across
-/// pill.
+/// pill. A chord and a segment height — Chord and Rise, or Run and Rise,
+/// with Rise read as the height — give the arc (BuildCalc [Arc] p13):
+/// radius R = (c² ÷ 8h) + h ÷ 2, central angle 2 asin(c ÷ 2R), taken as
+/// the major arc when the height exceeds half the chord, and arc length
+/// R × angle. Entered as Run and Rise the triangle's Diagonal comes first
+/// and the arc follows; which one leads the strip is the arbiter's.
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
 /// length read was metric, feet otherwise; an area or a volume follows the
@@ -139,6 +147,18 @@ class DeterministicRules extends Equatable {
   /// The fewest sides a regular polygon can have.
   static const int fewestSides = 3;
 
+  /// The label of an arc's central angle.
+  static const String arcAngleKey = 'Arc angle';
+
+  /// The label of an arc's radius.
+  static const String arcRadiusKey = 'Arc radius';
+
+  /// The label of an arc's length.
+  static const String arcLengthKey = 'Arc length';
+
+  /// Degrees in a full turn.
+  static const int fullTurn = 360;
+
   const DeterministicRules();
 
   /// The answers [namedValues] earn, in the order the strip offers them;
@@ -155,6 +175,7 @@ class DeterministicRules extends Equatable {
       ..._box(lengths, unit),
       ..._rectangle(lengths, unit),
       ..._rightTriangle(lengths, unit),
+      ..._arc(lengths, unit),
       ..._shape(lengths, _sidesOf(namedValues), unit),
     ];
   }
@@ -179,6 +200,36 @@ class DeterministicRules extends Equatable {
       0.5 * sides * cornerRadius * cornerRadius * math.sin(2 * math.pi / sides),
       unit: unit,
     );
+  }
+
+  List<Answer> _arc(Map<DimensionKey, Length> lengths, Unit unit) {
+    final chordKey = lengths.containsKey(DimensionKey.chord)
+        ? DimensionKey.chord
+        : DimensionKey.run;
+    final chord = lengths[chordKey];
+    final height = lengths[DimensionKey.rise];
+    if (chord == null || height == null) return const [];
+    if (chord.ticks <= 0 || height.ticks <= 0) return const [];
+    final c = chord.ticks.toDouble();
+    final h = height.ticks.toDouble();
+    final radius = (h * h + c * c / 4) / (2 * h);
+    final minorAngle =
+        2 * math.asin(math.min(1, c / (2 * radius))) * 180 / math.pi;
+    final angle = h > c / 2 ? fullTurn - minorAngle : minorAngle;
+    final sources = [chordKey.id, DimensionKey.rise.id];
+    return [
+      Answer(key: arcAngleKey, value: Angle(angle), sources: sources),
+      Answer(
+        key: arcRadiusKey,
+        value: Length(_wholeTicks(radius), unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: arcLengthKey,
+        value: Length(_wholeTicks(radius * angle * math.pi / 180), unit: unit),
+        sources: sources,
+      ),
+    ];
   }
 
   int? _sidesOf(Map<String, Quantity> namedValues) {
