@@ -5,13 +5,14 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// A fake implementation of [AuthNotifier] for testing purposes
+/// A fake implementation of [AuthNotifier] for testing purposes.
+///
+/// Records what it emits itself rather than through a listener of its own,
+/// so [hasAuthStateListeners] and [hasUserProfileListeners] report the
+/// code under test alone.
 class FakeAuthNotifier
     implements AuthNotifier, AuthNotifierController, Disposable {
-  /// The controller for auth state changes
   final _authStateController = StreamController<AuthState>.broadcast();
-
-  /// The controller for user profile changes
   final _userProfileController = StreamController<User?>.broadcast();
 
   /// The list of auth state changes
@@ -20,15 +21,13 @@ class FakeAuthNotifier
   /// The list of user profile changes
   final List<User?> userProfileChangedEvents = [];
 
-  /// Creates a new [FakeAuthNotifier]
-  FakeAuthNotifier() {
-    _authStateController.stream.listen(
-      (state) => stateChangedEvents.add(state),
-    );
-    _userProfileController.stream.listen(
-      (user) => userProfileChangedEvents.add(user),
-    );
-  }
+  /// Whether anything still listens to [onAuthStateChanged]; false once
+  /// every listener has cancelled, as a disposed consumer must.
+  bool get hasAuthStateListeners => _authStateController.hasListener;
+
+  /// Whether anything still listens to [onUserProfileChanged]; false once
+  /// every listener has cancelled, as a disposed consumer must.
+  bool get hasUserProfileListeners => _userProfileController.hasListener;
 
   @override
   Stream<AuthState> get onAuthStateChanged => _authStateController.stream;
@@ -38,11 +37,13 @@ class FakeAuthNotifier
 
   @override
   void emitAuthStateChanged(AuthState state) {
+    stateChangedEvents.add(state);
     _authStateController.add(state);
   }
 
   @override
   void emitUserProfileChanged(User? user) {
+    userProfileChangedEvents.add(user);
     _userProfileController.add(user);
   }
 
