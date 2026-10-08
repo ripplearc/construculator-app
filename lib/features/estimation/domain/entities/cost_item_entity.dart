@@ -755,3 +755,107 @@ class EquipmentCostItem extends CostItem {
     );
   }
 }
+
+/// A contractor's own saved rate for an item, scoped to their company.
+///
+/// Distinct from [CostItem] (a line item within one estimation): a
+/// [YourRateEntry] is a reusable personal rate-book entry, looked up across
+/// estimations rather than tied to a single one. Multiple entries can share
+/// the same [companyId]/[category]/[itemName] grouping, distinguished by
+/// [entryLabel] — see `YourRatesRepository.save` for the exact collision
+/// rules that govern this.
+class YourRateEntry extends Equatable {
+  /// Unique identifier for this rate entry; server-generated.
+  final String id;
+
+  /// The company this rate entry belongs to.
+  ///
+  /// RLS limits the rows a caller can read to the companies they belong to,
+  /// so a caller in more than one company reads the rows of all of them.
+  /// For writes, the backend checks this value against the caller's actual
+  /// company membership.
+  final String companyId;
+
+  /// Display name of the item this rate is for.
+  final String itemName;
+
+  /// The type category of this rate entry.
+  final CostItemType category;
+
+  /// The saved rate amount and currency.
+  final Money rate;
+
+  /// Unit of measurement for this rate, when applicable.
+  final Unit? unit;
+
+  /// When this rate was saved, as supplied by the client — not defaulted
+  /// server-side.
+  final DateTime savedAt;
+
+  /// Pricing method this rate applies to, for equipment rates: by the day or
+  /// by the job. Null for non-equipment categories.
+  final EquipmentPricingMethod? equipmentMethod;
+
+  /// Optional label distinguishing this entry from others in the same
+  /// [companyId]/[category]/[itemName]/[equipmentMethod] grouping (e.g.
+  /// "Supplier A" vs "Supplier B").
+  final String? entryLabel;
+
+  const YourRateEntry({
+    required this.id,
+    required this.companyId,
+    required this.itemName,
+    required this.category,
+    required this.rate,
+    required this.savedAt,
+    this.unit,
+    this.equipmentMethod,
+    this.entryLabel,
+  });
+
+  @override
+  List<Object?> get props => [
+    id,
+    companyId,
+    itemName,
+    category,
+    rate,
+    unit,
+    savedAt,
+    equipmentMethod,
+    entryLabel,
+  ];
+
+  /// Creates a copy of this [YourRateEntry] with the given fields replaced.
+  ///
+  /// To explicitly clear a nullable field, pass [clearField] as the value.
+  /// Omitting a parameter preserves the current value.
+  YourRateEntry copyWith({
+    String? id,
+    String? companyId,
+    String? itemName,
+    CostItemType? category,
+    Money? rate,
+    Object? unit,
+    DateTime? savedAt,
+    Object? equipmentMethod,
+    Object? entryLabel,
+  }) {
+    return YourRateEntry(
+      id: id ?? this.id,
+      companyId: companyId ?? this.companyId,
+      itemName: itemName ?? this.itemName,
+      category: category ?? this.category,
+      rate: rate ?? this.rate,
+      unit: unit == clearField ? null : (unit as Unit?) ?? this.unit,
+      savedAt: savedAt ?? this.savedAt,
+      equipmentMethod: equipmentMethod == clearField
+          ? null
+          : (equipmentMethod as EquipmentPricingMethod?) ??
+                this.equipmentMethod,
+      entryLabel: entryLabel == clearField
+          ? null
+          : (entryLabel as String?) ?? this.entryLabel,
+    );
+  }
+}
