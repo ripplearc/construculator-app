@@ -2376,6 +2376,108 @@
   "@equipmentAmountOutOfRangeError": {
     "description": "Validation error shown below the amount field, on blur, when a typed value is outside the accepted bound (Job pricing, manually mode)"
   },
+  "equipmentDeliveryRowLabel": "Delivery",
+  "@equipmentDeliveryRowLabel": {
+    "description": "Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)"
+  },
+  "equipmentDeliveryFeeUnsetText": "—",
+  "@equipmentDeliveryFeeUnsetText": {
+    "description": "Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value"
+  },
+  "equipmentDeliveryAddNoteLink": "Add note",
+  "@equipmentDeliveryAddNoteLink": {
+    "description": "Link in the delivery-fee row's header that opens the expanded editor focused on its optional Note field (manually mode)"
+  },
+  "equipmentDeliveryFeeOutsizedDialogTitle": "Delivery costs more than the machine",
+  "@equipmentDeliveryFeeOutsizedDialogTitle": {
+    "description": "Title of the confirmation dialog shown when a delivery fee entered exceeds this line's own computed base cost, matching the storyboard frame \"Delivery $8500\" verbatim."
+  },
+  "equipmentDeliveryFeeOutsizedDialogBody": "Delivery is {feeAmount} against {baseCostAmount} for the job. Add it anyway?",
+  "@equipmentDeliveryFeeOutsizedDialogBody": {
+    "description": "Body of the outsized delivery-fee confirmation dialog under Job pricing, where there's no duration to name; feeAmount and baseCostAmount are pre-formatted currency strings for this line.",
+    "placeholders": {
+      "feeAmount": {
+        "type": "String",
+        "example": "$8,500.00"
+      },
+      "baseCostAmount": {
+        "type": "String",
+        "example": "$85.00"
+      }
+    }
+  },
+  "equipmentDeliveryFeeOutsizedDialogBodyDay": "Delivery is {feeAmount} against {baseCostAmount} for {durationPhrase} of {equipmentType}. Add it anyway?",
+  "@equipmentDeliveryFeeOutsizedDialogBodyDay": {
+    "description": "Body of the outsized delivery-fee confirmation dialog under Day pricing, matching the storyboard frame \"Delivery $8500\" (e.g. \"Delivery is $8,500.00 against $580.00 for four days of excavator. Add it anyway?\"); feeAmount and baseCostAmount are pre-formatted currency strings, durationPhrase is the pre-formatted duration phrase (see equipmentDeliveryFeeOutsizedDialogOneDay/HalfDay/DurationDays), and equipmentType is the typed equipment name for this line.",
+    "placeholders": {
+      "feeAmount": {
+        "type": "String",
+        "example": "$8,500.00"
+      },
+      "baseCostAmount": {
+        "type": "String",
+        "example": "$580.00"
+      },
+      "durationPhrase": {
+        "type": "String",
+        "example": "four days"
+      },
+      "equipmentType": {
+        "type": "String",
+        "example": "excavator"
+      }
+    }
+  },
+  "equipmentDeliveryFeeOutsizedDialogOneDay": "one day",
+  "@equipmentDeliveryFeeOutsizedDialogOneDay": {
+    "description": "Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 1 (the storyboard calls out this case specially, as \"one day\")"
+  },
+  "equipmentDeliveryFeeOutsizedDialogHalfDay": "half a day",
+  "@equipmentDeliveryFeeOutsizedDialogHalfDay": {
+    "description": "Duration phrase used in the Day-pricing outsized-fee dialog body when the duration is exactly 0.5 (the storyboard calls out this case specially)"
+  },
+  "equipmentDeliveryFeeOutsizedDialogDurationDays": "{durationText, select, 2{two} 3{three} 4{four} 5{five} 6{six} 7{seven} 8{eight} 9{nine} 10{ten} other{{durationText}}} days",
+  "@equipmentDeliveryFeeOutsizedDialogDurationDays": {
+    "description": "Duration phrase used in the Day-pricing outsized-fee dialog body for any duration other than exactly 1 or 0.5; durationText is the pre-formatted duration count",
+    "placeholders": {
+      "durationText": {
+        "type": "String",
+        "example": "4"
+      }
+    }
+  },
+  "equipmentDeliveryFeeOutsizedDialogGenericItem": "this equipment",
+  "@equipmentDeliveryFeeOutsizedDialogGenericItem": {
+    "description": "Fallback noun used in the Day-pricing outsized-fee dialog body (equipmentDeliveryFeeOutsizedDialogBodyDay) when no equipment name has been typed yet"
+  },
+  "equipmentDeliveryFeeOutsizedDialogGoBack": "Go back",
+  "@equipmentDeliveryFeeOutsizedDialogGoBack": {
+    "description": "Secondary button on the outsized delivery-fee confirmation dialog; dismisses the dialog and returns focus to the delivery-fee field with its value selected, preserving what was typed"
+  },
+  "equipmentDeliveryFeeOutsizedDialogAddIt": "Add it",
+  "@equipmentDeliveryFeeOutsizedDialogAddIt": {
+    "description": "Primary button on the outsized delivery-fee confirmation dialog; proceeds and saves the fee as entered"
+  },
+  "equipmentRateStatusSampleRateBadge": "Sample rate",
+  "@equipmentRateStatusSampleRateBadge": {
+    "description": "Status badge next to the Rate/Amount field label when the value came from a generic sample/reference rate, not yet confirmed as the user's own (manually mode)"
+  },
+  "equipmentRateStatusYourRateBadge": "✓ Your rate",
+  "@equipmentRateStatusYourRateBadge": {
+    "description": "Status badge next to the Rate/Amount field label once the rate is confirmed as the user's own known rate (manually mode); the leading checkmark is a literal character per the Figma spec, not a rendered icon"
+  },
+  "equipmentSaveAsMyRateLink": "Save as my default",
+  "@equipmentSaveAsMyRateLink": {
+    "description": "Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode); currently a no-op pending YourRatesRepository wiring (CA-1151)"
+  },
+  "equipmentNoteLabel": "Note",
+  "@equipmentNoteLabel": {
+    "description": "Label for the optional note field inside the expanded delivery-fee editor (manually mode)"
+  },
+  "equipmentNotePlaceholder": "Add a note (optional)",
+  "@equipmentNotePlaceholder": {
+    "description": "Placeholder text for the optional note field inside the expanded delivery-fee editor (manually mode)"
+  },
   "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
   "@projectSettingsNavigationError": {
     "description": "Toast shown when navigation to project settings fails",

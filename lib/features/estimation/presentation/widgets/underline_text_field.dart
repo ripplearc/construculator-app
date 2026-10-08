@@ -20,11 +20,21 @@ class UnderlineTextField extends StatefulWidget {
   /// Controls and reads the value text.
   final TextEditingController controller;
 
-  /// Placeholder text shown in the value row while the field is empty.
+  /// Placeholder text shown in the value row, in the same disabled
+  /// weight/color as the empty-value text itself (`bodyLargeRegular` /
+  /// `textDisable`), while the controller is empty (e.g. the equipment name
+  /// field's "Name the equipment", or the Note field's "Add a note
+  /// (optional)"). Fields that don't pass this simply render nothing while
+  /// empty.
   final String? hintText;
 
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
+
+  /// Leading content at the start of the value row (e.g. the delivery-fee
+  /// field's "$" icon, which sits before the digits rather than after them)
+  /// — stays inline in the row, not inside a box.
+  final Widget? prefix;
 
   /// Trailing content at the end of the value row (e.g. the "days" suffix
   /// text or the "$" icon) — stays inline in the row, not inside a box.
@@ -33,6 +43,20 @@ class UnderlineTextField extends StatefulWidget {
   /// Hides [suffix] while the field is empty, so a unit word such as "days"
   /// does not repeat the placeholder text.
   final bool hideSuffixWhenEmpty;
+
+  /// Content shown at the end of the label row, beside [label] (e.g. the
+  /// Rate field's "Sample rate"/"✓ Your rate" status badge).
+  final Widget? labelTrailing;
+
+  /// Content right-aligned at the end of the value row, after [suffix]
+  /// (e.g. the Rate field's "Save as my rate" link).
+  final Widget? trailingAction;
+
+  /// External focus node, for callers that need to observe or drive focus
+  /// from outside (e.g. the delivery-fee editor folds back to its collapsed
+  /// summary row when this loses focus). Defaults to an internally owned
+  /// node when omitted.
+  final FocusNode? focusNode;
 
   /// Error messages shown below the rule. Only the first is rendered,
   /// matching [CoreTextField.errorTextList]'s icon + red text treatment.
@@ -57,8 +81,12 @@ class UnderlineTextField extends StatefulWidget {
     required this.controller,
     this.hintText,
     this.keyboardType,
+    this.prefix,
     this.suffix,
     this.hideSuffixWhenEmpty = false,
+    this.labelTrailing,
+    this.trailingAction,
+    this.focusNode,
     this.errorTextList,
     this.touched = false,
     this.onTouched,
@@ -72,13 +100,16 @@ const double _labelToValueGap = 3;
 const double _valueToRuleGap = 10;
 
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
-  final _focusNode = FocusNode();
+  late final FocusNode _focusNode;
   bool _wasFocused = false;
   late bool _touched = widget.touched;
+
+  bool get _ownsFocusNode => widget.focusNode == null;
 
   @override
   void initState() {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChange);
     widget.controller.addListener(_onTextChange);
   }
@@ -108,7 +139,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
     widget.controller.removeListener(_onTextChange);
-    _focusNode.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -117,6 +150,9 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final suffix = widget.suffix;
+    final prefix = widget.prefix;
+    final labelTrailing = widget.labelTrailing;
+    final trailingAction = widget.trailingAction;
     final errorTextList = widget.errorTextList;
     final visibleErrorText =
         _touched && errorTextList != null && errorTextList.isNotEmpty
@@ -156,16 +192,31 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              widget.label,
-              style: textTheme.bodySmallRegular.copyWith(
-                color: hasError ? colorTheme.statusError : colorTheme.textBody,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  widget.label,
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: hasError
+                        ? colorTheme.statusError
+                        : colorTheme.textBody,
+                  ),
+                ),
+                if (labelTrailing != null) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  labelTrailing,
+                ],
+              ],
             ),
             const SizedBox(height: _labelToValueGap),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (prefix != null) ...[
+                  prefix,
+                  const SizedBox(width: CoreSpacing.space2),
+                ],
                 if (suffix != null)
                   Flexible(child: IntrinsicWidth(child: textField))
                 else
@@ -174,6 +225,10 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                     !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
                   const SizedBox(width: CoreSpacing.space1),
                   suffix,
+                ],
+                if (trailingAction != null) ...[
+                  const SizedBox(width: CoreSpacing.space2),
+                  trailingAction,
                 ],
               ],
             ),
