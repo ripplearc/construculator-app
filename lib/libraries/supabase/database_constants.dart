@@ -177,6 +177,20 @@ class DatabaseConstants {
   /// Local-only PowerSync table of the named material densities.
   static const String calculatorDensitiesTable = 'calculator_densities';
 
+  /// Local-only PowerSync table of the remembered values the memory
+  /// drawers offer back, one row per value.
+  static const String calculatorRecentsTable = 'calculator_recents';
+
+  /// The drawer a remembered value sits in: a function key id, or the
+  /// shared angle drawer.
+  static const String drawerColumn = 'drawer';
+
+  /// A remembered value's dimension: a `Dimension` name.
+  static const String dimensionColumn = 'dimension';
+
+  /// A remembered value's magnitude in its dimension's canonical unit.
+  static const String magnitudeColumn = 'magnitude';
+
   /// Which size store a row belongs to: a `SizeStore` name.
   static const String storeColumn = 'store';
 
