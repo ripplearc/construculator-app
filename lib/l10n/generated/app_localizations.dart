@@ -3735,6 +3735,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fix the delivery fee to continue'**
   String get fixDeliveryFeeToContinueButton;
+
+  /// Toast shown after an equipment cost line is added; names the estimate it went into
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {estimateName}'**
+  String addedToEstimateToast(String estimateName);
 }
 
 class _AppLocalizationsDelegate

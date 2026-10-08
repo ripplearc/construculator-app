@@ -3068,5 +3068,16 @@
   "@fixDeliveryFeeToContinueButton": {
     "description": "Disabled submit button label while the delivery fee has an error. No Figma frame covers this case.",
     "context": "N/A"
+  },
+  "addedToEstimateToast": "Added to {estimateName}",
+  "@addedToEstimateToast": {
+    "description": "Toast shown after an equipment cost line is added; names the estimate it went into",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-158825",
+    "placeholders": {
+      "estimateName": {
+        "type": "String",
+        "example": "Bedroom 2"
+      }
+    }
   }
 }
