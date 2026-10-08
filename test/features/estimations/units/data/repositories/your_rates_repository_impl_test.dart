@@ -113,6 +113,7 @@ void main() {
           final result = await repository.search(
             '',
             category: CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.isRight(), true);
@@ -137,7 +138,7 @@ void main() {
             ),
           ]);
 
-          final result = await repository.search('');
+          final result = await repository.search('', companyId: testCompanyId);
 
           expect(result.isRight(), true);
           expect(result.getRightOrNull()!.length, 2);
@@ -156,6 +157,7 @@ void main() {
           final result = await repository.search(
             'exc',
             category: CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.isRight(), true);
@@ -177,6 +179,7 @@ void main() {
           final result = await repository.search(
             'MINI Excavator 1.5t',
             category: CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['r1']);
@@ -189,6 +192,7 @@ void main() {
         final result = await repository.search(
           '   ',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.getRightOrNull(), hasLength(2));
@@ -205,6 +209,7 @@ void main() {
           '',
           category: CostItemType.equipment,
           limit: 2,
+          companyId: testCompanyId,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -226,6 +231,7 @@ void main() {
             'excavator',
             category: CostItemType.equipment,
             limit: 1,
+            companyId: testCompanyId,
           );
 
           expect(result.getRightOrNull(), hasLength(2));
@@ -272,6 +278,7 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.isLeft(), true);
@@ -295,6 +302,7 @@ void main() {
           final result = await repository.getByItemName(
             'Excavator',
             CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.isRight(), true);
@@ -310,6 +318,7 @@ void main() {
           final result = await repository.getByItemName(
             '  MINI   Excavator ',
             CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.getRightOrNull()!.id, 'r1');
@@ -350,6 +359,7 @@ void main() {
         final result = await repository.getByItemName(
           'Excavator',
           CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.isRight(), true);
@@ -367,12 +377,51 @@ void main() {
           final result = await repository.getByItemName(
             'Excavator',
             CostItemType.equipment,
+            companyId: testCompanyId,
           );
 
           expect(result.isRight(), true);
           expect(result.getRightOrNull(), isNull);
         },
       );
+    });
+
+    group('a blank company id', () {
+      test('search returns a failure and reads nothing', () async {
+        final result = await repository.search('', companyId: '  ');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.permissionDenied,
+          ),
+        );
+        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+      });
+
+      test('getByItemName returns a failure and reads nothing', () async {
+        final result = await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: '',
+        );
+
+        expect(result.isLeft(), true);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+      });
+
+      test('save returns a failure and reads and writes nothing', () async {
+        final result = await repository.save(
+          buildEntry().copyWith(companyId: ''),
+        );
+
+        expect(result.isLeft(), true);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('selectMatch'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
     });
 
     group('save', () {

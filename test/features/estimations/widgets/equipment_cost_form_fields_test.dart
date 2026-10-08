@@ -9,7 +9,9 @@ import 'package:construculator/features/estimation/presentation/widgets/choice_c
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +43,15 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    // CurrentCompanyResolverImpl caches its result for the resolver's own
+    // lifetime, which outlives a single test here (it's a lazy singleton
+    // shared across this file's setUpAll'd Modular instance) — clear it so
+    // each test starts from a fresh, un-resolved session.
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
   });
 
   Widget makeWidget({
@@ -1892,6 +1903,7 @@ void main() {
       final searchResult = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return searchResult.fold(
         (_) => throw StateError('seed search failed'),
@@ -2058,6 +2070,7 @@ void main() {
       final searchResult = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return searchResult.fold(
         (_) => throw StateError('seed search failed'),
@@ -2075,6 +2088,7 @@ void main() {
       final entries = (await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       )).fold((_) => throw StateError('search failed'), (found) => found);
       final entry = entries.firstWhere((e) => e.itemName == itemName);
       await tester.pumpWidget(const SizedBox());
@@ -2386,7 +2400,7 @@ void main() {
       await repository.save(
         YourRateEntry(
           id: '',
-          companyId: '',
+          companyId: 'company-1',
           itemName: itemName,
           category: CostItemType.equipment,
           rate: Money(amount: amount),
@@ -2398,6 +2412,7 @@ void main() {
       final saved = await repository.search(
         itemName,
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       return saved.fold(
         (_) => throw StateError('seed search failed'),
@@ -2450,6 +2465,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.length), 1);
       expect(saved.fold((_) => null, (e) => e.single.rate.amount), 150);
@@ -2510,6 +2526,7 @@ void main() {
         final saved = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(saved.fold((_) => null, (e) => e.length), 2);
       },
@@ -2538,6 +2555,7 @@ void main() {
         final saved = await Modular.get<YourRatesRepository>().search(
           'Mini excavator',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(saved.fold((_) => null, (e) => e.single.rate.amount), 145);
       },
@@ -2572,6 +2590,7 @@ void main() {
         final saved = await Modular.get<YourRatesRepository>().search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           saved.fold(
@@ -2617,6 +2636,7 @@ void main() {
         final unchanged = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(unchanged.fold((_) => null, (e) => e.single.rate.amount), 100);
 
@@ -2633,6 +2653,7 @@ void main() {
         final both = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           both.fold(
@@ -2742,6 +2763,7 @@ void main() {
         final beforeLabel = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(beforeLabel.fold((_) => null, (e) => e.single.rate.amount), 150);
 
@@ -2757,6 +2779,7 @@ void main() {
         final afterLabel = await repository.search(
           'Backhoe',
           category: CostItemType.equipment,
+          companyId: 'company-1',
         );
         expect(
           afterLabel.fold(
@@ -2836,6 +2859,7 @@ void main() {
       final saved = await Modular.get<YourRatesRepository>().search(
         'backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.single.itemName), 'backhoe');
     });
@@ -2866,6 +2890,7 @@ void main() {
       final saved = await repository.search(
         'Dumpster',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(
         saved.fold((_) => null, (e) => e.single.equipmentMethod),
@@ -2912,6 +2937,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       // Still just the one seeded row — the cancelled retry never reached
       // the repository.
@@ -2952,6 +2978,7 @@ void main() {
       final saved = await repository.search(
         'Backhoe',
         category: CostItemType.equipment,
+        companyId: 'company-1',
       );
       expect(saved.fold((_) => null, (e) => e.length), 1);
     });

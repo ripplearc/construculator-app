@@ -4,6 +4,8 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +34,11 @@ void main() {
   });
 
   setUp(() {
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     fakeSupabase.addTableData('your_rates', [
       for (var i = 0; i < 4; i++)
         {
@@ -173,6 +180,10 @@ void main() {
       tester,
     ) async {
       fakeSupabase.reset();
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
       fakeSupabase.addTableData('your_rates', [
         for (var i = 0; i < 6; i++) row('day-$i', 'Excavator $i'),
         row('job-1', 'Dumpster', method: 'job'),
@@ -190,6 +201,10 @@ void main() {
       'a Job rate is listed when the newest rates are all Day rates',
       (tester) async {
         fakeSupabase.reset();
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-1',
+        );
         fakeSupabase.addTableData('your_rates', [
           row(
             'job-1',
@@ -234,6 +249,10 @@ void main() {
       tester,
     ) async {
       fakeSupabase.reset();
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
       fakeSupabase.addTableData('your_rates', [
         row('job-1', 'Dumpster', method: 'job', amount: 400),
       ]);
