@@ -2952,6 +2952,72 @@ abstract class AppLocalizations {
   /// **'Save as my default'**
   String get equipmentSaveAsMyRateLink;
 
+  /// Title of the sheet that searches the contractor's saved equipment rates, opened from the Rate/Amount field's search button
+  ///
+  /// In en, this message translates to:
+  /// **'Look up a rate'**
+  String get yourRatesLookupTitle;
+
+  /// Placeholder text for the search field in the Look-up-a-rate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search or type equipment'**
+  String get yourRatesSearchHint;
+
+  /// Shown in the Look-up-a-rate sheet's recents view (empty search query) when there's no saved entry for the current pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'No saved rates yet for this pricing method.'**
+  String get yourRatesEmptyState;
+
+  /// Shown in the Look-up-a-rate sheet, in place of the rows, when a non-empty search query matches no saved entry (storyboard CUJ 6, frame Lookup no match). The query is in curly quotes
+  ///
+  /// In en, this message translates to:
+  /// **'No matches for “{query}”'**
+  String yourRatesNoMatchState(String query);
+
+  /// Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows
+  ///
+  /// In en, this message translates to:
+  /// **'/day'**
+  String get yourRatesDaySuffix;
+
+  /// Suffix after a job-priced rate amount in the Look-up-a-rate sheet's result rows
+  ///
+  /// In en, this message translates to:
+  /// **'job'**
+  String get yourRatesJobSuffix;
+
+  /// Accessible label for the search-icon button on the Rate/Amount field that opens the Look-up-a-rate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search saved rates'**
+  String get yourRatesLookupButton;
+
+  /// Error row in the Look-up-a-rate sheet when the phone could not read Your rates (storyboard CUJ 6, frame Look-up saved prices not read). Never replaced by the no-saved-rates text, because no search ran
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t open your saved prices.'**
+  String get yourRatesLoadError;
+
+  /// Text button on the right of the Look-up-a-rate sheet's error row; searches Your rates again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get yourRatesTryAgain;
+
+  /// Screen reader label of the clear (x) button in the Look-up-a-rate sheet's search box
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get yourRatesClearSearchSemanticLabel;
+
+  /// Label for the primary button that confirms the currently-selected result row and closes the Look-up-a-rate sheet; amount is the pre-formatted currency string and unit is yourRatesDaySuffix/yourRatesJobSuffix for the selected entry's pricing method
+  ///
+  /// In en, this message translates to:
+  /// **'Use {amount} {unit}'**
+  String yourRatesUseButtonLabel(String amount, String unit);
+
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
   /// In en, this message translates to:
