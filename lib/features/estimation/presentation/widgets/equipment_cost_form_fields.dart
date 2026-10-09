@@ -1,8 +1,11 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -14,11 +17,17 @@ class EquipmentCostFormFields extends StatefulWidget {
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
+  /// The estimate this item is being added to. Forwarded to
+  /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
+  /// delivery fee. May be null wherever the caller doesn't have one yet.
+  final String? estimateId;
+
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
+    this.estimateId,
   });
 
   @override
@@ -33,9 +42,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _durationController = TextEditingController();
   final _dailyRateController = TextEditingController();
   final _jobAmountController = TextEditingController();
+  final _deliveryFeeController = TextEditingController();
+  final _deliveryFocusNode = FocusNode();
+  final _noteController = TextEditingController();
+  final _noteFocusNode = FocusNode();
 
   final _daySelected = ValueNotifier<bool>(true);
   final _jobSelected = ValueNotifier<bool>(false);
+
+  bool _deliveryExpanded = false;
 
   @override
   void initState() {
@@ -45,6 +60,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.addListener(_onDurationChanged);
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
+    _deliveryFeeController.addListener(_onDeliveryFeeChanged);
+    _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
+    _noteController.addListener(_onDescriptionChanged);
   }
 
   @override
@@ -70,6 +88,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.dispose();
     _dailyRateController.dispose();
     _jobAmountController.dispose();
+    _deliveryFeeController.dispose();
+    _deliveryFocusNode.dispose();
+    _noteController.dispose();
+    _noteFocusNode.dispose();
     _daySelected.dispose();
     _jobSelected.dispose();
     super.dispose();
@@ -97,6 +119,87 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(_jobAmountController.text),
     );
+  }
+
+  void _onDeliveryFeeChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentDeliveryFeeUpdatedEvent(_deliveryFeeController.text),
+    );
+    _notifyTotal();
+  }
+
+  void _onDeliveryFocusChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _onDescriptionChanged() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentDescriptionUpdatedEvent(_noteController.text),
+    );
+  }
+
+  void _toggleDeliveryExpanded() {
+    if (_deliveryExpanded) {
+      setState(() => _deliveryExpanded = false);
+      _deliveryFocusNode.unfocus();
+      return;
+    }
+    setState(() => _deliveryExpanded = true);
+    // The field has no autofocus param, so it must exist in the tree
+    // (post-frame) before it can accept focus.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _deliveryFocusNode.requestFocus();
+    });
+  }
+
+  void _openNoteField() {
+    if (!_deliveryExpanded) {
+      setState(() => _deliveryExpanded = true);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _noteFocusNode.requestFocus();
+    });
+  }
+
+  Future<void> _showOutsizedFeeDialog(EquipmentCostFormData data) async {
+    final fee = data.deliveryFee;
+    if (fee == null) return;
+    final isDay = data.method == EquipmentPricingMethod.day;
+    final baseCost = isDay
+        ? (data.duration ?? 0) * (data.dailyRate ?? 0)
+        : (data.jobAmount ?? 0);
+    final bloc = context.read<EquipmentCostFormBloc>();
+
+    // Tapping outside the dialog pops it with a null result, which is
+    // treated the same as "Go back".
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (_) => _OutsizedFeeDialog(
+        fee: fee,
+        baseCost: baseCost,
+        method: data.method,
+        duration: data.duration,
+        equipmentType: data.equipmentType,
+      ),
+    );
+    if (!mounted) return;
+
+    final estimateId = widget.estimateId;
+    if (accepted == true && estimateId != null) {
+      bloc.add(EquipmentOutsizedFeeAcceptedEvent(estimateId: estimateId));
+      return;
+    }
+    bloc.add(const EquipmentOutsizedFeeDeclinedEvent());
+    setState(() => _deliveryExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _deliveryFocusNode.requestFocus();
+      _deliveryFeeController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _deliveryFeeController.text.length,
+      );
+    });
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
@@ -129,10 +232,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       widget.onTotalChanged?.call(0);
       return;
     }
-    final total = isDay
+    final base = isDay
         ? (data.duration ?? 0) * (data.dailyRate ?? 0)
         : data.jobAmount ?? 0;
-    widget.onTotalChanged?.call(total);
+    final hasDeliveryFeeError = data.fieldErrors.containsKey(
+      EquipmentFormField.deliveryFee,
+    );
+    final delivery = hasDeliveryFeeError ? 0.0 : (data.deliveryFee ?? 0);
+    // Delivery is added after the rate math, never inside it.
+    widget.onTotalChanged?.call(base + delivery);
   }
 
   EquipmentCostFormData _dataOf(EquipmentCostFormState state) =>
@@ -174,6 +282,64 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       EquipmentFieldError.rateOutOfRange => l10n.equipmentAmountOutOfRangeError,
       _ => null,
     };
+  }
+
+  String _deliveryRowValue(BuildContext context, double? fee) {
+    final raw = _deliveryFeeController.text;
+    return switch ((_deliveryFocusNode.hasFocus, raw.isEmpty, fee)) {
+      (true, false, _) => '${DisplayFormatter.currency.currencySymbol}$raw',
+      (_, _, null) => context.l10n.equipmentDeliveryFeeUnsetText,
+      (_, _, final fee?) => DisplayFormatter.currency.format(fee),
+    };
+  }
+
+  String _deliveryRowText(BuildContext context, double? fee) =>
+      '${context.l10n.equipmentDeliveryRowLabel} '
+      '${_deliveryRowValue(context, fee)}';
+
+  Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
+    final l10n = context.l10n;
+    return switch (status) {
+      RateStatus.sampleRateUnverified => RateStatusBadge(
+        key: const Key('rate_status_badge'),
+        label: l10n.equipmentRateStatusSampleRateBadge,
+        variant: RateStatusBadgeVariant.orange,
+      ),
+      RateStatus.ownRateConfirmed => RateStatusBadge(
+        key: const Key('rate_status_badge'),
+        label: l10n.equipmentRateStatusYourRateBadge,
+        variant: RateStatusBadgeVariant.green,
+      ),
+      RateStatus.ownRateUnconfirmed || RateStatus.missing => null,
+    };
+  }
+
+  Widget? _saveAsMyRateLink(BuildContext context, RateStatus status) {
+    if (status != RateStatus.sampleRateUnverified) return null;
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Semantics(
+      button: true,
+      label: l10n.equipmentSaveAsMyRateLink,
+      excludeSemantics: true,
+      child: GestureDetector(
+        key: const Key('save_as_my_rate_link'),
+        behavior: HitTestBehavior.opaque,
+        // TODO: [CA-1151] wire to YourRatesRepository.save() once it exists. https://ripplearc.youtrack.cloud/issue/CA-1151
+        onTap: () {},
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          alignment: Alignment.centerRight,
+          child: Text(
+            l10n.equipmentSaveAsMyRateLink,
+            style: textTheme.bodySmallSemiBold.copyWith(
+              color: colorTheme.textLink,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -245,6 +411,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
         listener: (_, state) {
           final data = _dataOf(state);
+          if (state is EquipmentCostFormOutsizedFeeConfirm) {
+            _showOutsizedFeeDialog(data);
+          }
           widget.onSaveEnabledChanged?.call(data.isValid);
           _mirrorMethodIntoChips(data.method);
           _notifyTotalFromData(data);
@@ -316,6 +485,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
                   errorTextList: _errorList(_rateErrorText(context, data)),
                   touched: _touchedFieldKeys.contains('rate_field'),
                   onTouched: () => _touchedFieldKeys.add('rate_field'),
@@ -329,15 +500,345 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
+                  labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                  trailingAction: _saveAsMyRateLink(context, data.rateStatus),
                   errorTextList: _errorList(_amountErrorText(context, data)),
                   touched: _touchedFieldKeys.contains('amount_field'),
                   onTouched: () => _touchedFieldKeys.add('amount_field'),
                 ),
-              // TODO: [CA-1144] add the Delivery row below the rate and amount fields. https://ripplearc.youtrack.cloud/issue/CA-1144
+              const SizedBox(height: CoreSpacing.space5),
+              _buildDeliveryFeeSection(context, data),
             ],
           );
         },
       ),
     ];
+  }
+
+  Widget _buildDeliveryFeeSection(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        CoreSpacing.space4,
+        0,
+        CoreSpacing.space4,
+        _deliveryExpanded ? CoreSpacing.space3 : 0,
+      ),
+      decoration: BoxDecoration(
+        color: colorTheme.backgroundGrayLight,
+        borderRadius: BorderRadius.circular(CoreSpacing.space3),
+        // Figma node 66337:162350's "Details Row" instance strokes the
+        // whole panel with `#eaecf0` at 1px — colorTheme.lineLight resolves
+        // to exactly that (gray200, 0xFFEAECF0 in ripplearc_coreui's own
+        // token file), confirmed directly rather than guessed.
+        border: Border.all(color: colorTheme.lineLight, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              // Figma node 66337:162350's "Details Row" packs the value,
+              // dot, and "Add note" tightly together on the left, with only
+              // the chevron pushed to the far right — so the dot and "Add
+              // note" must sit in the same Row, not in separate Expanded
+              // siblings (which would leave a gap between them).
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Semantics(
+                        button: true,
+                        label: _deliveryRowText(context, data.deliveryFee),
+                        excludeSemantics: true,
+                        child: GestureDetector(
+                          key: const Key('delivery_fee_row'),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _toggleDeliveryExpanded,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: 1,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text:
+                                                '${l10n.equipmentDeliveryRowLabel} ',
+                                            style: textTheme.bodyMediumRegular
+                                                .copyWith(
+                                                  color: colorTheme.textBody,
+                                                ),
+                                          ),
+                                          TextSpan(
+                                            text: _deliveryRowValue(
+                                              context,
+                                              data.deliveryFee,
+                                            ),
+                                            style: textTheme.bodyMediumSemiBold
+                                                .copyWith(
+                                                  color:
+                                                      colorTheme.textHeadline,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: CoreSpacing.space1,
+                                    ),
+                                    child: Text(
+                                      '·',
+                                      style: textTheme.bodySmallRegular
+                                          .copyWith(
+                                            color: colorTheme.textDisable,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Semantics(
+                      button: true,
+                      label: l10n.equipmentDeliveryAddNoteLink,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        key: const Key('delivery_fee_add_note_link'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _openNoteField,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            l10n.equipmentDeliveryAddNoteLink,
+                            style: textTheme.bodyMediumSemiBold.copyWith(
+                              color: colorTheme.textLink,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Purely decorative: the labeled header zone to its left
+              // already exposes the same expand/collapse action to a11y
+              // tools, so this icon is excluded rather than adding a second,
+              // unlabeled tappable node to the semantics tree.
+              ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleDeliveryExpanded,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    alignment: Alignment.center,
+                    child: AnimatedRotation(
+                      turns: _deliveryExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 150),
+                      child: CoreIconWidget(
+                        icon: CoreIcons.arrowDown,
+                        color: colorTheme.iconGrayMid,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_deliveryExpanded) ...[
+            const SizedBox(height: CoreSpacing.space3),
+            UnderlineTextField(
+              key: const Key('delivery_fee_field'),
+              label: l10n.equipmentDeliveryRowLabel,
+              controller: _deliveryFeeController,
+              focusNode: _deliveryFocusNode,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              prefix: Text(
+                '\$',
+                style: textTheme.bodyLargeRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+            ),
+            const SizedBox(height: CoreSpacing.space3),
+            UnderlineTextField(
+              key: const Key('delivery_note_field'),
+              label: l10n.equipmentNoteLabel,
+              controller: _noteController,
+              focusNode: _noteFocusNode,
+              hintText: l10n.equipmentNotePlaceholder,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OutsizedFeeDialog extends StatelessWidget {
+  const _OutsizedFeeDialog({
+    required this.fee,
+    required this.baseCost,
+    required this.method,
+    required this.duration,
+    required this.equipmentType,
+  });
+
+  final double fee;
+  final double baseCost;
+
+  final EquipmentPricingMethod method;
+
+  final double? duration;
+
+  final String equipmentType;
+
+  String _formatDuration(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
+
+  String _formatDurationPhrase(BuildContext context, double value) {
+    final l10n = context.l10n;
+    if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
+    if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
+    return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
+      _formatDuration(value),
+    );
+  }
+
+  TextSpan _withBoldAmounts(
+    String text,
+    List<String> amounts, {
+    required TextStyle regular,
+    required TextStyle bold,
+  }) {
+    final pattern = RegExp(amounts.map(RegExp.escape).join('|'));
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, match.start)));
+      }
+      spans.add(TextSpan(text: match.group(0), style: bold));
+      cursor = match.end;
+    }
+    if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor)));
+    return TextSpan(style: regular, children: spans);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final isDay = method == EquipmentPricingMethod.day;
+    final bodyText = isDay
+        ? l10n.equipmentDeliveryFeeOutsizedDialogBodyDay(
+            DisplayFormatter.currency.format(fee),
+            DisplayFormatter.currency.format(baseCost),
+            _formatDurationPhrase(context, duration ?? 0),
+            equipmentType.trim().isEmpty
+                ? l10n.equipmentDeliveryFeeOutsizedDialogGenericItem
+                : equipmentType.trim(),
+          )
+        : l10n.equipmentDeliveryFeeOutsizedDialogBody(
+            DisplayFormatter.currency.format(fee),
+            DisplayFormatter.currency.format(baseCost),
+          );
+    return Dialog(
+      backgroundColor: sheetSurface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CoreSpacing.space5),
+      ),
+      // 22px padding and the 340/52 dimensions below come directly from the
+      // Figma spec (node 65354:146175) and don't land on a named CoreSpacing
+      // step, so they're literal rather than tokenized.
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.equipmentDeliveryFeeOutsizedDialogTitle,
+                key: const Key('outsized_fee_dialog_title'),
+                style: textTheme.titleMediumSemiBold.copyWith(
+                  color: colorTheme.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Text.rich(
+                _withBoldAmounts(
+                  bodyText,
+                  [
+                    DisplayFormatter.currency.format(fee),
+                    DisplayFormatter.currency.format(baseCost),
+                  ],
+                  regular: textTheme.bodyMediumRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                  bold: textTheme.bodyMediumSemiBold.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                ),
+                key: const Key('outsized_fee_dialog_body'),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Row(
+                children: [
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('outsized_fee_dialog_go_back_button'),
+                      label: l10n.equipmentDeliveryFeeOutsizedDialogGoBack,
+                      variant: CoreButtonVariant.secondary,
+                      size: CoreButtonSize.medium,
+                      onPressed: () => Navigator.of(context).pop(false),
+                    ),
+                  ),
+                  const SizedBox(width: CoreSpacing.space3),
+                  Expanded(
+                    child: CoreButton(
+                      key: const Key('outsized_fee_dialog_add_it_button'),
+                      label: l10n.equipmentDeliveryFeeOutsizedDialogAddIt,
+                      variant: CoreButtonVariant.primary,
+                      size: CoreButtonSize.medium,
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
