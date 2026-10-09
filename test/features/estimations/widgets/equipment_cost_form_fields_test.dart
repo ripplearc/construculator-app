@@ -2282,7 +2282,7 @@ void main() {
           // Focusing the note field can auto-scroll the sheet's
           // SingleChildScrollView to keep it visible; settle that before
           // tapping the chip so its on-screen offset is stable.
-          FocusManager.instance.primaryFocus?.unfocus();
+          FocusManager.instance.primaryFocus!.unfocus();
           await tester.pumpAndSettle();
 
           await tester.tap(find.byKey(const Key('job_method_chip')));
