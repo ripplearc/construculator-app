@@ -3,6 +3,8 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_ite
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -13,11 +15,20 @@ class CostItemFormScreen extends StatefulWidget {
   final String estimationId;
   final AppRouter router;
 
+  /// When true, renders as plain content for a [CoreQuickSheet] (a back
+  /// arrow + title header row instead of a [Scaffold]/[CoreAppBar]) rather
+  /// than a full-screen route. Equipment only, per the Figma mocks — every
+  /// "New equipment cost" screen renders as a bottom sheet over the
+  /// estimate details screen. Material and Labor keep the full-screen
+  /// [Scaffold] presentation (this defaults to false).
+  final bool presentAsSheet;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
     required this.estimationId,
     required this.router,
+    this.presentAsSheet = false,
   });
 
   @override
@@ -32,6 +43,27 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    if (widget.presentAsSheet) {
+      return ColoredBox(
+        key: const Key('cost_item_form_screen'),
+        color: sheetSurface(context),
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SheetHeader(title: _screenTitle(context)),
+              Flexible(child: _buildBody(context)),
+              // TODO: [CA-355] replace the Total bar with the "Adds to this estimate" panel and the full-width button. https://ripplearc.youtrack.cloud/issue/CA-355
+              _buildBottomBar(context),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       key: const Key('cost_item_form_screen'),
       backgroundColor: colorTheme.pageBackground,
@@ -100,33 +132,40 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     return Column(
+      mainAxisSize: widget.presentAsSheet
+          ? MainAxisSize.min
+          : MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ColoredBox(
-          color: colorTheme.backgroundBlueLight,
-          child: Padding(
-            padding: const EdgeInsets.all(CoreSpacing.space4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.howToCalculateCostLabel,
-                  key: const Key('how_to_calculate_label'),
-                  style: textTheme.bodyMediumRegular.copyWith(
-                    color: colorTheme.textHeadline,
+        if (!widget.presentAsSheet)
+          ColoredBox(
+            color: colorTheme.backgroundBlueLight,
+            child: Padding(
+              padding: const EdgeInsets.all(CoreSpacing.space4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.howToCalculateCostLabel,
+                    key: const Key('how_to_calculate_label'),
+                    style: textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textHeadline,
+                    ),
                   ),
-                ),
-                const SizedBox(height: CoreSpacing.space2),
-                CostItemModeToggle(
-                  fromCostFile: _fromCostFile,
-                  onFromCostFile: () => setState(() => _fromCostFile = true),
-                  onManually: () => setState(() => _fromCostFile = false),
-                ),
-              ],
+                  const SizedBox(height: CoreSpacing.space2),
+                  CostItemModeToggle(
+                    fromCostFile: _fromCostFile,
+                    onFromCostFile: () => setState(() => _fromCostFile = true),
+                    onManually: () => setState(() => _fromCostFile = false),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        Expanded(child: _buildFormFields()),
+        if (widget.presentAsSheet)
+          Flexible(child: _buildFormFields())
+        else
+          Expanded(child: _buildFormFields()),
       ],
     );
   }

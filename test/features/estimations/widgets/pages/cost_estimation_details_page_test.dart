@@ -1,6 +1,9 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -220,6 +223,7 @@ void main() {
         fakeRouter.navigationHistory,
         contains(RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null)),
       );
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets('displays preview button in bottom bar', (
@@ -321,9 +325,75 @@ void main() {
         fakeRouter.navigationHistory,
         contains(RouteCall('$fullAddLabourCostRoute/$testEstimationId', null)),
       );
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
-    testWidgets('tapping add equipment cost button navigates to equipment cost form', (
+    testWidgets(
+      'tapping add equipment cost button opens the equipment cost sheet '
+      'instead of navigating to a route',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.byType(BottomSheet), findsOneWidget);
+
+        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+        expect(
+          fakeRouter.navigationHistory,
+          isNot(
+            contains(
+              RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null),
+            ),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'equipment sheet shows the New equipment cost title and no cost-file '
+      'mode toggle',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('New equipment cost'), findsOneWidget);
+        final surface = sheetSurface(tester.element(find.byType(BottomSheet)));
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is Container &&
+                  w.decoration is BoxDecoration &&
+                  (w.decoration! as BoxDecoration).color == surface,
+            ),
+          ),
+          findsWidgets,
+        );
+        expect(find.byKey(const Key('how_to_calculate_label')), findsNothing);
+        expect(find.byKey(const Key('from_cost_file_pill')), findsNothing);
+      },
+    );
+
+    testWidgets('equipment sheet is shorter than 90 percent of the screen', (
       WidgetTester tester,
     ) async {
       setUpAuthenticatedUser(
@@ -332,17 +402,66 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-      expect(
-        fakeRouter.navigationHistory,
-        contains(RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null)),
+      final sheetHeight = tester.getSize(find.byType(CostItemFormScreen)).height;
+      final screenHeight = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      expect(sheetHeight, lessThan(screenHeight * 0.9));
+    });
+
+    testWidgets('equipment sheet keeps the Rate field above the keyboard', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
       );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const Key('rate_field')));
+      await tester.pumpAndSettle();
+
+      final screenHeight = tester.view.physicalSize.height /
+          tester.view.devicePixelRatio;
+      final keyboardTop = screenHeight - 300 / tester.view.devicePixelRatio;
+      final rateBottom = tester.getRect(find.byKey(const Key('rate_field'))).bottom;
+      final barTop = tester.getRect(find.byKey(const Key('cost_item_total_label'))).top;
+      expect(tester.takeException(), isNull);
+      expect(rateBottom, lessThanOrEqualTo(keyboardTop));
+      expect(rateBottom, lessThanOrEqualTo(barTop));
+    });
+
+    testWidgets('tapping the back arrow on the equipment sheet closes it', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CostItemFormScreen), findsOneWidget);
+
+      await tester.tap(find.byKey(SheetHeader.backButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostItemFormScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
     });
   });
 }

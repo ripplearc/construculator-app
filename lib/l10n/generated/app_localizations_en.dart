@@ -981,7 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addLabourCostsScreenTitle => 'Labour cost entry';
 
   @override
-  String get addEquipmentCostsScreenTitle => 'Equipment cost entry';
+  String get addEquipmentCostsScreenTitle => 'New equipment cost';
 
   @override
   String get howToCalculateCostLabel => 'How you want to calculate cost?';
@@ -1454,6 +1454,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentNameLabel => 'Equipment';
 
   @override
+  String get equipmentNamePlaceholder => 'Name the equipment';
+
+  @override
   String get equipmentDayMethodLabel => 'Day';
 
   @override
@@ -1466,13 +1469,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDurationLabel => 'Duration';
 
   @override
+  String get equipmentDurationPlaceholder => 'Set the days';
+
+  @override
   String get equipmentDurationSuffix => 'days';
 
   @override
   String get equipmentRateLabel => 'Rate';
 
   @override
+  String get equipmentRatePlaceholder => 'Set your rate';
+
+  @override
   String get equipmentAmountLabel => 'Amount';
+
+  @override
+  String get equipmentAmountPlaceholder => 'Set the amount';
 
   @override
   String get rateDayLabel => 'Rate/Day:';

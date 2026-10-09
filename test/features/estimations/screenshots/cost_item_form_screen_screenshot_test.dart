@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -63,10 +65,14 @@ void main() {
               create: (_) => Modular.get<EquipmentCostFormBloc>(),
             ),
           ],
-          child: CostItemFormScreen(
-            type: type,
-            estimationId: 'test-estimation-id',
-            router: FakeAppRouter(),
+          child: Builder(
+            builder: (context) {
+              return CostItemFormScreen(
+                type: type,
+                estimationId: 'test-estimation-id',
+                router: FakeAppRouter(),
+              );
+            },
           ),
         ),
       ),
@@ -164,6 +170,55 @@ void main() {
         find.byType(CostItemFormScreen),
         matchesGoldenFile(
           'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_error$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders equipment cost form as a sheet over the estimate', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: TextButton(
+                  key: const Key('open_sheet'),
+                  onPressed: () => CoreQuickSheet.show(
+                    context: context,
+                    backgroundColor: sheetSurface(context),
+                    child: BlocProvider<EquipmentCostFormBloc>(
+                      create: (_) => Modular.get<EquipmentCostFormBloc>(),
+                      child: CostItemFormScreen(
+                        type: CostItemType.equipment,
+                        estimationId: 'test-estimation-id',
+                        router: FakeAppRouter(),
+                        presentAsSheet: true,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Add equipment cost'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('open_sheet')));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/equipment_sheet$suffix.png',
         ),
       );
     });
