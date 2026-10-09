@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -24,15 +25,18 @@ EventTransformer<YourRatesSearched> _searchTransformer(Duration debounce) =>
         )
         .switchMap(mapper);
 
+EventTransformer<E> _ignoreWhileInFlight<E>() =>
+    (events, mapper) => events.exhaustMap(mapper);
+
 /// BLoC for the contractor's personal saved-rate book: recents per category
 /// and free-text search, backed directly by [YourRatesRepository].
 ///
 /// Deliberately has no usecase layer, matching `EquipmentCostFormBloc`'s
 /// precedent for straightforward repository CRUD in this feature. Also has
 /// no "current company"/"current project" dependency: every event carries
-/// the category it operates within explicitly, and `save` (not wired to any
-/// event here — see CA-1151) takes a fully-formed [YourRateEntry] whose
-/// [YourRateEntry.companyId] the caller is responsible for supplying.
+/// the category it operates within explicitly, and [YourRatesSaveRequested]
+/// takes a fully-formed [YourRateEntry] whose [YourRateEntry.companyId] the
+/// caller is responsible for supplying.
 class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
 
@@ -48,6 +52,10 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     on<YourRatesSearched>(
       _onSearched,
       transformer: _searchTransformer(queryDebounce),
+    );
+    on<YourRatesSaveRequested>(
+      _onSaveRequested,
+      transformer: _ignoreWhileInFlight(),
     );
   }
 
@@ -80,5 +88,23 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       (failure) => emit(YourRatesError(failure)),
       (entries) => emit(YourRatesSearchResults(entries)),
     );
+  }
+
+  Future<void> _onSaveRequested(
+    YourRatesSaveRequested event,
+    Emitter<YourRatesState> emit,
+  ) async {
+    final result = await _repository.save(event.entry);
+    result.fold((failure) {
+      final errorType = failure is EstimationFailure ? failure.errorType : null;
+      switch (errorType) {
+        case EstimationErrorType.duplicateEntry:
+          emit(YourRatesSaveCollision(event.entry));
+        case EstimationErrorType.duplicateLabel:
+          emit(YourRatesSaveLabelTaken(event.entry));
+        default:
+          emit(YourRatesSaveFailed(failure));
+      }
+    }, (_) => emit(YourRatesSaveSucceeded()));
   }
 }

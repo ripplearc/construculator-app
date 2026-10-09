@@ -55,6 +55,7 @@ void main() {
             child: EquipmentCostFormFields(
               fromCostFile: fromCostFile,
               yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+              clock: FakeClockImpl(),
             ),
           ),
         ),
@@ -184,6 +185,129 @@ void main() {
       await expectFieldsGolden(tester, 'delivery_folded_fee', suffix);
     });
 
+    Future<void> typeSavableRate(WidgetTester tester) async {
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Mini excavator',
+      );
+      await tester.enterText(find.byKey(const Key('rate_field')), '145');
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders the hint under the Rate row before a save', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/save_hint$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the saved hint once the rate is saved', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/save_saved$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the error line when the rate was not saved', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      fakeSupabase.shouldThrowOnInsert = true;
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/save_failed$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the Name this rate dialog', (tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1.0;
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'rate-1',
+          'company_id': '',
+          'category': 'equipment',
+          'item_name': 'Mini excavator',
+          'rate_amount': 120,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'entry_label': 'Supplier A',
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+        },
+      ]);
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/390.0x800.0/entry_label_dialog$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the Name this rate dialog with the label taken', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1.0;
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'rate-1',
+          'company_id': '',
+          'category': 'equipment',
+          'item_name': 'Mini excavator',
+          'rate_amount': 120,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'entry_label': 'Supplier A',
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+        },
+      ]);
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('entry_label_field')),
+        'Supplier A',
+      );
+      await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/390.0x800.0/entry_label_dialog_taken$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders the big-fee question for an outsized delivery fee', (
       tester,
     ) async {
@@ -281,6 +405,29 @@ void main() {
         ),
       );
     });
+
+    testWidgets(
+      'renders the Save as my default link and helper text once a rate is '
+      'typed (Figma node 66342:178091, cuj6-equip-5-verify)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(tester: tester, theme: theme);
+        await tester.enterText(
+          find.byKey(const Key('equipment_name_field')),
+          'Mini excavator',
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('rate_field')), '145');
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_save_as_my_rate$suffix.png',
+          ),
+        );
+      },
+    );
 
     testWidgets(
       'renders manually mode with no red error after clearing item type '

@@ -218,14 +218,23 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                   const SizedBox(width: CoreSpacing.space2),
                 ],
                 if (suffix != null)
-                  Flexible(child: IntrinsicWidth(child: textField))
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: IntrinsicWidth(child: textField)),
+                          if (!(widget.hideSuffixWhenEmpty && isEmpty)) ...[
+                            const SizedBox(width: CoreSpacing.space1),
+                            suffix,
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
                 else
                   Expanded(child: textField),
-                if (suffix != null &&
-                    !(widget.hideSuffixWhenEmpty && isEmpty)) ...[
-                  const SizedBox(width: CoreSpacing.space1),
-                  suffix,
-                ],
                 if (trailingAction != null) ...[
                   const SizedBox(width: CoreSpacing.space2),
                   trailingAction,
