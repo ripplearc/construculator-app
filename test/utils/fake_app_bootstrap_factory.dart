@@ -35,6 +35,7 @@ class FakeAppBootstrapFactory {
   ///   (e.g. FakeFeatureFlagRepository with overrides) to control flag state
   /// - [appLifecycleWrapper]: Provide a specific fake to move the app between
   ///   foreground and background
+  /// - [appVersion]: Provide a distinctive version to assert where it ends up
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -57,6 +58,7 @@ class FakeAppBootstrapFactory {
     PowerSyncDatabase? powerSyncDatabase,
     FeatureFlagRepository? featureFlagRepository,
     FakeAppLifecycleWrapper? appLifecycleWrapper,
+    String appVersion = '1.0.0',
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -71,6 +73,7 @@ class FakeAppBootstrapFactory {
           featureFlagRepository ?? FakeFeatureFlagRepository(),
       currentScreenTracker: CurrentScreenTracker(),
       appLifecycleWrapper: appLifecycleWrapper ?? FakeAppLifecycleWrapper(),
+      appVersion: appVersion,
     );
   }
 }

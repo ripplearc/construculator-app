@@ -11,6 +11,7 @@ import 'package:construculator/libraries/consent/domain/entities/consent_status_
 import 'package:construculator/libraries/consent/domain/entities/user_consent_entity.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/interfaces/consent_audit_metadata.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -39,16 +40,18 @@ class ConsentRepositoryImpl implements ConsentRepository {
   /// The answer when there is no signed-in user to gate.
   static const _ungated = ConsentSatisfied(ConsentRepository.noUserVersion);
 
-  /// Composes the resolver and recorder from [remoteDataSource]/[clock] so
-  /// callers only need to wire the shared [localDataSource].
+  /// Composes the resolver and recorder from [remoteDataSource], [clock] and
+  /// [auditMetadata] so callers only need to wire the shared
+  /// [localDataSource].
   ConsentRepositoryImpl({
     required LocalConsentDataSource localDataSource,
     required RemoteConsentDataSource remoteDataSource,
     required this._supabaseWrapper,
     required Clock clock,
+    required ConsentAuditMetadata auditMetadata,
   }) : _localDataSource = localDataSource,
        _verificationResolver = ConsentVerificationResolver(remoteDataSource),
-       _recorder = ConsentRecorder(localDataSource, clock);
+       _recorder = ConsentRecorder(localDataSource, clock, auditMetadata);
 
   @override
   Future<ConsentStatus> getCachedConsentStatus(ConsentType type) async {

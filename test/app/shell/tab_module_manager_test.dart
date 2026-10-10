@@ -35,6 +35,7 @@ void main() {
           featureFlagRepository: FakeFeatureFlagRepository(),
           currentScreenTracker: CurrentScreenTracker(),
           appLifecycleWrapper: FakeAppLifecycleWrapper(),
+          appVersion: '1.0.0',
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -89,6 +90,7 @@ void main() {
           featureFlagRepository: FakeFeatureFlagRepository(),
           currentScreenTracker: CurrentScreenTracker(),
           appLifecycleWrapper: FakeAppLifecycleWrapper(),
+          appVersion: '1.0.0',
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();
