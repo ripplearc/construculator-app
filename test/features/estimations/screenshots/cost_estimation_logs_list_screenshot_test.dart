@@ -262,6 +262,43 @@ void main() {
       );
     });
 
+    // CUJ 11 screen 10b.
+    testWidgets('a list whose early events were not recorded', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costFileUploaded',
+          activityDetails: {'fileName': 'materials.xlsx'},
+          firstName: 'Sam',
+        ),
+        LogTestDataFactory.createLogData(
+          id: 'log-2',
+          estimateId: estimateId,
+          activity: 'costFileUploaded',
+          activityDetails: {'fileName': 'labor-rates.xlsx'},
+          firstName: 'Sam',
+          loggedAt: '2025-03-01T10:00:00.000Z',
+        ),
+      ]);
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_not_recorded_end$suffix.png',
+        ),
+      );
+    });
+
     // CUJ 11 screen 8.
     testWidgets('older events loading', (tester) async {
       tester.view.physicalSize = size;

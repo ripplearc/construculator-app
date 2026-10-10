@@ -48,6 +48,13 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
   /// Whether every page has been loaded, so the list has an end to mark.
   bool get hasReachedEnd => !hasMore && logs.isNotEmpty;
 
+  /// Whether the whole history is on screen: every page is loaded and the
+  /// oldest entry is "Estimate created". Without that entry, the early
+  /// events were never recorded (CUJ 11 screen 10b).
+  bool get isHistoryComplete =>
+      hasReachedEnd &&
+      logs.last.activity == CostEstimationActivityType.costEstimationCreated;
+
   @override
   List<Object?> get props => [logs, hasMore, isLoadingMore];
 }

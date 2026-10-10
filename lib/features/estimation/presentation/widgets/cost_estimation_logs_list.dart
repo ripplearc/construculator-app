@@ -376,7 +376,12 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         if (state is CostEstimationLogLoadMoreError)
           SliverToBoxAdapter(child: _buildLoadMoreFailure(context, state)),
         if (state.hasReachedEnd)
-          SliverToBoxAdapter(child: _buildEndOfListMarker(context)),
+          SliverToBoxAdapter(
+            child: _buildEndOfListMarker(
+              context,
+              isHistoryComplete: state.isHistoryComplete,
+            ),
+          ),
       ],
     );
   }
@@ -386,7 +391,12 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   // need to pass the tapped entry to open that entry's send.
   void _openSendScreen() {}
 
-  Widget _buildEndOfListMarker(BuildContext context) {
+  // "No older events" says the history is complete, so a list whose early
+  // events were never recorded ends with a different line (CUJ 11 screen 10b).
+  Widget _buildEndOfListMarker(
+    BuildContext context, {
+    required bool isHistoryComplete,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(
         top: CoreSpacing.space4,
@@ -394,11 +404,14 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ),
       child: Center(
         child: Text(
-          context.l10n.noOlderLogEvents,
+          isHistoryComplete
+              ? context.l10n.noOlderLogEvents
+              : context.l10n.earlierLogEventsNotRecorded,
           key: CostEstimationLogsList.endOfListMarkerKey,
           style: context.textTheme.bodySmallRegular.copyWith(
             color: context.colorTheme.textBody,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );
