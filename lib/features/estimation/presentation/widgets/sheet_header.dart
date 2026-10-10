@@ -11,6 +11,9 @@ class SheetHeader extends StatelessWidget {
   /// Key of the back arrow, so tests and screen readers can find it.
   static const backButtonKey = Key('sheet_back_button');
 
+  /// Key of the subtitle, so tests can find it.
+  static const subtitleKey = Key('sheet_subtitle');
+
   /// The main line, in semibold. A long title is cut off with an ellipsis.
   final String title;
 
@@ -58,6 +61,7 @@ class SheetHeader extends StatelessWidget {
                 if (subtitleText != null)
                   Text(
                     subtitleText,
+                    key: subtitleKey,
                     style: textTheme.bodyMediumRegular.copyWith(
                       color: colorTheme.textBody,
                     ),

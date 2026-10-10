@@ -64,6 +64,8 @@ class EquipmentCostFormBloc
           otherMethodRateStatus: e.method == d.method
               ? d.otherMethodRateStatus
               : d.rateStatus,
+          recalledFromRecents: e.fromRecents,
+          recalledRate: e.fromRecents ? e.rate : d.recalledRate,
         );
         return e.method == EquipmentPricingMethod.day
             ? recalled.copyWith(dailyRate: e.rate)
@@ -94,7 +96,7 @@ class EquipmentCostFormBloc
     Emitter<EquipmentCostFormState> emit,
     EquipmentCostFormData Function(EquipmentCostFormData) update,
   ) {
-    emit(EquipmentCostFormEditing(_validated(update(_current()))));
+    emit(EquipmentCostFormEditing(_validated(update(state.formData))));
   }
 
   Future<void> _onSubmitted(
@@ -107,7 +109,7 @@ class EquipmentCostFormBloc
         state is EquipmentCostFormSuccess) {
       return;
     }
-    final draft = _validated(_current());
+    final draft = _validated(state.formData);
     if (!draft.isValid) {
       emit(EquipmentCostFormEditing(draft));
       return;
@@ -159,17 +161,6 @@ class EquipmentCostFormBloc
       (failure) => emit(EquipmentCostFormFailure(draft, failure)),
       (created) => emit(EquipmentCostFormSuccess(draft, created)),
     );
-  }
-
-  EquipmentCostFormData _current() {
-    return switch (state) {
-      EquipmentCostFormEditing(:final data) => data,
-      EquipmentCostFormOutsizedFeeConfirm(:final data) => data,
-      EquipmentCostFormSubmitting(:final data) => data,
-      EquipmentCostFormSuccess(:final data) => data,
-      EquipmentCostFormFailure(:final data) => data,
-      EquipmentCostFormInitial() => const EquipmentCostFormData(),
-    };
   }
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
