@@ -232,6 +232,40 @@ void main() {
         },
       );
 
+      test('passes companyId through to the data source when given', () async {
+        await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: 'equipment',
+          DatabaseConstants.companyIdColumn: testCompanyId,
+        });
+      });
+
+      test(
+        "companyId actually keeps a second company's rows out of the result, "
+        'not just out of the filter map',
+        () async {
+          seed([
+            row(id: 'mine', companyId: testCompanyId, itemName: 'Excavator'),
+            row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator'),
+          ]);
+
+          final result = await repository.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+          );
+
+          expect(result.isRight(), true);
+          expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['mine']);
+        },
+      );
+
       test('maps a generic exception to unexpectedError failure', () async {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
 
@@ -281,6 +315,36 @@ void main() {
           expect(result.getRightOrNull()!.id, 'r1');
         },
       );
+
+      test('passes companyId through to the data source when given', () async {
+        await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: 'equipment',
+          DatabaseConstants.companyIdColumn: testCompanyId,
+        });
+      });
+
+      test('companyId actually keeps a same-name row in a second company from '
+          'being returned', () async {
+        seed([
+          row(id: 'theirs', companyId: 'company-2', itemName: 'Excavator'),
+        ]);
+
+        final result = await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(result.isRight(), true);
+        expect(result.getRightOrNull(), isNull);
+      });
 
       test('returns Right(null) when no row matches', () async {
         final result = await repository.getByItemName(
@@ -626,6 +690,37 @@ void main() {
           expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
         },
       );
+
+      test("scopes the collision lookup to the entry's companyId", () async {
+        final entry = buildEntry();
+
+        await repository.save(entry);
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['filters'], {
+          DatabaseConstants.categoryColumn: entry.category.toJson(),
+          DatabaseConstants.companyIdColumn: entry.companyId,
+        });
+      });
+
+      test('an unlabeled row in a second company does not collide with this '
+          "entry's own save, so it inserts rather than overwriting", () async {
+        seed([
+          row(
+            id: 'theirs',
+            companyId: 'company-2',
+            entryLabel: null,
+            rateAmount: 100.0,
+          ),
+        ]);
+        final entry = buildEntry(amount: 300.0);
+
+        final result = await repository.save(entry);
+
+        expect(result.isRight(), true);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), hasLength(1));
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
 
       test('maps an RLS violation (42501) to permissionDenied', () async {
         fakeSupabaseWrapper.shouldThrowOnInsert = true;

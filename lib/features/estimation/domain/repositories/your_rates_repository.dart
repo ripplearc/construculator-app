@@ -6,18 +6,25 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
-/// RLS limits the rows a caller can read to the companies they belong to, so
-/// a caller in more than one company reads the rows of all of them. No read
-/// here narrows to one company yet. [save] writes a [YourRateEntry.companyId]
-/// the backend checks against the caller's actual company membership.
+/// RLS alone does not scope a read to one company, for a user who belongs to
+/// more than one: the optional `companyId` parameter some methods below
+/// accept is what actually scopes a read to one company, the same role it
+/// plays in `your_rates`' backend README (be#57). RLS still gates access to
+/// rows the caller has no membership in at all; `companyId` is what narrows
+/// among the companies the caller does belong to. It also makes company
+/// isolation testable, since `FakeSupabaseWrapper` has no concept of RLS and
+/// so cannot otherwise catch a cross-company read in a test. [save] always
+/// writes a [YourRateEntry.companyId] the backend checks against the
+/// caller's actual company membership.
 ///
 /// Names match without regard to capital letters or extra spaces, so
 /// `Mini excavator` and ` MINI  excavator ` are one name. A name saved with a
 /// day rate and with a job price is two rows.
-// TODO: [CA-1180](https://ripplearc.youtrack.cloud/issue/CA-1180) Add an explicit company id to the reads.
 abstract class YourRatesRepository {
   /// Searches saved rate entries by item name, optionally scoped to one
-  /// [category].
+  /// [category] and one [companyId] — the real company-scoping mechanism for
+  /// a caller in more than one company. A null [companyId] adds no filter and
+  /// returns the rows of every company the caller belongs to.
   ///
   /// The [query] is split into words. An entry matches when any word is in
   /// its item name, ignoring case, so `mini excavator 1.5t` finds
@@ -36,10 +43,13 @@ abstract class YourRatesRepository {
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,
+    String? companyId,
     int? limit,
   });
 
-  /// Looks up the rate entry for one item within one category.
+  /// Looks up the rate entry for one item within one category, optionally
+  /// scoped to one [companyId]. A null [companyId] adds no filter and matches
+  /// the rows of every company the caller belongs to.
   ///
   /// The name is matched without regard to capital letters or extra spaces.
   /// Multiple entries can share the same name, distinguished by
@@ -51,8 +61,9 @@ abstract class YourRatesRepository {
   /// disambiguate should use [search] instead.
   Future<Either<Failure, YourRateEntry?>> getByItemName(
     String itemName,
-    CostItemType category,
-  );
+    CostItemType category, {
+    String? companyId,
+  });
 
   /// Saves [entry] into the caller's rate book, applying the collision rule
   /// for its (category, name, [YourRateEntry.equipmentMethod]) grouping:
