@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Opens a web URL outside the app, in the browser or whichever app handles
 /// it.
 ///
