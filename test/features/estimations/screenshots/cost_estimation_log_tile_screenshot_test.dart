@@ -223,8 +223,8 @@ void main() {
         user: user,
         loggedAt: DateTime(2025, 2, 10, 9, 15),
         activityDetails: {
-          'itemName': 'Concrete Foundation',
-          'itemType': 'Material',
+          'costItemName': 'Concrete Foundation',
+          'costItemType': 'Material',
         },
       );
 
@@ -355,8 +355,8 @@ void main() {
         user: user,
         loggedAt: DateTime(2025, 10, 30, 10, 5),
         activityDetails: {
-          'itemName': 'Temporary Scaffolding',
-          'itemType': 'Equipment',
+          'costItemName': 'Temporary Scaffolding',
+          'costItemType': 'Equipment',
         },
       );
 
@@ -381,7 +381,7 @@ void main() {
         user: user,
         loggedAt: DateTime(2025, 11, 15, 14, 25),
         activityDetails: {
-          'itemName': 'Steel Beams',
+          'costItemName': 'Steel Beams',
           'editedFields': {
             'quantity': {'oldValue': 10, 'newValue': 15},
             'unit_price': {'oldValue': 150.0, 'newValue': 175.0},
