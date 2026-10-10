@@ -20,6 +20,9 @@ class CostEstimationLogsList extends StatefulWidget {
     'cost_estimation_logs_load_more_retry',
   );
   static const logsScrollViewKey = Key('cost_estimation_logs_scroll_view');
+  static const refreshErrorViewKey = Key(
+    'cost_estimation_logs_refresh_error_view',
+  );
 
   final String estimateId;
   final String estimateName;
@@ -215,12 +218,15 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
+  // Waits for the reload to end, so the pull-down spinner stays up in place
+  // of the failure message while it runs (CUJ 11 screen 13).
   Future<void> _onRefresh() async {
-    // Intentionally fire-and-forget: the RefreshIndicator dismisses immediately.
-    // Loading feedback is provided by BlocBuilder transitioning through
-    // CostEstimationLogLoading → CostEstimationLogWithData/Empty states.
     final bloc = context.read<CostEstimationLogBloc>();
-    bloc.add(CostEstimationLogFetchInitial(estimateId: widget.estimateId));
+    bloc.add(CostEstimationLogRefresh(estimateId: widget.estimateId));
+    await bloc.stream.firstWhere(
+      (state) => state is! CostEstimationLogWithData || !state.isRefreshing,
+      orElse: () => bloc.state,
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -304,31 +310,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CoreIconWidget(
-              icon: CoreIcons.error,
-              size: CoreIconSize.size16,
-              color: appColors.textError,
-            ),
-            const SizedBox(width: CoreSpacing.space2),
-            Flexible(
-              // Announced when it appears. Focus stays on Try again while the
-              // result swaps in, so a screen reader would not otherwise hear
-              // that the load failed.
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  message,
-                  style: typography.bodySmallRegular.copyWith(
-                    color: appColors.textError,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        _buildFailureMessage(context, message),
         const SizedBox(height: CoreSpacing.space3),
         Text(
           context.l10n.logsLoadErrorReassurance,
@@ -349,6 +331,61 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
+  Widget _buildFailureMessage(BuildContext context, String message) {
+    final appColors = context.colorTheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CoreIconWidget(
+          icon: CoreIcons.error,
+          size: CoreIconSize.size16,
+          color: appColors.textError,
+        ),
+        const SizedBox(width: CoreSpacing.space2),
+        Flexible(
+          // Announced when it appears. Focus stays where it was while the
+          // result swaps in, so a screen reader would not otherwise hear
+          // that the load failed.
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              message,
+              style: context.textTheme.bodySmallRegular.copyWith(
+                color: appColors.textError,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Sits above the first entry and never replaces the list (CUJ 11
+  // screen 13). Pulling down again is the retry, so it has no button.
+  Widget _buildRefreshFailure(BuildContext context) {
+    return Padding(
+      key: CostEstimationLogsList.refreshErrorViewKey,
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space3,
+        bottom: CoreSpacing.space5,
+      ),
+      child: Column(
+        spacing: CoreSpacing.space3,
+        children: [
+          _buildFailureMessage(context, context.l10n.refreshLogsError),
+          Text(
+            context.l10n.refreshLogsErrorHint,
+            style: context.textTheme.bodySmallRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadedState(
     BuildContext context,
     CostEstimationLogWithData state,
@@ -359,6 +396,8 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       shrinkWrap: true,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        if (state.hasRefreshFailed)
+          SliverToBoxAdapter(child: _buildRefreshFailure(context)),
         SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             return Padding(

@@ -37,10 +37,18 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
   final bool hasMore;
   final bool isLoadingMore;
 
+  /// Whether a pull-down reload is running while [logs] stay on screen.
+  final bool isRefreshing;
+
+  /// Whether the last pull-down reload failed, so [logs] may be out of date.
+  final bool hasRefreshFailed;
+
   CostEstimationLogWithData({
     required List<CostEstimationLog> logs,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.isRefreshing = false,
+    this.hasRefreshFailed = false,
   }) : logs = UnmodifiableListView<CostEstimationLog>(
          List<CostEstimationLog>.from(logs),
        );
@@ -49,7 +57,13 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
   bool get hasReachedEnd => !hasMore && logs.isNotEmpty;
 
   @override
-  List<Object?> get props => [logs, hasMore, isLoadingMore];
+  List<Object?> get props => [
+    logs,
+    hasMore,
+    isLoadingMore,
+    isRefreshing,
+    hasRefreshFailed,
+  ];
 }
 
 /// State when loading logs fails
@@ -84,6 +98,7 @@ class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
     this.isRepeatFailure = false,
     super.hasMore,
     super.isLoadingMore = false,
+    super.hasRefreshFailed,
   });
 
   @override
@@ -93,6 +108,7 @@ class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
     logs,
     hasMore,
     isLoadingMore,
+    hasRefreshFailed,
   ];
 }
 
@@ -102,20 +118,23 @@ class CostEstimationLogLoaded extends CostEstimationLogWithData {
     required super.logs,
     super.hasMore,
     super.isLoadingMore,
+    super.isRefreshing,
+    super.hasRefreshFailed,
   });
 
   CostEstimationLogLoaded copyWith({
     List<CostEstimationLog>? logs,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? isRefreshing,
+    bool? hasRefreshFailed,
   }) {
     return CostEstimationLogLoaded(
       logs: logs ?? this.logs.toList(),
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      hasRefreshFailed: hasRefreshFailed ?? this.hasRefreshFailed,
     );
   }
-
-  @override
-  List<Object?> get props => [logs, hasMore, isLoadingMore];
 }

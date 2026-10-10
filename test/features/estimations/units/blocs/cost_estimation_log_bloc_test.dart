@@ -835,6 +835,301 @@ void main() {
       );
     });
 
+    group('CostEstimationLogRefresh', () {
+      Future<void> loadFirstPage(CostEstimationLogBloc bloc) async {
+        bloc.add(
+          const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+        );
+        await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+      }
+
+      void failNextReads() {
+        fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+        fakeSupabaseWrapper.selectPaginatedExceptionType =
+            SupabaseExceptionType.timeout;
+      }
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should keep the logs on screen while reloading and replace them when the reload works',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 3,
+              estimateId: testEstimateId,
+            ),
+          );
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          CostEstimationLogLoaded(
+            logs: expectedLatestLogsForEstimate(
+              totalCount: 2,
+              takeCount: 2,
+              estimateId: testEstimateId,
+            ),
+            isRefreshing: true,
+          ),
+          CostEstimationLogLoaded(
+            logs: expectedLatestLogsForEstimate(
+              totalCount: 3,
+              takeCount: 3,
+              estimateId: testEstimateId,
+            ),
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should show the empty state when the reload returns no entries',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+          fakeSupabaseWrapper.clearTableData(
+            DatabaseConstants.costEstimationLogsTable,
+          );
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.isRefreshing,
+            'isRefreshing',
+            true,
+          ),
+          const CostEstimationLogEmpty(),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should keep every loaded log and mark the reload failed when it fails',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+          failNextReads();
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () {
+          final logs = expectedLatestLogsForEstimate(
+            totalCount: defaultPageSize + 5,
+            takeCount: defaultPageSize,
+            estimateId: testEstimateId,
+          );
+          return [
+            CostEstimationLogLoaded(
+              logs: logs,
+              hasMore: true,
+              isRefreshing: true,
+            ),
+            CostEstimationLogLoaded(
+              logs: logs,
+              hasMore: true,
+              hasRefreshFailed: true,
+            ),
+          ];
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should clear the failure mark while a second reload runs',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+          failNextReads();
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.hasRefreshFailed,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle + 2,
+        expect: () {
+          final logs = expectedLatestLogsForEstimate(
+            totalCount: 2,
+            takeCount: 2,
+            estimateId: testEstimateId,
+          );
+          return [
+            CostEstimationLogLoaded(logs: logs, isRefreshing: true),
+            CostEstimationLogLoaded(logs: logs),
+          ];
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should load the next page after a failed reload from where the list on screen ends, keeping the failure mark',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+          failNextReads();
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.hasRefreshFailed,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle + 2,
+        expect: () => [
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', true)
+              .having((s) => s.hasRefreshFailed, 'hasRefreshFailed', true),
+          CostEstimationLogLoaded(
+            logs: expectedLatestLogsForEstimate(
+              totalCount: defaultPageSize + 5,
+              takeCount: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+            hasRefreshFailed: true,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore load more while a reload runs',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.isRefreshing,
+          );
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+          await Future<void>.delayed(Duration.zero);
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () {
+          final logs = expectedLatestLogsForEstimate(
+            totalCount: defaultPageSize + 5,
+            takeCount: defaultPageSize,
+            estimateId: testEstimateId,
+          );
+          return [
+            CostEstimationLogLoaded(
+              logs: logs,
+              hasMore: true,
+              isRefreshing: true,
+            ),
+            CostEstimationLogLoaded(logs: logs, hasMore: true),
+          ];
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should load as a first load when the empty state is on screen',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogEmpty);
+
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 1,
+              estimateId: testEstimateId,
+            ),
+          );
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          const CostEstimationLogLoading(),
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.logs.length,
+            'logs length',
+            1,
+          ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should show the first-load error again when a reload from the error view fails',
+        build: () {
+          failNextReads();
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogError);
+
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+        },
+        skip: skipOneFetchInitialCycle,
+        expect: () => [
+          const CostEstimationLogLoading(),
+          isA<CostEstimationLogError>().having(
+            (s) => s.isRepeatFailure,
+            'isRepeatFailure',
+            true,
+          ),
+        ],
+      );
+    });
+
     group('hasReachedEnd', () {
       final logs = expectedLatestLogsForEstimate(
         totalCount: 2,

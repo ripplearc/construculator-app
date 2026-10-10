@@ -911,6 +911,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMoreLogsErrorRepeat => 'Still couldn\'t load older events.';
 
   @override
+  String get refreshLogsError => 'Couldn\'t refresh Logs.';
+
+  @override
+  String get refreshLogsErrorHint =>
+      'The list below may be out of date. Pull down to try again.';
+
+  @override
   String get loadingLogs => 'Loading Logs';
 
   @override

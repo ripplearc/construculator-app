@@ -1714,6 +1714,18 @@ abstract class AppLocalizations {
   /// **'Still couldn\'t load older events.'**
   String get loadMoreLogsErrorRepeat;
 
+  /// Message shown above the activity logs list when a pull-down reload fails and the list already on screen is kept
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh Logs.'**
+  String get refreshLogsError;
+
+  /// Line under the failed reload message, telling the contractor the kept list may be stale and how to retry
+  ///
+  /// In en, this message translates to:
+  /// **'The list below may be out of date. Pull down to try again.'**
+  String get refreshLogsErrorHint;
+
   /// Label under the spinner while the first page of activity logs loads
   ///
   /// In en, this message translates to:

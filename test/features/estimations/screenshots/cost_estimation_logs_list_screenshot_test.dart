@@ -210,6 +210,36 @@ void main() {
       );
     });
 
+    // CUJ 11 screen 13: the list stays and the message sits above it.
+    testWidgets('a reload that failed', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      seedLogs(
+        LogTestDataFactory.createLogDataList(count: 6, estimateId: estimateId),
+      );
+
+      await pumpLogsList(tester, theme: theme);
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, 320),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_refresh_failed$suffix.png',
+        ),
+      );
+    });
+
     // CUJ 11 screen 2. The spinner animation does not draw in a golden; its
     // label and the sheet's height do.
     testWidgets('first page loading', (tester) async {
