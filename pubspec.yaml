@@ -37,6 +37,9 @@ dependencies:
   path: 1.9.1
   package_info_plus: 10.2.1
   http: 1.6.0
+  # Already on the graph through supabase_flutter (^6.1.2); declared at the
+  # resolved version so lib/ may import it.
+  url_launcher: 6.3.2
 
 dev_dependencies:
   flutter_test:

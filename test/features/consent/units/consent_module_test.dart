@@ -1,18 +1,22 @@
 import 'package:construculator/features/consent/consent_module.dart';
 import 'package:construculator/features/consent/presentation/bloc/consent_gate_bloc/consent_gate_bloc.dart';
 import 'package:construculator/features/consent/presentation/pages/consent_gate_page.dart';
-import 'package:construculator/features/consent/presentation/widgets/consent_document_links.dart';
 import 'package:construculator/features/consent/testing/consent_test_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/guards/consent_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/consent_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/url_launcher/interfaces/url_launcher.dart';
+import 'package:construculator/libraries/url_launcher/testing/fake_url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -196,17 +200,49 @@ void main() {
       expect(find.byType(ConsentGatePage), findsOneWidget);
     });
 
-    testWidgets('the gate page ships with its document links hidden', (
-      tester,
-    ) async {
-      // The production configuration, asserted where production sets it:
-      // onOpenDocument is a no-op until CA-1024, so rendering tappable links
-      // that open nothing would be worse than rendering none. A future edit
-      // that flips this without wiring the launcher fails here.
-      await tester.pumpWidget(buildRouteChild());
-      await tester.pumpAndSettle();
+    group('when a new version is published', () {
+      final requiredVersion = ConsentVersion(
+        id: 'version-2',
+        consentType: ConsentType.termsAndPrivacy,
+        version: 2,
+        documentUrl: 'https://example.com/terms/v2',
+        publishedAt: DateTime.utc(2026, 8, 11),
+      );
+      late FakeUrlLauncher urlLauncher;
 
-      expect(find.byType(ConsentDocumentLinks), findsNothing);
+      setUp(() {
+        urlLauncher = FakeUrlLauncher();
+        Modular.replaceInstance<UrlLauncher>(urlLauncher);
+        Modular.replaceInstance<ConsentRepository>(
+          FakeConsentRepository()
+            ..resolveTo(
+              ConsentOutdated(
+                acceptedVersion: 1,
+                requiredVersion: requiredVersion,
+              ),
+            ),
+        );
+      });
+
+      testWidgets('tapping terms opens the version document', (tester) async {
+        await tester.pumpWidget(buildRouteChild());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('consentGateTermsLink')));
+
+        expect(urlLauncher.openedUrls, [requiredVersion.documentUrl]);
+      });
+
+      testWidgets('tapping privacy opens the version document', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildRouteChild());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('consentGatePrivacyLink')));
+
+        expect(urlLauncher.openedUrls, [requiredVersion.documentUrl]);
+      });
     });
   });
 }

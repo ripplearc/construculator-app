@@ -31,6 +31,8 @@ import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/url_launcher/interfaces/url_launcher.dart';
+import 'package:construculator/libraries/url_launcher/url_launcher_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -45,6 +47,7 @@ class AuthModule extends Module {
     ConsentLibraryModule(appBootstrap),
     ClockModule(),
     RouterModule(),
+    UrlLauncherModule(),
   ];
 
   @override
@@ -90,6 +93,7 @@ void _registerRoutes(RouteManager r) {
       ],
       child: CreateAccountPage(
         router: Modular.get<AppRouter>(),
+        urlLauncher: Modular.get<UrlLauncher>(),
         email: r.args.data as String,
       ),
     ),

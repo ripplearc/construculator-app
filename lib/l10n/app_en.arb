@@ -435,6 +435,11 @@
     "description": "Error message shown when last name is required",
     "context": "N/A"
   },
+  "legalDocumentOpenErrorMessage": "We couldn't open the document. Please try again later.",
+  "@legalDocumentOpenErrorMessage": {
+    "description": "Error toast shown when tapping the terms or privacy link fails to open a browser",
+    "context": "N/A"
+  },
   "letsGetStarted": "Let's Get Started",
   "@letsGetStarted": {
     "description": "Label for new registration",
