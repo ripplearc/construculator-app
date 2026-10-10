@@ -13,6 +13,7 @@ import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ---------------------------------------------------------------------------
@@ -154,6 +155,33 @@ void main() {
           });
         },
       );
+
+      test('names every platform the way consent records name it', () async {
+        const platformNames = {
+          TargetPlatform.iOS: 'ios',
+          TargetPlatform.android: 'android',
+          TargetPlatform.macOS: 'macos',
+          TargetPlatform.windows: 'windows',
+          TargetPlatform.linux: 'linux',
+          TargetPlatform.fuchsia: 'fuchsia',
+        };
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        for (final platform in TargetPlatform.values) {
+          debugDefaultTargetPlatformOverride = platform;
+          fakePosthogWrapper.resetFake();
+
+          await repository.track(
+            const AnalyticsEvent(name: 'estimation_created'),
+          );
+
+          expect(
+            fakePosthogWrapper.capturedEvents.single.properties!['platform'],
+            platformNames[platform],
+            reason: '$platform',
+          );
+        }
+      });
 
       test('event properties override standard properties on key collision',
           () async {

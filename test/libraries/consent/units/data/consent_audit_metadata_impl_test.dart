@@ -17,7 +17,8 @@ void main() {
     });
 
     // The names AnalyticsRepositoryImpl sends as `platform`, so a consent row
-    // and an analytics event name the same device the same way.
+    // and an analytics event name the same device the same way. Its test
+    // pins the same six names.
     const analyticsPlatformNames = {
       TargetPlatform.iOS: 'ios',
       TargetPlatform.android: 'android',

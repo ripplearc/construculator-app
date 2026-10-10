@@ -7,9 +7,11 @@ class ConsentAuditMetadataImpl implements ConsentAuditMetadata {
   @override
   final String appVersion;
 
+  /// Creates metadata stamped with the bootstrap's [appVersion].
   ConsentAuditMetadataImpl({required this.appVersion});
 
-  // Same values analytics sends as its `platform` property.
+  /// The lowercase platform name, the same value analytics sends as
+  /// `platform`.
   @override
   String get platform => defaultTargetPlatform.name.toLowerCase();
 }
