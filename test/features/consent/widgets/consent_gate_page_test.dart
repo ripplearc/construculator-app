@@ -284,17 +284,15 @@ void main() {
   });
 
   group('when the session carries no internal user id', () {
-    // The one status the guard decides on its own rather than through
-    // gatesAccess, so it is the one status the guard and this page can
-    // disagree about. They are driven together here, against a single
-    // repository, because either half read alone looks correct: the guard
-    // blocking is right, and the page leaving for the shell is right for
-    // every other ConsentSatisfied. Only the pair shows the loop.
+    // The guard blocks this status, so the page must not leave for the
+    // shell either, or the two would trade the user back and forth. They
+    // are driven together here, against a single repository, because
+    // either half read alone looks correct. Only the pair shows the loop.
     late ConsentGuard guard;
 
     setUp(() {
       repository.resolveTo(
-        const ConsentSatisfied(ConsentRepository.noUserVersion),
+        const ConsentUserUnidentified(ConsentType.termsAndPrivacy),
       );
       guard = ConsentGuard(() => Modular.get<CheckConsentStatusUseCase>());
     });

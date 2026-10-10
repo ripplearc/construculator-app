@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- CONSENT STATUS MUTATION TESTING -->
-    <!-- Targets: ConsentStatus.resolve(), the single definition of what the
-         five gate outcomes mean. Critical path: this decides whether a user
-         reaches the app. -->
+    <!-- Targets: ConsentStatus.resolve() and gatesAccess, the single
+         definitions of what the six gate outcomes mean and which of them
+         block. Critical path: this decides whether a user reaches the app. -->
 
     <files>
         <file>lib/libraries/consent/domain/entities/consent_status_entity.dart</file>
@@ -53,6 +53,36 @@
         <!-- RULE 8: NeverGiven carries the wrong version -->
         <regex pattern="return ConsentNeverGiven\(published\);" dotAll="true" id="status.resolve.wrong_never_given_version">
             <mutation text="return ConsentNeverGiven(ConsentVersion(id: '', consentType: published.consentType, version: 0, documentUrl: '', publishedAt: published.publishedAt));"/>
+        </regex>
+
+        <!-- RULE 9: gatesAccess ignores the type again, so analytics gates -->
+        <regex pattern="type == ConsentType\.termsAndPrivacy;" dotAll="true" id="status.gates.ignore_type">
+            <mutation text="true;"/>
+        </regex>
+
+        <!-- RULE 10: gatesAccess gates the wrong type -->
+        <regex pattern="type == ConsentType\.termsAndPrivacy;" dotAll="true" id="status.gates.invert_type">
+            <mutation text="type != ConsentType.termsAndPrivacy;"/>
+        </regex>
+
+        <!-- RULE 11: Outdated and NeverGiven read a fixed type, not their own -->
+        <regex pattern="_gatesShell\(requiredVersion\.consentType\)" dotAll="true" id="status.gates.version_type_ignored">
+            <mutation text="_gatesShell(ConsentType.termsAndPrivacy)"/>
+        </regex>
+
+        <!-- RULE 12: Indeterminate and UserUnidentified gate whatever their type -->
+        <regex pattern="ConsentUserUnidentified\(:final consentType\) =&gt; _gatesShell\(consentType\)" dotAll="true" id="status.gates.type_carrying_always_gate">
+            <mutation text="ConsentUserUnidentified(:final consentType) =&gt; true"/>
+        </regex>
+
+        <!-- RULE 13: The ungated states gate -->
+        <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.ungated_states_gate">
+            <mutation text="ConsentSatisfied() || ConsentUnverified() =&gt; true"/>
+        </regex>
+
+        <!-- RULE 14: An unidentified user is read as consent given -->
+        <regex pattern="ConsentSatisfied\(\) \|\| ConsentUnverified\(\) =&gt; false" dotAll="true" id="status.gates.unidentified_ungated">
+            <mutation text="ConsentSatisfied() || ConsentUnverified() || ConsentUserUnidentified() =&gt; false"/>
         </regex>
     </rules>
 

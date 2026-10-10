@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
-import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/params/consent_usecase_params.dart';
@@ -153,15 +152,13 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
 
   // Maps a resolved status onto what the page should show.
   ConsentGateState _stateFor(ConsentStatus status) => switch (status) {
-    // The repository answers with this synthetic version when it cannot
-    // identify the user, which is not an acceptance -- ConsentGuard blocks on
-    // it for that reason. Mapping it to Allowed here would navigate straight
-    // back to the shell, whose guard redirects here again: an unbreakable
-    // loop for exactly the session the guard exists to catch. Unavailable is
-    // the same dead end the guard leaves the user in, and its retry re-reads
-    // the status, so a JWT that later carries the claim resolves normally.
-    ConsentSatisfied(acceptedVersion: ConsentRepository.noUserVersion) =>
-      const ConsentGateUnavailable(),
+    // ConsentGuard blocks on this, so mapping it to Allowed here would
+    // navigate straight back to the shell, whose guard redirects here again:
+    // an unbreakable loop for exactly the session the guard exists to catch.
+    // Unavailable is the same dead end the guard leaves the user in, and its
+    // retry re-reads the status, so a JWT that later carries the claim
+    // resolves normally.
+    ConsentUserUnidentified() => const ConsentGateUnavailable(),
     ConsentSatisfied(:final acceptedVersion) => ConsentGateAllowed(
       acceptedVersion,
     ),

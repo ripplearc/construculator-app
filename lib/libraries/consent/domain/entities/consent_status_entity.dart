@@ -11,7 +11,8 @@ import 'package:equatable/equatable.dart';
 /// at all — a missed case must not be something the compiler tolerates.
 ///
 /// [gatesAccess] states which of them block. The split is not simply "errors
-/// gate": it turns on whether there is a prior acceptance to fall back on. See
+/// gate": it turns on whether there is a prior acceptance to fall back on, and
+/// on the type, since only terms and privacy ever gates. See
 /// [ConsentUnverified] and [ConsentIndeterminate].
 sealed class ConsentStatus extends Equatable {
   const ConsentStatus();
@@ -22,10 +23,24 @@ sealed class ConsentStatus extends Equatable {
   /// lives here: a second implementation that disagreed would gate users
   /// differently depending on which path reached it. The route guard and the
   /// tests both read this rather than restating the mapping.
+  ///
+  /// Type-aware: only [ConsentType.termsAndPrivacy] gates the app shell. An
+  /// [ConsentType.analytics] outcome never does, whatever its status — a stale
+  /// or missing analytics consent disables capture, it does not lock anyone
+  /// out of a calculator. Every gating status already names its type, so the
+  /// check needs nothing beyond what the status carries.
   bool get gatesAccess => switch (this) {
     ConsentSatisfied() || ConsentUnverified() => false,
-    ConsentOutdated() || ConsentNeverGiven() || ConsentIndeterminate() => true,
+    ConsentOutdated(:final requiredVersion) ||
+    ConsentNeverGiven(
+      :final requiredVersion,
+    ) => _gatesShell(requiredVersion.consentType),
+    ConsentIndeterminate(:final consentType) ||
+    ConsentUserUnidentified(:final consentType) => _gatesShell(consentType),
   };
+
+  static bool _gatesShell(ConsentType type) =>
+      type == ConsentType.termsAndPrivacy;
 
   /// Resolves the gate outcome for [acceptedVersion] against [published].
   ///
@@ -63,23 +78,9 @@ sealed class ConsentStatus extends Equatable {
 
 /// The accepted version is at least the published version. Ungated.
 class ConsentSatisfied extends ConsentStatus {
-  /// The version the user has on file.
-  ///
-  /// May be synthetic. `ConsentRepository.noUserVersion` (`0`) is what the
-  /// repository reports when it cannot identify the user at all, which is
-  /// neither an acceptance nor an error. Callers must not read it as a version
-  /// the user actually accepted.
-  ///
-  /// `ConsentGuard` tests for that exact value and blocks, and
-  /// `ConsentGateBloc._stateFor` mirrors it — so `0` now carries a decision,
-  /// not just a caveat. Nothing else may report this state carrying `0`:
-  /// `ConsentVerificationResolver` resolves "nothing published for this type"
-  /// to [ConsentIndeterminate] or [ConsentUnverified] for that reason, and a
-  /// future path that reused `0` for a different meaning would lock those
-  /// users out at the gate's retry screen.
-  /// TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - Give the sentinel
-  /// its own sealed state so gatesAccess carries the branch and the overload
-  /// goes away.
+  /// The version the user has on file. Always a real acceptance, traced to a
+  /// published row: a session the repository cannot identify reports
+  /// [ConsentUserUnidentified] instead.
   final int acceptedVersion;
 
   const ConsentSatisfied(this.acceptedVersion);
@@ -88,7 +89,8 @@ class ConsentSatisfied extends ConsentStatus {
   List<Object?> get props => [acceptedVersion];
 }
 
-/// A newer version has been published than the one the user accepted. Gated.
+/// A newer version has been published than the one the user accepted. Gated
+/// for terms and privacy (see [gatesAccess]).
 ///
 /// The only path that blocks a returning user, and it requires a *successfully
 /// fetched* published version strictly greater than the accepted one — never
@@ -110,7 +112,7 @@ class ConsentOutdated extends ConsentStatus {
 }
 
 /// No acceptance on record — a cold install, cleared data, or a prior
-/// withdrawal. Gated.
+/// withdrawal. Gated for terms and privacy (see [gatesAccess]).
 class ConsentNeverGiven extends ConsentStatus {
   /// The version to present for acceptance.
   final ConsentVersion requiredVersion;
@@ -146,7 +148,8 @@ class ConsentUnverified extends ConsentStatus {
 }
 
 /// The requirement could not be established at all, and there is no prior
-/// acceptance to fall back on. **Gated**, with a retry screen.
+/// acceptance to fall back on. **Gated** for terms and privacy, with a retry
+/// screen (see [gatesAccess]).
 ///
 /// The deliberate exception to the leniency of [ConsentUnverified], and the
 /// two must never be collapsed. Failing open requires something to fall back
@@ -170,6 +173,29 @@ class ConsentIndeterminate extends ConsentStatus {
   final ConsentType consentType;
 
   const ConsentIndeterminate(this.consentType);
+
+  @override
+  List<Object?> get props => [consentType];
+}
+
+/// The session is signed in but the repository cannot tell whose it is.
+/// **Gated** for terms and privacy, with a retry screen (see [gatesAccess]).
+///
+/// `AuthGuard` passing does not rule this out: it tests the auth session,
+/// while the internal user id comes from a separate JWT claim. A stale token
+/// or a refresh race leaves a signed-in session without that claim, and it is
+/// most likely for a brand-new signup, whose token is minted before the
+/// profile exists.
+///
+/// Its own state rather than [ConsentSatisfied] carrying a synthetic version,
+/// so every exhaustive switch has to decide what it means. Read as an
+/// acceptance it would silently un-gate a user whose consent was never
+/// evaluated.
+class ConsentUserUnidentified extends ConsentStatus {
+  /// Which document was being checked when the user could not be identified.
+  final ConsentType consentType;
+
+  const ConsentUserUnidentified(this.consentType);
 
   @override
   List<Object?> get props => [consentType];

@@ -47,6 +47,57 @@ void main() {
       );
     });
 
+    test('blocks a session whose user cannot be identified', () {
+      // Not an acceptance: letting it through would un-gate a user whose
+      // consent was never evaluated.
+      expect(
+        gates(const ConsentUserUnidentified(ConsentType.termsAndPrivacy)),
+        isTrue,
+      );
+    });
+
+    group('for analytics', () {
+      // Analytics gates capture only: blocking a calculator over an analytics
+      // opt-in would be disproportionate, whatever the status.
+      final analyticsVersion = ConsentVersion(
+        id: 'analytics-2',
+        consentType: ConsentType.analytics,
+        version: 2,
+        documentUrl: 'https://example.com/analytics/v2',
+        publishedAt: DateTime.utc(2026, 8, 11),
+      );
+
+      test('lets an outdated acceptance through', () {
+        expect(
+          gates(
+            ConsentOutdated(
+              acceptedVersion: 1,
+              requiredVersion: analyticsVersion,
+            ),
+          ),
+          isFalse,
+        );
+      });
+
+      test('lets a missing acceptance through', () {
+        expect(gates(ConsentNeverGiven(analyticsVersion)), isFalse);
+      });
+
+      test('lets an unidentified user through', () {
+        expect(
+          gates(const ConsentUserUnidentified(ConsentType.analytics)),
+          isFalse,
+        );
+      });
+
+      test('lets an unresolved requirement through', () {
+        expect(
+          gates(const ConsentIndeterminate(ConsentType.analytics)),
+          isFalse,
+        );
+      });
+    });
+
     test('distinguishes an unverified check from a satisfied one', () {
       // Both are ungated, but they must stay distinguishable: only one of them
       // means the version was actually confirmed.

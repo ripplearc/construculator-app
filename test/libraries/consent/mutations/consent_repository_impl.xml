@@ -21,10 +21,10 @@
              ConsentStatus directly, not Either) removed the Right(...)
              wrapper this rule targeted, making it inert -- see #545 B2.
              Anchored on the method signature since "if (userId == null)
-             return _ungated;" is identical text in verifyPublishedVersion
+             return ConsentUserUnidentified(type);" is identical text in verifyPublishedVersion
              (rule 6) a few lines below. -->
-        <regex pattern="Future&lt;ConsentStatus&gt; getCachedConsentStatus\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return _ungated;" dotAll="true" id="repo.read.skip_signed_out_guard">
-            <mutation text="Future&lt;ConsentStatus&gt; getCachedConsentStatus(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return _ungated;"/>
+        <regex pattern="Future&lt;ConsentStatus&gt; getCachedConsentStatus\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return ConsentUserUnidentified\(type\);" dotAll="true" id="repo.read.skip_signed_out_guard">
+            <mutation text="Future&lt;ConsentStatus&gt; getCachedConsentStatus(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return ConsentUserUnidentified(type);"/>
         </regex>
 
         <!-- RULE 2: Skip the missing-published-version guard in
@@ -60,8 +60,8 @@
              was removed by a later revision, leaving it byte-identical to
              rule 1's target and matching neither -- see #545 B2. Anchored
              on the method signature instead. -->
-        <regex pattern="Future&lt;ConsentStatus&gt; verifyPublishedVersion\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return _ungated;" dotAll="true" id="repo.verify.skip_signed_out_guard">
-            <mutation text="Future&lt;ConsentStatus&gt; verifyPublishedVersion(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return _ungated;"/>
+        <regex pattern="Future&lt;ConsentStatus&gt; verifyPublishedVersion\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return ConsentUserUnidentified\(type\);" dotAll="true" id="repo.verify.skip_signed_out_guard">
+            <mutation text="Future&lt;ConsentStatus&gt; verifyPublishedVersion(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return ConsentUserUnidentified(type);"/>
         </regex>
 
         <!-- RULE 11: Swap the fail-open/fail-closed split #545 B1 added --
@@ -91,6 +91,18 @@
         <!-- RULE 10: Wrong fallback when nothing is on file to withdraw -->
         <regex pattern="version = _effectiveAcceptedVersion\(current\) \?\? 0;" dotAll="true" id="repo.record_withdrawal.wrong_fallback_version">
             <mutation text="version = _effectiveAcceptedVersion(current) ?? 999;"/>
+        </regex>
+        <!-- RULE 12: Hard-code the type an indeterminate status carries.
+             gatesAccess reads it, so termsAndPrivacy here would let a
+             missing analytics row block the app. Matches every site. -->
+        <regex pattern="ConsentIndeterminate\(type\)" dotAll="true" id="repo.status.hardcode_indeterminate_type">
+            <mutation text="ConsentIndeterminate(ConsentType.termsAndPrivacy)"/>
+        </regex>
+
+        <!-- RULE 13: Hard-code the type an unidentified session carries.
+             Matches every site. -->
+        <regex pattern="ConsentUserUnidentified\(type\)" dotAll="true" id="repo.status.hardcode_unidentified_type">
+            <mutation text="ConsentUserUnidentified(ConsentType.termsAndPrivacy)"/>
         </regex>
     </rules>
 
