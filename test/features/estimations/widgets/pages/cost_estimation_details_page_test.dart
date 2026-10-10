@@ -10,10 +10,12 @@ import 'package:construculator/features/estimation/presentation/widgets/your_rat
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -72,6 +74,11 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     (Modular.get<AppRouter>() as FakeAppRouter).reset();
   });
 

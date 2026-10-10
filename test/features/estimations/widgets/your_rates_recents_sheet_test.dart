@@ -3,6 +3,8 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +35,11 @@ void main() {
 
   setUp(() {
     result = null;
+    Modular.get<CurrentCompanyResolver>().clearCache();
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+      'company-1',
+    );
     clock.set(DateTime(2026, 1, 15));
     fakeSupabase.addTableData('your_rates', [
       {
