@@ -153,6 +153,18 @@ void main() {
         expect(status, const ConsentUnverified(1));
         expect(status.gatesAccess, isFalse);
       });
+
+      test('keeps the analytics type, which does not gate', () async {
+        remoteDataSource.error = Exception('offline');
+
+        final status = await resolver.resolve(
+          type: ConsentType.analytics,
+          acceptedVersion: null,
+        );
+
+        expect(status, const ConsentIndeterminate(ConsentType.analytics));
+        expect(status.gatesAccess, isFalse);
+      });
     });
   });
 }

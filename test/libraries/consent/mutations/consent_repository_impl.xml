@@ -92,6 +92,18 @@
         <regex pattern="version = _effectiveAcceptedVersion\(current\) \?\? 0;" dotAll="true" id="repo.record_withdrawal.wrong_fallback_version">
             <mutation text="version = _effectiveAcceptedVersion(current) ?? 999;"/>
         </regex>
+        <!-- RULE 12: Hard-code the type an indeterminate status carries.
+             gatesAccess reads it, so termsAndPrivacy here would let a
+             missing analytics row block the app. Matches every site. -->
+        <regex pattern="ConsentIndeterminate\(type\)" dotAll="true" id="repo.status.hardcode_indeterminate_type">
+            <mutation text="ConsentIndeterminate(ConsentType.termsAndPrivacy)"/>
+        </regex>
+
+        <!-- RULE 13: Hard-code the type an unidentified session carries.
+             Matches every site. -->
+        <regex pattern="ConsentUserUnidentified\(type\)" dotAll="true" id="repo.status.hardcode_unidentified_type">
+            <mutation text="ConsentUserUnidentified(ConsentType.termsAndPrivacy)"/>
+        </regex>
     </rules>
 
     <commands>
