@@ -17,6 +17,7 @@ import 'package:construculator/libraries/router/guards/consent_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/url_launcher/testing/fake_url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -47,10 +48,12 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  Widget buildPage({
-    ThemeData? theme,
-    List<String> openedUrls = const [],
-  }) {
+  setUpAll(CoreToast.disableTimers);
+  tearDownAll(CoreToast.enableTimers);
+
+  AppLocalizations l10n() => lookupAppLocalizations(const Locale('en'));
+
+  Widget buildPage({ThemeData? theme, FakeUrlLauncher? urlLauncher}) {
     return MaterialApp(
       theme: theme ?? createTestTheme(),
       locale: const Locale('en'),
@@ -61,7 +64,7 @@ void main() {
             Modular.get<ConsentGateBloc>()..add(const ConsentGateStarted()),
         child: ConsentGatePage(
           router: router,
-          onOpenDocument: openedUrls.add,
+          onOpenDocument: (urlLauncher ?? FakeUrlLauncher()).openExternal,
         ),
       ),
     );
@@ -85,25 +88,41 @@ void main() {
     });
 
     testWidgets('tapping terms opens the version document', (tester) async {
-      final openedUrls = <String>[];
-      await tester.pumpWidget(buildPage(openedUrls: openedUrls));
+      final urlLauncher = FakeUrlLauncher();
+      await tester.pumpWidget(buildPage(urlLauncher: urlLauncher));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('consentGateTermsLink')));
+      await tester.pumpAndSettle();
 
-      expect(openedUrls, [requiredVersion.documentUrl]);
+      expect(urlLauncher.openedUrls, [requiredVersion.documentUrl]);
+      expect(find.text(l10n().legalDocumentOpenErrorMessage), findsNothing);
     });
 
     testWidgets('tapping privacy opens the version document', (tester) async {
       // Terms and privacy are one document today, so both links open the
       // version's single documentUrl.
-      final openedUrls = <String>[];
-      await tester.pumpWidget(buildPage(openedUrls: openedUrls));
+      final urlLauncher = FakeUrlLauncher();
+      await tester.pumpWidget(buildPage(urlLauncher: urlLauncher));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('consentGatePrivacyLink')));
 
-      expect(openedUrls, [requiredVersion.documentUrl]);
+      expect(urlLauncher.openedUrls, [requiredVersion.documentUrl]);
+    });
+
+    testWidgets('says so when the document cannot be opened', (tester) async {
+      // The user cannot leave the gate, so a silent failure would leave
+      // them tapping a link that does nothing.
+      final urlLauncher = FakeUrlLauncher()..shouldOpen = false;
+      await tester.pumpWidget(buildPage(urlLauncher: urlLauncher));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('consentGateTermsLink')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().legalDocumentOpenErrorMessage), findsOneWidget);
+      expect(find.byKey(const Key('consentGateTitle')), findsOneWidget);
     });
 
     testWidgets('offers no back affordance', (tester) async {

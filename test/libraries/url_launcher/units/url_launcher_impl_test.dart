@@ -42,6 +42,25 @@ void main() {
       expect(opened, isFalse);
     });
 
+    test('reports false instead of throwing when the plugin is missing', () async {
+      final launcher = UrlLauncherImpl(
+        launch: (_) async => throw MissingPluginException('launch'),
+      );
+
+      final opened = await launcher.openExternal('https://example.com/terms');
+
+      expect(opened, isFalse);
+    });
+
+    test('opens a URL a server row padded with whitespace', () async {
+      final launcher = launcherThatOpens(opens: true);
+
+      final opened = await launcher.openExternal(' https://example.com/terms\n');
+
+      expect(opened, isTrue);
+      expect(launchedUris, [Uri.parse('https://example.com/terms')]);
+    });
+
     test('rejects a relative URL without reaching the platform', () async {
       final launcher = launcherThatOpens(opens: true);
 

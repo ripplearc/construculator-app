@@ -283,6 +283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lastNameRequired => 'Last name is required';
 
   @override
+  String get legalDocumentOpenErrorMessage =>
+      'We couldn\'t open the document. Please try again later.';
+
+  @override
   String get letsGetStarted => 'Let\'s Get Started';
 
   @override

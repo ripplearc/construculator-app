@@ -59,7 +59,7 @@ void main() {
               Modular.get<ConsentGateBloc>()..add(const ConsentGateStarted()),
           child: ConsentGatePage(
             router: Modular.get<AppRouter>(),
-            onOpenDocument: (_) {},
+            onOpenDocument: (_) async => true,
           ),
         ),
       ),

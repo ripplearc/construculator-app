@@ -13,8 +13,6 @@ typedef LaunchExternalApplication = Future<bool> Function(Uri url);
 class UrlLauncherImpl implements UrlLauncher {
   static final _logger = AppLogger().tag('UrlLauncherImpl');
 
-  /// Only web documents open; a `file:` or `intent:` URL in a server row
-  /// would otherwise reach the platform as-is.
   static const _webSchemes = {'http', 'https'};
 
   final LaunchExternalApplication _launch;
@@ -25,7 +23,7 @@ class UrlLauncherImpl implements UrlLauncher {
 
   @override
   Future<bool> openExternal(String url) async {
-    final uri = Uri.tryParse(url);
+    final uri = Uri.tryParse(url.trim());
     if (uri == null || !_webSchemes.contains(uri.scheme)) {
       _logger.warning('Cannot open "$url": not a web URL');
       return false;
@@ -35,6 +33,9 @@ class UrlLauncherImpl implements UrlLauncher {
       if (!opened) _logger.warning('No app could open "$url"');
       return opened;
     } on PlatformException catch (e, stackTrace) {
+      _logger.warning('Opening "$url" failed', e, stackTrace);
+      return false;
+    } on MissingPluginException catch (e, stackTrace) {
       _logger.warning('Opening "$url" failed', e, stackTrace);
       return false;
     }

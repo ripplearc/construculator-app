@@ -550,9 +550,8 @@ void main() {
       expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
     });
 
-    testWidgets('stays on the page when the document cannot be opened', (
-      tester,
-    ) async {
+    testWidgets('stays on the page and says so when the document cannot be '
+        'opened', (tester) async {
       urlLauncher.shouldOpen = false;
       await renderPage(tester);
 
@@ -560,6 +559,15 @@ void main() {
 
       expect(urlLauncher.openedUrls, [termsAndPrivacyUrl]);
       expect(find.text(l10n().createAccountTitle), findsOneWidget);
+      expect(find.text(l10n().legalDocumentOpenErrorMessage), findsOneWidget);
+    });
+
+    testWidgets('shows no error when the document opens', (tester) async {
+      await renderPage(tester);
+
+      await tapLink(tester, const Key('terms_and_services_link'));
+
+      expect(find.text(l10n().legalDocumentOpenErrorMessage), findsNothing);
     });
 
     testWidgets('can register with phone number instead of email', (

@@ -14,7 +14,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const usCountryCode = '+1';
 
-// TODO: https://ripplearc.youtrack.cloud/issue/CA-963 - Provisional URL that
+// TODO: https://ripplearc.youtrack.cloud/issue/CA-1305 - Provisional URL that
 // does not resolve yet; replace it with the published document's URL. Both
 // the terms and the privacy link open it until we know whether they are one
 // document or two.
@@ -102,8 +102,16 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
-  void _openTermsAndPrivacy() =>
-      widget.urlLauncher.openExternal(termsAndPrivacyUrl);
+  Future<void> _openTermsAndPrivacy() async {
+    final opened = await widget.urlLauncher.openExternal(termsAndPrivacyUrl);
+    if (opened || !mounted) return;
+    final l10n = context.l10n;
+    CoreToast.showError(
+      context,
+      l10n.legalDocumentOpenErrorMessage,
+      l10n.closeLabel,
+    );
+  }
 
   void _onRoleSelected(String? selectedName) {
     if (selectedName != null) {
