@@ -27,7 +27,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await loadAppFonts();
+    await loadAppFontsAll();
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     Modular.init(
       EstimationModule(
