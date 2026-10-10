@@ -151,6 +151,7 @@ class DatabaseConstants {
 
   // Cost Items columns
   static const String itemTypeColumn = 'item_type';
+  static const String itemTotalCostColumn = 'item_total_cost';
 
   // Your Rates columns (id and created_at/updated_at use the shared columns
   // above; companyIdColumn is the optional filter that actually scopes a
