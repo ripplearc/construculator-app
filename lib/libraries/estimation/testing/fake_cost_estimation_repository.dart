@@ -33,6 +33,20 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// The last limit passed to [watchEstimations].
   int? lastLimit;
 
+  /// What [getEstimation] returns.
+  Either<Failure, CostEstimate>? getEstimationResult;
+
+  /// The last ID passed to [getEstimation].
+  String? lastGetEstimationId;
+
+  @override
+  Future<Either<Failure, CostEstimate>> getEstimation(
+    String estimationId,
+  ) async {
+    lastGetEstimationId = estimationId;
+    return getEstimationResult ?? (throw UnimplementedError());
+  }
+
   @override
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
     String projectId, {

@@ -85,6 +85,16 @@ abstract class CostEstimationRepository {
     int? limit,
   });
 
+  /// Retrieves a single cost estimation by its ID.
+  ///
+  /// Returns a [Future] that completes with an [Either] containing either
+  /// a [Failure] (a not-found failure when no row has this ID) or the
+  /// matching [CostEstimate].
+  ///
+  /// The `totalCost` of the result is the stored column. It is not the sum of
+  /// the cost items.
+  Future<Either<Failure, CostEstimate>> getEstimation(String estimationId);
+
   /// Creates a new cost estimation.
   ///
   /// Returns a [Future] that completes with the created [CostEstimate] containing

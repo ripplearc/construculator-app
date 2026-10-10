@@ -59,6 +59,17 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   }
 
   @override
+  Future<CostEstimateDto?> getEstimationById(String estimationId) async {
+    _logger.debug('Getting cost estimation: $estimationId');
+    final response = await supabaseWrapper.selectSingle(
+      table: costEstimatesTable,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: estimationId,
+    );
+    return response == null ? null : CostEstimateDto.fromJson(response);
+  }
+
+  @override
   Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
     _logger.debug('Creating cost estimation: ${estimation.id}');
     final response = await supabaseWrapper.insert(
