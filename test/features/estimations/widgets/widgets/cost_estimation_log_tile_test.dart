@@ -447,8 +447,14 @@ void main() {
           richTextContaining(localization.activityEditedFieldUnitPrice),
           findsOneWidget,
         );
-        expect(richTextContaining(r'$14.00'), findsOneWidget);
-        expect(richTextContaining(r'$14.50'), findsOneWidget);
+        expect(
+          richTextContaining('${localization.activityFrom}\$14.00'),
+          findsOneWidget,
+        );
+        expect(
+          richTextContaining('${localization.activityTo}\$14.50'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('several changed prices count them and show no rates', (
@@ -517,6 +523,38 @@ void main() {
           findsOneWidget,
         );
         expect(richTextContaining(localization.activityFrom), findsNothing);
+      });
+
+      testWidgets('a new rate that is not a number shows no rates', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': [
+              {'itemName': 'Drywall sheets', 'oldRate': 14, 'newRate': '14.5'},
+            ],
+          },
+        );
+
+        await tester.pumpWidget(createWidget(log));
+
+        expect(richTextContaining(l10n().activityFrom), findsNothing);
+      });
+
+      testWidgets('a changed item that is not a map shows no rates', (
+        tester,
+      ) async {
+        final log = testLog.copyWith(
+          activity: CostEstimationActivityType.costFileUpdated,
+          activityDetails: {
+            'changedItems': ['Drywall sheets'],
+          },
+        );
+
+        await tester.pumpWidget(createWidget(log));
+
+        expect(richTextContaining(l10n().activityFrom), findsNothing);
       });
     });
 

@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_screen.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_file_changed_item_parser.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_mapper.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -189,16 +190,11 @@ class CostEstimationLogTile extends StatelessWidget {
     return null;
   }
 
-  // Only a one-price upload shows its rates. Several prices are counted in
-  // the title instead.
   Widget? _buildCostFileUpdatedSubtitle(BuildContext context) {
-    final changedItems = log.activityDetails['changedItems'];
-    if (changedItems is! List || changedItems.length != 1) return null;
-    final changedItem = changedItems.single;
-    if (changedItem is! Map) return null;
-    final oldRate = changedItem['oldRate'];
-    final newRate = changedItem['newRate'];
-    if (oldRate is! num || newRate is! num) return null;
+    final change = CostFileChangedItemParser.singleFrom(log.activityDetails);
+    final oldRate = change?.oldRate;
+    final newRate = change?.newRate;
+    if (oldRate == null || newRate == null) return null;
     final l10n = context.l10n;
     return _buildSubtitleRow(
       context,

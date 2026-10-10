@@ -231,6 +231,29 @@ void main() {
       );
     });
 
+    testWidgets('a11y: one-price cost file updated passes in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      final log = testLog.copyWith(
+        activity: CostEstimationActivityType.costFileUpdated,
+        activityDetails: {
+          'changedItems': [
+            {'itemName': 'Drywall sheets', 'oldRate': 14, 'newRate': 14.5},
+          ],
+        },
+      );
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => createWidget(log, theme: theme),
+        find.byType(CostEstimationLogTile),
+        checkTapTargetSize: false,
+        checkLabeledTapTarget: false,
+      );
+    });
+
     testWidgets('a11y: long user name layout passes', (tester) async {
       await setupA11yTest(tester);
 
