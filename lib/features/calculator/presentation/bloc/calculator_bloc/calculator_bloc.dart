@@ -103,6 +103,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         ));
       case ControlAction.clearAll:
         emit(CalculatorState.initial());
+      // TODO: [CA-1087] Open and close a bracket on the tape once the engine
+      // is wired into this bloc. https://ripplearc.youtrack.cloud/issue/CA-1087
+      case ControlAction.paren:
+        break;
+      // Never sent since coreui 0.28.0; the value leaves with CA-1197.
+      // ignore: deprecated_member_use
       case ControlAction.moreOptions:
         break;
     }
