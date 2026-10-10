@@ -359,12 +359,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         label: l10n.equipmentRateStatusSampleRateBadge,
         variant: RateStatusBadgeVariant.orange,
       ),
-      RateStatus.ownRateConfirmed => RateStatusBadge(
-        key: const Key('rate_status_badge'),
-        label: l10n.equipmentRateStatusYourRateBadge,
-        variant: RateStatusBadgeVariant.green,
-      ),
-      RateStatus.ownRateUnconfirmed || RateStatus.missing => null,
+      RateStatus.ownRateConfirmed ||
+      RateStatus.ownRateUnconfirmed ||
+      RateStatus.missing => null,
     };
   }
 
@@ -435,7 +432,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   bool _isSavableRate(EquipmentCostFormData data) =>
-      data.rateStatus != RateStatus.missing &&
+      (data.rateStatus == RateStatus.sampleRateUnverified ||
+          data.rateStatus == RateStatus.ownRateUnconfirmed) &&
       data.itemTypeError == null &&
       _equipmentNameController.text.trim().isNotEmpty &&
       !_hasRateFieldError(data);
@@ -628,7 +626,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       method: method,
       blocFactory: widget.yourRatesBlocFactory,
     );
-    if (entry == null || !mounted) return;
+    if (entry == null || !mounted || !context.mounted) return;
     if (_equipmentNameController.text.trim().isEmpty) {
       _equipmentNameController.text = entry.itemName;
     }
@@ -637,6 +635,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             : _jobAmountController)
         .text = _formatTrimmedNumber(
       entry.rate.amount,
+    );
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentSavedRateRecalledEvent(method: method, rate: entry.rate.amount),
     );
   }
 

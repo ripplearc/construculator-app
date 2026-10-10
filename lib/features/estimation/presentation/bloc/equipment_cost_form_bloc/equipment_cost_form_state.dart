@@ -54,6 +54,7 @@ class EquipmentCostFormData extends Equatable {
     this.jobAmount,
     this.deliveryFee,
     this.rateStatus = RateStatus.missing,
+    this.otherMethodRateStatus = RateStatus.missing,
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -71,6 +72,10 @@ class EquipmentCostFormData extends Equatable {
 
   /// Confidence level of the rate used for this line.
   final RateStatus rateStatus;
+
+  /// Rate status of the pricing method that is not selected, so switching
+  /// back to it restores the status it had.
+  final RateStatus otherMethodRateStatus;
 
   /// Freeform description/note for this item.
   final String? description;
@@ -103,6 +108,7 @@ class EquipmentCostFormData extends Equatable {
     Object? jobAmount = _unset,
     Object? deliveryFee = _unset,
     RateStatus? rateStatus,
+    RateStatus? otherMethodRateStatus,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -117,6 +123,8 @@ class EquipmentCostFormData extends Equatable {
           ? this.deliveryFee
           : deliveryFee as double?,
       rateStatus: rateStatus ?? this.rateStatus,
+      otherMethodRateStatus:
+          otherMethodRateStatus ?? this.otherMethodRateStatus,
       description: description == _unset
           ? this.description
           : description as String?,
@@ -134,6 +142,7 @@ class EquipmentCostFormData extends Equatable {
     jobAmount,
     deliveryFee,
     rateStatus,
+    otherMethodRateStatus,
     description,
     isValid,
     fieldErrors,
