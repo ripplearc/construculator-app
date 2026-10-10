@@ -2,6 +2,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_screen.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_file_changed_item_parser.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_mapper.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -102,11 +104,12 @@ class CostEstimationLogTile extends StatelessWidget {
         return _buildEditedFieldsSubtitle(context);
       case CostEstimationActivityType.taskAssigned:
         return _buildTaskAssignedSubtitle(context);
+      case CostEstimationActivityType.costFileUpdated:
+        return _buildCostFileUpdatedSubtitle(context);
       // TODO: [CA-1140] Give the Send kinds their second line (version,
       // recipient, state) from the storyboard's CUJ 11 screen 5 once CUJ 8
-      // (Send) produces it, PDF shared its "Shared with {appName}" line
-      // followed by "The phone cannot tell if it arrived.", and
-      // costFileUpdated its old and new rate when one price changed.
+      // (Send) produces it, and PDF shared its "Shared with {appName}" line
+      // followed by "The phone cannot tell if it arrived.".
       // https://ripplearc.youtrack.cloud/issue/CA-1140
       default:
         return null;
@@ -185,6 +188,20 @@ class CostEstimationLogTile extends StatelessWidget {
       );
     }
     return null;
+  }
+
+  Widget? _buildCostFileUpdatedSubtitle(BuildContext context) {
+    final change = CostFileChangedItemParser.singleFrom(log.activityDetails);
+    final oldRate = change?.oldRate;
+    final newRate = change?.newRate;
+    if (oldRate == null || newRate == null) return null;
+    final l10n = context.l10n;
+    return _buildSubtitleRow(
+      context,
+      CostItemEditedFieldFormatter.valueFor(l10n, 'unit_price', oldRate),
+      CostItemEditedFieldFormatter.valueFor(l10n, 'unit_price', newRate),
+      fieldLabel: CostItemEditedFieldFormatter.labelFor(l10n, 'unit_price'),
+    );
   }
 
   Widget _buildSubtitleSingleInfo(
