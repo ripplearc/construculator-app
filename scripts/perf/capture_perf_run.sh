@@ -25,6 +25,9 @@ JOURNEY="pre_login_v1"
 JOURNEY_TARGET="integration_test/perf/pre_login_journey_test.dart"
 DRIVER="test_driver/perf_driver.dart"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DRIVE_TIMEOUT="${PERF_DRIVE_TIMEOUT:-20m}"
+
 DEVICE_ID=""
 OUTPUT_DIR=""
 ITERATIONS=5
@@ -116,6 +119,11 @@ capture_startup() {
 # rest passed through. Retries a few times because the drive legs occasionally
 # fail on a transient VM-service race (a rerun clears it).
 #
+# Each attempt has a time limit. The USB link to the lab phone can freeze
+# `adb install` partway through the APK upload, and `flutter drive` then waits
+# forever instead of failing, so the retry below would never run. A timed-out
+# attempt re-attaches the phone before the next one.
+#
 # The jank leg passes --no-dds: the integration_test binding's traceAction opens
 # its own VM-service connection to record the timeline, and DDS in front of the
 # service refuses it. The memory leg does the opposite - it keeps DDS (which
@@ -133,7 +141,7 @@ drive_journey() {
   adb -s "$DEVICE_ID" forward --remove-all || true
   local attempt
   for attempt in 1 2 3; do
-    if PERF_OUTPUT_DIR="$perf_out" fvm flutter drive \
+    if PERF_OUTPUT_DIR="$perf_out" timeout --kill-after=30 "$DRIVE_TIMEOUT" fvm flutter drive \
       --profile \
       --flavor "$FLAVOR" \
       --dart-define=ENVIRONMENT=dev \
@@ -143,7 +151,9 @@ drive_journey() {
       "$@"; then
       return 0
     fi
-    echo "⚠️  drive leg attempt $attempt/3 failed; resetting forwards and retrying..." >&2
+    echo "⚠️  drive leg attempt $attempt/3 failed; re-attaching the phone and retrying..." >&2
+    bash "$SCRIPT_DIR/ensure_lab_device_attached.sh" --device-id "$DEVICE_ID" \
+      || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
     adb -s "$DEVICE_ID" forward --remove-all || true
   done
   echo "❌ drive leg failed after 3 attempts" >&2
