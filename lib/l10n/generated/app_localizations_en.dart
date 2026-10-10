@@ -2013,4 +2013,29 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$estimateName total before $before, after $after';
   }
+
+  @override
+  String get addToEstimateButton => 'Add to estimate';
+
+  @override
+  String get enterEquipmentNameToContinueButton =>
+      'Enter an equipment name to continue';
+
+  @override
+  String get enterDurationToContinueButton => 'Enter a duration to continue';
+
+  @override
+  String get enterRateToContinueButton => 'Enter a rate to continue';
+
+  @override
+  String get enterAmountToContinueButton => 'Enter an amount to continue';
+
+  @override
+  String get fixDurationToContinueButton => 'Fix the duration to continue';
+
+  @override
+  String get fixRateToContinueButton => 'Fix the rate to continue';
+
+  @override
+  String get fixAmountToContinueButton => 'Fix the amount to continue';
 }
