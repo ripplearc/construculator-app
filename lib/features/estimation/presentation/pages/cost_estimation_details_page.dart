@@ -9,7 +9,6 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_est
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -67,7 +66,6 @@ class CostEstimationDetailsPage extends StatefulWidget {
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
   late final EstimateSummaryBloc _summaryBloc;
-  var _isOpeningSheet = false;
 
   @override
   void initState() {
@@ -82,56 +80,28 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<CostEstimate?> _loadEstimate() async {
-    final current = _summaryBloc.state;
-    if (current is! EstimateSummaryLoaded &&
-        current is! EstimateSummaryLoading) {
-      _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
-    }
-    final settled = current is EstimateSummaryLoaded
-        ? current
-        : await _summaryBloc.stream.firstWhere(
-            (s) => s is EstimateSummaryLoaded || s is EstimateSummaryFailure,
-            orElse: () => _summaryBloc.state,
-          );
-    return settled is EstimateSummaryLoaded ? settled.estimate : null;
-  }
-
-  Future<void> _openEquipmentSheet(YourRateEntry? entry) async {
-    if (_isOpeningSheet) return;
-    _isOpeningSheet = true;
-    try {
-      final l10n = context.l10n;
-      final estimate = await _loadEstimate();
-      if (!mounted) return;
-      if (estimate == null) {
-        CoreToast.showError(
-          context,
-          l10n.estimateSummaryLoadFailedError,
-          l10n.closeLabel,
-        );
-        return;
-      }
-      await CoreQuickSheet.show<void>(
-        context: context,
-        backgroundColor: sheetSurface(context),
-        child: BlocProvider<EquipmentCostFormBloc>(
-          create: (_) => widget.equipmentCostFormBlocFactory(),
-          child: CostItemFormScreen(
-            type: CostItemType.equipment,
-            estimationId: widget.estimationId,
-            router: widget.router,
-            presentAsSheet: true,
-            yourRatesBlocFactory: widget.yourRatesBlocFactory,
-            clock: widget.clock,
-            estimate: estimate,
-            initialRateEntry: entry,
+  Future<void> _openEquipmentSheet(YourRateEntry? entry) {
+    return CoreQuickSheet.show<void>(
+      context: context,
+      backgroundColor: sheetSurface(context),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<EquipmentCostFormBloc>(
+            create: (_) => widget.equipmentCostFormBlocFactory(),
           ),
+          BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
+        ],
+        child: CostItemFormScreen(
+          type: CostItemType.equipment,
+          estimationId: widget.estimationId,
+          router: widget.router,
+          presentAsSheet: true,
+          yourRatesBlocFactory: widget.yourRatesBlocFactory,
+          clock: widget.clock,
+          initialRateEntry: entry,
         ),
-      );
-    } finally {
-      _isOpeningSheet = false;
-    }
+      ),
+    );
   }
 
   @override
@@ -274,7 +244,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   }
 
   Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
-    if (_isOpeningSheet) return;
     final result = await YourRatesRecentsSheet.show(
       context: context,
       clock: widget.clock,
