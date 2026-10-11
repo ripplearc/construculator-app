@@ -124,6 +124,16 @@ void main() {
       );
     });
 
+    test('getEstimation returns UnexpectedFailure', () async {
+      final result = await repository.getEstimation('est-1');
+
+      expect(result.isLeft(), isTrue);
+      expect(
+        result.fold((failure) => failure, (_) => null),
+        isA<UnexpectedFailure>(),
+      );
+    });
+
     test('dispose does not throw', () {
       expect(() => repository.dispose(), returnsNormally);
     });

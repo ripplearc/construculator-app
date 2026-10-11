@@ -1894,6 +1894,85 @@ void main() {
       );
     });
 
+    group('getEstimation', () {
+      test('should return the matching estimation', () async {
+        final map = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+        );
+        seedEstimationTable([map]);
+
+        final result = await repository.getEstimation(estimateIdDefault);
+
+        expect(result.isRight(), isTrue);
+        expectResult(
+          result,
+          (estimation) => expect(
+            estimation,
+            equals(CostEstimateDto.fromJson(map).toDomain()),
+          ),
+        );
+      });
+
+      test('should return notFoundError when no row has the ID', () async {
+        seedEstimationTable([]);
+
+        final result = await repository.getEstimation(estimateIdDefault);
+
+        expect(result.isLeft(), isTrue);
+        expectFailure(
+          result,
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          ),
+        );
+      });
+
+      test(
+        'should return connection error when data source throws SocketException',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnSelect = true;
+          fakeSupabaseWrapper.selectExceptionType =
+              SupabaseExceptionType.socket;
+          fakeSupabaseWrapper.selectErrorMessage = 'Connection failed';
+
+          final result = await repository.getEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+          );
+        },
+      );
+
+      test(
+        'should return timeout error when data source throws TimeoutException',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnSelect = true;
+          fakeSupabaseWrapper.selectExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.selectErrorMessage = errorMsgTimeout;
+
+          final result = await repository.getEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+          );
+        },
+      );
+    });
+
     group('renameEstimation', () {
       const String newEstimateName = 'Renamed Estimate';
 
@@ -2129,7 +2208,8 @@ void main() {
           );
 
           fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
           fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
 
           final result = await repository.renameEstimation(

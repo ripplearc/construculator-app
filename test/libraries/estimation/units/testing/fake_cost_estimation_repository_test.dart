@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
@@ -26,6 +27,20 @@ void main() {
       expect(repository.lastLimit, equals(10));
     });
 
+    test('getEstimation returns the set result and records the ID', () async {
+      final estimate = CostEstimate.defaultEstimate(createdAt: DateTime.now());
+      repository.getEstimationResult = Right(estimate);
+
+      final result = await repository.getEstimation('est-1');
+
+      expect(result.getRightOrNull(), equals(estimate));
+      expect(repository.lastGetEstimationId, equals('est-1'));
+    });
+
+    test('getEstimation throws UnimplementedError when no result is set', () {
+      expect(() => repository.getEstimation('est-1'), throwsUnimplementedError);
+    });
+
     test('changeLockStatus throws UnimplementedError', () {
       expect(
         () => repository.changeLockStatus(
@@ -38,7 +53,9 @@ void main() {
     });
 
     test('createEstimation throws UnimplementedError', () {
-      final estimation = CostEstimate.defaultEstimate(createdAt: DateTime.now());
+      final estimation = CostEstimate.defaultEstimate(
+        createdAt: DateTime.now(),
+      );
       expect(
         () => repository.createEstimation(estimation),
         throwsUnimplementedError,
