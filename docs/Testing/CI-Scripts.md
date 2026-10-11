@@ -177,7 +177,7 @@ The Comprehensive Check also runs everything the Pre-check runs (see below), so 
 
 1. A repository owner removes the `Pre-check` required status check from the ruleset "Merge to Main Branch". While Pre-check still runs, nothing is blocked.
 2. Set the variable: `gh variable set RUNCHECK_SKIP_PRECHECK --body true`.
-3. To go back: `gh variable delete RUNCHECK_SKIP_PRECHECK`. Then `#RunCheck` starts all three pipelines again. A required `Pre-check` status must be restored in the ruleset first, or PRs stay mergeable without it.
+3. To go back, delete the variable: `gh variable delete RUNCHECK_SKIP_PRECHECK`. `#RunCheck` then starts all three pipelines again. Restore the required `Pre-check` status in the ruleset only after that. While it is required, a PR with no Pre-check status cannot merge.
 
 The `pre-check` workflow stays in `codemagic.yaml` for manual runs.
 
