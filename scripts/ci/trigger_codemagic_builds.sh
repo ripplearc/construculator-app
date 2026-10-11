@@ -7,7 +7,7 @@ set -euo pipefail
 # Environment:
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID  required unless DRY_RUN=true
 #   CODEMAGIC_API_URL                      defaults to https://api.codemagic.io
-#   DRY_RUN=true                           print each request body, send nothing
+#   DRY_RUN=true                           print each request body and send nothing
 #
 # Every workflow is attempted even if an earlier one fails. The script exits
 # non-zero if any request fails or the response has no buildId.
@@ -36,7 +36,7 @@ write_summary() {
 FAILURES=0
 
 for WORKFLOW_ID in "$@"; do
-  BODY=$(jq -n \
+  BODY=$(jq -nc \
     --arg appId "${CODEMAGIC_APP_ID:-}" \
     --arg workflowId "$WORKFLOW_ID" \
     --arg branch "$BRANCH" \
@@ -44,7 +44,7 @@ for WORKFLOW_ID in "$@"; do
       environment: {variables: {FORCE_FAIL: "false"}}}')
 
   if [ "$DRY_RUN" = "true" ]; then
-    echo "DRY RUN: would start $WORKFLOW_ID on $BRANCH"
+    echo "DRY RUN: would start $WORKFLOW_ID on $BRANCH: $BODY"
     write_summary "- DRY RUN: would start \`$WORKFLOW_ID\` on \`$BRANCH\`"
     continue
   fi

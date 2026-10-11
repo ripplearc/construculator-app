@@ -135,6 +135,7 @@ DRY_RUN=true run_target ok feature/x pre-check comprehensive-check
 assert_true "dry run succeeds without credentials" exit_code_is 0
 assert_true "dry run sends nothing" requests_sent 0
 assert_true "dry run names the workflow it would start" output_contains "would start comprehensive-check on feature/x"
+assert_true "dry run shows the request body" output_contains '"workflowId":"comprehensive-check","branch":"feature/x"' 
 
 run_target ok feature/x
 assert_true "rejects a call with no workflow ids" exit_code_is 2
