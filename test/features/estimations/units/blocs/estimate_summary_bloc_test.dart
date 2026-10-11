@@ -163,30 +163,40 @@ void main() {
     );
 
     blocTest<EstimateSummaryBloc, EstimateSummaryState>(
-      'emits only the newest request when a second one starts while loading',
-      setUp: seedEstimate,
+      'emits only the newest request when two different estimates are requested',
+      setUp: () {
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, [
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-1',
+            estimateName: 'Bedroom 2',
+            totalCost: 1,
+          ),
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-2',
+            estimateName: 'Kitchen',
+            totalCost: 1,
+          ),
+        ]);
+      },
       build: () {
         fakeSupabaseWrapper.shouldDelayOperations = true;
         fakeSupabaseWrapper.completer = Completer();
         return Modular.get<EstimateSummaryBloc>();
       },
       act: (bloc) async {
-        bloc.add(const EstimateSummaryRequested(estimateId));
-        bloc.add(const EstimateSummaryRequested(estimateId));
+        bloc.add(const EstimateSummaryRequested('estimate-1'));
+        bloc.add(const EstimateSummaryRequested('estimate-2'));
         await bloc.stream.firstWhere((s) => s is EstimateSummaryLoading);
         fakeSupabaseWrapper.completer!.complete();
       },
-      wait: Duration.zero,
       expect: () => [
         isA<EstimateSummaryLoading>(),
-        isA<EstimateSummaryLoaded>(),
+        isA<EstimateSummaryLoaded>().having(
+          (s) => s.estimate.estimateName,
+          'name',
+          'Kitchen',
+        ),
       ],
-      verify: (_) {
-        expect(
-          fakeSupabaseWrapper.getMethodCallsFor('selectSingle'),
-          hasLength(2),
-        );
-      },
     );
   });
 }
