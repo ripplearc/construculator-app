@@ -144,5 +144,101 @@ void main() {
       );
 
     });
+
+    group('getEstimateItemsTotal', () {
+      void seedTotals(List<num> totals) {
+        fakeSupabaseWrapper.addTableData('cost_items', [
+          for (final total in totals)
+            {'estimate_id': 'estimate-1', 'item_total_cost': total},
+        ]);
+      }
+
+      test('adds the item totals to the cent', () async {
+        seedTotals([0.10, 0.20, 2993.62]);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 2993.92);
+      });
+
+      test('keeps 0.10 + 0.20 at exactly 0.30', () async {
+        seedTotals([0.10, 0.20]);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 0.3);
+      });
+
+      test('keeps 1.15 at exactly 1.15', () async {
+        seedTotals([1.15]);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 1.15);
+      });
+
+      test('adds up 999 items, one fewer than the row limit', () async {
+        seedTotals(List.filled(999, 1));
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 999);
+      });
+
+      test('fails when the items fill the 1000 row limit', () async {
+        seedTotals(List.filled(1000, 1));
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+      });
+
+      test('is zero for an estimate with no items', () async {
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 0);
+      });
+
+      test('maps a connection failure to connectionError', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+        fakeSupabaseWrapper.selectMultipleExceptionType =
+            SupabaseExceptionType.socket;
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
+          ),
+        );
+      });
+
+      test('maps a TypeError to parsingError', () async {
+        fakeSupabaseWrapper.addTableData('cost_items', [
+          {'estimate_id': 'estimate-1', 'item_total_cost': 'not a number'},
+        ]);
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.parsingError,
+          ),
+        );
+      });
+    });
   });
 }

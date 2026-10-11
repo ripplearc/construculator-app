@@ -16,6 +16,10 @@ class CostItemRepositoryImpl implements CostItemRepository {
   final CostItemDataSource dataSource;
   static final _logger = AppLogger().tag('CostItemRepositoryImpl');
 
+  /// The most rows the API returns for one request. A full page may have
+  /// dropped rows, so a sum over it could be too small.
+  static const _maxRowsPerRequest = 1000;
+
   @override
   Future<Either<Failure, CostItem>> createCostItem(CostItem item) async {
     try {
@@ -27,7 +31,32 @@ class CostItemRepositoryImpl implements CostItemRepository {
     }
   }
 
-  Left<Failure, CostItem> _handleError(Object error, String operation) {
+  @override
+  Future<Either<Failure, double>> getEstimateItemsTotal(
+    String estimateId,
+  ) async {
+    try {
+      final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+        estimateId,
+      );
+      if (totals.length >= _maxRowsPerRequest) {
+        _logger.error(
+          'Cost item totals for $estimateId fill the $_maxRowsPerRequest row limit, so the sum may be too small',
+        );
+        return const Left(
+          EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+      }
+      final cents = totals.fold<int>(0, (sum, t) => sum + (t * 100).round());
+      return Right(cents / 100);
+    } catch (e) {
+      return _handleError(e, 'summing cost items');
+    }
+  }
+
+  Left<Failure, T> _handleError<T>(Object error, String operation) {
     if (error is TimeoutException) {
       _logger.error(
         'Timeout error $operation: message=${error.message}, duration=${error.duration}',

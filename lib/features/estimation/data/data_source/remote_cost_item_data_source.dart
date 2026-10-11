@@ -54,6 +54,25 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   }
 
   @override
+  Future<List<double>> fetchItemTotalCostsByEstimateId(
+    String estimateId,
+  ) async {
+    _logger.debug('Fetching item totals for estimate: $estimateId');
+    final response = await _supabaseWrapper.select(
+      table: DatabaseConstants.costItemsTable,
+      columns: DatabaseConstants.itemTotalCostColumn,
+      filterColumn: DatabaseConstants.estimateIdColumn,
+      filterValue: estimateId,
+    );
+    return response
+        .map(
+          (row) =>
+              (row[DatabaseConstants.itemTotalCostColumn] as num).toDouble(),
+        )
+        .toList();
+  }
+
+  @override
   Future<CostItemDto> createCostItem(CostItemDto item) async {
     _logger.debug('Creating cost item: ${item.id}');
     final response = await _supabaseWrapper.insert(
