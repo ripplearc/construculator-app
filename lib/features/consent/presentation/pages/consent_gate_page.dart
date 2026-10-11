@@ -6,6 +6,7 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Full-screen page that blocks the app until consent is current.
 ///
@@ -17,24 +18,28 @@ class ConsentGatePage extends StatelessWidget {
   /// Router used to return to the shell once consent is current.
   final AppRouter router;
 
-  /// Opens a consent document externally.
+  /// Opens a consent document externally; resolves to whether it opened.
   ///
   /// Injected rather than called directly so the page stays free of platform
   /// concerns and remains testable.
-  final void Function(String url) onOpenDocument;
-
-  /// Whether [onOpenDocument] can actually open a document.
-  ///
-  /// Forwarded to [ConsentPrompt]; see its own doc for why a non-functional
-  /// callback hides the links instead of leaving them tappable and dead.
-  final bool documentLinksAvailable;
+  final Future<bool> Function(String url) onOpenDocument;
 
   const ConsentGatePage({
     super.key,
     required this.router,
     required this.onOpenDocument,
-    this.documentLinksAvailable = true,
   });
+
+  Future<void> _openDocument(BuildContext context, String url) async {
+    final opened = await onOpenDocument(url);
+    if (opened || !context.mounted) return;
+    final l10n = context.l10n;
+    CoreToast.showError(
+      context,
+      l10n.legalDocumentOpenErrorMessage,
+      l10n.closeLabel,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,19 +69,16 @@ class ConsentGatePage extends StatelessWidget {
               ConsentGateUnverified() => const SizedBox.shrink(),
               ConsentGateBlocked(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
-                onOpenDocument: onOpenDocument,
-                documentLinksAvailable: documentLinksAvailable,
+                onOpenDocument: (url) => _openDocument(context, url),
               ),
               ConsentGateSubmitting(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
-                onOpenDocument: onOpenDocument,
-                documentLinksAvailable: documentLinksAvailable,
+                onOpenDocument: (url) => _openDocument(context, url),
                 isSubmitting: true,
               ),
               ConsentGateSubmitFailed(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
-                onOpenDocument: onOpenDocument,
-                documentLinksAvailable: documentLinksAvailable,
+                onOpenDocument: (url) => _openDocument(context, url),
                 hasSubmitFailed: true,
               ),
               ConsentGateUnavailable() => ConsentUnavailable(

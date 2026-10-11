@@ -32,6 +32,7 @@ class TermsAndConditionsSection extends StatelessWidget {
         children: [
           WidgetSpan(
             child: GestureDetector(
+              key: const Key('terms_and_services_link'),
               onTap: onTermsAndConditionsLinkPressed,
               child: Text(
                 termsAndServicesLink,
@@ -45,6 +46,7 @@ class TermsAndConditionsSection extends StatelessWidget {
           TextSpan(text: ' $andAcknowledge '),
           WidgetSpan(
             child: GestureDetector(
+              key: const Key('privacy_policy_link'),
               onTap: onPrivacyPolicyLinkPressed,
               child: Text(
                 privacyPolicyLink,

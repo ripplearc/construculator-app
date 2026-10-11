@@ -616,6 +616,12 @@ abstract class AppLocalizations {
   /// **'Last name is required'**
   String get lastNameRequired;
 
+  /// Error toast shown when tapping the terms or privacy link fails to open a browser
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open the document. Please try again later.'**
+  String get legalDocumentOpenErrorMessage;
+
   /// Label for new registration
   ///
   /// In en, this message translates to:

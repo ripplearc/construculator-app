@@ -11,6 +11,7 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/url_launcher/testing/fake_url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -36,6 +37,7 @@ class _CreateAccountPageA11yTestModule extends Module {
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
+  final urlLauncher = FakeUrlLauncher();
   BuildContext? buildContext;
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
@@ -92,7 +94,13 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email, router: router)),
+      makeTestableWidget(
+        child: CreateAccountPage(
+          email: email,
+          router: router,
+          urlLauncher: urlLauncher,
+        ),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -176,7 +184,11 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: router),
+          child: CreateAccountPage(
+            email: testEmail,
+            router: router,
+            urlLauncher: urlLauncher,
+          ),
         ),
         find.text(buttonLabel),
         setupAfterPump: (t) async {
@@ -200,9 +212,34 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: CreateAccountPage(email: testEmail, router: router),
+            child: CreateAccountPage(
+              email: testEmail,
+              router: router,
+              urlLauncher: urlLauncher,
+            ),
           ),
           find.text(termsLink),
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for privacy policy link in both themes',
+      (tester) async {
+        await renderPage(tester);
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: CreateAccountPage(
+              email: testEmail,
+              router: router,
+              urlLauncher: urlLauncher,
+            ),
+          ),
+          find.byKey(const Key('privacy_policy_link')),
         );
       },
     );
@@ -218,7 +255,11 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: router),
+          child: CreateAccountPage(
+            email: testEmail,
+            router: router,
+            urlLauncher: urlLauncher,
+          ),
         ),
         find.text(roleLabelText),
       );
@@ -240,7 +281,11 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: CreateAccountPage(email: testEmail, router: router),
+              child: CreateAccountPage(
+                email: testEmail,
+                router: router,
+                urlLauncher: urlLauncher,
+              ),
             );
           },
           find.byKey(const Key('toast_close_button')),

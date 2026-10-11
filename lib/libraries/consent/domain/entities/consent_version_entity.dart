@@ -36,6 +36,11 @@ class ConsentVersion extends Equatable {
   /// Required rather than optional: asking someone to accept a document the
   /// app cannot show them would not be consent, so a version is only publish-
   /// able once there is something to read.
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-1305 - The seeded
+  // document_url is a provisional ripplearc.com URL; replace it with the
+  // published document's URL. The terms and privacy links both open it until
+  // we know whether they are one document or two (two needs a second field
+  // here).
   final String documentUrl;
 
   /// When this version became the published one.

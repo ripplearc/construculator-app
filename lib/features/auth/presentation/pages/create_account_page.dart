@@ -7,20 +7,29 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
+import 'package:construculator/libraries/url_launcher/interfaces/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const usCountryCode = '+1';
 
+// TODO: https://ripplearc.youtrack.cloud/issue/CA-1305 - Provisional URL that
+// does not resolve yet; replace it with the published document's URL. Both
+// the terms and the privacy link open it until we know whether they are one
+// document or two.
+const termsAndPrivacyUrl = 'https://ripplearc.com/legal/terms-and-privacy';
+
 class CreateAccountPage extends StatefulWidget {
   final AppRouter router;
+  final UrlLauncher urlLauncher;
   final String? email;
   final String? phone;
 
   const CreateAccountPage({
     super.key,
     required this.router,
+    required this.urlLauncher,
     this.email,
     this.phone,
   });
@@ -93,7 +102,16 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     }
   }
 
-  void _openLink(String url) {}
+  Future<void> _openTermsAndPrivacy() async {
+    final opened = await widget.urlLauncher.openExternal(termsAndPrivacyUrl);
+    if (opened || !mounted) return;
+    final l10n = context.l10n;
+    CoreToast.showError(
+      context,
+      l10n.legalDocumentOpenErrorMessage,
+      l10n.closeLabel,
+    );
+  }
 
   void _onRoleSelected(String? selectedName) {
     if (selectedName != null) {
@@ -532,8 +550,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     termsAndServicesLink: l10n.termsAndServicesLink,
                     privacyPolicyLink: l10n.privacyPolicyLink,
                     andAcknowledge: l10n.andAcknowledge,
-                    onTermsAndConditionsLinkPressed: () => _openLink(''),
-                    onPrivacyPolicyLinkPressed: () => _openLink(''),
+                    onTermsAndConditionsLinkPressed: _openTermsAndPrivacy,
+                    onPrivacyPolicyLinkPressed: _openTermsAndPrivacy,
                   ),
                   const SizedBox(height: 24),
                   CoreButton(
