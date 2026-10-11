@@ -113,11 +113,7 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
           companyId: companyId,
         );
       }
-    } catch (_) {
-      // The data source already logged it. The id was resolved; failing to
-      // keep it only costs the offline fallback, so the caller still gets
-      // its answer.
-    }
+    } catch (_) {}
   }
 
   Future<String?> _readStoredCompanyId({
@@ -132,8 +128,6 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     try {
       return await _localDataSource.loadCompanyId(userId);
     } catch (_) {
-      // The data source already logged it; the caller still gets the
-      // connection failure that sent it here.
       return null;
     }
   }

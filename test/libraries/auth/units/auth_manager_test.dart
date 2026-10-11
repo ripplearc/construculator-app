@@ -1324,8 +1324,11 @@ void main() {
           'company-a',
         );
 
+        final saved =
+            Modular.get<FakeCurrentCompanyDatabase>().nextInsertApplied;
+
         await authManager.loginWithEmail(testEmail, testPassword);
-        await pumpEventQueue();
+        await saved;
 
         final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
         expect(
@@ -1361,8 +1364,11 @@ void main() {
         await currentCompanyResolver.resolve();
         final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
 
+        final cleared =
+            Modular.get<FakeCurrentCompanyDatabase>().nextDeleteApplied;
+
         await supabaseWrapper.signOut();
-        await pumpEventQueue();
+        await cleared;
 
         expect(await deviceStore.loadCompanyId(userId), isNull);
       });
@@ -1435,9 +1441,12 @@ class _TestAppModule extends Module {
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
     i.addSingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
+    i.addSingleton<FakeCurrentCompanyDatabase>(
+      () => FakeCurrentCompanyDatabase(),
+    );
     i.addSingleton<LocalCurrentCompanyDataSource>(
       () => PowerSyncLocalCurrentCompanyDataSource(
-        database: FakeCurrentCompanyDatabase(),
+        database: i<FakeCurrentCompanyDatabase>(),
       ),
     );
     i.addSingleton<CurrentCompanyResolver>(
