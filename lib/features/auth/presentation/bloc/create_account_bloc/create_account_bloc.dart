@@ -15,7 +15,6 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
-import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
@@ -282,27 +281,18 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
     final (ConsentVersion?, Failure?) versionOrFailure = switch (status) {
       ConsentNeverGiven(:final requiredVersion) => (requiredVersion, null),
       ConsentOutdated(:final requiredVersion) => (requiredVersion, null),
-      // A real prior acceptance: signup has nothing to record. Excludes the
-      // synthetic no-user-id marker handled below -- a real acceptance's
-      // version always traces to a published row, enforced to be >= 1, so
-      // acceptedVersion can only equal ConsentRepository.noUserVersion (0)
-      // as that marker, never as a genuine version.
-      ConsentSatisfied(:final acceptedVersion)
-          when acceptedVersion != ConsentRepository.noUserVersion =>
-        (null, null),
+      // A real prior acceptance: signup has nothing to record.
+      ConsentSatisfied() => (null, null),
       // A prior acceptance exists but couldn't be reconfirmed against the
       // server right now -- the gate's own fail-open leniency. Nothing new
       // to record.
       ConsentUnverified() => (null, null),
-      // The synthetic "could not identify the user" marker used to reach
-      // this same (null, null) arm, silently reporting success while
-      // recording nothing -- reachable for exactly the user this method
-      // exists to protect: a brand-new signup, whose session token is
-      // minted before createUserProfile runs, making internal_user_id the
-      // claim most likely to still be missing. Silently equating "could not
-      // identify the user" with "already consented" is the same fail-open
-      // shape #537-#543 already fixed upstream.
-      ConsentSatisfied() => (
+      // Reachable for exactly the user this method exists to protect: a
+      // brand-new signup, whose session token is minted before
+      // createUserProfile runs, making internal_user_id the claim most likely
+      // to still be missing. Reporting success here would record nothing --
+      // the same fail-open shape #537-#543 already fixed upstream.
+      ConsentUserUnidentified() => (
         null,
         const ConsentFailure(errorType: ConsentErrorType.authenticationError),
       ),

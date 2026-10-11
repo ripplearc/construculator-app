@@ -64,6 +64,33 @@ void main() {
       });
     });
 
+    group('when the server has no analytics row', () {
+      // Same resolution as for terms, but analytics never blocks the app.
+      test('resolves to an indeterminate status that does not gate', () async {
+        remoteDataSource.publishedVersionsToReturn = [published()];
+
+        final status = await resolver.resolve(
+          type: ConsentType.analytics,
+          acceptedVersion: null,
+        );
+
+        expect(status, const ConsentIndeterminate(ConsentType.analytics));
+        expect(status.gatesAccess, isFalse);
+      });
+
+      test('falls back to unverified with a prior acceptance', () async {
+        remoteDataSource.publishedVersionsToReturn = [published()];
+
+        final status = await resolver.resolve(
+          type: ConsentType.analytics,
+          acceptedVersion: 2,
+        );
+
+        expect(status, const ConsentUnverified(2));
+        expect(status.gatesAccess, isFalse);
+      });
+    });
+
     group('when the server publishes a matching row', () {
       test(
         'resolves via ConsentStatus.resolve, unaffected by this fix',
@@ -124,6 +151,18 @@ void main() {
         final status = await resolver.resolve(type: type, acceptedVersion: 1);
 
         expect(status, const ConsentUnverified(1));
+        expect(status.gatesAccess, isFalse);
+      });
+
+      test('keeps the analytics type, which does not gate', () async {
+        remoteDataSource.error = Exception('offline');
+
+        final status = await resolver.resolve(
+          type: ConsentType.analytics,
+          acceptedVersion: null,
+        );
+
+        expect(status, const ConsentIndeterminate(ConsentType.analytics));
         expect(status.gatesAccess, isFalse);
       });
     });

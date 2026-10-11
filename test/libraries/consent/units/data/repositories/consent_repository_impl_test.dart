@@ -155,12 +155,12 @@ void main() {
       },
     );
 
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final result = await repository.getCachedConsentStatus(type);
 
-      expect(result, const ConsentSatisfied(0));
+      expect(result, const ConsentUserUnidentified(type));
     });
   });
 
@@ -260,12 +260,12 @@ void main() {
       },
     );
 
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final result = await repository.verifyPublishedVersion(type);
 
-      expect(result, const ConsentSatisfied(0));
+      expect(result, const ConsentUserUnidentified(type));
       expect(remote.callCount, 0);
     });
 
@@ -284,6 +284,102 @@ void main() {
         expect(remote.callCount, 0);
       },
     );
+  });
+
+  // Every status that carries a consent type must carry the type that was
+  // checked: gatesAccess reads it, so a hard-coded termsAndPrivacy would let
+  // a missing analytics row block the whole app.
+  group('keeps the checked type', () {
+    const analytics = ConsentType.analytics;
+    const indeterminate = ConsentIndeterminate(analytics);
+    const unidentified = ConsentUserUnidentified(analytics);
+
+    test('on a cached read with no internal user id', () async {
+      supabase.setInternalUserId(null);
+
+      final result = await repository.getCachedConsentStatus(analytics);
+
+      expect(result, unidentified);
+      expect(result.gatesAccess, isFalse);
+    });
+
+    test('on a cached read with no published version', () async {
+      final result = await repository.getCachedConsentStatus(analytics);
+
+      expect(result, indeterminate);
+      expect(result.gatesAccess, isFalse);
+    });
+
+    test('on a failed cached read', () async {
+      local.publishedVersionReadError = const FormatException('corrupt row');
+
+      final result = await repository.getCachedConsentStatus(analytics);
+
+      expect(result, indeterminate);
+    });
+
+    test('on a watch with no internal user id', () async {
+      supabase.setInternalUserId(null);
+
+      final statuses = repository.watchConsentStatus(analytics);
+
+      await expectLater(statuses, emits(unidentified));
+    });
+
+    test('on a watch tick with no published version', () async {
+      final statuses = repository.watchConsentStatus(analytics);
+
+      await expectLater(statuses, emits(indeterminate));
+    });
+
+    test('on a failed watch read with nothing accepted', () async {
+      local.publishedVersionReadError = const FormatException('corrupt row');
+
+      final statuses = repository.watchConsentStatus(analytics);
+
+      await expectLater(statuses, emits(indeterminate));
+    });
+
+    test('on a watch stream error', () async {
+      local.watchError = const FormatException('stream broke');
+
+      final statuses = repository.watchConsentStatus(analytics);
+
+      await expectLater(statuses, emits(indeterminate));
+    });
+
+    test('on a verification with no internal user id', () async {
+      supabase.setInternalUserId(null);
+
+      final result = await repository.verifyPublishedVersion(analytics);
+
+      expect(result, unidentified);
+    });
+
+    test('on a failed local read before verification', () async {
+      local.latestConsentReadError = const FormatException('corrupt row');
+
+      final result = await repository.verifyPublishedVersion(analytics);
+
+      expect(result, indeterminate);
+    });
+
+    test('on a verification the server has no row for', () async {
+      remote.publishedVersionsToReturn = [];
+
+      final result = await repository.verifyPublishedVersion(analytics);
+
+      expect(result, indeterminate);
+    });
+
+    test('on a failed verification with nothing accepted', () async {
+      remote.error = const SocketException('offline');
+
+      final result = await repository.verifyPublishedVersion(analytics);
+
+      expect(result, indeterminate);
+      expect(result.gatesAccess, isFalse);
+    });
   });
 
   group('recordAcceptance', () {
@@ -406,12 +502,12 @@ void main() {
   });
 
   group('watchConsentStatus', () {
-    test('does not gate a signed-out user', () async {
+    test('reports a session with no internal user id', () async {
       supabase.setInternalUserId(null);
 
       final statuses = repository.watchConsentStatus(type);
 
-      await expectLater(statuses, emits(const ConsentSatisfied(0)));
+      await expectLater(statuses, emits(const ConsentUserUnidentified(type)));
     });
 
     test('emits a new status when the consent record changes', () async {

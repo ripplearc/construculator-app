@@ -49,13 +49,8 @@ class ConsentVerificationResolver {
       // itself corrupt still drops as "unknown"). We cannot positively
       // establish the requirement, so this resolves exactly as a failed
       // fetch does below, rather than asserting a consent we never saw.
-      //
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - gatesAccess
-      // is not yet type-aware, so this also gates a missing `analytics` row.
-      // Safe today because every production call site passes only
-      // termsAndPrivacy, but that stops holding once the Settings opt-out
-      // toggle ships analytics verification -- make
-      // ConsentStatus.gatesAccess type-aware before that lands.
+      // For `analytics` the resulting ConsentIndeterminate does not gate:
+      // ConsentStatus.gatesAccess only blocks the shell on termsAndPrivacy.
       if (match == null) {
         _logger.error('No published consent version for ${type.toJson()}');
         return acceptedVersion == null

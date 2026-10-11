@@ -23,14 +23,6 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// exists. That asymmetry is the design, which is why it is visible in the
 /// types rather than only in this prose.
 abstract class ConsentRepository {
-  /// The version reported when the gate does not apply to the session.
-  ///
-  /// A signed-out user has no consent record and nothing to be gated on, which
-  /// is not an error and not an acceptance. Callers that key behaviour off
-  /// [ConsentSatisfied] — analytics capture in particular — must establish
-  /// that there is a signed-in user before reading this as consent given.
-  static const noUserVersion = 0;
-
   /// Resolves the user's status for [type] from locally held data only.
   ///
   /// Never touches the network, so it completes fast enough to sit on the app
@@ -39,8 +31,8 @@ abstract class ConsentRepository {
   /// nothing, which is the same position as a clean read that found no
   /// requirement, so it must resolve the same way.
   ///
-  /// Returns [ConsentSatisfied] carrying [noUserVersion] when no user is
-  /// signed in.
+  /// Returns [ConsentUserUnidentified] when the session carries no internal
+  /// user id.
   Future<ConsentStatus> getCachedConsentStatus(ConsentType type);
 
   /// Emits whenever the locally held consent data for [type] changes.

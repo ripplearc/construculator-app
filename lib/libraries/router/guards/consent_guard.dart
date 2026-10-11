@@ -16,10 +16,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// before the claim was provisioned, or any refresh race between
 /// authentication and claim propagation, leaves an authenticated session
 /// with no internal user id. [ConsentRepository.getCachedConsentStatus]
-/// answers that case with [ConsentSatisfied] carrying the synthetic
-/// [ConsentRepository.noUserVersion],
-/// which this guard must not read as an acceptance -- see the explicit check
-/// below.
+/// answers that case with [ConsentUserUnidentified], which gates like any
+/// other blocking status.
 ///
 /// Like [AuthGuard] — which resolves from the in-memory session rather than a
 /// round trip — this answers from cached state and never awaits the network
@@ -48,22 +46,7 @@ class ConsentGuard extends RouteGuard {
       const ConsentStatusParams(consentType: ConsentType.termsAndPrivacy),
     );
 
-    // ConsentSatisfied(noUserVersion) is what the repository returns when it
-    // cannot identify the user -- AuthGuard passing does not rule this out,
-    // it tests the auth session, not the internal user id claim. Reading it
-    // as "already consented" would silently un-gate the shell for a signed-in
-    // user whose consent was never evaluated.
-    //
-    // This is the one branch gatesAccess does not carry, so ConsentGateBloc
-    // mirrors it: _stateFor maps the same status to ConsentGateUnavailable
-    // rather than Allowed. Without that mirror the redirect below would land
-    // on a page that immediately navigates back to the shell, and the two
-    // sides would trade the user back and forth.
-    if (status == const ConsentSatisfied(ConsentRepository.noUserVersion)) {
-      return false;
-    }
-
-    // Every other state is ConsentStatus's own definition, not this guard's.
+    // Every state is ConsentStatus's own definition, not this guard's.
     // Restating the mapping here would let the route and the gate page
     // disagree about the same status.
     return !status.gatesAccess;

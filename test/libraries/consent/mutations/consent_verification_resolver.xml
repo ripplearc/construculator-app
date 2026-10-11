@@ -56,6 +56,13 @@
         <regex pattern="No published consent version for \$\{type\.toJson\(\)\}'\);\s*return acceptedVersion == null\s*\? ConsentIndeterminate\(type\)" dotAll="true" id="resolver.match.wrong_indeterminate_status">
             <mutation text="No published consent version for ${type.toJson()}');&#10;        return acceptedVersion == null&#10;            ? ConsentSatisfied(acceptedVersion ?? 0)"/>
         </regex>
+
+        <!-- RULE 8: Hard-code the type an indeterminate status carries. gatesAccess
+             reads it, so termsAndPrivacy here would let a missing analytics
+             row block the app. Matches both sites. -->
+        <regex pattern="ConsentIndeterminate\(type\)" dotAll="true" id="resolver.status.hardcode_indeterminate_type">
+            <mutation text="ConsentIndeterminate(ConsentType.termsAndPrivacy)"/>
+        </regex>
     </rules>
 
     <commands>

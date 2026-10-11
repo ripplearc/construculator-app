@@ -36,9 +36,6 @@ class ConsentRepositoryImpl implements ConsentRepository {
 
   static final _logger = AppLogger().tag('ConsentRepositoryImpl');
 
-  /// The answer when there is no signed-in user to gate.
-  static const _ungated = ConsentSatisfied(ConsentRepository.noUserVersion);
-
   /// Composes the resolver and recorder from [remoteDataSource]/[clock] so
   /// callers only need to wire the shared [localDataSource].
   ConsentRepositoryImpl({
@@ -53,7 +50,7 @@ class ConsentRepositoryImpl implements ConsentRepository {
   @override
   Future<ConsentStatus> getCachedConsentStatus(ConsentType type) async {
     final userId = _supabaseWrapper.getInternalUserId();
-    if (userId == null) return _ungated;
+    if (userId == null) return ConsentUserUnidentified(type);
 
     try {
       final (published, accepted) = await (
@@ -85,7 +82,7 @@ class ConsentRepositoryImpl implements ConsentRepository {
   @override
   Stream<ConsentStatus> watchConsentStatus(ConsentType type) {
     final userId = _supabaseWrapper.getInternalUserId();
-    if (userId == null) return Stream.value(_ungated);
+    if (userId == null) return Stream.value(ConsentUserUnidentified(type));
 
     return _localDataSource
         .watchLatestUserConsent(userId, type)
@@ -150,7 +147,7 @@ class ConsentRepositoryImpl implements ConsentRepository {
   @override
   Future<ConsentStatus> verifyPublishedVersion(ConsentType type) async {
     final userId = _supabaseWrapper.getInternalUserId();
-    if (userId == null) return _ungated;
+    if (userId == null) return ConsentUserUnidentified(type);
 
     // Read before the round trip, because this is the value that decides
     // whether failing open is safe below.

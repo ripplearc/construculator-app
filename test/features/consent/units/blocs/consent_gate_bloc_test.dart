@@ -86,6 +86,16 @@ void main() {
       act: (bloc) => bloc.add(const ConsentGateStarted()),
       expect: () => const [ConsentGateUnavailable()],
     );
+
+    blocTest<ConsentGateBloc, ConsentGateState>(
+      'shows the retry screen when the user cannot be identified',
+      // Allowed would leave for the shell, whose guard sends the user back.
+      setUp: () =>
+          resolveTo(const ConsentUserUnidentified(ConsentType.termsAndPrivacy)),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const ConsentGateStarted()),
+      expect: () => const [ConsentGateUnavailable()],
+    );
   });
 
   group('on verification', () {
