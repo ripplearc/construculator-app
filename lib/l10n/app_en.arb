@@ -2385,6 +2385,17 @@
   "@equipmentDeliveryRowLabel": {
     "description": "Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)"
   },
+  "equipmentDeliveryFeeLimitHint": "The largest delivery fee is {amount}.",
+  "@equipmentDeliveryFeeLimitHint": {
+    "description": "Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount",
+    "context": "N/A",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$999,999.99"
+      }
+    }
+  },
   "equipmentDeliveryFeeUnsetText": "—",
   "@equipmentDeliveryFeeUnsetText": {
     "description": "Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value"

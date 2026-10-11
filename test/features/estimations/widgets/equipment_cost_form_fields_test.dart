@@ -1748,6 +1748,90 @@ void main() {
       expect(capturedTotal, 400.0);
     });
 
+    group('delivery fee limit', () {
+      Finder deliveryField() => find.byKey(const Key('delivery_fee_field'));
+      Finder limitHint() => find.byKey(const Key('delivery_fee_limit_hint'));
+
+      String typedDelivery(WidgetTester tester) => tester
+          .widget<TextField>(
+            find.descendant(
+              of: deliveryField(),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller!
+          .text;
+
+      testWidgets('refuses a digit that would go above the largest fee and '
+          'says why', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '999999.99');
+        await tester.pump();
+        expect(limitHint(), findsNothing);
+
+        await tester.enterText(deliveryField(), '9999999.99');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '999999.99');
+        expect(
+          find.text('The largest delivery fee is \$999,999.99.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('refuses a third decimal without the hint', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '85.50');
+        await tester.pump();
+
+        await tester.enterText(deliveryField(), '85.505');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '85.50');
+        expect(limitHint(), findsNothing);
+      });
+
+      testWidgets('refuses letters and a second decimal point', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '85');
+        await tester.pump();
+
+        await tester.enterText(deliveryField(), '85a');
+        await tester.pump();
+        expect(typedDelivery(tester), '85');
+
+        await tester.enterText(deliveryField(), '8.5');
+        await tester.pump();
+        await tester.enterText(deliveryField(), '8.5.');
+        await tester.pump();
+        expect(typedDelivery(tester), '8.5');
+      });
+
+      testWidgets('the hint goes away on the next accepted edit', (
+        tester,
+      ) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '999999.99');
+        await tester.pump();
+        await tester.enterText(deliveryField(), '9999999.99');
+        await tester.pump();
+        expect(limitHint(), findsOneWidget);
+
+        await tester.enterText(deliveryField(), '99999');
+        await tester.pump();
+
+        expect(limitHint(), findsNothing);
+      });
+    });
+
     testWidgets('an unset delivery fee does not affect the total', (
       tester,
     ) async {

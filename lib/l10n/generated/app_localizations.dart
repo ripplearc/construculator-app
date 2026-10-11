@@ -2860,6 +2860,12 @@ abstract class AppLocalizations {
   /// **'Delivery'**
   String get equipmentDeliveryRowLabel;
 
+  /// Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount
+  ///
+  /// In en, this message translates to:
+  /// **'The largest delivery fee is {amount}.'**
+  String equipmentDeliveryFeeLimitHint(String amount);
+
   /// Placeholder shown after the delivery-fee row label when no delivery fee has been entered yet (manually mode); distinct from a $0.00 value
   ///
   /// In en, this message translates to:

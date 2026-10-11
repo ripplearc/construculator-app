@@ -1524,6 +1524,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDeliveryRowLabel => 'Delivery';
 
   @override
+  String equipmentDeliveryFeeLimitHint(String amount) {
+    return 'The largest delivery fee is $amount.';
+  }
+
+  @override
   String get equipmentDeliveryFeeUnsetText => '—';
 
   @override
