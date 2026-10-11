@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A label-above, underlined-value text field matching the Figma design
@@ -34,6 +35,9 @@ class UnderlineTextField extends StatefulWidget {
   /// Text style of the value and the placeholder, before the empty-state
   /// colour is applied. Defaults to `bodyLargeRegular`.
   final TextStyle? valueStyle;
+
+  /// Rules that shape or refuse typed text before it reaches [controller].
+  final List<TextInputFormatter>? inputFormatters;
 
   /// Leading content at the start of the value row (e.g. the delivery-fee
   /// field's "$" icon, which sits before the digits rather than after them)
@@ -86,6 +90,7 @@ class UnderlineTextField extends StatefulWidget {
     this.hintText,
     this.keyboardType,
     this.valueStyle,
+    this.inputFormatters,
     this.prefix,
     this.suffix,
     this.hideSuffixWhenEmpty = false,
@@ -182,6 +187,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
       controller: widget.controller,
       focusNode: _focusNode,
       keyboardType: widget.keyboardType,
+      inputFormatters: widget.inputFormatters,
       cursorColor: colorTheme.textHeadline,
       style: valueStyle.copyWith(
         color: isEmpty ? colorTheme.textDisable : colorTheme.textHeadline,

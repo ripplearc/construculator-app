@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delivery_fee_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -123,6 +124,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _jobSelected = ValueNotifier<bool>(false);
 
   bool _deliveryExpanded = false;
+  bool _showDeliveryLimitHint = false;
+  late final _deliveryFeeFormatter = DeliveryFeeInputFormatter(
+    onTooLarge: _showDeliveryLimit,
+  );
 
   String _lastDailyRateText = '';
   String _lastJobAmountText = '';
@@ -216,7 +221,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  void _showDeliveryLimit() {
+    if (!mounted) return;
+    setState(() => _showDeliveryLimitHint = true);
+  }
+
   void _onDeliveryFeeChanged() {
+    if (_showDeliveryLimitHint) {
+      setState(() => _showDeliveryLimitHint = false);
+    }
     context.read<EquipmentCostFormBloc>().add(
       EquipmentDeliveryFeeUpdatedEvent(_deliveryFeeController.text),
     );
@@ -236,7 +249,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _toggleDeliveryExpanded() {
     if (_deliveryExpanded) {
-      setState(() => _deliveryExpanded = false);
+      setState(() {
+        _deliveryExpanded = false;
+        _showDeliveryLimitHint = false;
+      });
       _deliveryFocusNode.unfocus();
       return;
     }
@@ -1115,6 +1131,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [_deliveryFeeFormatter],
               prefix: Text(
                 '\$',
                 style: textTheme.bodyLargeRegular.copyWith(
@@ -1122,6 +1139,24 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 ),
               ),
             ),
+            if (_showDeliveryLimitHint)
+              Padding(
+                padding: const EdgeInsets.only(top: CoreSpacing.space1),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    key: const Key('delivery_fee_limit_hint'),
+                    l10n.equipmentDeliveryFeeLimitHint(
+                      DisplayFormatter.currency.format(
+                        DeliveryFeeInputFormatter.largestFee,
+                      ),
+                    ),
+                    style: textTheme.bodySmallRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: CoreSpacing.space3),
             UnderlineTextField(
               key: const Key('delivery_note_field'),
