@@ -102,6 +102,7 @@ set_checks '{"check_runs":[]}'
 run_target
 assert_true "builds when main has no iOS check run" answer_is build
 assert_true "exits 0 so the workflow carries on" exit_code_is 0
+assert_true "says there is no result yet, not that the lookup failed" stderr_contains "has no Ios Debug Build result from Codemagic yet"
 
 set_checks "{\"check_runs\":[$(check_run codemagic-ci-cd completed success)]}"
 run_target

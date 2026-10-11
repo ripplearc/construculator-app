@@ -48,7 +48,7 @@ fi
 RESPONSE=$(api_get "commits/$SHA/check-runs?per_page=100&check_name=Ios%20Debug%20Build") ||
   build_because "Could not read check runs for $SHA ($RESPONSE). Building to be safe."
 
-HAS_RESULT=$(jq -er --arg app "$CODEMAGIC_APP_SLUG" --arg name "$CHECK_NAME" '
+HAS_RESULT=$(jq -r --arg app "$CODEMAGIC_APP_SLUG" --arg name "$CHECK_NAME" '
   [.check_runs[]
    | select(.name == $name and .app.slug == $app)
    | select(.status == "queued" or .status == "in_progress"
