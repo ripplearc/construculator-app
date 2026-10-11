@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 
@@ -13,6 +15,17 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// are still recorded in [executeCalls] and [getAllCalls].
 class FakeCurrentCompanyDatabase extends FakePowerSyncDatabaseWrapper {
   final List<Map<String, Object?>> _rows = [];
+  var _insertApplied = Completer<void>();
+  var _deleteApplied = Completer<void>();
+
+  /// Completes once the next insert has been applied. Read it before the
+  /// action that causes the write, then await it, so a test waits for the
+  /// write itself instead of for a number of event loop turns.
+  Future<void> get nextInsertApplied => _insertApplied.future;
+
+  /// Completes once the next delete has been applied. Used the same way as
+  /// [nextInsertApplied].
+  Future<void> get nextDeleteApplied => _deleteApplied.future;
 
   @override
   Future<List<Map<String, dynamic>>> getAll(
@@ -43,12 +56,18 @@ class FakeCurrentCompanyDatabase extends FakePowerSyncDatabaseWrapper {
   void _apply(String sql, List<Object?> parameters) {
     if (sql.startsWith('DELETE')) {
       _rows.clear();
+      final applied = _deleteApplied;
+      _deleteApplied = Completer<void>();
+      applied.complete();
     } else if (sql.startsWith('INSERT')) {
       _rows.add({
         DatabaseConstants.idColumn: parameters[0],
         DatabaseConstants.userIdColumn: parameters[1],
         DatabaseConstants.companyIdColumn: parameters[2],
       });
+      final applied = _insertApplied;
+      _insertApplied = Completer<void>();
+      applied.complete();
     }
   }
 
