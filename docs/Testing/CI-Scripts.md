@@ -204,8 +204,12 @@ CI mirrors this quick check:
 
 - Installs FVM and project Flutter SDK.
 - Runs code analysis on changed files.
-- Runs changed unit/widget tests with coverage threshold validation.
-- Publishes test report: `test-results/flutter.json`.
+- Runs the changed unit/widget tests with coverage through `scripts/ci/run_changed_tests_with_coverage.sh`:
+  - A new `lib/` file that no changed test covers fails (CA-658).
+  - New files must meet `ARC_CODE_COVERAGE_TARGET`, or `CODE_COVERAGE_MINIMUM` when the last commit message has `#DeltaCoverageLow` or `DCL`. A missing variable fails the step instead of skipping the check.
+  - A change with no `lib/` file, for example only `scripts/`, passes (CA-1033).
+  - The base is `main`. `#RunCheck` starts builds by branch, so Codemagic gives no pull request target, and the script never compares against an empty branch name. If it cannot find the merge base it fails. It never treats that as "no tests changed".
+- Publishes the test report to `coverage/changed/flutter.json`.
 
 If this passes, proceed to full validation with `--all` or `--comp`.
 
