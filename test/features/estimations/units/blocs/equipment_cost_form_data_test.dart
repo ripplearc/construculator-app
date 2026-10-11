@@ -113,6 +113,43 @@ void main() {
             blocker: null,
             total: 0.01,
           ),
+          'a half day at a rate ending in a half cent rounds up': (
+            events: [
+              name,
+              const EquipmentDurationUpdatedEvent('2.5'),
+              const EquipmentRateUpdatedEvent('33.33'),
+            ],
+            blocker: null,
+            total: 83.33,
+          ),
+          'half a day of 19.99 rounds up to 10.00': (
+            events: [
+              name,
+              const EquipmentDurationUpdatedEvent('0.5'),
+              const EquipmentRateUpdatedEvent('19.99'),
+            ],
+            blocker: null,
+            total: 10,
+          ),
+          'half a day of 0.29 rounds up to 0.15': (
+            events: [
+              name,
+              const EquipmentDurationUpdatedEvent('0.5'),
+              const EquipmentRateUpdatedEvent('0.29'),
+            ],
+            blocker: null,
+            total: 0.15,
+          ),
+          'the delivery fee is added to a rounded base without drift': (
+            events: [
+              name,
+              const EquipmentDurationUpdatedEvent('0.5'),
+              const EquipmentRateUpdatedEvent('0.01'),
+              const EquipmentDeliveryFeeUpdatedEvent('0.14'),
+            ],
+            blocker: null,
+            total: 0.15,
+          ),
           'a half day counts': (
             events: [
               name,

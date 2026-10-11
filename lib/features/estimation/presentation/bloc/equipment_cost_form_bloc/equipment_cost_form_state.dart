@@ -59,9 +59,6 @@ enum EquipmentSubmitBlocker {
 
   /// The Job amount has an error.
   invalidAmount,
-
-  /// The delivery fee has an error.
-  invalidDeliveryFee,
 }
 
 /// Base sealed class for all equipment cost form states.
@@ -142,20 +139,15 @@ class EquipmentCostFormData extends Equatable {
   /// The cost before delivery: duration x daily rate for Day, the amount for
   /// Job, rounded to the cent (half a cent rounds up). Empty fields count as
   /// zero.
-  double get baseCost => _roundToCents(
-    method == EquipmentPricingMethod.day
-        ? (duration ?? 0) * (dailyRate ?? 0)
-        : (jobAmount ?? 0),
-  );
+  double get baseCost => _baseCents / 100;
 
-  /// [baseCost] plus the delivery fee: a line is the sum of its rounded
-  /// parts. Delivery is added after the rate math, never inside it, and a fee
-  /// with an error is left out.
-  double get lineTotal =>
-      baseCost +
-      (fieldErrors.containsKey(EquipmentFormField.deliveryFee)
-          ? 0
-          : _roundToCents(deliveryFee ?? 0));
+  /// [baseCost] plus the delivery fee, rounded to the cent. Delivery is added
+  /// after the rate math, never inside it, and never blocks the line.
+  double get lineTotal => (_baseCents + _toCents(deliveryFee ?? 0)) / 100;
+
+  int get _baseCents => method == EquipmentPricingMethod.day
+      ? _dayBaseCents(duration ?? 0, dailyRate ?? 0)
+      : _toCents(jobAmount ?? 0);
 
   /// The first field, from top to bottom, that is empty or has an error, or
   /// null when the form can be submitted.
@@ -177,9 +169,6 @@ class EquipmentCostFormData extends Equatable {
       if (fieldErrors.containsKey(EquipmentFormField.jobAmount)) {
         return EquipmentSubmitBlocker.invalidAmount;
       }
-    }
-    if (fieldErrors.containsKey(EquipmentFormField.deliveryFee)) {
-      return EquipmentSubmitBlocker.invalidDeliveryFee;
     }
     return null;
   }
@@ -303,7 +292,12 @@ class EquipmentCostFormFailure extends EquipmentCostFormState {
   final Failure failure;
 }
 
-double _roundToCents(double amount) => (amount * 100).round() / 100;
+int _toCents(double amount) => (amount * 100).round();
+
+int _dayBaseCents(double duration, double rate) {
+  final halfDays = (duration * 2).round();
+  return (halfDays * _toCents(rate) + 1) ~/ 2;
+}
 
 const Object _unset = Object();
 
