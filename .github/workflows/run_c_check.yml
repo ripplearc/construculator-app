@@ -11,10 +11,15 @@ on:
         description: "Print the Codemagic requests instead of sending them."
         type: boolean
         default: true
+      comment:
+        description: "Text to use as the #RunCheck comment, for example '#RunCheck ios'."
+        default: "#RunCheck"
 
 permissions:
   contents: read
   pull-requests: read
+  checks: read
+  statuses: write
 
 jobs:
   trigger:
@@ -40,8 +45,44 @@ jobs:
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
           BRANCH_NAME=$(jq -er '.head.ref' <<< "$PR_JSON")
+          HEAD_SHA=$(jq -er '.head.sha' <<< "$PR_JSON")
           echo "BRANCH: $BRANCH_NAME"
           echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether the iOS build is needed
+        id: ios
+        continue-on-error: true
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pr_number }}
+          HEAD_SHA: ${{ steps.extract-branch.outputs.head_sha }}
+          COMMENT_BODY: ${{ github.event.comment.body || inputs.comment }}
+          SKIP_ENABLED: ${{ vars.RUNCHECK_SKIP_IOS == 'true' }}
+        run: |
+          RESULT=$(bash scripts/ci/ios_build_needed.sh)
+          echo "iOS build: $RESULT"
+          echo "decision=${RESULT%%:*}" >> "$GITHUB_OUTPUT"
+          if [ "$SKIP_ENABLED" = "true" ]; then
+            echo "- iOS build: $RESULT" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- iOS build (observation only, RUNCHECK_SKIP_IOS is not true): $RESULT" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Report the skipped iOS build
+        id: report
+        if: vars.RUNCHECK_SKIP_IOS == 'true' && steps.ios.outputs.decision == 'skip'
+        continue-on-error: true
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ steps.extract-branch.outputs.head_sha }}
+        run: |
+          bash scripts/ci/post_commit_status.sh "$HEAD_SHA" "Ios Debug Build" success \
+            "Skipped: no iOS-related files changed" "$RUN_URL"
 
       - name: Start Codemagic builds on Source Branch
         env:
@@ -49,7 +90,7 @@ jobs:
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-          SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check' || '' }}
+          SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check ' || '' }}${{ steps.report.outcome == 'success' && 'ios-debug-build' || '' }}
         run: |
           bash scripts/ci/trigger_codemagic_builds.sh "$BRANCH_NAME" \
             pre-check comprehensive-check ios-debug-build
