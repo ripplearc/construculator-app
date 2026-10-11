@@ -101,6 +101,9 @@ pre_check() {
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 
+  # Self-test the Codemagic trigger script against a fake curl
+  bash scripts/ci/trigger_codemagic_builds_test.sh
+
   # Get base commit
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   

@@ -2,88 +2,53 @@ name: Trigger Comprehensive Check
 on:
   issue_comment:
     types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request whose branch the builds are started for."
+        required: true
+      dry_run:
+        description: "Print the Codemagic requests instead of sending them."
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   trigger:
     runs-on: ubuntu-latest
     if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '#RunCheck')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.pull_request &&
+       contains(github.event.comment.body, '#RunCheck'))
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/ci
+          persist-credentials: false
+
       - name: Extract PR Source Branch
         id: extract-branch
         env:
-          PR_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pr_number }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_JSON=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          BRANCH_NAME=$(curl -sS --fail-with-body \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
-
-          BRANCH_NAME=$(echo "$PR_JSON" | jq -r '.head.ref')
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER" \
+            | jq -er '.head.ref')
           echo "BRANCH: $BRANCH_NAME"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-      - name: Trigger Pre-check on Source Branch
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Start Codemagic builds on Source Branch
         env:
+          BRANCH_NAME: ${{ steps.extract-branch.outputs.branch_name }}
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
         run: |
-          FULL_RESPONSE=$(curl -s \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
-            -d '{
-              "appId": "'"$CODEMAGIC_APP_ID"'",
-              "workflowId": "pre-check",
-              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'"
-            }' \
-            "https://api.codemagic.io/builds"
-          )
-
-          echo "Full API response: $FULL_RESPONSE"
-      - name: Trigger Comprehensive Check on Source Branch
-        env:
-          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
-          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
-        run: |
-          FULL_RESPONSE=$(curl -s \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
-            -d '{
-              "appId": "'"$CODEMAGIC_APP_ID"'",
-              "workflowId": "comprehensive-check",
-              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'",
-              "environment": {
-                "variables": {
-                  "FORCE_FAIL": "false"
-                }
-              }
-            }' \
-            "https://api.codemagic.io/builds"
-          )
-
-          echo "Full API response: $FULL_RESPONSE"
-
-      - name: Trigger iOS Debug Build on Source Branch
-        env:
-          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
-          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
-        run: |
-          FULL_RESPONSE=$(curl -s \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
-            -d '{
-              "appId": "'"$CODEMAGIC_APP_ID"'",
-              "workflowId": "ios-debug-build",
-              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'",
-              "environment": {
-                "variables": {
-                  "FORCE_FAIL": "false"
-                }
-              }
-            }' \
-            "https://api.codemagic.io/builds"
-          )
-
-          echo "Full API response: $FULL_RESPONSE"
+          bash scripts/ci/trigger_codemagic_builds.sh "$BRANCH_NAME" \
+            pre-check comprehensive-check ios-debug-build
