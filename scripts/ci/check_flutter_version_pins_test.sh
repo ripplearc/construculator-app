@@ -93,6 +93,11 @@ assert_true "fails when codemagic.yaml pins a version" exit_code_is 1
 assert_true "tells the reader the version comes from .fvmrc" output_contains "The version comes from .fvmrc (3.44.4)"
 
 new_repo 3.44.4
+printf '      flutter: v3.44.4\n' >>"${WORK_DIR}/repo/codemagic.yaml"
+run_target
+assert_true "fails on a v-prefixed pin, even one equal to .fvmrc" exit_code_is 1
+
+new_repo 3.44.4
 printf '      flutter: stable\n' >>"${WORK_DIR}/repo/codemagic.yaml"
 run_target
 assert_true "allows a channel name in codemagic.yaml" exit_code_is 0

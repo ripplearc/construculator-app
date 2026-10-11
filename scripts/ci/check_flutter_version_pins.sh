@@ -1,11 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Fail if a CI file pins a Flutter version that is not the one in .fvmrc.
+# Fail if CI carries a Flutter version of its own that .fvmrc should decide.
 # Usage: ./scripts/ci/check_flutter_version_pins.sh [repo-root]
 #
 # Checks:
-#   - codemagic.yaml pins no numeric Flutter version under `flutter:`.
+#   - codemagic.yaml sets no numeric Flutter version under `flutter:`, even one equal to .fvmrc.
 #   - every `flutter-version:` in .github/workflows/*.yml and *.yaml equals .fvmrc.
 
 ROOT="${1:-.}"
