@@ -100,6 +100,8 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       await _processOperation(operation);
     } on supabase.PostgrestException catch (error) {
       if (!_isRefusedRateChange(error, operation)) rethrow;
+      // TODO: [CA-1306] Derive the rate id from its name and label so a clash is one row and later edits find it.
+      // https://ripplearc.youtrack.cloud/issue/CA-1306
       if (await _overwroteRateWithSameKey(error, operation)) return;
       _logger.warning(
         'The server refused a your_rates change (code ${error.code}): '
