@@ -532,7 +532,7 @@ void main() {
         'emits SaveLabelTaken carrying the submitted entry when the label is '
         'already used, and writes nothing',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
+          database.seedRows([
             row(
               id: 'existing',
               itemName: 'Excavator',
@@ -551,8 +551,8 @@ void main() {
           ),
         ],
         verify: (_) {
-          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
-          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+          expect(database.insertedRows, isEmpty);
+          expect(database.updatedRowIds, isEmpty);
         },
       );
 

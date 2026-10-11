@@ -63,7 +63,7 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
   SyncStreamHandle? _streamHandle;
-  Future<SyncStreamHandle>? _activating;
+  Future<void>? _ready;
 
   /// Creates a data source over [_database], stamping writes from [_clock].
   LocalYourRatesDataSource({required this._database, required this._clock});
@@ -145,21 +145,33 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   /// Releases the `user_rates` subscription. The database itself belongs to
   /// `PowerSyncModule` and stays open.
   Future<void> dispose() async {
-    final handle = _streamHandle ?? await _activating;
+    try {
+      await _ready;
+    } catch (_) {
+      // Start-up failed, so there is no subscription to release.
+    }
+    final handle = _streamHandle;
     _streamHandle = null;
+    _ready = null;
     handle?.unsubscribe();
   }
 
-  Future<void> _ensureSyncing() async {
-    if (_streamHandle != null) return;
-    final activating = _activating ??= _database.syncStream(_streamName);
+  Future<void> _ensureSyncing() => _ready ??= _startSyncing().catchError((
+    Object error,
+  ) {
+    _ready = null;
+    throw error;
+  });
+
+  Future<void> _startSyncing() async {
+    final handle = await _database.syncStream(_streamName);
     try {
-      final handle = await activating;
-      _streamHandle = handle;
       await _waitForFirstRows(handle);
-    } finally {
-      _activating = null;
+    } catch (_) {
+      handle.unsubscribe();
+      rethrow;
     }
+    _streamHandle = handle;
   }
 
   Future<void> _waitForFirstRows(SyncStreamHandle handle) async {

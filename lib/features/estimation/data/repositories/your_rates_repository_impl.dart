@@ -5,12 +5,14 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 
 /// Implementation of [YourRatesRepository] over the phone's own database.
 class YourRatesRepositoryImpl implements YourRatesRepository {
   YourRatesRepositoryImpl({required this.dataSource});
 
   final YourRatesDataSource dataSource;
+  static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
   );
@@ -154,6 +156,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
 
   Failure _handleError(Object error) {
     if (error is FormatException || error is TypeError) {
+      _logger.error('Could not read a stored Your rates row: $error');
       return const EstimationFailure(
         errorType: EstimationErrorType.parsingError,
       );

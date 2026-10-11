@@ -226,13 +226,30 @@ void main() {
         database.firstSyncGate = Completer();
 
         final read = dataSource.loadRates();
-        await pumpEventQueue();
+        await database.firstSyncRequested;
         expect(database.getAllCalls, isEmpty);
 
         database.firstSyncGate!.complete();
         await read;
 
         expect(database.getAllCalls, hasLength(1));
+      });
+
+      test('holds a second read until the first sync is done', () {
+        fakeAsync((async) {
+          database.firstSyncGate = Completer();
+          dataSource.loadRates();
+          async.flushMicrotasks();
+          dataSource.loadRates();
+          async.flushMicrotasks();
+
+          expect(database.getAllCalls, isEmpty);
+
+          database.firstSyncGate!.complete();
+          async.flushMicrotasks();
+
+          expect(database.getAllCalls, hasLength(2));
+        });
       });
 
       test('is not waited on for ever when it cannot sync', () {

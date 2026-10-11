@@ -71,6 +71,14 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// complete, so a test can hold a first sync open.
   Completer<void>? firstSyncGate;
 
+  /// Completes the first time [SyncStreamHandle.waitForFirstSync] is called,
+  /// so a test can wait for the read to reach the first sync instead of for a
+  /// number of event loop turns.
+  var _firstSyncRequested = Completer<void>();
+
+  /// Completes once [SyncStreamHandle.waitForFirstSync] has been called.
+  Future<void> get firstSyncRequested => _firstSyncRequested.future;
+
   /// When set, every [syncStream] call throws this error on every call until
   /// explicitly cleared (`syncStreamError = null`) or [reset] is called — it
   /// does NOT self-clear after one use.
@@ -204,7 +212,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
       if (unsubscribed != null && !unsubscribed.isCompleted) {
         unsubscribed.complete();
       }
-    }, () async => firstSyncGate?.future);
+    }, () async {
+      if (!_firstSyncRequested.isCompleted) _firstSyncRequested.complete();
+      await firstSyncGate?.future;
+    });
   }
 
   /// Clears recorded calls, scripted results, errors, and watch seeds, and
@@ -228,6 +239,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     watchInvokedSignal = null;
     syncStreamUnsubscribeSignal = null;
     firstSyncGate = null;
+    _firstSyncRequested = Completer<void>();
     _closeWatchControllers();
   }
 
