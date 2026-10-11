@@ -180,7 +180,7 @@ run_target
 assert_true "runs iOS when the file list may be cut off at 3000 files" contains "at most 3000 files"
 
 reset_fake
-rm "${WORK_DIR}/fake/files_1.json"
+rm -f "${WORK_DIR}/fake/files_1.json"
 run_target
 assert_true "runs iOS when the file list cannot be read" contains "could not list the files"
 assert_true "still exits 0 when the file list cannot be read" exit_code_is 0
