@@ -69,11 +69,13 @@ run_target() {
   shift
   rm -rf "${WORK_DIR}/calls"
   mkdir -p "${WORK_DIR}/calls"
+  rm -f "${WORK_DIR}/summary.md"
   OUTPUT="$(
     cd "$WORK_DIR" &&
       PATH="${WORK_DIR}/bin:${PATH}" \
       FAKE_CURL_DIR="${WORK_DIR}/calls" \
       FAKE_CURL_MODE="$mode" \
+      GITHUB_STEP_SUMMARY="${WORK_DIR}/summary.md" \
       "$TARGET" "$@" 2>&1
   )"
   EXIT_CODE=$?
@@ -98,6 +100,7 @@ assert_true() {
 exit_code_is() { [ "$EXIT_CODE" -eq "$1" ]; }
 output_contains() { echo "$OUTPUT" | grep -Fq -- "$1"; }
 requests_sent() { [ "$(request_count)" -eq "$1" ]; }
+summary_contains() { grep -Fq -- "$1" "${WORK_DIR}/summary.md"; }
 body_field_is() { [ "$(jq -r "$2" "${WORK_DIR}/calls/body.$1")" = "$3" ]; }
 
 export CODEMAGIC_API_TOKEN="test-token"
@@ -109,6 +112,7 @@ assert_true "sends one request per workflow" requests_sent 3
 assert_true "sends the workflow id" body_field_is 2 .workflowId comprehensive-check
 assert_true "sends the app id" body_field_is 1 .appId test-app
 assert_true "disables FORCE_FAIL" body_field_is 3 .environment.variables.FORCE_FAIL false
+assert_true "records each started build in the job summary" summary_contains "Started \`comprehensive-check\` on \`feature/x\`: build \`build-2\`"
 
 # shellcheck disable=SC2016 # the shell metacharacters must stay literal
 HOSTILE_BRANCH='a";touch pwned;"$(touch pwned)'
@@ -120,6 +124,7 @@ run_target reject_first feature/x pre-check comprehensive-check
 assert_true "fails when Codemagic rejects a request" exit_code_is 1
 assert_true "still tries the remaining workflows after a rejection" requests_sent 2
 assert_true "reports the rejected workflow" output_contains "Codemagic rejected pre-check"
+assert_true "records the rejection in the job summary" summary_contains "\`pre-check\` was not started"
 
 run_target no_build_id feature/x comprehensive-check
 assert_true "fails when the response has no buildId" exit_code_is 1
