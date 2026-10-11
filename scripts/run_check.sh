@@ -108,6 +108,9 @@ pre_check() {
   # CA-1240: self-test the changed-tests coverage gate against real git repos
   bash scripts/ci/run_changed_tests_with_coverage_test.sh
 
+  # CA-1240: self-test the nightly iOS build decision against a fake curl
+  bash scripts/ci/main_needs_ios_build_test.sh
+
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 
