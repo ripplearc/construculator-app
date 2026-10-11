@@ -398,6 +398,29 @@ void main() {
             expect(transaction.isCompleted, isTrue);
           });
 
+          test('a label in different capital letters and spacing is the same '
+              'label', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate(label: 'With operator'),
+            ]);
+
+            await uploadSecondPhone(label: '  with   OPERATOR ');
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+          });
+
+          test('an accented name matches in other capital letters', () async {
+            fakeSupabase.addTableData('your_rates', [
+              serverRate()..['item_name'] = 'Élévateur',
+            ]);
+
+            await uploadSecondPhone(name: ' éLÉVATEUR ');
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+          });
+
           test('a different label is not overwritten', () async {
             fakeSupabase.addTableData('your_rates', [
               serverRate(label: '20 ton'),
@@ -408,6 +431,77 @@ void main() {
             expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
             expect(transaction.isCompleted, isTrue);
           });
+        });
+
+        test('a your_rates update for a row the server does not have completes '
+            'the transaction', () async {
+          fakeSupabase.shouldThrowOnUpdate = true;
+          fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.noDataFound;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'your_rates', 'phone-2-id', null, {
+              'rate_amount': 400.0,
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await connector.uploadData(fakeDatabase);
+
+          expect(transaction.isCompleted, isTrue);
+        });
+
+        test('a missing row on another table is still retried', () async {
+          fakeSupabase.shouldThrowOnUpdate = true;
+          fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.noDataFound;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'projects', 'proj-1', null, {
+              'name': 'Renamed',
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await expectLater(
+            connector.uploadData(fakeDatabase),
+            throwsException,
+          );
+
+          expect(transaction.isCompleted, isFalse);
+        });
+
+        test('a your_rates update refused as a duplicate is skipped, never '
+            'turned into an overwrite', () async {
+          fakeSupabase.addTableData('your_rates', [
+            {
+              'id': 'server-1',
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Mini excavator',
+              'equipment_method': 'day',
+              'entry_label': null,
+            },
+          ]);
+          fakeSupabase.shouldThrowOnUpdate = true;
+          fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'your_rates', 'phone-2-id', null, {
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Mini excavator',
+              'equipment_method': 'day',
+              'entry_label': null,
+              'rate_amount': 400.0,
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await connector.uploadData(fakeDatabase);
+
+          final updates = fakeSupabase.getMethodCallsFor('update');
+          expect(updates, hasLength(1));
+          expect(updates.single['filterValue'], 'phone-2-id');
+          expect(transaction.isCompleted, isTrue);
         });
 
         test('a refused your_rates update completes the transaction', () async {

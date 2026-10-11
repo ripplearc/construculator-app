@@ -50,8 +50,6 @@ void main() {
       savedAt: '2026-10-01T08:00:00.000Z',
     );
 
-    // PowerSync queues a write as a PUT whose data holds the columns but not
-    // the id, which travels as its own field.
     CrudEntry queuedPutFor(Map<String, Object?> storedRow) {
       final columns = Map.of(storedRow)..remove('id');
       return CrudEntry(

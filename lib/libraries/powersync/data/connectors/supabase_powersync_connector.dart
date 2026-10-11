@@ -12,6 +12,17 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// - Provides JWT credentials to PowerSync for authentication
 /// - Uploads local mutations to Supabase with proper error handling
 /// - Distinguishes permanent failures (RLS denial) from transient failures
+///
+/// A refused `your_rates` change is skipped so it cannot block the queue:
+/// a value the server rejects (23514), a duplicate from another phone (23505),
+/// and a PATCH whose row the server does not have (PGRST116).
+///
+/// When two phones save the same Your rates entry, the later upload overwrites
+/// the earlier one. Two entries are the same when the item name, pricing
+/// method and label match, where a name or label matches ignoring capital
+/// letters and extra spaces. That copies the server rule behind the
+/// `item_name_key` column: trim, collapse runs of spaces to one, lower-case.
+/// If the server rule changes, change `_rateKey` with it.
 class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
@@ -138,16 +149,21 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   }
 
   bool _hasSameRateKey(Map<String, dynamic> saved, Map<String, dynamic> rate) {
-    return _serverNameKey(saved[DatabaseConstants.itemNameColumn]) ==
-            _serverNameKey(rate[DatabaseConstants.itemNameColumn]) &&
+    return _rateKey(saved[DatabaseConstants.itemNameColumn]) ==
+            _rateKey(rate[DatabaseConstants.itemNameColumn]) &&
         saved[DatabaseConstants.equipmentMethodColumn] ==
             rate[DatabaseConstants.equipmentMethodColumn] &&
-        saved[DatabaseConstants.entryLabelColumn] ==
-            rate[DatabaseConstants.entryLabelColumn];
+        _rateKey(saved[DatabaseConstants.entryLabelColumn]) ==
+            _rateKey(rate[DatabaseConstants.entryLabelColumn]);
   }
 
-  String? _serverNameKey(Object? name) =>
-      (name as String?)?.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+  String? _rateKey(Object? text) {
+    final key = (text as String?)
+        ?.trim()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .toLowerCase();
+    return (key == null || key.isEmpty) ? null : key;
+  }
 
   bool _isRefusedRateChange(
     supabase.PostgrestException error,
@@ -156,7 +172,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     if (operation.table != DatabaseConstants.yourRatesTable) return false;
     final code = PostgresErrorCode.fromCode(error.code);
     return code == PostgresErrorCode.checkViolation ||
-        code == PostgresErrorCode.uniqueViolation;
+        code == PostgresErrorCode.uniqueViolation ||
+        (operation.op == UpdateType.patch &&
+            code == PostgresErrorCode.noDataFound);
   }
 
   // Applies a single local CRUD operation to the corresponding Supabase table,
@@ -205,8 +223,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code
   // 42501) is non-retryable, so the transaction is completed to unblock the
   // upload queue. Any other error is treated as transient and rethrown so
-  // PowerSync retries the transaction automatically. A refused your_rates
-  // change never gets here: _processOperationUnlessRefused skips it.
+  // PowerSync retries the transaction automatically.
   Future<void> _handleUploadError(
     Object error,
     CrudTransaction transaction,
