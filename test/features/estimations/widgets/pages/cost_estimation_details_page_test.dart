@@ -1271,8 +1271,9 @@ void main() {
         );
       });
 
-      testWidgets('does not open the sheet and shows an error when the '
-          'estimate cannot be loaded', (tester) async {
+      testWidgets('opens the sheet even when the estimate cannot be loaded', (
+        tester,
+      ) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
           email: 'test@example.com',
@@ -1282,8 +1283,7 @@ void main() {
         await tester.tap(find.byKey(const Key('add_material_cost_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CostItemFormScreen), findsNothing);
-        expect(find.text(l10n.estimateSummaryLoadFailedError), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
       });
 
       testWidgets('shows the estimate total before and after the line', (
