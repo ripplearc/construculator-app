@@ -178,6 +178,14 @@
         <regex pattern="_supabaseWrapper\.rpc&lt;String\?&gt;\(\n          DatabaseConstants\.ensureMyCompanyRpcFunction," dotAll="true" id="resolver.signin.ensure_wrong_rpc">
             <mutation text="_supabaseWrapper.rpc&lt;String?&gt;(\n          DatabaseConstants.getMyCompanyIdRpcFunction,"/>
         </regex>
+
+        <!-- RULE 29: a server without the ensure step is no longer told apart by its error code -->
+        <regex pattern="error\.code == _functionNotFoundCode" dotAll="true" id="resolver.ensure.drop_function_not_found_check">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="error is supabase\.PostgrestException &amp;&amp;" dotAll="true" id="resolver.ensure.always_function_not_found">
+            <mutation text="true || error is supabase.PostgrestException &amp;&amp;"/>
+        </regex>
     </rules>
 
     <commands>

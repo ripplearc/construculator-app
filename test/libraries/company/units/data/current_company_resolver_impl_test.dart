@@ -7,7 +7,10 @@ import 'package:construculator/libraries/company/data/data_source/powersync_loca
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -15,10 +18,14 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 import '../../../../utils/fake_current_company_database.dart';
 
 void main() {
+  final sentry = FakeSentryWrapper();
+  AppLogger.setSentryWrapper(sentry);
+
   group('CurrentCompanyResolverImpl', () {
     late FakeSupabaseWrapper supabaseWrapper;
     late FakeCurrentCompanyDatabase localDatabase;
@@ -51,6 +58,7 @@ void main() {
     tearDownAll(() {
       Modular.destroy();
       localDatabase.dispose();
+      AppLogger.setSentryWrapper(null);
     });
 
     setUp(() {
@@ -784,6 +792,43 @@ void main() {
             DatabaseConstants.ensureMyCompanyRpcFunction,
             DatabaseConstants.getMyCompanyIdRpcFunction,
           ]);
+        });
+
+        test('a server without ensure_my_company (PGRST202) is a warning, not '
+            'an error', () async {
+          sentry.reset();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              supabase.PostgrestException(
+                message: 'function not found',
+                code: 'PGRST202',
+              );
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          await scriptedResolver.resolveAfterSignIn();
+
+          expect(sentry.messages, isEmpty);
+          expect(sentry.exceptions, isEmpty);
+          expect(
+            sentry.breadcrumbs.map((b) => b.level),
+            contains(SentryEventLevel.warning),
+          );
+        });
+
+        test('any other failure of ensure_my_company is logged as an '
+            'error', () async {
+          sentry.reset();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              supabase.PostgrestException(
+                message: 'permission denied',
+                code: '42501',
+              );
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          await scriptedResolver.resolveAfterSignIn();
+
+          expect(sentry.messages.map((m) => m.level), [SentryEventLevel.error]);
         });
 
         test('with no signal it goes straight to the kept id without a '

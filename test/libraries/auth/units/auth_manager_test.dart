@@ -1317,6 +1317,14 @@ void main() {
         },
       );
 
+      Future<void> signInAndAwaitAuthenticated() async {
+        final authenticated = authNotifier.onAuthStateChanged.firstWhere(
+          (state) => state.status == AuthStatus.authenticated,
+        );
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await authenticated;
+      }
+
       test('signing in asks the server to ensure the user has a company, and '
           'keeps the id it returns', () async {
         supabaseWrapper.setRpcResponse(
@@ -1324,8 +1332,7 @@ void main() {
           'new-company',
         );
 
-        await authManager.loginWithEmail(testEmail, testPassword);
-        await pumpEventQueue();
+        await signInAndAwaitAuthenticated();
 
         expect(
           (await currentCompanyResolver.resolve()).getRightOrNull(),
@@ -1346,10 +1353,9 @@ void main() {
           'new-company',
         );
 
-        await authManager.loginWithEmail(testEmail, testPassword);
-        await pumpEventQueue();
-        await authManager.loginWithEmail(testEmail, testPassword);
-        await pumpEventQueue();
+        await signInAndAwaitAuthenticated();
+        await signInAndAwaitAuthenticated();
+        await currentCompanyResolver.resolve();
 
         expect(
           supabaseWrapper
@@ -1370,11 +1376,14 @@ void main() {
           'existing-company',
         );
 
+        final authenticated = authNotifier.onAuthStateChanged.firstWhere(
+          (state) => state.status == AuthStatus.authenticated,
+        );
         final result = await authManager.loginWithEmail(
           testEmail,
           testPassword,
         );
-        await pumpEventQueue();
+        await authenticated;
 
         expect(result.isSuccess, isTrue);
         expect(
