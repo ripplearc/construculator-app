@@ -3,7 +3,7 @@
     <!-- CONSENT RECORDER MUTATION TESTING -->
     <!-- Targets: ConsentRecorder.record — the one path in the consent library
          that returns a real Failure. Covers the null-userId guard, the
-         timestamp it stamps a write with, the row it hands back to the
+         timestamp and audit metadata it stamps a write with, the row it hands back to the
          caller, and the catch block reaching the error mapper rather than
          swallowing the write failure. -->
 
@@ -36,6 +36,15 @@
              recorded consent. -->
         <regex pattern="return Right\(stored\.toDomain\(\)\);" dotAll="true" id="consent_recorder.record.echo_the_input">
             <mutation text="return Right(UserConsent(id: 'unwritten', userId: userId, consentType: consentType, version: version, action: action, recordedAt: _clock.now()));"/>
+        </regex>
+
+        <!-- RULE 5: Leave the audit metadata off the write, so every row
+             lands with a null app_version and platform again. -->
+        <regex pattern="appVersion: _auditMetadata\.appVersion," dotAll="true" id="consent_recorder.record.drop_app_version">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="platform: _auditMetadata\.platform," dotAll="true" id="consent_recorder.record.drop_platform">
+            <mutation text=""/>
         </regex>
     </rules>
 
