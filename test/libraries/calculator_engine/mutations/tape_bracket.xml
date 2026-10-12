@@ -62,8 +62,8 @@
         </regex>
 
         <!-- RULE 10: = lands the chain without closing the bracket first -->
-        <regex pattern="TapeChanged\(:final tape, notice: null\) =&gt; switch \(tape\.pressEquals\(\)\) \{" dotAll="true" id="tape.press_equals.no_close_first">
-            <mutation text="TapeChanged(:final tape, notice: null) =&gt; switch (TapeChanged(tape)) {"/>
+        <regex pattern="TapeChanged\(:final tape, notice: null\) =&gt; _landedAfterClose\(tape\)," dotAll="true" id="tape.press_equals.no_close_first">
+            <mutation text="TapeChanged(:final tape, notice: null) =&gt; TapeChanged(tape),"/>
         </regex>
 
         <!-- RULE 11: a closed bracket is not a left-hand side for an
@@ -89,8 +89,8 @@
         </regex>
 
         <!-- RULE 15: = drops the closed tape when nothing lands -->
-        <regex pattern="TapeRefused\(\) =&gt; TapeChanged\(\s*tape,\s*notice: TapeNotice\.bracketClosedNothingToCompute,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
-            <mutation text="final TapeRefused refused =&gt; refused,"/>
+        <regex pattern="TapeOutcome\(\) =&gt; TapeChanged\(\s*closed,\s*notice: notice \?\? TapeNotice\.bracketClosedNothingToCompute,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
+            <mutation text="final TapeOutcome refused =&gt; refused,"/>
         </regex>
 
         <!-- RULE 16: closing a reopened bracket empty throws the group
@@ -120,6 +120,18 @@
              refusal, whose toast says to close a bracket that is not open -->
         <regex pattern="return const TapeRefused\(TapeRefusal\.bracketCannotTakeName\);" dotAll="true" id="tape.open_bracket.name_refusal_reuses_function_key">
             <mutation text="return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);"/>
+        </regex>
+
+        <!-- RULE 21: = on a reopened bracket the edit emptied brings the
+             group back but lands no Calc -->
+        <regex pattern="TapeChanged\(:final tape, notice: TapeNotice\.bracketEditCancelled\) =&gt;\s*_landedAfterClose\(tape, notice: TapeNotice\.bracketEditCancelled\)," dotAll="true" id="tape.press_equals.restore_without_landing">
+            <mutation text="TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =&gt; TapeChanged(tape, notice: TapeNotice.bracketEditCancelled),"/>
+        </regex>
+
+        <!-- RULE 22: the Calc lands on the restored group but the user is
+             not told the edit was cancelled -->
+        <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(tape, notice: notice\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
+            <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
         </regex>
     </rules>
 

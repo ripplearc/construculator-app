@@ -362,6 +362,33 @@ void main() {
         expect(lastResult(press(outcome.tape, '=')), 'Calc 14');
       });
 
+      test('= on an emptied reopened bracket brings it back and lands', () {
+        final tape = press(const Tape(), '2 + ( 3 × 4 ( ⌫ ⌫ ⌫ ⌫');
+        expect(bracketText(tape), '+(');
+        final outcome = tape.pressEquals() as TapeChanged;
+        expect(outcome.notice, TapeNotice.bracketEditCancelled);
+        expect(bracketText(outcome.tape), '+(3×4)');
+        expect(lastResult(outcome.tape), 'Calc 14');
+        expect(outcome.tape.chips, hasLength(3));
+      });
+
+      test('= on an emptied reopened bracket with nothing to compute', () {
+        final tape = press(const Tape(), '( 3 ( ⌫ ⌫');
+        final outcome = tape.pressEquals() as TapeChanged;
+        expect(outcome.notice, TapeNotice.bracketEditCancelled);
+        expect(bracketText(outcome.tape), '(3)');
+        expect(outcome.tape.openBracket, isNull);
+        expect(outcome.tape.endsWithResult, isFalse);
+      });
+
+      test('= on an emptied reopened bracket can land an error chip', () {
+        final tape = press(const Tape(), '2 lbs + ( 3 ft ( ⌫ ⌫ ⌫');
+        expect(bracketText(tape), '+(');
+        final outcome = tape.pressEquals() as TapeChanged;
+        expect(outcome.notice, TapeNotice.bracketEditCancelled);
+        expect(outcome.tape.endsWithError, isTrue);
+      });
+
       test('emptying a reopened bracket and ⌫ once more removes it', () {
         final tape = press(const Tape(), '2 + ( 3 ( ⌫ ⌫');
         expect(bracketText(tape), '+(');
