@@ -14,7 +14,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// update still has it and keeps its secure storage.
 ///
 /// If emptying secure storage fails, the flag stays unset and the next launch
-/// tries again. [SecureStorageWrapper] has already reported the failure.
+/// tries again. [SecureStorageWrapper] logs the failure, but Sentry is not
+/// running yet at that point, so the log reaches the console only.
 class StaleSecureStorageService {
   static const _hasLaunchedBeforeKey = 'has_launched_before';
 

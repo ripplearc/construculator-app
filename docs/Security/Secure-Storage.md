@@ -53,7 +53,9 @@ Keychain data can persist across app uninstalls unless explicitly cleared, where
 - **Flag present:** nothing happens.
 - **Flag absent and no earlier-version key:** a fresh install. It calls `deleteAll()` on secure storage, then sets the flag.
 - **Flag absent but the earlier app version's `sb-<project>-auth-token` entry is still in `SharedPreferences`:** an update from a build that kept the session there. The flag did not exist before this check shipped, so every updating user has no flag. Secure storage is kept (the session move runs next) and the flag is set.
-- **`deleteAll()` fails:** the flag stays unset, the app keeps starting, and the next launch tries again. `SecureStorageWrapperImpl` has already logged the failure to Sentry.
+- **`deleteAll()` fails:** the flag stays unset, the app keeps starting, and the next launch tries again. `SecureStorageWrapperImpl` logs the failure once. Sentry is not running yet during start-up, so that log reaches the console only.
+
+The check assumes the app cannot start before the phone's first unlock after a restart. Before that unlock, iOS may not let the app read `shared_preferences`, in which case a launch would look like a fresh install. This has not been tested. The app has no background modes, push handling or background plugins today. If any are added, this check needs revisiting.
 
 A build that has the session move but not this check yet would look like a fresh install to this check, because the move deletes the old entry. Ship both together, as CA-519 asks.
 
