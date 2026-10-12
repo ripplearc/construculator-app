@@ -554,6 +554,11 @@ The project uses **CodeMagic** for continuous integration and deployment.
 
 **Artifacts:** .app file
 
+#### 4. Nightly iOS debug build
+
+**Trigger:** Daily at 01:17 UTC (`.github/workflows/nightly_ios_build.yml`), only when the tip of `main` has no iOS build result yet
+**Purpose:** Catch iOS breakage on `main` that no pull request check ran for. Details in `docs/Testing/CI-Scripts.md`.
+
 ### Triggering Manual Checks
 
 To manually trigger CI checks on a PR, add a comment with:
