@@ -843,6 +843,19 @@ void main() {
         await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
       }
 
+      int pageReads({required int rangeFrom}) => fakeSupabaseWrapper
+          .getMethodCalls()
+          .where(
+            (call) =>
+                call['method'] == 'selectPaginated' &&
+                call['rangeFrom'] == rangeFrom,
+          )
+          .length;
+
+      int firstPageReads() => pageReads(rangeFrom: 0);
+
+      int olderPageReads() => pageReads(rangeFrom: defaultPageSize);
+
       void failNextReads() {
         fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
         fakeSupabaseWrapper.selectPaginatedExceptionType =
@@ -1053,12 +1066,14 @@ void main() {
           );
 
           bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
-          await Future<void>.delayed(Duration.zero);
-
           fakeSupabaseWrapper.shouldDelayOperations = false;
           fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && !s.isRefreshing,
+          );
         },
         skip: skipOneFetchInitialCycle,
+        verify: (_) => expect(olderPageReads(), 0),
         expect: () {
           final logs = expectedLatestLogsForEstimate(
             totalCount: defaultPageSize + 5,
@@ -1072,6 +1087,103 @@ void main() {
               isRefreshing: true,
             ),
             CostEstimationLogLoaded(logs: logs, hasMore: true),
+          ];
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore a reload while older events load',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.isLoadingMore,
+          );
+
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && !s.isLoadingMore,
+          );
+        },
+        skip: skipOneFetchInitialCycle,
+        verify: (_) => expect(firstPageReads(), 1),
+        expect: () {
+          final firstPage = expectedLatestLogsForEstimate(
+            totalCount: defaultPageSize * 2,
+            takeCount: defaultPageSize,
+            estimateId: testEstimateId,
+          );
+          return [
+            CostEstimationLogLoaded(
+              logs: firstPage,
+              hasMore: true,
+              isLoadingMore: true,
+            ),
+            CostEstimationLogLoaded(
+              logs: expectedLatestLogsForEstimate(
+                totalCount: defaultPageSize * 2,
+                takeCount: defaultPageSize * 2,
+                estimateId: testEstimateId,
+              ),
+              hasMore: true,
+            ),
+          ];
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore a second reload while one runs',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          await loadFirstPage(bloc);
+
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.isRefreshing,
+          );
+
+          bloc.add(const CostEstimationLogRefresh(estimateId: testEstimateId));
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && !s.isRefreshing,
+          );
+        },
+        skip: skipOneFetchInitialCycle,
+        verify: (_) => expect(firstPageReads(), 2),
+        expect: () {
+          final logs = expectedLatestLogsForEstimate(
+            totalCount: 2,
+            takeCount: 2,
+            estimateId: testEstimateId,
+          );
+          return [
+            CostEstimationLogLoaded(logs: logs, isRefreshing: true),
+            CostEstimationLogLoaded(logs: logs),
           ];
         },
       );

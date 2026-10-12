@@ -9,6 +9,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// The first load and the load of older events show their spinner at the
 /// same size beside a text label, so the two loading states match.
+///
+/// A failed pull-down reload keeps the list and shows its message above the
+/// first entry. Pulling down again is the retry, so the message has no button.
+/// The pull-down spinner stays up until the reload ends.
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
@@ -218,8 +222,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  // Waits for the reload to end, so the pull-down spinner stays up in place
-  // of the failure message while it runs (CUJ 11 screen 13).
   Future<void> _onRefresh() async {
     final bloc = context.read<CostEstimationLogBloc>();
     bloc.add(CostEstimationLogRefresh(estimateId: widget.estimateId));
@@ -361,8 +363,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  // Sits above the first entry and never replaces the list (CUJ 11
-  // screen 13). Pulling down again is the retry, so it has no button.
   Widget _buildRefreshFailure(BuildContext context) {
     return Padding(
       key: CostEstimationLogsList.refreshErrorViewKey,

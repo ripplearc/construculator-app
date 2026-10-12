@@ -15,7 +15,10 @@ part 'cost_estimation_log_state.dart';
 ///
 /// This BLoC handles:
 /// - Fetching initial logs for an estimation
-/// - Reloading on pull-down while the loaded logs stay on screen
+/// - Reloading on pull-down while the loaded logs stay on screen. With
+///   nothing on screen to keep, a reload is a first load. A reload is ignored
+///   while older events load or another reload runs, so it never leaves the
+///   repository's page position ahead of the logs on screen
 /// - Loading more logs with pagination
 /// - Error handling and state management
 /// - Event concurrency via transformers (restartable for FetchInitial)
@@ -64,9 +67,6 @@ class CostEstimationLogBloc
     );
   }
 
-  // Reloads the first page without passing through Loading, so the logs on
-  // screen stay put while it runs and after it fails (CUJ 11 screen 13).
-  // With nothing on screen to keep, it is a first load.
   Future<void> _onRefresh(
     CostEstimationLogRefresh event,
     Emitter<CostEstimationLogState> emit,
@@ -79,9 +79,11 @@ class CostEstimationLogBloc
       );
     }
 
+    if (currentState.isLoadingMore || currentState.isRefreshing) {
+      return;
+    }
+
     _currentEstimateId = event.estimateId;
-    await _inFlightLoadMore?.cancel();
-    _inFlightLoadMore = null;
 
     emit(
       CostEstimationLogLoaded(
