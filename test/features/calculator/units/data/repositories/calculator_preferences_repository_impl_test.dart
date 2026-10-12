@@ -227,27 +227,30 @@ void main() {
         },
       );
 
-      test('reads the prototype\'s keys off an old profile', () async {
-        final settings = expectLater(
-          repository.watchPreferences(),
-          emitsInOrder([
-            CalculatorPreferences.defaults,
-            isA<CalculatorPreferences>().having(
-              (preferences) => preferences.fractionResolution,
-              'fractionResolution',
-              FractionResolution.sixtyFourth,
-            ),
-          ]),
-        );
+      test(
+        'reads the settings off a profile that carries stray keys',
+        () async {
+          final settings = expectLater(
+            repository.watchPreferences(),
+            emitsInOrder([
+              CalculatorPreferences.defaults,
+              isA<CalculatorPreferences>().having(
+                (preferences) => preferences.fractionResolution,
+                'fractionResolution',
+                FractionResolution.sixtyFourth,
+              ),
+            ]),
+          );
 
-        await announce(
-          userWith({
-            'calculator': {'fracRes': 64},
-          }),
-        );
+          await announce(
+            userWith({
+              'calculator': {'fracRes': 8, 'fractional_resolution': 64},
+            }),
+          );
 
-        await settings;
-      });
+          await settings;
+        },
+      );
 
       test(
         'falls back to the defaults on sign-out, and the next user signed in '
