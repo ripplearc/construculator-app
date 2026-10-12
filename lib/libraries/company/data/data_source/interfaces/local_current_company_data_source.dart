@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Keeps the signed-in user's company id on the device.
 ///
 /// Holds one company id for one user at a time. A read for any other user
