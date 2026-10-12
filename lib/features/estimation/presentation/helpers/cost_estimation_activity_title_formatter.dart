@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
+import 'package:construculator/features/estimation/presentation/helpers/cost_file_changed_item_parser.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 
 /// Formats cost estimation activity logs into human-readable titles.
@@ -133,9 +134,8 @@ class CostEstimationActivityTitleFormatter {
         if (changedItems.length > 1) {
           return l10n.activityCostFileUpdatedCount(changedItems.length);
         }
-        final changedItem = changedItems.single;
-        final itemName = changedItem is Map ? changedItem['itemName'] : null;
-        if (itemName is String) {
+        final itemName = CostFileChangedItemParser.singleFrom(details)?.itemName;
+        if (itemName != null) {
           return l10n.activityCostFileUpdated(itemName);
         }
         return l10n.activityCostFileUpdatedSimple;

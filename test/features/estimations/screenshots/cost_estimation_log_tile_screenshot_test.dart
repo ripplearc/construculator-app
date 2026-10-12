@@ -188,6 +188,35 @@ void main() {
       );
     });
 
+    testWidgets('renders cost file updated with one price correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390.0, 120.0);
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final user = createTestUser(firstName: 'Sam', lastName: 'Lee');
+      final log = createTestLog(
+        activity: CostEstimationActivityType.costFileUpdated,
+        user: user,
+        loggedAt: DateTime(2025, 4, 22, 16, 12),
+        activityDetails: {
+          'changedItems': [
+            {'itemName': 'Drywall sheets', 'oldRate': 14, 'newRate': 14.5},
+          ],
+        },
+      );
+
+      await pumpLogTile(tester: tester, log: log, theme: theme);
+
+      await expectLater(
+        find.byType(CostEstimationLogTile),
+        matchesGoldenFile(
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_cost_file_updated$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('renders locked activity correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
