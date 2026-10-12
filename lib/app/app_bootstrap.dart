@@ -56,7 +56,10 @@ import 'package:powersync/powersync.dart';
 /// final config = AppConfigImpl(envLoader: envLoader);
 /// await config.initialize(env);
 ///
-/// final supabaseWrapper = SupabaseWrapperImpl(envLoader: envLoader);
+/// final supabaseWrapper = SupabaseWrapperImpl(
+///   envLoader: envLoader,
+///   secureStorage: SecureStorageWrapperImpl(),
+/// );
 /// await supabaseWrapper.initialize();
 ///
 /// final sentryWrapper = SentryWrapperImpl(
