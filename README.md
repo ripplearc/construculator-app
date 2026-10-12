@@ -518,7 +518,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 **Checks:**
 - Block `[skip ci]` commits
 - Analyze changed Dart files
-- Run changed tests with coverage (generates HTML report; no coverage threshold enforced)
+- Run changed tests with coverage. A new `lib/` file with no covering test fails, and new files must meet the coverage target (`scripts/ci/run_changed_tests_with_coverage.sh`)
 - Fast feedback (~5-10 min)
 
 **Notifications:** Email + Slack (#build-notifications)

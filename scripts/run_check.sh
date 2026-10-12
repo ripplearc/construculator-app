@@ -105,6 +105,9 @@ pre_check() {
   bash scripts/ci/check_flutter_version_pins_test.sh
   bash scripts/ci/check_flutter_version_pins.sh
 
+  # CA-1240: self-test the changed-tests coverage gate against real git repos
+  bash scripts/ci/run_changed_tests_with_coverage_test.sh
+
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 
