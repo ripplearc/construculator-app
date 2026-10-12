@@ -8,9 +8,9 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// The base fake scripts each answer by SQL text and so cannot show that a
 /// saved id comes back, or that another user's row is not returned. This one
 /// emulates only the three statements the company data source issues: a
-/// `SELECT` filtered by user id, an `INSERT`, and a `DELETE`, including those run inside a write
-/// transaction. The statements
-/// are still recorded in [executeCalls] and [getAllCalls].
+/// `SELECT` filtered by user id, an `INSERT`, and a `DELETE`, including those
+/// run inside a write transaction. The statements are still recorded in
+/// [executeCalls] and [getAllCalls].
 class FakeCurrentCompanyDatabase extends FakePowerSyncDatabaseWrapper {
   final List<Map<String, Object?>> _rows = [];
 

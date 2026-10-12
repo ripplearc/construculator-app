@@ -1,9 +1,8 @@
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
+import 'package:construculator/libraries/company/testing/fake_current_company_database.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../../../../utils/fake_current_company_database.dart';
 
 void main() {
   group('PowerSyncLocalCurrentCompanyDataSource', () {
@@ -71,6 +70,18 @@ void main() {
         dataSource.saveCompanyId(userId: 'user-1', companyId: 'company-1'),
         throwsStateError,
       );
+    });
+
+    test('a failed read is reported to the caller', () async {
+      database.getAllError = StateError('disk unreadable');
+
+      await expectLater(dataSource.loadCompanyId('user-1'), throwsStateError);
+    });
+
+    test('a failed clear is reported to the caller', () async {
+      database.executeError = StateError('disk full');
+
+      await expectLater(dataSource.clearCompanyId(), throwsStateError);
     });
   });
 }
