@@ -19,6 +19,23 @@ void main() {
       expect(fake.storedKeys, isEmpty);
     });
 
+    test('deleteAll empties the store and releases waiters', () async {
+      fake.seed('a', '1');
+      fake.seed('b', '2');
+      final waiting = fake.untilRemoved('a');
+
+      await fake.deleteAll();
+
+      await expectLater(waiting, completes);
+      expect(fake.storedKeys, isEmpty);
+    });
+
+    test('deleteAll throws when the delete switch is on', () async {
+      fake.shouldThrowOnDelete = true;
+
+      expect(() => fake.deleteAll(), throwsA(isA<PlatformException>()));
+    });
+
     test('seed and peek bypass the throwing switches', () async {
       fake.shouldThrowOnRead = true;
       fake.shouldThrowOnWrite = true;

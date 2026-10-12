@@ -4,6 +4,7 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
+import 'package:construculator/libraries/secure_storage/stale_secure_storage_service.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/secure_session_local_storage.dart';
 import 'package:construculator/libraries/supabase/utils/jwt_parser.dart';
@@ -31,6 +32,12 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     final supabaseUrl = _envLoader.get('SUPABASE_URL');
     final supabaseAnonKey = _envLoader.get('SUPABASE_ANON_KEY');
     if (supabaseUrl != null && supabaseAnonKey != null) {
+      final persistSessionKey = SecureSessionLocalStorage.persistSessionKeyFor(
+        supabaseUrl,
+      );
+      await StaleSecureStorageService(
+        secureStorage: _secureStorage,
+      ).clearIfFreshInstall(earlierVersionKey: persistSessionKey);
       await supabase.Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseAnonKey,
@@ -39,9 +46,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         authOptions: supabase.FlutterAuthClientOptions(
           localStorage: SecureSessionLocalStorage(
             secureStorage: _secureStorage,
-            persistSessionKey: SecureSessionLocalStorage.persistSessionKeyFor(
-              supabaseUrl,
-            ),
+            persistSessionKey: persistSessionKey,
           ),
         ),
       );
