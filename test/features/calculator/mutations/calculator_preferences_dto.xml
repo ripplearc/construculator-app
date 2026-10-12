@@ -3,10 +3,9 @@
     <!-- CALCULATOR PREFERENCES DTO MUTATION TESTING -->
     <!-- Targets: CalculatorPreferencesDto, the one reader and writer of the
          `calculator` key under user_preferences. Critical path: it is the
-         migration of the prototype's JSON as well as the round trip of
-         every save, so a weakened guard silently resets a user's settings
-         on every device, and a key written in the wrong spelling is never
-         read back. -->
+         round trip of every save, so a weakened guard silently resets a
+         user's settings on every device, and a key written in the wrong
+         spelling is never read back. -->
 
     <files>
         <file>lib/features/calculator/data/models/calculator_preferences_dto.dart</file>
@@ -18,43 +17,34 @@
             <mutation text="if (json == null) {"/>
         </regex>
 
-        <!-- RULE 2: the legacy key is no longer read -->
-        <regex pattern="json\.containsKey\(key\) \? json\[key\] : json\[legacyKey\];" dotAll="true" id="calculator_preferences_dto.read.drop_legacy_key">
-            <mutation text="json[key];"/>
+        <!-- RULE 2: a metric profile with no density key renders in lbs/yd³ -->
+        <regex pattern="DensityUnit\.defaultFor\(system\)," dotAll="true" id="calculator_preferences_dto.from_json.density_ignores_system">
+            <mutation text="DensityUnit.poundsPerCubicYard,"/>
         </regex>
 
-        <!-- RULE 3: the legacy key wins over the new one -->
-        <regex pattern="json\.containsKey\(key\) \? json\[key\] : json\[legacyKey\];" dotAll="true" id="calculator_preferences_dto.read.legacy_wins">
-            <mutation text="json.containsKey(legacyKey) ? json[legacyKey] : json[key];"/>
-        </regex>
-
-        <!-- RULE 4: a metric profile with no density key renders in lbs/yd³ -->
-        <regex pattern="_legacyDensityUnits\[legacyDensity\] \?\? DensityUnit\.defaultFor\(system\)," dotAll="true" id="calculator_preferences_dto.from_json.density_ignores_system">
-            <mutation text="_legacyDensityUnits[legacyDensity] ?? DensityUnit.poundsPerCubicYard,"/>
-        </regex>
-
-        <!-- RULE 5: the legacy density spelling is no longer read -->
-        <regex pattern="_legacyDensityUnits\[legacyDensity\] \?\? DensityUnit\.defaultFor\(system\)," dotAll="true" id="calculator_preferences_dto.from_json.drop_legacy_density">
-            <mutation text="DensityUnit.defaultFor(system),"/>
-        </regex>
-
-        <!-- RULE 6: an unreadable number matches the first value instead of
+        <!-- RULE 3: an unreadable number matches the first value instead of
              the default -->
-        <regex pattern="if \(numberOf\(value\) == number\) return value;\s*\}\s*return fallback;" dotAll="true" id="calculator_preferences_dto.enum_by_number.first_not_default">
+        <regex pattern="if \(numberOf\(value\) == number\) return value;\s*\}\s*return _fallback\(key, number, fallback\);" dotAll="true" id="calculator_preferences_dto.enum_by_number.first_not_default">
             <mutation text="if (numberOf(value) == number) return value; } return values.first;"/>
         </regex>
 
-        <!-- RULE 7: the fraction step is written under the legacy key -->
-        <regex pattern="fractionResolutionKey: preferences\.fractionResolution\.denominator," dotAll="true" id="calculator_preferences_dto.to_json.legacy_fraction_key">
-            <mutation text="_legacyFractionResolutionKey: preferences.fractionResolution.denominator,"/>
+        <!-- RULE 4: the fraction step is written under another key -->
+        <regex pattern="fractionResolutionKey: preferences\.fractionResolution\.denominator," dotAll="true" id="calculator_preferences_dto.to_json.other_fraction_key">
+            <mutation text="'fracRes': preferences.fractionResolution.denominator,"/>
         </regex>
 
-        <!-- RULE 8: a name matches every value but the one spelled -->
+        <!-- RULE 5: the density unit is written as its index, so a saved
+             profile reads back as the default -->
+        <regex pattern="densityUnitKey: preferences\.densityUnit\.name," dotAll="true" id="calculator_preferences_dto.to_json.density_as_index">
+            <mutation text="densityUnitKey: preferences.densityUnit.index,"/>
+        </regex>
+
+        <!-- RULE 6: a name matches every value but the one spelled -->
         <regex pattern="if \(value\.name == name\) return value;" dotAll="true" id="calculator_preferences_dto.enum_by_name.negated">
             <mutation text="if (value.name != name) return value;"/>
         </regex>
 
-        <!-- RULE 9: a number matches every value but the one written -->
+        <!-- RULE 7: a number matches every value but the one written -->
         <regex pattern="if \(numberOf\(value\) == number\) return value;" dotAll="true" id="calculator_preferences_dto.enum_by_number.negated">
             <mutation text="if (numberOf(value) != number) return value;"/>
         </regex>

@@ -34,42 +34,21 @@ void main() {
         );
       });
 
-      test(
-        'reads the prototype\'s keys, so an old profile migrates on read',
-        () {
-          final dto = CalculatorPreferencesDto.fromJson({
-            'system': 'metric',
-            'fracRes': 8,
-            'meterDp': 1,
-            'lbsTon': 2240,
-            'denUnit': 'ton_yd3',
-            'lenFormat': 'std',
-            'mmDp': 0,
-            'strip': 'tworow',
-            'editStyle': 'recompute',
-            'v': 2,
-          });
-          expect(
-            dto.preferences,
-            const CalculatorPreferences(
-              system: MeasurementSystem.metric,
-              fractionResolution: FractionResolution.eighth,
-              metreDisplay: MetreDisplay.oneDecimal,
-              tonDefinition: TonDefinition.longTon,
-              densityUnit: DensityUnit.tonsPerCubicYard,
-            ),
-          );
-        },
-      );
-
-      test('prefers the new key when both spellings are present', () {
+      test('reads only the keys it writes, so a stray key changes nothing', () {
         final dto = CalculatorPreferencesDto.fromJson({
-          'fractional_resolution': 64,
           'fracRes': 8,
+          'lenFormat': 'std',
+          'fractional_resolution': 64,
         });
         expect(
-          dto.preferences.fractionResolution,
-          FractionResolution.sixtyFourth,
+          dto.preferences,
+          const CalculatorPreferences(
+            system: MeasurementSystem.imperial,
+            fractionResolution: FractionResolution.sixtyFourth,
+            metreDisplay: MetreDisplay.twoDecimals,
+            tonDefinition: TonDefinition.shortTon,
+            densityUnit: DensityUnit.poundsPerCubicYard,
+          ),
         );
       });
 
@@ -96,9 +75,22 @@ void main() {
         },
       );
 
-      test('a legacy density key that cannot be read follows the system', () {
-        final dto = CalculatorPreferencesDto.fromJson({'denUnit': 'slugs'});
-        expect(dto.preferences.densityUnit, DensityUnit.poundsPerCubicYard);
+      test('a density unit that cannot be read follows the system', () {
+        final imperial = CalculatorPreferencesDto.fromJson({
+          'density_unit': 'slugs',
+        });
+        expect(
+          imperial.preferences.densityUnit,
+          DensityUnit.poundsPerCubicYard,
+        );
+        final metric = CalculatorPreferencesDto.fromJson({
+          'system': 'metric',
+          'density_unit': 'slugs',
+        });
+        expect(
+          metric.preferences.densityUnit,
+          DensityUnit.kilogramsPerCubicMetre,
+        );
       });
     });
 
@@ -120,6 +112,32 @@ void main() {
           );
         },
       );
+    });
+
+    test('pins the stored name of every density unit', () {
+      const stored = {
+        DensityUnit.poundsPerCubicYard: 'poundsPerCubicYard',
+        DensityUnit.poundsPerCubicFoot: 'poundsPerCubicFoot',
+        DensityUnit.tonsPerCubicYard: 'tonsPerCubicYard',
+        DensityUnit.kilogramsPerCubicMetre: 'kilogramsPerCubicMetre',
+      };
+      expect(stored.keys, containsAll(DensityUnit.values));
+      for (final entry in stored.entries) {
+        final json = CalculatorPreferencesDto(
+          CalculatorPreferences(
+            system: MeasurementSystem.imperial,
+            fractionResolution: FractionResolution.sixteenth,
+            metreDisplay: MetreDisplay.twoDecimals,
+            tonDefinition: TonDefinition.shortTon,
+            densityUnit: entry.key,
+          ),
+        ).toJson();
+        expect(json['density_unit'], entry.value);
+        expect(
+          CalculatorPreferencesDto.fromJson(json).preferences.densityUnit,
+          entry.key,
+        );
+      }
     });
 
     test('names the key it lives under', () {
