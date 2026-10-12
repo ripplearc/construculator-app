@@ -1,6 +1,5 @@
 import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,7 +38,6 @@ class SecureSessionLocalStorage extends LocalStorage {
 
   @override
   Future<void> initialize() async {
-    WidgetsFlutterBinding.ensureInitialized();
     final preferences = await SharedPreferences.getInstance();
     final legacySession = preferences.getString(persistSessionKey);
     if (legacySession == null) return;
