@@ -1,7 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
      <uses-permission
         android:name="android.permission.INTERNET"/>
+    <!-- allowBackup is off because the Keystore key that decrypts the saved
+         session is never backed up; a restored copy of the encrypted data
+         could not be read. See docs/Security/Secure-Storage.md. -->
     <application
+        android:allowBackup="false"
         android:label="Construculator"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
