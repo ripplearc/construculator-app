@@ -12,7 +12,8 @@ What it does:
 - **New sign-in:** the session is written to secure storage under the key `sb-<project>-auth-token`. Nothing is written to `shared_preferences`.
 - **Update from an earlier app version:** on start-up, a session found in `shared_preferences` under the same key is copied to secure storage and then deleted from `shared_preferences`, so signed-in users stay signed in. If the copy fails, the old entry stays and the copy is tried again on the next start. If secure storage already holds a session, it wins and the old entry is deleted.
 - **Sign-out:** the session is removed from secure storage, and from `shared_preferences` if an old copy is still there.
-- **Unreadable session:** if secure storage cannot be read (for example the Android Keystore key is gone), the app starts signed out. Supabase calls the read during start-up without catching errors, so a thrown error would stop the app from starting. `SecureStorageWrapperImpl` logs the failure to Sentry once.
+  Supabase does not surface a failed removal. It logs a warning and carries on, so the session stays in secure storage and the user is signed in again at the next launch. When the device is online, sign-out also asks the server to end the session, which stops the stored copy from working. Offline, the stored copy keeps working until it is removed.
+- **Unreadable session:** if secure storage cannot be read (for example the Android Keystore key is gone), the app starts signed out. Supabase calls the read during start-up without catching errors, so a thrown error would stop the app from starting. `SecureStorageWrapperImpl` logs the failure once. Sentry is not running yet during start-up, so that log reaches the console only.
 
 Not covered:
 - Supabase also keeps the PKCE code verifier in `shared_preferences` (`SharedPreferencesGotrueAsyncStorage`). It is a short-lived value used while a sign-in link is being completed, not a session token, and it is not moved.
