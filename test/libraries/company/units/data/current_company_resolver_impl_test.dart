@@ -15,7 +15,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../utils/fake_current_company_database.dart';
+import 'package:construculator/libraries/company/testing/fake_current_company_database.dart';
 
 void main() {
   group('CurrentCompanyResolverImpl', () {

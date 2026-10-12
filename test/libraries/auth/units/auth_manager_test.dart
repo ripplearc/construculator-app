@@ -29,7 +29,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-import '../../../utils/fake_current_company_database.dart';
+import 'package:construculator/libraries/company/testing/fake_current_company_database.dart';
 
 void main() {
   late FakeAuthNotifier authNotifier;
