@@ -569,6 +569,8 @@ To manually trigger CI checks on a PR, add a comment with:
 
 This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows. `pre-check` is left out when `RUNCHECK_SKIP_PRECHECK` is `true`.
 
+A second `#RunCheck` on a commit that already has results starts nothing and says so in a pull request comment, and `#RunCheck force` runs it again. A new `#RunCheck` cancels builds still running on older commits of the pull request. Both are off until the repository variable `RUNCHECK_DEDUPE` is `true` (`docs/Testing/CI-Scripts.md`).
+
 ---
 
 ## Trend Dashboard Host
