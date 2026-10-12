@@ -76,8 +76,10 @@ enum TapeNotice {
   emptyBracketsRemoved,
 
   /// A bracket reopened by ⌫ was emptied and then closed, so the edit was
-  /// cancelled and the group is back as it was (Section 7, "Editing a bracket"; Section 5, "The group had
-  /// nothing inside it, so your change was cancelled").
+  /// cancelled and the group is back as it was (Section 7, "Editing a
+  /// bracket"; Section 5, "The group had nothing inside it, so your change
+  /// was cancelled"). = brings the group back the same way, and then lands
+  /// the Calc.
   bracketEditCancelled,
 
   /// = closed the open bracket, as it always does first (Section 7), but
@@ -382,17 +384,16 @@ class Tape extends Equatable {
   /// = lands the running total as a Calc result chip, or a Dimension Error
   /// (or Division by zero) chip when a step is refused. With no operator
   /// applied, or an operator still waiting for its number, it says what it
-  /// needs; a number with no unit cannot be left.
+  /// needs; a number with no unit cannot be left. With a bracket open it
+  /// closes the bracket first (Section 7) and then lands the Calc: a
+  /// reopened bracket the edit emptied is brought back as it was and the
+  /// Calc lands on the restored group, with the notice kept.
   TapeOutcome pressEquals() {
     if (openBracket != null) {
       return switch (closeBracket()) {
-        TapeChanged(:final tape, notice: null) => switch (tape.pressEquals()) {
-          TapeRefused() => TapeChanged(
-            tape,
-            notice: TapeNotice.bracketClosedNothingToCompute,
-          ),
-          final TapeOutcome landed => landed,
-        },
+        TapeChanged(:final tape, notice: null) => _landedAfterClose(tape),
+        TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =>
+          _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
         final TapeChanged removed => removed,
         final TapeOutcome refused => refused,
       };
@@ -412,6 +413,15 @@ class Tape extends Equatable {
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
   }
+
+  TapeOutcome _landedAfterClose(Tape closed, {TapeNotice? notice}) =>
+      switch (closed.pressEquals()) {
+        TapeChanged(:final tape) => TapeChanged(tape, notice: notice),
+        TapeOutcome() => TapeChanged(
+          closed,
+          notice: notice ?? TapeNotice.bracketClosedNothingToCompute,
+        ),
+      };
 
   /// ⌫ removes one token step from the active chip; with nothing left to
   /// remove it drops the last chip — a result or an error included — and
