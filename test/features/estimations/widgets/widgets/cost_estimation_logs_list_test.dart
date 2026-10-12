@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math';
+import 'dart:ui';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
@@ -16,6 +18,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -977,6 +980,54 @@ void main() {
         expect(find.text(l10n().noOlderLogEvents), findsNothing);
       },
     );
+
+    testWidgets('centres every line of a wrapped not-recorded line', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costFileUploaded',
+          activityDetails: {'fileName': 'materials.xlsx'},
+          firstName: 'Liam',
+        ),
+      ]);
+
+      await pumpLogsList(tester);
+
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.byKey(CostEstimationLogsList.endOfListMarkerKey),
+          matching: find.byType(RichText),
+        ),
+      );
+      final text = l10n().earlierLogEventsNotRecorded;
+      final linesByTop = <double, List<TextBox>>{};
+      for (var i = 0; i < text.length; i++) {
+        if (text[i] == ' ') continue;
+        final box = paragraph
+            .getBoxesForSelection(
+              TextSelection(baseOffset: i, extentOffset: i + 1),
+              boxHeightStyle: BoxHeightStyle.max,
+            )
+            .single;
+        linesByTop.putIfAbsent(box.top, () => []).add(box);
+      }
+
+      expect(linesByTop.length, greaterThan(1), reason: 'the line wraps');
+      for (final line in linesByTop.values) {
+        final left = line.map((box) => box.left).reduce(min);
+        final right = line.map((box) => box.right).reduce(max);
+        expect(
+          left,
+          moreOrLessEquals(paragraph.size.width - right, epsilon: 1),
+        );
+      }
+    });
 
     testWidgets('hides the marker while older pages remain', (tester) async {
       final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;

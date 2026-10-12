@@ -431,8 +431,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   // need to pass the tapped entry to open that entry's send.
   void _openSendScreen() {}
 
-  // "No older events" says the history is complete, so a list whose early
-  // events were never recorded ends with a different line (CUJ 11 screen 10b).
   Widget _buildEndOfListMarker(
     BuildContext context, {
     required bool isHistoryComplete,
