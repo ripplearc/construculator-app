@@ -173,7 +173,19 @@ When triggered, the workflow starts these Codemagic pipelines for the PR source 
 - `comprehensive-check`
 - `ios-debug-build`
 
-**Important**: The script uses `set -euo pipefail`, which means it exits immediately on the first command failure. If `pre-check` fails, `comprehensive-check` will not run. Each step must pass before proceeding to the next.
+The three pipelines start independently through `scripts/ci/trigger_codemagic_builds.sh`. A failure in one does not stop the others from starting. If Codemagic rejects a request, or answers without a `buildId`, the workflow run turns red instead of reporting success.
+
+### Testing a trigger change without spending Codemagic minutes
+
+GitHub runs an `issue_comment` workflow from the version on `main`, so a `#RunCheck` comment on a branch never uses that branch's `run_c_check.yml`. To try a branch's version, run it by hand:
+
+```bash
+gh workflow run run_c_check.yml --ref <branch> -f pr_number=<PR number> -f dry_run=true
+```
+
+With `dry_run=true` the workflow looks up the PR's branch, prints the request it would send for each pipeline, and sends nothing. Use `-f dry_run=false` only when a real build is wanted.
+
+`scripts/ci/trigger_codemagic_builds_test.sh` covers the script itself with a fake `curl`, and runs as part of `./scripts/run_check.sh --pre`.
 
 ### How local and CI responsibilities split
 
