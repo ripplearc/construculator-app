@@ -275,7 +275,7 @@ MacOS developers should always verify iOS builds pass locally before creating PR
 
 ### Toolchain
 
-- Flutter: `3.32.0` (via Codemagic environment + FVM).
+- Flutter: the version in `.fvmrc`, installed by FVM. `codemagic.yaml` pins no Flutter version of its own, and `scripts/ci/check_flutter_version_pins.sh` fails the Comprehensive Check if it, or a `flutter-version:` in a GitHub workflow, differs from `.fvmrc`.
 - FVM is the standard entrypoint for local and CI commands.
 
 ### Required tools (local)
