@@ -1516,6 +1516,24 @@ abstract class AppLocalizations {
   /// **'Item Type: '**
   String get activityItemType;
 
+  /// Item type value in the activity log tile for a material cost item
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get activityItemTypeMaterial;
+
+  /// Item type value in the activity log tile for a labor cost item
+  ///
+  /// In en, this message translates to:
+  /// **'Labor'**
+  String get activityItemTypeLabor;
+
+  /// Item type value in the activity log tile for an equipment cost item
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get activityItemTypeEquipment;
+
   /// Label before an edited field's old and new values in activity logs, e.g. 'Quantity: '
   ///
   /// In en, this message translates to:

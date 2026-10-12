@@ -336,22 +336,44 @@ void main() {
         expect(richTextContaining('PDF'), findsOneWidget);
       });
 
-      testWidgets('displays cost item added subtitle with item type', (
+      for (final (serverType, label) in [
+        ('material', 'Material'),
+        ('labor', 'Labor'),
+        ('equipment', 'Equipment'),
+      ]) {
+        testWidgets('shows the server item type $serverType as $label', (
+          tester,
+        ) async {
+          final log = testLog.copyWith(
+            activity: CostEstimationActivityType.costItemAdded,
+            activityDetails: {'costItemType': serverType},
+          );
+
+          await tester.pumpWidget(createWidget(log));
+
+          expect(
+            richTextContaining('${l10n().activityItemType}$label'),
+            findsOneWidget,
+          );
+          expect(richTextContaining(serverType), findsNothing);
+        });
+      }
+
+      testWidgets('displays no item type the app does not know', (
         tester,
       ) async {
         final log = testLog.copyWith(
           activity: CostEstimationActivityType.costItemAdded,
-          activityDetails: {'costItemType': 'Material'},
+          activityDetails: {'costItemType': 'subcontract'},
         );
 
         await tester.pumpWidget(createWidget(log));
-        final localization = l10n();
 
         expect(
-          richTextContaining(localization.activityItemType),
-          findsOneWidget,
+          richTextContaining(l10n().activityItemType),
+          findsNothing,
         );
-        expect(richTextContaining('Material'), findsOneWidget);
+        expect(richTextContaining('subcontract'), findsNothing);
       });
 
       testWidgets('displays no item type for a removed cost item', (
@@ -361,7 +383,7 @@ void main() {
           activity: CostEstimationActivityType.costItemRemoved,
           activityDetails: {
             'costItemName': 'Scaffolding',
-            'costItemType': 'Material',
+            'costItemType': 'material',
           },
         );
 

@@ -52,7 +52,7 @@ class CostItemEditedFieldMapper {
   /// Example:
   /// ```dart
   /// final details = {
-  ///   'itemName': 'Concrete',
+  ///   'costItemName': 'Concrete',
   ///   'editedFields': {
   ///     'quantity': {'oldValue': 10, 'newValue': 15},
   ///     'unit_price': {'oldValue': 20, 'newValue': 25},

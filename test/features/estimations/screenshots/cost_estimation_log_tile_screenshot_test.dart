@@ -224,7 +224,7 @@ void main() {
         loggedAt: DateTime(2025, 2, 10, 9, 15),
         activityDetails: {
           'costItemName': 'Concrete Foundation',
-          'costItemType': 'Material',
+          'costItemType': 'material',
         },
       );
 
@@ -356,7 +356,7 @@ void main() {
         loggedAt: DateTime(2025, 10, 30, 10, 5),
         activityDetails: {
           'costItemName': 'Temporary Scaffolding',
-          'costItemType': 'Equipment',
+          'costItemType': 'equipment',
         },
       );
 
