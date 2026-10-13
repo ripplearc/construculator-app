@@ -26,6 +26,8 @@ void main() {
       expect(Rational.tryParse('1e5'), isNull);
       expect(Rational.tryParse('1/2'), isNull);
       expect(Rational.tryParse('1.0000000000000000001'), isNull);
+      expect(Rational.tryParse('12345678901234567'), isNull);
+      expect(Rational.tryParse('1234567890.1234567'), isNull);
     });
 
     test('adds, subtracts, multiplies and divides exactly', () {
@@ -64,6 +66,22 @@ void main() {
       expect(() => huge * const Rational(2), throwsA(isA<RationalOverflow>()));
       expect(
         () => const Rational(1, Rational.maxMagnitude) / const Rational(2),
+        throwsA(isA<RationalOverflow>()),
+      );
+    });
+
+    test('a product that would wrap a 64-bit int is an overflow too', () {
+      const twoToThe32 = Rational(1 << 32);
+      const tiny = Rational(1, 1 << 32);
+      expect(() => twoToThe32 * twoToThe32, throwsA(isA<RationalOverflow>()));
+      expect(() => twoToThe32 + tiny, throwsA(isA<RationalOverflow>()));
+      expect(
+        () => tiny - const Rational(1, 1 << 33),
+        throwsA(isA<RationalOverflow>()),
+      );
+      expect(() => tiny / twoToThe32, throwsA(isA<RationalOverflow>()));
+      expect(
+        () => twoToThe32.compareTo(tiny),
         throwsA(isA<RationalOverflow>()),
       );
     });
