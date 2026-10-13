@@ -145,9 +145,11 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
     if (_state == _SyncState.disconnected) {
       return;
     }
+    // Local-only tables hold data PowerSync does not own (the kept company
+    // id), so their owners clear them and this call must not race them.
     _logger.info('Disconnecting PowerSync and clearing local synced data');
     try {
-      await _database.disconnectAndClear();
+      await _database.disconnectAndClear(clearLocal: false);
       _state = _SyncState.disconnected;
     } catch (error, stackTrace) {
       // Stay in clearPending so the next connect retries the clear before

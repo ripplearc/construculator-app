@@ -49,6 +49,10 @@ class DatabaseConstants {
   /// replicated to the device. Scoped to that one user by the sync stream.
   static const String userConsentsTable = 'user_consents';
 
+  /// Device-only table holding the signed-in user's company id between app
+  /// launches. Never synced: `company_users` has no sync access.
+  static const String currentCompanyTable = 'current_company';
+
   /// Table storing per-user project search history. Fully isolated from
   /// [searchHistoryTable] (which serves Global Search) — neither feature reads
   /// from nor writes to the other's table.
