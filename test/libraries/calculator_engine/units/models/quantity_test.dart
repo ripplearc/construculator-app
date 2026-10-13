@@ -179,6 +179,22 @@ void main() {
         );
         expect(respelled, isNot(angle));
       });
+
+      test('the Pitch key cycles in/12in, degrees, grade (Section 8)', () {
+        const cycle = [
+          AngleSpelling.risePerFoot,
+          AngleSpelling.degrees,
+          AngleSpelling.grade,
+          AngleSpelling.risePerFoot,
+        ];
+        for (var i = 0; i < 3; i++) {
+          expect(cycle[i].nextPitchSpelling, cycle[i + 1]);
+        }
+        expect(
+          AngleSpelling.degreesMinutesSeconds.nextPitchSpelling,
+          AngleSpelling.grade,
+        );
+      });
     });
 
     group('Scalar', () {
