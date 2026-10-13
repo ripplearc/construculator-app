@@ -42,6 +42,38 @@ void main() {
         );
       });
 
+      test('a computed length is rounded once, at display (C3)', () {
+        final diagonal = Length.computed(
+          13 * Length.ticksPerFoot * math.sqrt2,
+          unit: Unit.foot,
+        );
+        expect(formatter.format(diagonal), '18.38ft');
+        expect(
+          formatter.format(const Length(14120, unit: Unit.foot)),
+          '18.39ft',
+        );
+        expect(
+          formatter.format(diagonal.spelledIn(Unit.footInch)),
+          '18ft 4-5/8in',
+        );
+        expect(formatter.format(diagonal.spelledIn(Unit.metre)), '5.6m');
+        expect(formatter.format(Length.computed(1.9, unit: Unit.inch)), '0in');
+        expect(formatter.format(const Length(2, unit: Unit.inch)), '0-1/16in');
+        expect(
+          formatter.format(Length.computed(1.9, unit: Unit.footInch)),
+          '0ft 0in',
+        );
+        expect(
+          formatter.format(const Length(2, unit: Unit.footInch)),
+          '0ft 0-1/16in',
+        );
+        expect(
+          formatter.format(Length.computed(255.9, unit: Unit.footInch)),
+          '0ft 4in',
+        );
+        expect(formatter.formatStoredLength(diagonal), '220.62in');
+      });
+
       test('18ft 8in as a compound, in inches and in metres', () {
         expect(
           formatter.format(const Length(widthTicks, unit: Unit.footInch)),

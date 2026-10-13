@@ -62,7 +62,7 @@ class ChainArithmetic extends Equatable {
   /// The largest tick count a length answer may reach: 2⁵³, the last whole
   /// number a double still holds exactly, so every kept length was rounded
   /// from an exact value.
-  static const int maxTicks = 1 << 53;
+  static const int maxTicks = Length.maxTicks;
 
   const ChainArithmetic();
 
