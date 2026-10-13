@@ -265,6 +265,23 @@ void main() {
           isNull,
         );
       });
+
+      test('a number whose inches outgrow a Rational is no value at all', () {
+        const sixteenDigitFeet = Token(
+          digits: '1844674407370955',
+          unit: Unit.foot,
+        );
+        const sixteenDigitMetres = Token(
+          digits: '3689348814741910',
+          unit: Unit.metre,
+        );
+        expect(parser.parse(const [sixteenDigitFeet]), isNull);
+        expect(parser.parse(const [sixteenDigitMetres]), isNull);
+        expect(
+          () => parser.inchesOf(sixteenDigitMetres),
+          throwsA(isA<RationalOverflow>()),
+        );
+      });
     });
 
     test('is equal to another parser with the same ton definition', () {

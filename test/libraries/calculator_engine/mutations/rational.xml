@@ -50,13 +50,19 @@
         </regex>
 
         <!-- RULE 8: subtraction adds -->
-        <regex pattern="numerator \* other\.denominator - other\.numerator \* denominator," dotAll="true" id="rational.subtract.adds">
-            <mutation text="numerator * other.denominator + other.numerator * denominator,"/>
+        <regex pattern="_product\(numerator, other\.denominator\) -\s*_product\(other\.numerator, denominator\)," dotAll="true" id="rational.subtract.adds">
+            <mutation text="_product(numerator, other.denominator) + _product(other.numerator, denominator),"/>
         </regex>
 
         <!-- RULE 9: a decimal with too many digits is kept anyway -->
         <regex pattern="if \(scale == null \|\| digits &gt; maxMagnitude\) return null;" dotAll="true" id="rational.parse.no_length_guard">
             <mutation text="if (scale == null) return null;"/>
+        </regex>
+
+        <!-- RULE 10: a product on the way is not checked, so 2³² × 2³² wraps
+             around to 0 and the size check of the result sees nothing -->
+        <regex pattern="if \(a != 0 &amp;&amp; b\.abs\(\) &gt; _intermediateLimit ~/ a\.abs\(\)\) \{" dotAll="true" id="rational.product.unchecked">
+            <mutation text="if (false) {"/>
         </regex>
     </rules>
 
