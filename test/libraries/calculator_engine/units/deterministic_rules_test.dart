@@ -86,7 +86,7 @@ void main() {
         expect(answers.first.sources, ['Length', 'Width']);
       });
 
-      test('the diagonal is rounded to a whole tick, half up', () {
+      test('the diagonal keeps its fraction of a tick', () {
         const three = Length(3, unit: Unit.inch);
         const four = Length(4, unit: Unit.inch);
         const one = Length(1, unit: Unit.inch);
@@ -94,15 +94,10 @@ void main() {
           rules.answersFor({'Length': three, 'Width': four})[1].value,
           const Length(5, unit: Unit.foot),
         );
-        expect(
-          rules.answersFor({'Length': one, 'Width': one})[1].value,
-          const Length(1, unit: Unit.foot),
-        );
-        const two = Length(2, unit: Unit.inch);
-        expect(
-          rules.answersFor({'Length': two, 'Width': three})[1].value,
-          const Length(4, unit: Unit.foot),
-        );
+        final unitDiagonal =
+            rules.answersFor({'Length': one, 'Width': one})[1].value as Length;
+        expect(unitDiagonal.preciseTicks, closeTo(1.41421, 0.00001));
+        expect(unitDiagonal.ticks, 1);
       });
 
       test('the diagonal of 10,000,000ft by 10,000,000ft does not wrap', () {
@@ -115,7 +110,6 @@ void main() {
           'Width': tenMillionFeet,
         });
         expect(texts(answers)[1], 'Diagonal: 14,142,135.62ft');
-        expect(texts(answers)[2], 'Perimeter: 40,000,000ft');
       });
 
       test('one named side is not a rectangle', () {
@@ -127,6 +121,32 @@ void main() {
         expect(
           rules.answersFor({'Length': feet22, 'Width': const Scalar(18)}),
           isEmpty,
+        );
+      });
+    });
+
+    group('a diagonal is rounded once, at display (Sections 6 and 8)', () {
+      const feet13 = Length(13 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet6 = Length(6 * Length.ticksPerFoot, unit: Unit.foot);
+
+      test('Length 13ft and Width 13ft read Diagonal 18.38ft, not 18.39ft', () {
+        final diagonal = rules
+            .answersFor({'Length': feet13, 'Width': feet13})
+            .singleWhere((answer) => answer.key == 'Diagonal');
+        expect(formatter.format(diagonal.value), '18.38ft');
+        expect(
+          (diagonal.value as Length).preciseTicks,
+          closeTo(14119.508, 0.001),
+        );
+        expect((diagonal.value as Length).ticks, 14120);
+      });
+
+      test('Rise 15ft and Run 6ft read Diagonal 16.16ft, not 16.15ft', () {
+        expect(
+          texts(
+            rules.answersFor({'Rise': feet15, 'Run': feet6}),
+          ).where((text) => text.startsWith('Diagonal')),
+          ['Diagonal: 16.16ft'],
         );
       });
     });
@@ -205,6 +225,34 @@ void main() {
           answers.first.value,
           isA<Area>().having((area) => area.unit, 'unit', Unit.foot),
         );
+      });
+
+      test('a chip no rule used does not change the unit (rule 4.5)', () {
+        // Answers are picked by their sources, because the rules higher in
+        // the stack read Height, Rise and Run too.
+        List<Answer> from(List<Answer> answers, String sources) => [
+          for (final answer in answers)
+            if (answer.sources.join(' ') == sources) answer,
+        ];
+        final beside = rules.answersFor({
+          'Length': const Length(2520, unit: Unit.centimetre),
+          'Width': const Length(2520, unit: Unit.millimetre),
+          'Height': feet9,
+          'Rise': feet12,
+          'Run': feet15,
+        });
+        expect(texts(from(beside, 'Length Width')), [
+          'Area: 1m²',
+          'Diagonal: 1.41m',
+          'Perimeter: 4m',
+        ]);
+        expect(texts(from(beside, 'Rise Run')).first, 'Diagonal: 19.21ft');
+        final triangle = rules.answersFor({
+          'Rise': rise,
+          'Run': run,
+          'Length': feet22,
+        });
+        expect(texts(from(triangle, 'Rise Run')).first, 'Diagonal: 5.22m');
       });
     });
 

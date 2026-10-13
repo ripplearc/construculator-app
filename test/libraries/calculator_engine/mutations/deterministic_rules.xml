@@ -28,9 +28,12 @@
             <mutation text="value: Length(a + b, unit: unit),"/>
         </regex>
 
-        <!-- RULE 4: the diagonal is truncated instead of rounded -->
-        <regex pattern="int _wholeTicks\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="deterministic_rules.diagonal.truncate">
-            <mutation text="int _wholeTicks(double ticks) =&gt; ticks.floor();"/>
+        <!-- RULE 4: a diagonal is rounded to a whole tick before display -->
+        <regex pattern="value: Length\.computed\(_hypotenuse\(a, b\), unit: unit\)," dotAll="true" id="deterministic_rules.diagonal.whole_tick">
+            <mutation text="value: Length(_hypotenuse(a, b).round(), unit: unit),"/>
+        </regex>
+        <regex pattern="value: Length\.computed\(\s*_hypotenuse\(rise\.ticks, run\.ticks\)," dotAll="true" id="deterministic_rules.triangle.whole_tick">
+            <mutation text="value: Length(_hypotenuse(rise.ticks, run.ticks).round(),"/>
         </regex>
 
         <!-- RULE 5: a run of nothing still gives a diagonal, and so does a
@@ -58,6 +61,17 @@
             <mutation text="math.sqrt(a.toDouble() * a);"/>
             <mutation text="math.sqrt(a.toDouble() * a + b * b);"/>
             <mutation text="math.sqrt(a * a + b.toDouble() * b);"/>
+        </regex>
+
+        <!-- RULE 10: the rectangle votes its unit over every named length,
+             so a chip no rule used changes the unit -->
+        <regex pattern="return _rectangleOf\(a\.ticks, b\.ticks, \[\s*first\.id,\s*second\.id,\s*\], _entrySystemUnit\(\[a, b\]\)\);" dotAll="true" id="deterministic_rules.unit.rectangle_whole_tape">
+            <mutation text="return _rectangleOf(a.ticks, b.ticks, [first.id, second.id], _entrySystemUnit(lengths.values));"/>
+        </regex>
+
+        <!-- RULE 11: the triangle votes its unit over every named length -->
+        <regex pattern="unit: _entrySystemUnit\(\[rise, run\]\)," dotAll="true" id="deterministic_rules.unit.triangle_whole_tape">
+            <mutation text="unit: _entrySystemUnit(lengths.values),"/>
         </regex>
 
         <!-- RULE 9: a value that is not a length is read as a side -->
