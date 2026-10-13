@@ -66,7 +66,39 @@
 
         <!-- RULE 11: one metric operand is enough for a metric answer -->
         <regex pattern="if \(lengths\.isEmpty \|\| !lengths\.every\(\(unit\) =&gt; unit\.isMetric\)\) \{" dotAll="true" id="chain_arithmetic.metric_unit.any">
-            <mutation text="if (!lengths.any((unit) =&gt; unit.isMetric)) {"/>
+            <mutation text="if (lengths.isEmpty || !lengths.any((unit) =&gt; unit.isMetric)) {"/>
+        </regex>
+
+        <!-- RULE 11b: a mixed sum ignores the System of units setting, or an
+             all-imperial one follows it -->
+        <regex pattern="system == MeasurementSystem\.metric \? Unit\.metre : imperial;" dotAll="true" id="chain_arithmetic.setting_unit.ignores_setting">
+            <mutation text="imperial;"/>
+            <mutation text="Unit.metre;"/>
+        </regex>
+
+        <!-- RULE 11c: a mixed length sum keeps the product's vote, or a
+             same-system one follows the setting -->
+        <regex pattern="Unit _lengthSumUnit\(Unit first, Unit second\) =&gt; _mixesSystems\(first, second\)\s*\? _settingUnit\(Unit\.footInch\)\s*: _lengthUnit\(\[first, second\]\);" dotAll="true" id="chain_arithmetic.length_sum.wrong_vote">
+            <mutation text="Unit _lengthSumUnit(Unit first, Unit second) =&gt; _lengthUnit([first, second]);"/>
+            <mutation text="Unit _lengthSumUnit(Unit first, Unit second) =&gt; _settingUnit(Unit.footInch);"/>
+        </regex>
+
+        <!-- RULE 11d: a mixed area sum keeps the first operand's unit, or a
+             same-system one follows the setting -->
+        <regex pattern="_mixesSystems\(first, second\) \? _settingUnit\(Unit\.foot\) : first;" dotAll="true" id="chain_arithmetic.area_sum.wrong_vote">
+            <mutation text="first;"/>
+            <mutation text="_settingUnit(Unit.foot);"/>
+        </regex>
+
+        <!-- RULE 11e: an acre or board feet beside a metric unit counts as
+             mixed -->
+        <regex pattern="first\.compoundRank &gt; 0 &amp;&amp;\s*second\.compoundRank &gt; 0 &amp;&amp;\s*first\.isMetric != second\.isMetric;" dotAll="true" id="chain_arithmetic.mixes_systems.unitless_vote">
+            <mutation text="first.isMetric != second.isMetric;"/>
+        </regex>
+
+        <!-- RULE 11f: a volume sum takes the second operand's unit -->
+        <regex pattern="Volume\(\) =&gt; Volume\(magnitude, unit: left\.unit\)," dotAll="true" id="chain_arithmetic.volume_sum.second_unit">
+            <mutation text="Volume() =&gt; Volume(magnitude, unit: (right as Volume).unit),"/>
         </regex>
 
         <!-- RULE 12: acres and board feet join the vote on the system -->

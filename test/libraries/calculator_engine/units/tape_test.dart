@@ -18,6 +18,7 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'cm' => current.pressUnit(Unit.centimetre),
+        'm' => current.pressUnit(Unit.metre),
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
         '+' => current.pressOperator(Operator.add),
@@ -698,6 +699,16 @@ void main() {
               .withPreferences(CalculatorPreferences.defaults);
           expect(back, tape, reason: keys);
         }
+      });
+
+      test('a mixed chain follows the System of units setting (CA-1233)', () {
+        const metric = CalculatorPreferences(system: MeasurementSystem.metric);
+        final imperial = press(const Tape(), '1 2 ft + 1 m =');
+        final metres = press(const Tape(preferences: metric), '1 2 ft + 1 m =');
+        String calc(Tape tape) =>
+            tape.formatter.format((tape.chips.last as ResultChip).value);
+        expect(calc(imperial), '15ft 3-3/8in');
+        expect(calc(metres), '4.66m');
       });
 
       test('keeps the settings through every key', () {
