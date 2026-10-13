@@ -62,10 +62,18 @@ final class Answer extends Equatable {
 /// right triangle (rule 4.4, BuildCalc p50: 12ft and 15ft give 19.21ft).
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
-/// length read was metric, feet otherwise; an area follows the same vote.
-/// Rounding points are the prototype's: a diagonal is rounded to whole
-/// ticks (JavaScript's `Math.round`, a half tick toward +∞), an area is the
-/// exact product of the ticks and a perimeter their exact sum.
+/// side the rule read was metric, feet otherwise, so a chip no rule used
+/// never changes an answer's unit (rule 4.5); an area follows the same
+/// vote. A diagonal keeps its fraction of a tick ([Length.computed]) and is
+/// rounded once, at display (Section 6, "Nothing is rounded until it is
+/// displayed"; Section 8, the formulas are computed exactly): 13ft by 13ft
+/// reads 18.38ft, as the prototype's open PR has it, where a whole tick
+/// read 18.39ft. An area is the exact product of the ticks and a perimeter
+/// their exact sum. The
+/// diagonal's squares are taken in double math, because an `int` square
+/// wraps past 3,954,427ft, inside the limit CA-1236 will enforce; the
+/// perimeter's `int` sum wraps only past 6 × 10^15ft, a side that limit
+/// refuses once it lands.
 class DeterministicRules extends Equatable {
   /// The label of the area of two named sides.
   static const String areaKey = 'Area';
@@ -87,8 +95,7 @@ class DeterministicRules extends Equatable {
       final value = namedValues[key.id];
       if (value is Length) lengths[key] = value;
     }
-    final unit = _entrySystemUnit(lengths.values);
-    return [..._rectangle(lengths, unit), ..._rightTriangle(lengths, unit)];
+    return [..._rectangle(lengths), ..._rightTriangle(lengths)];
   }
 
   static const List<(DimensionKey, DimensionKey)> _sidePairs = [
@@ -97,12 +104,15 @@ class DeterministicRules extends Equatable {
     (DimensionKey.width, DimensionKey.height),
   ];
 
-  List<Answer> _rectangle(Map<DimensionKey, Length> lengths, Unit unit) {
+  List<Answer> _rectangle(Map<DimensionKey, Length> lengths) {
     for (final (first, second) in _sidePairs) {
       final a = lengths[first];
       final b = lengths[second];
       if (a != null && b != null) {
-        return _rectangleOf(a.ticks, b.ticks, [first.id, second.id], unit);
+        return _rectangleOf(a.ticks, b.ticks, [
+          first.id,
+          second.id,
+        ], _entrySystemUnit([a, b]));
       }
     }
     return const [];
@@ -116,28 +126,29 @@ class DeterministicRules extends Equatable {
     ),
     Answer(
       key: diagonalKey,
-      value: Length(_wholeTicks(_hypotenuse(a, b)), unit: unit),
+      value: Length.computed(_hypotenuse(a, b), unit: unit),
       sources: sources,
     ),
+    // TODO: [CA-1236] The int sum wraps past 6 × 10^15ft a side; the
+    // 19,999,999.99 limit refuses such a side after CA-1236 merges.
+    // https://ripplearc.youtrack.cloud/issue/CA-1236
     Answer(
       key: perimeterKey,
-      // Whole-number math wraps only past 6 × 10^15ft, which CA-1236's limit
-      // rules out.
       value: Length(2 * (a + b), unit: unit),
       sources: sources,
     ),
   ];
 
-  List<Answer> _rightTriangle(Map<DimensionKey, Length> lengths, Unit unit) {
+  List<Answer> _rightTriangle(Map<DimensionKey, Length> lengths) {
     final rise = lengths[DimensionKey.rise];
     final run = lengths[DimensionKey.run];
     if (rise == null || run == null || run.ticks <= 0) return const [];
     return [
       Answer(
         key: diagonalKey,
-        value: Length(
-          _wholeTicks(_hypotenuse(rise.ticks, run.ticks)),
-          unit: unit,
+        value: Length.computed(
+          _hypotenuse(rise.ticks, run.ticks),
+          unit: _entrySystemUnit([rise, run]),
         ),
         sources: [DimensionKey.rise.id, DimensionKey.run.id],
       ),
@@ -149,12 +160,8 @@ class DeterministicRules extends Equatable {
       ? Unit.metre
       : Unit.foot;
 
-  // Both squares in double math: an int square wraps past 3,954,427ft, which
-  // is inside the 19,999,999.99 limit CA-1236 will enforce.
   double _hypotenuse(int a, int b) =>
       math.sqrt(a.toDouble() * a + b.toDouble() * b);
-
-  int _wholeTicks(double ticks) => (ticks + 0.5).floor();
 
   @override
   List<Object?> get props => const [];
