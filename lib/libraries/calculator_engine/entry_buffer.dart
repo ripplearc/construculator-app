@@ -29,6 +29,12 @@ enum EntryRefusal {
   /// A decimal point typed into a denominator.
   decimalInDenominator,
 
+  /// A 0 typed as the first digit under the line (7 [/] 0): a fraction
+  /// cannot have 0 underneath ("A fraction can't have 0 underneath"; owner
+  /// decision of 3 October 2026). 10, 16, 20 and 100 are fine, inside and
+  /// outside a bracket alike.
+  zeroDenominator,
+
   /// A second decimal point in one number; only an angle key may read it as
   /// degrees:minutes:seconds ("A second decimal point makes an angle").
   secondDecimalPoint,
@@ -169,6 +175,9 @@ class EntryBuffer extends Equatable {
     if (last.denominator case final denominator?) {
       if (digit == '.') {
         return const EntryRefused(EntryRefusal.decimalInDenominator);
+      }
+      if (denominator.isEmpty && digit == '0') {
+        return const EntryRefused(EntryRefusal.zeroDenominator);
       }
       return _replaceLast(
         last.copyWith(denominator: () => '$denominator$digit'),
