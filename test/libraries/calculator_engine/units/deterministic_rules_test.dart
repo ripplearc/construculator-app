@@ -24,7 +24,7 @@ void main() {
     for (final key in keys.split(' ')) {
       final outcome = switch (key) {
         'ft' => current.pressUnit(Unit.foot),
-        'in' => current.pressUnit(Unit.inch),
+        'in' => current.pressUnit(Unit.inch, takesInches: true),
         'm' => current.pressUnit(Unit.metre),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
@@ -228,10 +228,18 @@ void main() {
     });
 
     group('a right triangle from Rise and Run', () {
-      test('S41: Rise 12ft and Run 15ft give Diagonal 19.21ft', () {
+      test('S41: Rise 12ft and Run 15ft give the pitch, then Diagonal', () {
         final answers = rules.answersFor({'Rise': feet12, 'Run': feet15});
-        expect(texts(answers).first, 'Diagonal: 19.21ft');
-        expect(answers.first.sources, ['Rise', 'Run']);
+        expect(texts(answers).take(4), [
+          'Pitch-rise per 12in run: 9.6in/12in',
+          'Pitch-degrees: 38.66°',
+          'Pitch-grade: 80%',
+          'Diagonal: 19.21ft',
+        ]);
+        expect(
+          answers.take(4).map((answer) => answer.sources),
+          everyElement(['Rise', 'Run']),
+        );
       });
 
       test('Rise alone, Run alone, or a run of nothing give no diagonal', () {
@@ -255,7 +263,7 @@ void main() {
           'Rise': tenMillionFeet,
           'Run': tenMillionFeet,
         });
-        expect(texts(answers).first, 'Diagonal: 14,142,135.62ft');
+        expect(texts(answers)[3], 'Diagonal: 14,142,135.62ft');
       });
 
       test('a rectangle and a triangle on one tape answer in that order', () {
@@ -265,10 +273,13 @@ void main() {
           'Rise': feet12,
           'Run': feet15,
         });
-        expect(answers.map((answer) => answer.key).take(4), [
+        expect(answers.map((answer) => answer.key).take(7), [
           'Area',
           'Diagonal',
           'Perimeter',
+          'Pitch-rise per 12in run',
+          'Pitch-degrees',
+          'Pitch-grade',
           'Diagonal',
         ]);
       });
@@ -280,7 +291,7 @@ void main() {
 
       test('S60: Rise 3.1m and Run 4.2m give Diagonal 5.22m', () {
         final answers = rules.answersFor({'Rise': rise, 'Run': run});
-        expect(texts(answers).first, 'Diagonal: 5.22m');
+        expect(texts(answers)[3], 'Diagonal: 5.22m');
       });
 
       test('two metric sides answer in metres', () {
@@ -334,13 +345,13 @@ void main() {
           'Diagonal: 1.41m',
           'Perimeter: 4m',
         ]);
-        expect(texts(from(beside, 'Rise Run')).first, 'Diagonal: 19.21ft');
+        expect(texts(from(beside, 'Rise Run'))[3], 'Diagonal: 19.21ft');
         final triangle = rules.answersFor({
           'Rise': rise,
           'Run': run,
           'Length': feet22,
         });
-        expect(texts(from(triangle, 'Rise Run')).first, 'Diagonal: 5.22m');
+        expect(texts(from(triangle, 'Rise Run'))[3], 'Diagonal: 5.22m');
       });
     });
 
@@ -494,13 +505,14 @@ void main() {
         'S36: Run 9ft 10in and Rise 3ft 6in give the arc after the diagonal',
         () {
           final answers = rules.answersFor({'Run': run9ft10, 'Rise': rise3ft6});
-          expect(texts(answers), [
+          expect(texts(answers).skip(3), [
             'Diagonal: 10.44ft',
             'Arc angle: 141.78°',
             'Arc radius: 5.2ft',
             'Arc length: 12.88ft',
           ]);
-          expect(answers[1].sources, ['Run', 'Rise']);
+          expect(texts(answers).first, 'Pitch-rise per 12in run: 4.3in/12in');
+          expect(answers[4].sources, ['Run', 'Rise']);
         },
       );
 
@@ -576,6 +588,203 @@ void main() {
       });
     });
 
+    group('the triangle solver and the pitch (C3)', () {
+      const eightInches = Length(8 * Length.ticksPerInch, unit: Unit.inch);
+      const sixInches = Length(6 * Length.ticksPerInch, unit: Unit.inch);
+      const feet22 = Length(22 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet5 = Length(5 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet6 = Length(6 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet8 = Length(8 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet10 = Length(10 * Length.ticksPerFoot, unit: Unit.foot);
+      const feet13 = Length(13 * Length.ticksPerFoot, unit: Unit.foot);
+
+      test('S39: Rise 8ft and Run 6ft give 16in/12in, 53.13°, 133.3%', () {
+        expect(texts(rules.answersFor({'Rise': feet8, 'Run': feet6})).take(4), [
+          'Pitch-rise per 12in run: 16in/12in',
+          'Pitch-degrees: 53.13°',
+          'Pitch-grade: 133.3%',
+          'Diagonal: 10ft',
+        ]);
+      });
+
+      test('S40: Pitch 8in and Diag 22ft give Rise 12.2ft and Run 18.31ft', () {
+        final answers = rules.answersFor({
+          'Pitch': eightInches,
+          'Diag': feet22,
+        });
+        expect(texts(answers), ['Rise: 12.2ft', 'Run: 18.31ft']);
+        expect(
+          answers.map((answer) => answer.sources),
+          everyElement(['Pitch', 'Diag']),
+        );
+      });
+
+      test('Pitch with Run gives Rise and Diagonal, with Rise gives Run', () {
+        expect(texts(rules.answersFor({'Pitch': sixInches, 'Run': feet12})), [
+          'Rise: 6ft',
+          'Diagonal: 13.42ft',
+        ]);
+        final fromRise = rules.answersFor({'Pitch': sixInches, 'Rise': feet6});
+        expect(texts(fromRise), ['Run: 12ft', 'Diagonal: 13.42ft']);
+        expect(fromRise.first.sources, ['Pitch', 'Rise']);
+      });
+
+      test('S42: Slope 7 alone reads as 0.8in/12in and 4°', () {
+        final answers = rules.answersFor({'Slope': const Scalar(7)});
+        expect(texts(answers), [
+          'Pitch-rise per 12in run: 0.8in/12in',
+          'Pitch-degrees: 4°',
+        ]);
+        expect(answers.first.sources, ['Slope']);
+      });
+
+      test('a pitch alone offers its three spellings, degrees first', () {
+        expect(texts(rules.answersFor({'Pitch': eightInches})), [
+          'Pitch-degrees: 33.69°',
+          'Pitch-rise per 12in run: 8in/12in',
+          'Pitch-grade: 66.7%',
+        ]);
+        expect(texts(rules.answersFor({'Pitch': const Scalar(6)})), [
+          'Pitch-degrees: 6°',
+          'Pitch-rise per 12in run: 1.3in/12in',
+          'Pitch-grade: 10.5%',
+        ]);
+        expect(rules.answersFor({'Pitch': const Scalar(30)}).first.sources, [
+          'Pitch',
+        ]);
+      });
+
+      test('S93: a slope reaches the solver with a Run', () {
+        expect(
+          texts(rules.answersFor({'Slope': const Scalar(7), 'Run': feet12})),
+          ['Rise: 0.84ft', 'Diagonal: 12.03ft'],
+        );
+        expect(
+          texts(rules.answersFor({'Slope': const Scalar(50), 'Run': feet10})),
+          ['Rise: 5ft', 'Diagonal: 11.18ft'],
+        );
+      });
+
+      test('a diagonal with one leg gives the other leg, then the pitch', () {
+        final fromRise = rules.answersFor({'Rise': feet5, 'Diag': feet13});
+        expect(texts(fromRise), [
+          'Run: 12ft',
+          'Pitch-rise per 12in run: 5in/12in',
+          'Pitch-degrees: 22.62°',
+          'Pitch-grade: 41.7%',
+        ]);
+        expect(fromRise.first.sources, ['Rise', 'Diag']);
+        expect(
+          texts(rules.answersFor({'Run': feet12, 'Diag': feet13})).first,
+          'Rise: 5ft',
+        );
+        expect(rules.answersFor({'Rise': feet13, 'Diag': feet5}), isEmpty);
+      });
+
+      test('a pitch of 0° or less, or of 90° or more, answers nothing', () {
+        const outOfRange = <Map<String, Quantity>>[
+          {'Pitch': Scalar(90), 'Run': feet12},
+          {'Pitch': Scalar(0), 'Rise': feet6},
+          {'Pitch': Scalar(100), 'Diag': feet22},
+          {'Pitch': Scalar(-5), 'Run': feet10},
+          {'Pitch': Scalar(0), 'Run': feet10},
+          {'Pitch': Scalar(90)},
+          {'Slope': Scalar(0)},
+          {'Slope': Scalar(-3), 'Run': feet10},
+        ];
+        for (final namedValues in outOfRange) {
+          expect(
+            rules.answersFor(namedValues),
+            isEmpty,
+            reason: '$namedValues',
+          );
+        }
+        expect(
+          texts(
+            rules.answersFor({'Pitch': const Scalar(89.9), 'Run': feet10}),
+          ).first,
+          'Rise: 5,729.57ft',
+        );
+      });
+
+      test('a solved leg past the tick limit is left out', () {
+        const tenMillionFeet = Length(
+          10000000 * Length.ticksPerFoot,
+          unit: Unit.foot,
+        );
+        expect(
+          rules.answersFor({
+            'Pitch': const Scalar(89.999999),
+            'Run': tenMillionFeet,
+          }),
+          isEmpty,
+        );
+      });
+
+      test('a solved leg follows the entry system of the sides it read', () {
+        const tenMetres = Length(25197, unit: Unit.metre);
+        final answers = rules.answersFor({
+          'Pitch': eightInches,
+          'Diag': tenMetres,
+        });
+        expect(texts(answers), ['Rise: 5.55m', 'Run: 8.32m']);
+      });
+
+      test(
+        'S35: Height 3ft and Radius 9in give Column 5.3ft³, Cone 1.77ft³',
+        () {
+          const nineInches = Length(9 * Length.ticksPerInch, unit: Unit.inch);
+          const threeFeet = Length(3 * Length.ticksPerFoot, unit: Unit.foot);
+          final answers = rules.answersFor({
+            'Height': threeFeet,
+            'Radius': nineInches,
+          });
+          expect(texts(answers).take(2), ['Column: 5.3ft³', 'Cone: 1.77ft³']);
+          expect(answers.first.sources, ['Height', 'Radius']);
+          const eighteenInches = Length(
+            18 * Length.ticksPerInch,
+            unit: Unit.inch,
+          );
+          final fromDiameter = rules.answersFor({
+            'Height': threeFeet,
+            'Diameter': eighteenInches,
+          });
+          expect(texts(fromDiameter).take(2), [
+            'Column: 5.3ft³',
+            'Cone: 1.77ft³',
+          ]);
+          expect(fromDiameter.first.sources, ['Height', 'Diameter']);
+          const metre = Length(2520, unit: Unit.metre);
+          expect(
+            texts(rules.answersFor({'Height': metre, 'Radius': metre})).first,
+            'Column: 3.14m³',
+          );
+          final both = rules.answersFor({
+            'Height': threeFeet,
+            'Diameter': eighteenInches,
+            'Radius': feet5,
+          });
+          expect(texts(both).first, 'Column: 5.3ft³');
+          expect(both.first.sources, ['Height', 'Diameter']);
+        },
+      );
+
+      test('the column and the cone lead the box and the circle', () {
+        final answers = rules.answersFor({
+          'Length': feet12,
+          'Width': feet10,
+          'Height': feet8,
+          'Radius': feet5,
+        });
+        expect(answers.map((answer) => answer.key).take(4), [
+          'Column',
+          'Cone',
+          'Volume',
+          'Wall area',
+        ]);
+      });
+    });
+
     group('named values come from the tape', () {
       test('the last readable value under each key', () {
         final tape = press(
@@ -589,6 +798,21 @@ void main() {
         final tape = press(const Tape(), '[Length] 2 2 ft 8 ft [Width] 1 8');
         expect(tape.namedValues, {'Length': feet22});
       });
+
+      test(
+        'S40 end to end: [Pitch] 8 in [Diag] 22 ft solves through the tape',
+        () {
+          final tape = press(const Tape(), '[Pitch] 8 in [Diag] 2 2 ft');
+          expect(tape.namedValues.keys, ['Pitch', 'Diag']);
+          final answers = rules.answersFor(tape.namedValues);
+          expect(texts(answers), ['Rise: 12.2ft', 'Run: 18.31ft']);
+          expect(answers.first.sources, ['Pitch', 'Diag']);
+          final fromLeg = rules.answersFor(
+            press(const Tape(), '[Rise] 5 ft [Diag] 1 3 ft').namedValues,
+          );
+          expect(texts(fromLeg).first, 'Run: 12ft');
+        },
+      );
 
       test('S01 end to end: the strip reads Area 410.67ft² from the tape', () {
         final tape = press(const Tape(), '[Length] 2 2 ft [Width] 1 8 ft 8 in');
