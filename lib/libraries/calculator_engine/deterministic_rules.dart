@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:equatable/equatable.dart';
 
 /// The function keys whose values the geometry rules read, by the stable
@@ -32,7 +34,19 @@ enum DimensionKey {
   sides('Sides'),
 
   /// The chord of an arc; Run is read as the chord when no Chord is named.
-  chord('Chord');
+  chord('Chord'),
+
+  /// The hypotenuse of a right triangle, typed under the Diag key (the
+  /// key's label in the app, the UX Design Doc and the prototype); a
+  /// diagonal a rule computes is offered as [DeterministicRules.diagonalKey].
+  diagonal('Diag'),
+
+  /// The pitch of a roof: a length is inches of rise per 12in of run, a
+  /// bare number is degrees (Section 8, "Pitch alone"; the F3 grammar).
+  pitch('Pitch'),
+
+  /// The grade of a slope, a bare number in percent (Section 8, "Slope").
+  slope('Slope');
 
   /// The chip key the function key writes.
   final String id;
@@ -85,8 +99,26 @@ final class Answer extends Equatable {
 /// Height, then Width and Height. All three give a box: Volume and Wall
 /// area lead, and the rectangle facts of Length and Width follow (BuildCalc
 /// [Height]: "Calculate Volume, Wall Area and Room Area"). Rise and Run
-/// give the Diagonal of the right triangle (rule 4.4, BuildCalc p50: 12ft
-/// and 15ft give 19.21ft). A Diameter or a Radius gives the missing half
+/// give the pitch three ways — inches of rise per 12in of run, degrees and
+/// a percent grade, one angle in three spellings — and then the Diagonal of
+/// the right triangle (rule 4.4, BuildCalc p50: 12ft and 15ft give
+/// 19.21ft). Section 8 lists three pairs — Pitch with Diag (Rise = Diag ×
+/// sin θ, Run = Diag × cos θ), Pitch with Run (Rise = Run × tan θ, Diagonal
+/// = Run ÷ cos θ) and Rise with Run — and this port adds two that neither
+/// the doc nor the prototype has: Pitch with Rise, and a Diagonal with one
+/// leg, which answers the other leg first and then the pitch. A pitch on
+/// its own offers all three spellings, degrees first (Section 8, "Pitch
+/// alone"), and a bare number under Slope is a percent grade that reads as
+/// a pitch, offers its other two spellings and solves Rise with Run (Section
+/// 8, "Slope"). A pitch of 0° or less, or of 90° or more, solves nothing and
+/// offers nothing (Section 5.1, "A pitch has to be under 90°": the strip
+/// says why), and a solved leg past [ChainArithmetic.maxTicks] is left out
+/// where the prototype would show it. Height with a Radius or a Diameter
+/// gives the column and the cone (Section 8, "Column and cone": π r² h, and
+/// a third of it), leading the circle facts, and reads the Diameter when
+/// both are named, as the circle facts do. A rise, a run or a diagonal the
+/// solver computes keeps its fraction of a tick ([Length.computed]) and is
+/// rounded once, at display, as the rectangle's diagonal is. A Diameter or a Radius gives the missing half
 /// of the pair first (what BuildCalc's first [Circle] press shows), then
 /// the circle's area and circumference; with Sides it gives a regular
 /// polygon instead, measured across the corners: area, side length,
@@ -171,6 +203,33 @@ class DeterministicRules extends Equatable {
   /// The label of an arc's length.
   static const String arcLengthKey = 'Arc length';
 
+  /// The label of the pitch written as inches of rise per 12in of run.
+  static const String pitchRiseKey = 'Pitch-rise per 12in run';
+
+  /// The label of the pitch written in degrees.
+  static const String pitchDegreesKey = 'Pitch-degrees';
+
+  /// The label of the pitch written as a percent grade.
+  static const String pitchGradeKey = 'Pitch-grade';
+
+  /// The label of a rise the solver found.
+  static const String riseKey = 'Rise';
+
+  /// The label of a run the solver found.
+  static const String runKey = 'Run';
+
+  /// The label of a column's volume.
+  static const String columnKey = 'Column';
+
+  /// The label of a cone's volume, a third of the column's.
+  static const String coneKey = 'Cone';
+
+  /// A cone holds a third of the column on the same base (Section 8).
+  static const int coneDivisor = 3;
+
+  /// Degrees in a right angle: a pitch this steep has no run to solve from.
+  static const int rightAngle = 90;
+
   /// Degrees in a full turn.
   static const int fullTurn = 360;
 
@@ -186,11 +245,54 @@ class DeterministicRules extends Equatable {
       if (value is Length) lengths[key] = value;
     }
     return [
+      ..._columnAndCone(lengths),
       ..._box(lengths),
       ..._rectangle(lengths),
-      ..._rightTriangle(lengths),
+      ..._triangle(lengths, _pitchOf(namedValues)),
       ..._arc(lengths),
       ..._shape(lengths, _sidesOf(namedValues)),
+    ];
+  }
+
+  List<Answer> _columnAndCone(Map<DimensionKey, Length> lengths) {
+    final height = lengths[DimensionKey.height];
+    final (span, radiusTicks, spanKey) = switch ((
+      lengths[DimensionKey.diameter],
+      lengths[DimensionKey.radius],
+    )) {
+      (final Length diameter, _) => (
+        diameter,
+        diameter.preciseTicks / 2,
+        DimensionKey.diameter,
+      ),
+      (null, final Length radius) => (
+        radius,
+        radius.preciseTicks,
+        DimensionKey.radius,
+      ),
+      (null, null) => (null, 0.0, DimensionKey.radius),
+    };
+    if (height == null || span == null) return const [];
+    final radiusFeet = radiusTicks / Length.ticksPerFoot;
+    final column =
+        math.pi *
+        radiusFeet *
+        radiusFeet *
+        height.preciseTicks /
+        Length.ticksPerFoot;
+    final unit = _entrySystemUnit([height, span]);
+    final sources = [DimensionKey.height.id, spanKey.id];
+    return [
+      Answer(
+        key: columnKey,
+        value: Volume(column, unit: unit),
+        sources: sources,
+      ),
+      Answer(
+        key: coneKey,
+        value: Volume(column / coneDivisor, unit: unit),
+        sources: sources,
+      ),
     ];
   }
 
@@ -391,7 +493,7 @@ class DeterministicRules extends Equatable {
       value: Area(a * b.toDouble(), unit: unit),
       sources: sources,
     ),
-    ?_leg(diagonalKey, _hypotenuse(a, b), unit, sources),
+    ?_leg(diagonalKey, _hypotenuse(a.toDouble(), b.toDouble()), unit, sources),
     // TODO: [CA-1236] The int sum wraps past 6 × 10^15ft a side; the
     // 19,999,999.99 limit refuses such a side after CA-1236 merges.
     // https://ripplearc.youtrack.cloud/issue/CA-1236
@@ -402,27 +504,181 @@ class DeterministicRules extends Equatable {
     ),
   ];
 
-  List<Answer> _rightTriangle(Map<DimensionKey, Length> lengths) {
+  (Angle, DimensionKey)? _pitchOf(Map<String, Quantity> namedValues) {
+    final pitch = switch (namedValues[DimensionKey.pitch.id]) {
+      final Length rise => _angleOfRatio(
+        rise.preciseTicks /
+            Length.ticksPerInch /
+            QuantityFormatter.inchesPerFootOfRun,
+      ).spelledAs(AngleSpelling.risePerFoot),
+      final Angle angle => angle,
+      Scalar(:final value) => Angle(value),
+      _ => null,
+    };
+    if (pitch != null) return _inRange(pitch, DimensionKey.pitch);
+    if (namedValues[DimensionKey.slope.id] case Scalar(:final value)) {
+      return _inRange(
+        _angleOfRatio(
+          value / QuantityFormatter.percent,
+        ).spelledAs(AngleSpelling.grade),
+        DimensionKey.slope,
+      );
+    }
+    return null;
+  }
+
+  (Angle, DimensionKey)? _inRange(Angle pitch, DimensionKey key) =>
+      pitch.degrees > 0 && pitch.degrees < rightAngle ? (pitch, key) : null;
+
+  List<Answer> _triangle(
+    Map<DimensionKey, Length> lengths,
+    (Angle, DimensionKey)? pitch,
+  ) {
     final rise = lengths[DimensionKey.rise];
     final run = lengths[DimensionKey.run];
-    if (rise == null || run == null || run.ticks <= 0) return const [];
+    final diagonal = lengths[DimensionKey.diagonal];
+    if (rise != null && run != null) return _fromRiseAndRun(rise, run);
+    if (pitch case (final angle, final key)) {
+      return _fromPitch(angle, key, rise: rise, run: run, diagonal: diagonal);
+    }
+    if (diagonal != null && rise != null) {
+      return _fromDiagonalAndLeg(diagonal, rise, DimensionKey.rise);
+    }
+    if (diagonal != null && run != null) {
+      return _fromDiagonalAndLeg(diagonal, run, DimensionKey.run);
+    }
+    return const [];
+  }
+
+  List<Answer> _fromRiseAndRun(Length rise, Length run) {
+    if (run.preciseTicks <= 0) return const [];
+    final sources = [DimensionKey.rise.id, DimensionKey.run.id];
     return [
+      ..._pitchFamily(
+        _angleOfRatio(rise.preciseTicks / run.preciseTicks),
+        sources,
+      ),
       ?_leg(
         diagonalKey,
-        _hypotenuse(rise.ticks, run.ticks),
+        _hypotenuse(rise.preciseTicks, run.preciseTicks),
         _entrySystemUnit([rise, run]),
-        [DimensionKey.rise.id, DimensionKey.run.id],
+        sources,
       ),
     ];
   }
 
-  Unit _entrySystemUnit(Iterable<Length> lengths) =>
-      lengths.isNotEmpty && lengths.every((length) => length.unit.isMetric)
-      ? Unit.metre
-      : Unit.foot;
+  List<Answer> _fromPitch(
+    Angle pitch,
+    DimensionKey key, {
+    required Length? rise,
+    required Length? run,
+    required Length? diagonal,
+  }) {
+    final radians = pitch.degrees * math.pi / 180;
+    final sine = math.sin(radians);
+    final cosine = math.cos(radians);
+    if (diagonal != null) {
+      final sources = [key.id, DimensionKey.diagonal.id];
+      final unit = _entrySystemUnit([diagonal]);
+      return [
+        ?_leg(riseKey, diagonal.preciseTicks * sine, unit, sources),
+        ?_leg(runKey, diagonal.preciseTicks * cosine, unit, sources),
+      ];
+    }
+    if (run != null) {
+      final sources = [key.id, DimensionKey.run.id];
+      final unit = _entrySystemUnit([run]);
+      return [
+        ?_leg(riseKey, run.preciseTicks * sine / cosine, unit, sources),
+        ?_leg(diagonalKey, run.preciseTicks / cosine, unit, sources),
+      ];
+    }
+    if (rise != null) {
+      final sources = [key.id, DimensionKey.rise.id];
+      final unit = _entrySystemUnit([rise]);
+      return [
+        ?_leg(runKey, rise.preciseTicks * cosine / sine, unit, sources),
+        ?_leg(diagonalKey, rise.preciseTicks / sine, unit, sources),
+      ];
+    }
+    return key == DimensionKey.pitch
+        ? _pitchFamily(pitch, [key.id], spellings: _degreesFirst)
+        : _otherSpellings(pitch, [key.id]);
+  }
+
+  List<Answer> _fromDiagonalAndLeg(
+    Length diagonal,
+    Length leg,
+    DimensionKey legKey,
+  ) {
+    final other = math.sqrt(
+      diagonal.preciseTicks * diagonal.preciseTicks -
+          leg.preciseTicks * leg.preciseTicks,
+    );
+    if (!other.isFinite || leg.preciseTicks <= 0) return const [];
+    final sources = [legKey.id, DimensionKey.diagonal.id];
+    final unit = _entrySystemUnit([leg, diagonal]);
+    final (riseTicks, runTicks) = legKey == DimensionKey.rise
+        ? (leg.preciseTicks, other)
+        : (other, leg.preciseTicks);
+    if (runTicks <= 0) return const [];
+    return [
+      ?_leg(
+        legKey == DimensionKey.rise ? runKey : riseKey,
+        other,
+        unit,
+        sources,
+      ),
+      ..._pitchFamily(_angleOfRatio(riseTicks / runTicks), sources),
+    ];
+  }
+
+  static const List<AngleSpelling> _riseFirst = [
+    AngleSpelling.risePerFoot,
+    AngleSpelling.degrees,
+    AngleSpelling.grade,
+  ];
+
+  static const List<AngleSpelling> _degreesFirst = [
+    AngleSpelling.degrees,
+    AngleSpelling.risePerFoot,
+    AngleSpelling.grade,
+  ];
+
+  List<Answer> _pitchFamily(
+    Angle pitch,
+    List<String> sources, {
+    List<AngleSpelling> spellings = _riseFirst,
+  }) => [
+    for (final spelling in spellings)
+      Answer(
+        key: _pitchKeyOf(spelling),
+        value: pitch.spelledAs(spelling),
+        sources: sources,
+      ),
+  ];
+
+  List<Answer> _otherSpellings(Angle pitch, List<String> sources) {
+    final first = pitch.spelling.nextPitchSpelling;
+    return [
+      for (final spelling in [first, first.nextPitchSpelling])
+        Answer(
+          key: _pitchKeyOf(spelling),
+          value: pitch.spelledAs(spelling),
+          sources: sources,
+        ),
+    ];
+  }
+
+  String _pitchKeyOf(AngleSpelling spelling) => switch (spelling) {
+    AngleSpelling.risePerFoot => pitchRiseKey,
+    AngleSpelling.grade => pitchGradeKey,
+    AngleSpelling.degrees ||
+    AngleSpelling.degreesMinutesSeconds => pitchDegreesKey,
+  };
 
   Answer? _leg(String key, double ticks, Unit unit, List<String> sources) {
-    if (ticks > Length.maxTicks) return null;
+    if (!ticks.isFinite || ticks.abs() > ChainArithmetic.maxTicks) return null;
     return Answer(
       key: key,
       value: Length.computed(ticks, unit: unit),
@@ -430,8 +686,14 @@ class DeterministicRules extends Equatable {
     );
   }
 
-  double _hypotenuse(int a, int b) =>
-      math.sqrt(a.toDouble() * a + b.toDouble() * b);
+  Angle _angleOfRatio(double ratio) => Angle(math.atan(ratio) * 180 / math.pi);
+
+  Unit _entrySystemUnit(Iterable<Length> lengths) =>
+      lengths.isNotEmpty && lengths.every((length) => length.unit.isMetric)
+      ? Unit.metre
+      : Unit.foot;
+
+  double _hypotenuse(double a, double b) => math.sqrt(a * a + b * b);
 
   double _feetOf(Length length) => length.ticks / Length.ticksPerFoot;
 

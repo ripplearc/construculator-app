@@ -29,24 +29,18 @@
         </regex>
 
         <!-- RULE 4: a diagonal is rounded to a whole tick before display -->
-        <regex pattern="\?_leg\(diagonalKey, _hypotenuse\(a, b\), unit, sources\)," dotAll="true" id="deterministic_rules.diagonal.whole_tick">
-            <mutation text="Answer(key: diagonalKey, value: Length(_hypotenuse(a, b).round(), unit: unit), sources: sources),"/>
+        <regex pattern="\?_leg\(diagonalKey, _hypotenuse\(a\.toDouble\(\), b\.toDouble\(\)\), unit, sources\)," dotAll="true" id="deterministic_rules.diagonal.whole_tick">
+            <mutation text="?_leg(diagonalKey, _hypotenuse(a.toDouble(), b.toDouble()).roundToDouble(), unit, sources),"/>
         </regex>
-        <regex pattern="\?_leg\(\s*diagonalKey,\s*_hypotenuse\(rise\.ticks, run\.ticks\),\s*_entrySystemUnit\(\[rise, run\]\),\s*\[DimensionKey\.rise\.id, DimensionKey\.run\.id\],\s*\)," dotAll="true" id="deterministic_rules.triangle.whole_tick">
-            <mutation text="Answer(key: diagonalKey, value: Length(_hypotenuse(rise.ticks, run.ticks).round(), unit: _entrySystemUnit([rise, run])), sources: [DimensionKey.rise.id, DimensionKey.run.id]),"/>
-        </regex>
-
-        <!-- RULE 12: a diagonal past 2^53 ticks is still computed, so
-             Length.computed asserts instead of the answer being left out -->
-        <regex pattern="if \(ticks &gt; Length\.maxTicks\) return null;" dotAll="true" id="deterministic_rules.leg.no_limit">
-            <mutation text="if (false) return null;"/>
+        <regex pattern="_hypotenuse\(rise\.preciseTicks, run\.preciseTicks\)," dotAll="true" id="deterministic_rules.triangle.whole_tick">
+            <mutation text="_hypotenuse(rise.preciseTicks, run.preciseTicks).roundToDouble(),"/>
         </regex>
 
         <!-- RULE 5: a run of nothing still gives a diagonal, and so does a
              missing run -->
-        <regex pattern="if \(rise == null \|\| run == null \|\| run\.ticks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.triangle.no_guard">
-            <mutation text="if (rise == null || run == null || run.ticks &lt; 0) return const [];"/>
-            <mutation text="if (rise == null || run == null) return const [];"/>
+        <regex pattern="if \(run\.preciseTicks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.triangle.no_guard">
+            <mutation text="if (run.preciseTicks &lt; 0) return const [];"/>
+            <mutation text="if (false) return const [];"/>
         </regex>
 
         <!-- RULE 6: a mixed tape answers in metres, and an all-metric one in
@@ -63,9 +57,9 @@
 
         <!-- RULE 8: the hypotenuse drops a side, or squares one in int math
              so that it wraps past 3,954,427ft -->
-        <regex pattern="math\.sqrt\(a\.toDouble\(\) \* a \+ b\.toDouble\(\) \* b\);" dotAll="true" id="deterministic_rules.hypotenuse.one_side">
-            <mutation text="math.sqrt(a.toDouble() * a);"/>
-            <mutation text="math.sqrt(a.toDouble() * a + b * b);"/>
+        <regex pattern="double _hypotenuse\(double a, double b\) =&gt; math\.sqrt\(a \* a \+ b \* b\);" dotAll="true" id="deterministic_rules.hypotenuse.one_side">
+            <mutation text="double _hypotenuse(double a, double b) =&gt; math.sqrt(a * a);"/>
+            <mutation text="double _hypotenuse(double a, double b) =&gt; math.sqrt(a * a + b);"/>
             <mutation text="math.sqrt(a * a + b.toDouble() * b);"/>
         </regex>
 
@@ -76,8 +70,70 @@
         </regex>
 
         <!-- RULE 11: the triangle votes its unit over every named length -->
-        <regex pattern="_entrySystemUnit\(\[rise, run\]\)," dotAll="true" id="deterministic_rules.unit.triangle_whole_tape">
-            <mutation text="_entrySystemUnit(lengths.values),"/>
+        <regex pattern="_hypotenuse\(rise\.preciseTicks, run\.preciseTicks\),\s*_entrySystemUnit\(\[rise, run\]\)," dotAll="true" id="deterministic_rules.unit.triangle_whole_tape">
+            <mutation text="_hypotenuse(rise.preciseTicks, run.preciseTicks), Unit.foot,"/>
+        </regex>
+
+        <!-- RULE 12: the solver swaps sine and cosine, reads a pitch length
+             per inch of run, reads a slope per inch, or the cone is the
+             column -->
+        <regex pattern="\?_leg\(riseKey, diagonal\.preciseTicks \* sine, unit, sources\),\s*\?_leg\(runKey, diagonal\.preciseTicks \* cosine, unit, sources\)," dotAll="true" id="deterministic_rules.solver.sine_cosine_swapped">
+            <mutation text="?_leg(riseKey, diagonal.preciseTicks * cosine, unit, sources), ?_leg(runKey, diagonal.preciseTicks * sine, unit, sources),"/>
+        </regex>
+
+        <!-- RULE: a flat pitch, an upright one or any pitch at all reaches
+             the solver -->
+        <regex pattern="pitch\.degrees &gt; 0 &amp;&amp; pitch\.degrees &lt; rightAngle \? \(pitch, key\) : null;" dotAll="true" id="deterministic_rules.pitch.out_of_range">
+            <mutation text="pitch.degrees &gt;= 0 &amp;&amp; pitch.degrees &lt; rightAngle ? (pitch, key) : null;"/>
+            <mutation text="pitch.degrees &gt; 0 &amp;&amp; pitch.degrees &lt;= rightAngle ? (pitch, key) : null;"/>
+            <mutation text="(pitch, key);"/>
+        </regex>
+
+        <!-- RULE: a leg past the tick limit is shown -->
+        <regex pattern="if \(!ticks\.isFinite \|\| ticks\.abs\(\) &gt; ChainArithmetic\.maxTicks\) return null;" dotAll="true" id="deterministic_rules.leg.past_the_limit">
+            <mutation text="if (false) return null;"/>
+        </regex>
+
+        <!-- RULE: a pitch alone offers two spellings, or the rise first, or
+             a slope offers three -->
+        <regex pattern="return key == DimensionKey\.pitch\s*\? _pitchFamily\(pitch, \[key\.id\], spellings: _degreesFirst\)\s*: _otherSpellings\(pitch, \[key\.id\]\);" dotAll="true" id="deterministic_rules.pitch_alone.two_spellings">
+            <mutation text="return _otherSpellings(pitch, [key.id]);"/>
+            <mutation text="return _pitchFamily(pitch, [key.id]);"/>
+            <mutation text="return _pitchFamily(pitch, [key.id], spellings: _degreesFirst);"/>
+        </regex>
+
+        <!-- RULE: a diagonal with one leg answers the pitch first -->
+        <regex pattern="\?_leg\(\s*legKey == DimensionKey\.rise \? runKey : riseKey,\s*other,\s*unit,\s*sources,\s*\),\s*\.\.\._pitchFamily\(_angleOfRatio\(riseTicks / runTicks\), sources\)," dotAll="true" id="deterministic_rules.diagonal_leg.pitch_first">
+            <mutation text="..._pitchFamily(_angleOfRatio(riseTicks / runTicks), sources), ?_leg(legKey == DimensionKey.rise ? runKey : riseKey, other, unit, sources),"/>
+        </regex>
+
+        <!-- RULE: the column reads the radius when both are named -->
+        <regex pattern="\(final Length diameter, _\) =&gt; \(\s*diameter,\s*diameter\.preciseTicks / 2,\s*DimensionKey\.diameter,\s*\),\s*\(null, final Length radius\) =&gt; \(\s*radius,\s*radius\.preciseTicks,\s*DimensionKey\.radius,\s*\)," dotAll="true" id="deterministic_rules.column.radius_first">
+            <mutation text="(_, final Length radius) =&gt; (radius, radius.preciseTicks, DimensionKey.radius), (final Length diameter, null) =&gt; (diameter, diameter.preciseTicks / 2, DimensionKey.diameter),"/>
+        </regex>
+        <regex pattern="_leg\(riseKey, run\.preciseTicks \* sine / cosine, unit, sources\)," dotAll="true" id="deterministic_rules.solver.rise_from_run">
+            <mutation text="_leg(riseKey, run.preciseTicks * cosine / sine, unit, sources),"/>
+        </regex>
+        <regex pattern="rise\.preciseTicks /\s*Length\.ticksPerInch /\s*QuantityFormatter\.inchesPerFootOfRun," dotAll="true" id="deterministic_rules.pitch.length_per_inch">
+            <mutation text="rise.preciseTicks / Length.ticksPerInch,"/>
+        </regex>
+        <regex pattern="value / QuantityFormatter\.percent," dotAll="true" id="deterministic_rules.slope.per_inch">
+            <mutation text="value / QuantityFormatter.inchesPerFootOfRun,"/>
+        </regex>
+        <regex pattern="value: Volume\(column / coneDivisor, unit: unit\)," dotAll="true" id="deterministic_rules.cone.is_column">
+            <mutation text="value: Volume(column, unit: unit),"/>
+        </regex>
+        <regex pattern="math\.pi \*\s*radiusFeet \*\s*radiusFeet \*\s*height\.preciseTicks /" dotAll="true" id="deterministic_rules.column.radius_once">
+            <mutation text="math.pi * radiusFeet * height.preciseTicks /"/>
+        </regex>
+        <regex pattern="final first = pitch\.spelling\.nextPitchSpelling;" dotAll="true" id="deterministic_rules.pitch.offers_typed_spelling">
+            <mutation text="final first = pitch.spelling;"/>
+        </regex>
+        <regex pattern="\.\.\._columnAndCone\(lengths\),\s*\.\.\._box\(lengths\)," dotAll="true" id="deterministic_rules.column.not_leading">
+            <mutation text="..._box(lengths), ..._columnAndCone(lengths),"/>
+        </regex>
+        <regex pattern="\.\.\._pitchFamily\(\s*_angleOfRatio\(rise\.preciseTicks / run\.preciseTicks\),\s*sources,\s*\)," dotAll="true" id="deterministic_rules.pitch.inverted_ratio">
+            <mutation text="..._pitchFamily(_angleOfRatio(run.preciseTicks / rise.preciseTicks), sources),"/>
         </regex>
 
         <!-- RULE 9: a value that is not a length is read as a side -->
