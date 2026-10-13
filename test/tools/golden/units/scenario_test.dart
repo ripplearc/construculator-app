@@ -19,6 +19,17 @@ void main() {
       scenarios = loadScenarios(File('test/golden/scenarios.json'));
     });
 
+    test('names the prototype file and the commit it was exported at', () {
+      final source = loadScenarioSource(File('test/golden/scenarios.json'));
+      expect(source.file, 'construculator-prototype.html');
+      expect(source.commit, matches(RegExp(r'^[0-9a-f]{40}$')));
+      expect(source.commit, startsWith('69a6b1b'));
+      expect(
+        ScenarioSource.fromJson({'source': 'x.html'}),
+        const ScenarioSource(file: 'x.html'),
+      );
+    });
+
     test('holds every scenario of the prototype with unique ids', () {
       expect(scenarios, hasLength(134));
       expect(scenarios.map((s) => s.id).toSet(), hasLength(134));

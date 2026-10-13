@@ -454,10 +454,7 @@ void main() {
         check(CheckKind.tapeAt, index: 9, text: 'x').holds(snapshot),
         isFalse,
       );
-      expect(
-        check(CheckKind.tapeBracketAt, index: 9, flag: false).holds(snapshot),
-        isFalse,
-      );
+      expect(check(CheckKind.tapeAtPresent, index: 9).holds(snapshot), isFalse);
       expect(
         check(
           CheckKind.strip2At,
@@ -471,6 +468,20 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'a chip past the end of the tape reads as false, as undefined does',
+      () {
+        for (final kind in [
+          CheckKind.tapeBracketAt,
+          CheckKind.tapeBracketOpenAt,
+          CheckKind.tapeFrozenAt,
+        ]) {
+          expect(check(kind, index: 9, flag: false).holds(snapshot), isTrue);
+          expect(check(kind, index: 9, flag: true).holds(snapshot), isFalse);
+        }
+      },
+    );
 
     group('fromJson', () {
       test('reads each field the export writes', () {
