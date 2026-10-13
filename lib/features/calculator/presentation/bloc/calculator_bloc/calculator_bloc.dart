@@ -32,15 +32,17 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
     final finalizedState = _finalizeCurrentInput(state);
 
-    emit(finalizedState.copyWith(
-      activeInputLabel: () => event.id,
-      currentInputValue: '',
-      currentNumericValue: '',
-      isTyping: true,
-      resultLabel: () => null,
-      resultValue: () => null,
-      resultChip: () => null,
-    ));
+    emit(
+      finalizedState.copyWith(
+        activeInputLabel: () => event.id,
+        currentInputValue: '',
+        currentNumericValue: '',
+        isTyping: true,
+        resultLabel: () => null,
+        resultValue: () => null,
+        resultChip: () => null,
+      ),
+    );
   }
 
   void _onDigitPressed(
@@ -51,10 +53,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
     final newValue = state.currentInputValue + event.digit;
     final newNumericValue = state.currentNumericValue + event.digit;
-    emit(state.copyWith(
-      currentInputValue: newValue,
-      currentNumericValue: newNumericValue,
-    ));
+    emit(
+      state.copyWith(
+        currentInputValue: newValue,
+        currentNumericValue: newNumericValue,
+      ),
+    );
   }
 
   void _onUnitSelected(
@@ -97,17 +101,22 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
                 0,
                 state.currentNumericValue.length - 1,
               );
-        emit(state.copyWith(
-          currentInputValue: newInput,
-          currentNumericValue: newNumeric,
-        ));
+        emit(
+          state.copyWith(
+            currentInputValue: newInput,
+            currentNumericValue: newNumeric,
+          ),
+        );
       case ControlAction.clearAll:
         emit(CalculatorState.initial());
-      // TODO: [CA-1087] Open and close a bracket on the tape once the engine
-      // is wired into this bloc. https://ripplearc.youtrack.cloud/issue/CA-1087
+      // TODO: [CA-1087] Open and close a bracket on the tape (Tape.pressBracket)
+      // once S1a replaces this bloc's state with the engine's tape.
+      // https://ripplearc.youtrack.cloud/issue/CA-1087
       case ControlAction.paren:
         break;
-      // Never sent since coreui 0.28.0; the value leaves with CA-1197.
+      // TODO: [CA-1197] Remove this arm before coreui deletes
+      // ControlAction.moreOptions; coreui never sends it since 0.28.0.
+      // https://ripplearc.youtrack.cloud/issue/CA-1197
       // ignore: deprecated_member_use
       case ControlAction.moreOptions:
         break;
