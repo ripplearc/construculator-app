@@ -67,13 +67,16 @@ enum CheckKind {
   /// `J(r.tapeKinds) === J([...])`
   tapeKinds,
 
-  /// `r.tapeGroup[i]`
+  /// `r.tapeGroup[i]`; a chip past the end of the tape reads as `false`,
+  /// as `undefined` does in the prototype, so `!r.tapeGroup[i]` holds there
   tapeBracketAt,
 
-  /// `r.tapeGroupOpen[i]`
+  /// `r.tapeGroupOpen[i]`; a missing chip reads as `false`, as in the
+  /// prototype
   tapeBracketOpenAt,
 
-  /// `r.tapeFrozen[i]`
+  /// `r.tapeFrozen[i]`; a missing chip reads as `false`, as in the
+  /// prototype
   tapeFrozenAt,
 
   /// `r.strip[i] === x`
@@ -340,8 +343,8 @@ class Check extends Equatable {
   bool holds(Snapshot r, {int baseHistory = 0}) {
     String? at(List<String>? items, int? i) =>
         items != null && i != null && i < items.length ? items[i] : null;
-    bool? boolAt(List<bool> items, int? i) =>
-        i != null && i < items.length ? items[i] : null;
+    bool boolAt(List<bool> items, int? i) =>
+        i != null && i < items.length && items[i];
     return switch (kind) {
       CheckKind.value => r.value == text,
       CheckKind.valueStartsWith => r.value.startsWith(text ?? ''),

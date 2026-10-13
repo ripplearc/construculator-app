@@ -217,6 +217,34 @@ class Scenario extends Equatable {
   List<Object?> get props => [id, category, name, keys, expected, steps];
 }
 
+/// Where the file the export script wrote came from: the prototype file and
+/// the commit it was exported at, so a replay can say which prototype it
+/// measured against and a stale export is visible.
+class ScenarioSource extends Equatable {
+  /// The prototype file name.
+  final String file;
+
+  /// The prototype commit, or `null` when the file was exported from a
+  /// checkout that was not a git repository.
+  final String? commit;
+
+  const ScenarioSource({required this.file, this.commit});
+
+  /// Reads the header the export script wrote.
+  factory ScenarioSource.fromJson(Map<String, Object?> json) => ScenarioSource(
+    file: json['source'] as String,
+    commit: json['sourceCommit'] as String?,
+  );
+
+  @override
+  List<Object?> get props => [file, commit];
+}
+
+/// Reads the source header of the file the export script wrote.
+ScenarioSource loadScenarioSource(File file) => ScenarioSource.fromJson(
+  jsonDecode(file.readAsStringSync()) as Map<String, Object?>,
+);
+
 /// Reads every scenario from the file the export script wrote.
 List<Scenario> loadScenarios(File file) {
   final json = jsonDecode(file.readAsStringSync()) as Map<String, Object?>;
