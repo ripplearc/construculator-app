@@ -38,6 +38,13 @@ enum TapeRefusal {
   /// An operator with no value before it ("Type a value first").
   typeAValueFirst,
 
+  /// A unit key on a number under a key that takes a plain number (Section
+  /// 5.1, "A slope is a % grade, not a length": "[Slope] takes a bare
+  /// number — 7 means a 7% grade"; Sides "Takes: A count"). Pitch is the
+  /// exception the caller names: it takes inches of rise per 12in of run
+  /// ([Tape.pressUnit], `takesInches`).
+  keyTakesAPlainNumber,
+
   /// = with no operator to apply and no value waiting for one ("Nothing to
   /// compute yet"); the strip's top suggestion, if any, is the caller's to
   /// land instead. After a result or an error chip the prototype stays
@@ -298,19 +305,26 @@ class Tape extends Equatable {
   /// left open (18ft 8), a fraction without a unit (7/16) or a bare number
   /// under a function key (Length 18) cannot be left (Section 5.1, "Finish
   /// this value first"; Appendix D): the guard runs on fresh entry too. A
-  /// single bare number with no key seals as a scalar.
-  TapeOutcome pressFunctionKey(String key) {
+  /// single bare number with no key seals as a scalar, and so does one under
+  /// a key that takes a plain number — [keyWantsUnit] is false under Pitch,
+  /// Slope and Sides (term 2.14; Sides "Takes: A count"), the caller's call
+  /// the way [pressUnit] takes [holdsLengthOnly].
+  TapeOutcome pressFunctionKey(String key, {bool keyWantsUnit = true}) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
-      return _replaceLast(chip.copyWith(key: () => key));
+      return _replaceLast(
+        chip.copyWith(key: () => key, keyWantsUnit: keyWantsUnit),
+      );
     }
     if (chip != null && !chip.isReadable) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
     }
-    return TapeChanged(_sealed().append(ValueChip(key: key)));
+    return TapeChanged(
+      _sealed().append(ValueChip(key: key, keyWantsUnit: keyWantsUnit)),
+    );
   }
 
   /// A digit or a decimal point goes into the active chip, or starts a bare
@@ -340,12 +354,26 @@ class Tape extends Equatable {
   /// finished value (rule 4.3). Straight after a result with a unit it
   /// converts the result in place, and keeps its dimension: Calc 10ft then
   /// [Feet] is refused rather than raised. [holdsLengthOnly] is true under
-  /// a key that can only hold a length.
-  TapeOutcome pressUnit(Unit unit, {bool holdsLengthOnly = false}) {
+  /// a key that can only hold a length. Under a key that takes a plain
+  /// number ([pressFunctionKey], `keyWantsUnit` false) every unit is
+  /// refused, so [Slope] 6 [Feet] cannot become a length the solver never
+  /// reads (Section 5.1, "A slope is a % grade, not a length"); the one
+  /// exception is the caller's to name with [takesInches], true under
+  /// Pitch, where 8 [Inch] is 8in of rise per 12in of run (term 2.14) and
+  /// [Feet] is still refused.
+  TapeOutcome pressUnit(
+    Unit unit, {
+    bool holdsLengthOnly = false,
+    bool takesInches = false,
+  }) {
     if (openBracket case final bracket?) {
       return _inside(
         bracket,
-        (inner) => inner.pressUnit(unit, holdsLengthOnly: holdsLengthOnly),
+        (inner) => inner.pressUnit(
+          unit,
+          holdsLengthOnly: holdsLengthOnly,
+          takesInches: takesInches,
+        ),
       );
     }
     if (_endsWithClosedBracket) {
@@ -362,6 +390,11 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (chip.key != null &&
+        !chip.keyWantsUnit &&
+        !(takesInches && unit == Unit.inch)) {
+      return const TapeRefused(TapeRefusal.keyTakesAPlainNumber);
     }
     if (chip.entry.isOpen) {
       return _entry(

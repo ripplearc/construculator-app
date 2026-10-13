@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const parser = QuantityParser();
+  const plainNumberKeys = {'Pitch', 'Slope', 'Sides'};
 
   Tape changed(TapeOutcome outcome) {
     if (outcome case TapeChanged(:final tape)) return tape;
@@ -26,6 +27,9 @@ void main() {
         '⌫' => current.backspace(),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
+          keyWantsUnit: !plainNumberKeys.contains(
+            key.substring(1, key.length - 1),
+          ),
         ),
         _ => current.typeDigit(key),
       });
@@ -106,6 +110,71 @@ void main() {
         );
         expect(tape.active!.isReadable, isFalse);
         expect(tape.active!.value(parser), isNull);
+      });
+
+      test(
+        'a bare number under Pitch, Slope or Sides seals and has a value',
+        () {
+          for (final key in plainNumberKeys) {
+            final tape = press(const Tape(), '[$key] 6');
+            expect(tape.active!.isReadable, isTrue, reason: key);
+            expect(tape.active!.value(parser), const Scalar(6), reason: key);
+            expect(texts(press(tape, '[Run]')), [
+              '${key}6',
+              'Run',
+            ], reason: key);
+            expect(tape.namedValues, {key: const Scalar(6)}, reason: key);
+          }
+          final grade = press(const Tape(), '[Slope] 0 . 6 5');
+          expect(grade.active!.value(parser), const Scalar(0.65));
+          expect(texts(press(grade, '+')), ['Slope0.65', '']);
+        },
+      );
+
+      test('an empty chip renamed to a plain-number key takes its rule', () {
+        final tape = press(const Tape(), '[Length] [Sides] 6');
+        expect(texts(tape), ['Sides6']);
+        expect(tape.active!.value(parser), const Scalar(6));
+        expect(press(tape, '[Diameter]').chips.length, 2);
+      });
+
+      test('a plain-number key still wants a finished fraction', () {
+        final tape = press(const Tape(), '[Pitch] 7 / 1 6');
+        expect(
+          tape.pressFunctionKey('Run'),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+      });
+
+      test('a plain-number key refuses a unit; Pitch takes inches by name', () {
+        for (final key in ['Slope', 'Sides']) {
+          final tape = press(const Tape(), '[$key] 6');
+          expect(
+            tape.pressUnit(Unit.foot),
+            const TapeRefused(TapeRefusal.keyTakesAPlainNumber),
+            reason: key,
+          );
+          expect(
+            tape.pressUnit(Unit.inch),
+            const TapeRefused(TapeRefusal.keyTakesAPlainNumber),
+            reason: key,
+          );
+        }
+        final pitch = press(const Tape(), '[Pitch] 8');
+        expect(
+          pitch.pressUnit(Unit.foot, takesInches: true),
+          const TapeRefused(TapeRefusal.keyTakesAPlainNumber),
+        );
+        expect(
+          pitch.pressUnit(Unit.inch),
+          const TapeRefused(TapeRefusal.keyTakesAPlainNumber),
+        );
+        final rise = changed(pitch.pressUnit(Unit.inch, takesInches: true));
+        expect(texts(rise), ['Pitch8in']);
+        expect(
+          rise.active!.value(parser),
+          const Length(8 * Length.ticksPerInch, unit: Unit.inch),
+        );
       });
 
       test('a new number after a finished value is its own chip', () {

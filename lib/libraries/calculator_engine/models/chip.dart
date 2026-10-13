@@ -78,6 +78,14 @@ final class ValueChip extends TapeChip {
   /// definition it was typed under, whatever the tape's is now.
   final int? poundsPerTon;
 
+  /// Whether the function key the chip is named by wants a unit on its
+  /// number. A dimension key does (Section 5.1: Length 18 cannot be left),
+  /// where Pitch, Slope and Sides take a plain number (term 2.14, the
+  /// Read-as pill; Sides "Takes: A count"), so a bare 6 under them seals
+  /// the way a bare 78 with no key does. Set by the caller of
+  /// [Tape.pressFunctionKey]; ignored while the chip has no key.
+  final bool keyWantsUnit;
+
   /// Whether the keyboard writes into this chip.
   final bool isActive;
 
@@ -87,6 +95,7 @@ final class ValueChip extends TapeChip {
     this.entry = const EntryBuffer(),
     this.exact,
     this.poundsPerTon,
+    this.keyWantsUnit = true,
     this.isActive = true,
   });
 
@@ -94,12 +103,13 @@ final class ValueChip extends TapeChip {
   /// else what the entry parses to; `null` while the entry is open. A bare
   /// number — one open token of digits and no unit, 78 or 0.65; a fraction
   /// without a unit is not a number yet — is a scalar, unless it sits under
-  /// a function key, which wants its unit (Section 5.1: Length 18 cannot be
-  /// left).
+  /// a function key that wants its unit (Section 5.1: Length 18 cannot be
+  /// left); under Pitch, Slope or Sides it is the plain number those keys
+  /// take ([keyWantsUnit]).
   Quantity? value(QuantityParser parser) {
     if (exactValue case final value?) return value;
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
-    if (_isUnnamedBareNumber) return Scalar(entry.tokens.first.value);
+    if (_isPlainNumber) return Scalar(entry.tokens.first.value);
     return null;
   }
 
@@ -122,13 +132,12 @@ final class ValueChip extends TapeChip {
   }
 
   /// Whether the chip holds a value that can be sealed: a finished entry, a
-  /// converted one, or a bare number with no function key.
+  /// converted one, or a bare number with no function key or under a key
+  /// that takes a plain number.
   bool get isReadable =>
-      exactValue != null || entry.isComplete || _isUnnamedBareNumber;
+      exactValue != null || entry.isComplete || _isPlainNumber;
 
-  // TODO: [CA-1202] Limit this to keys that want a unit: Pitch, Slope and
-  // Sides take a plain number. https://ripplearc.youtrack.cloud/issue/CA-1202
-  bool get _isUnnamedBareNumber => key == null && _isBareNumber;
+  bool get _isPlainNumber => (key == null || !keyWantsUnit) && _isBareNumber;
 
   bool get _isBareNumber =>
       entry.tokens.length == 1 &&
@@ -146,6 +155,7 @@ final class ValueChip extends TapeChip {
     EntryBuffer? entry,
     ExactSpelling? Function()? exact,
     int? Function()? poundsPerTon,
+    bool? keyWantsUnit,
     bool? isActive,
   }) {
     return ValueChip(
@@ -154,6 +164,7 @@ final class ValueChip extends TapeChip {
       entry: entry ?? this.entry,
       exact: exact != null ? exact() : this.exact,
       poundsPerTon: poundsPerTon != null ? poundsPerTon() : this.poundsPerTon,
+      keyWantsUnit: keyWantsUnit ?? this.keyWantsUnit,
       isActive: isActive ?? this.isActive,
     );
   }
@@ -165,6 +176,7 @@ final class ValueChip extends TapeChip {
     entry,
     exact,
     poundsPerTon,
+    keyWantsUnit,
     isActive,
   ];
 }
