@@ -42,10 +42,13 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// added a thousand times is exactly 100 ft, and 1 mm × 1000 is exactly
 /// 1 m. The scaling number is read back from the shortest decimal spelling
 /// of its double, which is the decimal that was typed; a number with no
-/// finite spelling scales the ticks, the prototype's way. A length made
-/// from an area or a volume is kept to whole ticks, the
-/// prototype's rounding point, with JavaScript's `Math.round`, so a half
-/// tick rounds toward +∞. A length answer beyond [maxTicks] in either
+/// finite spelling scales the ticks, the prototype's way. Two lengths
+/// multiply as doubles, the way the design note on CA-1190 said: an area
+/// is a double, and the exact product of two fractions would outgrow a
+/// 64-bit `int` at sides of 2³² in where the double does not. A length made
+/// from an area or a volume is kept to whole ticks, the prototype's
+/// rounding point, with JavaScript's `Math.round`, so a half tick rounds
+/// toward +∞. A length answer beyond [maxTicks] in either
 /// direction, an exact fraction that outgrows what a [Rational] holds, or
 /// any answer that overflowed to infinity, is refused as
 /// [CalculationError.outOfRange] rather than clamped to a wrong number.
@@ -121,20 +124,18 @@ class ChainArithmetic extends Equatable {
 
   Quantity? _multiply(Quantity left, Quantity right) => switch ((left, right)) {
     (final Length a, final Length b) => Area(
-      (a.inches * b.inches).toDouble() * Area.squareTicksPerSquareInch,
+      a.inches.toDouble() * b.inches.toDouble() * Area.squareTicksPerSquareInch,
       unit: _systemUnit([a.unit, b.unit]),
     ),
     (final Area area, final Length length) => _volumeOf(area, length),
     (final Length length, final Area area) => _volumeOf(area, length),
-    (final Scalar factor, final Length length) => _lengthTimes(
+    (final Scalar factor, final Length length) => _scaledLength(
       length,
       factor.value,
-      inverse: false,
     ),
-    (final Length length, final Scalar factor) => _lengthTimes(
+    (final Length length, final Scalar factor) => _scaledLength(
       length,
       factor.value,
-      inverse: false,
     ),
     (final Scalar factor, _) => _scaled(right, (value) => value * factor.value),
     (_, final Scalar factor) => _scaled(left, (value) => value * factor.value),
@@ -144,10 +145,9 @@ class ChainArithmetic extends Equatable {
   Quantity? _divide(Quantity left, Quantity right) {
     if (_magnitude(right) == 0) return null;
     return switch ((left, right)) {
-      (final Length length, final Scalar divisor) => _lengthTimes(
+      (final Length length, final Scalar divisor) => _dividedLength(
         length,
         divisor.value,
-        inverse: true,
       ),
       (_, final Scalar divisor) => _scaled(
         left,
@@ -184,16 +184,14 @@ class ChainArithmetic extends Equatable {
         _ => null,
       };
     }
-    if (left is Length) {
-      final other = right as Length;
-      return _exactLength(
-        sign > 0 ? left.inches + other.inches : left.inches - other.inches,
-        _lengthSumUnit(left.unit, other.unit),
-      );
-    }
     final magnitude = _magnitude(left) + sign * _magnitude(right);
     return switch (left) {
-      Length() => throw StateError('a length is summed exactly'),
+      Length() => _exactLength(
+        sign > 0
+            ? left.inches + (right as Length).inches
+            : left.inches - (right as Length).inches,
+        _lengthSumUnit(left.unit, right.unit),
+      ),
       Area() => Area(
         magnitude,
         unit: _areaSumUnit(left.unit, (right as Area).unit),
@@ -229,21 +227,24 @@ class ChainArithmetic extends Equatable {
         Scalar() => Scalar(scale(quantity.value)),
       };
 
-  Length _lengthTimes(Length length, double factor, {required bool inverse}) {
-    final unit = _lengthUnit([length.unit]);
+  Length _scaledLength(Length length, double factor) {
     final exact = Rational.tryParse(factor.toString());
     if (exact == null) {
-      final ticks = length.ticks.toDouble();
-      return Length(
-        _wholeTicks(inverse ? ticks / factor : ticks * factor),
-        unit: unit,
-      );
+      return _roundedLength(length.ticks * factor, length.unit);
     }
-    return _exactLength(
-      inverse ? length.inches / exact : length.inches * exact,
-      unit,
-    );
+    return _exactLength(length.inches * exact, _lengthUnit([length.unit]));
   }
+
+  Length _dividedLength(Length length, double divisor) {
+    final exact = Rational.tryParse(divisor.toString());
+    if (exact == null) {
+      return _roundedLength(length.ticks / divisor, length.unit);
+    }
+    return _exactLength(length.inches / exact, _lengthUnit([length.unit]));
+  }
+
+  Length _roundedLength(double ticks, Unit unit) =>
+      Length(_wholeTicks(ticks), unit: _lengthUnit([unit]));
 
   Length _exactLength(Rational inches, Unit unit) {
     final ticks = (inches * const Rational(Length.ticksPerInch)).toDouble();
