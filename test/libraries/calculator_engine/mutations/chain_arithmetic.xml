@@ -106,6 +106,13 @@
             <mutation text="if (false) {"/>
         </regex>
 
+        <!-- RULE 20: two lengths multiply as exact fractions, so 2³² in ×
+             2³² in outgrows a Rational and is refused where the area, a
+             double, holds it -->
+        <regex pattern="a\.inches\.toDouble\(\) \* b\.inches\.toDouble\(\) \* Area\.squareTicksPerSquareInch," dotAll="true" id="chain_arithmetic.multiply.exact_area_product">
+            <mutation text="(a.inches * b.inches).toDouble() * Area.squareTicksPerSquareInch,"/>
+        </regex>
+
         <!-- RULE 19: the largest metric unit typed wins -->
         <regex pattern="b\.ticksPerUnit &lt; a\.ticksPerUnit \? b : a;" dotAll="true" id="chain_arithmetic.metric_unit.largest_wins">
             <mutation text="b.ticksPerUnit &gt; a.ticksPerUnit ? b : a;"/>
