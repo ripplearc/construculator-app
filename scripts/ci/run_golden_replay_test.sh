@@ -8,7 +8,7 @@
 # the script's parsing and exit codes are what is under test.
 #
 # Usage:
-#   scripts/ci/run_golden_replay_test.sh   # 9 checks
+#   scripts/ci/run_golden_replay_test.sh   # 10 checks
 
 set -uo pipefail
 
@@ -64,6 +64,9 @@ check "fails on a stale list entry when the gate is on" 1 "list is stale" 1
 
 stub_flutter 0 "Golden replay: 12/134 scenarios pass (100 failed a checkpoint, 22 hit an unsupported step, 155 checkpoints unported)"
 check "still reads a score line without the differ-on-purpose count" 0 "12/134, 0 differ on purpose"
+
+stub_flutter 0 "Golden replay: 132/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 2 checked nothing, 4 checkpoints unported, 0 differ on purpose, 1 checkpoint differs on purpose)" "Golden replay source: construculator-prototype.html @ 69a6b1b"
+check "holds the gate for a scenario that checked nothing" 1 "132 passed + 0 differ on purpose = 132, needs 134/134" 1
 
 stub_flutter 1 "Golden replay: 134/134 scenarios pass (0 failed a checkpoint, 0 hit an unsupported step, 0 checkpoints unported, 0 differ on purpose, 0 checkpoints differ on purpose)" "Some tests failed."
 check "fails when the test run itself fails" 1 "did not run to a score"

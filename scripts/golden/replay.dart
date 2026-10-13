@@ -35,8 +35,9 @@ enum CheckpointOutcome {
   /// A step before it could not be performed, so it was not reached.
   notReached,
 
-  /// The check did not hold, and `intended_differences.json` says the Dart
-  /// answer differs here on purpose; the result carries the reason.
+  /// The check did not hold, `intended_differences.json` says the Dart
+  /// answer differs here on purpose, and the decided Dart answer holds; the
+  /// result carries the reason.
   intended,
 
   /// The check held although it is listed as an intended difference: the
@@ -102,14 +103,33 @@ class ScenarioResult extends Equatable {
     this.difference,
   });
 
-  /// The scenario passes when every step was performed and no evaluated
-  /// checkpoint failed. Unported checkpoints do not fail it — they are
-  /// reported, since a pass that skipped them is a smaller claim. Neither
-  /// do intended differences: those are the decided answers.
-  bool get passed =>
+  /// The scenario passes when every step was performed, no evaluated
+  /// checkpoint failed, and at least one was evaluated. Unported checkpoints
+  /// do not fail it — they are reported, since a pass that skipped them is a
+  /// smaller claim — but a scenario that evaluated nothing is [unchecked],
+  /// not passed, so the gate cannot count it. Neither do intended
+  /// differences fail it: those are the decided answers.
+  bool get passed => _nothingWentWrong && _evaluated.isNotEmpty;
+
+  /// Whether every step was performed and nothing failed, but no checkpoint
+  /// was evaluated either, every one of them being unported.
+  bool get unchecked => _nothingWentWrong && _evaluated.isEmpty;
+
+  bool get _nothingWentWrong =>
       difference == null &&
       unsupportedStepIndex == null &&
       checkpoints.every((c) => c.outcome != CheckpointOutcome.failed);
+
+  Iterable<CheckpointResult> get _evaluated => checkpoints.where(
+    (c) => switch (c.outcome) {
+      CheckpointOutcome.passed ||
+      CheckpointOutcome.intended ||
+      CheckpointOutcome.stale => true,
+      CheckpointOutcome.failed ||
+      CheckpointOutcome.unported ||
+      CheckpointOutcome.notReached => false,
+    },
+  );
 
   /// Whether the whole scenario is a listed difference.
   bool get differsOnPurpose => difference != null;
@@ -134,9 +154,10 @@ class ScenarioResult extends Equatable {
     return null;
   }
 
-  /// How many checkpoints were unported.
+  /// How many of the scenario's checkpoints are unported, reached or not:
+  /// the count is a fact about the file, not about how far the replay got.
   int get unported =>
-      checkpoints.where((c) => c.outcome == CheckpointOutcome.unported).length;
+      checkpoints.where((c) => !c.checkpoint.check.isPorted).length;
 
   @override
   List<Object?> get props => [
@@ -152,9 +173,12 @@ class ScenarioResult extends Equatable {
 /// first step the driver cannot perform — everything after either is a
 /// screen the prototype never showed.
 ///
-/// A checkpoint listed in [intended] does not stop the replay when it fails:
-/// the Dart answer is the decided one, and the result says why. A scenario
-/// listed whole is not replayed.
+/// A checkpoint listed in [intended] is judged by the decided Dart answer
+/// instead: it differs on purpose while that answer holds, fails when it
+/// does not, and is stale when the prototype's own check holds after all.
+/// The prototype check being unported does not matter for a listed
+/// checkpoint, since the Dart answer is what is evaluated. A scenario listed
+/// whole is not replayed.
 Future<ScenarioResult> runScenario(
   Scenario scenario,
   ScenarioDriver driver, {
@@ -192,7 +216,8 @@ Future<ScenarioResult> runScenario(
       );
       continue;
     }
-    if (!step.check.isPorted) {
+    final listed = intended.forCheckpoint(scenario.id, step.description);
+    if (listed == null && !step.check.isPorted) {
       results.add(
         CheckpointResult(
           stepIndex: index,
@@ -203,13 +228,17 @@ Future<ScenarioResult> runScenario(
       continue;
     }
     final snapshot = driver.snapshot();
-    final passed = step.check.holds(snapshot, baseHistory: baseHistory);
-    final listed = intended.forCheckpoint(scenario.id, step.description);
-    final outcome = switch ((passed, listed)) {
-      (true, null) => CheckpointOutcome.passed,
-      (false, null) => CheckpointOutcome.failed,
-      (true, _) => CheckpointOutcome.stale,
-      (false, _) => CheckpointOutcome.intended,
+    final prototypeHolds =
+        step.check.isPorted &&
+        step.check.holds(snapshot, baseHistory: baseHistory);
+    final outcome = switch (listed) {
+      null =>
+        prototypeHolds ? CheckpointOutcome.passed : CheckpointOutcome.failed,
+      IntendedDifference() when prototypeHolds => CheckpointOutcome.stale,
+      IntendedDifference(:final dart) =>
+        dart != null && dart.holds(snapshot, baseHistory: baseHistory)
+            ? CheckpointOutcome.intended
+            : CheckpointOutcome.failed,
     };
     results.add(
       CheckpointResult(
@@ -239,10 +268,17 @@ class ReplayReport {
   /// Every scenario's result, in the file's order.
   final List<ScenarioResult> results;
 
-  const ReplayReport(this.results);
+  /// Where the scenarios came from, when the report knows: printed under
+  /// the score so a build log says which prototype commit was replayed.
+  final ScenarioSource? source;
+
+  const ReplayReport(this.results, {this.source});
 
   /// How many scenarios passed.
   int get passed => results.where((r) => r.passed).length;
+
+  /// How many scenarios evaluated no checkpoint at all.
+  int get unchecked => results.where((r) => r.unchecked).length;
 
   /// How many scenarios there are.
   int get total => results.length;
@@ -261,7 +297,10 @@ class ReplayReport {
   ];
 
   /// The score line: "Golden replay: 12/134 scenarios pass (…)". The gate
-  /// in `run_golden_replay.sh` passes when pass + differ on purpose = total.
+  /// in `run_golden_replay.sh` passes when pass + differ on purpose = total,
+  /// so a scenario that checked nothing holds the gate until its checks are
+  /// ported or it is listed. The unported count is the file's, reached or
+  /// not.
   String get scoreLine {
     final failed = results.where((r) => r.firstFailure != null).length;
     final unsupported = results
@@ -270,21 +309,35 @@ class ReplayReport {
     final unported = results.fold(0, (sum, r) => sum + r.unported);
     return '$scorePrefix $passed/$total scenarios pass '
         '($failed failed a checkpoint, $unsupported hit an unsupported step, '
-        '$unported checkpoints unported, $differing differ on purpose, '
-        '$intendedCheckpoints checkpoints differ on purpose)';
+        '$unchecked checked nothing, ${_checkpoints(unported)} unported, '
+        '$differing differ on purpose, '
+        '${_checkpoints(intendedCheckpoints)} '
+        '${intendedCheckpoints == 1 ? 'differs' : 'differ'} on purpose)';
   }
+
+  static String _checkpoints(int count) =>
+      '$count checkpoint${count == 1 ? '' : 's'}';
+
+  /// The line under the score naming the prototype file and commit the
+  /// scenarios were exported from, when the report knows them.
+  String? get sourceLine => switch (source) {
+    null => null,
+    final source =>
+      'Golden replay source: ${source.file} @ '
+          '${source.commit ?? 'an unknown commit'}',
+  };
 
   /// The prefix of the line that names a stale list entry, which the CI
   /// script also looks for.
   static const String stalePrefix = 'Golden replay: stale intended difference:';
 
-  /// The score line, one line per stale list entry, then a diff for each
-  /// scenario that did not pass (the scenario, the step, what the prototype
-  /// asked and what the screen showed) and the reason for each intended
-  /// difference.
+  /// The score line, the source line, one line per stale list entry, then a
+  /// diff for each scenario that did not pass (the scenario, the step, what
+  /// the prototype asked and what the screen showed) and the reason for
+  /// each intended difference.
   @override
   String toString() {
-    final lines = [scoreLine];
+    final lines = [scoreLine, ?sourceLine];
     for (final (result, checkpoint) in stale) {
       lines.add(
         '$stalePrefix ${result.scenario.id} '
@@ -340,6 +393,12 @@ class ReplayReport {
       return [
         '${scenario.id} ${scenario.name} — UNSUPPORTED step ${index + 1}: '
             '${scenario.steps[index]}',
+      ];
+    }
+    if (result.unchecked) {
+      return [
+        '${scenario.id} ${scenario.name} — UNCHECKED: '
+            '${_checkpoints(result.unported)} unported, none evaluated',
       ];
     }
     return ['${scenario.id} ${scenario.name} — passed'];

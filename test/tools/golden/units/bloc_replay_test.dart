@@ -100,10 +100,12 @@ class BlocScenarioDriver implements ScenarioDriver {
 void main() {
   late BlocScenarioDriver driver;
   late List<Scenario> scenarios;
+  late ScenarioSource source;
   late IntendedDifferences intended;
 
   setUpAll(() {
     scenarios = loadScenarios(File('test/golden/scenarios.json'));
+    source = loadScenarioSource(File('test/golden/scenarios.json'));
     intended = loadIntendedDifferences(
       File('test/golden/intended_differences.json'),
     );
@@ -125,7 +127,7 @@ void main() {
         for (final scenario in scenarios) {
           results.add(await runScenario(scenario, driver, intended: intended));
         }
-        final report = ReplayReport(results);
+        final report = ReplayReport(results, source: source);
         print(report);
         expect(report.total, scenarios.length);
         expect(
@@ -135,11 +137,17 @@ void main() {
             'scenarios pass',
           ),
         );
+        expect(
+          report.sourceLine,
+          'Golden replay source: construculator-prototype.html @ '
+          '${source.commit}',
+        );
       },
     );
 
     test('every listed difference names a scenario and a checkpoint that '
-        'exist', () {
+        'exist, and a checkpoint entry carries a Dart answer the runner '
+        'can evaluate', () {
       for (final entry in intended.entries) {
         final scenario = scenarios.firstWhere(
           (s) => s.id == entry.scenario,
@@ -153,6 +161,19 @@ void main() {
             contains(description),
             reason: '${entry.scenario} has no checkpoint "$description"',
           );
+          if (entry.dart case final dart?) {
+            expect(
+              dart.isPorted,
+              isTrue,
+              reason:
+                  '${entry.scenario} "$description" has an unported '
+                  'Dart answer',
+            );
+          } else {
+            fail('${entry.scenario} "$description" has no Dart answer');
+          }
+        } else {
+          expect(entry.dart, isNull);
         }
         expect(entry.reason, isNotEmpty);
       }

@@ -9,6 +9,9 @@
 # to fail the build unless every scenario passes or is listed in
 # test/golden/intended_differences.json (N + D = T). "T of T" would only
 # mean "same as the prototype", and the prototype has had bugs of its own.
+# A listed checkpoint counts only while the decided Dart answer holds, and
+# a scenario that evaluated no checkpoint (every check unported) is
+# "checked nothing", not passed, so neither can slip through the gate.
 # A listed check that holds anyway makes the list stale; the gate fails on
 # that too, so a listed difference is always a real one. A broken test run
 # (the test itself errors, or prints no score) fails the build in either
