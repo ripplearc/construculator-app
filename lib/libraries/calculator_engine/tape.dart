@@ -94,8 +94,17 @@ enum TapeRefusal {
 }
 
 /// Something the tape did that the user should be told about, though
-/// nothing was refused (Section 5.1 "Empty brackets"; Section 5.6).
+/// nothing was refused (Section 5.1 "Empty brackets"; Section 5.6; Section
+/// 6, a carried compound part).
 enum TapeNotice {
+  /// A unit key closed a part as large as the unit above it and carried it
+  /// up: 18ft 13in reads 19ft 1in (Section 6; owner decision of 3 October
+  /// 2026). The notice carries no text: the caller names both spellings
+  /// from the tapes it holds, the typed one as the active chip's text before
+  /// the key plus the key's unit (18ft 13 then [Inch]), the carried one as
+  /// the active chip's text after it.
+  carriedOver,
+
   /// A bracket was closed, or = pressed, with nothing between ( and ), so
   /// the bracket was removed and the value or operator before it is active
   /// again. ⌫ on an empty bracket removes it the same way but silently, as
@@ -783,6 +792,15 @@ class Tape extends Equatable {
         exact: buffer.isEmpty ? () => null : null,
         poundsPerTon: () => _tonTypedUnder(chip, buffer),
       ),
+    ),
+    EntryCarried(:final buffer) => TapeChanged(
+      _replaceActive(
+        chip.copyWith(
+          entry: buffer,
+          poundsPerTon: () => _tonTypedUnder(chip, buffer),
+        ),
+      ),
+      notice: TapeNotice.carriedOver,
     ),
     EntrySplit(:final finished, :final started) => TapeChanged(
       _replaceActive(chip.copyWith(entry: finished)).append(
