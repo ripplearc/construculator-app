@@ -17,24 +17,62 @@ sealed class Quantity extends Equatable {
   Dimension get dimension;
 }
 
-/// A distance, exact to 1/64 inch.
+/// A distance. A typed length is whole ticks of 1/64 inch; a computed one
+/// ([Length.computed]) keeps its fraction of a tick until it is displayed.
 final class Length extends Quantity {
   /// Ticks of 1/64 inch in one inch.
   static const int ticksPerInch = 64;
 
+  /// The largest tick count a length may reach: 2⁵³, the last whole number
+  /// a double still holds exactly. The arithmetic refuses an answer past it
+  /// and a rule answers nothing for one, so a computed length past it is an
+  /// assertion, never a value.
+  static const int maxTicks = 1 << 53;
+
   /// Ticks of 1/64 inch in one foot.
   static const int ticksPerFoot = 768;
 
-  /// Whole ticks of 1/64 inch. Metric entry is converted on input at
-  /// 2,519.685 ticks per metre, so a metre is exact to the nearest tick.
+  /// Whole ticks of 1/64 inch, the nearest to the length. Metric entry is
+  /// converted on input at 2,519.685 ticks per metre, so a metre is exact
+  /// to the nearest tick; a computed length ([Length.computed]) reads its
+  /// nearest tick here, a half rounded toward +∞ as the prototype's
+  /// `Math.round` does, and keeps the rest in [preciseTicks].
   final int ticks;
+
+  final double? _computedTicks;
 
   /// The length unit the value is written in. [Unit.footInch] is the trade
   /// compound; every other length unit renders as a decimal or a fraction.
   final Unit unit;
 
   const Length(this.ticks, {required this.unit})
+    : _computedTicks = null,
+      assert(
+        unit == Unit.inch ||
+            unit == Unit.foot ||
+            unit == Unit.footInch ||
+            unit == Unit.yard ||
+            unit == Unit.metre ||
+            unit == Unit.centimetre ||
+            unit == Unit.millimetre,
+        'a length needs a length unit',
+      );
+
+  /// A length a rule computed — a diagonal, a rise, a run — kept with its
+  /// fraction of a tick so that it is rounded once, at display (UX Design
+  /// Doc Section 6, "Nothing is rounded until it is displayed"; Section 8,
+  /// the formulas are computed exactly): 13ft by 13ft reads 18.38ft, where
+  /// a whole tick would read 18.39ft. [ticks] must be finite and within
+  /// [maxTicks]: a rule that computes a length answers nothing for a value
+  /// past either, and the assert is the backstop.
+  Length.computed(double ticks, {required this.unit})
     : assert(
+        ticks.isFinite && ticks.abs() <= maxTicks,
+        'a computed length is finite and within range',
+      ),
+      _computedTicks = ticks,
+      ticks = _nearestTick(ticks),
+      assert(
         unit == Unit.inch ||
             unit == Unit.foot ||
             unit == Unit.footInch ||
@@ -48,11 +86,23 @@ final class Length extends Quantity {
   @override
   Dimension get dimension => Dimension.length;
 
+  /// The length in ticks of 1/64 inch with its fraction of a tick, which a
+  /// decimal rendering reads so that it rounds once; a typed length is a
+  /// whole number here.
+  double get preciseTicks => _computedTicks ?? ticks.toDouble();
+
   /// The same distance written in another length unit.
-  Length spelledIn(Unit unit) => Length(ticks, unit: unit);
+  Length spelledIn(Unit unit) {
+    if (_computedTicks case final computed?) {
+      return Length.computed(computed, unit: unit);
+    }
+    return Length(ticks, unit: unit);
+  }
+
+  static int _nearestTick(double ticks) => (ticks + 0.5).floor();
 
   @override
-  List<Object?> get props => [ticks, unit];
+  List<Object?> get props => [preciseTicks, unit];
 }
 
 /// A surface. Two lengths multiplied give square ticks; the unit is the
