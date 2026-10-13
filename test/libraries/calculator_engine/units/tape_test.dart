@@ -352,6 +352,34 @@ void main() {
         );
       });
 
+      test('Width 18ft 8 [Lbs] is refused and the 8 stays typed (CA-1234)', () {
+        final tail = press(const Tape(), '[Width] 1 8 ft 8');
+        expect(
+          tail.pressUnit(Unit.pound, holdsLengthOnly: true),
+          const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+        );
+        final finished = changed(
+          tail.pressUnit(Unit.inch, holdsLengthOnly: true),
+        );
+        expect(texts(finished), ['Width18ft 8in']);
+      });
+
+      test('a carried compound part comes with a notice (CA-1234)', () {
+        final tail = press(const Tape(), '[Width] 1 8 ft 1 3');
+        final outcome = tail.pressUnit(Unit.inch, holdsLengthOnly: true);
+        expect(outcome, isA<TapeChanged>());
+        final carried = outcome as TapeChanged;
+        expect(carried.notice, TapeNotice.carriedOver);
+        expect(texts(carried.tape), ['Width19ft 1in']);
+        expect(
+          carried.tape.active!.value(parser),
+          const Length(
+            19 * Length.ticksPerFoot + Length.ticksPerInch,
+            unit: Unit.footInch,
+          ),
+        );
+      });
+
       test('a length-only key refuses the raise on its finished value', () {
         final tape = press(const Tape(), '[Width] 2 2 ft');
         final refused = tape.pressUnit(Unit.foot, holdsLengthOnly: true);

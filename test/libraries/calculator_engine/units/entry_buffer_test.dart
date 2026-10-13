@@ -97,10 +97,10 @@ void main() {
         );
       });
 
-      test('[/] on a finished fraction goes inside a number, as 7/16 has', () {
+      test('[/] on a finished fraction wants the unit key (CA-1234)', () {
         expect(
           type('7/16').typeFraction(),
-          const EntryRefused(EntryRefusal.fractionNeedsNumerator),
+          const EntryRefused(EntryRefusal.fractionNeedsUnit),
         );
       });
 
@@ -158,7 +158,85 @@ void main() {
         expect(type('8', feet).closeWith(Unit.yard), isA<EntrySplit>());
         expect(type('8', feet).closeWith(Unit.foot), isA<EntrySplit>());
         expect(type('8', feet).closeWith(Unit.pound), isA<EntrySplit>());
+        final split = type('8', feet).closeWith(Unit.pound) as EntrySplit;
+        expect(
+          () => split.finished.tokens.add(const Token(digits: '9')),
+          throwsUnsupportedError,
+        );
+        expect(
+          () => split.started.tokens.add(const Token(digits: '9')),
+          throwsUnsupportedError,
+        );
       });
+
+      test('a part as large as the unit above it is carried up (CA-1234)', () {
+        final feet = changed(type('18').closeWith(Unit.foot));
+        expect(
+          type('13', feet).closeWith(Unit.inch),
+          const EntryCarried(
+            EntryBuffer([
+              Token(digits: '19', unit: Unit.foot),
+              Token(digits: '1', unit: Unit.inch),
+            ]),
+          ),
+        );
+        String carried(EntryOutcome outcome) =>
+            (outcome as EntryCarried).buffer.text;
+        expect(carried(type('12', feet).closeWith(Unit.inch)), '19ft 0in');
+        expect(carried(type('30', feet).closeWith(Unit.inch)), '20ft 6in');
+        final metres = changed(type('1').closeWith(Unit.metre));
+        expect(
+          carried(type('100', metres).closeWith(Unit.centimetre)),
+          '2m 0cm',
+        );
+        expect(
+          carried(type('1000', metres).closeWith(Unit.millimetre)),
+          '2m 0mm',
+        );
+        final yards = changed(type('2').closeWith(Unit.yard));
+        expect(carried(type('3', yards).closeWith(Unit.foot)), '3yd 0ft');
+      });
+
+      test('a decimal part is carried on its whole inches', () {
+        final feet = changed(type('18').closeWith(Unit.foot));
+        String carried(EntryOutcome outcome) =>
+            (outcome as EntryCarried).buffer.text;
+        expect(carried(type('13.5', feet).closeWith(Unit.inch)), '19ft 1.5in');
+        expect(
+          carried(type('25.25', feet).closeWith(Unit.inch)),
+          '20ft 1.25in',
+        );
+        expect(carried(type('12.', feet).closeWith(Unit.inch)), '19ft 0.in');
+        expect(
+          changed(type('11.9', feet).closeWith(Unit.inch)).text,
+          '18ft 11.9in',
+        );
+        final metres = changed(type('1').closeWith(Unit.metre));
+        expect(
+          carried(type('100.5', metres).closeWith(Unit.centimetre)),
+          '2m 0.5cm',
+        );
+      });
+
+      test(
+        'a smaller part, a fraction or a decimal above it is not carried',
+        () {
+          final feet = changed(type('18').closeWith(Unit.foot));
+          expect(
+            changed(type('11', feet).closeWith(Unit.inch)).text,
+            '18ft 11in',
+          );
+          expect(
+            changed(type('13/2', feet).closeWith(Unit.inch)).text,
+            '18ft 13/2in',
+          );
+          final decimalFeet = changed(type('18.5').closeWith(Unit.foot));
+          expect(
+            changed(type('13', decimalFeet).closeWith(Unit.inch)).text,
+            '18.5ft 13in',
+          );
+        },
+      );
 
       test('a compound never crosses systems, even stepping down', () {
         final feet = changed(type('18').closeWith(Unit.foot));
@@ -206,33 +284,26 @@ void main() {
             '8',
             feet,
           ).closeWith(Unit.pound, editing: true, holdsLengthOnly: true),
-          const EntryRefused(EntryRefusal.needsLength),
+          const EntryRefused(EntryRefusal.tailNeedsLength),
         );
       });
 
       test(
-        'on fresh entry, Width 18ft 8 [Lbs] starts 8lbs as its own value',
+        'on fresh entry too, Width 18ft 8 [Lbs] needs a length (CA-1234)',
         () {
           final feet = changed(type('18').closeWith(Unit.foot));
-          final split =
-              type('8', feet).closeWith(Unit.pound, holdsLengthOnly: true)
-                  as EntrySplit;
+          final tail = type('8', feet);
           expect(
-            split,
-            EntrySplit(
-              finished: feet,
-              started: const EntryBuffer([
-                Token(digits: '8', unit: Unit.pound),
-              ]),
-            ),
+            tail.closeWith(Unit.pound, holdsLengthOnly: true),
+            const EntryRefused(EntryRefusal.tailNeedsLength),
           );
           expect(
-            () => split.finished.tokens.add(const Token(digits: '9')),
-            throwsUnsupportedError,
+            changed(tail.closeWith(Unit.inch, holdsLengthOnly: true)).text,
+            '18ft 8in',
           );
           expect(
-            () => split.started.tokens.add(const Token(digits: '9')),
-            throwsUnsupportedError,
+            tail.closeWith(Unit.foot, holdsLengthOnly: true),
+            isA<EntrySplit>(),
           );
         },
       );
@@ -333,6 +404,10 @@ void main() {
       expect(
         EntryRefused(reason),
         const EntryRefused(EntryRefusal.fractionNeedsNumerator),
+      );
+      expect(
+        EntryCarried(EntryBuffer([Token(digits: digits)])),
+        const EntryCarried(EntryBuffer([Token(digits: '22')])),
       );
     });
 
