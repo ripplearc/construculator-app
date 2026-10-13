@@ -11,6 +11,7 @@
 
     <files>
         <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+        <file>lib/libraries/calculator_engine/models/quantity.dart</file>
     </files>
 
     <rules>
@@ -144,6 +145,26 @@
             <mutation text="String _twoDigits(int value) =&gt; value.toString();"/>
         </regex>
 
+        <!-- RULE 24: a computed length is rounded to a tick before a decimal
+             rendering, a compound rendering or a stored size reads it -->
+        <regex pattern="'\$\{_localeNumber\(value\.preciseTicks / value\.unit\.ticksPerUnit, decimals, group\)\}'" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
+            <mutation text="'${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'"/>
+        </regex>
+        <regex pattern="Unit\.inch =&gt; _wholeInchesAndFraction\(value\.preciseTicks, group\),\s*Unit\.footInch =&gt; _feetAndInches\(value\.preciseTicks\)," dotAll="true" id="quantity_formatter.length.compound_from_whole_ticks">
+            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(value.ticks.toDouble(), group), Unit.footInch =&gt; _feetAndInches(value.preciseTicks),"/>
+            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(value.preciseTicks, group), Unit.footInch =&gt; _feetAndInches(value.ticks.toDouble()),"/>
+        </regex>
+        <regex pattern="final inches = value\.preciseTicks / Length\.ticksPerInch;" dotAll="true" id="quantity_formatter.stored_length.from_whole_ticks">
+            <mutation text="final inches = value.ticks / Length.ticksPerInch;"/>
+        </regex>
+
+        <!-- RULE 25: a computed length's nearest tick is floored or ceiled
+             instead of rounded half up -->
+        <regex pattern="static int _nearestTick\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity.length.nearest_tick">
+            <mutation text="static int _nearestTick(double ticks) =&gt; ticks.floor();"/>
+            <mutation text="static int _nearestTick(double ticks) =&gt; ticks.ceil();"/>
+        </regex>
+
         <!-- RULE 22: the spelling is ignored and a D:M:S angle reads in
              degrees -->
         <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,\s*group,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
@@ -152,7 +173,7 @@
     </rules>
 
     <commands>
-        <command group="quantity_formatter" expected-return="0">flutter test test/libraries/calculator_engine/units/quantity_formatter_test.dart</command>
+        <command group="quantity_formatter" expected-return="0">flutter test test/libraries/calculator_engine/units/quantity_formatter_test.dart test/libraries/calculator_engine/units/models/quantity_test.dart</command>
     </commands>
 
     <threshold failure="85">

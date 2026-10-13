@@ -93,7 +93,7 @@ class QuantityFormatter extends Equatable {
   /// millimetres under Metric (1200 × 2400), never grouped, and pre-rounded
   /// with `Math.round` as the prototype's `fmtSizeLen` does.
   String formatStoredLength(Length value) {
-    final inches = value.ticks / Length.ticksPerInch;
+    final inches = value.preciseTicks / Length.ticksPerInch;
     return switch (preferences.system) {
       MeasurementSystem.imperial =>
         '${_jsRoundedNumber(inches, storedInchDecimals, false)}${Unit.inch.suffix}',
@@ -119,8 +119,8 @@ class QuantityFormatter extends Equatable {
   }
 
   String _length(Length value, bool group) => switch (value.unit) {
-    Unit.inch => _wholeInchesAndFraction(value.ticks, group),
-    Unit.footInch => _feetAndInches(value.ticks),
+    Unit.inch => _wholeInchesAndFraction(value.preciseTicks, group),
+    Unit.footInch => _feetAndInches(value.preciseTicks),
     Unit.metre => _decimalLength(
       value,
       preferences.metreDisplay.decimals,
@@ -131,10 +131,10 @@ class QuantityFormatter extends Equatable {
   };
 
   String _decimalLength(Length value, int decimals, bool group) =>
-      '${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'
+      '${_localeNumber(value.preciseTicks / value.unit.ticksPerUnit, decimals, group)}'
       '${value.unit.suffix}';
 
-  String _wholeInchesAndFraction(int ticks, bool group) {
+  String _wholeInchesAndFraction(double ticks, bool group) {
     final magnitude = ticks.abs();
     var whole = magnitude ~/ Length.ticksPerInch;
     final fraction = _fractionOfInch(magnitude % Length.ticksPerInch);
@@ -143,7 +143,7 @@ class QuantityFormatter extends Equatable {
         '${fraction.text}${Unit.inch.suffix}';
   }
 
-  String _feetAndInches(int ticks) {
+  String _feetAndInches(double ticks) {
     final magnitude = ticks.abs();
     var feet = magnitude ~/ Length.ticksPerFoot;
     final remainder = magnitude % Length.ticksPerFoot;
@@ -157,7 +157,7 @@ class QuantityFormatter extends Equatable {
     return '${ticks < 0 ? '-' : ''}${feet}ft $inches${fraction.text}in';
   }
 
-  ({String text, int carry}) _fractionOfInch(int remainderTicks) {
+  ({String text, int carry}) _fractionOfInch(double remainderTicks) {
     final steps = preferences.fractionResolution.denominator;
     var numerator = _jsMathRound(
       remainderTicks / (Length.ticksPerInch / steps),
