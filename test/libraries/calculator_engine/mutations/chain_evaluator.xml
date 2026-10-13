@@ -98,8 +98,8 @@
 
         <!-- RULE: every ÷ 0 reopens a divisor, even one earlier in the chain
              or behind a failed prefix -->
-        <regex pattern="when _endsOnTheFailedDivisor =&gt;" dotAll="true" id="tape.equals.reopen_any_division_by_zero">
-            <mutation text="when chips.last is ValueChip =&gt;"/>
+        <regex pattern="when tape\._endsOnTheFailedDivisor =&gt;" dotAll="true" id="tape.equals.reopen_any_division_by_zero">
+            <mutation text="when tape.chips.last is ValueChip =&gt;"/>
         </regex>
 
         <!-- RULE: a failed prefix still reopens its last divisor -->
@@ -141,7 +141,7 @@
 
         <!-- RULE 13: = lands a failed step as a Calc 0 instead of an error
              chip -->
-        <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
+        <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(tape\.append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
             <mutation text="ChainFailed() =&gt; TapeChanged(append(const ResultChip(key: calcKey, value: Scalar(0)))),"/>
         </regex>
     </rules>

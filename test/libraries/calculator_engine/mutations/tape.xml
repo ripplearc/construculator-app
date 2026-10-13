@@ -27,8 +27,8 @@
         </regex>
 
         <!-- RULE 2: an unfinished value can be left by a function key -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(\s*_sealed\(\)\.append\(\s*ValueChip\(\s*key: key," dotAll="true" id="tape.function_key.leave_unfinished">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.finishThisValueFirst); } return TapeChanged(_sealed().append(ValueChip(key: key,"/>
+        <regex pattern="final tape = _withFractionClosedAsInches\(\);\s*if \(tape\._unfinished case final refusal\?\) return refusal;\s*return TapeChanged\(\s*tape\._sealed\(\)\.append\(\s*ValueChip\(\s*key: key," dotAll="true" id="tape.function_key.leave_unfinished">
+            <mutation text="final tape = _withFractionClosedAsInches(); return TapeChanged(tape._sealed().append(ValueChip(key: key,"/>
         </regex>
 
         <!-- RULE 2b: a new chip under a function key loses the key's unit
@@ -93,8 +93,23 @@
 
         <!-- RULE 11: an unfinished value under a function key is refused for
              the wrong reason -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(\s*_sealed\(\)\.append\(\s*ValueChip\(\s*key: key," dotAll="true" id="tape.function_key.wrong_refusal">
-            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(ValueChip(key: key,"/>
+        <regex pattern="if \(chip == null \|\| chip\.isReadable\) return null;\s*if \(chip\.entry\.endsWithUnitlessFraction\) \{\s*return const TapeEntryRefused\(EntryRefusal\.fractionNeedsUnit\);\s*\}\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);" dotAll="true" id="tape.function_key.wrong_refusal">
+            <mutation text="if (chip == null) return null; if (chip.entry.endsWithUnitlessFraction) { return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit); } return const TapeRefused(TapeRefusal.finishThisValueFirst);"/>
+            <mutation text="if (chip == null || chip.isReadable) return null; return const TapeRefused(TapeRefusal.finishThisValueFirst);"/>
+            <mutation text="if (chip == null || chip.isReadable) return null; if (chip.entry.endsWithUnitlessFraction) { return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit); } return const TapeRefused(TapeRefusal.typeANumberFirst);"/>
+        </regex>
+
+        <!-- RULE 26: a fraction after whole inches is never closed by itself,
+             or any fraction is -->
+        <regex pattern="if \(chip == null \|\| !chip\.entry\.endsWithFractionAfterWholeInches\) \{\s*return this;\s*\}" dotAll="true" id="tape.fraction.never_closed_as_inches">
+            <mutation text="if (true) { return this; }"/>
+            <mutation text="if (chip == null || !chip.entry.endsWithUnitlessFraction) { return this; }"/>
+        </regex>
+
+        <!-- RULE: = leaves the fraction it closed as inches open when there
+             is nothing to compute -->
+        <regex pattern="ChainValue\(\) \|\| ChainEmpty\(\) when !identical\(tape, this\) =&gt; TapeChanged\(" dotAll="true" id="tape.equals.fraction_left_open">
+            <mutation text="ChainValue() || ChainEmpty() when false =&gt; TapeChanged("/>
         </regex>
 
         <!-- RULE 12: an error chip counts as a result -->

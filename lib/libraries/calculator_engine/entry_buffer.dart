@@ -150,16 +150,59 @@ class EntryBuffer extends Equatable {
   /// Whether the last token still waits for a unit.
   bool get isOpen => tokens.isNotEmpty && tokens.last.unit == null;
 
+  /// Whether the last token is a finished fraction with no unit (1/2), which
+  /// cannot be left: [+], [=] and [( )] answer "Finish the fraction. Press a
+  /// unit key" (Section 6; owner decision of 4 October 2026).
+  bool get endsWithUnitlessFraction =>
+      tokens.isNotEmpty && _isUnitlessFraction(tokens.last);
+
+  /// Whether the last token is a finished fraction typed right after whole
+  /// inches (5ft 7in 1/2), which closes as inches by itself, the way the
+  /// Construction Master Pro types it (Section 6; owner decision of 4
+  /// October 2026). The exception is narrow: the token before it is in
+  /// inches, whole, with no fraction and not raised; after feet, after a
+  /// decimal inch or on its own the fraction still wants its unit key.
+  bool get endsWithFractionAfterWholeInches =>
+      tokens.length > 1 &&
+      _isUnitlessFraction(tokens.last) &&
+      _isWholeInches(tokens[tokens.length - 2]);
+
+  static bool _isUnitlessFraction(Token token) =>
+      token.unit == null && (token.denominator?.isNotEmpty ?? false);
+
+  static bool _isWholeInches(Token token) =>
+      token.unit == Unit.inch &&
+      token.power == 1 &&
+      token.denominator == null &&
+      !token.digits.contains('.');
+
   /// The buffer exactly as the tape echoes it: "18ft 8", "7/16in", "2in³".
-  String get text => tokens
-      .map(
-        (token) =>
-            '${token.digits}'
-            '${token.denominator == null ? '' : '/${token.denominator}'}'
-            '${token.unit?.suffix ?? ''}'
-            '${_exponent(token.power)}',
-      )
-      .join(' ');
+  /// A fraction closed in inches right after whole inches is written the
+  /// way the trade writes it, 5ft 7-1/2in (Section 6).
+  String get text {
+    final text = StringBuffer();
+    for (final (index, token) in tokens.indexed) {
+      if (index > 0) {
+        text.write(_isMixedNumber(tokens[index - 1], token) ? '-' : ' ');
+      }
+      final isWholeOfMixed =
+          index + 1 < tokens.length && _isMixedNumber(token, tokens[index + 1]);
+      text.write(isWholeOfMixed ? token.digits : _spelled(token));
+    }
+    return text.toString();
+  }
+
+  String _spelled(Token token) =>
+      '${token.digits}'
+      '${token.denominator == null ? '' : '/${token.denominator}'}'
+      '${token.unit?.suffix ?? ''}'
+      '${_exponent(token.power)}';
+
+  static bool _isMixedNumber(Token whole, Token fraction) =>
+      _isWholeInches(whole) &&
+      fraction.unit == Unit.inch &&
+      fraction.power == 1 &&
+      (fraction.denominator?.isNotEmpty ?? false);
 
   /// A digit or a decimal point.
   ///
@@ -246,7 +289,9 @@ class EntryBuffer extends Equatable {
             : EntryRefusal.tailNeedsLength,
       );
     }
-    if (previous != null && !_stepsDownWithinOneSystem(previous, unit)) {
+    if (previous != null &&
+        !_stepsDownWithinOneSystem(previous, unit) &&
+        !(unit == Unit.inch && endsWithFractionAfterWholeInches)) {
       if (editing) return const EntryRefused(EntryRefusal.cannotAppendUnit);
       return EntrySplit(
         finished: EntryBuffer(

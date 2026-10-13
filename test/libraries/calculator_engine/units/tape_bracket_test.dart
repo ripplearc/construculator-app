@@ -455,6 +455,19 @@ void main() {
         expect(lastResult(press(failed, '( 2 + 3 ( × 2 =')), 'Calc 10');
       });
 
+      test('a fraction inside a bracket wants its unit key too (CA-1235)', () {
+        const refused = TapeEntryRefused(EntryRefusal.fractionNeedsUnit);
+        final inside = press(const Tape(), '4 ft × ( 1 / 2');
+        expect(inside.pressOperator(Operator.add), refused);
+        expect(inside.pressEquals(), refused);
+        expect(inside.pressBracket(), refused);
+        expect(inside.openBracket!.expression, '×(1/2');
+        expect(
+          lastResult(press(const Tape(), '4 ft × ( 7 in 1 / 2 + 1 in ( =')),
+          'Calc 2.83ft²',
+        );
+      });
+
       test('a zero under the line is refused inside a bracket too', () {
         expect(
           press(const Tape(), '( 7 /').typeDigit('0'),

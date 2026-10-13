@@ -100,7 +100,7 @@ void main() {
         );
         expect(
           press(const Tape(), '7 / 1 6').pressFunctionKey('Width'),
-          const TapeRefused(TapeRefusal.finishThisValueFirst),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
         );
       });
 
@@ -164,7 +164,7 @@ void main() {
         final tape = press(const Tape(), '[Pitch] 7 / 1 6');
         expect(
           tape.pressFunctionKey('Run'),
-          const TapeRefused(TapeRefusal.finishThisValueFirst),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
         );
       });
 
@@ -414,6 +414,21 @@ void main() {
     });
 
     group('digits and fractions', () {
+      test(
+        '= closes a fraction after whole inches, then has nothing to compute',
+        () {
+          final outcome = press(const Tape(), '7 in 1 / 2').pressEquals();
+          expect(outcome, isA<TapeChanged>());
+          final closed = outcome as TapeChanged;
+          expect(closed.notice, TapeNotice.fractionClosedNothingToCompute);
+          expect(texts(closed.tape), ['7-1/2in']);
+          expect(
+            press(const Tape(), '7 in').pressEquals(),
+            const TapeRefused(TapeRefusal.nothingToCompute),
+          );
+        },
+      );
+
       test('editing a converted value reads the digits again', () {
         final converted = press(const Tape(), '2 2 ft in');
         expect(converted.active!.exactValue, isNotNull);
