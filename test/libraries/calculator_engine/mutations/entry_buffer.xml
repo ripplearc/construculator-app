@@ -60,6 +60,26 @@
         </regex>
 
         <!-- RULE 10: a key that takes lengths accepts a weight -->
+        <!-- RULE: a fraction after any inch token, or after a decimal inch,
+             closes as inches by itself -->
+        <regex pattern="token\.unit == Unit\.inch &amp;&amp;\s*token\.power == 1 &amp;&amp;\s*token\.denominator == null &amp;&amp;\s*!token\.digits\.contains\('\.'\);" dotAll="true" id="entry_buffer.fraction.after_whole_inches">
+            <mutation text="token.unit != null &amp;&amp; token.power == 1 &amp;&amp; token.denominator == null &amp;&amp; !token.digits.contains('.');"/>
+            <mutation text="token.unit == Unit.inch &amp;&amp; token.power == 1 &amp;&amp; !token.digits.contains('.');"/>
+            <mutation text="token.unit == Unit.inch &amp;&amp; token.power == 1 &amp;&amp; token.denominator == null;"/>
+        </regex>
+
+        <!-- RULE: a fraction closed as inches after whole inches is never
+             written as a mixed number, or a fraction after feet is -->
+        <regex pattern="_isWholeInches\(whole\) &amp;&amp;\s*fraction\.unit == Unit\.inch &amp;&amp;\s*fraction\.power == 1 &amp;&amp;\s*\(fraction\.denominator\?\.isNotEmpty \?\? false\);" dotAll="true" id="entry_buffer.text.no_mixed_number">
+            <mutation text="false;"/>
+            <mutation text="fraction.unit == Unit.inch &amp;&amp; fraction.power == 1 &amp;&amp; (fraction.denominator?.isNotEmpty ?? false);"/>
+        </regex>
+
+        <!-- RULE: [Inch] on a fraction after whole inches still splits -->
+        <regex pattern="!\(unit == Unit\.inch &amp;&amp; endsWithFractionAfterWholeInches\)\) \{" dotAll="true" id="entry_buffer.close_with.fraction_after_inches_splits">
+            <mutation text="true) {"/>
+        </regex>
+
         <!-- RULE: a zero under the line is accepted, or every 0 under the
              line is refused so 7/10 cannot be typed -->
         <regex pattern="if \(denominator\.isEmpty &amp;&amp; digit == '0'\) \{" dotAll="true" id="entry_buffer.fraction.zero_denominator">
