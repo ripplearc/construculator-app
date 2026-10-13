@@ -212,17 +212,23 @@ class QuantityFormatter extends Equatable {
       '${_jsRoundedNumber(value.degrees, resultDecimals, group)}°',
     AngleSpelling.degreesMinutesSeconds => _degreesMinutesSeconds(
       value.degrees,
+      group,
     ),
   };
 
-  String _degreesMinutesSeconds(double degrees) {
-    final totalSeconds = _jsMathRound(degrees.abs() * secondsPerDegree);
-    final wholeDegrees = totalSeconds ~/ secondsPerDegree;
-    final minutes = totalSeconds % secondsPerDegree ~/ secondsPerMinute;
-    final seconds = totalSeconds % secondsPerMinute;
+  String _degreesMinutesSeconds(double degrees, bool group) {
+    // The seconds stay a double: an int would clamp at 2^63 and show a
+    // different angle from the degrees spelling (CA-1201 owns 2^53).
+    final totalSeconds = (degrees.abs() * secondsPerDegree + 0.5)
+        .floorToDouble();
+    final rest = (totalSeconds % secondsPerDegree).toInt();
+    final wholeDegrees = (totalSeconds - rest) / secondsPerDegree;
+    final minutes = rest ~/ secondsPerMinute;
+    final seconds = rest % secondsPerMinute;
     final sign = degrees < 0 && totalSeconds > 0 ? minusSign : '';
     final secondsText = seconds == 0 ? '' : '${_twoDigits(seconds)}"';
-    return "$sign$wholeDegrees°${_twoDigits(minutes)}'$secondsText";
+    return '$sign${_localeNumber(wholeDegrees, 0, group)}°'
+        "${_twoDigits(minutes)}'$secondsText";
   }
 
   String _twoDigits(int value) => value.toString().padLeft(2, '0');
@@ -297,9 +303,9 @@ class QuantityFormatter extends Equatable {
     return '$buffer$rest';
   }
 
-  // TODO: [CA-1201] Refuse a value at or above 2^53 instead of clamping it
-  // at 2^63; reachable once × lands in #642.
-  // https://ripplearc.youtrack.cloud/issue/CA-1201
+  // TODO: [CA-1201] Refuse a value at or above 2^53, NaN or an infinity
+  // instead of clamping it at 2^63 or throwing; reachable since × landed
+  // in #642. https://ripplearc.youtrack.cloud/issue/CA-1201
   int _jsMathRound(double value) => (value + 0.5).floor();
 
   @override

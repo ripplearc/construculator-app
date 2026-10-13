@@ -100,14 +100,32 @@
 
         <!-- RULE 17: the angle is truncated to whole seconds instead of
              rounded, so 29.99999° reads 29°59'59" -->
-        <regex pattern="final totalSeconds = _jsMathRound\(\s*degrees\.abs\(\) \* secondsPerDegree,?\s*\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
-            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree).floor();"/>
+        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
+            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree).floorToDouble();"/>
+        </regex>
+
+        <!-- RULE 17b: the seconds become an int, which clamps at 2^63, so a
+             very large angle reads a different number in D:M:S -->
+        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.int_seconds_clamp">
+            <mutation text="final totalSeconds = _jsMathRound(degrees.abs() * secondsPerDegree).toDouble();"/>
+        </regex>
+
+        <!-- RULE 17c: the whole degrees keep the seconds' remainder, so
+             1234.5° rounds up to 1,235° -->
+        <regex pattern="final wholeDegrees = \(totalSeconds - rest\) / secondsPerDegree;" dotAll="true" id="quantity_formatter.dms.degrees_keep_remainder">
+            <mutation text="final wholeDegrees = totalSeconds / secondsPerDegree;"/>
+        </regex>
+
+        <!-- RULE 17d: the degrees of a D:M:S answer never group their
+             thousands -->
+        <regex pattern="\$\{_localeNumber\(wholeDegrees, 0, group\)\}" dotAll="true" id="quantity_formatter.dms.never_group">
+            <mutation text="${_localeNumber(wholeDegrees, 0, false)}"/>
         </regex>
 
         <!-- RULE 18: minutes are taken from the whole count instead of the
              remainder after the degrees -->
-        <regex pattern="final minutes = totalSeconds % secondsPerDegree ~/ secondsPerMinute;" dotAll="true" id="quantity_formatter.dms.minutes_not_remainder">
-            <mutation text="final minutes = totalSeconds ~/ secondsPerMinute;"/>
+        <regex pattern="final minutes = rest ~/ secondsPerMinute;" dotAll="true" id="quantity_formatter.dms.minutes_not_remainder">
+            <mutation text="final minutes = totalSeconds.toInt() ~/ secondsPerMinute;"/>
         </regex>
 
         <!-- RULE 19: the minus sign is dropped -->
@@ -128,7 +146,7 @@
 
         <!-- RULE 22: the spelling is ignored and a D:M:S angle reads in
              degrees -->
-        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
+        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,\s*group,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
             <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; '${_jsRoundedNumber(value.degrees, resultDecimals, group)}°',"/>
         </regex>
     </rules>

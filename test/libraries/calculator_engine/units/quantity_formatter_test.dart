@@ -297,6 +297,31 @@ void main() {
         test('a negative angle that rounds to zero reads 0°00\'', () {
           expect(dms(-0.00001), "0°00'");
         });
+
+        test('groups the thousands of the degrees as a result, not as an '
+            'entry', () {
+          expect(dms(1234.5), "1,234°30'");
+          expect(
+            formatter.format(
+              const Angle(
+                1234.5,
+                spelling: AngleSpelling.degreesMinutesSeconds,
+              ),
+              groupThousands: false,
+            ),
+            "1234°30'",
+          );
+        });
+
+        test('a very large angle reads the same whole degrees in both '
+            'spellings', () {
+          expect(
+            formatter.format(const Angle(1e16)),
+            '10,000,000,000,000,000°',
+          );
+          expect(dms(1e16), "10,000,000,000,000,000°00'");
+          expect(dms(1e12 + 0.5), "1,000,000,000,000°30'");
+        });
       });
 
       test('a scalar keeps two decimals and groups: 78 × 56 = 4,368', () {
