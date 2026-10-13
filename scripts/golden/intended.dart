@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 
+import 'check.dart';
+
 /// One place where the Dart calculator differs from the prototype on purpose:
 /// a whole scenario, or one checkpoint of it, with the reason.
 ///
@@ -21,29 +23,51 @@ class IntendedDifference extends Equatable {
   /// Why the Dart answer differs, with the design rule it follows.
   final String reason;
 
+  /// The decided Dart answer, evaluated in the prototype check's place: a
+  /// listed checkpoint differs on purpose only while this holds, and fails
+  /// otherwise, so the list can never accept a wrong answer. `null` for a
+  /// whole-scenario entry, which is not replayed.
+  final Check? dart;
+
   const IntendedDifference({
     required this.scenario,
     required this.reason,
     this.checkpoint,
+    this.dart,
   });
 
-  /// Reads one entry: `{"scenario": "S87", "checkpoint": "…", "reason": "…"}`.
-  factory IntendedDifference.fromJson(Map<String, Object?> json) =>
-      IntendedDifference(
-        scenario: json['scenario'] as String,
-        checkpoint: json['checkpoint'] as String?,
-        reason: json['reason'] as String,
+  /// Reads one entry: `{"scenario": "S87", "checkpoint": "…", "reason": "…",
+  /// "dart": {"kind": "toastIncludes", "text": "…"}}`. A checkpoint entry
+  /// without its `dart` answer is a [FormatException]: the list must say
+  /// what the Dart calculator shows, not only that it differs.
+  factory IntendedDifference.fromJson(Map<String, Object?> json) {
+    final scenario = json['scenario'] as String;
+    final checkpoint = json['checkpoint'] as String?;
+    final dart = json['dart'];
+    if (checkpoint != null && dart is! Map) {
+      throw FormatException(
+        '$scenario "$checkpoint" needs the decided Dart answer under "dart"',
       );
+    }
+    return IntendedDifference(
+      scenario: scenario,
+      checkpoint: checkpoint,
+      reason: json['reason'] as String,
+      dart: dart is Map ? Check.fromJson(dart.cast<String, Object?>()) : null,
+    );
+  }
 
   /// Whether this entry covers the whole scenario.
   bool get wholeScenario => checkpoint == null;
 
   @override
-  List<Object?> get props => [scenario, checkpoint, reason];
+  List<Object?> get props => [scenario, checkpoint, reason, dart];
 }
 
 /// The list of intended differences, looked up by scenario and checkpoint.
 class IntendedDifferences {
+  /// Every listed difference, whole scenarios and single checkpoints alike,
+  /// in the file's order.
   final List<IntendedDifference> entries;
 
   const IntendedDifferences(this.entries);
