@@ -30,11 +30,6 @@
             <mutation text=""/>
         </regex>
 
-        <!-- RULE 2: an open token is read as if it were finished -->
-        <regex pattern="if \(tokens\.isEmpty \|\|\s*tokens\.any\(\(token\) =&gt; !token\.isComplete \|\| !token\.value\.isFinite\)\) \{" dotAll="true" id="quantity_parser.parse.skip_completeness_guard">
-            <mutation text="if (tokens.isEmpty) {"/>
-        </regex>
-
         <!-- RULE 3: a raised unit is read as a plain length whatever its
              power -->
         <regex pattern="if \(tokens\.length == 1 &amp;&amp; first\.power &gt; 1\) return _raised\(first, unit\);" dotAll="true" id="quantity_parser.parse.ignore_power">
@@ -88,11 +83,6 @@
             <mutation text="true)"/>
         </regex>
 
-        <!-- RULE 13: a fraction over zero is read as a value -->
-        <regex pattern="!token\.isComplete \|\| !token\.value\.isFinite\)" dotAll="true" id="quantity_parser.parse.skip_finite_guard">
-            <mutation text="!token.isComplete)"/>
-        </regex>
-
         <!-- RULE 14: a weight is always answered in pounds -->
         <regex pattern="return Weight\(hundredthsOfPound, unit: unit\);" dotAll="true" id="quantity_parser.parse.weight_in_pounds">
             <mutation text="return Weight(hundredthsOfPound, unit: Unit.pound);"/>
@@ -101,6 +91,12 @@
         <!-- RULE 15: a length is always answered in inches -->
         <regex pattern="return Length\.exact\(\s*inches,\s*unit: _footInchForImperialCompound\(tokens, unit\),?\s*\);" dotAll="true" id="quantity_parser.parse.length_in_inches">
             <mutation text="return Length.exact(inches, unit: Unit.inch);"/>
+        </regex>
+
+        <!-- RULE 17: a number whose inches outgrow a Rational throws out of
+             parse instead of answering null -->
+        <regex pattern="\} on RationalOverflow \{\s*return null;\s*\}" dotAll="true" id="quantity_parser.parse.overflow_escapes">
+            <mutation text="} on RationalOverflow { rethrow; }"/>
         </regex>
 
         <!-- RULE 16: tokens of two dimensions are read as a zero -->

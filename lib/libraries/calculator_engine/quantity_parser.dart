@@ -31,7 +31,8 @@ class QuantityParser extends Equatable {
   /// The exact inches one length token stands for. A token whose number
   /// cannot be kept exactly — a fraction over zero, or more digits than a
   /// [Rational] holds — is a programming error here; [parse] answers `null`
-  /// for it.
+  /// for it. A number whose inches outgrow a [Rational] (1,844,674,407,370,955
+  /// ft) is a [RationalOverflow], which [parse] answers `null` for too.
   Rational inchesOf(Token token) {
     final exact = _exactValueOf(token);
     if (exact == null) {
@@ -45,7 +46,8 @@ class QuantityParser extends Equatable {
 
   /// The quantity the tokens spell, or `null` while any token is still open
   /// or the tokens cannot be one value (a length beside a weight, a raised
-  /// unit inside a compound, a fraction over zero).
+  /// unit inside a compound, a fraction over zero, a length too long to keep
+  /// exactly), so that the caller shows the error it already has.
   ///
   /// A single token pressed twice or three times is an area or a volume in
   /// that unit; a single board-foot token is a volume; weight tokens add up
@@ -75,20 +77,24 @@ class QuantityParser extends Equatable {
     }
     var inches = Rational.zero;
     var hundredthsOfPound = 0.0;
-    for (final token in tokens) {
-      final tokenUnit = token.unit;
-      if (tokenUnit == null ||
-          tokenUnit.dimension != unit.dimension ||
-          token.power > 1) {
-        return null;
+    try {
+      for (final token in tokens) {
+        final tokenUnit = token.unit;
+        if (tokenUnit == null ||
+            tokenUnit.dimension != unit.dimension ||
+            token.power > 1) {
+          return null;
+        }
+        if (unit.dimension == Dimension.length) {
+          inches += inchesOf(token);
+        } else {
+          hundredthsOfPound +=
+              token.value *
+              tokenUnit.hundredthsOfPoundPer(poundsPerTon: poundsPerTon);
+        }
       }
-      if (unit.dimension == Dimension.length) {
-        inches += inchesOf(token);
-      } else {
-        hundredthsOfPound +=
-            token.value *
-            tokenUnit.hundredthsOfPoundPer(poundsPerTon: poundsPerTon);
-      }
+    } on RationalOverflow {
+      return null;
     }
     if (unit.dimension == Dimension.weight) {
       return Weight(hundredthsOfPound, unit: unit);
