@@ -358,6 +358,18 @@ void main() {
         );
       });
 
+      test(
+        'mixed sides keep the prototype vote, not the setting (CA-1233)',
+        () {
+          const metre = Length(2520, unit: Unit.metre);
+          expect(texts(rules.answersFor({'Length': feet12, 'Width': metre})), [
+            'Area: 39.38ft²',
+            'Diagonal: 12.44ft',
+            'Perimeter: 30.56ft',
+          ]);
+        },
+      );
+
       test('a chip no rule used does not change the unit (rule 4.5)', () {
         // Answers are picked by their sources, because the rules higher in
         // the stack read Height, Rise and Run too.

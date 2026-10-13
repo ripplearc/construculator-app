@@ -22,6 +22,7 @@ void main() {
         '+' => current.pressOperator(Operator.add),
         '−' => current.pressOperator(Operator.subtract),
         '(' => current.pressBracket(),
+        '/' => current.typeFraction(),
         '=' => current.pressEquals(),
         '⌫' => current.backspace(),
         _ when key.startsWith('[') => current.pressFunctionKey(
@@ -434,6 +435,34 @@ void main() {
         expect(
           lastResult(press(const Tape(), '2 + 3 = × ( 4 + 1 ( =')),
           'Calc 25',
+        );
+      });
+
+      test('a bracket alone lands Calc, a bare value keeps its message', () {
+        expect(
+          lastResult(press(const Tape(), '( 3 ft + 2 ft ( =')),
+          'Calc 5ft 0in',
+        );
+        expect(
+          press(const Tape(), '1 8 ft').pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+      });
+
+      test('the bracket key after an error starts a chain of its own', () {
+        final failed = press(const Tape(), '5 lbs ÷ 2 ft =');
+        expect(failed.endsWithError, isTrue);
+        expect(lastResult(press(failed, '( 2 + 3 ( × 2 =')), 'Calc 10');
+      });
+
+      test('a zero under the line is refused inside a bracket too', () {
+        expect(
+          press(const Tape(), '( 7 /').typeDigit('0'),
+          const TapeEntryRefused(EntryRefusal.zeroDenominator),
+        );
+        expect(
+          press(const Tape(), '7 /').typeDigit('0'),
+          const TapeEntryRefused(EntryRefusal.zeroDenominator),
         );
       });
 

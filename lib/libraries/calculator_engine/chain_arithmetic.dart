@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
@@ -50,8 +51,17 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// every length that went in was metric, whatever their order (3yd × 2 =
 /// 18ft 0in; 1m + 1mm = 1,001mm, where metres would hide the millimetre);
 /// an area or a volume made from lengths answers in feet, or in that
-/// metric unit by the same vote (2cm × 3cm = 6cm²). Acres and board feet
-/// carry no length system and do not vote, so 1 acre × 1m answers in m³.
+/// metric unit by the same vote (2cm × 3cm = 6cm²). A sum or difference of
+/// lengths or of areas that mixes imperial and metric follows the System of
+/// units setting, in either order (Section 6; owner decision of 3 October
+/// 2026): 12ft + 1m reads 15ft 3-3/8in under Imperial and 4.66m under
+/// Metric, and 12ft² + 1m² reads 22.76ft² or 2.11m² the same way. A product
+/// or a quotient that mixes them keeps the prototype's vote and answers in
+/// feet under either setting (12ft × 1m = 39.38ft²), and a volume sum keeps
+/// its first operand's unit (500bf + 1yd³ = 824bf, 1yd³ + 1m³ = 2.31yd³),
+/// since Section 6 decides sums of lengths and areas only. Acres and board
+/// feet carry no length system and do not vote, so 1 acre × 1m answers in
+/// m³.
 /// A bare number scales an area in either order, where the prototype
 /// refused 3 × 12ft².
 ///
@@ -64,7 +74,11 @@ class ChainArithmetic extends Equatable {
   /// from an exact value.
   static const int maxTicks = Length.maxTicks;
 
-  const ChainArithmetic();
+  /// The System of units setting, which decides the unit of a length or
+  /// area sum whose operands mix imperial and metric.
+  final MeasurementSystem system;
+
+  const ChainArithmetic({this.system = MeasurementSystem.imperial});
 
   /// [left] `operator` [right], or why it cannot be computed.
   ArithmeticOutcome combine(Quantity left, Operator operator, Quantity right) {
@@ -150,9 +164,12 @@ class ChainArithmetic extends Equatable {
     return switch (left) {
       Length() => Length(
         _wholeTicks(magnitude),
-        unit: _lengthUnit([left.unit, (right as Length).unit]),
+        unit: _lengthSumUnit(left.unit, (right as Length).unit),
       ),
-      Area() => Area(magnitude, unit: left.unit),
+      Area() => Area(
+        magnitude,
+        unit: _areaSumUnit(left.unit, (right as Area).unit),
+      ),
       Volume() => Volume(magnitude, unit: left.unit),
       Weight() => Weight(magnitude, unit: left.unit),
       Angle() => Angle(magnitude),
@@ -216,6 +233,21 @@ class ChainArithmetic extends Equatable {
     return lengths.reduce(_smallerUnit);
   }
 
+  Unit _lengthSumUnit(Unit first, Unit second) => _mixesSystems(first, second)
+      ? _settingUnit(Unit.footInch)
+      : _lengthUnit([first, second]);
+
+  Unit _areaSumUnit(Unit first, Unit second) =>
+      _mixesSystems(first, second) ? _settingUnit(Unit.foot) : first;
+
+  bool _mixesSystems(Unit first, Unit second) =>
+      first.compoundRank > 0 &&
+      second.compoundRank > 0 &&
+      first.isMetric != second.isMetric;
+
+  Unit _settingUnit(Unit imperial) =>
+      system == MeasurementSystem.metric ? Unit.metre : imperial;
+
   Unit _smallerUnit(Unit a, Unit b) => b.ticksPerUnit < a.ticksPerUnit ? b : a;
 
   int _wholeTicks(double ticks) {
@@ -227,7 +259,7 @@ class ChainArithmetic extends Equatable {
   }
 
   @override
-  List<Object?> get props => const [];
+  List<Object?> get props => [system];
 }
 
 class _TicksOutOfRange implements Exception {

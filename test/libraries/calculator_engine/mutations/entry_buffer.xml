@@ -60,6 +60,13 @@
         </regex>
 
         <!-- RULE 10: a key that takes lengths accepts a weight -->
+        <!-- RULE: a zero under the line is accepted, or every 0 under the
+             line is refused so 7/10 cannot be typed -->
+        <regex pattern="if \(denominator\.isEmpty &amp;&amp; digit == '0'\) \{" dotAll="true" id="entry_buffer.fraction.zero_denominator">
+            <mutation text="if (false) {"/>
+            <mutation text="if (digit == '0') {"/>
+        </regex>
+
         <!-- RULE: a second [/] on a finished fraction asks for the top number
              again, or both cases say the same -->
         <regex pattern="denominator\.isEmpty\s*\? EntryRefusal\.fractionAlreadyOpen\s*: EntryRefusal\.fractionNeedsUnit," dotAll="true" id="entry_buffer.fraction.second_slash_message">

@@ -335,8 +335,19 @@ void main() {
         },
       );
 
+      test('a zero under the line is refused as it is typed (CA-1233)', () {
+        expect(
+          type('7/').typeDigit('0'),
+          const EntryRefused(EntryRefusal.zeroDenominator),
+        );
+        for (final denominator in ['10', '16', '20', '100']) {
+          expect(type('7/$denominator').text, '7/$denominator');
+        }
+      });
+
       test('a fraction over zero closes but is never complete', () {
-        final buffer = changed(type('7/0').closeWith(Unit.inch));
+        const overZero = EntryBuffer([Token(digits: '7', denominator: '0')]);
+        final buffer = changed(overZero.closeWith(Unit.inch));
         expect(buffer.text, '7/0in');
         expect(buffer.isOpen, isFalse);
         expect(buffer.isComplete, isFalse);
