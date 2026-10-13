@@ -440,7 +440,7 @@ void main() {
     group('settings', () {
       const weight = ResultChip(
         key: 'Weight',
-        value: Weight(22.28 * 2000 * 100, unit: Unit.ton),
+        value: Weight(44550 * 100, unit: Unit.ton),
       );
       const diagonal = ResultChip(
         key: 'Diagonal',
@@ -517,14 +517,40 @@ void main() {
         expect(back, tape);
       });
 
-      test('a frozen entry edited after the change reads the new ton', () {
+      test('a ton retyped after the change reads the new definition', () {
         final tape = press(const Tape(), '7 8 ton').withPreferences(longTon);
-        final retyped = press(tape, '⌫ ⌫ ton');
-        expect(retyped.active!.entry.text, '7ton');
+        final shorter = press(tape, '⌫ ⌫ ton');
+        expect(shorter.active!.entry.text, '7ton');
         expect(
-          retyped.active!.value(retyped.parser),
+          shorter.active!.value(shorter.parser),
           const Weight(7 * 2240 * 100, unit: Unit.ton),
         );
+        final sameText = press(tape, '⌫ ⌫ 8 ton');
+        expect(sameText.active!.entry.text, '78ton');
+        expect(
+          sameText.active!.value(sameText.parser),
+          const Weight(78 * 2240 * 100, unit: Unit.ton),
+        );
+      });
+
+      test('a typed ton with a digit open after it keeps its weight', () {
+        final tape = press(const Tape(), '7 8 ton 5').withPreferences(longTon);
+        final closed = press(tape, '⌫');
+        expect(closed.active!.entry.text, '78ton');
+        expect(
+          closed.active!.value(closed.parser),
+          const Weight(78 * 2000 * 100, unit: Unit.ton),
+        );
+      });
+
+      test('a converted ton, a bare number and an open entry round trip', () {
+        for (final keys in ['2 0 0 0 lbs ton', '7 8', '7 8 ton + 2']) {
+          final tape = press(const Tape(), keys);
+          final back = tape
+              .withPreferences(longTon)
+              .withPreferences(CalculatorPreferences.defaults);
+          expect(back, tape, reason: keys);
+        }
       });
 
       test('keeps the settings through every key', () {
