@@ -54,12 +54,15 @@ class UnitConverter {
       (_weightOffersByTypedUnit[value.unit] ?? const [])
           .map(value.spelledIn)
           .toList(growable: false),
-    Angle() => [
-      value.spelledAs(switch (value.spelling) {
-        AngleSpelling.degrees => AngleSpelling.degreesMinutesSeconds,
-        AngleSpelling.degreesMinutesSeconds => AngleSpelling.degrees,
-      }),
-    ],
+    Angle() => switch (value.spelling) {
+      AngleSpelling.degrees => [
+        value.spelledAs(AngleSpelling.degreesMinutesSeconds),
+      ],
+      AngleSpelling.degreesMinutesSeconds => [
+        value.spelledAs(AngleSpelling.degrees),
+      ],
+      AngleSpelling.risePerFoot || AngleSpelling.grade => const [],
+    },
     Scalar() => const [],
   };
 

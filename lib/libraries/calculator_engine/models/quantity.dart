@@ -217,19 +217,40 @@ final class Weight extends Quantity {
   List<Object?> get props => [hundredthsOfPound, unit];
 }
 
-/// How an angle is written on screen: decimal degrees (27.55°) or the way a
-/// survey sheet writes it, degrees, minutes and seconds (27°33'10").
+/// How an angle is written on screen: decimal degrees (27.55°), the way a
+/// survey sheet writes it, degrees, minutes and seconds (27°33'10"), or the
+/// two ways a roofer writes a pitch, inches of rise per 12 inches of run
+/// (16in/12in) and a percent grade (133.3%).
 ///
-/// Two spellings of one number, not two units (UX Design Doc Section 6,
-/// "Conversions offered": angle answers offer their D:M:S spelling), which
-/// is why it sits beside the degrees the way a length's unit sits beside
-/// its ticks, and why re-spelling an angle never touches them (rule 4.15).
+/// Spellings of one number, not units (UX Design Doc Section 6,
+/// "Conversions offered": angle answers offer their D:M:S spelling; Section
+/// 8: pressing Pitch cycles the three pitch spellings), which is why it
+/// sits beside the degrees the way a length's unit sits beside its ticks,
+/// and why re-spelling an angle never touches them (rule 4.15).
 enum AngleSpelling {
   /// Decimal degrees, to two decimals at display.
   degrees,
 
   /// Degrees, then minutes and seconds padded to two digits.
   degreesMinutesSeconds,
+
+  /// The pitch as inches of rise per 12 inches of run, the trade form of
+  /// Section 8 ("Right triangle"): the tangent of the angle times 12, to
+  /// one decimal, so 53.13° reads 16in/12in.
+  risePerFoot,
+
+  /// The pitch as a percent grade (Section 8): the tangent of the angle
+  /// times 100, to one decimal, so 53.13° reads 133.3% and 4° reads 7%.
+  grade;
+
+  /// The spelling the Pitch key moves to from this one: in/12in, then
+  /// degrees, then grade, and back (Section 8: "Pressing Pitch cycles the
+  /// three spellings"); a survey angle joins the cycle at degrees.
+  AngleSpelling get nextPitchSpelling => switch (this) {
+    risePerFoot => degrees,
+    degrees || degreesMinutesSeconds => grade,
+    grade => risePerFoot,
+  };
 }
 
 /// A rotation in decimal degrees, whichever spelling it wears.
