@@ -4,6 +4,8 @@ import 'package:equatable/equatable.dart';
 /// its numerator or denominator, which is the engine's "too large to keep"
 /// (the same refusal as a length beyond the tick limit).
 class RationalOverflow implements Exception {
+  /// The refusal carries nothing: the caller knows which operation it
+  /// refused and answers with its own out-of-range error.
   const RationalOverflow();
 }
 
@@ -17,7 +19,11 @@ class RationalOverflow implements Exception {
 /// from a typed decimal. Every arithmetic result is reduced; a result whose
 /// numerator or denominator would pass [maxMagnitude], the last whole
 /// number a double still holds exactly, is a [RationalOverflow] rather than
-/// a wrong number.
+/// a wrong number. So is any product formed on the way to a result — a
+/// numerator times the other denominator in a sum, a comparison or a
+/// division — that would pass 2⁶¹, the size at which two of them still add
+/// inside a 64-bit `int`; without that check 2³² × 2³² wraps around to 0
+/// and the size check of the result sees nothing wrong.
 class Rational extends Equatable implements Comparable<Rational> {
   /// The largest numerator or denominator a rational may carry: 2⁵³.
   static const int maxMagnitude = 1 << 53;
@@ -31,6 +37,9 @@ class Rational extends Equatable implements Comparable<Rational> {
   /// The denominator as written, always positive.
   final int denominator;
 
+  /// The number [numerator] over [denominator], kept as written: 2520/64
+  /// stays 2520/64 until [reduced]. [denominator] is 1 when left out, and
+  /// must be positive; the sign belongs to the numerator.
   const Rational(this.numerator, [this.denominator = 1])
     : assert(denominator > 0, 'a denominator is positive');
 
@@ -88,19 +97,23 @@ class Rational extends Equatable implements Comparable<Rational> {
 
   /// This plus [other].
   Rational operator +(Rational other) => _checked(
-    numerator * other.denominator + other.numerator * denominator,
-    denominator * other.denominator,
+    _product(numerator, other.denominator) +
+        _product(other.numerator, denominator),
+    _product(denominator, other.denominator),
   );
 
   /// This minus [other].
   Rational operator -(Rational other) => _checked(
-    numerator * other.denominator - other.numerator * denominator,
-    denominator * other.denominator,
+    _product(numerator, other.denominator) -
+        _product(other.numerator, denominator),
+    _product(denominator, other.denominator),
   );
 
   /// This times [other].
-  Rational operator *(Rational other) =>
-      _checked(numerator * other.numerator, denominator * other.denominator);
+  Rational operator *(Rational other) => _checked(
+    _product(numerator, other.numerator),
+    _product(denominator, other.denominator),
+  );
 
   /// This divided by [other]; dividing by zero is an [ArgumentError], the
   /// caller's to refuse before it gets here.
@@ -108,8 +121,8 @@ class Rational extends Equatable implements Comparable<Rational> {
     if (other.isZero) throw ArgumentError.value(other, 'other', 'is zero');
     final sign = other.numerator < 0 ? -1 : 1;
     return _checked(
-      numerator * other.denominator * sign,
-      denominator * other.numerator.abs(),
+      _product(numerator, other.denominator) * sign,
+      _product(denominator, other.numerator.abs()),
     );
   }
 
@@ -117,8 +130,10 @@ class Rational extends Equatable implements Comparable<Rational> {
   Rational operator -() => Rational(-numerator, denominator);
 
   @override
-  int compareTo(Rational other) =>
-      (numerator * other.denominator).compareTo(other.numerator * denominator);
+  int compareTo(Rational other) => _product(
+    numerator,
+    other.denominator,
+  ).compareTo(_product(other.numerator, denominator));
 
   @override
   List<Object?> get props {
@@ -137,6 +152,15 @@ class Rational extends Equatable implements Comparable<Rational> {
       throw const RationalOverflow();
     }
     return result;
+  }
+
+  static const int _intermediateLimit = 1 << 61;
+
+  static int _product(int a, int b) {
+    if (a != 0 && b.abs() > _intermediateLimit ~/ a.abs()) {
+      throw const RationalOverflow();
+    }
+    return a * b;
   }
 
   static int _gcd(int a, int b) {
