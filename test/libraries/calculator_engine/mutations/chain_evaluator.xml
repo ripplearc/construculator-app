@@ -27,8 +27,10 @@
 
         <!-- RULE 3: an error chip empties the whole tape instead of ending
              its own chain -->
-        <regex pattern="case ErrorChip\(\):\s*running = _nothing;" dotAll="true" id="chain_evaluator.fold.error_empties_tape">
+        <regex pattern="case ErrorChip\(\):\s*if \(!_continuesAfter\(chips, index\)\) running = _nothing;" dotAll="true" id="chain_evaluator.fold.error_empties_tape">
             <mutation text="case ErrorChip(): return const ChainEmpty();"/>
+            <mutation text="case ErrorChip(): running = _nothing;"/>
+            <mutation text="case ErrorChip(): break;"/>
         </regex>
 
         <!-- RULE 4: an unreadable chip is skipped instead of stopping the
@@ -81,6 +83,45 @@
 
         <!-- RULE 13: = lands a failed step as a Calc 0 instead of an error
              chip -->
+        <!-- RULE: every ÷ 0 reopens a divisor, even one earlier in the chain
+             or behind a failed prefix -->
+        <regex pattern="when _endsOnTheFailedDivisor =&gt;" dotAll="true" id="tape.equals.reopen_any_division_by_zero">
+            <mutation text="when chips.last is ValueChip =&gt;"/>
+        </regex>
+
+        <!-- RULE: a failed prefix still reopens its last divisor -->
+        <regex pattern="return evaluator\.fold\(chips\.sublist\(0, chips\.length - 1\)\) is! ChainFailed;" dotAll="true" id="tape.equals.reopen_behind_failed_prefix">
+            <mutation text="return true;"/>
+        </regex>
+
+        <!-- RULE: the reopened divisor loses its error chip, or keeps the
+             zero that failed -->
+        <regex pattern="const ErrorChip\(CalculationError\.divisionByZero\),\s*divisor\.copyWith\(\s*entry: const EntryBuffer\(\)," dotAll="true" id="tape.equals.reopen_without_error_chip">
+            <mutation text="divisor.copyWith(entry: const EntryBuffer(),"/>
+            <mutation text="const ErrorChip(CalculationError.divisionByZero), divisor.copyWith("/>
+        </regex>
+
+        <!-- RULE: a second 0 under the reopened divisor lands a second error
+             chip -->
+        <regex pattern="if \(before\.last is! ErrorChip\)\s*const ErrorChip\(CalculationError\.divisionByZero\)," dotAll="true" id="tape.equals.second_error_chip">
+            <mutation text="const ErrorChip(CalculationError.divisionByZero),"/>
+        </regex>
+
+        <!-- RULE: ⌫ and an operator change on the reopened divisor keep the
+             error chip, or a bare chip typed after an error repairs it -->
+        <regex pattern="if \(chips\.length &lt; 2 \|\| chips\[chips\.length - 2\] is! ErrorChip\) return null;" dotAll="true" id="tape.divisor_repaired.never">
+            <mutation text="if (true) return null;"/>
+        </regex>
+        <regex pattern="if \(active case ValueChip\(operator: null\) \|\| null\) return null;" dotAll="true" id="tape.divisor_repaired.bare_chip">
+            <mutation text="if (active == null) return null;"/>
+        </regex>
+        <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(" dotAll="true" id="tape.press_operator.keeps_error_chip">
+            <mutation text="return _replaceLast("/>
+        </regex>
+        <regex pattern="if \(_withDivisorRepaired case final repaired\?\) return TapeChanged\(repaired\);" dotAll="true" id="tape.backspace.keeps_error_chip">
+            <mutation text=""/>
+        </regex>
+
         <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
             <mutation text="ChainFailed() =&gt; TapeChanged(append(const ResultChip(key: calcKey, value: Scalar(0)))),"/>
         </regex>
