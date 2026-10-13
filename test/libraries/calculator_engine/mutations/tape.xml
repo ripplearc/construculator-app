@@ -15,13 +15,15 @@
     <rules>
         <!-- RULE 1: a function key opens a second chip instead of renaming
              the empty one -->
-        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(chip\.copyWith\(key: \(\) =&gt; key\)\);" dotAll="true" id="tape.function_key.no_rename">
-            <mutation text="if (false) { return _replaceLast(chip.copyWith(key: () =&gt; key));"/>
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(\s*chip\.copyWith\(key: \(\) =&gt; key, keyWantsUnit: keyWantsUnit\),\s*\);" dotAll="true" id="tape.function_key.no_rename">
+            <mutation text="if (false) { return _replaceLast(chip.copyWith(key: () =&gt; key, keyWantsUnit: keyWantsUnit));"/>
+            <mutation text="if (chip != null &amp;&amp; chip.entry.isEmpty) { return _replaceLast(chip.copyWith(key: () =&gt; key));"/>
         </regex>
 
         <!-- RULE 2: an unfinished value can be left by a function key -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(ValueChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.leave_unfinished">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.finishThisValueFirst); } return TapeChanged(_sealed().append(ValueChip(key: key)));"/>
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(\s*_sealed\(\)\.append\(ValueChip\(key: key, keyWantsUnit: keyWantsUnit\)\),\s*\);" dotAll="true" id="tape.function_key.leave_unfinished">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.finishThisValueFirst); } return TapeChanged(_sealed().append(ValueChip(key: key, keyWantsUnit: keyWantsUnit)));"/>
+            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.finishThisValueFirst); } return TapeChanged(_sealed().append(ValueChip(key: key)));"/>
         </regex>
 
         <!-- RULE 3: a unit after a result is answered like an empty tape -->
@@ -33,6 +35,14 @@
              buffer instead of the ladder -->
         <regex pattern="if \(chip\.entry\.isOpen\) \{" dotAll="true" id="tape.press_unit.always_close">
             <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 4b: a plain-number key takes a unit, or Pitch loses its
+             inches, or any plain-number key takes inches -->
+        <regex pattern="if \(chip\.key != null &amp;&amp;\s*!chip\.keyWantsUnit &amp;&amp;\s*!\(takesInches &amp;&amp; unit == Unit\.inch\)\) \{" dotAll="true" id="tape.press_unit.plain_number_takes_unit">
+            <mutation text="if (false) {"/>
+            <mutation text="if (chip.key != null &amp;&amp; !chip.keyWantsUnit) {"/>
+            <mutation text="if (chip.key != null &amp;&amp; !chip.keyWantsUnit &amp;&amp; unit != Unit.inch) {"/>
         </regex>
 
         <!-- RULE 5: an edited converted value still reads as its stale exact
@@ -71,8 +81,8 @@
 
         <!-- RULE 11: an unfinished value under a function key is refused for
              the wrong reason -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(ValueChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.wrong_refusal">
-            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(ValueChip(key: key)));"/>
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(\s*_sealed\(\)\.append\(ValueChip\(key: key, keyWantsUnit: keyWantsUnit\)\),\s*\);" dotAll="true" id="tape.function_key.wrong_refusal">
+            <mutation text="if (chip != null &amp;&amp; !chip.isReadable) { return const TapeRefused(TapeRefusal.typeANumberFirst); } return TapeChanged(_sealed().append(ValueChip(key: key, keyWantsUnit: keyWantsUnit)));"/>
         </regex>
 
         <!-- RULE 12: an error chip counts as a result -->
@@ -102,8 +112,9 @@
         </regex>
 
         <!-- RULE 17: a bare number under a function key can be left -->
-        <regex pattern="bool get _isUnnamedBareNumber =&gt; key == null &amp;&amp; _isBareNumber;" dotAll="true" id="chip.bare_number.named_is_readable">
-            <mutation text="bool get _isUnnamedBareNumber =&gt; _isBareNumber;"/>
+        <regex pattern="bool get _isPlainNumber =&gt; \(key == null \|\| !keyWantsUnit\) &amp;&amp; _isBareNumber;" dotAll="true" id="chip.bare_number.named_is_readable">
+            <mutation text="bool get _isPlainNumber =&gt; _isBareNumber;"/>
+            <mutation text="bool get _isPlainNumber =&gt; key == null &amp;&amp; _isBareNumber;"/>
         </regex>
 
         <!-- RULE 18: an emptied chip keeps the exact quantity it was

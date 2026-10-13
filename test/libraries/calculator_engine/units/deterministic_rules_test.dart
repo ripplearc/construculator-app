@@ -28,6 +28,7 @@ void main() {
         'm' => current.pressUnit(Unit.metre),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
+          keyWantsUnit: key != '[Sides]',
         ),
         _ => current.typeDigit(key),
       };
@@ -392,6 +393,18 @@ void main() {
         expect(
           answers.map((answer) => answer.sources),
           everyElement(['Diameter', 'Sides']),
+        );
+      });
+
+      test('S34 off a real tape: [Diameter] 12 ft [Sides] 6', () {
+        final tape = press(const Tape(), '[Diameter] 1 2 ft [Sides] 6');
+        expect(tape.namedValues, {
+          'Diameter': feet12,
+          'Sides': const Scalar(6),
+        });
+        expect(
+          texts(rules.answersFor(tape.namedValues)).first,
+          'Polygon area: 93.53ft²',
         );
       });
 
