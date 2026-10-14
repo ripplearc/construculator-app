@@ -137,6 +137,27 @@ void main() {
         'No job prices for “excavator half day”. It has 2 day rates, from \$120.00 to \$180.00.',
       );
     });
+
+    test('gives one amount when several job prices cost the same', () {
+      expect(
+        messageFor([
+          rate(340, EquipmentPricingMethod.job, id: 'a'),
+          rate(340, EquipmentPricingMethod.job, id: 'b'),
+        ], EquipmentPricingMethod.day),
+        'No day rates for “excavator half day”. It has 2 job prices of \$340.00.',
+      );
+    });
+
+    test('gives one amount when several day rates cost the same', () {
+      expect(
+        messageFor([
+          rate(120, EquipmentPricingMethod.day, id: 'a'),
+          rate(120, EquipmentPricingMethod.day, id: 'b'),
+          rate(120, EquipmentPricingMethod.day, id: 'c'),
+        ], EquipmentPricingMethod.job),
+        'No job prices for “excavator half day”. It has 3 day rates of \$120.00.',
+      );
+    });
   });
 
   group('OtherMethodSuggestion.actionLabel', () {

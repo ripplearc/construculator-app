@@ -30,11 +30,17 @@
         <regex pattern="method: active == EquipmentPricingMethod\.day" dotAll="false" id="suggestion.method.flip">
             <mutation text="method: active != EquipmentPricingMethod.day"/>
         </regex>
-        <regex pattern="return method == EquipmentPricingMethod\.job" dotAll="false" id="suggestion.message.direction.negate">
-            <mutation text="return method != EquipmentPricingMethod.job"/>
-        </regex>
         <regex pattern="\? l10n\.yourRatesShowJobPrices" dotAll="false" id="suggestion.label.swap">
             <mutation text="? l10n.yourRatesShowDayRates"/>
+        </regex>
+        <regex pattern="count &gt; 1 &amp;&amp; lowest == highest" dotAll="false" id="suggestion.same_amount.negate">
+            <mutation text="count &gt; 1 &amp;&amp; lowest != highest"/>
+        </regex>
+        <regex pattern="count &gt; 1 &amp;&amp; lowest == highest" dotAll="false" id="suggestion.same_amount.single_match">
+            <mutation text="count &gt; 0 &amp;&amp; lowest == highest"/>
+        </regex>
+        <regex pattern="final isJob = method == EquipmentPricingMethod\.job" dotAll="false" id="suggestion.message.direction.negate_shared">
+            <mutation text="final isJob = method != EquipmentPricingMethod.job"/>
         </regex>
         <regex pattern="query,\s+count," dotAll="true" id="suggestion.message.drop_count">
             <mutation text="query, 1,"/>

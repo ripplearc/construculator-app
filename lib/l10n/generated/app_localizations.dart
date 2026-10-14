@@ -3032,6 +3032,26 @@ abstract class AppLocalizations {
     String highest,
   );
 
+  /// Like the job-prices message in the Look-up-a-rate sheet, for two or more job prices that all cost the same, so there is no range to give
+  ///
+  /// In en, this message translates to:
+  /// **'No day rates for “{query}”. It has {count} job prices of {amount}.'**
+  String yourRatesOtherMethodJobPricesSameAmount(
+    String query,
+    int count,
+    String amount,
+  );
+
+  /// Like the day-rates message in the Look-up-a-rate sheet, for two or more day rates that all cost the same, so there is no range to give
+  ///
+  /// In en, this message translates to:
+  /// **'No job prices for “{query}”. It has {count} day rates of {amount}.'**
+  String yourRatesOtherMethodDayRatesSameAmount(
+    String query,
+    int count,
+    String amount,
+  );
+
   /// Text button under the no-day-rates message in the Look-up-a-rate sheet; does what tapping Job on the equipment form does and keeps the typed words (storyboard CUJ 6, frame A price on the other method; Figma X3b)
   ///
   /// In en, this message translates to:

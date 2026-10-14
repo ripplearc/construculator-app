@@ -1670,6 +1670,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String yourRatesOtherMethodJobPricesSameAmount(
+    String query,
+    int count,
+    String amount,
+  ) {
+    return 'No day rates for “$query”. It has $count job prices of $amount.';
+  }
+
+  @override
+  String yourRatesOtherMethodDayRatesSameAmount(
+    String query,
+    int count,
+    String amount,
+  ) {
+    return 'No job prices for “$query”. It has $count day rates of $amount.';
+  }
+
+  @override
   String get yourRatesShowJobPrices => 'Show job prices';
 
   @override

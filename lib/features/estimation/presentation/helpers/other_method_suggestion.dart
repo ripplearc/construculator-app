@@ -60,7 +60,21 @@ class OtherMethodSuggestion {
   String message(AppLocalizations l10n, {required String query}) {
     final lowestText = DisplayFormatter.currency.format(lowest);
     final highestText = DisplayFormatter.currency.format(highest);
-    return method == EquipmentPricingMethod.job
+    final isJob = method == EquipmentPricingMethod.job;
+    if (count > 1 && lowest == highest) {
+      return isJob
+          ? l10n.yourRatesOtherMethodJobPricesSameAmount(
+              query,
+              count,
+              lowestText,
+            )
+          : l10n.yourRatesOtherMethodDayRatesSameAmount(
+              query,
+              count,
+              lowestText,
+            );
+    }
+    return isJob
         ? l10n.yourRatesOtherMethodJobPrices(
             query,
             count,
