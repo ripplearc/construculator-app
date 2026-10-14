@@ -41,7 +41,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
   final MaterialCostFormBloc Function() materialCostFormBlocFactory;
 
   /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
-  /// total for the equipment cost sheet. Same not-a-module-file reasoning as
+  /// total for the cost sheets. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
   final EstimateSummaryBloc Function() estimateSummaryBlocFactory;
 
@@ -71,7 +71,6 @@ class CostEstimationDetailsPage extends StatefulWidget {
       _CostEstimationDetailsPageState();
 }
 
-/// How an add-cost sheet's form ended up, read from its bloc state.
 enum _SheetOutcome { editing, submitting, added, failed }
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {

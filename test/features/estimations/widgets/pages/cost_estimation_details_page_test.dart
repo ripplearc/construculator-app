@@ -1320,6 +1320,50 @@ void main() {
         expect(saved['item_total_cost'], 156);
       });
 
+      testWidgets('dismissing the sheet while saving still confirms the add', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text('Added to Bedroom 2'), findsOneWidget);
+      });
+
+      testWidgets('a save that fails after the sheet was dismissed still shows '
+          'the error', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+
+        await tester.tap(addButton());
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+      });
+
       testWidgets('closing the sheet without adding shows no toast', (
         tester,
       ) async {
