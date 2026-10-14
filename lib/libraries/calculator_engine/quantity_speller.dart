@@ -50,7 +50,7 @@ class QuantitySpeller extends Equatable {
     Length() => [
       Token(
         digits: _digitsWithoutTrailingZeros(
-          (value.inches / value.unit.inchesPer).toDouble(),
+          value.amountIn(value.unit),
           lengthDecimals,
         ),
         unit: value.unit,
