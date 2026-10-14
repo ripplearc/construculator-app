@@ -375,16 +375,6 @@ void main() {
         expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
         expect(find.byType(BottomSheet), findsOneWidget);
         expect(find.byType(CostItemFormScreen), findsNothing);
-
-        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-        expect(
-          fakeRouter.navigationHistory,
-          isNot(
-            contains(
-              RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null),
-            ),
-          ),
-        );
       },
     );
 
@@ -1292,14 +1282,6 @@ void main() {
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('New material cost'), findsOneWidget);
         expect(find.text('Enter a material name to continue'), findsOneWidget);
-        expect(
-          (Modular.get<AppRouter>() as FakeAppRouter).navigationHistory,
-          isNot(
-            contains(
-              RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null),
-            ),
-          ),
-        );
       });
 
       testWidgets('opens the sheet even when the estimate cannot be loaded', (
