@@ -39,7 +39,7 @@ class MaterialCostFormBloc
         rate: rate,
         rateStatus: rate == null
             ? RateStatus.missing
-            : RateStatus.ownRateConfirmed,
+            : RateStatus.ownRateUnconfirmed,
       ),
     );
   }

@@ -105,6 +105,16 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'flags Infinity as not positive',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialQuantityUpdated('Infinity')),
+        verify: (b) => expect(
+          _dataOf(b.state).fieldErrors[MaterialFormField.quantity],
+          MaterialFieldError.quantityNotPositive,
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'accepts a quantity just under what the column holds',
         build: () => bloc,
         act: (b) => b.add(const MaterialQuantityUpdated('99999999999999')),
@@ -122,7 +132,7 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'treats an empty or unreadable quantity as missing',
+        'treats an empty quantity as missing',
         build: () => bloc,
         act: (b) => b
           ..add(const MaterialQuantityUpdated('4'))
@@ -130,6 +140,19 @@ void main() {
         verify: (b) {
           expect(_dataOf(b.state).quantity, isNull);
           expect(_dataOf(b.state).fieldErrors, isEmpty);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'treats an unreadable quantity as missing',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('4'))
+          ..add(const MaterialQuantityUpdated('1.2.3')),
+        verify: (b) {
+          expect(_dataOf(b.state).quantity, isNull);
+          expect(_dataOf(b.state).fieldErrors, isEmpty);
+          expect(_dataOf(b.state).isValid, isFalse);
         },
       );
     });
@@ -160,11 +183,11 @@ void main() {
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'marks a typed rate as the user\'s own, which removes the Sample-rate tag',
+        'marks a typed rate as the user\'s own but not confirmed',
         build: () => bloc,
         act: (b) => b.add(const MaterialRateUpdated('52')),
         verify: (b) =>
-            expect(_dataOf(b.state).rateStatus, RateStatus.ownRateConfirmed),
+            expect(_dataOf(b.state).rateStatus, RateStatus.ownRateUnconfirmed),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
