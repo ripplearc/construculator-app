@@ -179,12 +179,12 @@ void main() {
         act: (b) {
           b
             ..add(const MaterialCostItemTypeChanged('Nails'))
-            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialQuantityUpdated('1.5'))
             ..add(const MaterialUnitSelected(Unit.boxes))
-            ..add(const MaterialRateUpdated('0.335'))
+            ..add(const MaterialRateUpdated('2.55'))
             ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
-        verify: (_) => expect(insertedRow()['item_total_cost'], 1.01),
+        verify: (_) => expect(insertedRow()['item_total_cost'], 3.83),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
@@ -211,6 +211,42 @@ void main() {
           expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
         },
       );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'rounds a part quantity to the cent without losing a half cent',
+        build: () => bloc,
+        act: (b) {
+          b
+            ..add(const MaterialCostItemTypeChanged('Nails'))
+            ..add(const MaterialQuantityUpdated('0.5'))
+            ..add(const MaterialUnitSelected(Unit.boxes))
+            ..add(const MaterialRateUpdated('2.01'))
+            ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+        },
+        verify: (_) => expect(insertedRow()['item_total_cost'], 1.01),
+      );
+
+      final invalidValues = <String, List<MaterialCostFormEvent>>{
+        'a blank name': [const MaterialCostItemTypeChanged('   ')],
+        'a quantity of zero': [const MaterialQuantityUpdated('0')],
+        'a rate below the minimum': [const MaterialRateUpdated('0.001')],
+        'a rate above the maximum': [const MaterialRateUpdated('1000000')],
+      };
+      for (final entry in invalidValues.entries) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'saves nothing when everything is filled but ${entry.key}',
+          build: () => bloc,
+          act: (b) {
+            filledEvents.forEach(b.add);
+            entry.value.forEach(b.add);
+            b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          },
+          verify: (b) {
+            expect(b.state, isA<MaterialCostFormEditing>());
+            expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+          },
+        );
+      }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'keeps every value and the last unit when saving fails',

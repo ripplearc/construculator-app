@@ -123,11 +123,12 @@ class MaterialCostFormBloc
   }) {
     final now = _clock.now();
     return MaterialCostItem(
+      // TODO: [CA-643] send one id per form so a retry after a lost answer updates the same line instead of adding a second one. https://ripplearc.youtrack.cloud/issue/CA-643
       id: '',
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
       calculation: {'unit_price': rate, 'quantity': quantity},
-      itemTotalCost: (quantity * rate * 100).round() / 100,
+      itemTotalCost: (quantity * (rate * 100).round()).round() / 100,
       createdAt: now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
