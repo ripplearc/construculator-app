@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
+import 'package:construculator/libraries/calculator_engine/deterministic_rules.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
@@ -9,6 +10,7 @@ import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
+import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
 
@@ -63,6 +65,25 @@ enum TapeRefusal {
   /// grade, not a length": "[Slope] takes a bare number — 7 means a 7%
   /// grade").
   slopeTakesAGrade,
+
+  /// A trig key on a value with a unit (38ft [SIN]): "Sine needs a plain
+  /// angle, not a length" (Section 5.4). The caller names the function and
+  /// the value from the tape.
+  trigNeedsAPlainAngle,
+
+  /// A unit key on the number of a trig chip ([SIN] 38 [Feet]): "Sine takes
+  /// an angle, not a length" (Section 5.4); the number stays bare.
+  trigTakesAnAngle,
+
+  /// [TAN] on an odd quarter turn (90 [TAN], 270 [TAN]): "The tangent of
+  /// 90° is undefined" (Section 5.4); nothing lands and the number keeps
+  /// no degree badge. The caller names the angle the user typed.
+  tangentUndefined,
+
+  /// An operator, =, a function key or the bracket key on a trig chip whose
+  /// function has no value at its angle (Tangent 90°): "Tangent can't
+  /// answer that" (Section 5.4); the digits are never used in its place.
+  trigCannotAnswer,
 
   /// = with no operator to apply and no value waiting for one ("Nothing to
   /// compute yet"); the strip's top suggestion, if any, is the caller's to
@@ -334,9 +355,90 @@ class Tape extends Equatable {
   /// read (the prototype's `getDims`).
   Map<String, Quantity> get namedValues => {
     for (final chip in chips)
-      if (chip case ValueChip(:final key?) when chip.isReadable)
+      if (chip case ValueChip(
+        :final key?,
+      ) when chip.isReadable && chip.trigFunction == null)
         key: ?chip.value(parser),
   };
+
+  /// The answer a trig chip still being typed offers ([SIN] 38 offers Sine
+  /// 0.615661, scenario S95): accepting it is landing it as a result chip
+  /// with [append], which leaves the same tape as 38 [SIN] would (rule
+  /// 4.11). `null` when no trig chip is active, before its number is typed,
+  /// or when its function has no value there ([ValueChip.asksAnUndefinedTrig]).
+  Answer? get trigAnswer {
+    final chip = active;
+    final function = chip?.trigFunction;
+    final answer = chip?.value(parser);
+    if (function == null || answer == null) return null;
+    return Answer(key: function.key, value: answer, sources: [function.key]);
+  }
+
+  /// A forward trig key, SIN, COS or TAN (Section 3.5; rule 4.11), pressed
+  /// after its number or before it.
+  ///
+  /// After a bare number with no key (38 [SIN]) it answers at once: the
+  /// number is sealed as degrees, 38°, and the answer lands beside it as a
+  /// result chip labelled by [TrigFunction.key] (scenarios S57, S105). On a
+  /// value with a unit it is refused ([TapeRefusal.trigNeedsAPlainAngle]),
+  /// and [TAN] on an odd quarter turn is refused with nothing landed
+  /// ([TapeRefusal.tangentUndefined], scenario S94).
+  ///
+  /// Anywhere else it opens a trig chip the way a function key opens a
+  /// named one ([SIN] then 38, scenario S95): on an empty chip it renames
+  /// it, keeping its operator, so 5 × [SIN] 30 = is 2.5; a filled chip is
+  /// sealed first, a named bare number (Sides 6) included; a fresh trig
+  /// chip after a result starts a new calculation the caller banks, as a
+  /// digit does (scenario S98; [endsWithResult]). The chip offers its
+  /// answer as [trigAnswer], an operator seals it into the chain at its
+  /// answer (Sine 89° × 56 = 55.99, scenarios S97 and S101), and a unit key
+  /// on its number is refused ([TapeRefusal.trigTakesAnAngle]). Inside a
+  /// bracket the key is refused, as a function key is.
+  TapeOutcome pressTrigKey(TrigFunction function) {
+    if (openBracket != null) {
+      return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    final chip = active;
+    if (chip != null && chip.entry.isEmpty) {
+      return _replaceLast(
+        chip.copyWith(key: () => function.key, keyWantsUnit: false),
+      );
+    }
+    if (chip != null && chip.key == null && chip.operator == null) {
+      switch (chip.value(parser)) {
+        case Scalar(value: final degrees) || Angle(:final degrees):
+          return _answeredAfter(chip, function, degrees);
+        case final Quantity _:
+          return const TapeRefused(TapeRefusal.trigNeedsAPlainAngle);
+        case null:
+          break;
+      }
+    }
+    final tape = _withFractionClosedAsInches();
+    if (tape._unfinished case final refusal?) return refusal;
+    return TapeChanged(
+      tape._sealed().append(ValueChip(key: function.key, keyWantsUnit: false)),
+    );
+  }
+
+  TapeOutcome _answeredAfter(
+    ValueChip chip,
+    TrigFunction function,
+    double degrees,
+  ) {
+    final answer = function.of(degrees);
+    if (answer == null) {
+      return const TapeRefused(TapeRefusal.tangentUndefined);
+    }
+    final operand = chip.copyWith(
+      exact: () => (value: Angle(degrees), spelled: chip.entry),
+    );
+    return TapeChanged(
+      _replaceActive(
+        operand,
+      ).append(ResultChip(key: function.key, value: answer)),
+    );
+  }
 
   /// A function key opens a new active chip with that name (rule 4.1); on
   /// an empty active chip it renames it instead. A chip holding a compound
@@ -401,6 +503,9 @@ class Tape extends Equatable {
 
   TapeOutcome? get _unfinished {
     final chip = active;
+    if (chip != null && chip.asksAnUndefinedTrig) {
+      return const TapeRefused(TapeRefusal.trigCannotAnswer);
+    }
     if (chip == null || chip.isReadable) return null;
     if (chip.entry.endsWithUnitlessFraction) {
       return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit);
@@ -469,6 +574,9 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (chip.trigFunction != null) {
+      return const TapeRefused(TapeRefusal.trigTakesAnAngle);
     }
     if (takesAGrade && unit.dimension == Dimension.length) {
       return const TapeRefused(TapeRefusal.slopeTakesAGrade);
