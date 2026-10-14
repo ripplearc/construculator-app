@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/helpers/other_method_suggestion.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -169,7 +170,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _SearchField(
+                        SheetSearchField(
                           controller: _searchController,
                           onChanged: _search,
                         ),
@@ -266,49 +267,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   }
 }
 
-/// Figma node 66342:169083 ("Search Bar", `Property 1=Sheet filled`):
-/// white fill, 1px `#d0d5dd` (`colorTheme.lineMid`) stroke, 12px corner
-/// radius. [CoreSearchBox] gets the icon behavior right but is borderless
-/// everywhere else it is used, so this wraps it in the bordered box.
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SearchField({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final theme = Theme.of(context);
-    return Container(
-      key: const Key('your_rates_search_field'),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        border: Border.all(color: colorTheme.lineMid),
-        borderRadius: BorderRadius.circular(CoreSpacing.space3),
-      ),
-      child: Theme(
-        data: theme.copyWith(
-          extensions: [
-            for (final extension in theme.extensions.values)
-              if (extension is AppColorsExtension)
-                extension.copyWith(pageBackground: sheetSurface(context))
-              else
-                extension,
-          ],
-        ),
-        child: CoreSearchBox(
-          hintText: context.l10n.yourRatesSearchHint,
-          controller: controller,
-          onChanged: onChanged,
-          clearSemanticLabel: context.l10n.yourRatesClearSearchSemanticLabel,
-        ),
-      ),
-    );
-  }
-}
-
-// TODO: [CA-1249](https://ripplearc.youtrack.cloud/issue/CA-1249) Replace with CoreUI's error row once it exists.
 class _LoadErrorRow extends StatelessWidget {
   final VoidCallback onTryAgain;
 
