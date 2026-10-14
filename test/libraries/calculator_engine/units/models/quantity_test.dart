@@ -21,6 +21,38 @@ void main() {
         expect(inYards, isNot(equals(width)));
       });
 
+      test('a computed length keeps its fraction of a tick (C3)', () {
+        final computed = Length.computed(14119.5, unit: Unit.foot);
+        expect(computed.preciseTicks, 14119.5);
+        expect(computed.ticks, 14120);
+        expect(Length.computed(14119.4, unit: Unit.foot).ticks, 14119);
+        expect(Length.computed(-0.5, unit: Unit.foot).ticks, 0);
+        expect(
+          Length.computed(2520, unit: Unit.metre),
+          const Length(2520, unit: Unit.metre),
+        );
+        expect(computed.spelledIn(Unit.metre).preciseTicks, 14119.5);
+        expect(computed.spelledIn(Unit.metre).unit, Unit.metre);
+        expect(const Length(5, unit: Unit.inch).preciseTicks, 5.0);
+        expect(computed, isNot(const Length(14120, unit: Unit.foot)));
+      });
+
+      test('a computed length refuses NaN, infinity and a value past the '
+          'tick limit as an assertion', () {
+        expect(
+          Length.computed(Length.maxTicks.toDouble(), unit: Unit.foot).ticks,
+          Length.maxTicks,
+        );
+        expect(ChainArithmetic.maxTicks, Length.maxTicks);
+        for (final ticks in [double.nan, double.infinity, 1e24, -1e16]) {
+          expect(
+            () => Length.computed(ticks, unit: Unit.foot),
+            throwsA(isA<AssertionError>()),
+            reason: '$ticks',
+          );
+        }
+      });
+
       test('is equal to another length with the same ticks and unit', () {
         expect(
           const Length(64, unit: Unit.inch),
