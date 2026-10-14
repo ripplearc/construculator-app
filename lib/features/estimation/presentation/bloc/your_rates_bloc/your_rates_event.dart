@@ -20,6 +20,17 @@ class YourRatesSearched extends YourRatesEvent {
   final CostItemType? category;
 }
 
+/// Fired as the user types in a search box that sits above the recents list.
+/// A blank [query] brings the recents back, the same as
+/// [YourRatesRefreshRecents]; any other [query] searches like
+/// [YourRatesSearched]. One event for both, so a search still waiting out its
+/// debounce cannot land after the recents were asked for again.
+class YourRatesRecentsQueried extends YourRatesEvent {
+  const YourRatesRecentsQueried(this.query, this.category);
+  final String query;
+  final CostItemType category;
+}
+
 /// Fired to save [entry] via [YourRatesRepository.save]. Resolves to
 /// [YourRatesSaveSucceeded], [YourRatesSaveCollision] (a label is needed),
 /// [YourRatesSaveLabelTaken] (the label is already used), or
