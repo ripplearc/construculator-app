@@ -26,7 +26,7 @@ void main() {
     for (final key in keys.split(' ')) {
       final outcome = switch (key) {
         'ft' => current.pressUnit(Unit.foot),
-        'in' => current.pressUnit(Unit.inch, takesInches: true),
+        'in' => current.pressUnit(Unit.inch),
         'm' => current.pressUnit(Unit.metre),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
