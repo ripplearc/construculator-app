@@ -203,6 +203,19 @@ void main() {
       expect(converter.offersFor(dms), [degrees]);
     });
 
+    test('a pitch keeps its own cycle and gets no offer (Section 6)', () {
+      expect(
+        converter.offersFor(
+          const Angle(53.13, spelling: AngleSpelling.risePerFoot),
+        ),
+        isEmpty,
+      );
+      expect(
+        converter.offersFor(const Angle(53.13, spelling: AngleSpelling.grade)),
+        isEmpty,
+      );
+    });
+
     test('offers nothing for a scalar', () {
       expect(converter.offersFor(const Scalar(78)), isEmpty);
     });

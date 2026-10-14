@@ -285,6 +285,36 @@ void main() {
         expect(formatter.format(const Angle(90)), '90°');
       });
 
+      test('a pitch reads as inches per 12in of run or as a grade (C3)', () {
+        const sixteenInTwelve = Angle(53.13010235415598);
+        expect(
+          formatter.format(
+            sixteenInTwelve.spelledAs(AngleSpelling.risePerFoot),
+          ),
+          '16in/12in',
+        );
+        expect(
+          formatter.format(sixteenInTwelve.spelledAs(AngleSpelling.grade)),
+          '133.3%',
+        );
+        const sevenPercent = Angle(4.004362249);
+        expect(formatter.format(sevenPercent), '4°');
+        expect(
+          formatter.format(sevenPercent.spelledAs(AngleSpelling.risePerFoot)),
+          '0.8in/12in',
+        );
+        expect(
+          formatter.format(sevenPercent.spelledAs(AngleSpelling.grade)),
+          '7%',
+        );
+        expect(
+          formatter.format(
+            const Angle(26.56505117707799, spelling: AngleSpelling.grade),
+          ),
+          '50%',
+        );
+      });
+
       group('degrees, minutes and seconds, as a survey sheet writes them', () {
         String dms(double degrees) => formatter.format(
           Angle(degrees, spelling: AngleSpelling.degreesMinutesSeconds),

@@ -74,6 +74,12 @@
             <mutation text="for (final unit in const [Unit.foot, Unit.yard, Unit.inch, Unit.metre]) value.spelledIn(unit),"/>
         </regex>
 
+        <!-- RULE 12b: a pitch is offered a spelling, where Section 6 says it
+             keeps its own cycle -->
+        <regex pattern="AngleSpelling\.risePerFoot \|\| AngleSpelling\.grade =&gt; const \[\]," dotAll="true" id="unit_converter.angle.pitch_offered">
+            <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; [value.spelledAs(AngleSpelling.degrees)],"/>
+        </regex>
+
         <!-- RULE 12: acres are offered to a value already in acres -->
         <regex pattern="value\.unit != Unit\.acre\)" dotAll="true" id="unit_converter.area.offer_acre_to_acre">
             <mutation text="true)"/>

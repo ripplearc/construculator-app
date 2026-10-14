@@ -51,6 +51,16 @@ class QuantityFormatter extends Equatable {
   /// Decimals a computed result keeps: 410.67ft², 7.33yd, 0.04 ton.
   static const int resultDecimals = 2;
 
+  /// Decimals of a pitch written as inches per foot of run or as a grade
+  /// (Section 8: 16in/12in, 0.8in/12in, 133.3%).
+  static const int pitchDecimals = 1;
+
+  /// Inches of run a pitch's rise is quoted against: 16in/12in.
+  static const int inchesPerFootOfRun = 12;
+
+  /// A grade is a ratio in hundredths: a rise of 0.07 per unit of run is 7%.
+  static const int percent = 100;
+
   /// Decimals an area in acres keeps: 0.3673acre.
   static const int acreDecimals = 4;
 
@@ -214,7 +224,14 @@ class QuantityFormatter extends Equatable {
       value.degrees,
       group,
     ),
+    AngleSpelling.risePerFoot =>
+      '${_jsRoundedNumber(_rise(value) * inchesPerFootOfRun, pitchDecimals, group)}'
+          'in/12in',
+    AngleSpelling.grade =>
+      '${_jsRoundedNumber(_rise(value) * percent, pitchDecimals, group)}%',
   };
+
+  double _rise(Angle value) => math.tan(value.degrees * math.pi / 180);
 
   String _degreesMinutesSeconds(double degrees, bool group) {
     // The seconds stay a double: an int would clamp at 2^63 and show a

@@ -165,6 +165,18 @@
             <mutation text="static int _nearestTick(double ticks) =&gt; ticks.ceil();"/>
         </regex>
 
+        <!-- RULE 23: a pitch's rise is quoted per inch of run, or its grade
+             per inch, or the rise is the sine and not the tangent -->
+        <regex pattern="'\$\{_jsRoundedNumber\(_rise\(value\) \* inchesPerFootOfRun, pitchDecimals, group\)\}'" dotAll="true" id="quantity_formatter.pitch.rise_per_inch">
+            <mutation text="'${_jsRoundedNumber(_rise(value), pitchDecimals, group)}'"/>
+        </regex>
+        <regex pattern="'\$\{_jsRoundedNumber\(_rise\(value\) \* percent, pitchDecimals, group\)\}%'" dotAll="true" id="quantity_formatter.pitch.grade_per_foot">
+            <mutation text="'${_jsRoundedNumber(_rise(value) * inchesPerFootOfRun, pitchDecimals, group)}%'"/>
+        </regex>
+        <regex pattern="double _rise\(Angle value\) =&gt; math\.tan\(value\.degrees \* math\.pi / 180\);" dotAll="true" id="quantity_formatter.pitch.sine_not_tangent">
+            <mutation text="double _rise(Angle value) =&gt; math.sin(value.degrees * math.pi / 180);"/>
+        </regex>
+
         <!-- RULE 22: the spelling is ignored and a D:M:S angle reads in
              degrees -->
         <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,\s*group,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
