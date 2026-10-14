@@ -846,6 +846,33 @@ void main() {
         expect(saved['item_total_cost'], 580);
       });
 
+      String? highlightedLine(WidgetTester tester) =>
+          BlocProvider.of<AddedLineHighlightCubit>(
+            tester.element(find.byType(Scaffold).first),
+          ).state;
+
+      testWidgets('marks the equipment line just added and moves the mark to '
+          'the next one', (tester) async {
+        await openEquipmentSheet(tester);
+        expect(highlightedLine(tester), isNull);
+        await fillValidDayForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        final first = highlightedLine(tester);
+        expect(first, isNotNull);
+
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+        await fillValidDayForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        expect(highlightedLine(tester), isNotNull);
+        expect(highlightedLine(tester), isNot(first));
+      });
+
       testWidgets('reloads the estimate total after an add', (tester) async {
         await openEquipmentSheet(tester);
         await fillValidDayForm(tester);
@@ -1510,9 +1537,7 @@ void main() {
         fakeSupabase.shouldThrowOnInsert = false;
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
         await tester.pumpAndSettle();
-        await tester.tap(
-          find.byKey(ConfirmationDialog.secondaryButtonKey),
-        );
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
         await tester.pumpAndSettle();
 
         expect(highlightedLine(tester), isNull);

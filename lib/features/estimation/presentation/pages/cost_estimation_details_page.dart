@@ -79,8 +79,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
   late final EstimateSummaryBloc _summaryBloc;
 
-  /// Marks the line just added; provided to the whole screen so the cost list
-  /// can read it once it exists.
   // TODO: [CA-151] have the bound cost list read this cubit to highlight the line and clear it on tap.
   final _addedLineHighlight = AddedLineHighlightCubit();
 
@@ -103,6 +101,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         type: CostItemType.equipment,
         entry: entry,
         blocFactory: widget.equipmentCostFormBlocFactory,
+        addedItemIdOf: (state) =>
+            state is EquipmentCostFormSuccess ? state.createdItem.id : null,
         outcomeOf: (state) => switch (state) {
           EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
           EquipmentCostFormSuccess() => _SheetOutcome.added,

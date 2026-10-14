@@ -9,8 +9,6 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 // TODO: [CA-151] draw the estimate's cost lines inside this frame once the details screen is bound to data, and call clear on the highlight cubit from [onTap].
 class CostLineCardFrame extends StatelessWidget {
-  // The Figma card uses 14 for its corners and its top and bottom padding, a
-  // step CoreSpacing does not have.
   static const double _cornerRadius = 14;
   static const double _verticalPadding = 14;
 
@@ -44,7 +42,7 @@ class CostLineCardFrame extends StatelessWidget {
           borderRadius: BorderRadius.circular(_cornerRadius),
           border: Border.all(
             color: isHighlighted
-                ? colorTheme.lineHighlight
+                ? colorTheme.tabsHighlight
                 : colorTheme.lineLight,
           ),
         ),

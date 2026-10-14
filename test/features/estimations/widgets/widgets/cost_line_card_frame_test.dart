@@ -51,7 +51,7 @@ void main() {
 
     final box = decoration(tester);
     expect(box.color, colors.backgroundBlueLight);
-    expect((box.border! as Border).top.color, colors.lineHighlight);
+    expect((box.border! as Border).top.color, colors.tabsHighlight);
   });
 
   testWidgets('draws a grey border and no fill otherwise', (tester) async {
