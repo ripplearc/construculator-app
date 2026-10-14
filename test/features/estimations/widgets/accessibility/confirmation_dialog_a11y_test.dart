@@ -15,7 +15,9 @@ void main() {
       body: Center(
         child: ConfirmationDialog(
           title: 'Discard this line?',
-          body: 'Interior paint has not been added to the estimate.',
+          body: TextSpan(
+            text: 'Interior paint has not been added to the estimate.',
+          ),
           secondaryLabel: 'Discard',
           primaryLabel: 'Keep editing',
         ),

@@ -12,14 +12,33 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 // TODO: use a CoreUI confirmation dialog and spacing tokens once they exist, and move the equipment delivery-fee dialog onto this one. CoreUI has none today and no ticket tracks it yet.
 class ConfirmationDialog extends StatelessWidget {
+  /// Key of the title text.
   static const titleKey = Key('confirmation_dialog_title');
+
+  /// Key of the body text.
   static const bodyKey = Key('confirmation_dialog_body');
+
+  /// Key of the outlined secondary button.
   static const secondaryButtonKey = Key('confirmation_dialog_secondary_button');
+
+  /// Key of the filled primary button.
   static const primaryButtonKey = Key('confirmation_dialog_primary_button');
 
+  static const double _buttonLabelSize = 16;
+  static const double _sideBySideLabelSizeLimit = 18;
+
+  /// The question, in one line.
   final String title;
-  final String body;
+
+  /// The text under the title. A [TextSpan] with bold parts lets a caller
+  /// emphasise amounts or names.
+  final InlineSpan body;
+
+  /// Label of the outlined secondary button, which carries the destructive
+  /// answer.
   final String secondaryLabel;
+
+  /// Label of the filled primary button.
   final String primaryLabel;
 
   const ConfirmationDialog({
@@ -36,7 +55,7 @@ class ConfirmationDialog extends StatelessWidget {
   static Future<bool?> show(
     BuildContext context, {
     required String title,
-    required String body,
+    required InlineSpan body,
     required String secondaryLabel,
     required String primaryLabel,
   }) => showDialog<bool>(
@@ -76,7 +95,7 @@ class ConfirmationDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: CoreSpacing.space3),
-              Text(
+              Text.rich(
                 body,
                 key: bodyKey,
                 style: textTheme.bodyMediumRegular.copyWith(
@@ -84,33 +103,47 @@ class ConfirmationDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: CoreSpacing.space3),
-              Row(
-                children: [
-                  Expanded(
-                    child: CoreButton(
-                      key: secondaryButtonKey,
-                      label: secondaryLabel,
-                      variant: CoreButtonVariant.secondary,
-                      size: CoreButtonSize.medium,
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                  ),
-                  const SizedBox(width: CoreSpacing.space3),
-                  Expanded(
-                    child: CoreButton(
-                      key: primaryButtonKey,
-                      label: primaryLabel,
-                      variant: CoreButtonVariant.primary,
-                      size: CoreButtonSize.medium,
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
-                  ),
-                ],
-              ),
+              if (_stacksAnswers(context))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: CoreSpacing.space3,
+                  children: [
+                    _primaryButton(context),
+                    _secondaryButton(context),
+                  ],
+                )
+              else
+                Row(
+                  spacing: CoreSpacing.space3,
+                  children: [
+                    Expanded(child: _secondaryButton(context)),
+                    Expanded(child: _primaryButton(context)),
+                  ],
+                ),
             ],
           ),
         ),
       ),
     );
   }
+
+  bool _stacksAnswers(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(_buttonLabelSize) >
+      _sideBySideLabelSizeLimit;
+
+  Widget _secondaryButton(BuildContext context) => CoreButton(
+    key: secondaryButtonKey,
+    label: secondaryLabel,
+    variant: CoreButtonVariant.secondary,
+    size: CoreButtonSize.medium,
+    onPressed: () => Navigator.of(context).pop(false),
+  );
+
+  Widget _primaryButton(BuildContext context) => CoreButton(
+    key: primaryButtonKey,
+    label: primaryLabel,
+    variant: CoreButtonVariant.primary,
+    size: CoreButtonSize.medium,
+    onPressed: () => Navigator.of(context).pop(true),
+  );
 }
