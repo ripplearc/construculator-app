@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -10,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-// TODO: [CA-1217] add the "Search or type equipment" field above this list. https://ripplearc.youtrack.cloud/issue/CA-1217
 /// "Your recents" sheet (Figma node `66342:177929`, "phone ·
 /// cuj6-equip-1-recents" on the "Estimate V2" canvas): the pre-form step
 /// opened by "+ Add equipment cost" — a tap-to-reuse list of the
@@ -19,10 +19,17 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// the trailing "/day" vs "job" word differs. A trailing "+ New equipment
 /// cost" row opens the form blank instead.
 ///
+/// A "Search or type equipment" box sits above the list. A typed name lists
+/// the matching saved rates under YOUR RATES, or one "No matches" line, and
+/// the last row becomes "Create “name” as a new equipment cost". Clearing the
+/// box shows the recents again.
+///
+/// TODO: [CA-1157](https://ripplearc.youtrack.cloud/issue/CA-1157) Search the sample cost file here too, under a FROM SAMPLE COST FILE heading below YOUR RATES, once a real data source exists.
+///
 /// Distinct from [YourRatesLookupSheet] (Figma Screen 4, reached later from
-/// inside the open form's magnifier icon): this sheet has no search box, no
-/// disclaimer, no checkbox-select-then-confirm step, and isn't filtered to a
-/// single pricing method — tapping a row recalls it immediately.
+/// inside the open form's magnifier icon): this sheet has no disclaimer, no
+/// checkbox-select-then-confirm step, and isn't filtered to a single pricing
+/// method — tapping a row recalls it immediately.
 ///
 /// Returns a [YourRatesRecentsResult]: the tapped entry, the "+ New equipment
 /// cost" action, or a dismissal (swipe down, tap outside, or back).
@@ -56,21 +63,60 @@ class YourRatesRecentsSheet extends StatefulWidget {
 }
 
 class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
+  final _searchController = TextEditingController();
+  List<YourRateEntry> _lastEntries = const [];
+
   @override
   void initState() {
     super.initState();
     _loadRecents();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _loadRecents() => context.read<YourRatesBloc>().add(
-    const YourRatesRefreshRecents(CostItemType.equipment),
+    const YourRatesRecentsQueried('', CostItemType.equipment),
   );
+
+  void _onQueryChanged(String query) {
+    setState(() {});
+    context.read<YourRatesBloc>().add(
+      YourRatesRecentsQueried(query, CostItemType.equipment),
+    );
+  }
+
+  void _onTryAgain() => _searchController.text.trim().isEmpty
+      ? _loadRecents()
+      : context.read<YourRatesBloc>().add(
+          YourRatesRecentsQueried(
+            _searchController.text,
+            CostItemType.equipment,
+            immediate: true,
+          ),
+        );
 
   void _onRowTap(YourRateEntry entry) =>
       Navigator.of(context).pop(YourRatesRecentsPicked(entry));
 
   void _onNewEquipmentCost() =>
       Navigator.of(context).pop(const YourRatesRecentsNewEquipmentCost());
+
+  void _onCreateTypedEquipment(String name, List<YourRateEntry> savedRows) {
+    final saved = savedRows
+        .where(
+          (entry) => entry.itemName.trim().toLowerCase() == name.toLowerCase(),
+        )
+        .firstOrNull;
+    Navigator.of(context).pop(
+      saved != null
+          ? YourRatesRecentsPicked(saved)
+          : YourRatesRecentsNewEquipmentCost(name: name),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +129,18 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       children: [
         SheetHeader(title: l10n.yourRatesRecentsTitle),
         Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CoreSpacing.space5,
+            CoreSpacing.space2,
+            CoreSpacing.space5,
+            CoreSpacing.space2,
+          ),
+          child: SheetSearchField(
+            controller: _searchController,
+            onChanged: _onQueryChanged,
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -90,7 +148,10 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
             children: [
               BlocBuilder<YourRatesBloc, YourRatesState>(
                 builder: (context, state) {
-                  if (state is YourRatesLoading) {
+                  final typedName = _searchController.text.trim();
+                  final isSearching = typedName.isNotEmpty;
+                  final isLoading = state is YourRatesLoading;
+                  if (isLoading && !isSearching) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(
                         vertical: CoreSpacing.space6,
@@ -101,18 +162,27 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                   final loadError = switch (state) {
                     YourRatesError() => _RecentsLoadError(
                       isRetrying: false,
-                      onTryAgain: _loadRecents,
+                      onTryAgain: _onTryAgain,
                     ),
                     YourRatesRetrying() => _RecentsLoadError(
                       isRetrying: true,
-                      onTryAgain: _loadRecents,
+                      onTryAgain: _onTryAgain,
                     ),
                     _ => null,
                   };
                   final entries = switch (state) {
-                    YourRatesLoaded(:final recents) => recents,
+                    YourRatesLoaded(:final recents) when !isSearching =>
+                      recents,
+                    YourRatesSearchResults(:final results) when isSearching =>
+                      results,
+                    YourRatesLoading() => _lastEntries,
                     _ => const <YourRateEntry>[],
                   };
+                  if (!isLoading) _lastEntries = entries;
+                  final hasNoMatch =
+                      isSearching &&
+                      state is YourRatesSearchResults &&
+                      entries.isEmpty;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -126,7 +196,10 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                             CoreSpacing.space1,
                           ),
                           child: Text(
-                            l10n.yourRatesRecentsSectionHeading.toUpperCase(),
+                            (isSearching
+                                    ? l10n.yourRatesName
+                                    : l10n.yourRatesRecentsSectionHeading)
+                                .toUpperCase(),
                             style: context.textTheme.bodySmallSemiBold.copyWith(
                               color: colorTheme.textBody,
                             ),
@@ -150,8 +223,43 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         ),
                         const SizedBox(height: CoreSpacing.space2),
                       ],
+                      if (isLoading)
+                        const Padding(
+                          key: Key('your_rates_recents_searching'),
+                          padding: EdgeInsets.symmetric(
+                            vertical: CoreSpacing.space6,
+                          ),
+                          child: CoreLoadingIndicator(),
+                        ),
+                      if (hasNoMatch)
+                        Padding(
+                          key: const Key('your_rates_recents_no_match'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoreSpacing.space5,
+                            vertical: CoreSpacing.space6,
+                          ),
+                          child: Text(
+                            l10n.yourRatesNoMatchState(typedName),
+                            textAlign: TextAlign.center,
+                            style: context.textTheme.bodyMediumRegular.copyWith(
+                              color: colorTheme.textBody,
+                            ),
+                          ),
+                        ),
                       const CoreDivider(),
-                      _NewEquipmentCostRow(onTap: _onNewEquipmentCost),
+                      if (isSearching)
+                        _NewEquipmentCostRow(
+                          key: const Key('create_typed_equipment_row'),
+                          label: l10n.yourRatesCreateEquipmentAction(typedName),
+                          onTap: () =>
+                              _onCreateTypedEquipment(typedName, entries),
+                        )
+                      else
+                        _NewEquipmentCostRow(
+                          key: const Key('new_equipment_cost_row'),
+                          label: l10n.yourRatesNewEquipmentCostAction,
+                          onTap: _onNewEquipmentCost,
+                        ),
                     ],
                   );
                 },
@@ -328,20 +436,23 @@ class _RecentRateRow extends StatelessWidget {
 
 // TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
 class _NewEquipmentCostRow extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
 
-  const _NewEquipmentCostRow({required this.onTap});
+  const _NewEquipmentCostRow({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final label = context.l10n.yourRatesNewEquipmentCostAction;
     return Semantics(
       button: true,
       label: label,
       excludeSemantics: true,
       child: InkWell(
-        key: const Key('new_equipment_cost_row'),
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
@@ -358,10 +469,12 @@ class _NewEquipmentCostRow extends StatelessWidget {
                 size: CoreSpacing.space5,
               ),
               const SizedBox(width: CoreSpacing.space3),
-              Text(
-                label,
-                style: context.textTheme.bodyMediumSemiBold.copyWith(
-                  color: colorTheme.textLink,
+              Flexible(
+                child: Text(
+                  label,
+                  style: context.textTheme.bodyMediumSemiBold.copyWith(
+                    color: colorTheme.textLink,
+                  ),
                 ),
               ),
             ],

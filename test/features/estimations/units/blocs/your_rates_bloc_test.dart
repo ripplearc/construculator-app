@@ -525,6 +525,39 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'a typed query after a failed read emits Retrying, not Loading',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesError(
+          EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+        ),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'an immediate typed query does not wait out the debounce',
+        setUp: seedRates,
+        build: longDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried(
+              'exc',
+              CostItemType.equipment,
+              immediate: true,
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'a query of only spaces does not wait out the debounce',
         setUp: seedRates,
         build: longDebounceBloc,
