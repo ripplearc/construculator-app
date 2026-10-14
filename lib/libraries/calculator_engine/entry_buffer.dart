@@ -8,13 +8,19 @@ import 'package:equatable/equatable.dart';
 /// where the prototype swallowed the key: [decimalInDenominator] and the
 /// unit key's [finishTheFraction].
 enum EntryRefusal {
-  /// [/] with no open number in front of it, or on a number whose fraction
-  /// is already finished ("Fractions go inside a number").
+  /// [/] with no open number in front of it ("Type the top number first";
+  /// Section 5.1). A second [/] on a finished fraction is
+  /// [fractionNeedsUnit].
   fractionNeedsNumerator,
 
   /// [/] while the fraction still waits for its denominator ("Finish the
   /// fraction").
   fractionAlreadyOpen,
+
+  /// A second [/] once the top and bottom numbers are typed (7 [/] 16 [/]):
+  /// the fraction wants its unit key ("Finish the fraction. Press a unit
+  /// key"; owner decision of 3 October 2026).
+  fractionNeedsUnit,
 
   /// [/] on a number with a decimal point ("A decimal can't take a
   /// fraction").
@@ -36,8 +42,16 @@ enum EntryRefusal {
   /// centimeters here").
   cannotAppendUnit,
 
-  /// A weight unit under a key that takes lengths ("Width needs a length").
+  /// A weight unit on the number first typed under a key that takes lengths
+  /// (Width 8 [Lbs]: "Width needs a length"; Section 5.2).
   needsLength,
+
+  /// A weight unit on a number typed after a finished length under a key
+  /// that takes lengths (Width 18ft 8 [Lbs]): the 8 stays typed and wants a
+  /// length unit ("Width takes lengths and not pounds. Press a length unit
+  /// for the 8, or backspace to remove it."; Section 5.2; owner decision of
+  /// 3 October 2026). The two toasts of that row are two refusals.
+  tailNeedsLength,
 
   /// A unit key with no open number to close; a finished value is the
   /// ladder's, an empty buffer is "Type a number first".
@@ -76,6 +90,20 @@ final class EntrySplit extends EntryOutcome {
 
   @override
   List<Object?> get props => [finished, started];
+}
+
+/// A unit key closed a part as large as the unit above it and carried it
+/// up (UX Design Doc Section 6; owner decision of 3 October 2026): 18ft
+/// then 13 [Inch] is 19ft 1in, 1m then 100 [cm] is 2m 0cm. The tape tells
+/// the user, naming the spelling before and after the key.
+final class EntryCarried extends EntryOutcome {
+  /// The buffer after the key, with the carry done.
+  final EntryBuffer buffer;
+
+  const EntryCarried(this.buffer);
+
+  @override
+  List<Object?> get props => [buffer];
 }
 
 /// The key was refused and the buffer is untouched.
@@ -162,7 +190,7 @@ class EntryBuffer extends Equatable {
       return EntryRefused(
         denominator.isEmpty
             ? EntryRefusal.fractionAlreadyOpen
-            : EntryRefusal.fractionNeedsNumerator,
+            : EntryRefusal.fractionNeedsUnit,
       );
     }
     if (last.digits.contains('.')) {
@@ -178,9 +206,15 @@ class EntryBuffer extends Equatable {
   /// squared or cubed value, since there is no "2511ft³ 45in"; anything else
   /// starts a new value on fresh entry ([EntrySplit]) and is refused while
   /// [editing] a tapped chip. [holdsLengthOnly] is true under a key that
-  /// takes lengths, which refuses a weight unit: while editing, Width 18ft 8
-  /// [Lbs] needs a length (Section 5.2); on fresh entry the same keys leave
-  /// Width 18ft and start 8lbs as its own chip (rule 4.5).
+  /// takes lengths, which refuses a weight unit, on fresh entry as while
+  /// editing: Width 18ft 8 [Lbs] needs a length and keeps the 8 typed
+  /// (Section 5.2; owner decision of 3 October 2026), where Width 18ft 8
+  /// [Feet] still starts 8ft as its own chip (rule 4.5). A part as large as
+  /// the unit above it is carried up on its whole parts when the unit closes
+  /// it ([EntryCarried]): 18ft 13in reads 19ft 1in and 18ft 13.5in reads
+  /// 19ft 1.5in (Section 6: any inch part as large as a foot). A fraction
+  /// (13/2 is a numerator over a line, not whole inches) or a decimal above
+  /// it (18.5ft 13in) is left as typed.
   EntryOutcome closeWith(
     Unit unit, {
     bool editing = false,
@@ -193,12 +227,15 @@ class EntryBuffer extends Equatable {
     if (last.denominator == '') {
       return const EntryRefused(EntryRefusal.finishTheFraction);
     }
-    final needsLength = holdsLengthOnly && unit.dimension != Dimension.length;
-    if (editing && needsLength) {
-      return const EntryRefused(EntryRefusal.needsLength);
+    final previous = tokens.length > 1 ? tokens[tokens.length - 2] : null;
+    if (holdsLengthOnly && unit.dimension != Dimension.length) {
+      return EntryRefused(
+        previous == null
+            ? EntryRefusal.needsLength
+            : EntryRefusal.tailNeedsLength,
+      );
     }
-    if (tokens.length > 1 &&
-        !_stepsDownWithinOneSystem(tokens[tokens.length - 2], unit)) {
+    if (previous != null && !_stepsDownWithinOneSystem(previous, unit)) {
       if (editing) return const EntryRefused(EntryRefusal.cannotAppendUnit);
       return EntrySplit(
         finished: EntryBuffer(
@@ -209,8 +246,36 @@ class EntryBuffer extends Equatable {
         ),
       );
     }
-    if (needsLength) return const EntryRefused(EntryRefusal.needsLength);
-    return _replaceLast(last.copyWith(unit: () => unit));
+    final closed = last.copyWith(unit: () => unit);
+    if (previous case Token(unit: final above?)) {
+      return _carriedUp(previous, above, closed, unit);
+    }
+    return _replaceLast(closed);
+  }
+
+  EntryOutcome _carriedUp(Token previous, Unit above, Token closed, Unit unit) {
+    final partsPerUnit = (above.ticksPerUnit / unit.ticksPerUnit).round();
+    final (whole, decimals) = _wholeAndDecimals(closed.digits);
+    final parts = closed.denominator == null ? int.tryParse(whole) : null;
+    final wholeAbove = int.tryParse(previous.digits);
+    if (parts == null || wholeAbove == null || parts < partsPerUnit) {
+      return _replaceLast(closed);
+    }
+    return EntryCarried(
+      EntryBuffer(
+        List.unmodifiable([
+          ...tokens.take(tokens.length - 2),
+          previous.copyWith(digits: '${wholeAbove + parts ~/ partsPerUnit}'),
+          closed.copyWith(digits: '${parts % partsPerUnit}$decimals'),
+        ]),
+      ),
+    );
+  }
+
+  static (String, String) _wholeAndDecimals(String digits) {
+    final point = digits.indexOf('.');
+    if (point < 0) return (digits, '');
+    return (digits.substring(0, point), digits.substring(point));
   }
 
   /// ⌫: removes one token step, in the order it was typed — the power

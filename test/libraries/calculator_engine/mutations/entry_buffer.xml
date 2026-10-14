@@ -60,8 +60,46 @@
         </regex>
 
         <!-- RULE 10: a key that takes lengths accepts a weight -->
-        <regex pattern="final needsLength = holdsLengthOnly &amp;&amp; unit\.dimension != Dimension\.length;" dotAll="true" id="entry_buffer.close_with.ignore_length_only">
-            <mutation text="final needsLength = false;"/>
+        <!-- RULE: a second [/] on a finished fraction asks for the top number
+             again, or both cases say the same -->
+        <regex pattern="denominator\.isEmpty\s*\? EntryRefusal\.fractionAlreadyOpen\s*: EntryRefusal\.fractionNeedsUnit," dotAll="true" id="entry_buffer.fraction.second_slash_message">
+            <mutation text="denominator.isEmpty ? EntryRefusal.fractionAlreadyOpen : EntryRefusal.fractionNeedsNumerator,"/>
+            <mutation text="EntryRefusal.fractionAlreadyOpen,"/>
+        </regex>
+
+        <!-- RULE: the carry starts one part too late, or a fraction's
+             numerator is carried as whole parts -->
+        <regex pattern="if \(parts == null \|\| wholeAbove == null \|\| parts &lt; partsPerUnit\) \{" dotAll="true" id="entry_buffer.carry.threshold">
+            <mutation text="if (parts == null || wholeAbove == null || parts &lt;= partsPerUnit) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+        <regex pattern="final parts = closed\.denominator == null \? int\.tryParse\(whole\) : null;" dotAll="true" id="entry_buffer.carry.fraction_numerator">
+            <mutation text="final parts = int.tryParse(whole);"/>
+        </regex>
+
+        <!-- RULE: a decimal part is never carried, or loses its decimals -->
+        <regex pattern="if \(point &lt; 0\) return \(digits, ''\);" dotAll="true" id="entry_buffer.carry.decimal_never">
+            <mutation text="if (true) return (digits, '');"/>
+        </regex>
+
+        <!-- RULE: the carry adds one whatever the size, or keeps the whole
+             part below -->
+        <regex pattern="previous\.copyWith\(digits: '\$\{wholeAbove \+ parts ~/ partsPerUnit\}'\)," dotAll="true" id="entry_buffer.carry.quotient">
+            <mutation text="previous.copyWith(digits: '${wholeAbove + 1}'),"/>
+        </regex>
+        <regex pattern="closed\.copyWith\(digits: '\$\{parts % partsPerUnit\}\$decimals'\)," dotAll="true" id="entry_buffer.carry.remainder">
+            <mutation text="closed.copyWith(digits: '${parts - partsPerUnit}$decimals'),"/>
+            <mutation text="closed.copyWith(digits: '${parts % partsPerUnit}'),"/>
+        </regex>
+
+        <!-- RULE: a key that takes lengths takes a weight, or answers the
+             first number's toast on a typed tail -->
+        <regex pattern="if \(holdsLengthOnly &amp;&amp; unit\.dimension != Dimension\.length\) \{" dotAll="true" id="entry_buffer.close_with.ignore_length_only">
+            <mutation text="if (false) {"/>
+            <mutation text="if (editing &amp;&amp; holdsLengthOnly &amp;&amp; unit.dimension != Dimension.length) {"/>
+        </regex>
+        <regex pattern="previous == null\s*\? EntryRefusal\.needsLength\s*: EntryRefusal\.tailNeedsLength," dotAll="true" id="entry_buffer.close_with.one_needs_length_toast">
+            <mutation text="EntryRefusal.needsLength,"/>
         </regex>
 
         <!-- RULE 11: backspace drops the whole raised unit instead of one
