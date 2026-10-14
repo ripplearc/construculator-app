@@ -195,7 +195,7 @@ class _RecentsLoadError extends StatelessWidget {
                   children: [
                     CoreIconWidget(
                       icon: CoreIcons.error,
-                      size: CoreSpacing.space4,
+                      size: CoreIconSize.size16,
                       color: colorTheme.iconRed,
                     ),
                     const SizedBox(width: CoreSpacing.space1),
