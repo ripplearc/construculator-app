@@ -44,10 +44,13 @@ class AddedToEstimateToast extends StatelessWidget {
                     color: Color(0xFF009E69),
                     shape: BoxShape.circle,
                   ),
-                  child: CoreIconWidget(
-                    icon: CoreIcons.checkMark,
-                    size: CoreIconSize.size24,
-                    color: _onFill,
+                  child: Padding(
+                    padding: const EdgeInsets.all(CoreSpacing.space1),
+                    child: CoreIconWidget(
+                      icon: CoreIcons.checkMark,
+                      size: CoreIconSize.size16,
+                      color: _onFill,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 11),
