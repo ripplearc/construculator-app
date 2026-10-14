@@ -257,7 +257,7 @@ void main() {
         ]);
       });
 
-      test('lets a save newer than the last use sit above that use', () async {
+      test('sorts a never-used rate by its save date', () async {
         seed([
           row(
             id: 'used-earlier',
