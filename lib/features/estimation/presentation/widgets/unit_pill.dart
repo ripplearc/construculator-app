@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/helpers/unit_dis
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The rounded unit button next to the quantity. Tapping it opens the unit
@@ -10,8 +11,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 // TODO: [CA-1186] replace the interim unit list with the grouped 23-unit "Select unit" sheet, which has no time units and a 2,000 lb ton where Tons here is metric. https://ripplearc.youtrack.cloud/issue/CA-1186
 class UnitPill extends StatelessWidget {
-  static const double _tapPadding = 8;
-  static const double _pillVerticalPadding = 3;
+  static const double _pillHeight = CoreSpacing.space8;
+  static const double _tapHeight = CoreSpacing.space12;
   static const _unlistedUnits = {Unit.hours, Unit.days};
 
   /// The picked unit, or null while none is picked.
@@ -36,50 +37,58 @@ class UnitPill extends StatelessWidget {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     final unit = this.unit;
-    return Semantics(
-      button: true,
-      label: unit == null
-          ? l10n.unitPillEmptySemanticLabel
-          : l10n.unitPillSemanticLabel(unit.displayName(l10n)),
-      // The label already says what the button shows and does, so the text
-      // and icon inside would be read a second time.
-      excludeSemantics: true,
-      enabled: isEnabled,
-      onTap: isEnabled ? () => _openList(context) : null,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openList(context),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: _tapPadding),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: CoreSpacing.space3,
-              vertical: _pillVerticalPadding,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(CoreSpacing.space5),
-              border: Border.all(color: colorTheme.lineMid),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: CoreSpacing.space1,
-              children: [
-                Text(
-                  unit == null
-                      ? l10n.unitPillEmptyLabel
-                      : unit.displayName(l10n),
-                  style: textTheme.bodyLargeRegular.copyWith(
-                    color: unit == null
-                        ? colorTheme.textDisable
-                        : colorTheme.textHeadline,
-                  ),
+    return SizedBox(
+      height: _pillHeight,
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        fit: OverflowBoxFit.deferToChild,
+        minHeight: _tapHeight,
+        maxHeight: _tapHeight,
+        child: Semantics(
+          button: true,
+          label: unit == null
+              ? l10n.unitPillEmptySemanticLabel
+              : l10n.unitPillSemanticLabel(unit.displayName(l10n)),
+          excludeSemantics: true,
+          enabled: isEnabled,
+          onTap: isEnabled ? () => _openList(context) : null,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openList(context),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              child: Container(
+                height: _pillHeight,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space3,
                 ),
-                CoreIconWidget(
-                  icon: CoreIcons.arrowDown,
-                  size: CoreIconSize.size20,
-                  color: colorTheme.iconGrayMid,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoreSpacing.space5),
+                  border: Border.all(color: colorTheme.lineMid),
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: CoreSpacing.space1,
+                  children: [
+                    Text(
+                      unit == null
+                          ? l10n.unitPillEmptyLabel
+                          : unit.displayName(l10n),
+                      style: textTheme.bodyLargeRegular.copyWith(
+                        color: unit == null
+                            ? colorTheme.textDisable
+                            : colorTheme.textHeadline,
+                      ),
+                    ),
+                    CoreIconWidget(
+                      icon: CoreIcons.arrowDown,
+                      size: CoreIconSize.size20,
+                      color: colorTheme.iconGrayMid,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -11,6 +11,11 @@ void main() {
 
   setUp(() => picked = null);
 
+  Finder pillSemantics() => find.descendant(
+    of: find.byKey(const Key('unit_pill')),
+    matching: find.byType(GestureDetector),
+  );
+
   Future<void> pumpPill(
     WidgetTester tester, {
     Unit? unit,
@@ -91,7 +96,7 @@ void main() {
     await pumpPill(tester, unit: Unit.liters);
 
     expect(
-      tester.getSemantics(find.byKey(const Key('unit_pill'))).label,
+      tester.getSemantics(pillSemantics()).label,
       'Unit: Liters. Tap to change',
     );
   });
@@ -106,21 +111,15 @@ void main() {
     expect(picked, isNull);
   });
 
-  testWidgets('has a 48 dp tap area around a 32 dp pill', (tester) async {
+  testWidgets('is drawn 32 dp tall and reports a 48 dp tap area', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
     await pumpPill(tester, unit: Unit.liters);
 
-    expect(tester.getSize(find.byKey(const Key('unit_pill'))).height, 48);
-    expect(
-      tester
-          .getSize(
-            find.descendant(
-              of: find.byKey(const Key('unit_pill')),
-              matching: find.byType(Container),
-            ),
-          )
-          .height,
-      32,
-    );
+    expect(tester.getSize(find.byKey(const Key('unit_pill'))).height, 32);
+    expect(tester.getSemantics(pillSemantics()).rect.height, 48);
+    handle.dispose();
   });
 
   testWidgets('ticks only the unit that is picked', (tester) async {
@@ -159,9 +158,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await pumpPill(tester, unit: Unit.liters, isEnabled: false);
 
-    final data = tester
-        .getSemantics(find.byKey(const Key('unit_pill')))
-        .getSemanticsData();
+    final data = tester.getSemantics(pillSemantics()).getSemanticsData();
 
     expect(data.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
     expect(data.hasAction(SemanticsAction.tap), isFalse);
