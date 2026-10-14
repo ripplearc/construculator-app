@@ -72,15 +72,17 @@ class _DiscardLineGuardState extends State<DiscardLineGuard> {
         ? notification.dragDetails != null
         : notification is OverscrollNotification &&
               notification.dragDetails != null;
-    if (notification is OverscrollNotification &&
+    final isClampedPullPastTop =
+        notification is OverscrollNotification &&
         isDragging &&
-        notification.overscroll < 0) {
-      // Clamping physics, as on Android, report the pull past the top here.
+        notification.overscroll < 0;
+    final isBouncingPullPastTop =
+        notification is ScrollUpdateNotification &&
+        isDragging &&
+        notification.metrics.pixels < 0;
+    if (isClampedPullPastTop) {
       _pulledDown -= notification.overscroll;
-    } else if (notification is ScrollUpdateNotification &&
-        isDragging &&
-        notification.metrics.pixels < 0) {
-      // Bouncing physics, as on iOS, scroll to a negative position instead.
+    } else if (isBouncingPullPastTop) {
       _pulledDown = math.max(_pulledDown, -notification.metrics.pixels);
     } else if (notification is ScrollEndNotification) {
       final pulledPastTop = _pulledDown >= _pullDownDistance;
@@ -108,9 +110,11 @@ class _DiscardLineGuardState extends State<DiscardLineGuard> {
     final keepEditing = await ConfirmationDialog.show(
       context,
       title: l10n.discardLineDialogTitle,
-      body: name.isEmpty
-          ? l10n.discardLineDialogBodyUnnamed
-          : l10n.discardLineDialogBody(name),
+      body: TextSpan(
+        text: name.isEmpty
+            ? l10n.discardLineDialogBodyUnnamed
+            : l10n.discardLineDialogBody(name),
+      ),
       secondaryLabel: l10n.discardLineDiscardButton,
       primaryLabel: l10n.discardLineKeepEditingButton,
     );

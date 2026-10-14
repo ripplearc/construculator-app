@@ -22,8 +22,7 @@ class MaterialCostFormBloc
   final LastUsedUnitRepository _lastUsedUnitRepository;
   final Clock _clock;
 
-  /// The values the form opened with, to tell when the user has changed any.
-  MaterialCostFormData _opened = const MaterialCostFormData();
+  MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
 
   MaterialCostFormBloc({
     required this._repository,
@@ -52,7 +51,7 @@ class MaterialCostFormBloc
     final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
-    _opened = MaterialCostFormData(unit: rememberedUnit);
+    _formValuesAtOpening = MaterialCostFormData(unit: rememberedUnit);
     if (rememberedUnit != null && _current().unit == null) {
       _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
     }
@@ -152,10 +151,10 @@ class MaterialCostFormBloc
   }
 
   bool _differsFromOpened(MaterialCostFormData data) =>
-      data.itemName != _opened.itemName ||
-      data.quantity != _opened.quantity ||
-      data.unit != _opened.unit ||
-      data.rate != _opened.rate;
+      data.itemName.trim() != _formValuesAtOpening.itemName.trim() ||
+      data.quantity != _formValuesAtOpening.quantity ||
+      data.unit != _formValuesAtOpening.unit ||
+      data.rate != _formValuesAtOpening.rate;
 
   MaterialCostFormData _current() {
     return switch (state) {

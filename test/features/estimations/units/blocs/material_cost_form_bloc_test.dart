@@ -524,6 +524,15 @@ void main() {
         verify: (b) => expect(b.state.data.hasUnsavedChanges, isFalse),
       );
 
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'are none while the name is only spaces',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialCostItemTypeChanged('   ')),
+        verify: (b) => expect(hasChanges(b), isFalse),
+      );
+
       for (final event in <MaterialCostFormEvent>[
         const MaterialCostItemTypeChanged('Paint'),
         const MaterialQuantityUpdated('3'),

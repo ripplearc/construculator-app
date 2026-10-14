@@ -1365,6 +1365,56 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsNothing);
       });
 
+      testWidgets('a swipe down on the form with a name typed asks to discard '
+          'the line', (tester) async {
+        await openMaterialSheet(tester);
+        await tester.enterText(
+          find.byKey(const Key('material_name_field')),
+          'Interior paint',
+        );
+
+        await tester.fling(
+          find.byKey(const Key('material_name_field')),
+          const Offset(0, 300),
+          1500,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('a swipe down from the handle does not drop a typed name', (
+        tester,
+      ) async {
+        await openMaterialSheet(tester);
+        await tester.enterText(
+          find.byKey(const Key('material_name_field')),
+          'Interior paint',
+        );
+        final handle = Offset(
+          tester.getCenter(find.byType(CostItemFormScreen)).dx,
+          tester.getTopLeft(find.byType(CostItemFormScreen)).dy - 12,
+        );
+
+        await tester.flingFrom(handle, const Offset(0, 300), 1500);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(
+          tester
+              .widget<TextField>(
+                find.descendant(
+                  of: find.byKey(const Key('material_name_field')),
+                  matching: find.byType(TextField),
+                ),
+              )
+              .controller!
+              .text,
+          'Interior paint',
+        );
+      });
+
       testWidgets('closing the sheet without adding shows no toast', (
         tester,
       ) async {
