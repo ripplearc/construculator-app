@@ -210,12 +210,16 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         return;
       case YourRatesRecentsPicked(:final entry):
         await _openEquipmentForm(context, entry);
-      case YourRatesRecentsNewEquipmentCost():
-        await _openEquipmentForm(context, null);
+      case YourRatesRecentsNewEquipmentCost(:final name):
+        await _openEquipmentForm(context, null, name: name);
     }
   }
 
-  Future<void> _openEquipmentForm(BuildContext context, YourRateEntry? entry) {
+  Future<void> _openEquipmentForm(
+    BuildContext context,
+    YourRateEntry? entry, {
+    String? name,
+  }) {
     return CoreQuickSheet.show(
       context: context,
       backgroundColor: sheetSurface(context),
@@ -229,6 +233,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           yourRatesBlocFactory: widget.yourRatesBlocFactory,
           clock: widget.clock,
           initialRateEntry: entry,
+          initialEquipmentName: name,
         ),
       ),
     );

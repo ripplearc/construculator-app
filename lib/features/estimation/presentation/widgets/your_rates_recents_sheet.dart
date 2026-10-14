@@ -383,9 +383,12 @@ final class YourRatesRecentsPicked extends YourRatesRecentsResult {
   const YourRatesRecentsPicked(this.entry);
 }
 
-/// "+ New equipment cost" was tapped.
+/// "+ New equipment cost" was tapped, or a typed name was created as new.
+/// [name] is the typed name, or null when the form opens blank.
 final class YourRatesRecentsNewEquipmentCost extends YourRatesRecentsResult {
-  const YourRatesRecentsNewEquipmentCost();
+  final String? name;
+
+  const YourRatesRecentsNewEquipmentCost({this.name});
 }
 
 /// The sheet was closed without a choice: swipe down, tap outside, or back.

@@ -39,6 +39,11 @@ class CostItemFormScreen extends StatefulWidget {
   /// [CostItemType.material] and [CostItemType.labor].
   final YourRateEntry? initialRateEntry;
 
+  /// A name typed on the Your recents search before this form opened.
+  /// Forwarded to [EquipmentCostFormFields]. Ignored for
+  /// [CostItemType.material] and [CostItemType.labor].
+  final String? initialEquipmentName;
+
   /// Backs the equipment form's "Save as my rate" timestamp. Same
   /// not-a-module-file reasoning as [yourRatesBlocFactory].
   final Clock clock;
@@ -51,6 +56,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.yourRatesBlocFactory,
     this.presentAsSheet = false,
     this.initialRateEntry,
+    this.initialEquipmentName,
     required this.clock,
   });
 
@@ -247,6 +253,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         clock: widget.clock,
         showRecalledRateHeader: !widget.presentAsSheet,
         initialRateEntry: widget.initialRateEntry,
+        initialEquipmentName: widget.initialEquipmentName,
       ),
     };
   }

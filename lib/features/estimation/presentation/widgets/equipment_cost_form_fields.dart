@@ -57,6 +57,11 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// saved-rate screen.
   final YourRateEntry? initialRateEntry;
 
+  /// A name typed on the Your recents search before the form opened. Fills the
+  /// equipment name and leaves the rate empty. Ignored when
+  /// [initialRateEntry] is set.
+  final String? initialEquipmentName;
+
   /// The estimate this item is being added to. Forwarded to
   /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
   /// delivery fee. May be null wherever the caller doesn't have one yet.
@@ -83,6 +88,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.onSaveEnabledChanged,
     this.showRecalledRateHeader = true,
     this.initialRateEntry,
+    this.initialEquipmentName,
     this.estimateId,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -127,6 +133,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final initialEntry = widget.initialRateEntry;
     if (initialEntry != null) {
       _applySavedRate(initialEntry, fromRecents: true);
+    } else if (widget.initialEquipmentName case final name?) {
+      _equipmentNameController.text = name;
     }
   }
 
