@@ -80,11 +80,19 @@ final class ValueChip extends TapeChip {
 
   /// Whether the function key the chip is named by wants a unit on its
   /// number. A dimension key does (Section 5.1: Length 18 cannot be left),
-  /// where Pitch, Slope and Sides take a plain number (term 2.14, the
-  /// Read-as pill; Sides "Takes: A count"), so a bare 6 under them seals
-  /// the way a bare 78 with no key does. Set by the caller of
-  /// [Tape.pressFunctionKey]; ignored while the chip has no key.
+  /// where Pitch, Slope and Sides take a plain number (Section 5.1: "A bare
+  /// number under a key that takes a plain number … is complete"), so a
+  /// bare 6 under them seals the way a bare 78 with no key does. Set by the
+  /// caller of [Tape.pressFunctionKey]; ignored while the chip has no key.
   final bool keyWantsUnit;
+
+  /// Whether a plain number under the chip's key is an angle in degrees,
+  /// true under Pitch (rule 4.10: "Under Pitch, a bare number is degrees"):
+  /// Pitch 30 + 15 is 45° and Pitch 30 × 2ft a Dimension Error (Section 7),
+  /// where the count under Sides and the grade under Slope stay scalars.
+  /// Set by the caller of [Tape.pressFunctionKey]; read only while
+  /// [keyWantsUnit] is false.
+  final bool readsDegrees;
 
   /// Whether the keyboard writes into this chip.
   final bool isActive;
@@ -96,6 +104,7 @@ final class ValueChip extends TapeChip {
     this.exact,
     this.poundsPerTon,
     this.keyWantsUnit = true,
+    this.readsDegrees = false,
     this.isActive = true,
   });
 
@@ -105,12 +114,13 @@ final class ValueChip extends TapeChip {
   /// without a unit is not a number yet — is a scalar, unless it sits under
   /// a function key that wants its unit (Section 5.1: Length 18 cannot be
   /// left); under Pitch, Slope or Sides it is the plain number those keys
-  /// take ([keyWantsUnit]).
+  /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]).
   Quantity? value(QuantityParser parser) {
     if (exactValue case final value?) return value;
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
-    if (_isPlainNumber) return Scalar(entry.tokens.first.value);
-    return null;
+    if (!_isPlainNumber) return null;
+    final number = entry.tokens.first.value;
+    return readsDegrees ? Angle(number) : Scalar(number);
   }
 
   QuantityParser _typedUnder(QuantityParser parser) {
@@ -156,6 +166,7 @@ final class ValueChip extends TapeChip {
     ExactSpelling? Function()? exact,
     int? Function()? poundsPerTon,
     bool? keyWantsUnit,
+    bool? readsDegrees,
     bool? isActive,
   }) {
     return ValueChip(
@@ -165,6 +176,7 @@ final class ValueChip extends TapeChip {
       exact: exact != null ? exact() : this.exact,
       poundsPerTon: poundsPerTon != null ? poundsPerTon() : this.poundsPerTon,
       keyWantsUnit: keyWantsUnit ?? this.keyWantsUnit,
+      readsDegrees: readsDegrees ?? this.readsDegrees,
       isActive: isActive ?? this.isActive,
     );
   }
@@ -177,6 +189,7 @@ final class ValueChip extends TapeChip {
     exact,
     poundsPerTon,
     keyWantsUnit,
+    readsDegrees,
     isActive,
   ];
 }
