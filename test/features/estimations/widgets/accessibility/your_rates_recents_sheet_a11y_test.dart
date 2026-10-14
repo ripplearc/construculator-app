@@ -101,6 +101,44 @@ void main() {
     );
 
     testWidgets(
+      'a11y: the search box meets tap target and label guidelines in both '
+      'themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('your_rates_search_field')),
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: the Create row for a typed name meets tap target and label '
+      'guidelines',
+      (tester) async {
+        await setupA11yTest(tester);
+        await tester.pumpWidget(makeWidget(CoreTheme.light()));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const Key('your_rates_search_field')),
+            matching: find.byType(EditableText),
+          ),
+          'mini excavator',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          find.byKey(const Key('create_typed_equipment_row')),
+        );
+      },
+    );
+
+    testWidgets(
       'a11y: "Try again" on the failed-read message meets tap target and label '
       'guidelines in both themes',
       (tester) async {

@@ -428,4 +428,98 @@ void main() {
       expect(find.byKey(errorKey), findsNothing);
     });
   });
+  group('YourRatesRecentsSheet – search', () {
+    final searchField = find.descendant(
+      of: find.byKey(const Key('your_rates_search_field')),
+      matching: find.byType(EditableText),
+    );
+
+    Future<void> typeQuery(WidgetTester tester, String query) async {
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a typed name lists the matching rates under YOUR RATES', (
+      tester,
+    ) async {
+      fakeSupabase.addTableData('your_rates', [
+        {
+          'id': 'compactor-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': clock.now().toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      await typeQuery(tester, 'compactor');
+
+      expect(find.text('YOUR RATES'), findsOneWidget);
+      expect(find.byKey(const Key('your_rate_row_compactor-rate')), findsOne);
+      expect(find.byKey(const Key('your_rate_row_day-rate')), findsNothing);
+    });
+
+    testWidgets('the last row offers to create the typed name', (tester) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, 'mini excavator');
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Create “mini excavator” as a new equipment cost'),
+        findsNothing,
+      );
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(
+        (result! as YourRatesRecentsNewEquipmentCost).name,
+        'mini excavator',
+      );
+    });
+
+    testWidgets(
+      'a name with no match shows one line and keeps the Create row',
+      (tester) async {
+        await openSheet(tester);
+
+        await typeQuery(tester, 'stump grinder');
+
+        expect(find.text('No matches for “stump grinder”'), findsOneWidget);
+        expect(find.text('YOUR RATES'), findsNothing);
+        expect(
+          find.text('Create “stump grinder” as a new equipment cost'),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('new_equipment_cost_row')), findsNothing);
+      },
+    );
+
+    testWidgets('clearing the box shows the recents and the New row again', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await typeQuery(tester, 'stump grinder');
+
+      await tester.tap(find.bySemanticsLabel('Clear search'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
+      expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+      expect(find.byKey(const Key('create_typed_equipment_row')), findsNothing);
+    });
+
+    testWidgets('spaces alone are not a name', (tester) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, '   ');
+
+      expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+      expect(find.byKey(const Key('create_typed_equipment_row')), findsNothing);
+    });
+  });
 }

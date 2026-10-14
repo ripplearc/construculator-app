@@ -248,5 +248,60 @@ void main() {
         );
       },
     );
+
+    Future<void> typeQuery(WidgetTester tester, String query) async {
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('your_rates_search_field')),
+          matching: find.byType(EditableText),
+        ),
+        query,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('displays YOUR RATES and the Create row for a typed name', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      seedRate(
+        itemName: 'Mini excavator — 1.5 ton',
+        amount: 150,
+        method: EquipmentPricingMethod.day,
+        savedAt: clock.now().subtract(const Duration(days: 30)),
+        lastUsedAt: clock.now().subtract(const Duration(days: 5)),
+      );
+
+      await pumpSheet(tester: tester, theme: theme);
+      await typeQuery(tester, 'mini excavator');
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/search_typed_name$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('displays one no-match line and keeps the Create row', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpSheet(tester: tester, theme: theme);
+      await typeQuery(tester, 'stump grinder');
+
+      await expectLater(
+        find.byType(YourRatesRecentsSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_recents_sheet/${size.width}x${size.height}/search_no_match$suffix.png',
+        ),
+      );
+    });
   });
 }

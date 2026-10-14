@@ -2733,6 +2733,16 @@
       }
     }
   },
+  "yourRatesCreateEquipmentAction": "Create “{name}” as a new equipment cost",
+  "@yourRatesCreateEquipmentAction": {
+    "description": "Last row of the 'Your recents' sheet while a name is typed in its search box; opens the equipment form with that name (storyboard CUJ 6, frame A name typed in the search). The name is in curly quotes",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "mini excavator"
+      }
+    }
+  },
   "yourRatesNewEquipmentCostAction": "New equipment cost",
   "@yourRatesNewEquipmentCostAction": {
     "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"
