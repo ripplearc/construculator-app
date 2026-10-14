@@ -2,6 +2,7 @@ import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart'
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
+import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
@@ -9,6 +10,25 @@ import 'package:construculator/libraries/calculator_engine/quantity_formatter.da
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
+
+/// The function keys whose number is complete without a unit (Section 5.1:
+/// "A bare number under a key that takes a plain number … is complete"), by
+/// the id a [ValueChip.key] carries. The one list the screen and the tests
+/// read to pass [Tape.pressFunctionKey] its `keyWantsUnit` and
+/// `readsDegrees` and [Tape.pressUnit] its `takesAGrade`.
+abstract final class PlainNumberKeys {
+  /// A bare number under Pitch is degrees (rule 4.10).
+  static const String pitch = 'Pitch';
+
+  /// A bare number under Slope is a percent grade (rule 4.10).
+  static const String slope = 'Slope';
+
+  /// Sides takes a count.
+  static const String sides = 'Sides';
+
+  /// Every key that takes a plain number.
+  static const Set<String> all = {pitch, slope, sides};
+}
 
 /// Why a key could not apply to the tape as a whole (Section 5.1). Refusals
 /// of the number being typed are [EntryRefusal]s and of a finished value
@@ -37,6 +57,11 @@ enum TapeRefusal {
 
   /// An operator with no value before it ("Type a value first").
   typeAValueFirst,
+
+  /// A length unit on a number under Slope (Section 5.4, "A slope is a %
+  /// grade, not a length": "[Slope] takes a bare number — 7 means a 7%
+  /// grade").
+  slopeTakesAGrade,
 
   /// = with no operator to apply and no value waiting for one ("Nothing to
   /// compute yet"); the strip's top suggestion, if any, is the caller's to
@@ -298,19 +323,42 @@ class Tape extends Equatable {
   /// left open (18ft 8), a fraction without a unit (7/16) or a bare number
   /// under a function key (Length 18) cannot be left (Section 5.1, "Finish
   /// this value first"; Appendix D): the guard runs on fresh entry too. A
-  /// single bare number with no key seals as a scalar.
-  TapeOutcome pressFunctionKey(String key) {
+  /// single bare number with no key seals as a scalar, and so does one under
+  /// a key that takes a plain number — [keyWantsUnit] is false under Pitch,
+  /// Slope and Sides (Section 5.1: "A bare number under a key that takes a
+  /// plain number … is complete"), the caller's call the way [pressUnit]
+  /// takes [holdsLengthOnly]. [readsDegrees] is true under Pitch, whose
+  /// plain number is an angle (rule 4.10).
+  TapeOutcome pressFunctionKey(
+    String key, {
+    bool keyWantsUnit = true,
+    bool readsDegrees = false,
+  }) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
-      return _replaceLast(chip.copyWith(key: () => key));
+      return _replaceLast(
+        chip.copyWith(
+          key: () => key,
+          keyWantsUnit: keyWantsUnit,
+          readsDegrees: readsDegrees,
+        ),
+      );
     }
     if (chip != null && !chip.isReadable) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
     }
-    return TapeChanged(_sealed().append(ValueChip(key: key)));
+    return TapeChanged(
+      _sealed().append(
+        ValueChip(
+          key: key,
+          keyWantsUnit: keyWantsUnit,
+          readsDegrees: readsDegrees,
+        ),
+      ),
+    );
   }
 
   /// A digit or a decimal point goes into the active chip, or starts a bare
@@ -340,12 +388,24 @@ class Tape extends Equatable {
   /// finished value (rule 4.3). Straight after a result with a unit it
   /// converts the result in place, and keeps its dimension: Calc 10ft then
   /// [Feet] is refused rather than raised. [holdsLengthOnly] is true under
-  /// a key that can only hold a length.
-  TapeOutcome pressUnit(Unit unit, {bool holdsLengthOnly = false}) {
+  /// a key that can only hold a length. [takesAGrade] is true under
+  /// Slope, whose bare number is a % grade: a length unit there is refused
+  /// (Section 5.4, "A slope is a % grade, not a length"), so [Slope] 6
+  /// [Feet] cannot become a length the solver never reads. Pitch takes a
+  /// length as inches of rise per 12in of run (rule 4.10).
+  TapeOutcome pressUnit(
+    Unit unit, {
+    bool holdsLengthOnly = false,
+    bool takesAGrade = false,
+  }) {
     if (openBracket case final bracket?) {
       return _inside(
         bracket,
-        (inner) => inner.pressUnit(unit, holdsLengthOnly: holdsLengthOnly),
+        (inner) => inner.pressUnit(
+          unit,
+          holdsLengthOnly: holdsLengthOnly,
+          takesAGrade: takesAGrade,
+        ),
       );
     }
     if (_endsWithClosedBracket) {
@@ -362,6 +422,9 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (takesAGrade && unit.dimension == Dimension.length) {
+      return const TapeRefused(TapeRefusal.slopeTakesAGrade);
     }
     if (chip.entry.isOpen) {
       return _entry(

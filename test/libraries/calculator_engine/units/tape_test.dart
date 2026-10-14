@@ -21,11 +21,16 @@ void main() {
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
         '+' => current.pressOperator(Operator.add),
+        '×' => current.pressOperator(Operator.multiply),
         '=' => current.pressEquals(),
         '/' => current.typeFraction(),
         '⌫' => current.backspace(),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
+          keyWantsUnit: !PlainNumberKeys.all.contains(
+            key.substring(1, key.length - 1),
+          ),
+          readsDegrees: key == '[${PlainNumberKeys.pitch}]',
         ),
         _ => current.typeDigit(key),
       });
@@ -106,6 +111,94 @@ void main() {
         );
         expect(tape.active!.isReadable, isFalse);
         expect(tape.active!.value(parser), isNull);
+      });
+
+      test(
+        'a bare number under Pitch, Slope or Sides seals and has a value',
+        () {
+          const values = {
+            PlainNumberKeys.pitch: Angle(6),
+            PlainNumberKeys.slope: Scalar(6),
+            PlainNumberKeys.sides: Scalar(6),
+          };
+          expect(values.keys.toSet(), PlainNumberKeys.all);
+          for (final MapEntry(:key, value: expected) in values.entries) {
+            final tape = press(const Tape(), '[$key] 6');
+            expect(tape.active!.isReadable, isTrue, reason: key);
+            expect(tape.active!.value(parser), expected, reason: key);
+            expect(texts(press(tape, '[Run]')), [
+              '${key}6',
+              'Run',
+            ], reason: key);
+            expect(tape.namedValues, {key: expected}, reason: key);
+          }
+          final grade = press(const Tape(), '[Slope] 0 . 6 5');
+          expect(grade.active!.value(parser), const Scalar(0.65));
+          expect(texts(press(grade, '+')), ['Slope0.65', '']);
+        },
+      );
+
+      test('a bare number under Pitch is degrees in a chain (rule 4.10)', () {
+        final sum = press(const Tape(), '[Pitch] 3 0 + 1 5 =');
+        expect(sum.chips.last, const ResultChip(key: 'Calc', value: Angle(45)));
+
+        final product = press(const Tape(), '[Pitch] 3 0 × 2 ft =');
+        expect(
+          product.chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+        );
+      });
+
+      test('an empty chip renamed to a plain-number key takes its rule', () {
+        final tape = press(const Tape(), '[Length] [Sides] 6');
+        expect(texts(tape), ['Sides6']);
+        expect(tape.active!.value(parser), const Scalar(6));
+        expect(press(tape, '[Diameter]').chips.length, 2);
+
+        final pitch = press(const Tape(), '[Length] [Pitch] 6');
+        expect(pitch.active!.value(parser), const Angle(6));
+      });
+
+      test('a plain-number key still wants a finished fraction', () {
+        final tape = press(const Tape(), '[Pitch] 7 / 1 6');
+        expect(
+          tape.pressFunctionKey('Run'),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+      });
+
+      test('Slope refuses a length unit (Section 5.4)', () {
+        final slope = press(const Tape(), '[Slope] 6');
+        for (final unit in [Unit.foot, Unit.inch, Unit.metre]) {
+          expect(
+            slope.pressUnit(unit, takesAGrade: true),
+            const TapeRefused(TapeRefusal.slopeTakesAGrade),
+            reason: unit.name,
+          );
+        }
+        expect(
+          slope.pressUnit(Unit.pound, takesAGrade: true),
+          isNot(const TapeRefused(TapeRefusal.slopeTakesAGrade)),
+        );
+        expect(texts(changed(slope.pressUnit(Unit.foot))), ['Slope6ft']);
+      });
+
+      test('Pitch takes a length as rise per 12in of run, Sides a unit', () {
+        final pitch = press(const Tape(), '[Pitch] 8');
+        final inches = changed(pitch.pressUnit(Unit.inch));
+        expect(texts(inches), ['Pitch8in']);
+        expect(
+          inches.active!.value(parser),
+          const Length(8 * Length.ticksPerInch, unit: Unit.inch),
+        );
+        final feet = changed(pitch.pressUnit(Unit.foot));
+        expect(texts(feet), ['Pitch8ft']);
+        expect(
+          feet.active!.value(parser),
+          const Length(8 * 12 * Length.ticksPerInch, unit: Unit.foot),
+        );
+
+        expect(texts(press(const Tape(), '[Sides] 6 ft')), ['Sides6ft']);
       });
 
       test('a new number after a finished value is its own chip', () {
