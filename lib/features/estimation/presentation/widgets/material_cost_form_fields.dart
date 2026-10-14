@@ -117,24 +117,39 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               label: l10n.materialRateLabel,
               valueGap: CoreSpacing.space2,
               onTap: _rateFocus.requestFocus,
-              child: _SheetTextField(
-                key: const Key('material_rate_field'),
-                readOnly: _isSaving(state),
-                controller: _rateController,
-                focusNode: _rateFocus,
-                label: l10n.materialRateLabel,
-                hintText: l10n.materialRatePlaceholder,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [_decimalLimitFormatter(decimals: 2)],
-                // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
-                suffixText: state.data.unit == null
-                    ? null
-                    : l10n.materialRatePerUnitSuffix(
-                        state.data.unit!.displayName(l10n),
+              child: Row(
+                spacing: CoreSpacing.space2,
+                children: [
+                  IntrinsicWidth(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: CoreSpacing.space12,
                       ),
-                onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
+                      child: _SheetTextField(
+                        key: const Key('material_rate_field'),
+                        readOnly: _isSaving(state),
+                        controller: _rateController,
+                        focusNode: _rateFocus,
+                        label: l10n.materialRateLabel,
+                        hintText: l10n.materialRatePlaceholder,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [_decimalLimitFormatter(decimals: 2)],
+                        // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
+                        onChanged: (value) =>
+                            bloc.add(MaterialRateUpdated(value)),
+                      ),
+                    ),
+                  ),
+                  if (state.data.unit case final unit?)
+                    Text(
+                      l10n.materialRatePerUnitSuffix(unit.displayName(l10n)),
+                      style: context.textTheme.bodyLargeRegular.copyWith(
+                        color: context.colorTheme.textBody,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -169,7 +184,6 @@ class _SheetTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String> onChanged;
   final bool readOnly;
-  final String? suffixText;
 
   const _SheetTextField({
     super.key,
@@ -181,7 +195,6 @@ class _SheetTextField extends StatelessWidget {
     required this.readOnly,
     this.keyboardType,
     this.inputFormatters,
-    this.suffixText,
   });
 
   @override
@@ -215,10 +228,6 @@ class _SheetTextField extends StatelessWidget {
                 vertical: (_tapHeight - _drawnHeight) / 2,
               ),
               hintText: hintText,
-              suffixText: suffixText,
-              suffixStyle: textTheme.bodyLargeRegular.copyWith(
-                color: colorTheme.textBody,
-              ),
               hintStyle: textTheme.bodyLargeRegular.copyWith(
                 color: colorTheme.textDisable,
               ),

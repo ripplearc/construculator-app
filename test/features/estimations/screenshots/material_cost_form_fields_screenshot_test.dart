@@ -95,6 +95,7 @@ void main() {
     );
     await tester.enterText(find.byKey(const Key('material_rate_field')), '52');
     bloc.add(const MaterialUnitSelected(Unit.liters));
+    FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
   }
 

@@ -197,6 +197,14 @@ void main() {
       expect(find.text('/ Liters'), findsOneWidget);
     });
 
+    testWidgets('shows the unit even before a rate is typed', (tester) async {
+      await pumpFields(tester);
+      bloc.add(const MaterialUnitSelected(Unit.liters));
+      await tester.pump();
+
+      expect(find.text('/ Liters'), findsOneWidget);
+    });
+
     testWidgets('shows no unit after the rate while none is picked', (
       tester,
     ) async {
