@@ -463,6 +463,15 @@ void main() {
       expect(evaluator.fold(chips), const ChainValue(Scalar(5), steps: 1));
     });
 
+    test('a result after an error chip starts a new chain', () {
+      const chips = [
+        ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+        ErrorChip(CalculationError.divisionByZero),
+        ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
+      ];
+      expect(evaluator.fold(chips), const ChainValue(Scalar(3), steps: 0));
+    });
+
     test('a failed step is the fold until a chip with no operator', () {
       const pounds = ValueChip(
         entry: EntryBuffer([Token(digits: '5', unit: Unit.pound)]),

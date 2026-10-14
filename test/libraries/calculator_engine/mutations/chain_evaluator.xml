@@ -33,6 +33,12 @@
             <mutation text="case ErrorChip(): break;"/>
         </regex>
 
+        <!-- RULE: a result chip or a second error chip right after an error
+             chip continues the chain from before the error -->
+        <regex pattern="ResultChip\(\) \|\| ErrorChip\(\) =&gt; false," dotAll="true" id="chain_evaluator.continues_after.result_or_error">
+            <mutation text="ResultChip() || ErrorChip() =&gt; true,"/>
+        </regex>
+
         <!-- RULE 4: an unreadable chip is skipped instead of stopping the
              fold -->
         <regex pattern="if \(value == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
@@ -81,8 +87,6 @@
             <mutation text="case ResultChip(:final value): running = _joined(running, null, value);"/>
         </regex>
 
-        <!-- RULE 13: = lands a failed step as a Calc 0 instead of an error
-             chip -->
         <!-- RULE: every ÷ 0 reopens a divisor, even one earlier in the chain
              or behind a failed prefix -->
         <regex pattern="when _endsOnTheFailedDivisor =&gt;" dotAll="true" id="tape.equals.reopen_any_division_by_zero">
@@ -122,6 +126,8 @@
             <mutation text=""/>
         </regex>
 
+        <!-- RULE 13: = lands a failed step as a Calc 0 instead of an error
+             chip -->
         <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
             <mutation text="ChainFailed() =&gt; TapeChanged(append(const ResultChip(key: calcKey, value: Scalar(0)))),"/>
         </regex>
