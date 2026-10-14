@@ -84,6 +84,5 @@ class EstimationRoutesModule extends Module {
         );
       },
     );
-
   }
 }
