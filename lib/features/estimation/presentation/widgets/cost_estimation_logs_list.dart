@@ -13,6 +13,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// A failed pull-down reload keeps the list and shows its message above the
 /// first entry. Pulling down again is the retry, so the message has no button.
 /// The pull-down spinner stays up until the reload ends.
+///
+/// Every failure message is a live region, so a screen reader announces it
+/// when it appears. Focus stays where it was while the result swaps in, so
+/// the reader would not otherwise hear that the load failed.
 class CostEstimationLogsList extends StatefulWidget {
   static const errorViewKey = Key('cost_estimation_logs_error_view');
   static const errorRetryButtonKey = Key('cost_estimation_logs_error_retry');
@@ -346,9 +350,6 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Flexible(
-          // Announced when it appears. Focus stays where it was while the
-          // result swaps in, so a screen reader would not otherwise hear
-          // that the load failed.
           child: Semantics(
             liveRegion: true,
             child: Text(
