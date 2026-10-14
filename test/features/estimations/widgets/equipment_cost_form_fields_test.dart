@@ -2301,8 +2301,8 @@ void main() {
     );
 
     testWidgets(
-      'when the account has no company the error line shows under the Rate row '
-      'and the link stays',
+      'when the account has no company the form shows the same error line and '
+      'keeps the link',
       (tester) async {
         fakeSupabase.setRpcResponse(
           DatabaseConstants.getMyCompanyIdRpcFunction,
