@@ -108,14 +108,14 @@ void main() {
       expect(rowSize(tester, 'Quantity').height, 90 + 1);
     });
 
-    testWidgets('the unit button is drawn 38 dp tall', (tester) async {
+    testWidgets('the unit button is drawn 32 dp tall', (tester) async {
       await pumpFields(tester);
 
       final drawn = find.descendant(
         of: unitPill,
         matching: find.byType(DecoratedBox),
       );
-      expect(tester.getSize(drawn.first).height, 38);
+      expect(tester.getSize(drawn.first).height, 32);
     });
 
     testWidgets('the rate row leaves 8 dp between its label and value', (
@@ -184,6 +184,27 @@ void main() {
       final box = tester.getRect(unitPill);
 
       expect(box.height, 48);
+    });
+  });
+
+  group('rate unit', () {
+    testWidgets('shows the unit after a typed rate', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '52');
+      bloc.add(const MaterialUnitSelected(Unit.liters));
+      await tester.pump();
+
+      expect(find.text('/ Liters'), findsOneWidget);
+    });
+
+    testWidgets('shows no unit after the rate while none is picked', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '52');
+      await tester.pump();
+
+      expect(find.textContaining('/ '), findsNothing);
     });
   });
 

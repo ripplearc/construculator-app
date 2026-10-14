@@ -2109,5 +2109,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get materialRatePlaceholder => 'Set your rate';
 
   @override
+  String materialRatePerUnitSuffix(String unit) {
+    return '/ $unit';
+  }
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 }

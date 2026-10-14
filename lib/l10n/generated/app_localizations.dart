@@ -3860,6 +3860,12 @@ abstract class AppLocalizations {
   /// **'Set your rate'**
   String get materialRatePlaceholder;
 
+  /// Shown after a typed material rate to say which unit it is the price of, for example '/ Liters'
+  ///
+  /// In en, this message translates to:
+  /// **'/ {unit}'**
+  String materialRatePerUnitSuffix(String unit);
+
   /// Title of the bottom sheet for adding a material cost to an estimate
   ///
   /// In en, this message translates to:

@@ -3185,6 +3185,16 @@
     "description": "Placeholder in the rate field while it is empty",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
   },
+  "materialRatePerUnitSuffix": "/ {unit}",
+  "@materialRatePerUnitSuffix": {
+    "description": "Shown after a typed material rate to say which unit it is the price of, for example '/ Liters'",
+    "context": "Storyboard CUJ 4, Verify frame: the rate reads $52.00 /gal",
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
   "newMaterialCostSheetTitle": "New material cost",
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",

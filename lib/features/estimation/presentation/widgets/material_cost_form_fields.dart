@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -7,20 +8,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Longest name a person can type; a longer one can only arrive from a cost
-/// file.
 const int _maxNameLength = 80;
 
-/// The quantity row is 90 dp tall in Figma: the unit button's 48 dp tap area
-/// takes 5 dp from the gap above it and 5 dp from the space below it.
 const double _quantityValueGap = 3;
 const double _quantityBottomPadding = 7;
 
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
-// TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it.
-// TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint.
+// TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
+// TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
   const MaterialCostFormFields({super.key});
 
@@ -131,6 +128,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                   decimal: true,
                 ),
                 inputFormatters: [_decimalLimitFormatter(decimals: 2)],
+                // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
+                suffixText: state.data.unit == null
+                    ? null
+                    : l10n.materialRatePerUnitSuffix(
+                        state.data.unit!.displayName(l10n),
+                      ),
                 onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
               ),
             ),
@@ -153,11 +156,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   }
 }
 
-/// A borderless single-line text input that sits in a [SheetFieldRow].
-///
-/// The input draws 24 dp tall as in Figma, but reports a 48 dp tall tap target
-/// so assistive technology can hit it.
-///
 // TODO: [CA-1158] replace with CoreUI's underline-style text field once it exists. https://ripplearc.youtrack.cloud/issue/CA-1158
 class _SheetTextField extends StatelessWidget {
   static const double _drawnHeight = CoreSpacing.space6;
@@ -171,6 +169,7 @@ class _SheetTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String> onChanged;
   final bool readOnly;
+  final String? suffixText;
 
   const _SheetTextField({
     super.key,
@@ -182,6 +181,7 @@ class _SheetTextField extends StatelessWidget {
     required this.readOnly,
     this.keyboardType,
     this.inputFormatters,
+    this.suffixText,
   });
 
   @override
@@ -215,6 +215,10 @@ class _SheetTextField extends StatelessWidget {
                 vertical: (_tapHeight - _drawnHeight) / 2,
               ),
               hintText: hintText,
+              suffixText: suffixText,
+              suffixStyle: textTheme.bodyLargeRegular.copyWith(
+                color: colorTheme.textBody,
+              ),
               hintStyle: textTheme.bodyLargeRegular.copyWith(
                 color: colorTheme.textDisable,
               ),
