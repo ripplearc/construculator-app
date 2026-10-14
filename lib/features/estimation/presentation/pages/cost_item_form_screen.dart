@@ -32,10 +32,10 @@ class CostItemFormScreen extends StatefulWidget {
 
   /// When true, renders as plain content for a [CoreQuickSheet] (a back
   /// arrow + title header row instead of a [Scaffold]/[CoreAppBar]) rather
-  /// than a full-screen route. Equipment only, per the Figma mocks — every
-  /// "New equipment cost" screen renders as a bottom sheet over the
-  /// estimate details screen. Material and Labor keep the full-screen
-  /// [Scaffold] presentation (this defaults to false).
+  /// than a full-screen route. Material and Equipment, per the Figma mocks —
+  /// their "New ... cost" screens render as a bottom sheet over the
+  /// estimate details screen. Labor keeps the full-screen [Scaffold]
+  /// presentation (this defaults to false).
   final bool presentAsSheet;
 
   /// A rate already picked on the Equipment "Your recents" screen before
