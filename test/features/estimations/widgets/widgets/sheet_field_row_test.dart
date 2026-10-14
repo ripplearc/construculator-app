@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -14,6 +15,7 @@ void main() {
     double? valueGap,
     double? bottomPadding,
     bool tappable = true,
+    Widget? value,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -28,12 +30,14 @@ void main() {
             valueGap: valueGap ?? CoreSpacing.space1,
             bottomPadding: bottomPadding ?? CoreSpacing.space3,
             onTap: tappable ? () => taps++ : null,
-            child: const SizedBox(
-              key: Key('value'),
-              height: 24,
-              width: 40,
-              child: Text('3'),
-            ),
+            child:
+                value ??
+                const SizedBox(
+                  key: Key('value'),
+                  height: 24,
+                  width: 40,
+                  child: Text('3'),
+                ),
           ),
         ),
       ),
@@ -79,16 +83,75 @@ void main() {
     );
   });
 
-  testWidgets('reports a tap on the label, the empty space and the value '
-      'area', (tester) async {
+  testWidgets('reports a tap on the label, the empty space and the value', (
+    tester,
+  ) async {
     await pumpRow(tester);
     final row = tester.getRect(find.byKey(const Key('row')));
 
     await tester.tap(find.text('Quantity'));
     await tester.tapAt(Offset(row.right - 8, row.top + 30));
-    await tester.tapAt(Offset(row.left + 8, row.top + 4));
+    await tester.tap(find.byKey(const Key('value')));
 
     expect(taps, 3);
+  });
+
+  testWidgets('gives a button inside the row the tap instead of the row', (
+    tester,
+  ) async {
+    var buttonTaps = 0;
+    await pumpRow(
+      tester,
+      value: TextButton(
+        key: const Key('inner_button'),
+        onPressed: () => buttonTaps++,
+        child: const Text('Liters'),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('inner_button')));
+
+    expect(buttonTaps, 1);
+    expect(taps, 0);
+  });
+
+  testWidgets('insets the divider 20 dp and the label 22 dp from the edges', (
+    tester,
+  ) async {
+    await pumpRow(tester);
+
+    final row = tester.getRect(find.byKey(const Key('row')));
+    final divider = tester.getRect(
+      find.descendant(
+        of: find.byType(CoreDivider),
+        matching: find.byType(DecoratedBox),
+      ),
+    );
+    expect(divider.left - row.left, 20);
+    expect(row.right - divider.right, 20);
+    expect(tester.getRect(find.text('Quantity')).left - row.left, 22);
+  });
+
+  testWidgets('is announced once, by the value, with no extra stop for the '
+      'row', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pumpRow(
+      tester,
+      value: Semantics(
+        label: 'Quantity',
+        child: SizedBox(key: Key('value'), height: 24, width: 40),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Quantity'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(find.byKey(const Key('row')))
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap),
+      isFalse,
+    );
+    handle.dispose();
   });
 
   testWidgets('does nothing on a tap when no handler is given', (tester) async {
