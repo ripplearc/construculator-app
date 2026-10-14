@@ -164,6 +164,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
+// TODO: [CA-1316] replace with the CoreUI inline error row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1316
 class _RecentsLoadError extends StatelessWidget {
   final bool isRetrying;
   final VoidCallback onTryAgain;
