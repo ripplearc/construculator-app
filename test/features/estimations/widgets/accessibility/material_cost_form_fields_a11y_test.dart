@@ -84,7 +84,12 @@ void main() {
 
         expect(
           tester
-              .getSemantics(find.byKey(const Key('material_unit_pill')))
+              .getSemantics(
+                find.descendant(
+                  of: find.byKey(const Key('material_unit_pill')),
+                  matching: find.byType(GestureDetector),
+                ),
+              )
               .label,
           'Choose a unit',
         );
