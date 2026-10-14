@@ -123,6 +123,13 @@ enum TapeNotice {
   /// then found nothing to compute: the tape holds the closed bracket and
   /// the toast is the one for [TapeRefusal.nothingToCompute].
   bracketClosedNothingToCompute,
+
+  /// = closed a fraction typed right after whole inches as inches, as every
+  /// leaving key does (Section 6), but then found nothing to compute: the
+  /// tape holds 7-1/2in and the toast is the one for
+  /// [TapeRefusal.nothingToCompute], in the prototype's order (close, then
+  /// refuse).
+  fractionClosedNothingToCompute,
 }
 
 /// What a key did to the tape.
@@ -342,6 +349,12 @@ class Tape extends Equatable {
   /// plain number … is complete"), the caller's call the way [pressUnit]
   /// takes [holdsLengthOnly]. [readsDegrees] is true under Pitch, whose
   /// plain number is an angle (rule 4.10).
+  ///
+  /// Every key that leaves the chip — a function key, an operator, =, the
+  /// bracket key — first closes a fraction typed right after whole inches as
+  /// inches (5ft 7in 1/2 reads 5ft 7-1/2in) and refuses a fraction still
+  /// waiting for its unit key with "Finish the fraction. Press a unit key"
+  /// (Section 6; owner decisions of 4 October 2026).
   TapeOutcome pressFunctionKey(
     String key, {
     bool keyWantsUnit = true,
@@ -360,11 +373,10 @@ class Tape extends Equatable {
         ),
       );
     }
-    if (chip != null && !chip.isReadable) {
-      return const TapeRefused(TapeRefusal.finishThisValueFirst);
-    }
+    final tape = _withFractionClosedAsInches();
+    if (tape._unfinished case final refusal?) return refusal;
     return TapeChanged(
-      _sealed().append(
+      tape._sealed().append(
         ValueChip(
           key: key,
           keyWantsUnit: keyWantsUnit,
@@ -372,6 +384,28 @@ class Tape extends Equatable {
         ),
       ),
     );
+  }
+
+  Tape _withFractionClosedAsInches() {
+    final chip = active;
+    if (chip == null || !chip.entry.endsWithFractionAfterWholeInches) {
+      return this;
+    }
+    return switch (chip.entry.closeWith(Unit.inch)) {
+      EntryChanged(:final buffer) => _replaceActive(
+        chip.copyWith(entry: buffer),
+      ),
+      EntryOutcome() => this,
+    };
+  }
+
+  TapeOutcome? get _unfinished {
+    final chip = active;
+    if (chip == null || chip.isReadable) return null;
+    if (chip.entry.endsWithUnitlessFraction) {
+      return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit);
+    }
+    return const TapeRefused(TapeRefusal.finishThisValueFirst);
   }
 
   /// A digit or a decimal point goes into the active chip, or starts a bare
@@ -493,10 +527,9 @@ class Tape extends Equatable {
       if (chip.entry.isEmpty) {
         return const TapeRefused(TapeRefusal.typeAValueFirst);
       }
-      if (!chip.isReadable) {
-        return const TapeRefused(TapeRefusal.finishThisValueFirst);
-      }
-      return TapeChanged(_sealed().append(ValueChip(operator: operator)));
+      final tape = _withFractionClosedAsInches();
+      if (tape._unfinished case final refusal?) return refusal;
+      return TapeChanged(tape._sealed().append(ValueChip(operator: operator)));
     }
     final last = chips.isEmpty ? null : chips.last;
     final hasLeftHandSide = switch (last) {
@@ -536,18 +569,22 @@ class Tape extends Equatable {
         final TapeOutcome refused => refused,
       };
     }
-    final chip = active;
-    if (chip != null && !chip.entry.isEmpty && !chip.isReadable) {
-      return const TapeRefused(TapeRefusal.finishThisValueFirst);
+    final tape = _withFractionClosedAsInches();
+    if (tape.active case final chip? when !chip.entry.isEmpty) {
+      if (tape._unfinished case final refusal?) return refusal;
     }
-    return switch (runningTotal) {
+    return switch (tape.runningTotal) {
       ChainValue(:final value, isCalculation: true) => TapeChanged(
-        append(ResultChip(key: calcKey, value: value)),
+        tape.append(ResultChip(key: calcKey, value: value)),
       ),
       ChainFailed(error: CalculationError.divisionByZero)
-          when _endsOnTheFailedDivisor =>
-        TapeChanged(_withDivisorReopened()),
-      ChainFailed(:final error) => TapeChanged(append(ErrorChip(error))),
+          when tape._endsOnTheFailedDivisor =>
+        TapeChanged(tape._withDivisorReopened()),
+      ChainFailed(:final error) => TapeChanged(tape.append(ErrorChip(error))),
+      ChainValue() || ChainEmpty() when !identical(tape, this) => TapeChanged(
+        tape,
+        notice: TapeNotice.fractionClosedNothingToCompute,
+      ),
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
@@ -669,10 +706,9 @@ class Tape extends Equatable {
     if (chip != null && chip.entry.isEmpty) {
       return _replaceLastChip(BracketChip(operator: chip.operator));
     }
-    if (chip != null && !chip.isReadable) {
-      return const TapeRefused(TapeRefusal.finishThisValueFirst);
-    }
-    return TapeChanged(_sealed().append(const BracketChip()));
+    final tape = _withFractionClosedAsInches();
+    if (tape._unfinished case final refusal?) return refusal;
+    return TapeChanged(tape._sealed().append(const BracketChip()));
   }
 
   /// Closes the open bracket: an operator left without a value at the end
@@ -687,7 +723,7 @@ class Tape extends Equatable {
   TapeOutcome closeBracket() {
     final bracket = openBracket;
     if (bracket == null) return const TapeRefused(TapeRefusal.noBracketToClose);
-    var inner = _with(bracket.inner);
+    var inner = _with(bracket.inner)._withFractionClosedAsInches();
     if (inner.active case final chip? when chip.entry.isEmpty) {
       inner = _with(inner.chips.sublist(0, inner.chips.length - 1));
     }
@@ -698,9 +734,7 @@ class Tape extends Equatable {
         notice: TapeNotice.emptyBracketsRemoved,
       );
     }
-    if (inner.active case final chip? when !chip.isReadable) {
-      return const TapeRefused(TapeRefusal.finishThisValueFirst);
-    }
+    if (inner._unfinished case final refusal?) return refusal;
     final total = inner.runningTotal;
     if (total case final ChainFailed failure) return TapeBracketFailed(failure);
     if (total is ChainEmpty) {

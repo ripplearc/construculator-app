@@ -169,6 +169,20 @@ void main() {
         );
       });
 
+      test('a fraction closed as inches after whole inches reads 7-1/2in', () {
+        final inches = changed(type('7').closeWith(Unit.inch));
+        final half = type('1/2', inches);
+        expect(half.text, '7in 1/2');
+        expect(changed(half.closeWith(Unit.inch)).text, '7-1/2in');
+        final feet = changed(type('5').closeWith(Unit.foot));
+        expect(
+          changed(type('1/2', feet).closeWith(Unit.inch)).text,
+          '5ft 1/2in',
+        );
+        final decimal = changed(type('7.5').closeWith(Unit.inch));
+        expect(type('1/2', decimal).closeWith(Unit.inch), isA<EntrySplit>());
+      });
+
       test('a part as large as the unit above it is carried up (CA-1234)', () {
         final feet = changed(type('18').closeWith(Unit.foot));
         expect(
@@ -304,6 +318,45 @@ void main() {
           expect(
             tail.closeWith(Unit.foot, holdsLengthOnly: true),
             isA<EntrySplit>(),
+          );
+        },
+      );
+
+      test(
+        'a fraction right after whole inches joins the compound (CA-1235)',
+        () {
+          final inches = changed(
+            type(
+              '7',
+              changed(type('5').closeWith(Unit.foot)),
+            ).closeWith(Unit.inch),
+          );
+          final half = type('1/2', inches);
+          expect(half.endsWithFractionAfterWholeInches, isTrue);
+          expect(half.endsWithUnitlessFraction, isTrue);
+          expect(changed(half.closeWith(Unit.inch)).text, '5ft 7-1/2in');
+          for (final before in [
+            changed(type('5').closeWith(Unit.foot)),
+            changed(type('7.5').closeWith(Unit.inch)),
+            changed(type('7/16').closeWith(Unit.inch)),
+            const EntryBuffer(),
+          ]) {
+            final fraction = type('1/2', before);
+            expect(
+              fraction.endsWithFractionAfterWholeInches,
+              isFalse,
+              reason: before.text,
+            );
+            expect(
+              fraction.endsWithUnitlessFraction,
+              isTrue,
+              reason: before.text,
+            );
+          }
+          expect(type('1/').endsWithUnitlessFraction, isFalse);
+          expect(
+            changed(type('1/2').closeWith(Unit.inch)).endsWithUnitlessFraction,
+            isFalse,
           );
         },
       );

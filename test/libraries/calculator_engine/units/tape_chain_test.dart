@@ -23,6 +23,7 @@ void main() {
         'bf' => current.pressUnit(Unit.boardFoot),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
+        '/' => current.typeFraction(),
         '+' => current.pressOperator(Operator.add),
         '−' => current.pressOperator(Operator.subtract),
         '=' => current.pressEquals(),
@@ -289,6 +290,41 @@ void main() {
         expect(lastResult(press(divided, '4 =')), 'Calc 1.25');
         final mismatched = press(const Tape(), '7 8 lbs ÷ 1 2 ft =');
         expect(lastResult(press(mismatched, '3 ft × 4 ft =')), 'Calc 12ft²');
+      });
+
+      test(
+        'a fraction after whole inches closes as inches by itself (CA-1235)',
+        () {
+          final sum = press(const Tape(), '5 ft 7 in 1 / 2 + 1 8 ft 8 in =');
+          expect((sum.chips.first as ValueChip).entry.text, '5ft 7-1/2in');
+          expect(lastResult(sum), 'Calc 24ft 3-1/2in');
+          final withInch = press(
+            const Tape(),
+            '5 ft 7 in 1 / 2 in + 1 8 ft 8 in =',
+          );
+          expect((withInch.chips.first as ValueChip).entry.text, '5ft 7-1/2in');
+          expect(lastResult(withInch), 'Calc 24ft 3-1/2in');
+          expect(
+            lastResult(press(const Tape(), '4 ft × 0 . 7 5 =')),
+            'Calc 3ft 0in',
+          );
+        },
+      );
+
+      test('a fraction with no unit key cannot be left (CA-1235)', () {
+        const refused = TapeEntryRefused(EntryRefusal.fractionNeedsUnit);
+        final alone = press(const Tape(), '4 ft × 1 / 2');
+        expect(alone.pressOperator(Operator.add), refused);
+        expect(alone.pressEquals(), refused);
+        expect(alone.pressFunctionKey('Width'), refused);
+        expect(alone.pressBracket(), refused);
+        for (final keys in ['1 / 2', '5 ft 1 / 2', '7 . 5 in 1 / 2']) {
+          expect(
+            press(const Tape(), keys).pressOperator(Operator.add),
+            refused,
+            reason: keys,
+          );
+        }
       });
 
       test('a mixed chain follows the System of units setting (CA-1233)', () {
