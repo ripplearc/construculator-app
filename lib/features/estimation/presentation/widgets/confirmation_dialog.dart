@@ -10,7 +10,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The destructive answer belongs on the secondary button, so it is never the
 /// filled, default-tap one.
 ///
-// TODO: use a CoreUI confirmation dialog and spacing tokens once they exist, and move the equipment delivery-fee dialog onto this one. CoreUI has none today and no ticket tracks it yet.
+// TODO: [CA-1315] move this into ripplearc_coreui and move the Equipment delivery-fee dialog onto it. https://ripplearc.youtrack.cloud/issue/CA-1315
 class ConfirmationDialog extends StatelessWidget {
   /// Key of the title text.
   static const titleKey = Key('confirmation_dialog_title');
