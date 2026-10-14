@@ -182,6 +182,11 @@
         <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(\s*value\.degrees,\s*group,?\s*\)," dotAll="true" id="quantity_formatter.angle.ignore_spelling">
             <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; '${_jsRoundedNumber(value.degrees, resultDecimals, group)}°',"/>
         </regex>
+        <!-- RULE: a length near the limit throws in a metric rendering
+             instead of falling back to double math -->
+        <regex pattern="\} on RationalOverflow \{\s*return inches\.toDouble\(\) / unit\.inchesPer\.toDouble\(\);" dotAll="true" id="quantity.amount_in.no_fallback">
+            <mutation text="} on RationalOverflow { rethrow;"/>
+        </regex>
     </rules>
 
     <commands>
