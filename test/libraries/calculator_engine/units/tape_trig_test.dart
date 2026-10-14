@@ -23,7 +23,10 @@ void main() {
     '(' => tape.pressBracket(),
     _ when key.startsWith('[') => tape.pressFunctionKey(
       key.substring(1, key.length - 1),
-      keyWantsUnit: key != '[Sides]',
+      keyWantsUnit: !PlainNumberKeys.all.contains(
+        key.substring(1, key.length - 1),
+      ),
+      readsDegrees: key == '[${PlainNumberKeys.pitch}]',
     ),
     _ => tape.typeDigit(key),
   };
