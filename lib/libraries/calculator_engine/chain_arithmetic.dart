@@ -74,6 +74,13 @@ class ChainArithmetic extends Equatable {
   /// from an exact value.
   static const int maxTicks = 1 << 53;
 
+  // A length an area or a volume quotient gives is kept to 1/512 of a tick
+  // so it is rounded once, at display (Section 6): a whole tick reads
+  // 2cm × 3cm ÷ 2cm as 3.02cm. 512 keeps the scaled count inside an int up
+  // to maxTicks, and the reduced fraction fits a Rational because a double
+  // holds no more than 53 significant bits.
+  static const int _partsPerTick = 1 << 9;
+
   const ChainArithmetic();
 
   /// [left] `operator` [right], or why it cannot be computed.
@@ -115,40 +122,37 @@ class ChainArithmetic extends Equatable {
     ),
     (final Area area, final Length length) => _volumeOf(area, length),
     (final Length length, final Area area) => _volumeOf(area, length),
-    (final Scalar factor, final Length length) => _scaledLength(
-      length,
-      factor.value,
+    (final Scalar factor, _) => _scaled(
+      right,
+      (value) => value * factor.value,
+      (length) => _scaledLength(length, factor.value),
     ),
-    (final Length length, final Scalar factor) => _scaledLength(
-      length,
-      factor.value,
+    (_, final Scalar factor) => _scaled(
+      left,
+      (value) => value * factor.value,
+      (length) => _scaledLength(length, factor.value),
     ),
-    (final Scalar factor, _) => _scaled(right, (value) => value * factor.value),
-    (_, final Scalar factor) => _scaled(left, (value) => value * factor.value),
     _ => null,
   };
 
   Quantity? _divide(Quantity left, Quantity right) {
     if (_magnitude(right) == 0) return null;
     return switch ((left, right)) {
-      (final Length length, final Scalar divisor) => _dividedLength(
-        length,
-        divisor.value,
-      ),
       (_, final Scalar divisor) => _scaled(
         left,
         (value) => value / divisor.value,
+        (length) => _dividedLength(length, divisor.value),
       ),
-      (final Area area, final Length length) => Length(
-        _wholeTicks(area.squareTicks / length.ticks),
-        unit: _lengthUnit([area.unit, length.unit]),
+      (final Area area, final Length length) => _keptLength(
+        area.squareTicks / _magnitude(length),
+        _lengthUnit([area.unit, length.unit]),
       ),
-      (final Volume volume, final Area area) => Length(
-        _wholeTicks(_cubicTicks(volume) / area.squareTicks),
-        unit: _lengthUnit([volume.unit, area.unit]),
+      (final Volume volume, final Area area) => _keptLength(
+        _cubicTicks(volume) / area.squareTicks,
+        _lengthUnit([volume.unit, area.unit]),
       ),
       (final Volume volume, final Length length) => Area(
-        _cubicTicks(volume) / length.ticks,
+        _cubicTicks(volume) / _magnitude(length),
         unit: _systemUnit([volume.unit, length.unit]),
       ),
       _ when left.dimension == right.dimension => Scalar(
@@ -194,21 +198,18 @@ class ChainArithmetic extends Equatable {
     _ => left.dimension == right.dimension,
   };
 
-  Quantity _scaled(Quantity quantity, double Function(double) scale) =>
-      switch (quantity) {
-        Length() => Length(
-          _wholeTicks(scale(quantity.ticks.toDouble())),
-          unit: _lengthUnit([quantity.unit]),
-        ),
-        Area() => Area(scale(quantity.squareTicks), unit: quantity.unit),
-        Volume() => Volume(scale(quantity.cubicFeet), unit: quantity.unit),
-        Weight() => Weight(
-          scale(quantity.hundredthsOfPound),
-          unit: quantity.unit,
-        ),
-        Angle() => Angle(scale(quantity.degrees)),
-        Scalar() => Scalar(scale(quantity.value)),
-      };
+  Quantity _scaled(
+    Quantity quantity,
+    double Function(double) scale,
+    Length Function(Length) scaleLength,
+  ) => switch (quantity) {
+    final Length length => scaleLength(length),
+    Area() => Area(scale(quantity.squareTicks), unit: quantity.unit),
+    Volume() => Volume(scale(quantity.cubicFeet), unit: quantity.unit),
+    Weight() => Weight(scale(quantity.hundredthsOfPound), unit: quantity.unit),
+    Angle() => Angle(scale(quantity.degrees)),
+    Scalar() => Scalar(scale(quantity.value)),
+  };
 
   Length _scaledLength(Length length, double factor) {
     final exact = Rational.tryParse(factor.toString());
@@ -228,6 +229,17 @@ class ChainArithmetic extends Equatable {
 
   Length _roundedLength(double ticks, Unit unit) =>
       Length(_wholeTicks(ticks), unit: _lengthUnit([unit]));
+
+  Length _keptLength(double ticks, Unit unit) {
+    _wholeTicks(ticks);
+    return Length.exact(
+      Rational(
+        (ticks * _partsPerTick).round(),
+        Length.ticksPerInch * _partsPerTick,
+      ).reduced,
+      unit: unit,
+    );
+  }
 
   Length _exactLength(Rational inches, Unit unit) {
     final ticks = (inches * const Rational(Length.ticksPerInch)).toDouble();

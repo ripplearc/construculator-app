@@ -96,6 +96,20 @@ final class Length extends Quantity {
   /// The same distance written in another length unit.
   Length spelledIn(Unit unit) => Length.exact(inches, unit: unit);
 
+  /// How many [unit]s the length is, for a decimal rendering. Exact while
+  /// the quotient fits a [Rational]; past that (99,999,999,999,999in in
+  /// metres, where the metre's 5000/127in pushes the fraction over its
+  /// limit) it is taken in double math, which still holds every digit a
+  /// decimal rendering shows, so a typed length near the limit converts
+  /// instead of throwing [RationalOverflow].
+  double amountIn(Unit unit) {
+    try {
+      return (inches / unit.inchesPer).toDouble();
+    } on RationalOverflow {
+      return inches.toDouble() / unit.inchesPer.toDouble();
+    }
+  }
+
   @override
   List<Object?> get props => [inches, unit];
 }

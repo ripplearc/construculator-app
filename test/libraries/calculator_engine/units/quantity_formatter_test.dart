@@ -120,6 +120,23 @@ void main() {
     });
 
     group('CA-1190: a typed length is rendered from its exact value', () {
+      test('a typed length near the limit renders in metres and the '
+          'conversions instead of throwing', () {
+        const huge = Length.exact(Rational(100000000000001), unit: Unit.inch);
+        expect(
+          formatter.format(huge.spelledIn(Unit.metre)),
+          '2,540,000,000,000.03m',
+        );
+        expect(const UnitConverter().offersFor(huge).map(formatter.format), [
+          '8333333333333ft 5in',
+          '2,540,000,000,000,026mm',
+        ]);
+        expect(
+          formatter.format(huge.spelledIn(Unit.inch)),
+          '100,000,000,000,001in',
+        );
+      });
+
       const decimalFeet = Length.exact(Rational(5196, 25), unit: Unit.foot);
 
       test('17.32 ft reads 17.32ft, and 17ft 3-13/16in as a compound', () {

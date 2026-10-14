@@ -535,20 +535,78 @@ void main() {
     });
 
     test(
-      'a length made from an area rounds half toward +∞, as the prototype does',
+      'a length made from an area keeps its half tick, rounded once at display',
       () {
         const threeSquareTicks = Area(3);
         const twoTicks = Length(2, unit: Unit.inch);
         expect(
           arithmetic.combine(threeSquareTicks, Operator.divide, twoTicks),
-          const ArithmeticValue(Length(2, unit: Unit.footInch)),
+          const ArithmeticValue(
+            Length.exact(Rational(3, 128), unit: Unit.footInch),
+          ),
         );
         expect(
           arithmetic.combine(const Area(-3), Operator.divide, twoTicks),
-          const ArithmeticValue(Length(-1, unit: Unit.footInch)),
+          const ArithmeticValue(
+            Length.exact(Rational(-3, 128), unit: Unit.footInch),
+          ),
         );
       },
     );
+
+    test('a factor too long to keep exactly rounds its length half up', () {
+      final tooLong = double.parse('0.30000000000000004');
+      expect(
+        arithmetic.combine(
+          const Length(5, unit: Unit.inch),
+          Operator.multiply,
+          Scalar(tooLong),
+        ),
+        const ArithmeticValue(Length(2, unit: Unit.footInch)),
+      );
+    });
+
+    test('area ÷ length and volume ÷ length divide by the exact length', () {
+      const formatter = QuantityFormatter();
+      String text(ArithmeticOutcome outcome) =>
+          formatter.format(value(outcome));
+      final metre = Length.exact(Unit.metre.inchesPer, unit: Unit.metre);
+      Length centimetres(int count) => Length.exact(
+        Unit.centimetre.inchesPer * Rational(count),
+        unit: Unit.centimetre,
+      );
+      final squareMetre = value(
+        arithmetic.combine(metre, Operator.multiply, metre),
+      );
+      expect(
+        text(arithmetic.combine(squareMetre, Operator.divide, centimetres(3))),
+        '3,333.33cm',
+      );
+      final sixSquareCentimetres = value(
+        arithmetic.combine(centimetres(2), Operator.multiply, centimetres(3)),
+      );
+      expect(
+        text(
+          arithmetic.combine(
+            sixSquareCentimetres,
+            Operator.divide,
+            centimetres(2),
+          ),
+        ),
+        '3cm',
+      );
+      final cubicMetre = value(
+        arithmetic.combine(squareMetre, Operator.multiply, metre),
+      );
+      expect(
+        text(arithmetic.combine(cubicMetre, Operator.divide, centimetres(3))),
+        '333,333.33cm²',
+      );
+      expect(
+        text(arithmetic.combine(cubicMetre, Operator.divide, squareMetre)),
+        '1m',
+      );
+    });
 
     test('two lengths multiply as doubles, so a huge area does not wrap', () {
       const formatter = QuantityFormatter();

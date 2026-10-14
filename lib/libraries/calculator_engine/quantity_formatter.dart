@@ -132,7 +132,7 @@ class QuantityFormatter extends Equatable {
   };
 
   String _decimalLength(Length value, int decimals, bool group) =>
-      '${_localeNumber((value.inches / value.unit.inchesPer).toDouble(), decimals, group)}'
+      '${_localeNumber(value.amountIn(value.unit), decimals, group)}'
       '${value.unit.suffix}';
 
   String _wholeInchesAndFraction(Rational inches, bool group) {
