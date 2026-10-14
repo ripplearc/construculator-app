@@ -28,7 +28,10 @@ void main() {
         'm' => current.pressUnit(Unit.metre),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
-          keyWantsUnit: key != '[Sides]',
+          keyWantsUnit: !PlainNumberKeys.all.contains(
+            key.substring(1, key.length - 1),
+          ),
+          readsDegrees: key == '[${PlainNumberKeys.pitch}]',
         ),
         _ => current.typeDigit(key),
       };
