@@ -58,22 +58,27 @@ final class Answer extends Equatable {
 /// Any two of Length, Width and Height give Area, Diagonal and Perimeter,
 /// in that order (Figma 62421:72531: two sides default to Area, never
 /// straight to drywall); Length and Width are read first, then Length and
-/// Height, then Width and Height. Rise and Run give the Diagonal of the
-/// right triangle (rule 4.4, BuildCalc p50: 12ft and 15ft give 19.21ft).
+/// Height, then Width and Height. All three give a box: Volume and Wall
+/// area lead, and the rectangle facts of Length and Width follow (BuildCalc
+/// [Height]: "Calculate Volume, Wall Area and Room Area"). Rise and Run
+/// give the Diagonal of the right triangle (rule 4.4, BuildCalc p50: 12ft
+/// and 15ft give 19.21ft).
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
 /// side the rule read was metric, feet otherwise, so a chip no rule used
-/// never changes an answer's unit (rule 4.5); an area follows the same
-/// vote. A diagonal keeps its fraction of a tick ([Length.computed]) and is
-/// rounded once, at display (Section 6, "Nothing is rounded until it is
-/// displayed"; Section 8, the formulas are computed exactly): 13ft by 13ft
-/// reads 18.38ft, as the prototype's open PR has it, where a whole tick
-/// read 18.39ft. An area is the exact product of the ticks and a perimeter
-/// their exact sum. The
-/// diagonal's squares are taken in double math, because an `int` square
-/// wraps past 3,954,427ft, inside the limit CA-1236 will enforce; the
-/// perimeter's `int` sum wraps only past 6 × 10^15ft, a side that limit
-/// refuses once it lands.
+/// never changes an answer's unit (rule 4.5); an area or a volume follows
+/// the same vote. A diagonal keeps its fraction of a tick ([Length.computed])
+/// and is rounded once, at display (Section 6, "Nothing is rounded until it
+/// is displayed"; Section 8, the formulas are computed exactly): 13ft by
+/// 13ft reads 18.38ft, as the prototype's open PR has it, where a whole
+/// tick read 18.39ft. An area is the exact product of the ticks and a
+/// perimeter their exact sum. The diagonal's squares are taken in double
+/// math, because an `int` square wraps past 3,954,427ft, inside the limit
+/// CA-1236 will enforce; the perimeter's `int` sum wraps only past 6 ×
+/// 10^15ft, a side that limit refuses once it lands. A volume is kept exact
+/// and rounded to two decimals only at display, as the Full Design Doc
+/// decides where the prototype pre-rounds it, so the text is the same 960ft³
+/// and a cost later prices what is shown.
 class DeterministicRules extends Equatable {
   /// The label of the area of two named sides.
   static const String areaKey = 'Area';
@@ -83,6 +88,12 @@ class DeterministicRules extends Equatable {
 
   /// The label of the perimeter of two named sides.
   static const String perimeterKey = 'Perimeter';
+
+  /// The label of the volume of a box.
+  static const String volumeKey = 'Volume';
+
+  /// The label of the area of a box's four walls.
+  static const String wallAreaKey = 'Wall area';
 
   const DeterministicRules();
 
@@ -95,7 +106,11 @@ class DeterministicRules extends Equatable {
       final value = namedValues[key.id];
       if (value is Length) lengths[key] = value;
     }
-    return [..._rectangle(lengths), ..._rightTriangle(lengths)];
+    return [
+      ..._box(lengths),
+      ..._rectangle(lengths),
+      ..._rightTriangle(lengths),
+    ];
   }
 
   static const List<(DimensionKey, DimensionKey)> _sidePairs = [
@@ -103,6 +118,37 @@ class DeterministicRules extends Equatable {
     (DimensionKey.length, DimensionKey.height),
     (DimensionKey.width, DimensionKey.height),
   ];
+
+  List<Answer> _box(Map<DimensionKey, Length> lengths) {
+    final length = lengths[DimensionKey.length];
+    final width = lengths[DimensionKey.width];
+    final height = lengths[DimensionKey.height];
+    if (length == null || width == null || height == null) return const [];
+    final unit = _entrySystemUnit([length, width, height]);
+    final sources = [
+      DimensionKey.length.id,
+      DimensionKey.width.id,
+      DimensionKey.height.id,
+    ];
+    return [
+      Answer(
+        key: volumeKey,
+        value: Volume(
+          _feetOf(length) * _feetOf(width) * _feetOf(height),
+          unit: unit,
+        ),
+        sources: sources,
+      ),
+      Answer(
+        key: wallAreaKey,
+        value: Area(
+          2 * (length.ticks + width.ticks) * height.ticks.toDouble(),
+          unit: unit,
+        ),
+        sources: sources,
+      ),
+    ];
+  }
 
   List<Answer> _rectangle(Map<DimensionKey, Length> lengths) {
     for (final (first, second) in _sidePairs) {
@@ -162,6 +208,8 @@ class DeterministicRules extends Equatable {
 
   double _hypotenuse(int a, int b) =>
       math.sqrt(a.toDouble() * a + b.toDouble() * b);
+
+  double _feetOf(Length length) => length.ticks / Length.ticksPerFoot;
 
   @override
   List<Object?> get props => const [];
