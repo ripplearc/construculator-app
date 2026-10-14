@@ -101,11 +101,13 @@ void main() {
       expect(rowSize(tester, 'Material').height, 72 + 1);
     });
 
-    testWidgets('the quantity row is 90 dp tall, so the 48 dp tap area of the '
-        'unit button does not stretch it', (tester) async {
+    testWidgets('the quantity row is 74 dp tall as in the storyboard, so the '
+        '48 dp tap area of the unit button does not stretch it', (
+      tester,
+    ) async {
       await pumpFields(tester);
 
-      expect(rowSize(tester, 'Quantity').height, 90 + 1);
+      expect(rowSize(tester, 'Quantity').height, 73 + 1);
     });
 
     testWidgets('the unit button is drawn 32 dp tall', (tester) async {
@@ -165,25 +167,37 @@ void main() {
       });
     }
 
-    testWidgets('the unit button opens its list from 20 dp below its centre', (
+    testWidgets('the unit button opens its list from its own area', (
       tester,
     ) async {
       await pumpFields(tester);
       final centre = tester.getCenter(unitPill);
 
-      await tester.tapAt(centre + const Offset(0, 22));
+      await tester.tapAt(centre + const Offset(0, 14));
       await tester.pumpAndSettle();
 
       expect(find.text('Select unit'), findsOneWidget);
     });
 
-    testWidgets('the unit button area does not reach the next row', (
-      tester,
-    ) async {
+    testWidgets('the unit button is laid out 32 dp tall and reports a 48 dp '
+        'tap area', (tester) async {
+      final handle = tester.ensureSemantics();
       await pumpFields(tester);
-      final box = tester.getRect(unitPill);
 
-      expect(box.height, 48);
+      expect(tester.getRect(unitPill).height, 32);
+      expect(
+        tester
+            .getSemantics(
+              find.descendant(
+                of: unitPill,
+                matching: find.byType(GestureDetector),
+              ),
+            )
+            .rect
+            .height,
+        48,
+      );
+      handle.dispose();
     });
   });
 

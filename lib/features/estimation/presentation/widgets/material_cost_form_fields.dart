@@ -11,7 +11,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 const int _maxNameLength = 80;
 
 const double _quantityValueGap = 3;
-const double _quantityBottomPadding = 7;
+const double _quantityBottomPadding = 6;
 
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
