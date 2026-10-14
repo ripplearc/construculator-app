@@ -15,12 +15,15 @@ const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 EventTransformer<E> _restartable<E>() =>
     (events, mapper) => events.switchMap(mapper);
 
-EventTransformer<YourRatesSearched> _searchTransformer(Duration debounce) =>
+EventTransformer<E> _searchTransformer<E>(
+  Duration debounce,
+  String Function(E event) queryOf,
+) =>
     (events, mapper) => events
         .debounce(
           (event) => TimerStream<void>(
             null,
-            event.query.isEmpty ? Duration.zero : debounce,
+            queryOf(event).isEmpty ? Duration.zero : debounce,
           ),
         )
         .switchMap(mapper);
@@ -51,7 +54,11 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     on<YourRatesRefreshRecents>(_onRefreshRecents, transformer: _restartable());
     on<YourRatesSearched>(
       _onSearched,
-      transformer: _searchTransformer(queryDebounce),
+      transformer: _searchTransformer(queryDebounce, (event) => event.query),
+    );
+    on<YourRatesRecentsQueried>(
+      _onRecentsQueried,
+      transformer: _searchTransformer(queryDebounce, (event) => event.query),
     );
     on<YourRatesSaveRequested>(
       _onSaveRequested,
@@ -91,6 +98,19 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     result.fold(
       (failure) => emit(YourRatesError(failure)),
       (entries) => emit(YourRatesSearchResults(entries)),
+    );
+  }
+
+  Future<void> _onRecentsQueried(
+    YourRatesRecentsQueried event,
+    Emitter<YourRatesState> emit,
+  ) async {
+    if (event.query.trim().isEmpty) {
+      return _onRefreshRecents(YourRatesRefreshRecents(event.category), emit);
+    }
+    return _onSearched(
+      YourRatesSearched(event.query, category: event.category),
+      emit,
     );
   }
 
