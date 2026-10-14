@@ -2049,7 +2049,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get addToEstimateFailedError => 'Couldn\'t add this cost. Try again.';
+  String get addToEstimateFailedError => 'This cost was not added. Try again.';
 
   @override
   String get addsToEstimateNeedsQuantityNote =>

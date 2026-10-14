@@ -3755,7 +3755,7 @@ abstract class AppLocalizations {
   /// Message shown when saving a cost line fails: a toast on the equipment sheet, and a line above the Add button on the material sheet. No Figma frame covers this case.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t add this cost. Try again.'**
+  /// **'This cost was not added. Try again.'**
   String get addToEstimateFailedError;
 
   /// Summary card note while the material quantity is empty

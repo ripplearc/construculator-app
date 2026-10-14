@@ -214,6 +214,21 @@ void main() {
       expect(find.textContaining('Bedroom 2'), findsOneWidget);
     });
 
+    testWidgets('shows a part quantity total without losing a half cent', (
+      tester,
+    ) async {
+      await pumpFooter(tester);
+      await fill(
+        tester,
+        name: 'Nails',
+        quantity: '0.5',
+        unit: Unit.boxes,
+        rate: '2.01',
+      );
+
+      expect(find.text(r'$1.01'), findsOneWidget);
+    });
+
     testWidgets('saves the line and closes the sheet when Add is tapped', (
       tester,
     ) async {
@@ -241,7 +256,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(AddToEstimateFooter.errorKey),
-          matching: find.text("Couldn't add this cost. Try again."),
+          matching: find.text('This cost was not added. Try again.'),
         ),
         findsOneWidget,
       );
@@ -252,6 +267,24 @@ void main() {
         ),
       );
       expect(isButtonDisabled(tester), isFalse);
+    });
+
+    testWidgets('disables the button at once and keeps its label while the '
+        'line saves', (tester) async {
+      await pumpFooter(tester);
+      await fillAll(tester);
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pump();
+
+      expect(isButtonDisabled(tester), isTrue);
+      expect(find.text('Add to estimate'), findsOneWidget);
+
+      fakeSupabase.completer!.complete();
+      fakeSupabase.shouldDelayOperations = false;
+      await tester.pumpAndSettle();
     });
 
     testWidgets('shows no error line before a save has failed', (tester) async {

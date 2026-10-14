@@ -119,7 +119,7 @@ class MaterialCostFormData extends Equatable {
     final rate = this.rate;
     if (quantity == null || rate == null) return 0;
     if (!quantity.isFinite || !rate.isFinite) return 0;
-    return (quantity * rate * 100).roundToDouble() / 100;
+    return (quantity * (rate * 100).round()).roundToDouble() / 100;
   }
 
   /// Whether the name field contains a non-empty value.

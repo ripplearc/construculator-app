@@ -17,8 +17,10 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
   /// The estimate the line is added to.
   final String estimateId;
 
-  /// That estimate's name and running total before this line is added.
+  /// The estimate's name, shown on the card.
   final String estimateName;
+
+  /// The estimate's running total before this line is added.
   final double estimateTotal;
 
   const MaterialAddToEstimateFooter({

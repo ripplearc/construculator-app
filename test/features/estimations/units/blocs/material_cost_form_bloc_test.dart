@@ -167,7 +167,7 @@ void main() {
           expect(row['unit_price'], 2.55);
           expect(row['item_total_cost'], 17.85);
           expect(row['calculation'], {'unit_price': 2.55, 'quantity': 7.0});
-          expect(row['rate_status'], 'own_rate_confirmed');
+          expect(row['rate_status'], 'own_rate_unconfirmed');
           expect(row['quantity_provenance'], 'manual');
           expect(row['currency'], 'USD');
         },
@@ -400,8 +400,17 @@ void main() {
         'is quantity times rate rounded to the cent',
         build: () => bloc,
         act: (b) => b
-          ..add(const MaterialQuantityUpdated('3'))
-          ..add(const MaterialRateUpdated('0.335')),
+          ..add(const MaterialQuantityUpdated('1.5'))
+          ..add(const MaterialRateUpdated('2.55')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 3.83),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a half cent from a part quantity',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('0.5'))
+          ..add(const MaterialRateUpdated('2.01')),
         verify: (b) => expect(_dataOf(b.state).lineTotal, 1.01),
       );
 

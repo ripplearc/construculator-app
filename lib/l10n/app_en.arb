@@ -3090,7 +3090,7 @@
       }
     }
   },
-  "addToEstimateFailedError": "Couldn't add this cost. Try again.",
+  "addToEstimateFailedError": "This cost was not added. Try again.",
   "@addToEstimateFailedError": {
     "description": "Message shown when saving a cost line fails: a toast on the equipment sheet, and a line above the Add button on the material sheet. No Figma frame covers this case.",
     "context": "N/A"
