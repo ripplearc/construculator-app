@@ -460,9 +460,12 @@ class Tape extends Equatable {
   ChainOutcome get runningTotal => evaluator.fold(chips);
 
   /// An operator seals the active chip and opens the next one under it; on
-  /// an operator chip still waiting for its number it changes the operator.
-  /// After a result, or a sealed value, the operator chains off it. With
-  /// nothing before it the press explains itself ("Type a value first").
+  /// an operator chip still waiting for its number it changes the operator,
+  /// and on the divisor ÷ 0 reopened it also drops the error chip, since the
+  /// division that failed is gone (5 ÷ 0 = × 2 = is Calc 10 on a clean
+  /// tape, where the prototype refuses the key). After a result, or a
+  /// sealed value, the operator chains off it. With nothing before it the
+  /// press explains itself ("Type a value first").
   TapeOutcome pressOperator(Operator operator) {
     if (openBracket case final bracket?) {
       return _inside(bracket, (inner) => inner.pressOperator(operator));
@@ -470,7 +473,9 @@ class Tape extends Equatable {
     final chip = active;
     if (chip != null) {
       if (chip.operator != null && chip.entry.isEmpty) {
-        return _replaceLast(chip.copyWith(operator: () => operator));
+        return (_withDivisorRepaired ?? this)._replaceLast(
+          chip.copyWith(operator: () => operator),
+        );
       }
       if (chip.entry.isEmpty) {
         return const TapeRefused(TapeRefusal.typeAValueFirst);
@@ -499,6 +504,15 @@ class Tape extends Equatable {
   /// closes the bracket first (Section 7) and then lands the Calc: a
   /// reopened bracket the edit emptied is brought back as it was and the
   /// Calc lands on the restored group, with the notice kept.
+  ///
+  /// ÷ 0 as the last step lands its error chip and reopens the divisor
+  /// empty after it, keeping its operator (Section 5, "Division by zero";
+  /// Appendix D): the next number typed is the new divisor and = computes
+  /// the chain, because only the last chip can be active. A second 0 under
+  /// the reopened divisor keeps the one error chip (5 ÷ 0 = 0 = is still
+  /// 5 | Division by zero | ÷ _), so the tape never holds two in a row. A
+  /// ÷ 0 earlier in the chain, or a bracket worth zero, lands the error chip
+  /// at the end the way a Dimension Error does.
   TapeOutcome pressEquals() {
     if (openBracket != null) {
       return switch (closeBracket()) {
@@ -517,12 +531,42 @@ class Tape extends Equatable {
       ChainValue(:final value, isCalculation: true) => TapeChanged(
         append(ResultChip(key: calcKey, value: value)),
       ),
-      // TODO: [CA-1208] On ÷ 0, reopen the divisor empty so the next number
-      // replaces it. https://ripplearc.youtrack.cloud/issue/CA-1208
+      ChainFailed(error: CalculationError.divisionByZero)
+          when _endsOnTheFailedDivisor =>
+        TapeChanged(_withDivisorReopened()),
       ChainFailed(:final error) => TapeChanged(append(ErrorChip(error))),
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
+  }
+
+  bool get _endsOnTheFailedDivisor {
+    if (chips.last case ValueChip(operator: Operator.divide)) {
+      return evaluator.fold(chips.sublist(0, chips.length - 1)) is! ChainFailed;
+    }
+    return false;
+  }
+
+  Tape _withDivisorReopened() {
+    final divisor = chips.last as ValueChip;
+    final before = chips.sublist(0, chips.length - 1);
+    return _with([
+      ...before,
+      if (before.last is! ErrorChip)
+        const ErrorChip(CalculationError.divisionByZero),
+      divisor.copyWith(
+        entry: const EntryBuffer(),
+        exact: () => null,
+        poundsPerTon: () => null,
+        isActive: true,
+      ),
+    ]);
+  }
+
+  Tape? get _withDivisorRepaired {
+    if (chips.length < 2 || chips[chips.length - 2] is! ErrorChip) return null;
+    if (active case ValueChip(operator: null) || null) return null;
+    return _with([...chips.sublist(0, chips.length - 2), chips.last]);
   }
 
   TapeOutcome _landedAfterClose(Tape closed, {TapeNotice? notice}) =>
@@ -538,7 +582,9 @@ class Tape extends Equatable {
   /// remove it drops the last chip — a result or an error included — and
   /// makes the value before it active again, so an error is repaired in
   /// place (rule 4.12, walkthrough 21.2); a closed bracket before the
-  /// dropped chip is reopened instead.
+  /// dropped chip is reopened instead. On the divisor ÷ 0 reopened it drops
+  /// the error chip and keeps the divisor open (5 ÷ 0 = ⌫ is 5 | ÷ _, as
+  /// the prototype has it), and a second ⌫ reopens the dividend.
   ///
   /// Straight after ) it reopens the bracket in place, with the keypad
   /// typing into its last value again (Section 7, "Editing a bracket").
@@ -562,6 +608,7 @@ class Tape extends Equatable {
       return _entry(chip, chip.entry.backspace());
     }
     if (chips.isEmpty) return const TapeRefused(TapeRefusal.nothingToDelete);
+    if (_withDivisorRepaired case final repaired?) return TapeChanged(repaired);
     final remaining = chips.sublist(0, chips.length - 1);
     if (remaining.isEmpty) return TapeChanged(_with(remaining));
     final before = remaining.sublist(0, remaining.length - 1);

@@ -75,7 +75,11 @@ final class ChainEmpty extends ChainOutcome {
 /// a new chain, so 5lbs + 12ft then Width 5ft × 3 still lands Calc 15ft 0in.
 /// An error chip ends its chain the same way, wherever it sits: once the
 /// failed step has landed on the tape the strip goes silent (rule 4.12), a
-/// second = has nothing to land, and 4 + 3 after the chip folds again.
+/// second = has nothing to land, and 4 + 3 after the chip folds again. The
+/// one exception is the divisor ÷ 0 reopens after its error chip (Section
+/// 5, "Division by zero"): a chip that carries an operator straight after
+/// an error chip continues the chain from the total before the error, so
+/// 5 ÷ 0 = then 2 = is Calc 2.5.
 ///
 /// A closed bracket is worth what its inside folds to, at full precision
 /// and with its dimension (Section 7, "Brackets with units"), and the
@@ -97,10 +101,10 @@ class ChainEvaluator extends Equatable {
   /// The running total of [chips], as far as it can be computed.
   ChainOutcome fold(List<TapeChip> chips) {
     var running = _nothing;
-    for (final chip in chips) {
+    for (final (index, chip) in chips.indexed) {
       switch (chip) {
         case ErrorChip():
-          running = _nothing;
+          if (!_continuesAfter(chips, index)) running = _nothing;
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
         case ValueChip(:final operator) || BracketChip(:final operator):
@@ -122,6 +126,14 @@ class ChainEvaluator extends Equatable {
   }
 
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
+
+  bool _continuesAfter(List<TapeChip> chips, int index) =>
+      index + 1 < chips.length &&
+      switch (chips[index + 1]) {
+        ValueChip(:final operator) ||
+        BracketChip(:final operator) => operator != null,
+        ResultChip() || ErrorChip() => false,
+      };
 
   _RunningChain _joined(
     _RunningChain running,

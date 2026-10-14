@@ -285,11 +285,7 @@ void main() {
 
       test('rule 4.12: = works again after an error chip', () {
         final divided = press(const Tape(), '5 ÷ 0 =');
-        expect(
-          divided.chips.last,
-          const ErrorChip(CalculationError.divisionByZero),
-        );
-        expect(lastResult(press(divided, '4 + 3 =')), 'Calc 7');
+        expect(lastResult(press(divided, '4 =')), 'Calc 1.25');
         final mismatched = press(const Tape(), '7 8 lbs ÷ 1 2 ft =');
         expect(lastResult(press(mismatched, '3 ft × 4 ft =')), 'Calc 12ft²');
       });
@@ -315,12 +311,102 @@ void main() {
         );
       });
 
-      test('÷ 0 lands its own error', () {
+      test('÷ 0 lands its own error and reopens the divisor empty', () {
         final landed = press(const Tape(), '5 ÷ 0 =');
+        expect(landed.chips, const [
+          ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+          ErrorChip(CalculationError.divisionByZero),
+          ValueChip(operator: Operator.divide),
+        ]);
+        expect(landed.endsWithError, isFalse);
+        expect(landed.runningTotal, const ChainEmpty());
+        expect(
+          landed.pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+      });
+
+      test('the next number is the new divisor: 5 ÷ 0 = 2 = is Calc 2.5', () {
+        final retyped = press(const Tape(), '5 ÷ 0 = 2');
+        expect(calc(retyped), '2.5');
+        expect(lastResult(press(retyped, '=')), 'Calc 2.5');
+        expect(lastResult(press(const Tape(), '5 ÷ 0 = + 3 =')), 'Calc 8');
+      });
+
+      test('a named divisor keeps its name when it is reopened', () {
+        final landed = press(const Tape(), '5 ft ÷ [Width] 0 ft =');
+        expect(
+          landed.active,
+          const ValueChip(key: 'Width', operator: Operator.divide),
+        );
+      });
+
+      test('⌫ after ÷ 0 drops the error chip and keeps the divisor open', () {
+        final repaired = press(const Tape(), '5 ÷ 0 = ⌫');
+        expect(repaired.chips, const [
+          ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+          ValueChip(operator: Operator.divide),
+        ]);
+        expect(repaired.endsWithError, isFalse);
+        expect(lastResult(press(repaired, '2 =')), 'Calc 2.5');
+        final dividend = press(repaired, '⌫');
+        expect(dividend.active!.entry.text, '5');
+        expect(lastResult(press(dividend, '× 2 =')), 'Calc 10');
+      });
+
+      test('⌫ on a bare chip typed after an error chip keeps the error', () {
+        final emptied = press(const Tape(), '5 ÷ 0 + 3 = 2 ⌫ ⌫');
+        expect(
+          emptied.chips.last,
+          const ErrorChip(CalculationError.divisionByZero),
+        );
+      });
+
+      test('a second 0 under the reopened divisor keeps one error chip', () {
+        final again = press(const Tape(), '5 ÷ 0 = 0 =');
+        expect(again.chips, const [
+          ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+          ErrorChip(CalculationError.divisionByZero),
+          ValueChip(operator: Operator.divide),
+        ]);
+        expect(lastResult(press(again, '2 =')), 'Calc 2.5');
+      });
+
+      test('an operator on the reopened divisor drops the error chip', () {
+        final changedOperator = press(const Tape(), '5 ÷ 0 = ×');
+        expect(changedOperator.chips, const [
+          ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+          ValueChip(operator: Operator.multiply),
+        ]);
+        expect(lastResult(press(changedOperator, '2 =')), 'Calc 10');
+      });
+
+      test(
+        'a ÷ 0 that is not the last step lands the error chip at the end',
+        () {
+          for (final keys in ['5 ÷ 0 + 3 =', '5 ÷ 0 ÷ 0 =']) {
+            final landed = press(const Tape(), keys);
+            expect(
+              landed.chips.last,
+              const ErrorChip(CalculationError.divisionByZero),
+              reason: keys,
+            );
+            expect(landed.active, isNull, reason: keys);
+          }
+        },
+      );
+
+      test('a bracket worth zero is not reopened', () {
+        var tape = press(const Tape(), '5 ÷');
+        tape = (tape.pressBracket() as TapeChanged).tape;
+        tape = press(tape, '0');
+        tape = (tape.pressBracket() as TapeChanged).tape;
+        final landed = press(tape, '=');
         expect(
           landed.chips.last,
           const ErrorChip(CalculationError.divisionByZero),
         );
+        expect(landed.chips[1], isA<BracketChip>());
       });
 
       test('backspace performs surgery on the error and = answers (S72)', () {
@@ -375,6 +461,15 @@ void main() {
         ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
       ];
       expect(evaluator.fold(chips), const ChainValue(Scalar(5), steps: 1));
+    });
+
+    test('a result after an error chip starts a new chain', () {
+      const chips = [
+        ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
+        ErrorChip(CalculationError.divisionByZero),
+        ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
+      ];
+      expect(evaluator.fold(chips), const ChainValue(Scalar(3), steps: 0));
     });
 
     test('a failed step is the fold until a chip with no operator', () {

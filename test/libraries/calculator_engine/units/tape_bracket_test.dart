@@ -439,12 +439,19 @@ void main() {
 
       test('a bracket after an error chip folds on its own', () {
         expect(
-          lastResult(press(const Tape(), '5 ÷ 0 = ( 2 + 3 ( × 4 =')),
+          lastResult(press(const Tape(), '5 lbs ÷ 2 ft = ( 2 + 3 ( × 4 =')),
           'Calc 20',
         );
         expect(
           lastResult(press(const Tape(), '2 + 3 = ( 4 + 1 ( =')),
           'Calc 5',
+        );
+      });
+
+      test('a bracket after ÷ 0 = is the new divisor (CA-1208)', () {
+        expect(
+          lastResult(press(const Tape(), '5 ÷ 0 = ( 2 + 3 ( × 4 =')),
+          'Calc 4',
         );
       });
     });
