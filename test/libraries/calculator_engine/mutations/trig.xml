@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE FORWARD TRIG MUTATION TESTING (F1a, CA-1069) -->
+    <!-- Targets: TrigFunction (the ratio of an angle and where the tangent
+         has none), the trig key on the tape (postfix answer, prefix chip,
+         refusals) and the trig reading of a value chip. Critical path: a
+         wrong function or a missing guard prints a confident wrong number,
+         as the prototype once printed 16,331,239,353,195,370 for TAN 90. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/trig.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+        <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the functions are swapped, or the angle is read in
+             radians -->
+        <regex pattern="sine =&gt; Scalar\(math\.sin\(radians\), decimals: ratioDecimals\)," dotAll="true" id="trig.sine.is_cosine">
+            <mutation text="sine =&gt; Scalar(math.cos(radians), decimals: ratioDecimals),"/>
+        </regex>
+        <regex pattern="cosine =&gt; Scalar\(math\.cos\(radians\), decimals: ratioDecimals\)," dotAll="true" id="trig.cosine.is_sine">
+            <mutation text="cosine =&gt; Scalar(math.sin(radians), decimals: ratioDecimals),"/>
+        </regex>
+        <regex pattern=": Scalar\(math\.tan\(radians\), decimals: ratioDecimals\)," dotAll="true" id="trig.tangent.is_sine">
+            <mutation text=": Scalar(math.sin(radians), decimals: ratioDecimals),"/>
+        </regex>
+        <regex pattern="final radians = degrees \* math\.pi / _halfTurn;" dotAll="true" id="trig.radians.unconverted">
+            <mutation text="final radians = degrees;"/>
+        </regex>
+
+        <!-- RULE 2: the tangent of 90° is answered, or only 90° itself is
+             refused -->
+        <regex pattern="_isOddQuarterTurn\(degrees\)\s*\? null" dotAll="true" id="trig.tangent.no_guard">
+            <mutation text="false ? null"/>
+        </regex>
+        <regex pattern="\(\(degrees % _halfTurn\) - _quarterTurn\)\.abs\(\) &lt; _quarterTurnTolerance;" dotAll="true" id="trig.tangent.only_ninety">
+            <mutation text="(degrees - _quarterTurn).abs() &lt; _quarterTurnTolerance;"/>
+        </regex>
+
+        <!-- RULE 3: every key names a trig function -->
+        <regex pattern="if \(function\.key == key\) return function;" dotAll="true" id="trig.named.any_key">
+            <mutation text="return function;"/>
+        </regex>
+
+        <!-- RULE 4: a ratio is rounded like a plain result -->
+        <regex pattern="Scalar\(:final decimals\?\) =&gt; _jsRoundedNumber\(\s*value\.value,\s*decimals," dotAll="true" id="trig.ratio.two_decimals">
+            <mutation text="Scalar(:final decimals?) =&gt; _jsRoundedNumber(value.value, resultDecimals,"/>
+        </regex>
+
+        <!-- RULE 5: an empty chip renamed to a trig key still wants a unit -->
+        <regex pattern="chip\.copyWith\(key: \(\) =&gt; function\.key, keyWantsUnit: false\)," dotAll="true" id="trig.key.rename_wants_unit">
+            <mutation text="chip.copyWith(key: () =&gt; function.key),"/>
+        </regex>
+
+        <!-- RULE 6: a named bare number is answered postfix, or a length is
+             opened as a fresh chip -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.key == null &amp;&amp; chip\.operator == null\) \{" dotAll="true" id="trig.key.postfix_on_named">
+            <mutation text="if (chip != null &amp;&amp; chip.operator == null) {"/>
+        </regex>
+        <regex pattern="case final Quantity _:\s*return const TapeRefused\(TapeRefusal\.trigNeedsAPlainAngle\);" dotAll="true" id="trig.key.length_accepted">
+            <mutation text="case final Quantity _: break;"/>
+        </regex>
+
+        <!-- RULE 7: the refused tangent says the wrong thing, or the eaten
+             number keeps no degree badge -->
+        <regex pattern="if \(answer == null\) \{\s*return const TapeRefused\(TapeRefusal\.tangentUndefined\);" dotAll="true" id="trig.key.tangent_reason">
+            <mutation text="if (answer == null) { return const TapeRefused(TapeRefusal.trigCannotAnswer);"/>
+        </regex>
+        <regex pattern="exact: \(\) =&gt; \(value: Angle\(degrees\), spelled: chip\.entry\)," dotAll="true" id="trig.key.no_badge">
+            <mutation text="exact: () =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 8: a unit on a trig number gets the plain-number toast -->
+        <regex pattern="if \(chip\.trigFunction != null\) \{\s*return const TapeRefused\(TapeRefusal\.trigTakesAnAngle\);" dotAll="true" id="trig.unit.plain_number_reason">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.trigTakesAnAngle);"/>
+        </regex>
+
+        <!-- RULE 9: an undefined trig chip's digits are used in its place -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.asksAnUndefinedTrig\) \{" dotAll="true" id="trig.undefined.left">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="\(final function\?, final angle\?\) =&gt; function\.of\(angle\.degrees\) == null," dotAll="true" id="trig.undefined.never">
+            <mutation text="(final function?, final angle?) =&gt; false,"/>
+        </regex>
+
+        <!-- RULE 10: a trig chip is worth its digits, or every bare named
+             chip asks a trig function -->
+        <regex pattern="if \(trigOperand case final angle\?\) return trigFunction\?\.of\(angle\.degrees\);" dotAll="true" id="trig.chip.worth_digits">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="Angle\? get trigOperand =&gt; trigFunction != null &amp;&amp; _isBareNumber" dotAll="true" id="trig.chip.any_key_asks">
+            <mutation text="Angle? get trigOperand =&gt; _isBareNumber"/>
+        </regex>
+
+        <!-- RULE 10b: a trig key is accepted inside a bracket -->
+        <regex pattern="pressTrigKey\(TrigFunction function\) \{\s*if \(openBracket != null\) \{" dotAll="true" id="trig.key.inside_bracket">
+            <mutation text="pressTrigKey(TrigFunction function) { if (false) {"/>
+        </regex>
+
+        <!-- RULE 11: a trig chip feeds the rules -->
+        <regex pattern="when chip\.isReadable &amp;&amp; chip\.trigFunction == null\)" dotAll="true" id="trig.named_values.include_trig">
+            <mutation text="when chip.isReadable)"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="trig" expected-return="0">flutter test test/libraries/calculator_engine/units/trig_test.dart test/libraries/calculator_engine/units/tape_trig_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

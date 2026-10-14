@@ -278,11 +278,15 @@ final class Scalar extends Quantity {
   /// The number itself.
   final double value;
 
-  const Scalar(this.value);
+  /// The decimals it keeps at display when it is not a plain result: six
+  /// for a trig ratio (Sine 0.615661). `null` renders it as any result.
+  final int? decimals;
+
+  const Scalar(this.value, {this.decimals});
 
   @override
   Dimension get dimension => Dimension.scalar;
 
   @override
-  List<Object?> get props => [value];
+  List<Object?> get props => [value, decimals];
 }
