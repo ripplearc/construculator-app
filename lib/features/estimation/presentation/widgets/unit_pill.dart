@@ -8,9 +8,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The rounded unit button next to the quantity. Tapping it opens the unit
 /// list; the unit is never typed.
 ///
-// TODO: [CA-1186] replace the interim 13-unit list with the grouped 23-unit "Select unit" sheet. https://ripplearc.youtrack.cloud/issue/CA-1186
+// TODO: [CA-1186] replace the interim unit list with the grouped 23-unit "Select unit" sheet, which has no time units and a 2,000 lb ton where Tons here is metric. https://ripplearc.youtrack.cloud/issue/CA-1186
 class UnitPill extends StatelessWidget {
-  static const double _tapPadding = 5;
+  static const double _tapPadding = 8;
+  static const double _pillVerticalPadding = 3;
+  static const _unlistedUnits = {Unit.hours, Unit.days};
 
   /// The picked unit, or null while none is picked.
   final Unit? unit;
@@ -42,17 +44,17 @@ class UnitPill extends StatelessWidget {
       // The label already says what the button shows and does, so the text
       // and icon inside would be read a second time.
       excludeSemantics: true,
-      onTap: () => _openList(context),
+      enabled: isEnabled,
+      onTap: isEnabled ? () => _openList(context) : null,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _openList(context),
         child: Padding(
-          // Makes the tap area 48 dp tall while the drawn pill stays 38 dp.
           padding: const EdgeInsets.symmetric(vertical: _tapPadding),
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: CoreSpacing.space3,
-              vertical: CoreSpacing.space2 - 2,
+              vertical: _pillVerticalPadding,
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(CoreSpacing.space5),
@@ -124,9 +126,12 @@ class _UnitList extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  for (final unit in Unit.values)
+                  for (final unit in Unit.values.where(
+                    (unit) => !UnitPill._unlistedUnits.contains(unit),
+                  ))
                     CoreCheckRowItem(
                       key: Key('unit_option_${unit.name}'),
+                      leading: const SizedBox.shrink(),
                       title: unit.displayName(l10n),
                       selected: unit == selected,
                       onChanged: (_) => Navigator.of(context).pop(unit),

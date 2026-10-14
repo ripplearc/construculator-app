@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -103,5 +104,67 @@ void main() {
 
     expect(find.text('Select unit'), findsNothing);
     expect(picked, isNull);
+  });
+
+  testWidgets('has a 48 dp tap area around a 32 dp pill', (tester) async {
+    await pumpPill(tester, unit: Unit.liters);
+
+    expect(tester.getSize(find.byKey(const Key('unit_pill'))).height, 48);
+    expect(
+      tester
+          .getSize(
+            find.descendant(
+              of: find.byKey(const Key('unit_pill')),
+              matching: find.byType(Container),
+            ),
+          )
+          .height,
+      32,
+    );
+  });
+
+  testWidgets('ticks only the unit that is picked', (tester) async {
+    await pumpPill(tester, unit: Unit.liters);
+
+    await tester.tap(find.byKey(const Key('unit_pill')));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<CoreCheckRowItem>(find.byKey(const Key('unit_option_liters')))
+          .selected,
+      isTrue,
+    );
+    expect(
+      tester
+          .widget<CoreCheckRowItem>(find.byKey(const Key('unit_option_bags')))
+          .selected,
+      isFalse,
+    );
+  });
+
+  testWidgets('does not offer Hours or Days for a material', (tester) async {
+    await pumpPill(tester);
+
+    await tester.tap(find.byKey(const Key('unit_pill')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('unit_option_hours')), findsNothing);
+    expect(find.byKey(const Key('unit_option_days')), findsNothing);
+  });
+
+  testWidgets('tells a screen reader it is off and gives it no tap action', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpPill(tester, unit: Unit.liters, isEnabled: false);
+
+    final data = tester
+        .getSemantics(find.byKey(const Key('unit_pill')))
+        .getSemanticsData();
+
+    expect(data.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
+    expect(data.hasAction(SemanticsAction.tap), isFalse);
+    handle.dispose();
   });
 }
