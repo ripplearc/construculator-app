@@ -43,8 +43,8 @@
 
         <!-- RULE 6: a split finishes the value but never starts the new one
              beside it -->
-        <regex pattern="\)\.append\(ValueChip\(entry: started\)\)," dotAll="true" id="tape.entry.split_drops_started">
-            <mutation text="),"/>
+        <regex pattern="_replaceActive\(chip\.copyWith\(entry: finished\)\)\.append\(\s*ValueChip\(\s*entry: started,\s*poundsPerTon: _tonTypedUnder\(const ValueChip\(\), started\),\s*\),\s*\)," dotAll="true" id="tape.entry.split_drops_started">
+            <mutation text="_replaceActive(chip.copyWith(entry: finished)),"/>
         </regex>
 
         <!-- RULE 7: backspace drops the last chip without reopening the value
@@ -134,6 +134,12 @@
 
         <!-- RULE 24: every token counts as a ton, so a digit typed after
              the ton re-stamps it -->
+        <!-- RULE: a ton a split starts is read at whatever the setting is
+             later -->
+        <regex pattern="entry: started,\s*poundsPerTon: _tonTypedUnder\(const ValueChip\(\), started\)," dotAll="true" id="tape.entry.split_ton_unstamped">
+            <mutation text="entry: started, poundsPerTon: null,"/>
+        </regex>
+
         <regex pattern="entry\.tokens\.where\(\(token\) =&gt; token\.unit == Unit\.ton\)\.length;" dotAll="true" id="tape.entry.every_token_is_a_ton">
             <mutation text="entry.tokens.length;"/>
         </regex>

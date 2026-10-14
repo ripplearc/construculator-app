@@ -465,6 +465,32 @@ void main() {
         expect(reread.formatter.format(diagonal.value), '5.2m');
       });
 
+      test('a ton a split starts keeps the definition it was typed under', () {
+        final tape = press(const Tape(), '7 8 ton 5 ton');
+        final started = tape.active!;
+        expect(started.entry.text, '5ton');
+        expect(started.poundsPerTon, 2000);
+        final reread = tape.withPreferences(longTon);
+        expect(
+          reread.active!.value(reread.parser),
+          const Weight(5 * 2000 * 100, unit: Unit.ton),
+        );
+        expect(
+          (reread.chips.first as ValueChip).value(reread.parser),
+          const Weight(78 * 2000 * 100, unit: Unit.ton),
+        );
+      });
+
+      test('a ton converted from pounds stays that conversion through ⌫', () {
+        final converted = press(const Tape(), '2 0 0 0 lbs ton');
+        final retyped = press(converted.withPreferences(longTon), '⌫ ton');
+        expect(retyped.active!.entry.text, '1ton');
+        expect(
+          retyped.active!.value(retyped.parser),
+          const Weight(2000 * 100, unit: Unit.ton),
+        );
+      });
+
       test('a typed ton keeps its text and its weight under a new ton', () {
         const shortTons78 = Weight(78 * 2000 * 100, unit: Unit.ton);
         final tape = press(const Tape(), '7 8 ton');

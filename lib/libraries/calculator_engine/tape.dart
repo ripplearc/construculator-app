@@ -225,8 +225,15 @@ class Tape extends Equatable {
   /// ton keeps the definition it was typed under ([ValueChip.poundsPerTon]):
   /// a 78 ton typed at 2,000 lb still weighs 156,000 lb under 2,240, with
   /// or without a digit still open after it, and only a ton typed after the
-  /// change reads the new definition. The chips are untouched, so going
-  /// back to the first setting gives the first tape. The text stays as
+  /// change reads the new definition, a ton a split starts included (78ton
+  /// 5 then [Ton] stamps the 5ton with the setting it was typed under). A
+  /// ton converted from pounds keeps its exact weight while its digits are
+  /// still the conversion's spelling (rule 4.15): 2000lbs then [Ton] reads
+  /// 1ton worth 2,000 lb, and ⌫ then [Ton] after a change to the long ton
+  /// still reads 2,000 lb, because the chip is still that conversion; a
+  /// digit typed into it makes it a typed ton under the new setting. The
+  /// chips are untouched, so going back to the first setting gives the
+  /// first tape. The text stays as
   /// typed (Appendix C: "your entries keep their typed units"); whether it
   /// should re-spell to 69.64 ton is the doc owner's call.
   Tape withPreferences(CalculatorPreferences preferences) =>
@@ -655,9 +662,12 @@ class Tape extends Equatable {
       ),
     ),
     EntrySplit(:final finished, :final started) => TapeChanged(
-      _replaceActive(
-        chip.copyWith(entry: finished),
-      ).append(ValueChip(entry: started)),
+      _replaceActive(chip.copyWith(entry: finished)).append(
+        ValueChip(
+          entry: started,
+          poundsPerTon: _tonTypedUnder(const ValueChip(), started),
+        ),
+      ),
     ),
     EntryRefused(:final reason) => TapeEntryRefused(reason),
   };
