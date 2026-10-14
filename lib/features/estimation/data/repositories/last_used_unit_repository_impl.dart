@@ -8,7 +8,8 @@ import 'package:construculator/libraries/storage/interfaces/storage_service.dart
 /// a second account on the same phone has its own.
 ///
 /// A failed read or write is a lost convenience, not an error the user can act
-/// on, so both are swallowed and a read falls back to no remembered unit.
+/// on, so both are swallowed and a read falls back to no remembered unit. A
+/// stored name that is no longer a known unit also reads as no remembered unit.
 class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
   LastUsedUnitRepositoryImpl({
     required this._storage,
@@ -25,7 +26,7 @@ class LastUsedUnitRepositoryImpl implements LastUsedUnitRepository {
     if (key == null) return null;
     try {
       final stored = await _storage.getData<String>(key);
-      return stored == null ? null : Unit.fromJson(stored);
+      return Unit.values.where((unit) => unit.name == stored).firstOrNull;
     } catch (e) {
       _logger.warning('Could not read the last used unit: $e');
       return null;

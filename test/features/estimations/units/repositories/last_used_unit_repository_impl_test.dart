@@ -102,6 +102,18 @@ void main() {
       expect(await repository.getLastUnit(CostItemType.material), isNull);
     });
 
+    test(
+      'returns nothing when the saved unit is no longer a known unit',
+      () async {
+        await storage.saveData<String>(
+          'last_used_unit.account-1.material',
+          'furlongs',
+        );
+
+        expect(await repository.getLastUnit(CostItemType.material), isNull);
+      },
+    );
+
     test('keeps the previous unit when a save fails', () async {
       await repository.saveLastUnit(CostItemType.material, Unit.liters);
       storage.shouldThrowOnWrite = true;

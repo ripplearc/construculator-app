@@ -400,6 +400,37 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'names the unit before the rate when both are empty',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialQuantityUpdated('2')),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.unit,
+            MaterialBlockerKind.missing,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'names the unit before an invalid rate',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialQuantityUpdated('2'))
+          ..add(const MaterialRateUpdated('1000000')),
+        verify: (b) => expect(
+          _dataOf(b.state).blocker,
+          const MaterialFormBlocker(
+            MaterialFormField.unit,
+            MaterialBlockerKind.missing,
+          ),
+        ),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'reports an invalid value as invalid, not missing',
         build: () => bloc,
         act: (b) => b

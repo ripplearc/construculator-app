@@ -125,7 +125,8 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<LastUsedUnitRepository>(
-      () => LastUsedUnitRepositoryImpl(storage: i.get(), authRepository: i.get()),
+      () =>
+          LastUsedUnitRepositoryImpl(storage: i.get(), authRepository: i.get()),
     );
 
     i.addLazySingleton<YourRatesRepository>(
