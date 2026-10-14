@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
+import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
@@ -58,9 +59,9 @@ void main() {
           builder: (context) => Scaffold(
             body: TextButton(
               key: const Key('open_sheet'),
-              onPressed: () => CoreQuickSheet.show<void>(
+              onPressed: () => GuardedQuickSheet.show<void>(
                 context: context,
-                enableDrag: false,
+                backgroundColor: CoreTheme.light().coreColors.pageBackground,
                 child: BlocProvider<MaterialCostFormBloc>.value(
                   value: bloc,
                   child: CostItemFormScreen(
@@ -247,6 +248,50 @@ void main() {
       await tester.tap(find.byKey(SheetHeader.backButtonKey));
       await tester.pumpAndSettle();
     }
+
+    Future<void> swipeDownOnHandle(WidgetTester tester) async {
+      await tester.fling(
+        find.byKey(GuardedQuickSheet.handleKey),
+        const Offset(0, 300),
+        1500,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a swipe down on the handle with a name typed asks to discard '
+        'the line', (tester) async {
+      await openSheet(tester);
+      await typeName(tester, 'Interior paint');
+
+      await swipeDownOnHandle(tester);
+
+      expect(find.text('Discard this line?'), findsOneWidget);
+      expect(find.text('New material cost'), findsOneWidget);
+    });
+
+    testWidgets('a swipe down on the handle closes at once when nothing was '
+        'typed', (tester) async {
+      await openSheet(tester);
+
+      await swipeDownOnHandle(tester);
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.text('New material cost'), findsNothing);
+    });
+
+    testWidgets('a slow drag on the handle does not close the sheet', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      await tester.drag(
+        find.byKey(GuardedQuickSheet.handleKey),
+        const Offset(0, 20),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('New material cost'), findsOneWidget);
+    });
 
     testWidgets('closes at once when nothing was typed', (tester) async {
       await openSheet(tester);

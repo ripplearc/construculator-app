@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -106,7 +107,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
-        enableDrag: false,
+        asksBeforeClosing: true,
         blocFactory: widget.materialCostFormBlocFactory,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
@@ -118,7 +119,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
-    bool enableDrag = true,
+    bool asksBeforeClosing = false,
     required B Function() blocFactory,
     required _SheetOutcome Function(S state) outcomeOf,
     YourRateEntry? entry,
@@ -126,31 +127,38 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     final l10n = context.l10n;
     final formBloc = blocFactory();
     try {
-      await CoreQuickSheet.show<void>(
-        context: context,
-        backgroundColor: sheetSurface(context),
-        enableDrag: enableDrag,
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider<B>.value(value: formBloc),
-            BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
-          ],
-          child: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
-            builder: (context, summary) => CostItemFormScreen(
-              type: type,
-              estimationId: widget.estimationId,
-              router: widget.router,
-              presentAsSheet: true,
-              yourRatesBlocFactory: widget.yourRatesBlocFactory,
-              clock: widget.clock,
-              estimate: summary is EstimateSummaryLoaded
-                  ? summary.estimate
-                  : null,
-              initialRateEntry: entry,
-            ),
+      final sheetBody = MultiBlocProvider(
+        providers: [
+          BlocProvider<B>.value(value: formBloc),
+          BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
+        ],
+        child: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
+          builder: (context, summary) => CostItemFormScreen(
+            type: type,
+            estimationId: widget.estimationId,
+            router: widget.router,
+            presentAsSheet: true,
+            yourRatesBlocFactory: widget.yourRatesBlocFactory,
+            clock: widget.clock,
+            estimate: summary is EstimateSummaryLoaded
+                ? summary.estimate
+                : null,
+            initialRateEntry: entry,
           ),
         ),
       );
+      final surface = sheetSurface(context);
+      await (asksBeforeClosing
+          ? GuardedQuickSheet.show<void>(
+              context: context,
+              backgroundColor: surface,
+              child: sheetBody,
+            )
+          : CoreQuickSheet.show<void>(
+              context: context,
+              backgroundColor: surface,
+              child: sheetBody,
+            ));
       final wasSavingWhenDismissed =
           outcomeOf(formBloc.state) == _SheetOutcome.submitting;
       if (wasSavingWhenDismissed) {

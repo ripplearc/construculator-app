@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_item_
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -1384,35 +1385,37 @@ void main() {
         expect(find.byType(CostItemFormScreen), findsOneWidget);
       });
 
-      testWidgets('a swipe down from the handle does not drop a typed name', (
-        tester,
-      ) async {
+      testWidgets('a swipe down on the handle with a name typed asks to '
+          'discard the line', (tester) async {
         await openMaterialSheet(tester);
         await tester.enterText(
           find.byKey(const Key('material_name_field')),
           'Interior paint',
         );
-        final handle = Offset(
-          tester.getCenter(find.byType(CostItemFormScreen)).dx,
-          tester.getTopLeft(find.byType(CostItemFormScreen)).dy - 12,
-        );
 
-        await tester.flingFrom(handle, const Offset(0, 300), 1500);
+        await tester.fling(
+          find.byKey(GuardedQuickSheet.handleKey),
+          const Offset(0, 300),
+          1500,
+        );
         await tester.pumpAndSettle();
 
+        expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
         expect(find.byType(CostItemFormScreen), findsOneWidget);
-        expect(
-          tester
-              .widget<TextField>(
-                find.descendant(
-                  of: find.byKey(const Key('material_name_field')),
-                  matching: find.byType(TextField),
-                ),
-              )
-              .controller!
-              .text,
-          'Interior paint',
+      });
+
+      testWidgets('a swipe down on the handle closes the sheet when nothing '
+          'was typed', (tester) async {
+        await openMaterialSheet(tester);
+
+        await tester.fling(
+          find.byKey(GuardedQuickSheet.handleKey),
+          const Offset(0, 300),
+          1500,
         );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
       });
 
       testWidgets('closing the sheet without adding shows no toast', (
