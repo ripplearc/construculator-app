@@ -19,6 +19,7 @@ void main() {
         'yd' => current.pressUnit(Unit.yard),
         'lbs' => current.pressUnit(Unit.pound),
         'cm' => current.pressUnit(Unit.centimetre),
+        'm' => current.pressUnit(Unit.metre),
         'bf' => current.pressUnit(Unit.boardFoot),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -288,6 +289,26 @@ void main() {
         expect(lastResult(press(divided, '4 =')), 'Calc 1.25');
         final mismatched = press(const Tape(), '7 8 lbs ÷ 1 2 ft =');
         expect(lastResult(press(mismatched, '3 ft × 4 ft =')), 'Calc 12ft²');
+      });
+
+      test('a mixed chain follows the System of units setting (CA-1233)', () {
+        expect(
+          lastResult(press(const Tape(), '1 2 ft + 1 m =')),
+          'Calc 15ft 3-3/8in',
+        );
+        const metric = CalculatorPreferences(system: MeasurementSystem.metric);
+        expect(
+          lastResult(press(const Tape(preferences: metric), '1 m + 1 2 ft =')),
+          'Calc 4.66m',
+        );
+      });
+
+      test('12lbs ÷ 0ft is a Dimension Error, not a division by zero', () {
+        final landed = press(const Tape(), '1 2 lbs ÷ 0 ft =');
+        expect(
+          landed.chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+        );
       });
 
       test('a metric chain answers in the unit it was typed in', () {

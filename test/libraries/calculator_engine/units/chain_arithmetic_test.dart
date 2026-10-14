@@ -531,8 +531,144 @@ void main() {
       );
     });
 
-    test('is equal to any other table, having no state', () {
+    group('a mixed sum follows the System of units setting (CA-1233)', () {
+      const formatter = QuantityFormatter();
+      const metric = ChainArithmetic(system: MeasurementSystem.metric);
+      const metre = Length(2520, unit: Unit.metre);
+      final squareMetre = Area(
+        Unit.metre.ticksPerUnit * Unit.metre.ticksPerUnit,
+        unit: Unit.metre,
+      );
+      String text(ArithmeticOutcome outcome) =>
+          formatter.format((outcome as ArithmeticValue).value);
+
+      test('12ft + 1m reads 15ft 3-3/8in or 4.66m, in either order', () {
+        for (final (left, right) in [(feet(12), metre), (metre, feet(12))]) {
+          expect(
+            text(arithmetic.combine(left, Operator.add, right)),
+            '15ft 3-3/8in',
+          );
+          expect(text(metric.combine(left, Operator.add, right)), '4.66m');
+        }
+      });
+
+      test('12ft² + 1m² reads 22.76ft² or 2.11m², in either order', () {
+        final twelve = squareFeet(12);
+        for (final (left, right) in [
+          (twelve, squareMetre),
+          (squareMetre, twelve),
+        ]) {
+          expect(
+            text(arithmetic.combine(left, Operator.add, right)),
+            '22.76ft²',
+          );
+          expect(text(metric.combine(left, Operator.add, right)), '2.11m²');
+        }
+      });
+
+      test(
+        'a mixed product or quotient answers in feet under either setting',
+        () {
+          for (final table in [arithmetic, metric]) {
+            expect(
+              text(table.combine(feet(12), Operator.multiply, metre)),
+              '39.38ft²',
+            );
+            expect(
+              text(table.combine(metre, Operator.multiply, feet(12))),
+              '39.38ft²',
+            );
+            expect(
+              text(table.combine(squareFeet(12), Operator.divide, metre)),
+              '3ft 7-7/8in',
+            );
+          }
+        },
+      );
+
+      test('a volume sum keeps its first operand\'s unit: 1yd³ + 1m³', () {
+        final cubicYard = Volume(27, unit: Unit.yard);
+        final cubicMetre = Volume(
+          Unit.metre.ticksPerUnit *
+              Unit.metre.ticksPerUnit *
+              Unit.metre.ticksPerUnit /
+              (Length.ticksPerFoot * Length.ticksPerFoot * Length.ticksPerFoot),
+          unit: Unit.metre,
+        );
+        for (final table in [arithmetic, metric]) {
+          expect(
+            text(table.combine(cubicYard, Operator.add, cubicMetre)),
+            '2.31yd³',
+          );
+          expect(
+            value(table.combine(cubicMetre, Operator.add, cubicYard)),
+            isA<Volume>().having((volume) => volume.unit, 'unit', Unit.metre),
+          );
+        }
+      });
+
+      test('an acre has no system and keeps its unit beside a metric area', () {
+        expect(
+          value(
+            metric.combine(
+              squareFeet(43560, unit: Unit.acre),
+              Operator.add,
+              squareMetre,
+            ),
+          ),
+          isA<Area>().having((area) => area.unit, 'unit', Unit.acre),
+        );
+      });
+
+      test('one system alone keeps its own rule under either setting', () {
+        expect(
+          text(metric.combine(feet(12), Operator.add, inches(3))),
+          '12ft 3in',
+        );
+        expect(
+          text(
+            arithmetic.combine(
+              metre,
+              Operator.add,
+              const Length(1260, unit: Unit.centimetre),
+            ),
+          ),
+          '150.02cm',
+        );
+        expect(
+          text(
+            metric.combine(
+              squareFeet(1, unit: Unit.yard),
+              Operator.add,
+              squareFeet(2),
+            ),
+          ),
+          '0.33yd²',
+        );
+      });
+
+      test('12lbs ÷ 0ft is a dimension error, 5 ÷ 0 its own', () {
+        expect(
+          arithmetic.combine(
+            const Weight(1200),
+            Operator.divide,
+            const Length(0, unit: Unit.foot),
+          ),
+          const ArithmeticFailed(CalculationError.dimensionError),
+        );
+        expect(
+          arithmetic.combine(const Scalar(5), Operator.divide, const Scalar(0)),
+          const ArithmeticFailed(CalculationError.divisionByZero),
+        );
+      });
+    });
+
+    test('is equal to another table with the same setting', () {
       expect(ChainArithmetic(), arithmetic);
+      expect(
+        const ChainArithmetic(system: MeasurementSystem.metric),
+        isNot(arithmetic),
+      );
     });
 
     test('outcomes compare by what they carry', () {

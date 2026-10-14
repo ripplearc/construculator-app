@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
@@ -277,7 +278,10 @@ class Tape extends Equatable {
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
 
   /// Folds the chips into the running total.
-  ChainEvaluator get evaluator => ChainEvaluator(parser: parser);
+  ChainEvaluator get evaluator => ChainEvaluator(
+    parser: parser,
+    arithmetic: ChainArithmetic(system: preferences.system),
+  );
 
   /// Whether nothing has been typed.
   bool get isEmpty => chips.isEmpty;
