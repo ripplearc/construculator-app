@@ -2,6 +2,7 @@ import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
+import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
 
 /// What a tape folds to.
@@ -86,6 +87,15 @@ final class ChainEmpty extends ChainOutcome {
 /// steps worked inside it count, so (2 + 3) on its own is a calculation
 /// and = lands Calc 5. An open bracket is worth nothing yet, which is why
 /// no Calc is offered while it is open.
+///
+/// A trig chip is worth its answer, except an Arctangent whose number is
+/// followed by ÷ and bare numbers with no key: the ÷ builds the ratio for
+/// ATAN (Section 6, "Trig chips in a chain"). While that ratio is the end
+/// of the tape the chip is worth its digits, so [ATAN] 16 ÷ 12 folds to
+/// Calc 1.33, the ratio whose angle the tape offers beside it; once any
+/// other chip follows, the ratio is sealed into its angle, because an
+/// operator never demotes a trig chip into its digits: [ATAN] 16 ÷ 12 × 2
+/// is 106.26°.
 class ChainEvaluator extends Equatable {
   /// Reads each chip's value.
   final QuantityParser parser;
@@ -101,14 +111,26 @@ class ChainEvaluator extends Equatable {
   /// The running total of [chips], as far as it can be computed.
   ChainOutcome fold(List<TapeChip> chips) {
     var running = _nothing;
-    for (final (index, chip) in chips.indexed) {
+    var index = 0;
+    while (index < chips.length) {
+      final chip = chips[index];
+      var next = index + 1;
       switch (chip) {
         case ErrorChip():
           if (!_continuesAfter(chips, index)) running = _nothing;
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
         case ValueChip(:final operator) || BracketChip(:final operator):
-          final reading = _readingOf(chip);
+          final ratio = _arctangentRatio(chips, index);
+          final ({Quantity value, int steps})? reading;
+          if (ratio != null && ratio.end == chips.length) {
+            reading = (value: Scalar(ratio.digits), steps: 0);
+          } else if (ratio case (digits: _, :final angle?, :final end)) {
+            reading = (value: angle, steps: end - index - 1);
+            next = end;
+          } else {
+            reading = _readingOf(chip);
+          }
           if (reading == null) return const ChainEmpty();
           running = _joined(
             running,
@@ -117,6 +139,7 @@ class ChainEvaluator extends Equatable {
             stepsInside: reading.steps,
           );
       }
+      index = next;
     }
     if (running.failure case final failure?) return failure;
     if (running.total case final total?) {
@@ -164,6 +187,38 @@ class ChainEvaluator extends Equatable {
         ),
       ),
     };
+  }
+
+  ({double digits, Quantity? angle, int end})? _arctangentRatio(
+    List<TapeChip> chips,
+    int index,
+  ) {
+    final chip = chips[index];
+    if (chip is! ValueChip || chip.trigFunction != TrigFunction.arctangent) {
+      return null;
+    }
+    final digits = chip.bareNumber;
+    if (digits == null) return null;
+    var ratio = digits;
+    var end = index + 1;
+    while (end < chips.length) {
+      final divisor = chips[end];
+      if (divisor case ValueChip(
+        dividesAnArctangentRatio: true,
+        :final bareNumber?,
+      )) {
+        ratio /= bareNumber;
+        end++;
+      } else {
+        break;
+      }
+    }
+    if (end == index + 1) return null;
+    return (
+      digits: digits,
+      angle: ratio.isFinite ? TrigFunction.arctangent.of(ratio) : null,
+      end: end,
+    );
   }
 
   ({Quantity value, int steps})? _readingOf(TapeChip chip) => switch (chip) {
