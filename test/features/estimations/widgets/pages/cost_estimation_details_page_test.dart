@@ -6,7 +6,9 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -1364,6 +1366,58 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsNothing);
       });
 
+      testWidgets('a swipe down on the form with a name typed asks to discard '
+          'the line', (tester) async {
+        await openMaterialSheet(tester);
+        await tester.enterText(
+          find.byKey(const Key('material_name_field')),
+          'Interior paint',
+        );
+
+        await tester.fling(
+          find.byKey(const Key('material_name_field')),
+          const Offset(0, 300),
+          1500,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('a swipe down on the handle with a name typed asks to '
+          'discard the line', (tester) async {
+        await openMaterialSheet(tester);
+        await tester.enterText(
+          find.byKey(const Key('material_name_field')),
+          'Interior paint',
+        );
+
+        await tester.fling(
+          find.byKey(GuardedQuickSheet.handleKey),
+          const Offset(0, 300),
+          1500,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('a swipe down on the handle closes the sheet when nothing '
+          'was typed', (tester) async {
+        await openMaterialSheet(tester);
+
+        await tester.fling(
+          find.byKey(GuardedQuickSheet.handleKey),
+          const Offset(0, 300),
+          1500,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+      });
+
       testWidgets('closing the sheet without adding shows no toast', (
         tester,
       ) async {
@@ -1400,7 +1454,7 @@ void main() {
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
       });
 
-      testWidgets('closing after a failed save leaves no error behind'
+      testWidgets('discarding after a failed save leaves no error behind'
           ' on the page', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
@@ -1418,6 +1472,8 @@ void main() {
         );
 
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
