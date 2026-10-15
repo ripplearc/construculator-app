@@ -2806,6 +2806,12 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get equipmentDurationLabel;
 
+  /// Label of the duration field on the compact saved-day-rate confirmation (CUJ 6 Sub-flow B, Figma node 66337:158600); the manual-entry form keeps equipmentDurationLabel
+  ///
+  /// In en, this message translates to:
+  /// **'How many days?'**
+  String get equipmentRecalledDaysLabel;
+
   /// Placeholder text for the duration field while it is empty (Day pricing, manually mode)
   ///
   /// In en, this message translates to:

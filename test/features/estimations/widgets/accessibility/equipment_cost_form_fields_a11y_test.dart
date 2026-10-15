@@ -154,6 +154,31 @@ void main() {
     );
 
     testWidgets(
+      'a11y: the recalled-rate Amount field meets text contrast guidelines '
+      'in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final dumpster = YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Dumpster',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 400),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.job,
+        );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: dumpster),
+          find.byKey(const Key('amount_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
+    );
+
+    testWidgets(
       'a11y: Day/Job toggle chips meet tap target and label guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);

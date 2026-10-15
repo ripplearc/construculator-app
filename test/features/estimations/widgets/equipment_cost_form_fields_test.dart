@@ -2147,6 +2147,14 @@ void main() {
     );
   });
 
+  testWidgets('manual entry keeps the "Duration" label', (tester) async {
+    await tester.pumpWidget(makeWidget());
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.equipmentDurationLabel), findsOneWidget);
+    expect(find.text(l10n.equipmentRecalledDaysLabel), findsNothing);
+  });
+
   // CA-1146: CUJ 6 Sub-flows B (saved day rate) and C (saved job price).
   // Figma's actual B2/C2 confirmation screens (nodes 66337:158600 and
   // 66337:159434) replace the full entry form with a compact Title/Subtitle
@@ -2271,6 +2279,21 @@ void main() {
         );
         expect(find.byKey(const Key('rate_field')), findsNothing);
         expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      });
+
+      testWidgets('labels the duration field "How many days?"', (tester) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+
+        await recallRate(tester, 'Scissor lift');
+
+        expect(find.text(l10n.equipmentRecalledDaysLabel), findsOneWidget);
+        expect(find.text(l10n.equipmentDurationLabel), findsNothing);
       });
 
       testWidgets(
