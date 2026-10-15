@@ -221,6 +221,62 @@ void main() {
       }
     });
 
+    Future<void> pumpFailedReload(
+      WidgetTester tester, {
+      ThemeData? theme,
+    }) async {
+      seedLogs(
+        LogTestDataFactory.createLogDataList(count: 2, estimateId: estimateId),
+      );
+      await pumpWidget(tester, theme: theme);
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, 320),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a11y: failed reload message is readable in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      for (final theme in [createTestTheme(), createTestThemeDark()]) {
+        await tester.pumpWidget(const SizedBox.shrink());
+        fakeSupabase.shouldThrowOnSelectPaginated = false;
+        await pumpFailedReload(tester, theme: theme);
+
+        for (final text in [
+          l10n().refreshLogsError,
+          l10n().refreshLogsErrorHint,
+        ]) {
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.text(text),
+            checkTapTargetSize: false,
+            checkLabeledTapTarget: false,
+          );
+        }
+      }
+    });
+
+    testWidgets('a11y: failed reload is announced to screen readers', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await pumpFailedReload(tester);
+
+      expect(
+        tester.getSemantics(find.text(l10n().refreshLogsError)),
+        isSemantics(label: l10n().refreshLogsError, isLiveRegion: true),
+      );
+      semantics.dispose();
+    });
+
     testWidgets('a11y: end-of-list marker is readable in both themes', (
       tester,
     ) async {

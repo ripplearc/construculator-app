@@ -55,8 +55,6 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
       'Fetching initial logs for estimate: $estimateId, pageSize: $defaultPageSize',
     );
 
-    _paginationStates.remove(estimateId);
-
     try {
       final dtos = await dataSource
           .getEstimationLogs(

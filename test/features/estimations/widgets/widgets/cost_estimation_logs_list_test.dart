@@ -636,6 +636,104 @@ void main() {
     });
   });
 
+  group('CostEstimationLogsList failed reload', () {
+    void seedTwoLogs() {
+      seedLogs(
+        LogTestDataFactory.createLogDataList(count: 2, estimateId: estimateId),
+      );
+    }
+
+    void failNextReads() {
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+    }
+
+    Future<void> pullDown(WidgetTester tester) async {
+      await tester.drag(
+        find.byKey(CostEstimationLogsList.logsScrollViewKey),
+        const Offset(0, 320),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('keeps every entry on screen and shows the message above it', (
+      tester,
+    ) async {
+      seedTwoLogs();
+      await pumpLogsList(tester);
+      final logsBefore = renderedTileLogs(tester);
+
+      failNextReads();
+      await pullDown(tester);
+      await tester.pumpAndSettle();
+
+      expect(renderedTileLogs(tester), logsBefore);
+      expect(find.text(l10n().refreshLogsError), findsOneWidget);
+      expect(find.text(l10n().refreshLogsErrorHint), findsOneWidget);
+      expect(find.byKey(CostEstimationLogsList.errorViewKey), findsNothing);
+      expect(
+        tester
+            .getBottomLeft(
+              find.byKey(CostEstimationLogsList.refreshErrorViewKey),
+            )
+            .dy,
+        lessThanOrEqualTo(
+          tester.getTopLeft(find.byKey(ValueKey(logsBefore.first.id))).dy,
+        ),
+      );
+    });
+
+    testWidgets('shows the pull-down spinner in place of the message', (
+      tester,
+    ) async {
+      seedTwoLogs();
+      await pumpLogsList(tester);
+      final logsBefore = renderedTileLogs(tester);
+      failNextReads();
+      await pullDown(tester);
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnSelectPaginated = false;
+      fakeSupabase.completer = Completer();
+      fakeSupabase.shouldDelayOperations = true;
+      await pullDown(tester);
+      for (var frame = 0; frame < 10; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(
+        find.byKey(CostEstimationLogsList.refreshErrorViewKey),
+        findsNothing,
+      );
+      expect(find.byType(RefreshProgressIndicator), findsOneWidget);
+      expect(renderedTileLogs(tester), logsBefore);
+
+      fakeSupabase.shouldDelayOperations = false;
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RefreshProgressIndicator), findsNothing);
+      expect(
+        find.byKey(CostEstimationLogsList.refreshErrorViewKey),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows the empty state when the reload returns no entries', (
+      tester,
+    ) async {
+      seedTwoLogs();
+      await pumpLogsList(tester);
+
+      fakeSupabase.clearTableData(DatabaseConstants.costEstimationLogsTable);
+      await pullDown(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().noActivityLogs), findsOneWidget);
+      expect(find.byType(CostEstimationLogTile), findsNothing);
+    });
+  });
+
   group('CostEstimationLogsList in its bottom sheet', () {
     // Opens the list the way the app does, in a CoreQuickSheet, on a phone-
     // sized screen, and returns that screen's height.

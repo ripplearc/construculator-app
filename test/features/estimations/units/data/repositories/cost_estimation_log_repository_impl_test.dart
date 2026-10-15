@@ -274,6 +274,38 @@ void main() {
           expect(lastCall['rangeTo'], defaultPageSize - 1);
         },
       );
+
+      test(
+        'keeps pagination state when a later fetch for the same estimate fails',
+        () async {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          await repository.fetchInitialLogs(testEstimateId);
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          final failedReload = await repository.fetchInitialLogs(
+            testEstimateId,
+          );
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
+
+          expect(failedReload.isLeft(), isTrue);
+          expect(repository.hasMoreLogs(testEstimateId), isTrue);
+
+          final nextPage = await repository.loadMoreLogs(testEstimateId);
+
+          expect(nextPage.getRightOrNull(), hasLength(5));
+          final lastCall = fakeSupabaseWrapper
+              .getMethodCallsFor('selectPaginated')
+              .last;
+          expect(lastCall['rangeFrom'], defaultPageSize);
+        },
+      );
     });
 
     group('loadMoreLogs', () {

@@ -10,7 +10,10 @@ import 'package:construculator/libraries/errors/failures.dart';
 abstract class CostEstimationLogRepository {
   /// Fetches the initial page of logs for a specific cost estimation.
   ///
-  /// This method resets pagination state and retrieves the first page of logs.
+  /// This method retrieves the first page of logs and, when it succeeds,
+  /// resets pagination state to follow that page. A failed fetch keeps the
+  /// previous pagination state, so the next page still follows the logs the
+  /// caller already shows.
   /// Logs are typically ordered by timestamp (most recent first).
   ///
   /// Parameters:
