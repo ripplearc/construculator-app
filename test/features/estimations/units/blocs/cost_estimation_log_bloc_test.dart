@@ -84,15 +84,13 @@ void main() {
 
       return List.generate(takeCount, (i) {
         final index = totalCount - i - 1;
-        final day = (index + 1).toString().padLeft(2, '0');
-
         return CostEstimationLog(
           id: 'log-$index',
           estimateId: estimateId,
           activity: CostEstimationActivityType.costEstimationCreated,
           user: defaultUser,
           activityDetails: const {},
-          loggedAt: DateTime.parse('2025-02-${day}T10:00:00.000Z'),
+          loggedAt: DateTime(2025, 2, index + 1, 10),
         );
       });
     }

@@ -100,7 +100,7 @@ void main() {
         final log = _createLog(
           id: '7',
           activity: CostEstimationActivityType.costItemAdded,
-          activityDetails: {'itemName': 'Labor'},
+          activityDetails: {'costItemName': 'Labor'},
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);
@@ -126,7 +126,7 @@ void main() {
         final log = _createLog(
           id: '9',
           activity: CostEstimationActivityType.costItemEdited,
-          activityDetails: {'itemName': 'Materials'},
+          activityDetails: {'costItemName': 'Materials'},
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);
@@ -152,7 +152,7 @@ void main() {
         final log = _createLog(
           id: '11',
           activity: CostEstimationActivityType.costItemRemoved,
-          activityDetails: {'itemName': 'Equipment'},
+          activityDetails: {'costItemName': 'Equipment'},
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);
@@ -178,7 +178,7 @@ void main() {
         final log = _createLog(
           id: '13',
           activity: CostEstimationActivityType.costItemDuplicated,
-          activityDetails: {'itemName': 'Permits'},
+          activityDetails: {'costItemName': 'Permits'},
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);

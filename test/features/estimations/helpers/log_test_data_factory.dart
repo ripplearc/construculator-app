@@ -2,6 +2,10 @@ import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart'
 import 'package:construculator/libraries/supabase/database_constants.dart';
 
 /// Factory for creating test data for cost estimation logs.
+///
+/// The server stores `logged_at` in UTC and the app shows it in the phone's
+/// time zone. Default times are built from a local 10:00 AM so every
+/// screenshot shows the same time on any machine.
 class LogTestDataFactory {
   static Map<String, dynamic> createLogData({
     required String id,
@@ -28,8 +32,9 @@ class LogTestDataFactory {
       DatabaseConstants.estimateIdColumn: estimateId,
       DatabaseConstants.activityColumn: activity,
       DatabaseConstants.userColumn: userDto.toJson(),
-      DatabaseConstants.activityDetailsColumn: activityDetails ?? const {},
-      DatabaseConstants.loggedAtColumn: loggedAt ?? '2025-02-25T10:00:00.000Z',
+      DatabaseConstants.detailsColumn: activityDetails ?? const {},
+      DatabaseConstants.loggedAtColumn:
+          loggedAt ?? DateTime(2025, 2, 25, 10).toUtc().toIso8601String(),
     };
   }
 
@@ -44,7 +49,7 @@ class LogTestDataFactory {
         id: 'log-$i',
         estimateId: estimateId,
         activity: activityType,
-        loggedAt: '2025-02-${(i + 1).toString().padLeft(2, '0')}T10:00:00.000Z',
+        loggedAt: DateTime(2025, 2, i + 1, 10).toUtc().toIso8601String(),
       ),
     );
   }

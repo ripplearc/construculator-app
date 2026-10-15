@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_send_screen.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_file_changed_item_parser.dart';
@@ -143,15 +144,24 @@ class CostEstimationLogTile extends StatelessWidget {
   }
 
   Widget? _buildItemTypeSubtitle(BuildContext context) {
-    final itemType = log.activityDetails['itemType'] as String?;
+    final itemType = CostItemType.values
+        .asNameMap()[log.activityDetails['costItemType']];
     if (itemType != null) {
       return _buildSubtitleSingleInfo(
         context,
         context.l10n.activityItemType,
-        itemType,
+        _itemTypeLabel(context, itemType),
       );
     }
     return null;
+  }
+
+  String _itemTypeLabel(BuildContext context, CostItemType itemType) {
+    return switch (itemType) {
+      CostItemType.material => context.l10n.activityItemTypeMaterial,
+      CostItemType.labor => context.l10n.activityItemTypeLabor,
+      CostItemType.equipment => context.l10n.activityItemTypeEquipment,
+    };
   }
 
   Widget? _buildEditedFieldsSubtitle(BuildContext context) {

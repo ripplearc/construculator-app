@@ -47,7 +47,7 @@ void main() {
     });
 
     test('returns empty list when editedFields is missing', () {
-      const activityDetails = {'itemName': 'Concrete'};
+      const activityDetails = {'costItemName': 'Concrete'};
 
       final changes = CostItemEditedFieldMapper.fromActivityDetails(
         l10n,

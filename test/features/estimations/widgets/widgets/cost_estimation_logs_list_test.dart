@@ -212,13 +212,13 @@ void main() {
         id: 'log-1',
         activity: CostEstimationActivityType.costEstimationCreated,
         firstName: 'Liam',
-        loggedAt: DateTime.parse('2025-02-25T10:00:00.000Z'),
+        loggedAt: DateTime(2025, 2, 25, 10),
       );
       final newerLog = createExpectedLog(
         id: 'log-2',
         activity: CostEstimationActivityType.costEstimationRenamed,
         firstName: 'Ava',
-        loggedAt: DateTime.parse('2025-03-01T10:00:00.000Z'),
+        loggedAt: DateTime.parse('2025-03-01T10:00:00.000Z').toLocal(),
         activityDetails: {'oldName': 'A', 'newName': 'B'},
       );
 
@@ -251,13 +251,13 @@ void main() {
         id: 'log-1',
         activity: CostEstimationActivityType.costEstimationCreated,
         firstName: 'First',
-        loggedAt: DateTime.parse('2025-02-01T10:00:00.000Z'),
+        loggedAt: DateTime.parse('2025-02-01T10:00:00.000Z').toLocal(),
       );
       final refreshedLog = createExpectedLog(
         id: 'log-2',
         activity: CostEstimationActivityType.costEstimationCreated,
         firstName: 'Fresh',
-        loggedAt: DateTime.parse('2025-03-10T10:00:00.000Z'),
+        loggedAt: DateTime.parse('2025-03-10T10:00:00.000Z').toLocal(),
       );
 
       seedLogs([

@@ -24,7 +24,8 @@ class CostEstimationLogDto extends Equatable {
   /// User who performed the activity (stored as nested JSON).
   final Map<String, dynamic> user;
 
-  /// Additional details specific to the activity type.
+  /// Additional details specific to the activity type, read from the
+  /// server's `details` column.
   final Map<String, dynamic> activityDetails;
 
   /// ISO 8601 timestamp when the activity was logged.
@@ -49,7 +50,7 @@ class CostEstimationLogDto extends Equatable {
       estimateId: json['estimate_id'] as String,
       activity: json['activity'] as String,
       user: (json['user'] as Map<String, dynamic>?) ?? {},
-      activityDetails: (json['activity_details'] as Map<String, dynamic>?) ?? {},
+      activityDetails: (json['details'] as Map<String, dynamic>?) ?? {},
       loggedAt: json['logged_at'] as String,
     );
   }
@@ -63,7 +64,7 @@ class CostEstimationLogDto extends Equatable {
     'estimate_id': estimateId,
     'activity': activity,
     'user': user,
-    'activity_details': activityDetails,
+    'details': activityDetails,
     'logged_at': loggedAt,
   };
 
@@ -73,7 +74,8 @@ class CostEstimationLogDto extends Equatable {
   /// domain entity structure. It:
   /// - Converts string activity type to [CostEstimationActivityType] enum
   /// - Converts nested user JSON to [UserProfile] entity
-  /// - Parses ISO 8601 timestamp string to [DateTime] object
+  /// - Parses the ISO 8601 timestamp, which the server writes in UTC, and
+  ///   converts it to the phone's local time for display
   ///
   /// Throws [FormatException] if timestamp string is invalid.
   /// An unrecognized activity type string does not throw; it falls back to
@@ -89,7 +91,7 @@ class CostEstimationLogDto extends Equatable {
       activity: CostEstimationActivityTypeExtension.fromJson(activity),
       user: UserProfileDto.fromJson(user).toDomain(),
       activityDetails: activityDetails,
-      loggedAt: DateTime.parse(loggedAt),
+      loggedAt: DateTime.parse(loggedAt).toLocal(),
     );
   }
 
@@ -99,7 +101,8 @@ class CostEstimationLogDto extends Equatable {
   /// database storage or API transmission. It:
   /// - Converts [CostEstimationActivityType] enum to string
   /// - Converts [UserProfile] entity to nested JSON object
-  /// - Formats [DateTime] to ISO 8601 timestamp string
+  /// - Formats [DateTime] to an ISO 8601 timestamp string in UTC, as the
+  ///   server stores it
   factory CostEstimationLogDto.fromDomain(CostEstimationLog log) {
     return CostEstimationLogDto(
       id: log.id,
@@ -107,7 +110,7 @@ class CostEstimationLogDto extends Equatable {
       activity: log.activity.toJson(),
       user: UserProfileDto.fromDomain(log.user).toJson(),
       activityDetails: log.activityDetails,
-      loggedAt: log.loggedAt.toIso8601String(),
+      loggedAt: log.loggedAt.toUtc().toIso8601String(),
     );
   }
 
