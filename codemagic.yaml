@@ -5,8 +5,6 @@ workflows:
     environment:
       groups:
         - notification_emails
-      # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
-      flutter: 3.32.0
     cache:
       cache_paths:
         - .fvm/
@@ -26,11 +24,6 @@ workflows:
             echo "❌ Skipping checks is not allowed!"
             exit 1
           fi
-      - name: Clone and Checkout
-        script: |
-          git clone "$CM_REPO_URL" .
-          git checkout "$CM_COMMIT"
-
       - name: Install Dependencies
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
@@ -248,7 +241,6 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
     cache:
       cache_paths:
         - .fvm/
@@ -262,15 +254,12 @@ workflows:
             echo "FORCE_FAIL is true. Failing the workflow."
             exit 1
           fi
+      - name: Check Flutter version pins
+        script: bash scripts/ci/check_flutter_version_pins.sh
       - name: Install FVM
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
         script: fvm install
-      - name: Clone and Checkout
-        script: |
-          git clone $CM_REPO_URL .
-          git checkout $CM_COMMIT
-
       - name: Install Dependencies
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
@@ -444,7 +433,6 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
       ubuntu: 24.04
     cache:
       cache_paths:
@@ -460,10 +448,8 @@ workflows:
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
         script: fvm install
-      - name: Clone and Checkout
-        script: |
-          git clone $CM_REPO_URL .
-          git checkout $BASE_BRANCH
+      - name: Checkout Base Branch
+        script: git checkout "$BASE_BRANCH"
 
       - name: Install Dependencies
         script: |
@@ -616,7 +602,6 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
     cache:
       cache_paths:
         - .fvm/
@@ -635,11 +620,6 @@ workflows:
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
         script: fvm install
-      - name: Clone and Checkout
-        script: |
-          git clone "$CM_REPO_URL" .
-          git checkout "$CM_COMMIT"
-
       - name: Install Dependencies
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
@@ -689,7 +669,6 @@ workflows:
         - construculator_qa
         - notification_emails
         - ripple_arc
-      flutter: 3.32.0
       ubuntu: 24.04
     cache:
       cache_paths:
