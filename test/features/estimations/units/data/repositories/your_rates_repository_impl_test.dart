@@ -209,8 +209,8 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
-          limit: 2,
           companyId: testCompanyId,
+          limit: 2,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -236,6 +236,7 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -257,6 +258,7 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -278,6 +280,7 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -300,6 +303,7 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
+          companyId: testCompanyId,
           limit: 1,
         );
 
@@ -558,11 +562,9 @@ void main() {
         () async {
           await repository.save(buildEntry(amount: 300.0));
 
-          final body =
-              fakeSupabaseWrapper.getMethodCallsFor('insert').single['data']
-                  as Map<String, dynamic>;
-          expect(body.containsKey('last_used_at'), isFalse);
-          expect(body['rate_amount'], 300.0);
+          final inserted = database.insertedRows.single;
+          expect(inserted['last_used_at'], isNull);
+          expect(inserted['rate_amount'], 300.0);
         },
       );
 
