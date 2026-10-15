@@ -378,8 +378,11 @@ class Tape extends Equatable {
   /// after its number or before it.
   ///
   /// After a bare number with no key (38 [SIN]) it answers at once: the
-  /// number is sealed as degrees, 38°, and the answer lands beside it as a
-  /// result chip labelled by [TrigFunction.key] (scenarios S57, S105). On a
+  /// number becomes the trig chip [SIN] 38 would have opened, sealed, and
+  /// the answer lands beside it as a result chip labelled by
+  /// [TrigFunction.key] (scenario S57). Both orders land that one tape: the
+  /// operand chip carries its unit, Sine · degrees 38°, and the result
+  /// follows it (rule 4.11, which the prototype's S105 does not follow). On a
   /// value with a unit it is refused ([TapeRefusal.trigNeedsAPlainAngle]),
   /// and [TAN] on an odd quarter turn is refused with nothing landed
   /// ([TapeRefusal.tangentUndefined], scenario S94).
@@ -400,9 +403,7 @@ class Tape extends Equatable {
     }
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
-      return _replaceLast(
-        chip.copyWith(key: () => function.key, keyWantsUnit: false),
-      );
+      return _replaceLast(_asTrigChip(chip, function));
     }
     if (chip != null && chip.key == null && chip.operator == null) {
       switch (chip.value(parser)) {
@@ -417,9 +418,15 @@ class Tape extends Equatable {
     final tape = _withFractionClosedAsInches();
     if (tape._unfinished case final refusal?) return refusal;
     return TapeChanged(
-      tape._sealed().append(ValueChip(key: function.key, keyWantsUnit: false)),
+      tape._sealed().append(_asTrigChip(const ValueChip(), function)),
     );
   }
+
+  ValueChip _asTrigChip(ValueChip chip, TrigFunction function) => chip.copyWith(
+    key: () => function.key,
+    keyWantsUnit: false,
+    readsDegrees: true,
+  );
 
   TapeOutcome _answeredAfter(
     ValueChip chip,
@@ -430,12 +437,9 @@ class Tape extends Equatable {
     if (answer == null) {
       return const TapeRefused(TapeRefusal.tangentUndefined);
     }
-    final operand = chip.copyWith(
-      exact: () => (value: Angle(degrees), spelled: chip.entry),
-    );
     return TapeChanged(
       _replaceActive(
-        operand,
+        _asTrigChip(chip, function),
       ).append(ResultChip(key: function.key, value: answer)),
     );
   }

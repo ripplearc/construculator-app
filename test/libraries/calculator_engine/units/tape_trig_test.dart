@@ -71,12 +71,15 @@ void main() {
         expect(lastResult(press(const Tape(), '3 8 TAN')), 'Tangent 0.781286');
       });
 
-      test('S105: the number the key ate is sealed as degrees', () {
+      test('rule 4.11: the number the key ate is the chip Cosine · degrees '
+          '98°, then its answer', () {
         final tape = press(const Tape(), '9 8 COS');
         final operand = tape.chips.first as ValueChip;
         expect(operand.isActive, isFalse);
+        expect(operand.key, 'Cosine');
+        expect(operand.readsDegrees, isTrue);
         expect(operand.entry.text, '98');
-        expect(text(operand.value(parser)), '98°');
+        expect(text(operand.trigOperand), '98°');
         expect(lastResult(tape), 'Cosine -0.139173');
         expect(tape.active, isNull);
       });
@@ -92,8 +95,23 @@ void main() {
           upright.pressTrigKey(TrigFunction.tangent),
           const TapeRefused(TapeRefusal.tangentUndefined),
         );
-        expect(activeOf(upright).exactValue, isNull);
+        expect(activeOf(upright).key, isNull);
+        expect(activeOf(upright).readsDegrees, isFalse);
         expect(lastResult(press(const Tape(), '8 9 TAN')), 'Tangent 57.289962');
+      });
+
+      test('the tangent is refused only within 1e-9° of a quarter turn', () {
+        expect(
+          lastResult(press(const Tape(), '8 9 . 9 9 9 9 TAN')),
+          'Tangent 572,957.795104',
+        );
+        expect(
+          press(
+            const Tape(),
+            '8 9 . 9 9 9 9 9 9 9 9 9 9',
+          ).pressTrigKey(TrigFunction.tangent),
+          const TapeRefused(TapeRefusal.tangentUndefined),
+        );
       });
 
       test('a fraction with no unit still wants its unit key', () {
@@ -109,7 +127,7 @@ void main() {
         final opened = press(const Tape(), 'SIN');
         expect(
           opened.active,
-          const ValueChip(key: 'Sine', keyWantsUnit: false),
+          const ValueChip(key: 'Sine', keyWantsUnit: false, readsDegrees: true),
         );
         expect(opened.trigAnswer, isNull);
         final typed = press(opened, '3 8');
@@ -121,7 +139,29 @@ void main() {
         final accepted = typed.append(
           ResultChip(key: 'Sine', value: answer.value),
         );
-        expect(accepted.chips.last, press(const Tape(), '3 8 SIN').chips.last);
+        expect(accepted.chips, press(const Tape(), '3 8 SIN').chips);
+      });
+
+      test('rule 4.11: both orders land one tape, Sine · degrees 38° and its '
+          'answer', () {
+        final postfix = press(const Tape(), '3 8 SIN');
+        final prefix = press(const Tape(), 'SIN 3 8');
+        final landed = prefix.append(
+          ResultChip(key: 'Sine', value: offered(prefix).value),
+        );
+        expect(landed, postfix);
+        expect(
+          postfix.chips.first,
+          const ValueChip(
+            key: 'Sine',
+            entry: EntryBuffer([Token(digits: '38')]),
+            keyWantsUnit: false,
+            readsDegrees: true,
+            isActive: false,
+          ),
+        );
+        expect(text((postfix.chips.first as ValueChip).trigOperand), '38°');
+        expect(lastResult(postfix), 'Sine 0.615661');
       });
 
       test('S97 and S101: an operator seals Sine 89° at its answer', () {
@@ -139,7 +179,10 @@ void main() {
         expect(lastResult(landed), 'Calc -55.19');
         expect(landed.endsWithResult, isTrue);
         final next = press(landed, 'SIN');
-        expect(next.active, const ValueChip(key: 'Sine', keyWantsUnit: false));
+        expect(
+          next.active,
+          const ValueChip(key: 'Sine', keyWantsUnit: false, readsDegrees: true),
+        );
       });
 
       test('S103: the chain is worth the angle on the chip, Sine 80° × 56', () {
@@ -172,9 +215,14 @@ void main() {
         );
         expect(activeOf(named).key, 'Sine');
         expect((named.chips.first as ValueChip).value(parser), const Scalar(6));
+        final chained = press(const Tape(), '5 × 3 SIN');
         expect(
-          press(const Tape(), '5 × 3').pressTrigKey(TrigFunction.sine),
-          isA<TapeChanged>(),
+          chained.chips.sublist(0, 2).whereType<ValueChip>(),
+          hasLength(2),
+        );
+        expect(
+          chained.active,
+          const ValueChip(key: 'Sine', keyWantsUnit: false, readsDegrees: true),
         );
       });
 
