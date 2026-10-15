@@ -133,23 +133,31 @@ void main() {
         );
       });
 
-      test('a number too long to be an angle is refused, not NaN', () {
-        final tooLong = press(const Tape(), List.filled(310, '9').join(' '));
-        for (final function in TrigFunction.values) {
+      test('a number past the typed limit is refused before a trig key '
+          'sees it', () {
+        final atLimit = press(const Tape(), List.filled(7, '9').join(' '));
+        expect(
+          atLimit.typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
+        );
+        for (final function in [
+          TrigFunction.sine,
+          TrigFunction.cosine,
+          TrigFunction.tangent,
+        ]) {
           expect(
-            tooLong.pressTrigKey(function),
-            const TapeRefused(TapeRefusal.trigCannotAnswer),
+            atLimit.pressTrigKey(function),
+            isA<TapeChanged>(),
             reason: '$function',
           );
         }
-        expect(activeOf(tooLong).key, isNull);
         final prefix = press(
           const Tape(),
-          'SIN ${List.filled(310, '9').join(' ')}',
+          'SIN ${List.filled(7, '9').join(' ')}',
         );
         expect(
-          prefix.pressEquals(),
-          const TapeRefused(TapeRefusal.trigCannotAnswer),
+          prefix.typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
         );
       });
 

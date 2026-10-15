@@ -144,6 +144,13 @@
         <regex pattern="ChainFailed\(:final error\) =&gt; TapeChanged\(tape\.append\(ErrorChip\(error\)\)\)," dotAll="true" id="tape.press_equals.error_as_result">
             <mutation text="ChainFailed() =&gt; TapeChanged(append(const ResultChip(key: calcKey, value: Scalar(0)))),"/>
         </regex>
+
+        <!-- RULE CA-1236: an answer above 19,999,999.99 is offered, or fails
+             as the wrong error -->
+        <regex pattern="ArithmeticValue\(value: final next\) when formatter\.isTooLarge\(next\) =&gt;\s*const ArithmeticFailed\(CalculationError\.outOfRange\)," dotAll="true" id="chain_evaluator.fold.too_large">
+            <mutation text="ArithmeticValue(value: final next) when false =&gt; const ArithmeticFailed(CalculationError.outOfRange),"/>
+            <mutation text="ArithmeticValue(value: final next) when formatter.isTooLarge(next) =&gt; const ArithmeticFailed(CalculationError.dimensionError),"/>
+        </regex>
     </rules>
 
     <commands>
