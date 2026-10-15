@@ -23,6 +23,7 @@ import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   setUpAll(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
@@ -134,13 +135,13 @@ void main() {
 
       await tapBack(tester);
 
-      expect(find.text('Discard this line?'), findsOneWidget);
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
       expect(
-        find.text('Mini excavator has not been added to the estimate.'),
+        find.text(l10n.discardLineDialogBody('Mini excavator')),
         findsOneWidget,
       );
-      expect(find.text('Discard'), findsOneWidget);
-      expect(find.text('Keep editing'), findsOneWidget);
+      expect(find.text(l10n.discardLineDiscardButton), findsOneWidget);
+      expect(find.text(l10n.discardLineKeepEditingButton), findsOneWidget);
     });
 
     testWidgets('Keep editing stays on the sheet with the typed value', (
@@ -233,9 +234,9 @@ void main() {
 
       await tapBack(tester);
 
-      expect(find.text('Discard this line?'), findsOneWidget);
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
       expect(
-        find.text('Scissor lift — 19ft has not been added to the estimate.'),
+        find.text(l10n.discardLineDialogBody('Scissor lift — 19ft')),
         findsOneWidget,
       );
     });
@@ -263,9 +264,9 @@ void main() {
 
       await tapBack(tester);
 
-      expect(find.text('Discard this line?'), findsOneWidget);
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
       expect(
-        find.text('Dumpster — 30 yd has not been added to the estimate.'),
+        find.text(l10n.discardLineDialogBody('Dumpster — 30 yd')),
         findsOneWidget,
       );
     });
