@@ -20,6 +20,8 @@ void main() {
         'lbs' => current.pressUnit(Unit.pound),
         'cm' => current.pressUnit(Unit.centimetre),
         'm' => current.pressUnit(Unit.metre),
+        'mm' => current.pressUnit(Unit.millimetre),
+        'ton' => current.pressUnit(Unit.ton),
         'bf' => current.pressUnit(Unit.boardFoot),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -35,6 +37,12 @@ void main() {
       });
     }
     return current;
+  }
+
+  ValueChip activeOf(Tape tape) {
+    final chip = tape.active;
+    if (chip == null) throw StateError('no active chip on ${tape.chips}');
+    return chip;
   }
 
   String calc(Tape tape) {
@@ -184,7 +192,7 @@ void main() {
       test('change a pending operator instead of stacking two', () {
         final tape = press(const Tape(), '2 + ×');
         expect(tape.chips.length, 2);
-        expect(tape.active!.operator, Operator.multiply);
+        expect(activeOf(tape).operator, Operator.multiply);
       });
 
       test('with nothing before them say type a value first', () {
@@ -366,20 +374,15 @@ void main() {
         );
       });
 
-      test('a length past the tick limit lands an out-of-range error chip, '
-          'in a sum and in a product', () {
+      test('a number past 19,999,999.99 cannot be typed, and a length sum past '
+          '19,999,999.99 lands an out-of-range error chip', () {
         String typed(String digits) => digits.split('').join(' ');
-        final summed = press(
-          const Tape(),
-          '${typed('99999999999999')} ft + 1 ft =',
-        );
-        expect(summed.chips.last, const ErrorChip(CalculationError.outOfRange));
-        final multiplied = press(
-          const Tape(),
-          '${typed('1844674407370955')} in × 1 =',
+        expect(
+          press(const Tape(), typed('9999999')).typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
         );
         expect(
-          multiplied.chips.last,
+          press(const Tape(), '${typed('19999999')} ft + 1 ft =').chips.last,
           const ErrorChip(CalculationError.outOfRange),
         );
       });
@@ -537,10 +540,120 @@ void main() {
 
       test('backspace performs surgery on the error and = answers (S72)', () {
         final repaired = press(const Tape(), '7 8 lbs ÷ 1 2 ft = ⌫ ⌫');
-        expect(repaired.active!.entry.text, '12');
+        expect(activeOf(repaired).entry.text, '12');
         expect(calc(repaired), '6.5lbs');
         expect(lastResult(press(repaired, '=')), 'Calc 6.5lbs');
       });
+    });
+  });
+
+  group('Tape very large and very small answers (CA-1236)', () {
+    String landed(Tape tape) {
+      if (tape.chips.last case ResultChip(:final value)) {
+        return formatter.format(value);
+      }
+      throw StateError('the tape does not end on a result: ${tape.chips}');
+    }
+
+    test('9999999 × 9999999 = lands Too large, and ⌫ reopens the number', () {
+      final typed = press(const Tape(), '9 9 9 9 9 9 9 × 9 9 9 9 9 9 9');
+      expect(
+        typed.runningTotal,
+        const ChainFailed(
+          CalculationError.outOfRange,
+          left: Scalar(9999999),
+          operator: Operator.multiply,
+          right: Scalar(9999999),
+        ),
+      );
+      final landed = press(typed, '=');
+      expect(landed.chips.last, const ErrorChip(CalculationError.outOfRange));
+      final repaired = press(landed, '⌫');
+      expect(repaired.chips, typed.chips);
+      expect(activeOf(repaired).entry.text, '9999999');
+    });
+
+    test('19,999,999.99 is shown, a cent more is Too large', () {
+      final edge = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 8 + 0 . 0 1');
+      expect(calc(edge), '19,999,999.99');
+      expect(
+        press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 + 0 . 0 1 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+    });
+
+    test('the limit is the number the answer shows', () {
+      String typed(String number) => number.split('').join(' ');
+      expect(
+        press(const Tape(), '${typed('19999999')} mm + 0 . 6 mm =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        landed(
+          press(const Tape(), '0 − ${typed('19999999.99')} − 0 . 0 0 5 ='),
+        ),
+        '-19,999,999.99',
+      );
+    });
+
+    test("a ton is read at the tape's ton for the limit", () {
+      const keys = '1 9 0 0 0 0 0 0 ton + 0 ton =';
+      expect(
+        press(const Tape(), '1 9 9 9 9 9 9 9 ton + 1 ton =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        press(
+          const Tape(
+            preferences: CalculatorPreferences(
+              tonDefinition: TonDefinition.longTon,
+            ),
+          ),
+          keys,
+        ).chips.last,
+        isA<ResultChip>(),
+      );
+    });
+
+    test('the limit is in the unit shown, which never changes by itself', () {
+      expect(
+        press(const Tape(), '1 0 0 0 0 0 0 0 ft × 2 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        landed(press(const Tape(), '9 9 9 9 9 9 9 ft × 2 =')),
+        '19999998ft 0in',
+      );
+      expect(
+        press(const Tape(), '5 0 0 0 0 0 0 yd × 4 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+    });
+
+    test(
+      'a length under the rounding reads in words, a true zero does not',
+      () {
+        expect(
+          landed(press(const Tape(), '5 ft 1 / 6 4 in − 5 ft =')),
+          'Under 1/16in',
+        );
+        expect(
+          landed(press(const Tape(), '5 ft − 5 ft 1 / 6 4 in =')),
+          'Short by under 1/16in',
+        );
+        expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      },
+    );
+
+    test('an area under the rounding reads in words', () {
+      expect(
+        landed(press(const Tape(), '1 / 8 in × 1 / 8 in =')),
+        'Under 0.01ft²',
+      );
+    });
+
+    test('1 mm + 1 mm = is still 2mm', () {
+      expect(landed(press(const Tape(), '1 mm + 1 mm =')), '2mm');
     });
   });
 
