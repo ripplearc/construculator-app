@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
@@ -15,6 +17,7 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -92,9 +95,14 @@ void main() {
     );
   }
 
-  Future<void> pumpAppAtRoute(WidgetTester tester, String route) async {
+  Future<void> pumpAppAtRoute(
+    WidgetTester tester,
+    String route, {
+    void Function()? beforeNavigate,
+  }) async {
     await tester.pumpWidget(makeApp());
     await tester.pumpAndSettle();
+    beforeNavigate?.call();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
   }
@@ -744,6 +752,61 @@ void main() {
 
       expect(find.byType(CostItemFormScreen), findsNothing);
       expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    group('estimate summary load', () {
+      Future<void> openNewEquipmentSheet(WidgetTester tester) async {
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('opens the sheet when the estimate load failed', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforeNavigate: () {
+            fakeSupabase.shouldThrowOnSelect = true;
+            fakeSupabase.selectExceptionType = SupabaseExceptionType.socket;
+          },
+        );
+        fakeSupabase.shouldThrowOnSelect = false;
+
+        await openNewEquipmentSheet(tester);
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('opens the sheet while the estimate load never answers', (
+        tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforeNavigate: () {
+            fakeSupabase.shouldDelayOperations = true;
+            fakeSupabase.completer = Completer();
+          },
+        );
+        fakeSupabase.shouldDelayOperations = false;
+
+        await openNewEquipmentSheet(tester);
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
     });
   });
 }
