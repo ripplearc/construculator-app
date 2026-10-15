@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/discard_line_guard.dart';
@@ -96,7 +97,14 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         ),
       );
       return widget.type == CostItemType.material
-          ? DiscardLineGuard(child: sheet)
+          ? DiscardLineGuard<MaterialCostFormBloc, MaterialCostFormState>(
+              hasUnsavedChanges: (state) =>
+                  (state is MaterialCostFormEditing ||
+                      state is MaterialCostFormFailure) &&
+                  state.data.hasUnsavedChanges,
+              itemNameOf: (state) => state.data.itemName,
+              child: sheet,
+            )
           : sheet;
     }
     return Scaffold(

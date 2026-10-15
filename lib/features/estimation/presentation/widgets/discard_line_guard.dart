@@ -1,12 +1,11 @@
 import 'dart:math' as math;
 
-import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Guards the material sheet against closing by accident.
+/// Guards a cost form sheet against closing by accident.
 ///
 /// A tap on the dimmed background, the back arrow, a swipe down and the
 /// phone's back gesture all arrive here as a blocked pop. The sheet turns off
@@ -19,16 +18,28 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// when nothing was typed. After that, a sheet with something typed in it asks
 /// "Discard this line?". Tapping outside the dialog, or the back gesture on it,
 /// means keep editing.
-class DiscardLineGuard extends StatefulWidget {
+///
+/// [B] is the form's bloc and [S] its state. [hasUnsavedChanges] says whether a
+/// state has something typed in it, and [itemNameOf] gives the name the dialog
+/// shows, empty when nothing was named yet.
+class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
+  final bool Function(S state) hasUnsavedChanges;
+  final String Function(S state) itemNameOf;
   final Widget child;
 
-  const DiscardLineGuard({super.key, required this.child});
+  const DiscardLineGuard({
+    super.key,
+    required this.hasUnsavedChanges,
+    required this.itemNameOf,
+    required this.child,
+  });
 
   @override
-  State<DiscardLineGuard> createState() => _DiscardLineGuardState();
+  State<DiscardLineGuard<B, S>> createState() => _DiscardLineGuardState<B, S>();
 }
 
-class _DiscardLineGuardState extends State<DiscardLineGuard> {
+class _DiscardLineGuardState<B extends StateStreamable<S>, S>
+    extends State<DiscardLineGuard<B, S>> {
   static const double _swipeDownVelocity = 700;
   static const double _pullDownDistance = 64;
 
@@ -36,13 +47,14 @@ class _DiscardLineGuardState extends State<DiscardLineGuard> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+    return BlocBuilder<B, S>(
       buildWhen: (previous, current) =>
-          _hasUnsavedChanges(previous) != _hasUnsavedChanges(current),
+          widget.hasUnsavedChanges(previous) !=
+          widget.hasUnsavedChanges(current),
       builder: (context, state) {
         final isKeyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
         return PopScope(
-          canPop: !_hasUnsavedChanges(state) && !isKeyboardUp,
+          canPop: !widget.hasUnsavedChanges(state) && !isKeyboardUp,
           onPopInvokedWithResult: (didPop, _) {
             if (!didPop) _askBeforeClosing(context, isKeyboardUp);
           },
@@ -62,10 +74,6 @@ class _DiscardLineGuardState extends State<DiscardLineGuard> {
       },
     );
   }
-
-  bool _hasUnsavedChanges(MaterialCostFormState state) =>
-      (state is MaterialCostFormEditing || state is MaterialCostFormFailure) &&
-      state.data.hasUnsavedChanges;
 
   bool _onFormScrolled(ScrollNotification notification) {
     final isDragging = notification is ScrollUpdateNotification
@@ -101,12 +109,7 @@ class _DiscardLineGuardState extends State<DiscardLineGuard> {
       return;
     }
     final l10n = context.l10n;
-    final name = context
-        .read<MaterialCostFormBloc>()
-        .state
-        .data
-        .itemName
-        .trim();
+    final name = widget.itemNameOf(context.read<B>().state).trim();
     final keepEditing = await ConfirmationDialog.show(
       context,
       title: l10n.discardLineDialogTitle,
