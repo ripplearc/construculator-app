@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- CALCULATOR ENGINE FORWARD TRIG MUTATION TESTING (F1a, CA-1069) -->
-    <!-- Targets: TrigFunction (the ratio of an angle and where the tangent
-         has none), the trig key on the tape (postfix answer, prefix chip,
-         refusals) and the trig reading of a value chip. Critical path: a
-         wrong function or a missing guard prints a confident wrong number,
-         as the prototype once printed 16,331,239,353,195,370 for TAN 90. -->
+    <!-- CALCULATOR ENGINE TRIG MUTATION TESTING (F1a CA-1069, F1b CA-1302) -->
+    <!-- Targets: TrigFunction (the ratio of an angle, the angle of a ratio,
+         where the tangent has none and where a ratio is out of range), the
+         trig keys on the tape (postfix answer, prefix chip, the answers a
+         key takes, the ratio ATAN reaches across a ÷, refusals) and the
+         trig reading of a value chip. Critical path: a wrong function or a
+         missing guard prints a confident wrong number, as the prototype once
+         printed 16,331,239,353,195,370 for TAN 90 and 0° for 1800 [COS]
+         [ACOS]. -->
 
     <files>
         <file>lib/libraries/calculator_engine/trig.dart</file>
         <file>lib/libraries/calculator_engine/tape.dart</file>
         <file>lib/libraries/calculator_engine/models/chip.dart</file>
         <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
     </files>
 
     <rules>
@@ -26,13 +30,13 @@
         <regex pattern=": Scalar\(math\.tan\(radians\), decimals: ratioDecimals\)," dotAll="true" id="trig.tangent.is_sine">
             <mutation text=": Scalar(math.sin(radians), decimals: ratioDecimals),"/>
         </regex>
-        <regex pattern="final radians = degrees \* math\.pi / _halfTurn;" dotAll="true" id="trig.radians.unconverted">
-            <mutation text="final radians = degrees;"/>
+        <regex pattern="final radians = operand \* math\.pi / _halfTurn;" dotAll="true" id="trig.radians.unconverted">
+            <mutation text="final radians = operand;"/>
         </regex>
 
         <!-- RULE 2: the tangent of 90° is answered, or only 90° itself is
              refused -->
-        <regex pattern="_isOddQuarterTurn\(degrees\)\s*\? null" dotAll="true" id="trig.tangent.no_guard">
+        <regex pattern="_isOddQuarterTurn\(operand\)\s*\? null" dotAll="true" id="trig.tangent.no_guard">
             <mutation text="false ? null"/>
         </regex>
         <regex pattern="\(\(degrees % _halfTurn\) - _quarterTurn\)\.abs\(\) &lt; _quarterTurnTolerance;" dotAll="true" id="trig.tangent.only_ninety">
@@ -49,12 +53,14 @@
             <mutation text="Scalar(:final decimals?) =&gt; _jsRoundedNumber(value.value, resultDecimals,"/>
         </regex>
 
-        <!-- RULE 5: a trig chip still wants a unit, or does not name its
-             degrees (rule 4.11: "Sine · degrees 38°"), or an empty chip is
-             not renamed -->
-        <regex pattern="keyWantsUnit: false,\s*readsDegrees: true,\s*\);" dotAll="true" id="trig.key.chip_form">
-            <mutation text="keyWantsUnit: true, readsDegrees: true, );"/>
+        <!-- RULE 5: a trig chip still wants a unit, or a forward chip does
+             not name its degrees (rule 4.11: "Sine · degrees 38°"), or an
+             inverse chip reads its ratio as degrees, or an empty chip is not
+             renamed -->
+        <regex pattern="keyWantsUnit: false,\s*readsDegrees: !function\.isInverse,\s*\);" dotAll="true" id="trig.key.chip_form">
+            <mutation text="keyWantsUnit: true, readsDegrees: !function.isInverse, );"/>
             <mutation text="keyWantsUnit: false, readsDegrees: false, );"/>
+            <mutation text="keyWantsUnit: false, readsDegrees: true, );"/>
         </regex>
         <regex pattern="return _replaceLast\(_asTrigChip\(chip, function\)\);" dotAll="true" id="trig.key.no_rename">
             <mutation text="return _replaceLast(chip);"/>
@@ -62,8 +68,8 @@
 
         <!-- RULE 6: a named bare number is answered postfix, or a length is
              opened as a fresh chip -->
-        <regex pattern="if \(chip != null &amp;&amp; chip\.key == null &amp;&amp; chip\.operator == null\) \{" dotAll="true" id="trig.key.postfix_on_named">
-            <mutation text="if (chip != null &amp;&amp; chip.operator == null) {"/>
+        <regex pattern="\} else if \(chip\.key == null &amp;&amp; chip\.operator == null\) \{" dotAll="true" id="trig.key.postfix_on_named">
+            <mutation text="} else if (chip.operator == null) {"/>
         </regex>
         <regex pattern="case final Quantity _:\s*return const TapeRefused\(TapeRefusal\.trigNeedsAPlainAngle\);" dotAll="true" id="trig.key.length_accepted">
             <mutation text="case final Quantity _: break;"/>
@@ -87,17 +93,18 @@
         <regex pattern="if \(chip != null &amp;&amp; chip\.asksAnUndefinedTrig\) \{" dotAll="true" id="trig.undefined.left">
             <mutation text="if (false) {"/>
         </regex>
-        <regex pattern="\(final function\?, final angle\?\) =&gt; function\.of\(angle\.degrees\) == null," dotAll="true" id="trig.undefined.never">
-            <mutation text="(final function?, final angle?) =&gt; false,"/>
+        <regex pattern="\(final function\?, final operand\?\) =&gt; function\.answerTo\(operand\) == null," dotAll="true" id="trig.undefined.never">
+            <mutation text="(final function?, final operand?) =&gt; false,"/>
         </regex>
 
         <!-- RULE 10: a trig chip is worth its digits, or every bare named
              chip asks a trig function -->
-        <regex pattern="if \(trigOperand case final angle\?\) return trigFunction\?\.of\(angle\.degrees\);" dotAll="true" id="trig.chip.worth_digits">
+        <regex pattern="if \(trigOperand case final operand\?\) \{\s*return trigFunction\?\.answerTo\(operand\);\s*\}" dotAll="true" id="trig.chip.worth_digits">
             <mutation text=""/>
         </regex>
-        <regex pattern="Angle\? get trigOperand =&gt; trigFunction != null &amp;&amp; _isBareNumber" dotAll="true" id="trig.chip.any_key_asks">
-            <mutation text="Angle? get trigOperand =&gt; _isBareNumber"/>
+        <regex pattern="function\.isInverse \? Scalar\(number\) : Angle\(number\)," dotAll="true" id="trig.chip.operand_kind">
+            <mutation text="Angle(number),"/>
+            <mutation text="Scalar(number),"/>
         </regex>
 
         <!-- RULE 10b: a trig key is accepted inside a bracket -->
@@ -115,6 +122,101 @@
         <!-- RULE 11: a trig chip feeds the rules -->
         <regex pattern="when chip\.isReadable &amp;&amp; chip\.trigFunction == null\)" dotAll="true" id="trig.named_values.include_trig">
             <mutation text="when chip.isReadable)"/>
+        </regex>
+
+        <!-- RULE 12 (F1b): the inverse functions are swapped, or answer in
+             radians -->
+        <regex pattern="final ratio\? =&gt; _angle\(math\.asin\(ratio\)\)," dotAll="true" id="trig.inverse.arcsine_is_arccosine">
+            <mutation text="final ratio? =&gt; _angle(math.acos(ratio)),"/>
+        </regex>
+        <regex pattern="final ratio\? =&gt; _angle\(math\.acos\(ratio\)\)," dotAll="true" id="trig.inverse.arccosine_is_arcsine">
+            <mutation text="final ratio? =&gt; _angle(math.asin(ratio)),"/>
+        </regex>
+        <regex pattern="arctangent =&gt; _angle\(math\.atan\(operand\)\)," dotAll="true" id="trig.inverse.arctangent_is_arcsine">
+            <mutation text="arctangent =&gt; _angle(math.asin(operand)),"/>
+        </regex>
+        <regex pattern="Angle\(radians \* _halfTurn / math\.pi\);" dotAll="true" id="trig.inverse.radians">
+            <mutation text="Angle(radians);"/>
+        </regex>
+
+        <!-- RULE 13 (F1b): a ratio beyond ±1 answered, or float noise past
+             ±1 refused or widened. "< 1" for "<= 1" is equivalent now: at
+             exactly ±1 the noise line answers ±1 too. -->
+        <regex pattern="if \(operand\.abs\(\) &lt;= 1\) return operand;" dotAll="true" id="trig.inverse.range">
+            <mutation text="return operand;"/>
+        </regex>
+        <regex pattern="if \(operand\.abs\(\) - 1 &lt; _ratioTolerance\) return operand\.sign;" dotAll="true" id="trig.inverse.noise_refused">
+            <mutation text="if (false) return operand.sign;"/>
+        </regex>
+        <regex pattern="static const double _ratioTolerance = 1e-9;" dotAll="true" id="trig.inverse.noise_tolerance">
+            <mutation text="static const double _ratioTolerance = 1e-6;"/>
+        </regex>
+
+        <!-- RULE 14 (F1b): a function is filed under the wrong family -->
+        <regex pattern="sine \|\| cosine \|\| tangent =&gt; false," dotAll="true" id="trig.inverse.forward_is_inverse">
+            <mutation text="sine || cosine || tangent =&gt; true,"/>
+        </regex>
+        <regex pattern="arcsine \|\| arccosine \|\| arctangent =&gt; true," dotAll="true" id="trig.inverse.inverse_is_forward">
+            <mutation text="arcsine || arccosine || arctangent =&gt; false,"/>
+        </regex>
+
+        <!-- RULE 15 (F1b): a function takes the wrong kind of value -->
+        <regex pattern="\(false, Angle\(:final degrees\)\) =&gt; of\(degrees\)," dotAll="true" id="trig.answer_to.inverse_takes_angle">
+            <mutation text="(_, Angle(:final degrees)) =&gt; of(degrees),"/>
+        </regex>
+        <regex pattern="\(_, Scalar\(:final value\)\) =&gt; of\(value\)," dotAll="true" id="trig.answer_to.forward_refuses_number">
+            <mutation text="(true, Scalar(:final value)) =&gt; of(value),"/>
+        </regex>
+
+        <!-- RULE 16 (F1b): a rebuilt answer loses its reading or its
+             operator -->
+        <regex pattern="\(final Angle angle, Angle\(:final spelling\)\) =&gt; angle\.spelledAs\(spelling\)," dotAll="true" id="trig.rebuilt.loses_spelling">
+            <mutation text="(final Angle angle, Angle(:final spelling)) =&gt; angle,"/>
+        </regex>
+        <regex pattern="value: kept, operator: answer\.operator\);" dotAll="true" id="trig.rebuilt.loses_operator">
+            <mutation text="value: kept);"/>
+        </regex>
+
+        <!-- RULE 17 (F1b): a trig key takes the wrong answer, or a wrong
+             value, after its number -->
+        <regex pattern="Scalar\(\) when function\.isInverse &amp;&amp; TrigFunction\.named\(key\) == null =&gt;" dotAll="true" id="trig.key.inverse_eats_trig_answer">
+            <mutation text="Scalar() when function.isInverse =&gt;"/>
+        </regex>
+        <regex pattern="Angle\(\) when !function\.isInverse =&gt; value," dotAll="true" id="trig.key.forward_skips_angle">
+            <mutation text="Angle() when false =&gt; value,"/>
+        </regex>
+        <regex pattern="if \(chip\.operator == Operator\.divide &amp;&amp; chip\.isReadable\) \{" dotAll="true" id="trig.key.any_operator_ratio">
+            <mutation text="if (chip.operator != null &amp;&amp; chip.isReadable) {"/>
+        </regex>
+        <regex pattern="ChainFailed\(\) =&gt; pressEquals\(\)," dotAll="true" id="trig.key.failed_division_hidden">
+            <mutation text="ChainFailed() =&gt; null,"/>
+        </regex>
+        <regex pattern="if \(chip\.trigFunction != null\) return null;" dotAll="true" id="trig.key.inverse_reads_trig_chip">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(value is Angle\) return const TapeRefused\(TapeRefusal\.ratioOutOfRange\);" dotAll="true" id="trig.key.inverse_takes_angle">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(operand is! Scalar &amp;&amp; operand is! Angle\) \{" dotAll="true" id="trig.key.length_out_of_range">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="\? TapeRefusal\.ratioOutOfRange\s*: TapeRefusal\.tangentUndefined," dotAll="true" id="trig.key.refusals_swapped">
+            <mutation text="? TapeRefusal.tangentUndefined : TapeRefusal.ratioOutOfRange,"/>
+        </regex>
+
+
+
+
+        <!-- RULE 21 (F1b): postfix inverse leaves its ratio a bare number, so
+             the two orders land two tapes (rule 4.11) -->
+        <regex pattern="_replaceActive\(_asTrigChip\(chip, function\)\),\s*function,\s*value," dotAll="true" id="trig.inverse.postfix_other_tape">
+            <mutation text="this, function, value,"/>
+        </regex>
+
+        <!-- RULE 22 (F1b): a rebuilt answer reads a trig operand chip at its
+             answer -->
+        <regex pattern="final ValueChip chip when chip\.trigFunction != null =&gt; chip\.trigOperand," dotAll="true" id="trig.rebuilt.operand_at_answer">
+            <mutation text=""/>
         </regex>
     </rules>
 
