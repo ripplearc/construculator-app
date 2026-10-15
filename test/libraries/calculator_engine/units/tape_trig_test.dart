@@ -14,10 +14,15 @@ void main() {
     'SIN' => tape.pressTrigKey(TrigFunction.sine),
     'COS' => tape.pressTrigKey(TrigFunction.cosine),
     'TAN' => tape.pressTrigKey(TrigFunction.tangent),
+    'ASIN' => tape.pressTrigKey(TrigFunction.arcsine),
+    'ACOS' => tape.pressTrigKey(TrigFunction.arccosine),
+    'ATAN' => tape.pressTrigKey(TrigFunction.arctangent),
     'ft' => tape.pressUnit(Unit.foot),
     'in' => tape.pressUnit(Unit.inch),
     '×' => tape.pressOperator(Operator.multiply),
     '−' => tape.pressOperator(Operator.subtract),
+    '+' => tape.pressOperator(Operator.add),
+    '÷' => tape.pressOperator(Operator.divide),
     '/' => tape.typeFraction(),
     '=' => tape.pressEquals(),
     '(' => tape.pressBracket(),
@@ -56,11 +61,25 @@ void main() {
     return answer;
   }
 
-  String lastResult(Tape tape) {
-    if (tape.chips.last case ResultChip(:final key, :final value)) {
+  String result(TapeChip chip) {
+    if (chip case ResultChip(:final key, :final value)) {
       return '$key ${formatter.format(value)}';
     }
-    throw StateError('the tape does not end on a result: ${tape.chips}');
+    throw StateError('not a result: $chip');
+  }
+
+  String lastResult(Tape tape) => result(tape.chips.last);
+
+  String answerText(Tape tape) {
+    final answer = offered(tape);
+    return '${answer.key} ${formatter.format(answer.value)}';
+  }
+
+  String calc(Tape tape) {
+    if (tape.runningTotal case ChainValue(:final value, isCalculation: true)) {
+      return 'Calc ${formatter.format(value)}';
+    }
+    throw StateError('no Calc on ${tape.chips}');
   }
 
   group('Tape trig keys (F1a)', () {
@@ -261,6 +280,297 @@ void main() {
           press(const Tape(), '( 3').pressTrigKey(TrigFunction.sine),
           const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
         );
+      });
+    });
+  });
+
+  group('Tape inverse trig keys (F1b)', () {
+    const outOfRange = TapeRefused(TapeRefusal.ratioOutOfRange);
+
+    group('postfix: the key after its ratio', () {
+      test('S58: a pending division is evaluated first, then the angle', () {
+        final arctangent = press(const Tape(), '1 2 ÷ 2 3 ATAN');
+        expect(arctangent.chips.length, 4);
+        expect(result(arctangent.chips[2]), 'Calc 0.52');
+        expect(lastResult(arctangent), 'Arctangent 27.55°');
+        expect(arctangent.active, isNull);
+        expect(
+          lastResult(press(const Tape(), '1 2 ÷ 2 3 = ASIN')),
+          'Arcsine 31.45°',
+        );
+        expect(
+          lastResult(press(const Tape(), '1 2 ÷ 2 3 = ACOS')),
+          'Arccosine 58.55°',
+        );
+        expect(
+          lastResult(press(const Tape(), '1 2 ÷ 2 3 ASIN')),
+          'Arcsine 31.45°',
+        );
+      });
+
+      test('S70: 2 [ASIN] is refused, 0.5 [ASIN] is Arcsine 30°', () {
+        final two = press(const Tape(), '2');
+        expect(two.pressTrigKey(TrigFunction.arcsine), outOfRange);
+        expect(two.pressTrigKey(TrigFunction.arccosine), outOfRange);
+        expect(lastResult(press(two, 'ATAN')), 'Arctangent 63.43°');
+        final half = press(const Tape(), '0 . 5 ASIN');
+        expect(lastResult(half), 'Arcsine 30°');
+        final operand = half.chips.first as ValueChip;
+        expect(operand.isActive, isFalse);
+        expect(operand.key, 'Arcsine');
+        expect(operand.readsDegrees, isFalse);
+        expect(operand.trigOperand, const Scalar(0.5));
+        expect(lastResult(press(const Tape(), '1 ASIN')), 'Arcsine 90°');
+        expect(lastResult(press(const Tape(), '1 ACOS')), 'Arccosine 0°');
+      });
+
+      test('rule 4.11: both orders land one tape, Arcsine · a ratio 0.5 and '
+          'its answer', () {
+        for (final key in ['ASIN', 'ACOS', 'ATAN']) {
+          final postfix = press(const Tape(), '0 . 5 $key');
+          final prefix = press(const Tape(), '$key 0 . 5');
+          final landed = prefix.append(
+            ResultChip(key: offered(prefix).key, value: offered(prefix).value),
+          );
+          expect(landed, postfix, reason: key);
+        }
+      });
+
+      test('a ratio a hair past 1 in floating point is 1', () {
+        expect(
+          lastResult(press(const Tape(), '0 . 1 + 0 . 2 ÷ 0 . 3 ASIN')),
+          'Arcsine 90°',
+        );
+        expect(
+          press(
+            const Tape(),
+            '1 . 0 0 0 0 0 0 1',
+          ).pressTrigKey(TrigFunction.arcsine),
+          outOfRange,
+        );
+      });
+
+      test('S110: a ratio over 1 is an ordinary roof for [ATAN]', () {
+        expect(
+          lastResult(press(const Tape(), '1 6 ÷ 1 2 ATAN')),
+          'Arctangent 53.13°',
+        );
+        expect(
+          lastResult(press(const Tape(), '1 6 ÷ 1 2 = ATAN')),
+          'Arctangent 53.13°',
+        );
+        expect(
+          press(const Tape(), '1 6 ÷ 1 2 =').pressTrigKey(TrigFunction.arcsine),
+          outOfRange,
+        );
+      });
+
+      test('two lengths divided give a ratio; a length is refused', () {
+        expect(
+          lastResult(press(const Tape(), '1 2 ft ÷ 2 3 ft ATAN')),
+          'Arctangent 27.55°',
+        );
+        const needsARatio = TapeRefused(TapeRefusal.trigNeedsAPlainAngle);
+        expect(
+          press(const Tape(), '1 2 ft').pressTrigKey(TrigFunction.arctangent),
+          needsARatio,
+        );
+        expect(
+          press(const Tape(), '1 2 ft ÷ 2').pressTrigKey(TrigFunction.arcsine),
+          needsARatio,
+        );
+      });
+
+      test('an angle is not a ratio, typed or divided', () {
+        final pitch = press(const Tape(), '[Pitch] 3 0');
+        expect(pitch.pressTrigKey(TrigFunction.arctangent), outOfRange);
+        expect(
+          press(pitch, '÷ 2').pressTrigKey(TrigFunction.arcsine),
+          outOfRange,
+        );
+        expect(activeOf(press(pitch, '× ACOS')).key, 'Arccosine');
+      });
+
+      test('a division that fails lands its error the way = does', () {
+        final dividedByZero = press(const Tape(), '1 2 ÷ 0');
+        expect(
+          dividedByZero.pressTrigKey(TrigFunction.arctangent),
+          dividedByZero.pressEquals(),
+        );
+        expect(
+          press(const Tape(), '1 2 ÷ 0 ATAN').chips,
+          contains(const ErrorChip(CalculationError.divisionByZero)),
+        );
+      });
+
+      test('only a division builds the ratio: 12 × 23 opens Arctangent…', () {
+        final tape = press(const Tape(), '1 2 × 2 3 ATAN');
+        expect(
+          tape.active,
+          const ValueChip(key: 'Arctangent', keyWantsUnit: false),
+        );
+        expect(tape.chips.whereType<ResultChip>(), isEmpty);
+        expect(activeOf(press(const Tape(), '[Sides] 6 ASIN')).key, 'Arcsine');
+        final arcsine = press(const Tape(), 'ASIN 0 . 5 ACOS');
+        expect(arcsine.chips.length, 2);
+        expect(activeOf(arcsine).key, 'Arccosine');
+      });
+    });
+
+    group('which answers a trig key takes', () {
+      test('S96: a ratio Calc is eaten, a sine is not an angle', () {
+        expect(
+          lastResult(press(const Tape(), '1 2 ÷ 2 3 = ASIN')),
+          'Arcsine 31.45°',
+        );
+        final sine = press(const Tape(), '3 8 SIN');
+        final cosine = press(sine, 'COS');
+        expect(sine.endsWithResult, isTrue);
+        expect(
+          cosine.active,
+          const ValueChip(
+            key: 'Cosine',
+            keyWantsUnit: false,
+            readsDegrees: true,
+          ),
+        );
+        final angle = press(const Tape(), '1 2 ÷ 2 3 ATAN SIN');
+        expect(result(angle.chips[3]), 'Arctangent 27.55°');
+        expect(lastResult(angle), 'Sine 0.462566');
+        expect(
+          activeOf(press(const Tape(), 'ASIN 2')).asksAnUndefinedTrig,
+          isTrue,
+        );
+      });
+
+      test('S106: a trig answer is not the next trig key\'s operand', () {
+        final cosine = press(const Tape(), '1 8 0 0 COS');
+        expect(text((cosine.chips.first as ValueChip).trigOperand), '1,800°');
+        expect(lastResult(cosine), 'Cosine 1');
+        expect(activeOf(press(cosine, 'ACOS')).key, 'Arccosine');
+        expect(press(cosine, 'ACOS').chips.last, isA<ValueChip>());
+        expect(activeOf(press(const Tape(), '8 9 SIN ASIN')).key, 'Arcsine');
+        final chained = press(const Tape(), '0 . 5 ASIN SIN');
+        expect(chained.chips.length, 3);
+        expect(result(chained.chips[1]), 'Arcsine 30°');
+        expect(lastResult(chained), 'Sine 0.5');
+      });
+
+      test(
+        'an angle answer is not a ratio, and its tangent can be undefined',
+        () {
+          final angle = press(const Tape(), 'ACOS 0 . 8 × 6 =');
+          expect(lastResult(angle), 'Calc 221.22°');
+          expect(activeOf(press(angle, 'ATAN')).key, 'Arctangent');
+          expect(lastResult(press(angle, 'TAN')), 'Tangent 0.876032');
+          expect(
+            press(const Tape(), '0 ACOS').pressTrigKey(TrigFunction.tangent),
+            const TapeRefused(TapeRefusal.tangentUndefined),
+          );
+          expect(
+            press(const Tape(), '1 5 × 1 =').pressTrigKey(TrigFunction.sine),
+            isA<TapeChanged>().having(
+              (outcome) => activeOf(outcome.tape).key,
+              'opens',
+              'Sine',
+            ),
+          );
+        },
+      );
+    });
+
+    group('prefix: the key before its ratio', () {
+      test('S100: an out-of-range ratio keeps saying why', () {
+        final tape = press(const Tape(), 'ACOS 4 5');
+        expect(activeOf(tape).trigOperand, const Scalar(45));
+        expect(activeOf(tape).asksAnUndefinedTrig, isTrue);
+        expect(tape.trigAnswer, isNull);
+        const refused = TapeRefused(TapeRefusal.trigCannotAnswer);
+        expect(tape.pressOperator(Operator.multiply), refused);
+        expect(tape.pressOperator(Operator.divide), refused);
+        expect(tape.pressEquals(), refused);
+      });
+
+      test('S109: a lone operand offers its answer for the caller to land', () {
+        final arctangent = press(const Tape(), 'ATAN 0 . 1');
+        expect(answerText(arctangent), 'Arctangent 5.71°');
+        expect(
+          arctangent.pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+        expect(answerText(press(const Tape(), 'ACOS 0 . 5')), 'Arccosine 60°');
+      });
+
+      test('S110: [ATAN] 1.333 answers, [ASIN] 1.5 does not', () {
+        expect(
+          answerText(press(const Tape(), 'ATAN 1 . 3 3 3')),
+          'Arctangent 53.12°',
+        );
+        final arcsine = press(const Tape(), 'ASIN 1 . 5');
+        expect(arcsine.trigAnswer, isNull);
+        expect(activeOf(arcsine).asksAnUndefinedTrig, isTrue);
+      });
+
+      test('S112: × seals the function, and ÷ seals ASIN and SIN', () {
+        final arccosine = press(const Tape(), 'ACOS 0 . 8');
+        expect(answerText(arccosine), 'Arccosine 36.87°');
+        final sealed = press(arccosine, '× 6');
+        expect(sealed.trigAnswer, isNull);
+        expect(calc(sealed), 'Calc 221.22°');
+        expect(lastResult(press(sealed, '=')), 'Calc 221.22°');
+        expect(calc(press(const Tape(), 'SIN 3 0 × 6')), 'Calc 3');
+        expect(calc(press(const Tape(), 'ATAN 1 × 2')), 'Calc 90°');
+        final halved = press(const Tape(), 'ASIN 0 . 5 ÷ 2');
+        expect(halved.trigAnswer, isNull);
+        expect(calc(halved), 'Calc 15°');
+        expect(calc(press(const Tape(), 'SIN 3 0 ÷ 2')), 'Calc 0.25');
+      });
+
+      test('S102: an answer is rebuilt on the tape an edit left before it', () {
+        ValueChip retyped(TapeChip chip, String digits) => (chip as ValueChip)
+            .copyWith(entry: EntryBuffer([Token(digits: digits)]));
+        String rebuilt(Tape before, TapeChip answer) {
+          final chip = before.rebuiltTrigAnswer(answer as ResultChip);
+          if (chip == null) throw StateError('$answer was not rebuilt');
+          return result(chip);
+        }
+
+        final sine = press(const Tape(), '3 8 SIN');
+        expect(
+          rebuilt(
+            Tape(chips: [retyped(sine.chips.first, '40')]),
+            sine.chips.last,
+          ),
+          'Sine 0.642788',
+        );
+        final arcsine = press(const Tape(), '0 . 5 ASIN');
+        expect(
+          rebuilt(
+            Tape(chips: [retyped(arcsine.chips.first, '0.6')]),
+            arcsine.chips.last,
+          ),
+          'Arcsine 36.87°',
+        );
+        expect(
+          Tape(
+            chips: [retyped(arcsine.chips.first, '2')],
+          ).rebuiltTrigAnswer(arcsine.chips.last as ResultChip),
+          isNull,
+        );
+        final divided = press(const Tape(), '7 8 ÷ 8 9 ATAN');
+        expect(
+          rebuilt(press(const Tape(), '7 0 ÷ 8 9 ='), divided.chips.last),
+          'Arctangent 38.19°',
+        );
+      });
+
+      test('a unit on a ratio is refused, and the number stays bare', () {
+        final tape = press(const Tape(), 'ASIN 0 . 5');
+        expect(
+          tape.pressUnit(Unit.foot),
+          const TapeRefused(TapeRefusal.trigTakesAnAngle),
+        );
+        expect(activeOf(tape).entry.text, '0.5');
       });
     });
   });

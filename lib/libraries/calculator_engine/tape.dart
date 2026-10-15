@@ -66,14 +66,24 @@ enum TapeRefusal {
   /// grade").
   slopeTakesAGrade,
 
-  /// A trig key on a value with a unit (38ft [SIN]): "Sine needs a plain
-  /// angle, not a length" (Section 5.4). The caller names the function and
-  /// the value from the tape.
+  /// A trig key on a value with a unit (38ft [SIN], 12ft ÷ 2 [ATAN]): "Sine
+  /// needs a plain angle, not a length", "Arctangent needs a ratio, not a
+  /// length" (Section 5.4). The caller names the function and the value
+  /// from the tape.
   trigNeedsAPlainAngle,
 
   /// A unit key on the number of a trig chip ([SIN] 38 [Feet]): "Sine takes
-  /// an angle, not a length" (Section 5.4); the number stays bare.
+  /// an angle, not a length", "Arcsine takes a ratio, not a length"
+  /// (Section 5.4); the number stays bare.
   trigTakesAnAngle,
+
+  /// ASIN or ACOS on a ratio beyond ±1 (2 [ASIN]): "Arcsine needs a ratio
+  /// between −1 and 1 — 2 isn't one" (Section 5.4, "Ratio out of range");
+  /// nothing lands and the number stays as typed. An inverse key on an
+  /// angle still being typed under its key (Pitch 30°) or on an angle
+  /// reached by a division is refused the same way (rule 4.11). The caller
+  /// names the function and the value.
+  ratioOutOfRange,
 
   /// [TAN] on an odd quarter turn (90 [TAN], 270 [TAN]): "The tangent of
   /// 90° is undefined" (Section 5.4); nothing lands and the number keeps
@@ -362,10 +372,11 @@ class Tape extends Equatable {
   };
 
   /// The answer a trig chip still being typed offers ([SIN] 38 offers Sine
-  /// 0.615661, scenario S95): accepting it is landing it as a result chip
-  /// with [append], which leaves the same tape as 38 [SIN] would (rule
-  /// 4.11). `null` when no trig chip is active, before its number is typed,
-  /// or when its function has no value there ([ValueChip.asksAnUndefinedTrig]).
+  /// 0.615661, scenario S95; [ACOS] 0.5 offers Arccosine 60°): accepting it
+  /// is landing it as a result chip with [append], which leaves the same
+  /// tape as 38 [SIN] would (rule 4.11). `null` when no trig chip is
+  /// active, before its number is typed, or when its function has no value
+  /// there ([ValueChip.asksAnUndefinedTrig]).
   Answer? get trigAnswer {
     final chip = active;
     final function = chip?.trigFunction;
@@ -374,8 +385,27 @@ class Tape extends Equatable {
     return Answer(key: function.key, value: answer, sources: [function.key]);
   }
 
-  /// A forward trig key, SIN, COS or TAN (Section 3.5; rule 4.11), pressed
-  /// after its number or before it.
+  /// [answer], a trig answer an edit behind it left standing, rebuilt on
+  /// this tape, the chips before it, so that it survives the edit (rule
+  /// 4.8; scenario S102). It is rebuilt on the operand chip both orders
+  /// land (Sine · degrees 40° rebuilds Sine 0.642788), on the Calc a
+  /// postfix key answered (making the 78 of 78 ÷ 89 [ATAN] a 70 rebuilds
+  /// Arctangent 38.19°). `null` when the edit leaves no answer, and the
+  /// chip is removed (Section 5.5, "A result that can no longer be
+  /// computed").
+  ResultChip? rebuiltTrigAnswer(ResultChip answer) {
+    final operand = switch (chips.lastOrNull) {
+      final ValueChip chip when chip.trigFunction != null => chip.trigOperand,
+      final ValueChip chip => chip.value(parser),
+      ResultChip(:final value) => value,
+      _ => null,
+    };
+    if (operand == null) return null;
+    return TrigFunction.rebuilt(answer, operand);
+  }
+
+  /// A trig key (Section 3.5; rule 4.11), pressed after its number or
+  /// before it.
   ///
   /// After a bare number with no key (38 [SIN]) it answers at once: the
   /// number becomes the trig chip [SIN] 38 would have opened, sealed, and
@@ -397,6 +427,24 @@ class Tape extends Equatable {
   /// answer (Sine 89° × 56 = 55.99, scenarios S97 and S101), and a unit key
   /// on its number is refused ([TapeRefusal.trigTakesAnAngle]). Inside a
   /// bracket the key is refused, as a function key is.
+  ///
+  /// ASIN, ACOS and ATAN take a ratio and answer an angle. After a bare
+  /// number they answer at once, and the number becomes the trig chip the
+  /// prefix order lands, Arcsine · a ratio 0.5, so both orders land one
+  /// tape (0.5 [ASIN] is Arcsine 30°, scenario S70; rule 4.11); after
+  /// a division still being typed they land its Calc first and answer from
+  /// it, 12 ÷ 23 [ATAN] is Calc 0.52 then Arctangent 27.55° (walkthroughs
+  /// 16.2 and 16.3); on a finished tape they take a Calc that is a ratio,
+  /// 12 ÷ 23 = [ASIN] is Arcsine 31.45° (Section 3.5). ASIN and ACOS
+  /// refuse a ratio beyond ±1, and every inverse key refuses an angle,
+  /// such as Pitch 30° still being typed ([TapeRefusal.ratioOutOfRange]).
+  ///
+  /// A forward key takes an angle the tape has answered (0.5 [ASIN] [SIN]
+  /// is Sine 0.5, scenario S106). A trig key never takes the wrong kind of
+  /// answer, nor the ratio a forward key answered: 38 [SIN] [COS] and 1800
+  /// [COS] [ACOS] open a fresh chip instead (scenarios S96, S106), which
+  /// the caller banks the tape for, as for any fresh chip after a result.
+  /// When the key takes the answer the tape goes on.
   TapeOutcome pressTrigKey(TrigFunction function) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
@@ -405,7 +453,13 @@ class Tape extends Equatable {
     if (chip != null && chip.entry.isEmpty) {
       return _replaceLast(_asTrigChip(chip, function));
     }
-    if (chip != null && chip.key == null && chip.operator == null) {
+    if (chip == null) {
+      if (_answerTheKeyTakes(function) case final operand?) {
+        return _answeredOn(this, function, operand);
+      }
+    } else if (function.isInverse) {
+      if (_inverseKeyOn(chip, function) case final outcome?) return outcome;
+    } else if (chip.key == null && chip.operator == null) {
       switch (chip.value(parser)) {
         case Scalar(value: final degrees) || Angle(:final degrees):
           return _answeredAfter(chip, function, degrees);
@@ -425,8 +479,64 @@ class Tape extends Equatable {
   ValueChip _asTrigChip(ValueChip chip, TrigFunction function) => chip.copyWith(
     key: () => function.key,
     keyWantsUnit: false,
-    readsDegrees: true,
+    readsDegrees: !function.isInverse,
   );
+
+  Quantity? _answerTheKeyTakes(TrigFunction function) {
+    if (chips.isEmpty || chips.last is! ResultChip) return null;
+    final ResultChip(:key, :value) = chips.last as ResultChip;
+    return switch (value) {
+      Scalar() when function.isInverse && TrigFunction.named(key) == null =>
+        value,
+      Angle() when !function.isInverse => value,
+      _ => null,
+    };
+  }
+
+  TapeOutcome? _inverseKeyOn(ValueChip chip, TrigFunction function) {
+    if (chip.operator == Operator.divide && chip.isReadable) {
+      return switch (runningTotal) {
+        ChainValue(value: final ratio, isCalculation: true) => _answeredOn(
+          append(ResultChip(key: calcKey, value: ratio)),
+          function,
+          ratio,
+        ),
+        ChainFailed() => pressEquals(),
+        ChainValue() || ChainEmpty() => null,
+      };
+    }
+    if (chip.trigFunction != null) return null;
+    final value = chip.value(parser);
+    if (value is Angle) return const TapeRefused(TapeRefusal.ratioOutOfRange);
+    if (chip.key != null || chip.operator != null || value == null) {
+      return null;
+    }
+    return _answeredOn(
+      _replaceActive(_asTrigChip(chip, function)),
+      function,
+      value,
+    );
+  }
+
+  static TapeOutcome _answeredOn(
+    Tape tape,
+    TrigFunction function,
+    Quantity operand,
+  ) {
+    if (function.answerTo(operand) case final answer?) {
+      return TapeChanged(
+        tape.append(ResultChip(key: function.key, value: answer)),
+      );
+    }
+    if (operand is! Scalar && operand is! Angle) {
+      return const TapeRefused(TapeRefusal.trigNeedsAPlainAngle);
+    }
+    return TapeRefused(
+      function.isInverse
+          ? TapeRefusal.ratioOutOfRange
+          : TapeRefusal.tangentUndefined,
+    );
+  }
 
   TapeOutcome _answeredAfter(
     ValueChip chip,
