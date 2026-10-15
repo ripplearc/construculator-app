@@ -49,9 +49,15 @@
             <mutation text="Scalar(:final decimals?) =&gt; _jsRoundedNumber(value.value, resultDecimals,"/>
         </regex>
 
-        <!-- RULE 5: an empty chip renamed to a trig key still wants a unit -->
-        <regex pattern="chip\.copyWith\(key: \(\) =&gt; function\.key, keyWantsUnit: false\)," dotAll="true" id="trig.key.rename_wants_unit">
-            <mutation text="chip.copyWith(key: () =&gt; function.key),"/>
+        <!-- RULE 5: a trig chip still wants a unit, or does not name its
+             degrees (rule 4.11: "Sine · degrees 38°"), or an empty chip is
+             not renamed -->
+        <regex pattern="keyWantsUnit: false,\s*readsDegrees: true,\s*\);" dotAll="true" id="trig.key.chip_form">
+            <mutation text="keyWantsUnit: true, readsDegrees: true, );"/>
+            <mutation text="keyWantsUnit: false, readsDegrees: false, );"/>
+        </regex>
+        <regex pattern="return _replaceLast\(_asTrigChip\(chip, function\)\);" dotAll="true" id="trig.key.no_rename">
+            <mutation text="return _replaceLast(chip);"/>
         </regex>
 
         <!-- RULE 6: a named bare number is answered postfix, or a length is
@@ -64,12 +70,12 @@
         </regex>
 
         <!-- RULE 7: the refused tangent says the wrong thing, or the eaten
-             number keeps no degree badge -->
+             number does not become the trig chip the prefix order lands -->
         <regex pattern="if \(answer == null\) \{\s*return const TapeRefused\(TapeRefusal\.tangentUndefined\);" dotAll="true" id="trig.key.tangent_reason">
             <mutation text="if (answer == null) { return const TapeRefused(TapeRefusal.trigCannotAnswer);"/>
         </regex>
-        <regex pattern="exact: \(\) =&gt; \(value: Angle\(degrees\), spelled: chip\.entry\)," dotAll="true" id="trig.key.no_badge">
-            <mutation text="exact: () =&gt; null,"/>
+        <regex pattern="_replaceActive\(\s*_asTrigChip\(chip, function\),\s*\)" dotAll="true" id="trig.key.postfix_other_tape">
+            <mutation text="_replaceActive(chip)"/>
         </regex>
 
         <!-- RULE 8: a unit on a trig number gets the plain-number toast -->
@@ -97,6 +103,13 @@
         <!-- RULE 10b: a trig key is accepted inside a bracket -->
         <regex pattern="pressTrigKey\(TrigFunction function\) \{\s*if \(openBracket != null\) \{" dotAll="true" id="trig.key.inside_bracket">
             <mutation text="pressTrigKey(TrigFunction function) { if (false) {"/>
+        </regex>
+
+        <!-- RULE 10c: the tangent's tolerance widens, so 89.9999° is refused,
+             or narrows, so 89.9999999999° answers -->
+        <regex pattern="static const double _quarterTurnTolerance = 1e-9;" dotAll="true" id="trig.tangent.tolerance">
+            <mutation text="static const double _quarterTurnTolerance = 1e-3;"/>
+            <mutation text="static const double _quarterTurnTolerance = 1e-12;"/>
         </regex>
 
         <!-- RULE 11: a trig chip feeds the rules -->
