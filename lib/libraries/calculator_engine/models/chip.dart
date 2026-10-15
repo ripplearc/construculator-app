@@ -71,6 +71,13 @@ final class ValueChip extends TapeChip {
   /// through [exactValue], which ignores it once the entry is edited.
   final ExactSpelling? exact;
 
+  /// How many pounds the ton in [entry] stood for when it was typed or
+  /// re-spelled, `null` while the entry holds no ton. A setting never
+  /// changes what was typed (rule 4.14), so a later ton definition reads
+  /// only the tons typed after it: [value] reads this chip by the
+  /// definition it was typed under, whatever the tape's is now.
+  final int? poundsPerTon;
+
   /// Whether the keyboard writes into this chip.
   final bool isActive;
 
@@ -79,6 +86,7 @@ final class ValueChip extends TapeChip {
     this.operator,
     this.entry = const EntryBuffer(),
     this.exact,
+    this.poundsPerTon,
     this.isActive = true,
   });
 
@@ -90,9 +98,17 @@ final class ValueChip extends TapeChip {
   /// left).
   Quantity? value(QuantityParser parser) {
     if (exactValue case final value?) return value;
-    if (entry.isComplete) return parser.parse(entry.tokens);
+    if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
     if (_isUnnamedBareNumber) return Scalar(entry.tokens.first.value);
     return null;
+  }
+
+  QuantityParser _typedUnder(QuantityParser parser) {
+    if (poundsPerTon case final typedUnder?
+        when typedUnder != parser.poundsPerTon) {
+      return QuantityParser(poundsPerTon: typedUnder);
+    }
+    return parser;
   }
 
   /// The exact quantity behind the entry while the entry is still the
@@ -120,14 +136,16 @@ final class ValueChip extends TapeChip {
       entry.tokens.first.denominator == null &&
       double.tryParse(entry.tokens.first.digits) != null;
 
-  /// Returns a copy with the given fields replaced. [key], [operator] and
-  /// [exact] take a `Function()?` wrapper so that clearing them to `null`
-  /// can be told apart from leaving them as they are.
+  /// Returns a copy with the given fields replaced. [key], [operator],
+  /// [exact] and [poundsPerTon] take a `Function()?` wrapper so that
+  /// clearing them to `null` can be told apart from leaving them as they
+  /// are.
   ValueChip copyWith({
     String? Function()? key,
     Operator? Function()? operator,
     EntryBuffer? entry,
     ExactSpelling? Function()? exact,
+    int? Function()? poundsPerTon,
     bool? isActive,
   }) {
     return ValueChip(
@@ -135,12 +153,20 @@ final class ValueChip extends TapeChip {
       operator: operator != null ? operator() : this.operator,
       entry: entry ?? this.entry,
       exact: exact != null ? exact() : this.exact,
+      poundsPerTon: poundsPerTon != null ? poundsPerTon() : this.poundsPerTon,
       isActive: isActive ?? this.isActive,
     );
   }
 
   @override
-  List<Object?> get props => [key, operator, entry, exact, isActive];
+  List<Object?> get props => [
+    key,
+    operator,
+    entry,
+    exact,
+    poundsPerTon,
+    isActive,
+  ];
 }
 
 /// An answer the app computed (term 2.3): an accepted suggestion, an equals

@@ -1,9 +1,11 @@
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
+import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
@@ -180,6 +182,14 @@ final class TapeUnitRefused extends TapeOutcome {
 ///
 /// The tape is a value; every key returns a new tape or a refusal. The
 /// strip's answers are not the tape's.
+///
+/// The tape carries the calculator settings (Appendix C) so that one value
+/// decides how its chips are read, re-spelled and rendered: the ton
+/// definition is what a typed "78 ton" weighs when it is typed and what a
+/// weight re-spells at, and every setting is what [formatter] renders a
+/// chip by. A setting never changes a stored value (rule 4.14): a typed
+/// ton remembers the definition it was typed under, and [withPreferences]
+/// is the same chips under new settings, which the caller re-renders.
 class Tape extends Equatable {
   /// The label of the result = lands.
   static const String calcKey = 'Calc';
@@ -188,18 +198,46 @@ class Tape extends Equatable {
   /// one can be active.
   final List<TapeChip> chips;
 
-  /// How many pounds make a ton: the one setting the tape's reading and
-  /// writing of values share, so a "78 ton" typed at 2,240 lb is never
-  /// re-spelled at 2,000.
-  final int poundsPerTon;
+  /// The settings the chips are read, re-spelled and rendered by.
+  final CalculatorPreferences preferences;
 
   const Tape({
     this.chips = const [],
-    this.poundsPerTon = QuantityParser.defaultPoundsPerTon,
+    this.preferences = CalculatorPreferences.defaults,
   });
+
+  /// How many pounds make a ton, as the parser and the ladder read a ton
+  /// typed now. A ton typed earlier keeps the definition it was typed under
+  /// ([ValueChip.poundsPerTon]), so a "78 ton" typed at 2,240 lb is never
+  /// re-read at 2,000.
+  int get poundsPerTon => preferences.poundsPerTon;
 
   /// Reads finished entries as quantities.
   QuantityParser get parser => QuantityParser(poundsPerTon: poundsPerTon);
+
+  /// Renders a chip's value under the settings.
+  QuantityFormatter get formatter =>
+      QuantityFormatter(preferences: preferences);
+
+  /// The same chips under new settings; a setting never changes a stored
+  /// value (rule 4.14). A result keeps its value and renders anew: 22.28
+  /// ton reads 19.89 ton under the long ton, the weight unchanged. A typed
+  /// ton keeps the definition it was typed under ([ValueChip.poundsPerTon]):
+  /// a 78 ton typed at 2,000 lb still weighs 156,000 lb under 2,240, with
+  /// or without a digit still open after it, and only a ton typed after the
+  /// change reads the new definition, a ton a split starts included (78ton
+  /// 5 then [Ton] stamps the 5ton with the setting it was typed under). A
+  /// ton converted from pounds keeps its exact weight while its digits are
+  /// still the conversion's spelling (rule 4.15): 2000lbs then [Ton] reads
+  /// 1ton worth 2,000 lb, and ⌫ then [Ton] after a change to the long ton
+  /// still reads 2,000 lb, because the chip is still that conversion; a
+  /// digit typed into it makes it a typed ton under the new setting. The
+  /// chips are untouched, so going back to the first setting gives the
+  /// first tape. The text stays as
+  /// typed (Appendix C: "your entries keep their typed units"); whether it
+  /// should re-spell to 69.64 ton is the doc owner's call.
+  Tape withPreferences(CalculatorPreferences preferences) =>
+      Tape(chips: chips, preferences: preferences);
 
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
@@ -617,12 +655,19 @@ class Tape extends Equatable {
 
   TapeOutcome _entry(ValueChip chip, EntryOutcome outcome) => switch (outcome) {
     EntryChanged(:final buffer) => _replaceLast(
-      chip.copyWith(entry: buffer, exact: buffer.isEmpty ? () => null : null),
+      chip.copyWith(
+        entry: buffer,
+        exact: buffer.isEmpty ? () => null : null,
+        poundsPerTon: () => _tonTypedUnder(chip, buffer),
+      ),
     ),
     EntrySplit(:final finished, :final started) => TapeChanged(
-      _replaceActive(
-        chip.copyWith(entry: finished),
-      ).append(ValueChip(entry: started)),
+      _replaceActive(chip.copyWith(entry: finished)).append(
+        ValueChip(
+          entry: started,
+          poundsPerTon: _tonTypedUnder(const ValueChip(), started),
+        ),
+      ),
     ),
     EntryRefused(:final reason) => TapeEntryRefused(reason),
   };
@@ -632,8 +677,18 @@ class Tape extends Equatable {
     return chip.copyWith(
       entry: spelled,
       exact: () => (value: value, spelled: spelled),
+      poundsPerTon: () => _tonTypedUnder(chip, spelled),
     );
   }
+
+  int? _tonTypedUnder(ValueChip chip, EntryBuffer buffer) {
+    final tons = _tonTokens(buffer);
+    if (tons == 0) return null;
+    return tons > _tonTokens(chip.entry) ? poundsPerTon : chip.poundsPerTon;
+  }
+
+  int _tonTokens(EntryBuffer entry) =>
+      entry.tokens.where((token) => token.unit == Unit.ton).length;
 
   TapeOutcome _convertResult(ResultChip result, Unit unit) {
     final outcome = ladder.press(
@@ -669,8 +724,8 @@ class Tape extends Equatable {
   }
 
   Tape _with(List<TapeChip> chips) =>
-      Tape(chips: chips, poundsPerTon: poundsPerTon);
+      Tape(chips: chips, preferences: preferences);
 
   @override
-  List<Object?> get props => [chips, poundsPerTon];
+  List<Object?> get props => [chips, preferences];
 }

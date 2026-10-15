@@ -15,13 +15,13 @@
     <rules>
         <!-- RULE 1: a function key opens a second chip instead of renaming
              the empty one -->
-        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{" dotAll="true" id="tape.function_key.no_rename">
-            <mutation text="if (false) {"/>
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(chip\.copyWith\(key: \(\) =&gt; key\)\);" dotAll="true" id="tape.function_key.no_rename">
+            <mutation text="if (false) { return _replaceLast(chip.copyWith(key: () =&gt; key));"/>
         </regex>
 
         <!-- RULE 2: an unfinished value can be left by a function key -->
-        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{" dotAll="true" id="tape.function_key.leave_unfinished">
-            <mutation text="if (false) {"/>
+        <regex pattern="if \(chip != null &amp;&amp; !chip\.isReadable\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return TapeChanged\(_sealed\(\)\.append\(ValueChip\(key: key\)\)\);" dotAll="true" id="tape.function_key.leave_unfinished">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.finishThisValueFirst); } return TapeChanged(_sealed().append(ValueChip(key: key)));"/>
         </regex>
 
         <!-- RULE 3: a unit after a result is answered like an empty tape -->
@@ -43,14 +43,14 @@
 
         <!-- RULE 6: a split finishes the value but never starts the new one
              beside it -->
-        <regex pattern="\)\.append\(ValueChip\(entry: started\)\)," dotAll="true" id="tape.entry.split_drops_started">
-            <mutation text="),"/>
+        <regex pattern="_replaceActive\(chip\.copyWith\(entry: finished\)\)\.append\(\s*ValueChip\(\s*entry: started,\s*poundsPerTon: _tonTypedUnder\(const ValueChip\(\), started\),\s*\),\s*\)," dotAll="true" id="tape.entry.split_drops_started">
+            <mutation text="_replaceActive(chip.copyWith(entry: finished)),"/>
         </regex>
 
         <!-- RULE 7: backspace drops the last chip without reopening the value
              before it -->
-        <regex pattern="previous\.copyWith\(isActive: true\)," dotAll="true" id="tape.backspace.no_reopen">
-            <mutation text="previous,"/>
+        <regex pattern="previous\.copyWith\(isActive: true\),\s*\]\),\s*final BracketChip closed =&gt; _with\(\[\.\.\.before, _reopened\(closed\)\]\)," dotAll="true" id="tape.backspace.no_reopen">
+            <mutation text="previous, ]), final BracketChip closed =&gt; _with([...before, _reopened(closed)]),"/>
         </regex>
 
         <!-- RULE 8: backspace unwinds the tape even while the active chip has
@@ -108,8 +108,50 @@
 
         <!-- RULE 18: an emptied chip keeps the exact quantity it was
              converted from -->
-        <regex pattern="chip\.copyWith\(entry: buffer, exact: buffer\.isEmpty \? \(\) =&gt; null : null\)," dotAll="true" id="tape.entry.empty_keeps_exact">
-            <mutation text="chip.copyWith(entry: buffer),"/>
+        <regex pattern="chip\.copyWith\(\s*entry: buffer,\s*exact: buffer\.isEmpty \? \(\) =&gt; null : null,\s*poundsPerTon: \(\) =&gt; _tonTypedUnder\(chip, buffer\),\s*\)," dotAll="true" id="tape.entry.empty_keeps_exact">
+            <mutation text="chip.copyWith(entry: buffer, poundsPerTon: () =&gt; _tonTypedUnder(chip, buffer)),"/>
+        </regex>
+
+        <!-- RULE 19: new settings drop the chips, or keep the old settings -->
+        <regex pattern="Tape withPreferences\(CalculatorPreferences preferences\) =&gt;\s*Tape\(chips: chips, preferences: preferences\);" dotAll="true" id="tape.with_preferences.drops_chips">
+            <mutation text="Tape withPreferences(CalculatorPreferences preferences) =&gt; Tape(preferences: preferences);"/>
+            <mutation text="Tape withPreferences(CalculatorPreferences preferences) =&gt; Tape(chips: chips, preferences: this.preferences);"/>
+        </regex>
+
+        <!-- RULE 22: a typed ton never remembers its definition, so a new
+             one re-reads it; or every edit re-stamps it, so ⌫ on a digit
+             open after the ton re-reads it -->
+        <regex pattern="return tons &gt; _tonTokens\(chip\.entry\) \? poundsPerTon : chip\.poundsPerTon;" dotAll="true" id="tape.entry.ton_definition_forgotten">
+            <mutation text="return chip.poundsPerTon;"/>
+            <mutation text="return poundsPerTon;"/>
+        </regex>
+
+        <!-- RULE 23: a chip is read by the tape's ton, not the one it was
+             typed under -->
+        <regex pattern="if \(entry\.isComplete\) return _typedUnder\(parser\)\.parse\(entry\.tokens\);" dotAll="true" id="chip.value.ignores_typed_ton">
+            <mutation text="if (entry.isComplete) return parser.parse(entry.tokens);"/>
+        </regex>
+
+        <!-- RULE 24: every token counts as a ton, so a digit typed after
+             the ton re-stamps it -->
+        <!-- RULE: a ton a split starts is read at whatever the setting is
+             later -->
+        <regex pattern="entry: started,\s*poundsPerTon: _tonTypedUnder\(const ValueChip\(\), started\)," dotAll="true" id="tape.entry.split_ton_unstamped">
+            <mutation text="entry: started, poundsPerTon: null,"/>
+        </regex>
+
+        <regex pattern="entry\.tokens\.where\(\(token\) =&gt; token\.unit == Unit\.ton\)\.length;" dotAll="true" id="tape.entry.every_token_is_a_ton">
+            <mutation text="entry.tokens.length;"/>
+        </regex>
+
+        <!-- RULE 20: a key press forgets the settings -->
+        <regex pattern="Tape _with\(List&lt;TapeChip&gt; chips\) =&gt;\s*Tape\(chips: chips, preferences: preferences\);" dotAll="true" id="tape.with.forgets_settings">
+            <mutation text="Tape _with(List&lt;TapeChip&gt; chips) =&gt; Tape(chips: chips);"/>
+        </regex>
+
+        <!-- RULE 21: the formatter ignores the settings -->
+        <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
+            <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
         </regex>
     </rules>
 
