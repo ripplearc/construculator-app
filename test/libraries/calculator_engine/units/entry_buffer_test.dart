@@ -19,6 +19,16 @@ void main() {
 
   group('EntryBuffer', () {
     group('typing digits', () {
+      test('CA-1236: a digit past 19,999,999.99 is refused as Too large', () {
+        const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+        final edge = type('19999999');
+        expect(edge.typeDigit('9'), tooLarge);
+        expect(type('.99', edge).text, '19999999.99');
+        expect(type('.99', edge).typeDigit('1'), tooLarge);
+        expect(type('2000000').typeDigit('0'), tooLarge);
+        expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
+      });
+
       test('fills the open number and echoes it', () {
         final buffer = type('22');
         expect(buffer, const EntryBuffer([Token(digits: '22')]));
@@ -664,14 +674,16 @@ void main() {
       });
 
       test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
+        // The degrees stop at the typed limit (19,999,999), so the minutes
+        // segment, which has no limit, carries the total to 2⁵³.
         expect(
-          typeAngle('150119987579015:92:').text,
+          typeAngle('19999999:9007198054741052:').text,
           '150119987579016°32\'00"',
           reason: '9,007,199,254,740,992 minutes, the last exact carry',
         );
         expect(
-          typeAngle('150119987579015:94:').text,
-          '150119987579015°94\'00"',
+          typeAngle('19999999:9007198054741054:').text,
+          '19999999°9007198054741054\'00"',
           reason: 'two past it: the segments are left as typed',
         );
       });
@@ -725,9 +737,9 @@ void main() {
       });
 
       test('segments past 2⁵³ minutes are left as typed', () {
-        final huge = typeAngle('99999999999999999:5:');
-        expect(huge.text, '99999999999999999°05\'00"');
-        expect(typeAngle('9', huge).text, '99999999999999999°05\'9"');
+        final huge = typeAngle('19999999:99999999999999999:');
+        expect(huge.text, '19999999°99999999999999999\'00"');
+        expect(typeAngle('9', huge).text, '19999999°99999999999999999\'9"');
       });
 
       test(

@@ -34,8 +34,10 @@ enum CalculationError {
   /// ÷ 0.
   divisionByZero,
 
-  /// The answer is too large to keep: a length beyond
-  /// [ChainArithmetic.maxTicks], or a number that overflowed to infinity.
+  /// The answer is too large to show: above [Quantity.largestShown] in the
+  /// unit it is written in, which the chip reads as "Too large" (Section 5),
+  /// as is every length beyond [ChainArithmetic.maxTicks] and every number
+  /// that overflowed to infinity.
   outOfRange,
 }
 
