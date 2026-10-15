@@ -30,6 +30,8 @@ void main() {
       currency: 'USD',
       unitPrice: const Money(amount: 10.0),
       quantity: const Quantity(value: 10.0, unit: Unit.bags),
+      rateStatus: RateStatus.ownRateConfirmed,
+      quantityProvenance: QuantityProvenance.manual,
     );
 
     setUpAll(() {

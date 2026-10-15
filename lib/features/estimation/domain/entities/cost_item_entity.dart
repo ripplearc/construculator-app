@@ -174,10 +174,10 @@ enum EquipmentPricingMethod {
 
 /// Confidence level of a rate value used in a cost item's calculation.
 ///
-/// This is intentionally generic and not equipment-specific: it is introduced
-/// for [EquipmentCostItem.rateStatus] but is designed to be adopted by
-/// Material and Labor cost items in future tickets, so all cost item types
-/// can express the same three-way rate confidence.
+/// This is intentionally generic and not equipment-specific: it is shared by
+/// [EquipmentCostItem.rateStatus] and [MaterialCostItem.rateStatus] and is
+/// designed to be adopted by Labor cost items, so all cost item types can
+/// express the same three-way rate confidence.
 enum RateStatus {
   /// Rate comes from a generic sample/reference rate, not yet verified by the user.
   sampleRateUnverified('sample_rate_unverified'),
@@ -212,6 +212,36 @@ enum RateStatus {
     return RateStatus.values.firstWhere(
       (e) => e.value == value,
       orElse: () => RateStatus.missing,
+    );
+  }
+}
+
+/// Where a cost item's quantity came from.
+///
+/// Tracked separately from [RateStatus] because a line can take its quantity
+/// from the calculator while its price is still an unconfirmed sample rate.
+enum QuantityProvenance {
+  /// The quantity was typed directly into the cost form.
+  manual('manual'),
+
+  /// The quantity was measured in the calculator and handed off to the form.
+  fromCalculator('from_calculator');
+
+  /// The string stored in JSON for this provenance.
+  final String value;
+  const QuantityProvenance(this.value);
+
+  /// Serializes this [QuantityProvenance] to its JSON string representation.
+  String toJson() => value;
+
+  /// Deserializes a [QuantityProvenance] from JSON string.
+  ///
+  /// Falls back to [QuantityProvenance.manual] for unknown values because a
+  /// quantity with no known origin must never claim to be calculator-sourced.
+  static QuantityProvenance fromJson(String value) {
+    return QuantityProvenance.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => QuantityProvenance.manual,
     );
   }
 }
@@ -380,9 +410,6 @@ sealed class CostItem extends Equatable {
   /// ISO 4217 currency code for this cost item's monetary values.
   final String currency;
 
-  /// Optional brand or manufacturer name for this cost item.
-  final String? brand;
-
   /// Optional URL linking to the product or resource for this item.
   final String? productLink;
 
@@ -399,7 +426,6 @@ sealed class CostItem extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     required this.currency,
-    this.brand,
     this.productLink,
     this.description,
   });
@@ -415,7 +441,6 @@ sealed class CostItem extends Equatable {
     createdAt,
     updatedAt,
     currency,
-    brand,
     productLink,
     description,
   ];
@@ -440,6 +465,21 @@ class MaterialCostItem extends CostItem {
   /// Total quantity of this material with its unit of measurement.
   final Quantity quantity;
 
+  /// Percentage of extra material allowed for waste; null when unset, 0.0 when
+  /// explicitly zero.
+  final double? wastePercent;
+
+  /// Confidence level of [unitPrice].
+  final RateStatus rateStatus;
+
+  /// Whether [quantity] was typed by hand or measured in the calculator.
+  final QuantityProvenance quantityProvenance;
+
+  /// Formula the calculator computed [quantity] from, such as `47.24in x 94.49in`.
+  ///
+  /// Set only when [quantityProvenance] is [QuantityProvenance.fromCalculator].
+  final String? calculatorFormula;
+
   const MaterialCostItem({
     required super.id,
     required super.estimateId,
@@ -451,18 +491,37 @@ class MaterialCostItem extends CostItem {
     required super.currency,
     required this.unitPrice,
     required this.quantity,
-    super.brand,
+    required this.rateStatus,
+    required this.quantityProvenance,
+    this.wastePercent,
+    this.calculatorFormula,
     super.productLink,
     super.description,
-  }) : super(itemType: CostItemType.material);
+  }) : assert(
+         calculatorFormula == null ||
+             quantityProvenance == QuantityProvenance.fromCalculator,
+         'A calculator formula needs fromCalculator provenance.',
+       ),
+       super(itemType: CostItemType.material);
 
   @override
-  List<Object?> get props => [...super.props, unitPrice, quantity];
+  List<Object?> get props => [
+    ...super.props,
+    unitPrice,
+    quantity,
+    wastePercent,
+    rateStatus,
+    quantityProvenance,
+    calculatorFormula,
+  ];
 
   /// Creates a copy of this [MaterialCostItem] with the given fields replaced.
   ///
   /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
+  ///
+  /// Switching [quantityProvenance] to [QuantityProvenance.manual] also needs
+  /// `calculatorFormula: clearField`, otherwise the constructor assert fails.
   ///
   /// Example:
   /// ```dart
@@ -482,7 +541,10 @@ class MaterialCostItem extends CostItem {
     String? currency,
     Money? unitPrice,
     Quantity? quantity,
-    Object? brand,
+    Object? wastePercent,
+    RateStatus? rateStatus,
+    QuantityProvenance? quantityProvenance,
+    Object? calculatorFormula,
     Object? productLink,
     Object? description,
   }) {
@@ -497,7 +559,14 @@ class MaterialCostItem extends CostItem {
       currency: currency ?? this.currency,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
-      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
+      wastePercent: wastePercent == clearField
+          ? null
+          : (wastePercent as double?) ?? this.wastePercent,
+      rateStatus: rateStatus ?? this.rateStatus,
+      quantityProvenance: quantityProvenance ?? this.quantityProvenance,
+      calculatorFormula: calculatorFormula == clearField
+          ? null
+          : (calculatorFormula as String?) ?? this.calculatorFormula,
       productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
@@ -532,7 +601,6 @@ class LaborCostItem extends CostItem {
     required this.laborCalcMethod,
     required this.laborValue,
     this.crewSize,
-    super.brand,
     super.productLink,
     super.description,
   }) : super(itemType: CostItemType.labor);
@@ -570,7 +638,6 @@ class LaborCostItem extends CostItem {
     LaborCalculationMethodType? laborCalcMethod,
     LaborValue? laborValue,
     Object? crewSize,
-    Object? brand,
     Object? productLink,
     Object? description,
   }) {
@@ -585,9 +652,9 @@ class LaborCostItem extends CostItem {
       currency: currency ?? this.currency,
       laborCalcMethod: laborCalcMethod ?? this.laborCalcMethod,
       laborValue: laborValue ?? this.laborValue,
-      crewSize:
-          crewSize == clearField ? null : (crewSize as int?) ?? this.crewSize,
-      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
+      crewSize: crewSize == clearField
+          ? null
+          : (crewSize as int?) ?? this.crewSize,
       productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
@@ -666,7 +733,6 @@ class EquipmentCostItem extends CostItem {
     this.dailyRate,
     this.jobAmount,
     this.deliveryFee,
-    super.brand,
     super.productLink,
     super.description,
   }) : assert(
@@ -718,7 +784,6 @@ class EquipmentCostItem extends CostItem {
     Object? jobAmount,
     Object? deliveryFee,
     RateStatus? rateStatus,
-    Object? brand,
     Object? productLink,
     Object? description,
   }) {
@@ -745,7 +810,6 @@ class EquipmentCostItem extends CostItem {
           ? null
           : (deliveryFee as Money?) ?? this.deliveryFee,
       rateStatus: rateStatus ?? this.rateStatus,
-      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
