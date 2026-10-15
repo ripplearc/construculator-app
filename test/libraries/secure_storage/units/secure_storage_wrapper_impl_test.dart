@@ -30,6 +30,16 @@ class _FakeFailingFlutterSecureStorage extends FlutterSecureStorage {
   }) async => throw PlatformException(code: 'keystore_unavailable');
 
   @override
+  Future<void> deleteAll({
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => throw PlatformException(code: 'keystore_unavailable');
+
+  @override
   Future<void> delete({
     required String key,
     AppleOptions? iOptions,
@@ -81,6 +91,17 @@ void main() {
       expect(await wrapper.read('b'), '2');
     });
 
+    test('deleteAll removes every key', () async {
+      final wrapper = buildWrapper();
+      await wrapper.write('a', '1');
+      await wrapper.write('b', '2');
+
+      await wrapper.deleteAll();
+
+      expect(await wrapper.read('a'), isNull);
+      expect(await wrapper.read('b'), isNull);
+    });
+
     test('deleting a key that is not there does not throw', () async {
       await expectLater(buildWrapper().delete('missing'), completes);
     });
@@ -114,6 +135,10 @@ void main() {
 
       test('delete rethrows so a surviving session is not hidden', () {
         expect(() => wrapper.delete('k'), throwsA(isA<PlatformException>()));
+      });
+
+      test('deleteAll rethrows so a surviving session is not hidden', () {
+        expect(() => wrapper.deleteAll(), throwsA(isA<PlatformException>()));
       });
     });
   });

@@ -48,24 +48,19 @@ Keychain data can persist across app uninstalls unless explicitly cleared, where
 
 **The risk:** A user uninstalls the app, reinstalls it, and the app silently picks up stale tokens, cached PII, or old flags — without the user's awareness.
 
-**Solution (not yet implemented, tracked by [CA-519](https://ripplearc.youtrack.cloud/issue/CA-519)):**
-On first launch after a fresh install, check for a 'first-run' flag stored in regular `SharedPreferences` (which does get cleared on uninstall). If the flag is absent, run a `deleteAll()` on `flutter_secure_storage` to wipe any stale data.
+**Solution:**
+`StaleSecureStorageService` (`lib/libraries/secure_storage/stale_secure_storage_service.dart`) runs inside `SupabaseWrapperImpl.initialize()`, before Supabase reads the session. It looks for a `has_launched_before` flag in regular `SharedPreferences`, which iOS does clear on uninstall:
+- **Flag present:** nothing happens.
+- **Flag absent and no earlier-version key:** a fresh install. It calls `deleteAll()` on secure storage, then sets the flag.
+- **Flag absent but the earlier app version's `sb-<project>-auth-token` entry is still in `SharedPreferences`:** an update from a build that kept the session there. The flag did not exist before this check shipped, so every updating user has no flag. Secure storage is kept (the session move runs next) and the flag is set.
+- **`deleteAll()` fails:** the flag stays unset, the app keeps starting, and the next launch tries again. `SecureStorageWrapperImpl` logs the failure once. Sentry is not running yet during start-up, so that log reaches the console only.
 
-> ⚠️ Because the session now lives in secure storage, the flag check alone is not safe. An app that was installed before the flag existed also has no flag, so a plain `deleteAll()` would sign out every user who updates. An absent flag with a session still in `shared_preferences` is an update, not a fresh install, and must not wipe.
+The check assumes the app cannot start before the phone's first unlock after a restart. Before that unlock, iOS may not let the app read `shared_preferences`, in which case a launch would look like a fresh install. This has not been tested. The app has no background modes, push handling or background plugins today. If any are added, this check needs revisiting.
 
-```dart
-// Run during app initialization
-final prefs = await SharedPreferences.getInstance();
-final isFirstRun = prefs.getBool('has_launched_before') ?? true;
-
-if (isFirstRun) {
-  await const FlutterSecureStorage().deleteAll();
-  await prefs.setBool('has_launched_before', false);
-}
-```
+A build that has the session move but not this check yet would look like a fresh install to this check, because the move deletes the old entry. Ship both together, as CA-519 asks.
 
 [Read more about this issue](https://github.com/mogol/flutter_secure_storage/issues/43)
-[Youtrack issue to implement this](https://ripplearc.youtrack.cloud/issue/CA-519).
+[Youtrack issue](https://ripplearc.youtrack.cloud/issue/CA-519).
 
 ## Package Comparison
 
@@ -148,7 +143,7 @@ The login session is kept in secure storage by `SecureSessionLocalStorage` (see 
 
 ## Action Items
 
-- [ ] **Priority: High** — Implement first-run stale data wipe on iOS to handle the uninstall persistence issue ([CA-519](https://ripplearc.youtrack.cloud/issue/CA-519)), keeping the update-versus-fresh-install check above
+- [x] **Priority: High** — First-run stale data wipe on iOS ([CA-519](https://ripplearc.youtrack.cloud/issue/CA-519)). Still to do: check on a real iPhone that a reinstall starts signed out
 - [ ] **Priority: High** — Audit existing code for any PII written to `SharedPreferences`, local files, or logs — migrate to `flutter_secure_storage`
 - [ ] **Priority: Medium** — Document the key management strategy if Hive is adopted: where the AES key lives and how it is rotated
 - [ ] **Priority: Ongoing** — Monitor Supabase SDK changelogs for changes to the `LocalStorage` interface that `SecureSessionLocalStorage` extends
