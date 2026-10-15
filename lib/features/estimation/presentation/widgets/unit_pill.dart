@@ -1,0 +1,156 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// The rounded unit button next to the quantity. Tapping it opens the unit
+/// list; the unit is never typed.
+///
+// TODO: [CA-1186] replace the interim unit list with the grouped 23-unit "Select unit" sheet, which has no time units and a 2,000 lb ton where Tons here is metric. https://ripplearc.youtrack.cloud/issue/CA-1186
+class UnitPill extends StatelessWidget {
+  static const double _pillHeight = CoreSpacing.space8;
+  static const double _tapHeight = CoreSpacing.space12;
+  static const _unlistedUnits = {Unit.hours, Unit.days};
+
+  /// The picked unit, or null while none is picked.
+  final Unit? unit;
+
+  /// Called with the unit the user picked from the list.
+  final ValueChanged<Unit> onUnitSelected;
+
+  /// Whether tapping opens the list. False while the line is being saved.
+  final bool isEnabled;
+
+  const UnitPill({
+    super.key,
+    required this.unit,
+    required this.onUnitSelected,
+    this.isEnabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final l10n = context.l10n;
+    final unit = this.unit;
+    return SizedBox(
+      height: _pillHeight,
+      child: OverflowBox(
+        alignment: Alignment.centerLeft,
+        fit: OverflowBoxFit.deferToChild,
+        minHeight: _tapHeight,
+        maxHeight: _tapHeight,
+        child: Semantics(
+          button: true,
+          label: unit == null
+              ? l10n.unitPillEmptySemanticLabel
+              : l10n.unitPillSemanticLabel(unit.displayName(l10n)),
+          excludeSemantics: true,
+          enabled: isEnabled,
+          onTap: isEnabled ? () => _openList(context) : null,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openList(context),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              widthFactor: 1,
+              child: Container(
+                height: _pillHeight,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space3,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoreSpacing.space5),
+                  border: Border.all(color: colorTheme.lineMid),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: CoreSpacing.space1,
+                  children: [
+                    Text(
+                      unit == null
+                          ? l10n.unitPillEmptyLabel
+                          : unit.displayName(l10n),
+                      style: textTheme.bodyLargeRegular.copyWith(
+                        color: unit == null
+                            ? colorTheme.textDisable
+                            : colorTheme.textHeadline,
+                      ),
+                    ),
+                    CoreIconWidget(
+                      icon: CoreIcons.arrowDown,
+                      size: CoreIconSize.size20,
+                      color: colorTheme.iconGrayMid,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openList(BuildContext context) async {
+    if (!isEnabled) return;
+    final picked = await CoreQuickSheet.show<Unit>(
+      context: context,
+      backgroundColor: sheetSurface(context),
+      child: _UnitList(selected: unit),
+    );
+    if (picked != null) onUnitSelected(picked);
+  }
+}
+
+class _UnitList extends StatelessWidget {
+  final Unit? selected;
+
+  const _UnitList({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final textTheme = context.textTheme;
+    final colorTheme = context.colorTheme;
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(CoreSpacing.space4),
+            child: Text(
+              l10n.selectUnitTitle,
+              style: textTheme.titleMediumSemiBold.copyWith(
+                color: colorTheme.textHeadline,
+              ),
+            ),
+          ),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (final unit in Unit.values.where(
+                    (unit) => !UnitPill._unlistedUnits.contains(unit),
+                  ))
+                    CoreCheckRowItem(
+                      key: Key('unit_option_${unit.name}'),
+                      leading: const SizedBox.shrink(),
+                      title: unit.displayName(l10n),
+                      selected: unit == selected,
+                      onChanged: (_) => Navigator.of(context).pop(unit),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
