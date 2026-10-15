@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/currency_display_controller.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -98,8 +99,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _equipmentNameController = TextEditingController();
   final _quantityController = TextEditingController();
   final _durationController = TextEditingController();
-  final _dailyRateController = TextEditingController();
-  final _jobAmountController = TextEditingController();
+  final _dailyRateFocusNode = FocusNode();
+  final _jobAmountFocusNode = FocusNode();
+  late final _dailyRateController = CurrencyDisplayController(
+    focusNode: _dailyRateFocusNode,
+  );
+  late final _jobAmountController = CurrencyDisplayController(
+    focusNode: _jobAmountFocusNode,
+  );
   final _deliveryFeeController = TextEditingController();
   final _deliveryFocusNode = FocusNode();
   final _noteController = TextEditingController();
@@ -154,6 +161,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.dispose();
     _dailyRateController.dispose();
     _jobAmountController.dispose();
+    _dailyRateFocusNode.dispose();
+    _jobAmountFocusNode.dispose();
     _deliveryFeeController.dispose();
     _deliveryFocusNode.dispose();
     _noteController.dispose();
@@ -724,20 +733,29 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
-  Widget _durationField(BuildContext context, EquipmentCostFormData data) {
+  Widget _durationField(
+    BuildContext context,
+    EquipmentCostFormData data, {
+    bool recalled = false,
+  }) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     return UnderlineTextField(
       key: const Key('duration_field'),
-      label: l10n.equipmentDurationLabel,
+      label: recalled
+          ? l10n.equipmentRecalledDaysLabel
+          : l10n.equipmentDurationLabel,
+      valueStyle: recalled ? textTheme.headlineMediumRegular : null,
       hintText: l10n.equipmentDurationPlaceholder,
       controller: _durationController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       hideSuffixWhenEmpty: true,
       suffix: Text(
         l10n.equipmentDurationSuffix,
-        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
+        style:
+            (recalled ? textTheme.bodyLargeRegular : textTheme.bodySmallRegular)
+                .copyWith(color: colorTheme.textBody),
       ),
       errorTextList: _errorList(_durationErrorText(context, data)),
       touched: _touchedFieldKeys.contains('duration_field'),
@@ -749,7 +767,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   Widget _amountField(
     BuildContext context,
     EquipmentCostFormData data, {
-    bool showRateChrome = true,
+    bool recalled = false,
   }) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
@@ -757,28 +775,31 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     return UnderlineTextField(
       key: const Key('amount_field'),
       label: l10n.equipmentAmountLabel,
+      valueStyle: recalled ? textTheme.headlineMediumRegular : null,
       hintText: l10n.equipmentAmountPlaceholder,
       controller: _jobAmountController,
+      focusNode: _jobAmountFocusNode,
       hideSuffixWhenEmpty: true,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       suffix: Text(
         _rateUnitSuffix(context, data.method),
-        style: textTheme.bodySmallRegular.copyWith(color: colorTheme.textBody),
+        style:
+            (recalled ? textTheme.bodyLargeRegular : textTheme.bodySmallRegular)
+                .copyWith(color: colorTheme.textBody),
       ),
-      labelTrailing: showRateChrome
-          ? _rateStatusBadge(context, data.rateStatus)
-          : null,
-      trailingAction: showRateChrome
-          ? (_saveAsMyRateLink(context, data) ??
-                _lookupRateButtonWhenEmpty(context, data))
-          : null,
+      labelTrailing: recalled
+          ? null
+          : _rateStatusBadge(context, data.rateStatus),
+      trailingAction: recalled
+          ? null
+          : (_saveAsMyRateLink(context, data) ??
+                _lookupRateButtonWhenEmpty(context, data)),
       errorTextList: _errorList(_amountErrorText(context, data)),
       touched: _touchedFieldKeys.contains('amount_field'),
       onTouched: () => _touchedFieldKeys.add('amount_field'),
     );
   }
 
-  // TODO: [CA-1218] use the "How many days?" label, show the Job amount as $400.00, and add the divider below this header. https://ripplearc.youtrack.cloud/issue/CA-1218
   List<Widget> _recalledRateHeader(
     BuildContext context,
     EquipmentCostFormData data,
@@ -839,8 +860,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     const SizedBox(height: CoreSpacing.space5),
                   ],
                   isDay
-                      ? _durationField(context, data)
-                      : _amountField(context, data, showRateChrome: false),
+                      ? _durationField(context, data, recalled: true)
+                      : _amountField(context, data, recalled: true),
                   const SizedBox(height: CoreSpacing.space5),
                   _buildDeliveryFeeSection(context, data),
                 ],
@@ -889,7 +910,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     label: l10n.equipmentRateLabel,
                     hintText: l10n.equipmentRatePlaceholder,
                     controller: _dailyRateController,
-                    // TODO: [CA-1218] show the rate as currency ($145.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
+                    focusNode: _dailyRateFocusNode,
                     hideSuffixWhenEmpty: true,
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,

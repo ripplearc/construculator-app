@@ -31,6 +31,10 @@ class UnderlineTextField extends StatefulWidget {
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
 
+  /// Text style of the value and the placeholder, before the empty-state
+  /// colour is applied. Defaults to `bodyLargeRegular`.
+  final TextStyle? valueStyle;
+
   /// Leading content at the start of the value row (e.g. the delivery-fee
   /// field's "$" icon, which sits before the digits rather than after them)
   /// — stays inline in the row, not inside a box.
@@ -81,6 +85,7 @@ class UnderlineTextField extends StatefulWidget {
     required this.controller,
     this.hintText,
     this.keyboardType,
+    this.valueStyle,
     this.prefix,
     this.suffix,
     this.hideSuffixWhenEmpty = false,
@@ -166,22 +171,21 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         ? colorTheme.textHeadline
         : colorTheme.lineMid;
     final ruleHeight = _focusNode.hasFocus || hasError ? 1.5 : 1.0;
+    final valueStyle = widget.valueStyle ?? textTheme.bodyLargeRegular;
     final textField = TextField(
       controller: widget.controller,
       focusNode: _focusNode,
       keyboardType: widget.keyboardType,
       cursorColor: colorTheme.textHeadline,
-      style: isEmpty
-          ? textTheme.bodyLargeRegular.copyWith(color: colorTheme.textDisable)
-          : textTheme.bodyLargeRegular.copyWith(color: colorTheme.textHeadline),
+      style: valueStyle.copyWith(
+        color: isEmpty ? colorTheme.textDisable : colorTheme.textHeadline,
+      ),
       decoration: InputDecoration(
         border: InputBorder.none,
         isDense: true,
         contentPadding: EdgeInsets.zero,
         hintText: suffix != null && !isEmpty ? null : widget.hintText,
-        hintStyle: textTheme.bodyLargeRegular.copyWith(
-          color: colorTheme.textDisable,
-        ),
+        hintStyle: valueStyle.copyWith(color: colorTheme.textDisable),
       ),
     );
 
