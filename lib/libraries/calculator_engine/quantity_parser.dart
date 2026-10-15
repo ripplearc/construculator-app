@@ -31,8 +31,9 @@ class QuantityParser extends Equatable {
   /// The exact inches one length token stands for. A token whose number
   /// cannot be kept exactly — a fraction over zero, or more digits than a
   /// [Rational] holds — is a programming error here; [parse] answers `null`
-  /// for it. A number whose inches outgrow a [Rational] (1,844,674,407,370,955
-  /// ft) is a [RationalOverflow], which [parse] answers `null` for too.
+  /// for it, as it does for an open token. A number whose inches outgrow a
+  /// [Rational] (1,844,674,407,370,955 ft) is a [RationalOverflow], which
+  /// [parse] answers `null` for too.
   Rational inchesOf(Token token) {
     final exact = _exactValueOf(token);
     if (exact == null) {
@@ -57,10 +58,11 @@ class QuantityParser extends Equatable {
   /// it was typed in.
   Quantity? parse(List<Token> tokens) {
     if (tokens.isEmpty ||
-        tokens.any((token) => !token.isComplete || !token.value.isFinite)) {
+        tokens.any(
+          (token) => !token.isComplete || _exactValueOf(token) == null,
+        )) {
       return null;
     }
-    if (tokens.any((token) => _exactValueOf(token) == null)) return null;
     final first = tokens.first;
     final unit = first.unit;
     if (unit == null) return null;

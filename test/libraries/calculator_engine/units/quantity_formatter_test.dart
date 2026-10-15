@@ -119,6 +119,66 @@ void main() {
       });
     });
 
+    group('CA-1190: a typed length is rendered from its exact value', () {
+      test('a typed length near the limit renders in metres and the '
+          'conversions instead of throwing', () {
+        const huge = Length.exact(Rational(100000000000001), unit: Unit.inch);
+        expect(
+          formatter.format(huge.spelledIn(Unit.metre)),
+          '2,540,000,000,000.03m',
+        );
+        expect(const UnitConverter().offersFor(huge).map(formatter.format), [
+          '8333333333333ft 5in',
+          '2,540,000,000,000,026mm',
+        ]);
+        expect(
+          formatter.format(huge.spelledIn(Unit.inch)),
+          '100,000,000,000,001in',
+        );
+      });
+
+      const decimalFeet = Length.exact(Rational(5196, 25), unit: Unit.foot);
+
+      test('17.32 ft reads 17.32ft, and 17ft 3-13/16in as a compound', () {
+        expect(formatter.format(decimalFeet), '17.32ft');
+        expect(
+          formatter.format(decimalFeet.spelledIn(Unit.footInch)),
+          '17ft 3-13/16in',
+        );
+        expect(
+          formatter.format(decimalFeet.spelledIn(Unit.inch)),
+          '207-13/16in',
+        );
+      });
+
+      test('a metre typed exactly reads 1m, 100cm and 1,000mm', () {
+        const metre = Length.exact(Rational(5000, 127), unit: Unit.metre);
+        expect(formatter.format(metre), '1m');
+        expect(formatter.format(metre.spelledIn(Unit.centimetre)), '100cm');
+        expect(formatter.format(metre.spelledIn(Unit.millimetre)), '1,000mm');
+      });
+
+      test('a stored size keeps its typed decimal inch', () {
+        const sheet = Length.exact(Rational(1181, 25), unit: Unit.inch);
+        expect(formatter.formatStoredLength(sheet), '47.24in');
+      });
+
+      test('a negative exact length carries one sign in front', () {
+        expect(
+          formatter.format(
+            const Length.exact(Rational(-5196, 25), unit: Unit.footInch),
+          ),
+          '-17ft 3-13/16in',
+        );
+        expect(
+          formatter.format(
+            const Length.exact(Rational(-433, 25), unit: Unit.inch),
+          ),
+          '-17-5/16in',
+        );
+      });
+    });
+
     group('fractional resolution, one row per setting', () {
       const tenInchesOverThree = Length(213, unit: Unit.footInch);
 

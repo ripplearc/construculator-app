@@ -24,13 +24,26 @@
         </regex>
 
         <!-- RULE 3: area ÷ length is no longer a length -->
-        <regex pattern="\(final Area area, final Length length\) =&gt; Length\(" dotAll="true" id="chain_arithmetic.divide.area_by_length">
-            <mutation text="(final Area area, final Length length) when false =&gt; Length("/>
+        <regex pattern="\(final Area area, final Length length\) =&gt; _keptLength\(" dotAll="true" id="chain_arithmetic.divide.area_by_length">
+            <mutation text="(final Area area, final Length length) when false =&gt; _keptLength("/>
+        </regex>
+
+        <!-- RULE: a quotient divides by the length rounded to a tick -->
+        <regex pattern="area\.squareTicks / _magnitude\(length\)," dotAll="true" id="chain_arithmetic.divide.area_by_rounded_length">
+            <mutation text="area.squareTicks / length.ticks,"/>
+        </regex>
+        <regex pattern="_cubicTicks\(volume\) / _magnitude\(length\)," dotAll="true" id="chain_arithmetic.divide.volume_by_rounded_length">
+            <mutation text="_cubicTicks(volume) / length.ticks,"/>
+        </regex>
+
+        <!-- RULE: a quotient length is rounded to a whole tick -->
+        <regex pattern="\(ticks \* _partsPerTick\)\.round\(\),\s*Length\.ticksPerInch \* _partsPerTick," dotAll="true" id="chain_arithmetic.kept_length.whole_tick">
+            <mutation text="ticks.round(), Length.ticksPerInch,"/>
         </regex>
 
         <!-- RULE 4: volume ÷ area is no longer a length -->
-        <regex pattern="\(final Volume volume, final Area area\) =&gt; Length\(" dotAll="true" id="chain_arithmetic.divide.volume_by_area">
-            <mutation text="(final Volume volume, final Area area) when false =&gt; Length("/>
+        <regex pattern="\(final Volume volume, final Area area\) =&gt; _keptLength\(" dotAll="true" id="chain_arithmetic.divide.volume_by_area">
+            <mutation text="(final Volume volume, final Area area) when false =&gt; _keptLength("/>
         </regex>
 
         <!-- RULE 5: dividing by zero is computed, so a scalar ÷ 0 becomes
@@ -87,8 +100,13 @@
         </regex>
 
         <!-- RULE 15: a bare number on the left no longer scales -->
-        <regex pattern="\(final Scalar factor, _\) =&gt; _scaled\(right, \(value\) =&gt; value \* factor\.value\)," dotAll="true" id="chain_arithmetic.multiply.scalar_left">
-            <mutation text="(final Scalar factor, _) when false =&gt; _scaled(right, (value) =&gt; value * factor.value),"/>
+        <regex pattern="\(final Scalar factor, _\) =&gt; _scaled\(" dotAll="true" id="chain_arithmetic.multiply.scalar_left">
+            <mutation text="(final Scalar factor, _) when false =&gt; _scaled("/>
+        </regex>
+
+        <!-- RULE: a length divided by a number is multiplied instead -->
+        <regex pattern="\(length\) =&gt; _dividedLength\(length, divisor\.value\)," dotAll="true" id="chain_arithmetic.divide.length_by_scalar_multiplies">
+            <mutation text="(length) =&gt; _scaledLength(length, divisor.value),"/>
         </regex>
 
         <!-- RULE 16: volume ÷ length is no longer an area -->
@@ -104,6 +122,13 @@
         <!-- RULE 18: an answer that overflowed to infinity is kept -->
         <regex pattern="if \(!_magnitude\(value\)\.isFinite\) \{" dotAll="true" id="chain_arithmetic.combine.keep_infinity">
             <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 20: two lengths multiply as exact fractions, so 2³² in ×
+             2³² in outgrows a Rational and is refused where the area, a
+             double, holds it -->
+        <regex pattern="a\.inches\.toDouble\(\) \* b\.inches\.toDouble\(\) \* Area\.squareTicksPerSquareInch," dotAll="true" id="chain_arithmetic.multiply.exact_area_product">
+            <mutation text="(a.inches * b.inches).toDouble() * Area.squareTicksPerSquareInch,"/>
         </regex>
 
         <!-- RULE 19: the largest metric unit typed wins -->
