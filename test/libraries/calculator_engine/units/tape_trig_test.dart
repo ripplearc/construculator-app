@@ -44,6 +44,18 @@ void main() {
     return formatter.format(value);
   }
 
+  ValueChip activeOf(Tape tape) {
+    final chip = tape.active;
+    if (chip == null) throw StateError('no active chip on ${tape.chips}');
+    return chip;
+  }
+
+  Answer offered(Tape tape) {
+    final answer = tape.trigAnswer;
+    if (answer == null) throw StateError('no trig answer on ${tape.chips}');
+    return answer;
+  }
+
   String lastResult(Tape tape) {
     if (tape.chips.last case ResultChip(:final key, :final value)) {
       return '$key ${formatter.format(value)}';
@@ -80,7 +92,7 @@ void main() {
           upright.pressTrigKey(TrigFunction.tangent),
           const TapeRefused(TapeRefusal.tangentUndefined),
         );
-        expect(upright.active?.exactValue, isNull);
+        expect(activeOf(upright).exactValue, isNull);
         expect(lastResult(press(const Tape(), '8 9 TAN')), 'Tangent 57.289962');
       });
 
@@ -101,13 +113,13 @@ void main() {
         );
         expect(opened.trigAnswer, isNull);
         final typed = press(opened, '3 8');
-        expect(typed.active?.trigOperand, const Angle(38));
-        final answer = typed.trigAnswer;
-        expect(answer?.key, 'Sine');
-        expect(answer?.sources, ['Sine']);
-        expect(text(answer?.value), '0.615661');
+        expect(activeOf(typed).trigOperand, const Angle(38));
+        final answer = offered(typed);
+        expect(answer.key, 'Sine');
+        expect(answer.sources, ['Sine']);
+        expect(text(answer.value), '0.615661');
         final accepted = typed.append(
-          ResultChip(key: 'Sine', value: answer?.value ?? const Scalar(0)),
+          ResultChip(key: 'Sine', value: answer.value),
         );
         expect(accepted.chips.last, press(const Tape(), '3 8 SIN').chips.last);
       });
@@ -141,10 +153,10 @@ void main() {
         'an empty chip takes the key and keeps its operator: 5 × sin 30°',
         () {
           final tape = press(const Tape(), '5 × SIN 3 0');
-          expect(tape.active?.operator, Operator.multiply);
-          expect(tape.active?.key, 'Sine');
+          expect(activeOf(tape).operator, Operator.multiply);
+          expect(activeOf(tape).key, 'Sine');
           expect(lastResult(press(tape, '=')), 'Calc 2.5');
-          expect(press(const Tape(), '[Width] SIN').active?.key, 'Sine');
+          expect(activeOf(press(const Tape(), '[Width] SIN')).key, 'Sine');
         },
       );
 
@@ -152,13 +164,13 @@ void main() {
         final tape = press(const Tape(), 'SIN 3 8 COS');
         expect(tape.chips.length, 2);
         expect((tape.chips.first as ValueChip).isActive, isFalse);
-        expect(tape.active?.key, 'Cosine');
+        expect(activeOf(tape).key, 'Cosine');
         final named = press(const Tape(), '[Sides] 6 SIN');
         expect(
           named.chips.first,
           isA<ValueChip>().having((chip) => chip.key, 'key', 'Sides'),
         );
-        expect(named.active?.key, 'Sine');
+        expect(activeOf(named).key, 'Sine');
         expect((named.chips.first as ValueChip).value(parser), const Scalar(6));
         expect(
           press(const Tape(), '5 × 3').pressTrigKey(TrigFunction.sine),
@@ -172,12 +184,12 @@ void main() {
           tape.pressUnit(Unit.foot),
           const TapeRefused(TapeRefusal.trigTakesAnAngle),
         );
-        expect(tape.active?.entry.text, '38');
+        expect(activeOf(tape).entry.text, '38');
       });
 
       test('Tangent 90° answers nothing and no key reads its digits', () {
         final tape = press(const Tape(), 'TAN 9 0');
-        expect(tape.active?.asksAnUndefinedTrig, isTrue);
+        expect(activeOf(tape).asksAnUndefinedTrig, isTrue);
         expect(tape.trigAnswer, isNull);
         const refused = TapeRefused(TapeRefusal.trigCannotAnswer);
         expect(tape.pressOperator(Operator.multiply), refused);
@@ -185,7 +197,7 @@ void main() {
         expect(tape.pressFunctionKey('Width'), refused);
         expect(tape.pressTrigKey(TrigFunction.sine), refused);
         expect(
-          press(const Tape(), 'SIN 9 0').active?.asksAnUndefinedTrig,
+          activeOf(press(const Tape(), 'SIN 9 0')).asksAnUndefinedTrig,
           isFalse,
         );
         expect(const ValueChip(key: 'Width').asksAnUndefinedTrig, isFalse);
