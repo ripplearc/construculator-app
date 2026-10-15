@@ -1497,6 +1497,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDurationLabel => 'Duration';
 
   @override
+  String get equipmentRecalledDaysLabel => 'How many days?';
+
+  @override
   String get equipmentDurationPlaceholder => 'Set the days';
 
   @override
