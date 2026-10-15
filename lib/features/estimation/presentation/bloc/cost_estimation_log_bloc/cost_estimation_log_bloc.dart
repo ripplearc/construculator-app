@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:async/async.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/libraries/either/either.dart';

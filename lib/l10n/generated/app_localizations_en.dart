@@ -940,6 +940,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noOlderLogEvents => 'No older events';
 
   @override
+  String get earlierLogEventsNotRecorded =>
+      'Earlier events for this estimate were not recorded.';
+
+  @override
   String get appTitle => 'Construculator';
 
   @override
