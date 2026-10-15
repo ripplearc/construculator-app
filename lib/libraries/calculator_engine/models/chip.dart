@@ -93,6 +93,10 @@ final class ValueChip extends TapeChip {
   /// where the count under Sides and the grade under Slope stay scalars.
   /// Set by the caller of [Tape.pressFunctionKey]; read only while
   /// [keyWantsUnit] is false.
+  ///
+  /// A trig chip carries it too, set by [Tape.pressTrigKey] in both orders,
+  /// so its operand chip names its unit the way a Pitch chip does ("Sine ·
+  /// degrees 38°", rule 4.11) while the chip is worth its answer.
   final bool readsDegrees;
 
   /// Whether the keyboard writes into this chip.
