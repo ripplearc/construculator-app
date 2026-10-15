@@ -159,6 +159,35 @@ class MaterialCostFormData extends Equatable {
   ];
 }
 
-// TODO(CA-294): add MaterialCostFormSubmitting, MaterialCostFormSuccess, MaterialCostFormFailure states
+/// State while the cost item is being saved.
+class MaterialCostFormSubmitting extends MaterialCostFormState {
+  const MaterialCostFormSubmitting(this.data);
+
+  /// The form data being saved.
+  final MaterialCostFormData data;
+}
+
+/// State when the cost item was saved.
+class MaterialCostFormSuccess extends MaterialCostFormState {
+  const MaterialCostFormSuccess(this.data, this.createdItem);
+
+  /// The form data as it was when saved.
+  final MaterialCostFormData data;
+
+  /// The cost item as saved by [CostItemRepository.createCostItem].
+  final CostItem createdItem;
+}
+
+/// State when saving the cost item failed. The form keeps every value so the
+/// user can try again.
+class MaterialCostFormFailure extends MaterialCostFormState {
+  const MaterialCostFormFailure(this.data, this.failure);
+
+  /// The form data as it was when saving failed.
+  final MaterialCostFormData data;
+
+  /// The failure returned by [CostItemRepository.createCostItem].
+  final Failure failure;
+}
 
 const Object _unset = Object();
