@@ -1325,5 +1325,96 @@ void main() {
         expect: () => <EquipmentCostFormState>[],
       );
     });
+
+    group('hasUnsavedChanges', () {
+      Matcher unsaved(bool expected) => isA<EquipmentCostFormEditing>().having(
+        (s) => s.data.hasUnsavedChanges,
+        'hasUnsavedChanges',
+        expected,
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true once a name is typed and false again when it is cleared',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged('Mini excavator'))
+          ..add(const EquipmentCostItemTypeChanged('  ')),
+        expect: () => [unsaved(true), unsaved(false)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true after switching to Job and false after switching back',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+          ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day)),
+        expect: () => [unsaved(true), unsaved(false)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true after a duration is typed',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('3')),
+        expect: () => [unsaved(true)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true after a delivery fee is typed',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentDeliveryFeeUpdatedEvent('20')),
+        expect: () => [unsaved(true)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true after a note is typed',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const EquipmentDescriptionUpdatedEvent('Needs a trailer')),
+        expect: () => [unsaved(true)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is false right after a Your recents row fills the form',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged('Dumpster — 30 yd'))
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          ),
+        expect: () => [unsaved(true), unsaved(false)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'is true when a recalled price is edited and false when it is put back',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.job,
+              rate: 400,
+              fromRecents: true,
+            ),
+          )
+          ..add(const EquipmentRateUpdatedEvent('450'))
+          ..add(const EquipmentRateUpdatedEvent('400')),
+        expect: () => [unsaved(false), unsaved(true), unsaved(false)],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'counts a rate picked from the look-up sheet as a change',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const EquipmentSavedRateRecalledEvent(
+            method: EquipmentPricingMethod.day,
+            rate: 120,
+          ),
+        ),
+        expect: () => [unsaved(true)],
+      );
+    });
   });
 }
