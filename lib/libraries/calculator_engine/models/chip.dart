@@ -122,11 +122,14 @@ final class ValueChip extends TapeChip {
   /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]).
   ///
   /// A trig chip ([trigFunction]) is worth its answer, not its digits, so
-  /// Sine 89° × 56 is 55.99 (Section 6, "Trig chips in a chain"); one whose
-  /// function has no value at its angle (Tangent 90°) is worth nothing.
+  /// Sine 89° × 56 is 55.99 and Arccosine 0.8 × 6 is 221.22° (Section 6,
+  /// "Trig chips in a chain"); one whose function has no value at its
+  /// operand (Tangent 90°, Arcsine 2) is worth nothing.
   Quantity? value(QuantityParser parser) {
     if (exactValue case final value?) return value;
-    if (trigOperand case final angle?) return trigFunction?.of(angle.degrees);
+    if (trigOperand case final operand?) {
+      return trigFunction?.answerTo(operand);
+    }
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
     if (!_isPlainNumber) return null;
     final number = entry.tokens.first.value;
@@ -159,24 +162,31 @@ final class ValueChip extends TapeChip {
 
   bool get _isPlainNumber => (key == null || !keyWantsUnit) && _isBareNumber;
 
-  /// The forward trig function the chip asks, when its key is a trig key
-  /// (Sine…), else `null`.
+  /// The trig function the chip asks, when its key is a trig key (Sine…,
+  /// Arcsine…), else `null`.
   TrigFunction? get trigFunction => TrigFunction.named(key);
 
-  /// The angle a trig chip asks its function of: its bare number, in
-  /// degrees; `null` for any other chip or before a number is typed.
-  Angle? get trigOperand => trigFunction != null && _isBareNumber
-      ? Angle(entry.tokens.first.value)
-      : null;
+  /// What a trig chip asks its function of: its bare number, in degrees
+  /// for SIN, COS and TAN and as a ratio for the inverse keys; `null` for
+  /// any other chip or before a number is typed.
+  Quantity? get trigOperand => switch ((trigFunction, bareNumber)) {
+    (final function?, final number?) =>
+      function.isInverse ? Scalar(number) : Angle(number),
+    _ => null,
+  };
 
-  /// Whether the chip asks its trig function at an angle the function has
-  /// no value for (Tangent 90°): the strip says why, and no key may treat
-  /// its digits as a number in its place (Section 5.4: "Tangent can't
-  /// answer that").
+  /// Whether the chip asks its trig function of an operand the function
+  /// has no value for (Tangent 90°, Arcsine 2): the strip says why, and no
+  /// key may treat its digits as a number in its place (Section 5.4:
+  /// "Tangent can't answer that").
   bool get asksAnUndefinedTrig => switch ((trigFunction, trigOperand)) {
-    (final function?, final angle?) => function.of(angle.degrees) == null,
+    (final function?, final operand?) => function.answerTo(operand) == null,
     _ => false,
   };
+
+  /// The number of a chip that holds one bare number and nothing else,
+  /// else `null`.
+  double? get bareNumber => _isBareNumber ? entry.tokens.first.value : null;
 
   bool get _isBareNumber =>
       entry.tokens.length == 1 &&
