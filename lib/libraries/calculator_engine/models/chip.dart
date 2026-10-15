@@ -188,6 +188,13 @@ final class ValueChip extends TapeChip {
   /// else `null`.
   double? get bareNumber => _isBareNumber ? entry.tokens.first.value : null;
 
+  /// Whether the chip divides the ratio an Arctangent chip before it
+  /// builds (Section 6, "÷ builds the ratio for ATAN"): ÷ and a bare number
+  /// with no key. ÷ Pitch 12 is an angle and ÷ Sine 30 a trig chip of its
+  /// own, so neither joins the ratio.
+  bool get dividesAnArctangentRatio =>
+      key == null && operator == Operator.divide && bareNumber != null;
+
   bool get _isBareNumber =>
       entry.tokens.length == 1 &&
       entry.tokens.first.unit == null &&
