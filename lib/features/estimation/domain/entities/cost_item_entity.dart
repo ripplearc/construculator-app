@@ -765,7 +765,7 @@ class EquipmentCostItem extends CostItem {
 /// [entryLabel] — see `YourRatesRepository.save` for the exact collision
 /// rules that govern this.
 class YourRateEntry extends Equatable {
-  /// Unique identifier for this rate entry; server-generated.
+  /// Unique identifier for this rate entry; generated on the phone when the rate is first saved.
   final String id;
 
   /// The company this rate entry belongs to.

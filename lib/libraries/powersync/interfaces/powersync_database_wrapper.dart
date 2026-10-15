@@ -105,4 +105,12 @@ abstract class SyncStreamHandle {
   /// activated a stream should call this to avoid syncing data nothing is
   /// watching.
   void unsubscribe();
+
+  /// Completes once the stream has delivered its first full set of rows.
+  ///
+  /// Completes at once for a stream that has synced before, including in an
+  /// earlier session, so a repeat visit with no signal does not wait. For a
+  /// stream that has never synced it waits for the first sync, which with no
+  /// signal does not happen, so callers bound the wait.
+  Future<void> waitForFirstSync();
 }
