@@ -81,9 +81,17 @@ final class Length extends Quantity {
 
   /// The whole number of ticks of 1/64 inch nearest the length, a half
   /// tick rounded up as the prototype's `Math.round` does.
-  int get ticks => _exactInches == null
-      ? _wholeTicks
-      : (inches * const Rational(ticksPerInch)).round();
+  ///
+  /// The view never throws: a length the parser keeps carries at most 2⁵³
+  /// in its numerator, so 64 times it still fits an `int`, and a length
+  /// past the tick limit reaches the arithmetic, which refuses it as out
+  /// of range. Scaling through `Rational *` would throw
+  /// [RationalOverflow] for every length between 2⁴⁷ and 2⁵³ inches.
+  int get ticks {
+    final exact = _exactInches;
+    if (exact == null) return _wholeTicks;
+    return Rational(exact.numerator * ticksPerInch, exact.denominator).round();
+  }
 
   /// The same distance written in another length unit.
   Length spelledIn(Unit unit) => Length.exact(inches, unit: unit);
