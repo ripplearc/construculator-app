@@ -368,6 +368,24 @@ void main() {
         );
       });
 
+      test('a length past the tick limit lands an out-of-range error chip, '
+          'in a sum and in a product', () {
+        String typed(String digits) => digits.split('').join(' ');
+        final summed = press(
+          const Tape(),
+          '${typed('99999999999999')} ft + 1 ft =',
+        );
+        expect(summed.chips.last, const ErrorChip(CalculationError.outOfRange));
+        final multiplied = press(
+          const Tape(),
+          '${typed('1844674407370955')} in × 1 =',
+        );
+        expect(
+          multiplied.chips.last,
+          const ErrorChip(CalculationError.outOfRange),
+        );
+      });
+
       test('÷ 0 lands its own error and reopens the divisor empty', () {
         final landed = press(const Tape(), '5 ÷ 0 =');
         expect(landed.chips, const [
