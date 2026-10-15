@@ -43,8 +43,14 @@ void main() {
     });
 
     test('a ratio carries its six decimals, a Calc built from it does not', () {
-      final sine = TrigFunction.sine.of(89);
-      expect(sine?.decimals, TrigFunction.ratioDecimals);
+      expect(
+        TrigFunction.sine.of(89),
+        isA<Scalar>().having(
+          (ratio) => ratio.decimals,
+          'decimals',
+          TrigFunction.ratioDecimals,
+        ),
+      );
       expect(const Scalar(1), isNot(const Scalar(1, decimals: 6)));
       expect(formatter.format(const Scalar(55.991486)), '55.99');
     });
