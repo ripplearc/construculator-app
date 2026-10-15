@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -80,28 +81,66 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<void> _openEquipmentSheet(YourRateEntry? entry) {
-    return CoreQuickSheet.show<void>(
-      context: context,
-      backgroundColor: sheetSurface(context),
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider<EquipmentCostFormBloc>(
-            create: (_) => widget.equipmentCostFormBlocFactory(),
+  Future<void> _openEquipmentSheet(YourRateEntry? entry) async {
+    final l10n = context.l10n;
+    final formBloc = widget.equipmentCostFormBlocFactory();
+    try {
+      await CoreQuickSheet.show<void>(
+        context: context,
+        backgroundColor: sheetSurface(context),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<EquipmentCostFormBloc>.value(value: formBloc),
+            BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
+          ],
+          child: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
+            builder: (context, summary) => CostItemFormScreen(
+              type: CostItemType.equipment,
+              estimationId: widget.estimationId,
+              router: widget.router,
+              presentAsSheet: true,
+              yourRatesBlocFactory: widget.yourRatesBlocFactory,
+              clock: widget.clock,
+              estimate: summary is EstimateSummaryLoaded
+                  ? summary.estimate
+                  : null,
+              initialRateEntry: entry,
+            ),
           ),
-          BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
-        ],
-        child: CostItemFormScreen(
-          type: CostItemType.equipment,
-          estimationId: widget.estimationId,
-          router: widget.router,
-          presentAsSheet: true,
-          yourRatesBlocFactory: widget.yourRatesBlocFactory,
-          clock: widget.clock,
-          initialRateEntry: entry,
         ),
-      ),
-    );
+      );
+      final wasSavingWhenDismissed =
+          formBloc.state is EquipmentCostFormSubmitting;
+      if (wasSavingWhenDismissed) {
+        await formBloc.stream.firstWhere(
+          (s) => s is! EquipmentCostFormSubmitting,
+          orElse: () => formBloc.state,
+        );
+      }
+      if (!mounted) return;
+      final summary = _summaryBloc.state;
+      _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
+      switch (formBloc.state) {
+        case EquipmentCostFormSuccess() when summary is EstimateSummaryLoaded:
+          CoreToast.showCustomToast(
+            context,
+            (_) => AddedToEstimateToast(
+              message: l10n.addedToEstimateToast(summary.estimate.estimateName),
+            ),
+            duration: const Duration(seconds: 4),
+          );
+        case EquipmentCostFormFailure() when wasSavingWhenDismissed:
+          CoreToast.showError(
+            context,
+            l10n.addToEstimateFailedError,
+            l10n.closeLabel,
+          );
+        default:
+          break;
+      }
+    } finally {
+      unawaited(formBloc.close());
+    }
   }
 
   @override
