@@ -52,8 +52,8 @@
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->
-        <regex pattern="if \(openBracket != null\) \{\s*return const TapeRefused\(TapeRefusal\.bracketsHoldPlainArithmetic\);" dotAll="true" id="tape.function_key.inside_bracket">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);"/>
+        <regex pattern="bool readsDegrees = false,\s*\}\) \{\s*if \(openBracket != null\) \{" dotAll="true" id="tape.function_key.inside_bracket">
+            <mutation text="bool readsDegrees = false, }) { if (false) {"/>
         </regex>
 
         <!-- RULE 9: ⌫ after ) deletes the bracket instead of reopening it -->

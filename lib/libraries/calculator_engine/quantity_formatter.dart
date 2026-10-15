@@ -95,6 +95,11 @@ class QuantityFormatter extends Equatable {
         Volume() => _volume(value, groupThousands),
         Weight() => _weight(value, groupThousands),
         Angle() => _angle(value, groupThousands),
+        Scalar(:final decimals?) => _jsRoundedNumber(
+          value.value,
+          decimals,
+          groupThousands,
+        ),
         Scalar() => _scalar(value.value, groupThousands),
       };
 
