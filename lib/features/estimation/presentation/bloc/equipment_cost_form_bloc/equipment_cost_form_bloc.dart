@@ -75,6 +75,13 @@ class EquipmentCostFormBloc
             : recalled.copyWith(jobAmount: e.rate);
       });
     });
+    on<EquipmentRecalledAmountSavedEvent>((e, emit) {
+      _emit(
+        emit,
+        (d) =>
+            d.recalledFromRecents ? d.copyWith(recalledRate: d.jobAmount) : d,
+      );
+    });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
       final usable =

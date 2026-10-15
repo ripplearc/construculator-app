@@ -129,6 +129,36 @@ void main() {
     );
 
     testWidgets(
+      'a11y: the Save-as-my-default button under an edited recalled job price '
+      'meets tap target, label and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final dumpster = YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Dumpster',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 400),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.job,
+        );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: dumpster),
+          find.byKey(const Key('save_recalled_amount_button')),
+          setupAfterPump: (tester) async {
+            await tester.enterText(
+              find.byKey(const Key('amount_field')),
+              '450',
+            );
+            await tester.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
       'a11y: the recalled-rate Duration field meets text contrast guidelines '
       'in both themes',
       (tester) async {
