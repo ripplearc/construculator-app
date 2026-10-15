@@ -188,6 +188,16 @@ void main() {
         expect(const Length.exact(Rational(1, 128), unit: Unit.inch).ticks, 1);
         expect(const Length.exact(Rational(-1, 128), unit: Unit.inch).ticks, 0);
       });
+
+      test('a length past the tick limit still views its ticks', () {
+        const inches = 1199999999999988;
+        const typed = Length.exact(Rational(inches), unit: Unit.foot);
+        expect(typed.ticks, inches * Length.ticksPerInch);
+        expect(
+          const Length.exact(Rational(-inches, 4), unit: Unit.inch).ticks,
+          -inches ~/ 4 * Length.ticksPerInch,
+        );
+      });
     });
 
     group('Angle', () {

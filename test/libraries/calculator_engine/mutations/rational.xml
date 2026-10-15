@@ -64,6 +64,13 @@
         <regex pattern="if \(a != 0 &amp;&amp; b\.abs\(\) &gt; _intermediateLimit ~/ a\.abs\(\)\) \{" dotAll="true" id="rational.product.unchecked">
             <mutation text="if (false) {"/>
         </regex>
+
+        <!-- RULE 11: the product limit moves, so two products of 2⁶² add
+             past a 64-bit int and wrap, or a product of 2⁶¹ is refused -->
+        <regex pattern="static const int _intermediateLimit = 1 &lt;&lt; 61;" dotAll="true" id="rational.product.limit">
+            <mutation text="static const int _intermediateLimit = 1 &lt;&lt; 62;"/>
+            <mutation text="static const int _intermediateLimit = 1 &lt;&lt; 60;"/>
+        </regex>
     </rules>
 
     <commands>
