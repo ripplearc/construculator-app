@@ -44,6 +44,37 @@ void main() {
       expect(() => fake.delete('k'), throwsA(isA<PlatformException>()));
     });
 
+    test('untilWritten completes when the key is written later', () async {
+      var released = false;
+      final waiting = fake.untilWritten('k').then((_) => released = true);
+
+      await fake.write('other', 'v');
+      expect(released, isFalse);
+      await fake.write('k', 'v');
+      await waiting;
+
+      expect(released, isTrue);
+    });
+
+    test('untilWritten completes at once for a key already written', () async {
+      fake.seed('k', 'v');
+
+      await expectLater(fake.untilWritten('k'), completes);
+    });
+
+    test('untilRemoved completes when the key is deleted later', () async {
+      fake.seed('k', 'v');
+      final waiting = fake.untilRemoved('k');
+
+      await fake.delete('k');
+
+      await expectLater(waiting, completes);
+    });
+
+    test('untilRemoved completes at once for a key never written', () async {
+      await expectLater(fake.untilRemoved('k'), completes);
+    });
+
     test('reset empties the store and clears the switches', () async {
       fake.seed('k', 'v');
       fake.shouldThrowOnRead = true;

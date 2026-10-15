@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SECURE SESSION LOCAL STORAGE MUTATION TESTING -->
+    <!-- Targets: where the Supabase login session is kept, moved and removed -->
+
+    <files>
+        <file>lib/libraries/supabase/secure_session_local_storage.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude imports -->
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the move when no old session exists -->
+        <regex pattern="if \(legacySession == null\) return;" dotAll="true" id="session.migrate.skip_no_legacy_guard">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 2: Treat a missing old session as present -->
+        <regex pattern="if \(legacySession == null\) return;" dotAll="true" id="session.migrate.invert_no_legacy_guard">
+            <mutation text="if (legacySession != null) return;"/>
+        </regex>
+
+        <!-- RULE 3: Let the old session overwrite a newer secure one -->
+        <regex pattern="if \(await _secureStorage\.read\(persistSessionKey\) == null\) \{" dotAll="true" id="session.migrate.overwrite_newer">
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 4: Never copy the old session -->
+        <regex pattern="await _secureStorage\.write\(persistSessionKey, legacySession\);" dotAll="true" id="session.migrate.skip_copy">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 5: Delete the old session even when the copy failed -->
+        <regex pattern="\} on PlatformException \{\s*return;\s*\}" dotAll="true" id="session.migrate.delete_after_failed_copy">
+            <mutation text="} on PlatformException {}"/>
+        </regex>
+
+        <!-- RULE 6: Leave the old plain-text session in place -->
+        <regex pattern="await preferences\.remove\(persistSessionKey\);\s*\}\s*@override\s*Future&lt;bool&gt;" dotAll="true" id="session.migrate.keep_legacy">
+            <mutation text="}&#10;&#10;  @override&#10;  Future&lt;bool&gt;"/>
+        </regex>
+
+        <!-- RULE 7: Report a session when there is none -->
+        <regex pattern="await accessToken\(\) != null" dotAll="true" id="session.has_token.invert">
+            <mutation text="await accessToken() == null"/>
+        </regex>
+
+        <!-- RULE 8: Let an unreadable session stop the app from starting -->
+        <regex pattern="\} on PlatformException \{\s*return null;\s*\}" dotAll="true" id="session.read.rethrow_unreadable">
+            <mutation text="} on PlatformException {rethrow;}"/>
+        </regex>
+
+        <!-- RULE 9: Read an unreadable session as a session -->
+        <regex pattern="\} on PlatformException \{\s*return null;\s*\}" dotAll="true" id="session.read.unreadable_is_empty_string">
+            <mutation text="} on PlatformException {return '';}"/>
+        </regex>
+
+        <!-- RULE 10: Save the session under a different key -->
+        <regex pattern="_secureStorage\.write\(persistSessionKey, persistSessionString\)" dotAll="true" id="session.persist.wrong_key">
+            <mutation text="_secureStorage.write('other', persistSessionString)"/>
+        </regex>
+
+        <!-- RULE 11: Save an empty session -->
+        <regex pattern="_secureStorage\.write\(persistSessionKey, persistSessionString\)" dotAll="true" id="session.persist.empty_value">
+            <mutation text="_secureStorage.write(persistSessionKey, '')"/>
+        </regex>
+
+        <!-- RULE 12: Leave the old plain-text session behind on sign-out -->
+        <regex pattern="await preferences\.remove\(persistSessionKey\);\s*await _secureStorage\.delete" dotAll="true" id="session.remove.keep_legacy">
+            <mutation text="await _secureStorage.delete"/>
+        </regex>
+
+        <!-- RULE 13: Leave the secure session behind on sign-out -->
+        <regex pattern="await _secureStorage\.delete\(persistSessionKey\);" dotAll="true" id="session.remove.keep_secure">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 14: Build the key from the wrong part of the URL -->
+        <regex pattern="split\('\.'\)\.first" dotAll="true" id="session.key.wrong_host_part">
+            <mutation text="split('.').last"/>
+        </regex>
+
+        <!-- RULE 15: Change the key suffix -->
+        <regex pattern="-auth-token" dotAll="true" id="session.key.wrong_suffix">
+            <mutation text="-token"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="secure_session_local_storage" expected-return="0">flutter test test/libraries/supabase/units/secure_session_local_storage_test.dart test/libraries/supabase/units/supabase_wrapper_impl_session_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
