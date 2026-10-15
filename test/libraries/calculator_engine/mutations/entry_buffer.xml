@@ -94,6 +94,13 @@
         <regex pattern="return const EntryRefused\(EntryRefusal\.secondDecimalPoint\);" dotAll="true" id="entry_buffer.digit.wrong_point_reason">
             <mutation text="return const EntryRefused(EntryRefusal.decimalInDenominator);"/>
         </regex>
+
+        <!-- RULE CA-1236: a typed number passes 19,999,999.99, or stops at
+             it -->
+        <regex pattern="if \(double\.parse\(digits\) &gt; Quantity\.largestShown\) \{" dotAll="true" id="entry_buffer.type_digit.too_large">
+            <mutation text="if (double.parse(digits) &gt;= Quantity.largestShown) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
     </rules>
 
     <commands>

@@ -45,6 +45,14 @@ import 'package:equatable/equatable.dart';
 /// precision. The port of the prototype's `degToDMS`, with the formatter's
 /// own rule for a value that rounds to zero: 0°00', never −0°00'.
 ///
+/// A real value smaller than the rounding is written in words, never as
+/// zero, because a zero says two lengths match when they do not (owner
+/// decision of 4 October 2026): 5ft 1/64in − 5ft reads "Under 1/16in" at the
+/// 1/16 resolution, 5ft − 5ft 1/64in "Short by under 1/16in", and 1/8in ×
+/// 1/8in "Under 0.01ft²". The step is the smallest one the value's unit and
+/// setting show, so lengths, areas and volumes in every unit read alike; a
+/// true zero still reads 0ft 0in, and the exact value stays stored.
+///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
 /// quantity alike.
@@ -70,6 +78,14 @@ class QuantityFormatter extends Equatable {
   /// The minus sign a D:M:S spelling carries, the prototype's U+2212.
   static const String minusSign = '−';
 
+  /// The words before the smallest step a real value smaller than the
+  /// rounding reads as: "Under 1/16in".
+  static const String under = 'Under';
+
+  /// The words before the smallest step a real negative value smaller than
+  /// the rounding reads as: "Short by under 1/16in".
+  static const String shortByUnder = 'Short by under';
+
   /// The settings this formatter renders by.
   final CalculatorPreferences preferences;
 
@@ -88,6 +104,45 @@ class QuantityFormatter extends Equatable {
         Angle() => _angle(value, groupThousands),
         Scalar() => _scalar(value.value, groupThousands),
       };
+
+  /// Whether [value] shows a number above [Quantity.largestShown] in the unit
+  /// it is written in, so that the chain refuses it as "Too large" (Section
+  /// 5): 9,999,999 × 9,999,999 is, and so is 20,000,000ft, where
+  /// 19,999,999.99ft is not. The unit never changes by itself to make room.
+  ///
+  /// The number decided on is the one this formatter writes, as the
+  /// prototype's `shownMagnitude` reads it: 19,999,999.6mm writes
+  /// 20,000,000mm and is too large, 19,999,999ft 11.95in writes
+  /// 19999999ft 11-15/16in and is not, and 19,999,999.98 + 0.01, a hair
+  /// above the limit in binary, writes 19,999,999.99. A value of
+  /// 20,000,000 or more in its unit is too large before it is written,
+  /// because past 2⁶³ the written number is no longer the value.
+  bool isTooLarge(Quantity value) {
+    if (!(_amountShown(value).abs() < _firstWholeNumberPastTheLimit)) {
+      return true;
+    }
+    return _leadingNumber(format(value)) > Quantity.largestShown;
+  }
+
+  static const double _firstWholeNumberPastTheLimit = 20000000;
+
+  static final RegExp _shownNumber = RegExp(r'^[−-]?([\d,]+(?:\.\d+)?)');
+
+  static double _leadingNumber(String text) {
+    final digits = _shownNumber.firstMatch(text)?.group(1);
+    if (digits == null) return 0;
+    return double.parse(digits.replaceAll(',', ''));
+  }
+
+  double _amountShown(Quantity value) => switch (value) {
+    Length(unit: Unit.footInch) => value.amountIn(Unit.foot),
+    Length() => value.amountIn(value.unit),
+    Area() => _areaInUnit(value),
+    Volume() => _volumeInUnit(value),
+    Weight() => _weightInUnit(value),
+    Angle() => value.degrees,
+    Scalar() => value.value,
+  };
 
   /// A stored size (a sheet, a masonry piece, a footing cross-section) the
   /// way the trade quotes it: inches under Imperial (48 × 96), whole
@@ -131,9 +186,15 @@ class QuantityFormatter extends Equatable {
     _ => _decimalLength(value, resultDecimals, group),
   };
 
-  String _decimalLength(Length value, int decimals, bool group) =>
-      '${_localeNumber(value.amountIn(value.unit), decimals, group)}'
-      '${value.unit.suffix}';
+  String _decimalLength(Length value, int decimals, bool group) {
+    final amount = value.amountIn(value.unit);
+    return _numberOrUnder(
+      _localeNumber(amount, decimals, group),
+      amount,
+      decimals,
+      value.unit.suffix,
+    );
+  }
 
   String _wholeInchesAndFraction(Rational inches, bool group) {
     final negative = inches.numerator < 0;
@@ -141,6 +202,9 @@ class QuantityFormatter extends Equatable {
     var whole = magnitude.floor();
     final fraction = _fractionOfInch(magnitude - Rational(whole));
     whole += fraction.carry;
+    if (whole == 0 && fraction.text.isEmpty && magnitude.numerator != 0) {
+      return _underOneStep(negative: negative);
+    }
     return '${negative ? '-' : ''}${_localeNumber(whole.toDouble(), 0, group)}'
         '${fraction.text}${Unit.inch.suffix}';
   }
@@ -157,7 +221,32 @@ class QuantityFormatter extends Equatable {
       feet += 1;
       wholeInches = 0;
     }
+    if (feet == 0 &&
+        wholeInches == 0 &&
+        fraction.text.isEmpty &&
+        magnitude.numerator != 0) {
+      return _underOneStep(negative: negative);
+    }
     return '${negative ? '-' : ''}${feet}ft $wholeInches${fraction.text}in';
+  }
+
+  String _underOneStep({required bool negative}) => _under(
+    '1/${preferences.fractionResolution.denominator}${Unit.inch.suffix}',
+    negative: negative,
+  );
+
+  String _under(String step, {required bool negative}) =>
+      '${negative ? shortByUnder : under} $step';
+
+  String _numberOrUnder(
+    String number,
+    double amount,
+    int decimals,
+    String suffix,
+  ) {
+    if (number != '0' || amount == 0) return '$number$suffix';
+    final step = decimals == 0 ? '1' : '0.${'0' * (decimals - 1)}1';
+    return _under('$step$suffix', negative: amount < 0);
   }
 
   ({String text, int carry}) _fractionOfInch(Rational remainderInches) {
@@ -176,34 +265,55 @@ class QuantityFormatter extends Equatable {
   }
 
   String _area(Area value, bool group) {
+    final inUnit = _areaInUnit(value);
     if (value.unit == Unit.acre) {
-      final acres = value.squareFeet / Area.squareFeetPerAcre;
-      return '${_jsRoundedNumber(acres, acreDecimals, group)}${Unit.acre.suffix}';
+      return _numberOrUnder(
+        _jsRoundedNumber(inUnit, acreDecimals, group),
+        inUnit,
+        acreDecimals,
+        Unit.acre.suffix,
+      );
+    }
+    return _numberOrUnder(
+      _localeNumber(inUnit, resultDecimals, group),
+      inUnit,
+      resultDecimals,
+      '${value.unit.suffix}²',
+    );
+  }
+
+  double _areaInUnit(Area value) {
+    if (value.unit == Unit.acre) {
+      return value.squareFeet / Area.squareFeetPerAcre;
     }
     final ticksPerUnit = value.unit.ticksPerUnit;
-    final inUnit = value.squareTicks / ticksPerUnit / ticksPerUnit;
-    return '${_localeNumber(inUnit, resultDecimals, group)}${value.unit.suffix}²';
+    return value.squareTicks / ticksPerUnit / ticksPerUnit;
   }
 
   String _volume(Volume value, bool group) {
-    if (value.unit == Unit.boardFoot) {
-      return '${_jsRoundedNumber(value.boardFeet, resultDecimals, group)}'
-          '${Unit.boardFoot.suffix}';
-    }
-    final feetPerUnit = Length.ticksPerFoot / value.unit.ticksPerUnit;
-    final inUnit = value.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
-    return '${_jsRoundedNumber(inUnit, resultDecimals, group)}${value.unit.suffix}³';
+    final inUnit = _volumeInUnit(value);
+    return _numberOrUnder(
+      _jsRoundedNumber(inUnit, resultDecimals, group),
+      inUnit,
+      resultDecimals,
+      value.unit == Unit.boardFoot
+          ? Unit.boardFoot.suffix
+          : '${value.unit.suffix}³',
+    );
   }
 
+  double _volumeInUnit(Volume value) {
+    if (value.unit == Unit.boardFoot) return value.boardFeet;
+    final feetPerUnit = Length.ticksPerFoot / value.unit.ticksPerUnit;
+    return value.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+  }
+
+  double _weightInUnit(Weight value) =>
+      value.hundredthsOfPound /
+      value.unit.hundredthsOfPoundPer(poundsPerTon: preferences.poundsPerTon);
+
   String _weight(Weight value, bool group) {
-    final perUnit = value.unit.hundredthsOfPoundPer(
-      poundsPerTon: preferences.poundsPerTon,
-    );
-    final number = _localeNumber(
-      value.hundredthsOfPound / perUnit,
-      resultDecimals,
-      group,
-    );
+    final number = _localeNumber(_weightInUnit(value), resultDecimals, group);
     return switch (value.unit) {
       Unit.ton => '$number ${Unit.ton.suffix}',
       _ => '$number${value.unit.suffix}',

@@ -19,6 +19,16 @@ void main() {
 
   group('EntryBuffer', () {
     group('typing digits', () {
+      test('CA-1236: a digit past 19,999,999.99 is refused as Too large', () {
+        const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+        final edge = type('19999999');
+        expect(edge.typeDigit('9'), tooLarge);
+        expect(type('.99', edge).text, '19999999.99');
+        expect(type('.99', edge).typeDigit('1'), tooLarge);
+        expect(type('2000000').typeDigit('0'), tooLarge);
+        expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
+      });
+
       test('fills the open number and echoes it', () {
         final buffer = type('22');
         expect(buffer, const EntryBuffer([Token(digits: '22')]));
