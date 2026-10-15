@@ -412,6 +412,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         setState(() => _rateSaveStatus = _RateSaveStatus.failed);
       case YourRatesSaveSucceeded():
         setState(() => _rateSaveStatus = _RateSaveStatus.saved);
+        context.read<EquipmentCostFormBloc>().add(
+          const EquipmentRecalledAmountSavedEvent(),
+        );
       case YourRatesLoading():
       case YourRatesLoaded():
       case YourRatesSearchResults():
@@ -745,7 +748,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // TODO: [CA-1219] show "Used on this line only. Your default stays ..." and the "Save ... as my default" button once the amount differs from the saved price. https://ripplearc.youtrack.cloud/issue/CA-1219
   Widget _amountField(
     BuildContext context,
     EquipmentCostFormData data, {
@@ -775,6 +777,95 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       errorTextList: _errorList(_amountErrorText(context, data)),
       touched: _touchedFieldKeys.contains('amount_field'),
       onTouched: () => _touchedFieldKeys.add('amount_field'),
+    );
+  }
+
+  Widget _recalledAmountFooter(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final hintStyle = textTheme.bodySmallRegular.copyWith(
+      color: colorTheme.textBody,
+    );
+    if (!data.isRecalledAmountEdited) {
+      if (_rateSaveStatus != _RateSaveStatus.saved) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.only(top: CoreSpacing.space2),
+        child: _rateSaveMessage(
+          context,
+          key: const Key('recalled_amount_saved_hint'),
+          icon: CoreIcons.info,
+          iconColor: colorTheme.iconGrayMid,
+          text: Text(
+            l10n.equipmentRecalledAmountSavedHint(
+              DisplayFormatter.currency.format(data.recalledRate ?? 0),
+            ),
+            style: hintStyle,
+          ),
+        ),
+      );
+    }
+    final savedPrice = DisplayFormatter.currency.format(data.recalledRate ?? 0);
+    final editedAmount = DisplayFormatter.currency.format(data.jobAmount ?? 0);
+    final saveLabel = l10n.equipmentRecalledAmountSaveButton(editedAmount);
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _rateSaveMessage(
+            context,
+            key: const Key('recalled_amount_hint'),
+            icon: CoreIcons.info,
+            iconColor: colorTheme.iconGrayMid,
+            text: Text(
+              l10n.equipmentRecalledAmountUsedOnceHint(savedPrice),
+              style: hintStyle,
+            ),
+          ),
+          if (_rateSaveStatus == _RateSaveStatus.failed) ...[
+            const SizedBox(height: CoreSpacing.space1),
+            _rateSaveMessage(
+              context,
+              key: const Key('save_as_my_rate_error'),
+              icon: CoreIcons.error,
+              iconColor: colorTheme.iconRed,
+              text: Text(
+                l10n.yourRatesSaveFailedError,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textError,
+                ),
+              ),
+            ),
+          ],
+          if (_isSavableRate(data))
+            Semantics(
+              button: true,
+              label: saveLabel,
+              excludeSemantics: true,
+              child: GestureDetector(
+                key: const Key('save_recalled_amount_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _saveAsMyRate(data),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    saveLabel,
+                    style: textTheme.bodyLargeSemiBold.copyWith(
+                      color: colorTheme.textLink,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -841,6 +932,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   isDay
                       ? _durationField(context, data)
                       : _amountField(context, data, showRateChrome: false),
+                  if (!isDay) _recalledAmountFooter(context, data),
                   const SizedBox(height: CoreSpacing.space5),
                   _buildDeliveryFeeSection(context, data),
                 ],

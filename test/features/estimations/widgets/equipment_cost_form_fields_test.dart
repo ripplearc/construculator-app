@@ -2384,6 +2384,175 @@ void main() {
         },
       );
     });
+
+    group('re-saving an edited Job amount as the new default', () {
+      Future<void> recallDumpster(WidgetTester tester) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await recallRate(tester, 'Dumpster');
+      }
+
+      Future<void> editAmount(WidgetTester tester, String amount) async {
+        await tester.enterText(find.byKey(const Key('amount_field')), amount);
+        await tester.pump();
+      }
+
+      testWidgets('shows neither the hint nor the button before an edit', (
+        tester,
+      ) async {
+        await recallDumpster(tester);
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+      });
+
+      testWidgets(
+        'shows the used-on-this-line hint and a Save button with the edited '
+        'amount once the amount differs',
+        (tester) async {
+          await recallDumpster(tester);
+
+          await editAmount(tester, '450');
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$400.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveButton('\$450.00')),
+            findsOneWidget,
+          );
+          expect(
+            tester
+                .getSize(find.byKey(const Key('save_recalled_amount_button')))
+                .height,
+            greaterThanOrEqualTo(48),
+          );
+        },
+      );
+
+      testWidgets('hides the hint and the button after typing the saved price '
+          'back', (tester) async {
+        await recallDumpster(tester);
+        await editAmount(tester, '450');
+
+        await editAmount(tester, '400');
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+      });
+
+      testWidgets(
+        'saving asks for a label, then confirms the new default and updates '
+        'the header',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+
+          await tester.tap(
+            find.byKey(const Key('save_recalled_amount_button')),
+          );
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.byKey(const Key('entry_label_field')),
+            'Supplier B',
+          );
+          await tester.tap(
+            find.byKey(const Key('entry_label_dialog_save_button')),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const Key('save_recalled_amount_button')),
+            findsNothing,
+          );
+          expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+          expect(
+            find.text(
+              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
+          final saved = await Modular.get<YourRatesRepository>().search(
+            'Dumpster',
+            category: CostItemType.equipment,
+            companyId: 'company-1',
+          );
+          expect(
+            saved.fold(
+              (_) => <double>[],
+              (entries) => entries.map((e) => e.rate.amount).toList()..sort(),
+            ),
+            [400.0, 450.0],
+          );
+        },
+      );
+
+      testWidgets(
+        'a further edit after saving is compared with the new default',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          await tester.tap(
+            find.byKey(const Key('save_recalled_amount_button')),
+          );
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.byKey(const Key('entry_label_field')),
+            'Supplier B',
+          );
+          await tester.tap(
+            find.byKey(const Key('entry_label_dialog_save_button')),
+          );
+          await tester.pumpAndSettle();
+
+          await editAmount(tester, '500');
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$450.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveButton('\$500.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets('a recalled Day rate has no hint and no button', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Mini excavator',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await recallRate(tester, 'Mini excavator');
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+      });
+    });
   });
 
   group('EquipmentCostFormFields — save as my rate', () {

@@ -111,6 +111,15 @@ class EquipmentCostFormData extends Equatable {
   /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
 
+  /// Whether a line opened from a Your recents row now carries a Job amount
+  /// that differs from that row's saved price. The Day rate cannot be edited
+  /// on the compact screen, so only the Job amount is compared.
+  bool get isRecalledAmountEdited =>
+      recalledFromRecents &&
+      method == EquipmentPricingMethod.job &&
+      jobAmount != null &&
+      jobAmount != recalledRate;
+
   /// Returns a copy with the given fields replaced. For a nullable field, an
   /// explicit value sets it, `null` clears it, and omitting the parameter
   /// keeps its current value.
