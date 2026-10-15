@@ -377,12 +377,21 @@ class Tape extends Equatable {
   /// tape as 38 [SIN] would (rule 4.11). `null` when no trig chip is
   /// active, before its number is typed, or when its function has no value
   /// there ([ValueChip.asksAnUndefinedTrig]).
+  ///
+  /// ÷ builds the ratio for ATAN (rule 4.11; Section 6, "Trig chips in a
+  /// chain"): the operand of an Arctangent chip reaches across every ÷ and
+  /// bare number typed after it, and the answer names the operand it took,
+  /// so [ATAN] 16 ÷ 12 offers Arctangent(16 ÷ 12) 53.13° beside the Calc
+  /// 1.33 of the same digits (scenario S111; walkthrough 23.3). A divisor
+  /// of 0 leaves no ratio.
   Answer? get trigAnswer {
-    final chip = active;
-    final function = chip?.trigFunction;
-    final answer = chip?.value(parser);
-    if (function == null || answer == null) return null;
-    return Answer(key: function.key, value: answer, sources: [function.key]);
+    if (active == null) return null;
+    final question = _trigQuestionAsked;
+    if (question == null) return null;
+    final (:function, :operand, :key) = question;
+    final answer = function.of(operand);
+    if (answer == null) return null;
+    return Answer(key: key, value: answer, sources: [function.key]);
   }
 
   /// [answer], a trig answer an edit behind it left standing, rebuilt on
@@ -390,10 +399,31 @@ class Tape extends Equatable {
   /// 4.8; scenario S102). It is rebuilt on the operand chip both orders
   /// land (Sine · degrees 40° rebuilds Sine 0.642788), on the Calc a
   /// postfix key answered (making the 78 of 78 ÷ 89 [ATAN] a 70 rebuilds
-  /// Arctangent 38.19°). `null` when the edit leaves no answer, and the
-  /// chip is removed (Section 5.5, "A result that can no longer be
-  /// computed").
+  /// Arctangent 38.19°), or on the ratio an Arctangent builds across ÷,
+  /// named for its new digits (Arctangent(14 ÷ 12) 49.4°). `null` when the
+  /// edit leaves no answer, and the chip is removed (Section 5.5, "A result
+  /// that can no longer be computed").
   ResultChip? rebuiltTrigAnswer(ResultChip answer) {
+    if (_trigQuestionAsked case (
+      :final function,
+      :final operand,
+      :final key,
+    ) when key != function.key) {
+      final rebuilt = TrigFunction.rebuilt(
+        ResultChip(
+          key: function.key,
+          value: answer.value,
+          operator: answer.operator,
+        ),
+        Scalar(operand),
+      );
+      if (rebuilt == null) return null;
+      return ResultChip(
+        key: key,
+        value: rebuilt.value,
+        operator: rebuilt.operator,
+      );
+    }
     final operand = switch (chips.lastOrNull) {
       final ValueChip chip when chip.trigFunction != null => chip.trigOperand,
       final ValueChip chip => chip.value(parser),
@@ -403,6 +433,49 @@ class Tape extends Equatable {
     if (operand == null) return null;
     return TrigFunction.rebuilt(answer, operand);
   }
+
+  ({TrigFunction function, double operand, String key})?
+  get _trigQuestionAsked {
+    final question = _trigQuestion;
+    if (question == null) return null;
+    final (:chip, :divisors) = question;
+    final function = chip.trigFunction;
+    final number = chip.bareNumber;
+    if (function == null || number == null) return null;
+    var operand = number;
+    for (final divisor in divisors) {
+      final divisorNumber = divisor.bareNumber;
+      if (divisorNumber == null || divisorNumber == 0) return null;
+      operand /= divisorNumber;
+    }
+    final ratio = [chip, ...divisors].map(_spelledInRatio).join(' ');
+    return (
+      function: function,
+      operand: operand,
+      key: divisors.isEmpty ? function.key : '${function.key}($ratio)',
+    );
+  }
+
+  ({ValueChip chip, List<ValueChip> divisors})? get _trigQuestion {
+    final divisors = <ValueChip>[];
+    for (final chip in chips.reversed) {
+      if (chip is! ValueChip) return null;
+      if (chip.trigFunction case final function?) {
+        if (divisors.isNotEmpty && function != TrigFunction.arctangent) {
+          return null;
+        }
+        return (chip: chip, divisors: divisors.reversed.toList());
+      }
+      if (!chip.dividesAnArctangentRatio) return null;
+      divisors.add(chip);
+    }
+    return null;
+  }
+
+  static String _spelledInRatio(ValueChip chip) => switch (chip.operator) {
+    final operator? => '${operator.symbol} ${chip.entry.text}',
+    null => chip.entry.text,
+  };
 
   /// A trig key (Section 3.5; rule 4.11), pressed after its number or
   /// before it.
@@ -781,6 +854,10 @@ class Tape extends Equatable {
   /// 5 | Division by zero | ÷ _), so the tape never holds two in a row. A
   /// ÷ 0 earlier in the chain, or a bracket worth zero, lands the error chip
   /// at the end the way a Dimension Error does.
+  ///
+  /// An Arctangent whose operand reaches across a ÷ lands its angle, not
+  /// the Calc of its digits: [ATAN] 16 ÷ 12 = is Arctangent(16 ÷ 12)
+  /// 53.13° (walkthrough 23.3; [trigAnswer]).
   TapeOutcome pressEquals() {
     if (openBracket != null) {
       return switch (closeBracket()) {
@@ -794,6 +871,13 @@ class Tape extends Equatable {
     final tape = _withFractionClosedAsInches();
     if (tape.active case final chip? when !chip.entry.isEmpty) {
       if (tape._unfinished case final refusal?) return refusal;
+    }
+    if (tape._trigQuestion case (chip: _, divisors: [_, ...])) {
+      if (tape.trigAnswer case final answer?) {
+        return TapeChanged(
+          tape.append(ResultChip(key: answer.key, value: answer.value)),
+        );
+      }
     }
     return switch (tape.runningTotal) {
       ChainValue(:final value, isCalculation: true) => TapeChanged(

@@ -489,6 +489,9 @@ void main() {
         expect(tape.pressOperator(Operator.multiply), refused);
         expect(tape.pressOperator(Operator.divide), refused);
         expect(tape.pressEquals(), refused);
+        final roof = press(const Tape(), 'ATAN 1 2 ÷ 2 3');
+        expect(answerText(roof), 'Arctangent(12 ÷ 23) 27.55°');
+        expect(calc(roof), 'Calc 0.52');
       });
 
       test('S109: a lone operand offers its answer for the caller to land', () {
@@ -499,6 +502,13 @@ void main() {
           const TapeRefused(TapeRefusal.nothingToCompute),
         );
         expect(answerText(press(const Tape(), 'ACOS 0 . 5')), 'Arccosine 60°');
+        const rules = DeterministicRules();
+        final pitch = rules
+            .answersFor(
+              press(const Tape(), '[Rise] 8 ft [Run] 6 ft').namedValues,
+            )
+            .firstWhere((a) => a.key == DeterministicRules.pitchRiseKey);
+        expect(text(pitch.value), '16in/12in');
       });
 
       test('S110: [ATAN] 1.333 answers, [ASIN] 1.5 does not', () {
@@ -511,7 +521,22 @@ void main() {
         expect(activeOf(arcsine).asksAnUndefinedTrig, isTrue);
       });
 
-      test('S112: × seals the function, and ÷ seals ASIN and SIN', () {
+      test('S111: the answer names the operand it took, and = lands it', () {
+        final roof = press(const Tape(), 'ATAN 1 6 ÷ 1 2');
+        expect(answerText(roof), 'Arctangent(16 ÷ 12) 53.13°');
+        expect(offered(roof).sources, ['Arctangent']);
+        expect(calc(roof), 'Calc 1.33');
+        final landed = press(roof, '=');
+        expect(landed.chips.length, 3);
+        expect(lastResult(landed), 'Arctangent(16 ÷ 12) 53.13°');
+        expect(
+          answerText(press(const Tape(), 'ATAN 3 2 ÷ 2 ÷ 1 2')),
+          'Arctangent(32 ÷ 2 ÷ 12) 53.13°',
+        );
+        expect(answerText(press(const Tape(), 'ACOS 0 . 5')), 'Arccosine 60°');
+      });
+
+      test('S112: × seals the function, ÷ reaches only for [ATAN]', () {
         final arccosine = press(const Tape(), 'ACOS 0 . 8');
         expect(answerText(arccosine), 'Arccosine 36.87°');
         final sealed = press(arccosine, '× 6');
@@ -524,6 +549,27 @@ void main() {
         expect(halved.trigAnswer, isNull);
         expect(calc(halved), 'Calc 15°');
         expect(calc(press(const Tape(), 'SIN 3 0 ÷ 2')), 'Calc 0.25');
+      });
+
+      test('the reach ends at anything but ÷ and a bare number', () {
+        final times = press(const Tape(), 'ATAN 1 6 ÷ 1 2 × 2');
+        expect(times.trigAnswer, isNull);
+        expect(calc(times), 'Calc 106.26°');
+        expect(
+          calc(press(const Tape(), 'ATAN 1 6 ÷ 1 2 + 1')),
+          calc(press(const Tape(), 'ATAN 1 6 ÷ 1 2 = + 1')),
+        );
+        final pitch = press(const Tape(), 'ATAN 1 6 ÷ [Pitch] 1 2');
+        expect(pitch.trigAnswer, isNull);
+        final sine = press(const Tape(), 'ATAN 1 6 ÷ SIN 3 0');
+        expect(offered(sine).key, 'Sine');
+        expect(calc(sine), 'Calc 172.85°');
+        expect(press(const Tape(), 'ATAN 1 6 ÷').trigAnswer, isNull);
+        final byZero = press(const Tape(), 'ATAN 1 6 ÷ 0');
+        expect(byZero.trigAnswer, isNull);
+        expect(byZero.runningTotal, isA<ChainFailed>());
+        expect(press(const Tape(), 'ATAN 1 6 ÷ 1 2 ft').trigAnswer, isNull);
+        expect(press(const Tape(), '2 ÷ 1 2').trigAnswer, isNull);
       });
 
       test('S102: an answer is rebuilt on the tape an edit left before it', () {
@@ -561,6 +607,11 @@ void main() {
         expect(
           rebuilt(press(const Tape(), '7 0 ÷ 8 9 ='), divided.chips.last),
           'Arctangent 38.19°',
+        );
+        final reach = press(const Tape(), 'ATAN 1 6 ÷ 1 2 =');
+        expect(
+          rebuilt(press(const Tape(), 'ATAN 1 4 ÷ 1 2'), reach.chips.last),
+          'Arctangent(14 ÷ 12) 49.4°',
         );
       });
 

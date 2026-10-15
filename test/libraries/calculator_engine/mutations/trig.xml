@@ -204,8 +204,55 @@
             <mutation text="? TapeRefusal.tangentUndefined : TapeRefusal.ratioOutOfRange,"/>
         </regex>
 
+        <!-- RULE 18 (F1b): the ratio ATAN reaches across is built wrong, or
+             reached by another function or operator -->
+        <regex pattern="if \(divisorNumber == null \|\| divisorNumber == 0\) return null;" dotAll="true" id="trig.reach.divides_by_zero">
+            <mutation text="if (divisorNumber == null) return null;"/>
+        </regex>
+        <regex pattern="operand /= divisorNumber;" dotAll="true" id="trig.reach.multiplies">
+            <mutation text="operand *= divisorNumber;"/>
+        </regex>
+        <regex pattern="if \(divisors\.isNotEmpty &amp;&amp; function != TrigFunction\.arctangent\) \{" dotAll="true" id="trig.reach.any_function">
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(!chip\.dividesAnArctangentRatio\) return null;" dotAll="true" id="trig.reach.any_operator">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="key == null &amp;&amp; operator == Operator\.divide &amp;&amp; bareNumber != null;" dotAll="true" id="trig.reach.named_divisor">
+            <mutation text="operator == Operator.divide &amp;&amp; bareNumber != null;"/>
+            <mutation text="key == null &amp;&amp; bareNumber != null;"/>
+        </regex>
+        <regex pattern="key: divisors\.isEmpty \? function\.key : '\$\{function\.key\}\(\$ratio\)'," dotAll="true" id="trig.reach.unnamed_operand">
+            <mutation text="key: function.key,"/>
+        </regex>
+        <regex pattern="final operator\? =&gt; '\$\{operator\.symbol\} \$\{chip\.entry\.text\}'," dotAll="true" id="trig.reach.no_operator_in_name">
+            <mutation text="final operator? =&gt; chip.entry.text,"/>
+        </regex>
 
+        <!-- RULE 19 (F1b): = lands the Calc of the digits, or lands a lone
+             trig answer the caller owns -->
+        <regex pattern="if \(tape\._trigQuestion case \(chip: _, divisors: \[_, \.\.\.\]\)\) \{" dotAll="true" id="trig.equals.reach">
+            <mutation text="if (false) {"/>
+            <mutation text="if (tape._trigQuestion case (chip: _, divisors: _)) {"/>
+        </regex>
 
+        <!-- RULE 20 (F1b): the chain reads an Arctangent before ÷ at its
+             angle while the ratio is open, at its digits once it is sealed,
+             reads every chip before ÷ at its digits, or drops the divisors
+             of a sealed ratio -->
+        <regex pattern="if \(ratio != null &amp;&amp; ratio\.end == chips\.length\) \{" dotAll="true" id="trig.chain.reads_angle">
+            <mutation text="if (false) {"/>
+            <mutation text="if (ratio != null) {"/>
+        </regex>
+        <regex pattern="if \(chip is! ValueChip \|\| chip\.trigFunction != TrigFunction\.arctangent\) \{" dotAll="true" id="trig.chain.any_chip_digits">
+            <mutation text="if (chip is! ValueChip) {"/>
+        </regex>
+        <regex pattern="ratio /= bareNumber;" dotAll="true" id="trig.chain.any_operator_digits">
+            <mutation text="ratio *= bareNumber;"/>
+        </regex>
+        <regex pattern="reading = \(value: angle, steps: end - index - 1\);\s*next = end;" dotAll="true" id="trig.chain.sealed_keeps_divisors">
+            <mutation text="reading = (value: angle, steps: end - index - 1);"/>
+        </regex>
 
         <!-- RULE 21 (F1b): postfix inverse leaves its ratio a bare number, so
              the two orders land two tapes (rule 4.11) -->
@@ -214,9 +261,12 @@
         </regex>
 
         <!-- RULE 22 (F1b): a rebuilt answer reads a trig operand chip at its
-             answer -->
+             answer, or a reach answer as a lone function -->
         <regex pattern="final ValueChip chip when chip\.trigFunction != null =&gt; chip\.trigOperand," dotAll="true" id="trig.rebuilt.operand_at_answer">
             <mutation text=""/>
+        </regex>
+        <regex pattern="\) when key != function\.key\) \{" dotAll="true" id="trig.rebuilt.reach_lost">
+            <mutation text=") when false) {"/>
         </regex>
     </rules>
 
