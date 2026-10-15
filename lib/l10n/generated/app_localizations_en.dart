@@ -1619,6 +1619,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String equipmentRecalledAmountUsedOnceHint(String amount) {
+    return 'Used on this line only. Your default stays $amount.';
+  }
+
+  @override
+  String equipmentRecalledAmountSaveButton(String amount) {
+    return 'Save $amount as my default';
+  }
+
+  @override
+  String equipmentRecalledAmountSavedHint(String amount) {
+    return 'Your default is now $amount.';
+  }
+
+  @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
