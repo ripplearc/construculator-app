@@ -86,6 +86,20 @@ void main() {
       );
     });
 
+    test('a product of 2⁶¹ on the way to a sum is kept', () {
+      const twoToThe53Over256 = Rational(1 << 53, 1 << 8);
+      const minusOneOver256 = Rational(-1, 1 << 8);
+      expect(
+        twoToThe53Over256 + minusOneOver256,
+        const Rational((1 << 53) - 1, 1 << 8),
+      );
+    });
+
+    test('two products of 2⁶², which would wrap when added, are refused', () {
+      const one = Rational(1 << 31, 1 << 31);
+      expect(() => one + one, throwsA(isA<RationalOverflow>()));
+    });
+
     test('dividing by zero is an ArgumentError', () {
       expect(() => const Rational(1) / Rational.zero, throwsArgumentError);
     });
