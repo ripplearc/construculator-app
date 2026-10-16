@@ -57,6 +57,7 @@ class EquipmentCostFormData extends Equatable {
     this.otherMethodRateStatus = RateStatus.missing,
     this.recalledFromRecents = false,
     this.recalledRate,
+    this.recalledRateId,
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -90,6 +91,11 @@ class EquipmentCostFormData extends Equatable {
   /// types a new amount: the saved default is still this price until the user
   /// saves a new one. Null when the line was not opened from a recents row.
   final double? recalledRate;
+
+  /// The id of the saved rate this line was filled from, from Your recents or
+  /// the look-up. Adding the line records a use of that rate. Null when the
+  /// rate was typed.
+  final String? recalledRateId;
 
   /// Freeform description/note for this item.
   final String? description;
@@ -125,6 +131,7 @@ class EquipmentCostFormData extends Equatable {
     RateStatus? otherMethodRateStatus,
     bool? recalledFromRecents,
     Object? recalledRate = _unset,
+    String? recalledRateId,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -142,6 +149,7 @@ class EquipmentCostFormData extends Equatable {
       otherMethodRateStatus:
           otherMethodRateStatus ?? this.otherMethodRateStatus,
       recalledFromRecents: recalledFromRecents ?? this.recalledFromRecents,
+      recalledRateId: recalledRateId ?? this.recalledRateId,
       recalledRate: recalledRate == _unset
           ? this.recalledRate
           : recalledRate as double?,
@@ -165,6 +173,7 @@ class EquipmentCostFormData extends Equatable {
     otherMethodRateStatus,
     recalledFromRecents,
     recalledRate,
+    recalledRateId,
     description,
     isValid,
     fieldErrors,

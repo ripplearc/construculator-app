@@ -135,6 +135,16 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> recordRateUse(String rateId) async {
+    try {
+      await dataSource.stampLastUsedAtById(rateId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_handleError(e));
+    }
+  }
+
   Future<List<YourRateEntry>> _entriesNamed(
     CostItemType category,
     String itemName, {

@@ -128,6 +128,7 @@ const Schema schema = Schema([
       Column.text('equipment_method'),
       Column.text('entry_label'),
       Column.text('saved_at'),
+      Column.text('last_used_at'),
       Column.text('created_at'),
       Column.text('updated_at'),
     ],

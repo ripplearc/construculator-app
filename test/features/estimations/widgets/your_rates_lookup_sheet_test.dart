@@ -258,8 +258,12 @@ void main() {
 
     testWidgets('dates each saved rate: Used when added to an estimate, Saved '
         'when never added', (tester) async {
-      fakeSupabase.reset();
-      fakeSupabase.addTableData('your_rates', [
+      database.reset();
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
+      database.seedRows([
         row(
           'used-rate',
           'Mini excavator',
@@ -290,8 +294,12 @@ void main() {
     testWidgets('lists a rate used after a newer save above that save', (
       tester,
     ) async {
-      fakeSupabase.reset();
-      fakeSupabase.addTableData('your_rates', [
+      database.reset();
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
+      database.seedRows([
         row('saved-later', 'Scissor lift', savedAt: DateTime(2026, 1, 10)),
         row(
           'used-later',
