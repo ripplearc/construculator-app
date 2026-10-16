@@ -2,12 +2,14 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   group('EquipmentCostFormData live total and submit blocker', () {
@@ -18,6 +20,9 @@ void main() {
             supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
           ),
         ),
+      );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(
+        FakeYourRatesDatabase(),
       );
     });
 

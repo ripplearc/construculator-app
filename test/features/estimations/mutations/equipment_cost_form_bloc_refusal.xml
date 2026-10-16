@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- EQUIPMENT COST FORM BLOC MUTATION TESTING (Not kept notice) -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(result\.isLeft\(\)\) return state;" id="equipment_form.refusal.ignore_read_failure">
+            <mutation text="// ignored"/>
+        </regex>
+
+        <regex pattern="if \(_awaitingShownReport\) \{" id="equipment_form.refusal.invert_shown_report">
+            <mutation text="if (!_awaitingShownReport) {"/>
+        </regex>
+
+        <regex pattern="_awaitingShownReport = true;" id="equipment_form.refusal.never_await_report">
+            <mutation text="_awaitingShownReport = false;"/>
+        </regex>
+
+        <regex pattern="if \(marked\.isLeft\(\)\) _awaitingShownReport = false;" id="equipment_form.refusal.keep_flag_on_failed_mark">
+            <mutation text="// kept"/>
+        </regex>
+
+        <regex pattern="final marked = await _yourRatesRepository\.markRefusalShown\(\s*refusal\.itemName,\s*refusal\.equipmentMethod,\s*\);" id="equipment_form.refusal.never_mark_shown">
+            <mutation text="final marked = const Right&lt;Failure, void&gt;(null);"/>
+        </regex>
+
+        <regex pattern="if \(_current\(\)\.refusedDefault == notice\) return state;" id="equipment_form.refusal.emit_unchanged">
+            <mutation text="if (_current().refusedDefault != notice) return state;"/>
+        </regex>
+
+        <regex pattern="if \(event\.itemName\.trim\(\)\.isEmpty\) \{" id="equipment_form.refusal.blank_name_watches">
+            <mutation text="if (event.itemName.trim().isNotEmpty) {"/>
+        </regex>
+
+        <regex pattern="final estimateName = method == null" id="equipment_form.refusal.skip_estimate_for_method">
+            <mutation text="final estimateName = method != null"/>
+        </regex>
+
+        <regex pattern="acceptedAmount: refusal\.acceptedAmount," id="equipment_form.refusal.drop_accepted">
+            <mutation text="acceptedAmount: null,"/>
+        </regex>
+
+        <regex pattern="estimateName: estimateName," id="equipment_form.refusal.drop_estimate">
+            <mutation text="estimateName: null,"/>
+        </regex>
+
+        <regex pattern="refusedAmount: refusal\.refusedAmount," id="equipment_form.refusal.drop_refused">
+            <mutation text="refusedAmount: 0,"/>
+        </regex>
+
+        <regex pattern="events\.switchMap\(mapper\)" id="equipment_form.refusal.concurrent_watches">
+            <mutation text="events.asyncExpand(mapper)"/>
+        </regex>
+
+        <regex pattern="itemName: e\.value," id="equipment_form.refusal.watch_blank_on_type">
+            <mutation text="itemName: '',"/>
+        </regex>
+
+        <regex pattern="itemName: _current\(\)\.equipmentType," id="equipment_form.refusal.watch_blank_on_switch">
+            <mutation text="itemName: '',"/>
+        </regex>
+
+        <regex pattern="method: _current\(\)\.method," id="equipment_form.refusal.watch_wrong_method_on_type">
+            <mutation text="method: EquipmentPricingMethod.day,"/>
+        </regex>
+
+        <regex pattern="method: e\.method,\s*\),\s*\);\s*_emit" id="equipment_form.refusal.watch_wrong_method_on_switch">
+            <mutation text="method: EquipmentPricingMethod.day,), ); _emit"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="equipment_form_bloc" expected-return="0">flutter test test/features/estimations/units/blocs/equipment_cost_form_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="70">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
