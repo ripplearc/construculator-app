@@ -186,11 +186,11 @@ class EquipmentCostFormBloc
     final result = await _repository.createCostItem(
       _buildCostItem(draft, estimateId),
     );
-    final created = result.getRightOrNull();
-    if (created == null) {
-      emit(EquipmentCostFormFailure(draft, result.getLeftOrNull()!));
-      return;
-    }
+    final created = result.fold<CostItem?>((failure) {
+      emit(EquipmentCostFormFailure(draft, failure));
+      return null;
+    }, (item) => item);
+    if (created == null) return;
     emit(EquipmentCostFormSuccess(draft, created));
     final recalledRateId = draft.recalledRateId;
     if (recalledRateId != null) {
