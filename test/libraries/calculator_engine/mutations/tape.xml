@@ -153,9 +153,9 @@
 
         <!-- RULE 17b: a plain number under Pitch is a scalar, or every
              plain number is an angle -->
-        <regex pattern="return readsDegrees \? Angle\(number\) : Scalar\(number\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
-            <mutation text="return Scalar(number);"/>
-            <mutation text="return Angle(number);"/>
+        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;\s*return Scalar\(entry\.tokens\.first\.value\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
+            <mutation text="return Scalar(entry.tokens.first.value);"/>
+            <mutation text="return _typedAngle;"/>
         </regex>
 
         <!-- RULE 18: an emptied chip keeps the exact quantity it was

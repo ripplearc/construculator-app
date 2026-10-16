@@ -53,6 +53,18 @@ void main() {
         expect(token.value, double.infinity);
         expect(token.value.isFinite, isFalse);
       });
+
+      test('reads degrees, minutes and seconds as decimal degrees', () {
+        const angle = Token(digits: '38', minutes: '30', seconds: '45');
+        expect(angle.isDegreesMinutesSeconds, isTrue);
+        expect(angle.value, 38.5125);
+        expect(const Token(digits: '38', minutes: '').value, 38);
+        expect(
+          const Token(digits: '38', minutes: '30', seconds: '').value,
+          38.5,
+        );
+        expect(const Token(digits: '38').isDegreesMinutesSeconds, isFalse);
+      });
     });
 
     group('copyWith', () {
@@ -87,6 +99,20 @@ void main() {
 
       test('can set a new unit', () {
         expect(token.copyWith(unit: () => Unit.foot).unit, Unit.foot);
+      });
+
+      test('can open, fill and clear the angle segments', () {
+        const angle = Token(digits: '38', minutes: '30', seconds: '');
+        expect(
+          angle.copyWith(seconds: () => '45'),
+          const Token(digits: '38', minutes: '30', seconds: '45'),
+        );
+        expect(
+          angle.copyWith(seconds: () => null),
+          const Token(digits: '38', minutes: '30'),
+        );
+        expect(angle.copyWith(), angle);
+        expect(angle, isNot(const Token(digits: '38', minutes: '30')));
       });
     });
 

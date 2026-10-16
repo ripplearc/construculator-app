@@ -77,6 +77,11 @@ enum TapeRefusal {
   /// (Section 5.4); the number stays bare.
   trigTakesAnAngle,
 
+  /// The D:M:S key on a value with a unit (38ft [D:M:S], 18ft 8 [D:M:S]):
+  /// "D:M:S is an angle format, not a length" (Section 5.4); nothing
+  /// changes. The caller names the value from the tape.
+  dmsNeedsAPlainAngle,
+
   /// ASIN or ACOS on a ratio beyond ±1 (2 [ASIN]): "Arcsine needs a ratio
   /// between −1 and 1 — 2 isn't one" (Section 5.4, "Ratio out of range");
   /// nothing lands and the number stays as typed. An inverse key on an
@@ -710,7 +715,10 @@ class Tape extends Equatable {
   }
 
   /// A digit or a decimal point goes into the active chip, or starts a bare
-  /// one when nothing is active.
+  /// one when nothing is active. A second decimal point types degrees,
+  /// minutes and seconds (rule 4.10: 23.16.45 is 23°16'45") where the chip
+  /// takes an angle ([ValueChip.takesAnAngle]), and is refused under a key
+  /// that does not (Section 5.4, "A second decimal point makes an angle").
   TapeOutcome typeDigit(String digit) {
     if (openBracket case final bracket?) {
       return _inside(bracket, (inner) => inner.typeDigit(digit));
@@ -719,8 +727,63 @@ class Tape extends Equatable {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
     }
     final chip = active ?? const ValueChip();
-    return _entry(chip, chip.entry.typeDigit(digit));
+    return _entry(
+      chip,
+      chip.entry.typeDigit(digit, readsAngles: chip.takesAnAngle),
+    );
   }
+
+  /// The D:M:S key (Section 3.5), one segment per press: 38 [D:M:S] 30
+  /// [D:M:S] 45 types 38°30'45", the second decimal point made visible
+  /// (walkthrough 16.3). It reads the number being typed under the same
+  /// keys the point does ([ValueChip.takesAnAngle]); a value with a unit is
+  /// refused ([TapeRefusal.dmsNeedsAPlainAngle]: "D:M:S is an angle format,
+  /// not a length"), and with nothing typed the key asks for a number.
+  ///
+  /// On a finished angle answer the same key converts: Arcsine 31.45° reads
+  /// 31°26'56" and back, the value untouched (Section 6, "Conversions
+  /// offered": angle answers offer their D:M:S spelling). A pitch answer
+  /// keeps its own cycle and is left as it is. Inside a bracket the key is
+  /// refused, as a function key is.
+  TapeOutcome pressDmsKey() {
+    if (openBracket != null) {
+      return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    final chip = active;
+    if (chip == null) {
+      return switch (chips.lastOrNull) {
+        ResultChip(value: final Angle angle, :final key, :final operator) =>
+          _replaceLastChip(
+            ResultChip(
+              key: key,
+              value: _respelledAngle(angle),
+              operator: operator,
+            ),
+          ),
+        _ => const TapeRefused(TapeRefusal.typeANumberFirst),
+      };
+    }
+    if (chip.entry.isEmpty) {
+      return const TapeRefused(TapeRefusal.typeANumberFirst);
+    }
+    if (chip.entry.tokens.any((token) => token.unit != null)) {
+      return const TapeRefused(TapeRefusal.dmsNeedsAPlainAngle);
+    }
+    if (!chip.takesAnAngle) {
+      return const TapeEntryRefused(EntryRefusal.secondDecimalPoint);
+    }
+    return _entry(chip, chip.entry.closeDegreesMinutesSeconds());
+  }
+
+  Angle _respelledAngle(Angle angle) => switch (angle.spelling) {
+    AngleSpelling.degrees => angle.spelledAs(
+      AngleSpelling.degreesMinutesSeconds,
+    ),
+    AngleSpelling.degreesMinutesSeconds => angle.spelledAs(
+      AngleSpelling.degrees,
+    ),
+    AngleSpelling.risePerFoot || AngleSpelling.grade => angle,
+  };
 
   /// [/] goes into the active chip.
   TapeOutcome typeFraction() {
@@ -740,7 +803,9 @@ class Tape extends Equatable {
   /// Slope, whose bare number is a % grade: a length unit there is refused
   /// (Section 5.4, "A slope is a % grade, not a length"), so [Slope] 6
   /// [Feet] cannot become a length the solver never reads. Pitch takes a
-  /// length as inches of rise per 12in of run (rule 4.10).
+  /// length as inches of rise per 12in of run (rule 4.10). An angle typed
+  /// as degrees, minutes and seconds is refused a unit under any key
+  /// (Section 5.4, "That value is already an angle").
   TapeOutcome pressUnit(
     Unit unit, {
     bool holdsLengthOnly = false,
@@ -770,6 +835,9 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (chip.entry.isDegreesMinutesSeconds) {
+      return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
     }
     if (chip.trigFunction != null) {
       return const TapeRefused(TapeRefusal.trigTakesAnAngle);
