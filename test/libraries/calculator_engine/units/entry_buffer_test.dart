@@ -26,6 +26,10 @@ void main() {
         expect(type('.99', edge).text, '19999999.99');
         expect(type('.99', edge).typeDigit('1'), tooLarge);
         expect(type('2000000').typeDigit('0'), tooLarge);
+        final bottom = type('1/9999999');
+        expect(bottom.typeDigit('9'), tooLarge);
+        expect(type('1/19999999').typeDigit('9'), tooLarge);
+        expect(type('1/19999999').text, '1/19999999');
         expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
       });
 
