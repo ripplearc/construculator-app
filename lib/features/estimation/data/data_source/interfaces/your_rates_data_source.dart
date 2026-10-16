@@ -39,4 +39,10 @@ abstract class YourRatesDataSource {
   ///
   /// Throws an exception if the write fails or no row has [id].
   Future<YourRateEntryDto> updateRate(String id, YourRateEntryDto dto);
+
+  /// Sets `last_used_at` of the row identified by [id] to the current time in
+  /// UTC and leaves every other price field alone.
+  ///
+  /// Throws an exception if the write fails.
+  Future<void> stampLastUsedAtById(String id);
 }

@@ -193,7 +193,11 @@ class EstimationModule extends Module {
     );
     i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
     i.add<EquipmentCostFormBloc>(
-      () => EquipmentCostFormBloc(repository: i.get(), clock: i.get()),
+      () => EquipmentCostFormBloc(
+        repository: i.get(),
+        yourRatesRepository: i.get(),
+        clock: i.get(),
+      ),
     );
     i.add<YourRatesBloc>(
       () => YourRatesBloc(repository: i.get(), companyResolver: i.get()),
