@@ -1572,7 +1572,6 @@ void main() {
             const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
           );
         },
-        wait: const Duration(milliseconds: 1),
         verify: (_) async {
           expect(await recentsOrder(), ['older', 'newer']);
           expect(database.updatedRowIds, ['older']);
@@ -1657,11 +1656,31 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when the item is renamed after the rate is '
+        'picked',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('Bulldozer'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'still shows the line as added when the use cannot be recorded',
         build: () => bloc,
         act: (bloc) {
           fillLine(bloc);
-          recall(bloc, 'missing-rate');
+          recall(bloc, 'older');
+          database.executeError = StateError('disk full');
           bloc.add(
             const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
           );

@@ -31,7 +31,13 @@ class EquipmentCostFormBloc
     required this._clock,
   }) : super(const EquipmentCostFormInitial()) {
     on<EquipmentCostItemTypeChanged>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(equipmentType: e.value)),
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(
+          equipmentType: e.value,
+          recalledRateId: e.value == d.equipmentType ? d.recalledRateId : null,
+        ),
+      ),
     );
     on<EquipmentMethodSwitchedEvent>((e, emit) {
       _emit(emit, (d) {
@@ -185,11 +191,11 @@ class EquipmentCostFormBloc
       emit(EquipmentCostFormFailure(draft, result.getLeftOrNull()!));
       return;
     }
+    emit(EquipmentCostFormSuccess(draft, created));
     final recalledRateId = draft.recalledRateId;
     if (recalledRateId != null) {
       await _yourRatesRepository.recordRateUse(recalledRateId);
     }
-    emit(EquipmentCostFormSuccess(draft, created));
   }
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
