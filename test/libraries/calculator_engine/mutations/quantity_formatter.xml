@@ -84,8 +84,8 @@
 
         <!-- RULE 14: a fraction that rounds up to a whole inch is taken off
              instead of carried -->
-        <regex pattern="whole \+= fraction\.carry;" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
-            <mutation text="whole -= fraction.carry;"/>
+        <regex pattern="whole \+= fraction\.carry;\s*return '\$\{ticks &lt; 0 \? '-' : ''\}" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
+            <mutation text="whole -= fraction.carry; return '${ticks &lt; 0 ? '-' : ''}"/>
         </regex>
 
         <!-- RULE 15: a stored size under Metric divides by the millimetres
@@ -180,8 +180,8 @@
 
         <!-- RULE 23: a pitch's rise is quoted per inch of run, or its grade
              per inch, or the rise is the sine and not the tangent -->
-        <regex pattern="'\$\{_jsRoundedNumber\(_rise\(value\) \* inchesPerFootOfRun, pitchDecimals, group\)\}'" dotAll="true" id="quantity_formatter.pitch.rise_per_inch">
-            <mutation text="'${_jsRoundedNumber(_rise(value), pitchDecimals, group)}'"/>
+        <regex pattern="'\$\{_riseInInches\(_rise\(value\) \* inchesPerFootOfRun, group\)\}in/12in'," dotAll="true" id="quantity_formatter.pitch.rise_per_inch">
+            <mutation text="'${_riseInInches(_rise(value), group)}in/12in',"/>
         </regex>
         <regex pattern="'\$\{_jsRoundedNumber\(_rise\(value\) \* percent, pitchDecimals, group\)\}%'" dotAll="true" id="quantity_formatter.pitch.grade_per_foot">
             <mutation text="'${_jsRoundedNumber(_rise(value) * inchesPerFootOfRun, pitchDecimals, group)}%'"/>

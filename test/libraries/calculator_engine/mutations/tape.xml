@@ -27,9 +27,9 @@
         </regex>
 
         <!-- RULE 2: an unfinished value can be left by a function key -->
-        <regex pattern="final tape = _withFractionClosedAsInches\(\);\s*if \(tape\._unfinished case final refusal\?\) return refusal;\s*return TapeChanged\(\s*tape\._sealed\(\)\.append\(\s*ValueChip\(\s*key: key," dotAll="true" id="tape.function_key.leave_unfinished">
-            <mutation text="final tape = _withFractionClosedAsInches(); return TapeChanged(tape._sealed().append(ValueChip(key: key,"/>
-            <mutation text="final tape = this; if (tape._unfinished case final refusal?) return refusal; return TapeChanged(tape._sealed().append(ValueChip(key: key,"/>
+        <regex pattern="final tape = _withFractionClosedAsInches\(\);\s*if \(tape\._unfinished case final refusal\?\) return refusal;\s*if \(key == PlainNumberKeys\.pitch\) \{" dotAll="true" id="tape.function_key.leave_unfinished">
+            <mutation text="final tape = _withFractionClosedAsInches(); if (key == PlainNumberKeys.pitch) {"/>
+            <mutation text="final tape = this; if (tape._unfinished case final refusal?) return refusal; if (key == PlainNumberKeys.pitch) {"/>
         </regex>
 
         <!-- RULE 2b: a new chip under a function key loses the key's unit
