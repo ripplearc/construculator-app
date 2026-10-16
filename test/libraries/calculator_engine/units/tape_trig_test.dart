@@ -592,6 +592,56 @@ void main() {
         expect(press(const Tape(), '2 ÷ 1 2').trigAnswer, isNull);
       });
 
+      test('a chip before the ATAN stays in the chain (rule 4.6)', () {
+        final sum = press(const Tape(), '5 + ATAN 1 6 ÷ 1 2');
+        expect(answerText(sum), 'Arctangent(16 ÷ 12) 53.13°');
+        expect(calc(sum), 'Calc 58.13°');
+        expect(lastResult(press(sum, '=')), 'Calc 58.13°');
+        expect(
+          lastResult(press(const Tape(), '5 × ATAN 1 ÷ 1 =')),
+          'Calc 225°',
+        );
+        expect(
+          lastResult(press(const Tape(), '2 × 3 = × ATAN 1 6 ÷ 1 2 =')),
+          'Calc 318.78°',
+        );
+        expect(
+          calc(press(const Tape(), '5 + ATAN 1 6 ÷ 1 2 + 1')),
+          calc(press(const Tape(), '5 + ATAN 1 6 ÷ 1 2 = + 1')),
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ 1 2 =')),
+          'Arctangent(16 ÷ 12) 53.13°',
+          reason: 'an Arctangent that starts the tape still lands its angle',
+        );
+      });
+
+      test('a divisor of 0 fails the step, a lone [ATAN] 16 is its angle, '
+          'and the reach stops at an answer', () {
+        final byZero = press(const Tape(), 'ATAN 1 6 ÷ 0 × 2');
+        expect(
+          byZero.runningTotal,
+          isA<ChainFailed>().having(
+            (failed) => failed.error,
+            'error',
+            CalculationError.divisionByZero,
+          ),
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 × 2 =')),
+          'Calc 172.85°',
+        );
+        final lone = press(const Tape(), 'ATAN 1 6');
+        expect(
+          lone.runningTotal,
+          ChainValue(activeOf(lone).value(parser)!, steps: 0),
+          reason: 'a lone [ATAN] 16 is worth its angle, not its digits',
+        );
+        final landed = press(const Tape(), 'ATAN 1 6 ÷ 1 2 = ÷ 2');
+        expect(landed.trigAnswer, isNull);
+        expect(calc(landed), 'Calc 26.57°');
+      });
+
       test('S102: an answer is rebuilt on the tape an edit left before it', () {
         ValueChip retyped(TapeChip chip, String digits) => (chip as ValueChip)
             .copyWith(entry: EntryBuffer([Token(digits: digits)]));
