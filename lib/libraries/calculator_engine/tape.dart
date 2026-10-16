@@ -814,14 +814,29 @@ class Tape extends Equatable {
   /// 89.60 would read 90°00', which has no tangent, and under SIN or COS
   /// the same reading is not offered either; nothing says so (term 2.14).
   /// A decimal with only zeros after the point (12.00, 0.0) has no other
-  /// reading, since 12°00' is 12°, so it gets no pill either. The offers
-  /// under Pitch and Slope are CA-1303's second PR.
+  /// reading, since 12°00' is 12°, so it gets no pill either.
+  ///
+  /// Under Slope the pill offers the ratio where both readings are
+  /// realistic, between 0 and 2 (0.65 → 65%; above 2 it never asks), and
+  /// then the way back. Under Pitch it walks every reading of the digits,
+  /// degrees, inches of rise per 12in of run and D:M:S (8.45° → 8.45in/12in
+  /// → 8°45' → 8.45°, walkthrough 17.4), skipping the roof nobody could
+  /// frame (over 24in/12in, the same line Slope draws at a ratio of 2) and
+  /// the D:M:S of a whole number, which is itself; a reading the user has
+  /// typed in full, a fraction, or a length in feet or metres asks nothing.
   ReadAsOffer? get readAsOffer {
     if (openBracket != null) return null;
     if (_chipReadAsDegrees case (:final index, :final chip)) {
       return _angleOffer(index, chip);
     }
-    return null;
+    final chip = active;
+    if (chip == null) return null;
+    final index = chips.length - 1;
+    return switch (chip.key) {
+      PlainNumberKeys.slope => _slopeOffer(index, chip),
+      PlainNumberKeys.pitch => _pitchOffer(index, chip),
+      _ => null,
+    };
   }
 
   /// Takes the Read-as pill ([readAsOffer]): the chip is re-read from the
@@ -944,6 +959,78 @@ class Tape extends Equatable {
         decimals.split('').every((digit) => digit == '0');
   }
 
+  ReadAsOffer? _slopeOffer(int index, ValueChip chip) {
+    if (!_isSolo(chip)) return null;
+    final token = chip.entry.tokens.single;
+    if (token.isDegreesMinutesSeconds || token.digits.endsWith('.')) {
+      return null;
+    }
+    if (token.typedAs case final typed?) {
+      return ReadAsOffer(
+        chipIndex: index,
+        from: NumberReading.ratio,
+        to: NumberReading.grade,
+        next: _plain(typed),
+      );
+    }
+    final grade = token.value;
+    if (grade <= 0 || grade > ReadAsOffer.largestSlopeRatio) return null;
+    return ReadAsOffer(
+      chipIndex: index,
+      from: NumberReading.grade,
+      to: NumberReading.ratio,
+      next: EntryBuffer(
+        List.unmodifiable([
+          Token(
+            digits: _shiftedByAHundred(token.digits),
+            typedAs: token.digits,
+          ),
+        ]),
+      ),
+    );
+  }
+
+  ReadAsOffer? _pitchOffer(int index, ValueChip chip) {
+    if (chip.entry.tokens.length != 1) return null;
+    final token = chip.entry.tokens.single;
+    if (token.denominator != null || token.digits.isEmpty) return null;
+    if (token.unit != null && token.unit != Unit.inch) return null;
+    if (token.isDegreesMinutesSeconds && !_openSegmentIsEmpty(token)) {
+      return null;
+    }
+    final raw = token.typedAs ?? token.digits;
+    final stops = [
+      NumberReading.degrees,
+      if (!raw.endsWith('.') && _isARoofSomeoneCouldFrame(raw))
+        NumberReading.risePerFoot,
+      if (raw.contains('.')) NumberReading.degreesMinutesSeconds,
+    ];
+    if (stops.length < 2) return null;
+    final current = token.isDegreesMinutesSeconds
+        ? NumberReading.degreesMinutesSeconds
+        : token.unit == Unit.inch
+        ? NumberReading.risePerFoot
+        : NumberReading.degrees;
+    final next = stops[(stops.indexOf(current) + 1) % stops.length];
+    final entry = switch (next) {
+      NumberReading.degrees => _plain(raw),
+      NumberReading.risePerFoot => EntryBuffer(
+        List.unmodifiable([Token(digits: raw, unit: Unit.inch)]),
+      ),
+      _ => _readAsDegreesMinutesSeconds(raw),
+    };
+    if (entry == null) return null;
+    return ReadAsOffer(chipIndex: index, from: current, to: next, next: entry);
+  }
+
+  static bool _openSegmentIsEmpty(Token angle) =>
+      (angle.seconds ?? angle.minutes ?? '').isEmpty;
+
+  static bool _isARoofSomeoneCouldFrame(String raw) {
+    final rise = double.tryParse(raw);
+    return rise != null && rise > 0 && rise <= ReadAsOffer.largestRisePerFoot;
+  }
+
   static EntryBuffer _plain(String digits) =>
       EntryBuffer(List.unmodifiable([Token(digits: digits)]));
 
@@ -953,6 +1040,23 @@ class Tape extends Equatable {
       EntryChanged(:final buffer) => buffer,
       EntryOutcome() => null,
     };
+  }
+
+  // Done on the digits rather than × 100, because 0.65 × 100 is
+  // 65.00000000000001 and the pill promises the digits come back untouched.
+  static String _shiftedByAHundred(String digits) {
+    final point = digits.indexOf('.');
+    final whole = point < 0 ? digits : digits.substring(0, point);
+    final fraction = (point < 0 ? '' : digits.substring(point + 1)).padRight(
+      2,
+      '0',
+    );
+    final shifted = '$whole${fraction.substring(0, 2)}'.replaceFirst(
+      RegExp(r'^0+(?=\d)'),
+      '',
+    );
+    final rest = fraction.substring(2);
+    return rest.isEmpty ? shifted : '$shifted.$rest';
   }
 
   Angle _respelledAngle(Angle angle) => switch (angle.spelling) {

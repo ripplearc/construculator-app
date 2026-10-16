@@ -551,7 +551,10 @@ class EntryBuffer extends Equatable {
       return _changed(tokens.sublist(0, tokens.length - 1));
     }
     return _replaceLast(
-      last.copyWith(digits: last.digits.substring(0, last.digits.length - 1)),
+      last.copyWith(
+        digits: last.digits.substring(0, last.digits.length - 1),
+        typedAs: () => null,
+      ),
     );
   }
 
