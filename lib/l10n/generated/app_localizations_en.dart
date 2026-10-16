@@ -1894,6 +1894,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourRatesNewEquipmentCostAction => 'New equipment cost';
 
   @override
+  String equipmentRefusedDefaultNotice(
+    String refused,
+    String hasAccepted,
+    String accepted,
+    String hasEstimate,
+    String estimate,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(hasAccepted, {
+      'true': ' Your default is still $accepted.',
+      'other': '',
+    });
+    String _temp1 = intl.Intl.selectLogic(hasEstimate, {
+      'true': ' $estimate still uses $refused.',
+      'other': '',
+    });
+    return 'Your new default, $refused, was not saved.$_temp0$_temp1';
+  }
+
+  @override
   String get equipmentNoteLabel => 'Note';
 
   @override

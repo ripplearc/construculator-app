@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -12,6 +13,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -23,6 +25,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
+import '../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   late AppLocalizations l10n;
@@ -3615,6 +3618,190 @@ void main() {
         find.byKey(const Key('save_as_my_rate_helper_text')),
         findsNothing,
       );
+    });
+  });
+
+  group('EquipmentCostFormFields — Not kept message', () {
+    const itemName = 'Mini excavator';
+    final refusalId = YourRateRefusalKey.of(itemName, 'job');
+
+    void refuse({double? accepted = 400.0}) {
+      database.seedRefusal({
+        'id': refusalId,
+        'item_name': itemName,
+        'equipment_method': 'job',
+        'refused_amount': 450.0,
+        'accepted_amount': accepted,
+        'shown_at': null,
+      });
+    }
+
+    void keepOnLine() {
+      fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+        {
+          ...CostItemTestDataMapFactory.createEquipmentItemData(
+            itemName: itemName,
+            pricingMethod: 'job',
+            jobAmount: 450.0,
+          ),
+          'cost_estimates': {'estimate_name': 'Bedroom 2'},
+        },
+      ]);
+    }
+
+    Future<void> pickItemOnJob(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        itemName,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    String noticeText(WidgetTester tester) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(const Key('refused_default_notice')),
+            matching: find.byType(Text),
+          ),
+        )
+        .data!;
+
+    testWidgets('names the refused price, the default and the estimate', (
+      tester,
+    ) async {
+      refuse();
+      keepOnLine();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+
+      expect(
+        noticeText(tester),
+        'Your new default, \$450.00, was not saved. '
+        'Your default is still \$400.00. Bedroom 2 still uses \$450.00.',
+      );
+    });
+
+    testWidgets('leaves out the last sentence when no line keeps the price', (
+      tester,
+    ) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+
+      expect(
+        noticeText(tester),
+        'Your new default, \$450.00, was not saved. '
+        'Your default is still \$400.00.',
+      );
+    });
+
+    testWidgets('leaves out the middle sentence when the server never '
+        'accepted a price', (tester) async {
+      refuse(accepted: null);
+      keepOnLine();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+
+      expect(
+        noticeText(tester),
+        'Your new default, \$450.00, was not saved. '
+        'Bedroom 2 still uses \$450.00.',
+      );
+    });
+
+    testWidgets('shows nothing for an item the server did not refuse', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+
+      expect(find.byKey(const Key('refused_default_notice')), findsNothing);
+    });
+
+    testWidgets('takes the place of the save hint but keeps the save link', (tester) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pump();
+
+      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+      expect(
+        find.byKey(const Key('save_as_my_rate_helper_text')),
+        findsNothing,
+      );
+      expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
+    });
+
+    testWidgets('appears at once when the server refuses while the form is '
+        'open', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+      expect(find.byKey(const Key('refused_default_notice')), findsNothing);
+
+      refuse();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+    });
+
+    testWidgets('stays while the form is open after it was shown', (
+      tester,
+    ) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+
+      await tester.enterText(find.byKey(const Key('amount_field')), '500');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+    });
+
+    testWidgets('shows once per item, also on the next form', (tester) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+
+      expect(find.byKey(const Key('refused_default_notice')), findsNothing);
+    });
+
+    testWidgets('goes when a new default is saved for the item', (
+      tester,
+    ) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+
+      await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+        itemName,
+        'job',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('refused_default_notice')), findsNothing);
     });
   });
 }

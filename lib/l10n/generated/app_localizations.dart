@@ -3328,6 +3328,18 @@ abstract class AppLocalizations {
   /// **'New equipment cost'**
   String get yourRatesNewEquipmentCostAction;
 
+  /// Message above the Rate/Amount field on the first equipment form for an item after the server refused its saved default (storyboard CUJ 6, frame Not kept); refused and accepted are pre-formatted currency strings, hasAccepted is 'true' when the server ever accepted a price for the item (its middle sentence), and hasEstimate is 'true' when an estimate has a line at the refused amount (its last sentence) with estimate as that estimate's name
+  ///
+  /// In en, this message translates to:
+  /// **'Your new default, {refused}, was not saved.{hasAccepted, select, true{ Your default is still {accepted}.} other{}}{hasEstimate, select, true{ {estimate} still uses {refused}.} other{}}'**
+  String equipmentRefusedDefaultNotice(
+    String refused,
+    String hasAccepted,
+    String accepted,
+    String hasEstimate,
+    String estimate,
+  );
+
   /// Label for the optional note field inside the expanded delivery-fee editor (manually mode)
   ///
   /// In en, this message translates to:
