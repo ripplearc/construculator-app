@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE PITCH AND SLOPE GRAMMAR MUTATION TESTING (F3 CA-1071) -->
+    <!-- Targets: the Pitch key asking for the pitch the tape holds and
+         cycling its spellings, the rise per 12in of run written as a
+         fraction of an inch, and the reason the rules give for an
+         out-of-range pitch or slope. Critical path: a pitch landed in the
+         wrong spelling, or a fraction rounded to the wrong step, is a roof
+         cut to the wrong angle. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+        <file>lib/libraries/calculator_engine/deterministic_rules.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: [Pitch] on a pitch answer opens a chip instead of
+             cycling, or cycles on any answer -->
+        <regex pattern="if \(key == PlainNumberKeys\.pitch &amp;&amp; chip == null &amp;&amp; _endsOnAPitchAnswer\) \{\s*return cyclePitchSpelling\(\);\s*\}" dotAll="true" id="pitch.key.never_cycles">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="ResultChip\(:final key, value: Angle\(\)\) =&gt; DeterministicRules\.isPitchKey\(\s*key,\s*\)," dotAll="true" id="pitch.ends_on_pitch.any_angle">
+            <mutation text="ResultChip(value: Angle()) =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 2: [Pitch] lands the pitch in the wrong spelling, or never
+             lands it, or lands a non-pitch answer -->
+        <regex pattern="value: pitch\.spelledAs\(AngleSpelling\.risePerFoot\)," dotAll="true" id="pitch.key.lands_degrees">
+            <mutation text="value: pitch,"/>
+        </regex>
+        <regex pattern="if \(tape\._pitchTheRulesRead case final pitch\?\) \{" dotAll="true" id="pitch.key.never_asks">
+            <mutation text="if (null case final Angle pitch?) {"/>
+        </regex>
+        <regex pattern="if \(DeterministicRules\.isPitchKey\(answer\.key\)\) \{\s*if \(answer\.value case final Angle pitch\) return pitch;\s*\}" dotAll="true" id="pitch.rules_read.any_answer">
+            <mutation text="if (answer.value case final Angle pitch) return pitch;"/>
+        </regex>
+
+        <!-- RULE 3: the pill cycles to the same spelling, or keeps the old
+             label, or cycles a Calc -->
+        <regex pattern="final spelling = pitch\.spelling\.nextPitchSpelling;" dotAll="true" id="pitch.cycle.same_spelling">
+            <mutation text="final spelling = pitch.spelling;"/>
+        </regex>
+        <regex pattern="key: DeterministicRules\.pitchKeyFor\(spelling\)," dotAll="true" id="pitch.cycle.old_label">
+            <mutation text="key: key,"/>
+        </regex>
+        <regex pattern="\) when DeterministicRules\.isPitchKey\(key\)\) \{" dotAll="true" id="pitch.cycle.any_angle_answer">
+            <mutation text=") when true) {"/>
+        </regex>
+
+        <!-- RULE 4: the rise is written to one decimal again, the fraction
+             is dropped, a whole rise reads 0-, or the carry is lost -->
+        <regex pattern="'\$\{_riseInInches\(_rise\(value\) \* inchesPerFootOfRun, group\)\}in/12in'," dotAll="true" id="pitch.rise.one_decimal">
+            <mutation text="'${_jsRoundedNumber(_rise(value) * inchesPerFootOfRun, pitchDecimals, group)}in/12in',"/>
+        </regex>
+        <regex pattern="if \(whole == 0 &amp;&amp; fraction\.text\.isNotEmpty\) \{\s*return '\$sign\$\{fraction\.text\.substring\(1\)\}';\s*\}" dotAll="true" id="pitch.rise.leading_zero">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="whole \+= fraction\.carry;\s*final sign = inches &lt; 0" dotAll="true" id="pitch.rise.no_carry">
+            <mutation text="final sign = inches &lt; 0"/>
+        </regex>
+        <regex pattern="final fraction = _fractionOfInch\(ticks % Length\.ticksPerInch\);\s*whole \+= fraction\.carry;" dotAll="true" id="pitch.rise.no_fraction">
+            <mutation text="final fraction = (text: '', carry: 0);"/>
+        </regex>
+
+        <!-- RULE 5: the refusal never fires, or misses the slope's edge
+             (the pitch edges are deterministic_rules.pitch.out_of_range) -->
+        <regex pattern="if \(_pitchAngleOf\(value\) case final pitch\? when !_isInRange\(pitch\)\) \{\s*return RuleRefusal\.pitchOutOfRange;\s*\}" dotAll="true" id="pitch.refusal.pitch_never">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(namedValues\[DimensionKey\.slope\.id\] case Scalar\(\s*:final value,\s*\) when value &lt;= 0\) \{\s*return RuleRefusal\.slopeOutOfRange;\s*\}" dotAll="true" id="pitch.refusal.slope">
+            <mutation text=""/>
+            <mutation text="if (namedValues[DimensionKey.slope.id] case Scalar(:final value) when value &lt; 0) { return RuleRefusal.slopeOutOfRange; }"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="pitch_grammar" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_pitch_test.dart test/libraries/calculator_engine/units/quantity_formatter_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
