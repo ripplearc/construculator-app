@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE ANGLE DRAWER MUTATION TESTING (F2b CA-1303) -->
+    <!-- Targets: what the angle drawer files (a typed number that reads as
+         degrees or D:M:S, an angle answer at full precision), how it keeps
+         its three (newest first, no duplicates, re-filing moves to the
+         front), which key may have an angle back, and how a recalled angle
+         is typed into a chip. Critical path: a drawer that offers an angle
+         to an inverse key, or a count to Pitch, types the wrong kind of
+         value under a label that says it is helping. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/angle_memory.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: any key has an angle back, or only Pitch does, or an
+             inverse key does -->
+        <regex pattern="static bool keyTakesAnAngle\(String key\) =&gt;\s*key == PlainNumberKeys\.pitch \|\|\s*TrigFunction\.named\(key\)\?\.isInverse == false;" dotAll="true" id="angle_memory.key_takes_an_angle">
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; true;"/>
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; key == PlainNumberKeys.pitch;"/>
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; key == PlainNumberKeys.pitch || TrigFunction.named(key) != null;"/>
+        </regex>
+
+        <!-- RULE 2: the drawer offers its oldest, or offers to any key -->
+        <regex pattern="keyTakesAnAngle\(key\) \? remembered\.firstOrNull : null;" dotAll="true" id="angle_memory.newest_for">
+            <mutation text="keyTakesAnAngle(key) ? remembered.lastOrNull : null;"/>
+            <mutation text="remembered.firstOrNull;"/>
+        </regex>
+
+        <!-- RULE 3: a value that is not an angle is filed -->
+        <regex pattern="final angle = chip\.typedAngle;\s*if \(angle == null\) return this;" dotAll="true" id="angle_memory.filed.not_an_angle">
+            <mutation text="final angle = chip.typedAngle ?? const Angle(0);"/>
+        </regex>
+        <regex pattern="_isPlainNumber &amp;&amp; \(readsDegrees \|\| entry\.isDegreesMinutesSeconds\)\s*\? _typedAngle\s*: null;" dotAll="true" id="chip.typed_angle">
+            <mutation text="_isPlainNumber ? _typedAngle : null;"/>
+            <mutation text="_isPlainNumber &amp;&amp; readsDegrees ? _typedAngle : null;"/>
+        </regex>
+
+        <!-- RULE 4: the drawer grows past three, keeps duplicates, or files
+             at the back -->
+        <regex pattern="\]\.take\(depth\)," dotAll="true" id="angle_memory.depth">
+            <mutation text="].take(depth + 1),"/>
+        </regex>
+        <regex pattern="\.\.\.remembered\.where\(\(kept\) =&gt; kept\.entry != angle\.entry\)," dotAll="true" id="angle_memory.duplicates">
+            <mutation text="...remembered,"/>
+        </regex>
+        <regex pattern="angle,\s*\.\.\.remembered\.where" dotAll="true" id="angle_memory.filed_at_the_back">
+            <mutation text="...remembered.where((kept) =&gt; kept.entry != angle.entry), angle, ...remembered.where"/>
+        </regex>
+
+        <!-- RULE 5: an answer is filed at its two decimals, or a D:M:S
+             answer as decimal degrees, or its seconds are kept at zero -->
+        <regex pattern="RememberedAngle\(entry: _spelled\(angle, formatter\), value: angle\)," dotAll="true" id="angle_memory.answer.two_decimals">
+            <mutation text="RememberedAngle(entry: _spelled(angle, formatter), value: Angle(double.parse(_spelled(angle, formatter).tokens.single.digits), spelling: angle.spelling)),"/>
+        </regex>
+        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(answer\)," dotAll="true" id="angle_memory.answer.dms_as_degrees">
+            <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; Token(digits: formatter.format(answer.spelledAs(AngleSpelling.degrees), groupThousands: false).replaceFirst('°', '')),"/>
+        </regex>
+        <regex pattern="seconds: seconds == 0 \? '' : '\$seconds'," dotAll="true" id="angle_memory.answer.zero_seconds">
+            <mutation text="seconds: '$seconds',"/>
+        </regex>
+        <regex pattern="groupThousands: false," dotAll="true" id="angle_memory.answer.grouped">
+            <mutation text="groupThousands: true,"/>
+        </regex>
+        <regex pattern="AngleSpelling\.risePerFoot \|\|\s*AngleSpelling\.grade =&gt; answer\.spelledAs\(AngleSpelling\.degrees\)," dotAll="true" id="angle_memory.answer.pitch_spelling_kept">
+            <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; answer,"/>
+        </regex>
+        <regex pattern="if \(exactValue case final Angle angle\) return angle;" dotAll="true" id="chip.typed_angle.ignores_exact">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 6: a recalled angle lands on a filled chip, a bare chip or
+             a key that takes no angle, or loses its exact value -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*if \(chip\.key case final key\? when AngleMemory\.keyTakesAnAngle\(key\)\) \{" dotAll="true" id="tape.recall.guard">
+            <mutation text="if (chip != null) { if (chip.key case final key? when AngleMemory.keyTakesAnAngle(key)) {"/>
+            <mutation text="if (chip != null &amp;&amp; chip.entry.isEmpty) { if (chip.key case final key?) {"/>
+        </regex>
+        <regex pattern="exact: \(\) =&gt; \(value: angle\.value, spelled: angle\.entry\)," dotAll="true" id="tape.recall.loses_precision">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="angle_memory" expected-return="0">flutter test test/libraries/calculator_engine/units/angle_memory_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
