@@ -131,7 +131,7 @@ class EquipmentCostFormData extends Equatable {
     RateStatus? otherMethodRateStatus,
     bool? recalledFromRecents,
     Object? recalledRate = _unset,
-    String? recalledRateId,
+    Object? recalledRateId = _unset,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -149,7 +149,9 @@ class EquipmentCostFormData extends Equatable {
       otherMethodRateStatus:
           otherMethodRateStatus ?? this.otherMethodRateStatus,
       recalledFromRecents: recalledFromRecents ?? this.recalledFromRecents,
-      recalledRateId: recalledRateId ?? this.recalledRateId,
+      recalledRateId: recalledRateId == _unset
+          ? this.recalledRateId
+          : recalledRateId as String?,
       recalledRate: recalledRate == _unset
           ? this.recalledRate
           : recalledRate as double?,
