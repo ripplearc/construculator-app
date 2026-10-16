@@ -105,8 +105,8 @@
         <regex pattern="if \(trigOperand case final operand\?\) \{\s*return trigFunction\?\.answerTo\(operand\);\s*\}" dotAll="true" id="trig.chip.worth_digits">
             <mutation text=""/>
         </regex>
-        <regex pattern="function\.isInverse \? Scalar\(number\) : Angle\(number\)," dotAll="true" id="trig.chip.operand_kind">
-            <mutation text="Angle(number),"/>
+        <regex pattern="function\.isInverse \? Scalar\(number\) : _typedAngle," dotAll="true" id="trig.chip.operand_kind">
+            <mutation text="_typedAngle,"/>
             <mutation text="Scalar(number),"/>
         </regex>
 

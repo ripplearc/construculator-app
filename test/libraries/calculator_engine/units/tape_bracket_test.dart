@@ -229,8 +229,8 @@ void main() {
 
       test('a refusal inside a bracket passes through unchanged', () {
         expect(
-          press(const Tape(), '( 3 0 . 4').typeDigit('.'),
-          const TapeEntryRefused(EntryRefusal.secondDecimalPoint),
+          press(const Tape(), '( 7 / 1 6').typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.decimalInDenominator),
         );
       });
 
