@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   const formatter = QuantityFormatter();
+  const rules = DeterministicRules();
 
   Tape changed(TapeOutcome outcome) {
     if (outcome case TapeChanged(:final tape)) return tape;
@@ -17,6 +18,7 @@ void main() {
     'ACOS' => tape.pressTrigKey(TrigFunction.arccosine),
     'ATAN' => tape.pressTrigKey(TrigFunction.arctangent),
     'pill' => tape.reInput(),
+    '⌫' => tape.backspace(),
     'ft' => tape.pressUnit(Unit.foot),
     'in' => tape.pressUnit(Unit.inch),
     '×' => tape.pressOperator(Operator.multiply),
@@ -49,6 +51,8 @@ void main() {
         NumberReading.degrees when text.endsWith('.') => '',
         NumberReading.degrees =>
           chip.readsDegrees || chip.trigFunction != null ? '°' : '',
+        NumberReading.grade || NumberReading.ratio => '%',
+        NumberReading.risePerFoot => '/12in',
         NumberReading.degreesMinutesSeconds => '',
       };
 
@@ -74,7 +78,174 @@ void main() {
     throw StateError('not a result: ${tape.chips.last}');
   }
 
+  List<String> strip(Tape tape) => [
+    for (final answer in rules.answersFor(tape.namedValues))
+      '${answer.key}: ${formatter.format(answer.value)}',
+  ];
+
   group('Tape Read-as pill (F2b)', () {
+    group('under Pitch (walkthrough 17.4)', () {
+      test('S86: every reading reachable, none guessed, and a full lap comes '
+          'home to what was typed', () {
+        var tape = press(const Tape(), '[Pitch] 8');
+        expect(pill(tape), 'Input 8° as 8in/12in');
+        tape = press(tape, '.');
+        expect(pill(tape), "Input 8. as 8°00'");
+        tape = press(tape, '4 5');
+        expect(chipText(tape, 0), '8.45');
+        expect(pill(tape), 'Input 8.45° as 8.45in/12in');
+        expect(strip(tape).first, 'Pitch-degrees: 8.45°');
+
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '8.45in');
+        expect(strip(tape).first, 'Pitch-degrees: 35.16°');
+        expect(pill(tape), "Input 8.45in/12in as 8°45'");
+
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), "8°45'");
+        expect(strip(tape).first, 'Pitch-degrees: 8.75°');
+        expect(pill(tape), "Input 8°45' as 8.45°");
+
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '8.45');
+        expect(pill(tape), 'Input 8.45° as 8.45in/12in');
+        expect(tape, press(const Tape(), '[Pitch] 8 . 4 5'));
+      });
+
+      test('S86: the over-60 carry is previewed, and the way back returns '
+          'the digits untouched', () {
+        var tape = press(const Tape(), '[Pitch] 8 . 8 9');
+        expect(pill(tape), 'Input 8.89° as 8.89in/12in');
+        tape = press(tape, 'pill');
+        expect(pill(tape), "Input 8.89in/12in as 9°29'");
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), "9°29'");
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '8.89');
+      });
+
+      test('a D:M:S typed in full is settled, and so is one with its '
+          'minutes typed', () {
+        expect(
+          press(const Tape(), '[Pitch] 2 3 . 1 6 . 4 5').readAsOffer,
+          isNull,
+        );
+        expect(press(const Tape(), '[Pitch] 3 8 DMS 3').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 3 8 DMS').readAsOffer, isNull);
+      });
+
+      test('S88: a bare 6 is 6°, and the pill offers the six-and-twelve a '
+          'roofer meant', () {
+        var tape = press(const Tape(), '[Pitch] 6');
+        expect(strip(tape), [
+          'Pitch-degrees: 6°',
+          'Pitch-rise per 12in run: 1.3in/12in',
+          'Pitch-grade: 10.5%',
+        ]);
+        expect(pill(tape), 'Input 6° as 6in/12in');
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '6in');
+        expect(strip(tape), contains('Pitch-degrees: 26.57°'));
+        expect(pill(tape), 'Input 6in/12in as 6°');
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '6');
+        tape = press(tape, '.');
+        expect(pill(tape), "Input 6. as 6°00'");
+        tape = press(tape, '5');
+        expect(pill(tape), 'Input 6.5° as 6.5in/12in');
+        final twelve = press(const Tape(), '[Pitch] 1 2');
+        expect(pill(twelve), 'Input 12° as 12in/12in');
+        expect(strip(press(twelve, 'pill')), contains('Pitch-degrees: 45°'));
+      });
+
+      test('S115: the pill only offers a roof someone could frame', () {
+        expect(
+          pill(press(const Tape(), '[Pitch] 2 4')),
+          'Input 24° as 24in/12in',
+        );
+        expect(
+          pill(press(const Tape(), '[Pitch] 2 4 . 5')),
+          "Input 24.5° as 24°05'",
+        );
+        expect(
+          pill(press(const Tape(), '[Pitch] 3 0 . 4 5')),
+          "Input 30.45° as 30°45'",
+        );
+        expect(press(const Tape(), '[Pitch] 1 0 0').readAsOffer, isNull);
+        expect(
+          pill(press(const Tape(), '[Pitch] 0 . 5')),
+          'Input 0.5° as 0.5in/12in',
+        );
+        expect(
+          ReadAsOffer.largestRisePerFoot,
+          QuantityFormatter.inchesPerFootOfRun * ReadAsOffer.largestSlopeRatio,
+          reason: 'both keys draw the line at the same roof',
+        );
+      });
+
+      test('a length in feet, a fraction and a whole number ask nothing', () {
+        expect(press(const Tape(), '[Pitch] 8 ft').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 7 / 1 6').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 0').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch]').readAsOffer, isNull);
+      });
+
+      test('a 30.45in pitch typed with [Inch] is past the band, so the pill '
+          'walks the two readings left', () {
+        var tape = press(const Tape(), '[Pitch] 3 0 . 4 5 in');
+        expect(pill(tape), 'Input 30.45in/12in as 30.45°');
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '30.45');
+        expect(pill(tape), "Input 30.45° as 30°45'");
+      });
+    });
+
+    group('under Slope (S92)', () {
+      test('a percent by default, a ratio on request, and the way back', () {
+        var tape = press(const Tape(), '[Slope] 0 . 6 5');
+        expect(strip(tape)[1], 'Pitch-degrees: 0.37°');
+        expect(pill(tape), 'Input 0.65% as 65%');
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '65');
+        expect(strip(tape)[1], 'Pitch-degrees: 33.02°');
+        expect(pill(tape), 'Input 65% as 0.65%');
+        tape = press(tape, 'pill');
+        expect(chipText(tape, 0), '0.65');
+        expect(tape, press(const Tape(), '[Slope] 0 . 6 5'));
+      });
+
+      test('the band ends at 2, and a plain 7% grade is never asked about', () {
+        expect(pill(press(const Tape(), '[Slope] 2')), 'Input 2% as 200%');
+        expect(press(const Tape(), '[Slope] 2 . 1').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 7').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 0').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 0 .').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 1 .').readAsOffer, isNull);
+      });
+
+      test('the digits are shifted, never multiplied', () {
+        expect(
+          pill(press(const Tape(), '[Slope] 0 . 0 7')),
+          'Input 0.07% as 7%',
+        );
+        expect(
+          pill(press(const Tape(), '[Slope] 1 . 2 3 4')),
+          'Input 1.234% as 123.4%',
+        );
+        expect(pill(press(const Tape(), '[Slope] 0 . 5')), 'Input 0.5% as 50%');
+      });
+
+      test('the way back belongs to the digits it was made from', () {
+        final ratio = press(const Tape(), '[Slope] 0 . 6 5 pill');
+        expect(press(ratio, '0').readAsOffer, isNull);
+        expect(
+          pill(press(const Tape(), '[Slope] 0 . 1 2 pill ⌫')),
+          'Input 1% as 100%',
+          reason: '⌫ changes the digits, so the way back is gone',
+        );
+      });
+    });
+
     group('a number read as degrees (walkthrough 16.4)', () {
       test('S91: an open keypad is not context; [SIN] brings the question '
           'with the answer, and the tap rebuilds it', () {
@@ -157,11 +328,16 @@ void main() {
         expect(chipText(tape, 0), "45°02'");
       });
 
-      test('S116: the pill names the number it is talking about, even once '
-          'the display has moved on', () {
-        final tape = press(const Tape(), 'SIN 1 2 . 1 ÷ 3 . 5');
-        expect(tape.active!.entry.text, '3.5');
-        expect(pill(tape), "Input 12.1° as 12°01'");
+      test('S116: the same wording on every pill that changes a number', () {
+        expect(
+          pill(press(const Tape(), 'SIN 1 2 . 1 ÷ 3 . 5')),
+          "Input 12.1° as 12°01'",
+        );
+        expect(pill(press(const Tape(), '[Pitch] 6')), 'Input 6° as 6in/12in');
+        expect(
+          pill(press(const Tape(), '[Slope] 0 . 6 5')),
+          'Input 0.65% as 65%',
+        );
       });
 
       test('an answer that cannot be rebuilt is removed (Section 5.5)', () {
@@ -206,13 +382,13 @@ void main() {
         const ReadAsOffer(
           chipIndex: 0,
           from: NumberReading.degrees,
-          to: NumberReading.degreesMinutesSeconds,
+          to: NumberReading.risePerFoot,
           next: next,
         ),
         const ReadAsOffer(
           chipIndex: 0,
           from: NumberReading.degrees,
-          to: NumberReading.degreesMinutesSeconds,
+          to: NumberReading.risePerFoot,
           next: next,
         ),
       );
@@ -220,14 +396,14 @@ void main() {
         const ReadAsOffer(
           chipIndex: 0,
           from: NumberReading.degrees,
-          to: NumberReading.degreesMinutesSeconds,
+          to: NumberReading.risePerFoot,
           next: next,
         ),
         isNot(
           const ReadAsOffer(
             chipIndex: 0,
             from: NumberReading.degrees,
-            to: NumberReading.degreesMinutesSeconds,
+            to: NumberReading.risePerFoot,
             next: next,
             rebuildsAnAnswer: true,
           ),
