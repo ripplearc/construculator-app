@@ -63,6 +63,93 @@ final class ChainEmpty extends ChainOutcome {
   List<Object?> get props => const [];
 }
 
+/// The ratio an Arctangent chip builds across the ÷ and bare numbers typed
+/// after it (UX Design Doc rule 4.11; Section 6, "Trig chips in a chain"):
+/// [ATAN] 16 ÷ 12 asks the arctangent of 16 ÷ 12, and [ATAN] 32 ÷ 2 ÷ 12
+/// the same. The one place the reach is walked: the chain evaluator reads
+/// it to fold the chips, the tape to offer and name the answer.
+///
+/// Only ÷ and a bare number with no key join the ratio
+/// ([ValueChip.dividesAnArctangentRatio]); the walk stops at anything else,
+/// a result, a bracket, an operator or a named chip included. The
+/// Arctangent chip's own operator is the chain's, not the ratio's: 5 +
+/// [ATAN] 16 ÷ 12 is 5 plus the arctangent of 16 ÷ 12 (rule 4.6).
+final class ArctangentReach {
+  /// The Arctangent chip the ratio starts from.
+  final ValueChip chip;
+
+  /// The chips that divide it, each ÷ and a bare number, at least one.
+  final List<ValueChip> divisors;
+
+  /// The place on the tape just past the last divisor.
+  final int end;
+
+  /// The number typed under the Arctangent chip, before any ÷: the digits
+  /// the strip's Calc shows while the ratio is still the end of the tape.
+  final double digits;
+
+  const ArctangentReach._({
+    required this.chip,
+    required this.divisors,
+    required this.end,
+    required this.digits,
+  });
+
+  /// The reach from [chips] at [index], or `null` when the chip there is
+  /// not an Arctangent chip with a number, or nothing divides it.
+  static ArctangentReach? from(List<TapeChip> chips, int index) {
+    final chip = chips[index];
+    if (chip is! ValueChip || chip.trigFunction != TrigFunction.arctangent) {
+      return null;
+    }
+    final digits = chip.bareNumber;
+    if (digits == null) return null;
+    final divisors = <ValueChip>[];
+    var end = index + 1;
+    while (end < chips.length) {
+      if (chips[end] case final ValueChip divisor
+          when divisor.dividesAnArctangentRatio) {
+        divisors.add(divisor);
+        end++;
+      } else {
+        break;
+      }
+    }
+    if (divisors.isEmpty) return null;
+    return ArctangentReach._(
+      chip: chip,
+      divisors: List.unmodifiable(divisors),
+      end: end,
+      digits: digits,
+    );
+  }
+
+  /// The ratio the divisors build, or `null` when one of them is 0.
+  double? get ratio {
+    var ratio = digits;
+    for (final divisor in divisors) {
+      final number = divisor.bareNumber ?? 0;
+      if (number == 0) return null;
+      ratio /= number;
+    }
+    return ratio;
+  }
+
+  /// The arctangent of the ratio, or `null` where there is no ratio.
+  Quantity? get angle => switch (ratio) {
+    final ratio? => TrigFunction.arctangent.of(ratio),
+    null => null,
+  };
+
+  /// The ratio as the tape writes it, "16 ÷ 12", without the Arctangent
+  /// chip's own operator.
+  String get spelling => [
+    chip.entry.text,
+    for (final divisor in divisors)
+      '${Operator.divide.symbol} ${divisor.entry.text}',
+  ].join(' ');
+}
+
 /// Folds the tape left to right with no precedence (UX Design Doc rule
 /// 4.6, Section 7): 2 + 3 × 4 = 20, the way the handheld calculators work
 /// and the only order the tape can be read in. The port of the prototype's
@@ -90,12 +177,13 @@ final class ChainEmpty extends ChainOutcome {
 ///
 /// A trig chip is worth its answer, except an Arctangent whose number is
 /// followed by ÷ and bare numbers with no key: the ÷ builds the ratio for
-/// ATAN (Section 6, "Trig chips in a chain"). While that ratio is the end
-/// of the tape the chip is worth its digits, so [ATAN] 16 ÷ 12 folds to
-/// Calc 1.33, the ratio whose angle the tape offers beside it; once any
-/// other chip follows, the ratio is sealed into its angle, because an
-/// operator never demotes a trig chip into its digits: [ATAN] 16 ÷ 12 × 2
-/// is 106.26°.
+/// ATAN ([ArctangentReach]; Section 6, "Trig chips in a chain"). While that
+/// ratio is the end of a tape the Arctangent starts, the chip is worth its
+/// digits, so [ATAN] 16 ÷ 12 folds to Calc 1.33, the ratio whose angle the
+/// tape offers beside it; once any other chip follows, or the Arctangent
+/// continues a chain (5 + [ATAN] 16 ÷ 12 is 58.13°, rule 4.6), the ratio is
+/// sealed into its angle, because an operator never demotes a trig chip
+/// into its digits: [ATAN] 16 ÷ 12 × 2 is 106.26°.
 class ChainEvaluator extends Equatable {
   /// Reads each chip's value.
   final QuantityParser parser;
@@ -121,11 +209,11 @@ class ChainEvaluator extends Equatable {
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
         case ValueChip(:final operator) || BracketChip(:final operator):
-          final ratio = _arctangentRatio(chips, index);
+          final reach = ArctangentReach.from(chips, index);
           final ({Quantity value, int steps})? reading;
-          if (ratio != null && ratio.end == chips.length) {
-            reading = (value: Scalar(ratio.digits), steps: 0);
-          } else if (ratio case (digits: _, :final angle?, :final end)) {
+          if (reach != null && reach.end == chips.length && operator == null) {
+            reading = (value: Scalar(reach.digits), steps: 0);
+          } else if (reach case ArctangentReach(:final angle?, :final end)) {
             reading = (value: angle, steps: end - index - 1);
             next = end;
           } else {
@@ -186,38 +274,6 @@ class ChainEvaluator extends Equatable {
         ),
       ),
     };
-  }
-
-  ({double digits, Quantity? angle, int end})? _arctangentRatio(
-    List<TapeChip> chips,
-    int index,
-  ) {
-    final chip = chips[index];
-    if (chip is! ValueChip || chip.trigFunction != TrigFunction.arctangent) {
-      return null;
-    }
-    final digits = chip.bareNumber;
-    if (digits == null) return null;
-    var ratio = digits;
-    var end = index + 1;
-    while (end < chips.length) {
-      final divisor = chips[end];
-      if (divisor case ValueChip(
-        dividesAnArctangentRatio: true,
-        :final bareNumber?,
-      )) {
-        ratio /= bareNumber;
-        end++;
-      } else {
-        break;
-      }
-    }
-    if (end == index + 1) return null;
-    return (
-      digits: digits,
-      angle: ratio.isFinite ? TrigFunction.arctangent.of(ratio) : null,
-      end: end,
-    );
   }
 
   ({Quantity value, int steps})? _readingOf(TapeChip chip) => switch (chip) {
