@@ -6,6 +6,7 @@ import 'package:construculator/libraries/calculator_engine/models/calculator_pre
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/read_as_offer.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
@@ -128,6 +129,10 @@ enum TapeRefusal {
 
   /// [( )] to close with nothing open.
   noBracketToClose,
+
+  /// The Read-as pill tapped while the tape offers no other reading; the
+  /// pill shows only while [Tape.readAsOffer] has one.
+  nothingToReInput,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -757,6 +762,159 @@ class Tape extends Equatable {
       return const TapeEntryRefused(EntryRefusal.secondDecimalPoint);
     }
     return _entry(chip, chip.entry.closeDegreesMinutesSeconds());
+  }
+
+  /// The Read-as pill (term 2.14; rule 4.10): the other reading of a bare
+  /// number that could reasonably be read two ways, or `null` when nothing
+  /// asks. The pill shows the reading the calculator chose and names where
+  /// the next tap goes; [reInput] takes it.
+  ///
+  /// A number being read as degrees offers its D:M:S reading, 38.30 as
+  /// 38°30' (walkthrough 16.4): the number under a forward trig key, that
+  /// number once ÷ or another operator has moved on from it ([SIN] 12.1 ÷
+  /// 3.5 still offers the 12.1, S114), a bare number added to an angle
+  /// answer (60° + 12.1, which reads as degrees), and the number a postfix
+  /// trig key answered, where the pill reads "Re-input" because the answer
+  /// is rebuilt (S91). An open keypad is not context: a bare 38.30 with no
+  /// key offers nothing, and an inverse trig key never asks, since a ratio
+  /// has no minutes. A D:M:S reading offers the way back while its seconds
+  /// are still empty; once they are typed the reading is settled. The
+  /// offers under Pitch and Slope are CA-1303's second PR.
+  ReadAsOffer? get readAsOffer {
+    if (openBracket != null) return null;
+    if (_chipReadAsDegrees case (:final index, :final chip)) {
+      return _angleOffer(index, chip);
+    }
+    return null;
+  }
+
+  /// Takes the Read-as pill ([readAsOffer]): the chip is re-read from the
+  /// digits as they were typed, never converted (30.45 becomes 30°45', a
+  /// different angle, not 30°27'), so a full lap comes home to exactly what
+  /// was typed. A trig answer standing after the chip was computed from
+  /// the old reading and is rebuilt on the new one (38.30 [SIN] 0.619779
+  /// becomes 0.622515), or removed when it cannot be (Section 5.5).
+  TapeOutcome reInput() {
+    final offer = readAsOffer;
+    if (offer == null) return const TapeRefused(TapeRefusal.nothingToReInput);
+    final index = offer.chipIndex;
+    if (chips[index] case final ValueChip chip) {
+      final before = _with([
+        ...chips.sublist(0, index),
+        chip.copyWith(
+          entry: offer.next,
+          exact: () => null,
+          poundsPerTon: () => null,
+        ),
+      ]);
+      final after = chips.sublist(index + 1);
+      if (offer.rebuildsAnAnswer) {
+        if (after.firstOrNull case final ResultChip answer) {
+          return TapeChanged(
+            _with([
+              ...before.chips,
+              ?before.rebuiltTrigAnswer(answer),
+              ...after.sublist(1),
+            ]),
+          );
+        }
+      }
+      return TapeChanged(_with([...before.chips, ...after]));
+    }
+    return const TapeRefused(TapeRefusal.nothingToReInput);
+  }
+
+  ({int index, ValueChip chip})? get _chipReadAsDegrees {
+    final chip = active;
+    if (chip == null) {
+      if (chips.length < 2 || !_answersForwardTrig(chips.length - 1)) {
+        return null;
+      }
+      return switch (chips[chips.length - 2]) {
+        final ValueChip operand when _isSoloForwardTrig(operand) => (
+          index: chips.length - 2,
+          chip: operand,
+        ),
+        _ => null,
+      };
+    }
+    final index = chips.length - 1;
+    if (chip.operator == null) {
+      return _isSoloForwardTrig(chip) ? (index: index, chip: chip) : null;
+    }
+    final addsToAnAngle =
+        chip.key == null &&
+        _isSolo(chip) &&
+        (chip.operator == Operator.add || chip.operator == Operator.subtract);
+    if (addsToAnAngle && index > 0) {
+      if (chips[index - 1] case ResultChip(value: Angle())) {
+        return (index: index, chip: chip);
+      }
+    }
+    for (var behind = index - 1; behind >= 0; behind--) {
+      final earlier = chips[behind];
+      if (earlier is! ValueChip) return null;
+      if (_isSoloForwardTrig(earlier)) return (index: behind, chip: earlier);
+      if (earlier.key != null) return null;
+    }
+    return null;
+  }
+
+  bool _isSoloForwardTrig(ValueChip chip) =>
+      _isSolo(chip) && chip.trigFunction?.isInverse == false;
+
+  bool _answersForwardTrig(int index) =>
+      index < chips.length &&
+      switch (chips[index]) {
+        ResultChip(:final key) => switch (TrigFunction.named(key)) {
+          TrigFunction(isInverse: false) => true,
+          _ => false,
+        },
+        _ => false,
+      };
+
+  static bool _isSolo(ValueChip chip) =>
+      chip.entry.tokens.length == 1 &&
+      chip.entry.tokens.single.unit == null &&
+      chip.entry.tokens.single.denominator == null &&
+      chip.entry.tokens.single.digits.isNotEmpty;
+
+  ReadAsOffer? _angleOffer(int index, ValueChip chip) {
+    final token = chip.entry.tokens.single;
+    final rebuilds = _answersForwardTrig(index + 1);
+    if (token.isDegreesMinutesSeconds) {
+      if (token.typedAs case final typed?) {
+        return ReadAsOffer(
+          chipIndex: index,
+          from: NumberReading.degreesMinutesSeconds,
+          to: NumberReading.degrees,
+          next: _plain(typed),
+          rebuildsAnAnswer: rebuilds,
+        );
+      }
+      return null;
+    }
+    if (token.digits.endsWith('.')) return null;
+    final promoted = _readAsDegreesMinutesSeconds(token.digits);
+    if (promoted == null) return null;
+    return ReadAsOffer(
+      chipIndex: index,
+      from: NumberReading.degrees,
+      to: NumberReading.degreesMinutesSeconds,
+      next: promoted,
+      rebuildsAnAnswer: rebuilds,
+    );
+  }
+
+  static EntryBuffer _plain(String digits) =>
+      EntryBuffer(List.unmodifiable([Token(digits: digits)]));
+
+  static EntryBuffer? _readAsDegreesMinutesSeconds(String digits) {
+    if (!digits.contains('.')) return null;
+    return switch (_plain(digits).typeDigit('.', readsAngles: true)) {
+      EntryChanged(:final buffer) => buffer,
+      EntryOutcome() => null,
+    };
   }
 
   Angle _respelledAngle(Angle angle) => switch (angle.spelling) {

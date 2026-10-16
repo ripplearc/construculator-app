@@ -446,7 +446,12 @@ void main() {
         expect(typeAngle('30.89.00').text, '31°29\'0"');
         expect(
           typeAngle('30.89.').tokens.single,
-          const Token(digits: '31', minutes: '29', seconds: ''),
+          const Token(
+            digits: '31',
+            minutes: '29',
+            seconds: '',
+            typedAs: '30.89',
+          ),
         );
       });
 
