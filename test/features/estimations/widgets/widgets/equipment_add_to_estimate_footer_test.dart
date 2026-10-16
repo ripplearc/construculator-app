@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_add_to_estimate_footer.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late AppLocalizations l10n;
@@ -25,6 +29,7 @@ void main() {
         ),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(FakeYourRatesDatabase());
     l10n = lookupAppLocalizations(const Locale('en'));
   });
 
@@ -37,7 +42,7 @@ void main() {
     List<EquipmentCostFormEvent> events,
   ) async {
     final bloc = Modular.get<EquipmentCostFormBloc>();
-    addTearDown(bloc.close);
+    addTearDown(() => unawaited(bloc.close()));
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),

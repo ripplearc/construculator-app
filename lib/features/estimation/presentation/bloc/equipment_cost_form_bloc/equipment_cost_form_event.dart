@@ -115,3 +115,16 @@ class EquipmentOutsizedFeeAcceptedEvent extends EquipmentCostFormEvent {
 class EquipmentOutsizedFeeDeclinedEvent extends EquipmentCostFormEvent {
   const EquipmentOutsizedFeeDeclinedEvent();
 }
+
+/// Fired when the item name or the pricing method changes, to start watching
+/// whether the server refused the saved default of that item. Restarts the
+/// previous watch. The bloc fires it itself.
+class EquipmentRefusalWatchRequested extends EquipmentCostFormEvent {
+  const EquipmentRefusalWatchRequested({
+    required this.itemName,
+    required this.method,
+  });
+
+  final String itemName;
+  final EquipmentPricingMethod method;
+}

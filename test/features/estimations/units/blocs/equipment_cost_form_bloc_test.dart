@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -6,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -16,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   group('EquipmentCostFormBloc', () {
@@ -1645,7 +1648,9 @@ void main() {
           fillLine(bloc);
           recall(bloc, 'older');
           bloc
-            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
             ..add(const EquipmentRateUpdatedEvent('900'))
             ..add(
               const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
@@ -1664,8 +1669,12 @@ void main() {
           fillLine(bloc);
           recall(bloc, 'older');
           bloc
-            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
-            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day))
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+            )
+            ..add(
+              const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day),
+            )
             ..add(
               const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
             );
@@ -1751,6 +1760,258 @@ void main() {
           isA<EquipmentCostFormSubmitting>(),
           isA<EquipmentCostFormSuccess>(),
         ],
+      );
+    });
+
+    group('a default the server refused', () {
+      const itemName = 'Mini excavator';
+
+      void refuse({
+        double refused = 450.0,
+        double? accepted = 400.0,
+        String? shownAt,
+        String method = 'job',
+      }) {
+        database.seedRefusal({
+          'id': YourRateRefusalKey.of(itemName, method),
+          'item_name': itemName,
+          'equipment_method': method,
+          'refused_amount': refused,
+          'accepted_amount': accepted,
+          'shown_at': shownAt,
+        });
+      }
+
+      void keepOnLine({String estimateName = 'Bedroom 2'}) {
+        fakeSupabaseWrapper.addTableData('cost_items', [
+          {
+            ...CostItemTestDataMapFactory.createEquipmentItemData(
+              itemName: itemName,
+              pricingMethod: 'job',
+              jobAmount: 450.0,
+            ),
+            'cost_estimates': {'estimate_name': estimateName},
+          },
+        ]);
+      }
+
+      Matcher noticeIs({
+        double refused = 450.0,
+        double? accepted = 400.0,
+        String? estimateName,
+      }) => isA<EquipmentCostFormEditing>().having(
+        (s) => s.data.refusedDefault,
+        'refusedDefault',
+        RefusedDefaultNotice(
+          refusedAmount: refused,
+          acceptedAmount: accepted,
+          estimateName: estimateName,
+        ),
+      );
+
+      Future<EquipmentCostFormState> noticeAfterPicking({
+        EquipmentPricingMethod method = EquipmentPricingMethod.job,
+      }) async {
+        bloc.add(const EquipmentCostItemTypeChanged(itemName));
+        bloc.add(EquipmentMethodSwitchedEvent(method));
+        return bloc.stream.firstWhere(
+          (s) => s is EquipmentCostFormEditing && s.data.refusedDefault != null,
+        );
+      }
+
+      test(
+        'shows the notice with the estimate that keeps the amount',
+        () async {
+          refuse();
+          keepOnLine();
+
+          final state = await noticeAfterPicking();
+
+          expect(state, noticeIs(estimateName: 'Bedroom 2'));
+        },
+      );
+
+      test('leaves the estimate out when no line keeps the amount', () async {
+        refuse();
+
+        final state = await noticeAfterPicking();
+
+        expect(state, noticeIs());
+      });
+
+      test('leaves the estimate out when the lookup fails', () async {
+        refuse();
+        keepOnLine();
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+
+        final state = await noticeAfterPicking();
+
+        expect(state, noticeIs());
+      });
+
+      test('has no accepted amount when the server never kept one', () async {
+        refuse(accepted: null);
+
+        final state = await noticeAfterPicking();
+
+        expect(state, noticeIs(accepted: null));
+      });
+
+      test('records that it was shown, so a later form is quiet', () async {
+        refuse();
+        await noticeAfterPicking();
+
+        await expectLater(
+          Modular.get<YourRatesRepository>()
+              .watchUnshownRefusal(itemName, EquipmentPricingMethod.job)
+              .map((result) => result.getRightOrNull()),
+          emitsThrough(isNull),
+        );
+      });
+
+      test(
+        'keeps the notice while the form stays open after it is shown',
+        () async {
+          refuse();
+          final shown = await noticeAfterPicking();
+
+          bloc.add(const EquipmentRateUpdatedEvent('500'));
+          final edited = await bloc.stream.first;
+
+          expect(shown, noticeIs());
+          expect(edited, noticeIs());
+        },
+      );
+
+      test(
+        'drops the notice when a new default is saved for the item',
+        () async {
+          refuse();
+          await noticeAfterPicking();
+
+          await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+            itemName,
+            'job',
+          );
+
+          final cleared = await bloc.stream.firstWhere(
+            (s) =>
+                s is EquipmentCostFormEditing && s.data.refusedDefault == null,
+          );
+          expect(cleared, isA<EquipmentCostFormEditing>());
+        },
+      );
+
+      test(
+        'shows the notice when the server refuses while the form is open',
+        () async {
+          bloc.add(const EquipmentCostItemTypeChanged(itemName));
+          bloc.add(
+            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+          );
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is EquipmentCostFormEditing &&
+                s.data.method == EquipmentPricingMethod.job,
+          );
+
+          refuse();
+
+          final state = await bloc.stream.firstWhere(
+            (s) =>
+                s is EquipmentCostFormEditing && s.data.refusedDefault != null,
+          );
+          expect(state, noticeIs());
+        },
+      );
+
+      test(
+        'shows the notice when the name is typed after Job is chosen',
+        () async {
+          refuse();
+          bloc.add(
+            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+          );
+          bloc.add(const EquipmentCostItemTypeChanged(itemName));
+
+          final state = await bloc.stream.firstWhere(
+            (s) =>
+                s is EquipmentCostFormEditing && s.data.refusedDefault != null,
+          );
+
+          expect(state, noticeIs());
+        },
+      );
+
+      test(
+        'drops the notice later even when recording it as shown failed',
+        () async {
+          refuse();
+          database.executeError = StateError('disk full');
+          await noticeAfterPicking();
+          await pumpEventQueue();
+          database.executeError = null;
+
+          await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+            itemName,
+            'job',
+          );
+
+          final cleared = await bloc.stream.firstWhere(
+            (s) =>
+                s is EquipmentCostFormEditing && s.data.refusedDefault == null,
+          );
+          expect(cleared, isA<EquipmentCostFormEditing>());
+        },
+      );
+
+      test('watches one item at a time while the name is typed', () async {
+        for (final typed in ['M', 'Mi', 'Min', 'Mini']) {
+          bloc.add(EquipmentCostItemTypeChanged(typed));
+        }
+        await bloc.stream.firstWhere(
+          (s) =>
+              s is EquipmentCostFormEditing && s.data.equipmentType == 'Mini',
+        );
+        await pumpEventQueue();
+
+        expect(database.openRefusalWatchCount, 1);
+      });
+
+      test('stops watching when the form closes', () async {
+        bloc.add(const EquipmentCostItemTypeChanged(itemName));
+        await bloc.stream.first;
+        await pumpEventQueue();
+        expect(database.openRefusalWatchCount, 1);
+
+        await bloc.close();
+
+        expect(database.openRefusalWatchCount, 0);
+      });
+
+      test('keeps the notice when a read of the refusal fails', () async {
+        refuse();
+        await noticeAfterPicking();
+
+        database.failRefusalWatches(StateError('disk full'));
+        await pumpEventQueue();
+
+        expect(bloc.state, noticeIs());
+      });
+
+      test(
+        'shows no notice for the other pricing method of the item',
+        () async {
+          refuse();
+
+          bloc.add(const EquipmentCostItemTypeChanged(itemName));
+          final state = await bloc.stream.first;
+
+          expect(
+            (state as EquipmentCostFormEditing).data.refusedDefault,
+            isNull,
+          );
+        },
       );
     });
   });
