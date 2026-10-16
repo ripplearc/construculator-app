@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE READ-AS PILL MUTATION TESTING (F2b CA-1303) -->
+    <!-- Targets: which number the pill asks about (a number read as degrees,
+         a Slope number inside the 0..2 band, a Pitch number with more than
+         one reading), where each tap goes (the stops and their order, the
+         roof ceiling, the way back from the typed digits) and what the tap
+         does (re-input from the digits, rebuild the trig answer behind
+         them). Critical path: a pill that offers the wrong reading, or
+         rebuilds the wrong answer, rewrites the user's number under a label
+         that says it is helping. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: an open keypad is context, or an inverse key asks -->
+        <regex pattern="bool _isSoloForwardTrig\(ValueChip chip\) =&gt;\s*_isSolo\(chip\) &amp;&amp; chip\.trigFunction\?\.isInverse == false;" dotAll="true" id="read_as.degrees.any_solo_chip">
+            <mutation text="bool _isSoloForwardTrig(ValueChip chip) =&gt; _isSolo(chip);"/>
+            <mutation text="bool _isSoloForwardTrig(ValueChip chip) =&gt; _isSolo(chip) &amp;&amp; chip.trigFunction != null;"/>
+        </regex>
+
+        <!-- RULE 2: the question does not follow the angle through an
+             operator, or follows it past a named chip or an answer -->
+        <regex pattern="if \(_isSoloForwardTrig\(earlier\)\) return \(index: behind, chip: earlier\);" dotAll="true" id="read_as.degrees.not_behind_operator">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(earlier is! ValueChip\) return null;" dotAll="true" id="read_as.degrees.past_an_answer">
+            <mutation text="if (earlier is! ValueChip) continue;"/>
+        </regex>
+
+        <!-- RULE 3: a bare number beside an angle answer is not asked, or
+             one beside any answer is -->
+        <regex pattern="if \(chips\[index - 1\] case ResultChip\(value: Angle\(\)\)\) \{\s*return \(index: index, chip: chip\);\s*\}" dotAll="true" id="read_as.degrees.beside_an_angle">
+            <mutation text=""/>
+            <mutation text="if (chips[index - 1] case ResultChip()) { return (index: index, chip: chip); }"/>
+        </regex>
+
+        <!-- RULE 4: the postfix order never asks, or the verb is wrong -->
+        <regex pattern="if \(chips\.length &lt; 2 \|\| !_answersForwardTrig\(chips\.length - 1\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.degrees.postfix_never">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="final rebuilds = _answersForwardTrig\(index \+ 1\);" dotAll="true" id="read_as.degrees.verb">
+            <mutation text="final rebuilds = false;"/>
+        </regex>
+
+        <!-- RULE 5: a trailing point is asked about -->
+        <regex pattern="if \(token\.digits\.endsWith\('\.'\)\) return null;\s*final promoted" dotAll="true" id="read_as.degrees.trailing_point">
+            <mutation text="final promoted"/>
+        </regex>
+
+        <!-- RULE 6: the tap keeps the old answer, or rebuilds it on the old
+             reading, or forgets the chips after -->
+        <regex pattern="\?before\.rebuiltTrigAnswer\(answer\),\s*\.\.\.after\.sublist\(1\)," dotAll="true" id="read_as.re_input.answer_kept">
+            <mutation text="answer, ...after.sublist(1),"/>
+        </regex>
+        <regex pattern="return TapeChanged\(_with\(\[\.\.\.before\.chips, \.\.\.after\]\)\);\s*\}\s*return const TapeRefused\(TapeRefusal\.nothingToReInput\);" dotAll="true" id="read_as.re_input.chips_after_dropped">
+            <mutation text="return TapeChanged(before); } return const TapeRefused(TapeRefusal.nothingToReInput);"/>
+        </regex>
+
+        <!-- RULE 7: the typed digits are forgotten on the promotion -->
+        <regex pattern="final typedAs = plain\.typedAs \?\? plain\.digits;" dotAll="true" id="read_as.typed_as.forgotten">
+            <mutation text="final String? typedAs = null;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="read_as" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_read_as_test.dart test/libraries/calculator_engine/units/entry_buffer_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
