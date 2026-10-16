@@ -85,7 +85,7 @@ void main() {
         );
         expect(strip(tape), [
           'Pitch-degrees: 23.28°',
-          'Pitch-rise per 12in run: 5.2in/12in',
+          'Pitch-rise per 12in run: 5-3/16in/12in',
           'Pitch-grade: 43%',
         ]);
       });

@@ -159,6 +159,10 @@ enum TapeRefusal {
   /// A remembered angle tapped with no empty chip under a key that takes
   /// an angle to type it into; the memory chip shows only then (rule 4.16).
   noChipToRecallInto,
+
+  /// The "Pitch written as" pill tapped while the tape does not end on a
+  /// pitch answer; the pill shows only under one (Section 8).
+  noPitchToCycle,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -692,6 +696,15 @@ class Tape extends Equatable {
   /// inches (5ft 7in 1/2 reads 5ft 7-1/2in) and refuses a fraction still
   /// waiting for its unit key with "Finish the fraction. Press a unit key"
   /// (Section 6; owner decisions of 4 October 2026).
+  ///
+  /// [Pitch] asks, then cycles (Section 3.1, the Pitch key; Section 8;
+  /// walkthrough 17.2): pressed while the tape holds a pitch the rules can
+  /// read — a finished Rise and Run, a bare number under Slope, a pitch
+  /// typed under Pitch itself — it seals the chip and lands the pitch as
+  /// inches of rise per 12in of run, 16in/12in; pressed on a pitch answer
+  /// it cycles the spelling, in/12in → degrees → % grade → in/12in, as
+  /// [cyclePitchSpelling] does for the "Pitch written as" pill. Nothing is
+  /// recomputed: one ratio is rendered three ways (rule 4.10).
   TapeOutcome pressFunctionKey(
     String key, {
     bool keyWantsUnit = true,
@@ -710,8 +723,23 @@ class Tape extends Equatable {
         ),
       );
     }
+    if (key == PlainNumberKeys.pitch && chip == null && _endsOnAPitchAnswer) {
+      return cyclePitchSpelling();
+    }
     final tape = _withFractionClosedAsInches();
     if (tape._unfinished case final refusal?) return refusal;
+    if (key == PlainNumberKeys.pitch) {
+      if (tape._pitchTheRulesRead case final pitch?) {
+        return TapeChanged(
+          tape.append(
+            ResultChip(
+              key: DeterministicRules.pitchRiseKey,
+              value: pitch.spelledAs(AngleSpelling.risePerFoot),
+            ),
+          ),
+        );
+      }
+    }
     return TapeChanged(
       tape._sealed().append(
         ValueChip(
@@ -721,6 +749,45 @@ class Tape extends Equatable {
         ),
       ),
     );
+  }
+
+  /// The "Pitch written as" pill (Section 8: "Pressing Pitch cycles the
+  /// three spellings; the Pitch written as pill does the same on the
+  /// result"): the pitch answer the tape ends on is re-spelled in place,
+  /// in/12in → degrees → % grade → in/12in, under the label of the new
+  /// spelling. Refused when the tape does not end on a pitch answer.
+  TapeOutcome cyclePitchSpelling() {
+    if (chips.lastOrNull case ResultChip(
+      :final key,
+      value: final Angle pitch,
+      :final operator,
+    ) when DeterministicRules.isPitchKey(key)) {
+      final spelling = pitch.spelling.nextPitchSpelling;
+      return _replaceLastChip(
+        ResultChip(
+          key: DeterministicRules.pitchKeyFor(spelling),
+          value: pitch.spelledAs(spelling),
+          operator: operator,
+        ),
+      );
+    }
+    return const TapeRefused(TapeRefusal.noPitchToCycle);
+  }
+
+  bool get _endsOnAPitchAnswer => switch (chips.lastOrNull) {
+    ResultChip(:final key, value: Angle()) => DeterministicRules.isPitchKey(
+      key,
+    ),
+    _ => false,
+  };
+
+  Angle? get _pitchTheRulesRead {
+    for (final answer in const DeterministicRules().answersFor(namedValues)) {
+      if (DeterministicRules.isPitchKey(answer.key)) {
+        if (answer.value case final Angle pitch) return pitch;
+      }
+    }
+    return null;
   }
 
   Tape _withFractionClosedAsInches() {

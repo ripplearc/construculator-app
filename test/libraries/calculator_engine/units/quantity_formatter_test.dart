@@ -301,7 +301,7 @@ void main() {
         expect(formatter.format(sevenPercent), '4°');
         expect(
           formatter.format(sevenPercent.spelledAs(AngleSpelling.risePerFoot)),
-          '0.8in/12in',
+          '13/16in/12in',
         );
         expect(
           formatter.format(sevenPercent.spelledAs(AngleSpelling.grade)),

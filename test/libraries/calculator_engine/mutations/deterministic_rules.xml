@@ -97,10 +97,10 @@
 
         <!-- RULE: a flat pitch, an upright one or any pitch at all reaches
              the solver -->
-        <regex pattern="pitch\.degrees &gt; 0 &amp;&amp; pitch\.degrees &lt; rightAngle \? \(pitch, key\) : null;" dotAll="true" id="deterministic_rules.pitch.out_of_range">
-            <mutation text="pitch.degrees &gt;= 0 &amp;&amp; pitch.degrees &lt; rightAngle ? (pitch, key) : null;"/>
-            <mutation text="pitch.degrees &gt; 0 &amp;&amp; pitch.degrees &lt;= rightAngle ? (pitch, key) : null;"/>
-            <mutation text="(pitch, key);"/>
+        <regex pattern="bool _isInRange\(Angle pitch\) =&gt;\s*pitch\.degrees &gt; 0 &amp;&amp; pitch\.degrees &lt; rightAngle;" dotAll="true" id="deterministic_rules.pitch.out_of_range">
+            <mutation text="bool _isInRange(Angle pitch) =&gt; pitch.degrees &gt;= 0 &amp;&amp; pitch.degrees &lt; rightAngle;"/>
+            <mutation text="bool _isInRange(Angle pitch) =&gt; pitch.degrees &gt; 0 &amp;&amp; pitch.degrees &lt;= rightAngle;"/>
+            <mutation text="bool _isInRange(Angle pitch) =&gt; true;"/>
         </regex>
 
         <!-- RULE: a leg past the tick limit is shown -->
