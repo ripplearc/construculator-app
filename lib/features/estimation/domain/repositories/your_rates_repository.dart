@@ -93,4 +93,12 @@ abstract class YourRatesRepository {
   /// UI text field naturally hands back '' for an empty input, and this
   /// repository does not rely on callers to normalize that themselves.
   Future<Either<Failure, void>> save(YourRateEntry entry);
+
+  /// Records that a cost line was just added with the saved rate [rateId]:
+  /// its [YourRateEntry.lastUsedAt] becomes the current time in UTC, so the
+  /// rate moves to the top of Your recents and the look-up.
+  ///
+  /// Opening a rate, or saving its price again, does not call this. Nothing
+  /// else about the saved rate changes.
+  Future<Either<Failure, void>> recordRateUse(String rateId);
 }

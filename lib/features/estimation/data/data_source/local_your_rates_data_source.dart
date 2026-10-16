@@ -62,6 +62,12 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.updatedAtColumn} = ? '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
+  static const _stampLastUsedAtSql =
+      'UPDATE ${DatabaseConstants.yourRatesTable} SET '
+      '${DatabaseConstants.lastUsedAtColumn} = ?, '
+      '${DatabaseConstants.updatedAtColumn} = ? '
+      'WHERE ${DatabaseConstants.idColumn} = ?';
+
   SyncStreamHandle? _streamHandle;
   Future<void>? _ready;
 
@@ -138,6 +144,22 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       return _readById(id);
     } catch (e, stack) {
       _logger.error('Failed to update your rate on the phone', e, stack);
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> stampLastUsedAtById(String id) async {
+    try {
+      await _ensureSyncing();
+      final now = _clock.now().toUtc().toIso8601String();
+      await _database.execute(_stampLastUsedAtSql, [now, now, id]);
+    } catch (e, stack) {
+      _logger.error(
+        'Failed to record the use of your rate on the phone',
+        e,
+        stack,
+      );
       rethrow;
     }
   }

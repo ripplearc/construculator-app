@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
@@ -13,16 +14,27 @@ const double _maxRate = 999999.99;
 const double _durationColumnMax = 99999999.99;
 
 /// BLoC for managing the equipment cost form: item type, Day/Job pricing,
-/// delivery fee, validation, and submission to [CostItemRepository].
+/// delivery fee, validation, and submission to [CostItemRepository]. A line
+/// added with a saved rate records a use of that rate in [YourRatesRepository].
 class EquipmentCostFormBloc
     extends Bloc<EquipmentCostFormEvent, EquipmentCostFormState> {
   final CostItemRepository _repository;
+  final YourRatesRepository _yourRatesRepository;
   final Clock _clock;
 
-  EquipmentCostFormBloc({required this._repository, required this._clock})
-    : super(const EquipmentCostFormInitial()) {
+  EquipmentCostFormBloc({
+    required this._repository,
+    required this._yourRatesRepository,
+    required this._clock,
+  }) : super(const EquipmentCostFormInitial()) {
     on<EquipmentCostItemTypeChanged>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(equipmentType: e.value)),
+      (e, emit) => _emit(
+        emit,
+        (d) => d.copyWith(
+          equipmentType: e.value,
+          recalledRateId: e.value == d.equipmentType ? d.recalledRateId : null,
+        ),
+      ),
     );
     on<EquipmentMethodSwitchedEvent>((e, emit) {
       _emit(emit, (d) {
@@ -64,6 +76,7 @@ class EquipmentCostFormBloc
           otherMethodRateStatus: e.method == d.method
               ? d.otherMethodRateStatus
               : d.rateStatus,
+          recalledRateId: e.rateId,
           recalledFromRecents: e.fromRecents,
           recalledRate: e.fromRecents ? e.rate : d.recalledRate,
         );
@@ -157,10 +170,16 @@ class EquipmentCostFormBloc
     final result = await _repository.createCostItem(
       _buildCostItem(draft, estimateId),
     );
-    result.fold(
-      (failure) => emit(EquipmentCostFormFailure(draft, failure)),
-      (created) => emit(EquipmentCostFormSuccess(draft, created)),
-    );
+    final created = result.fold<CostItem?>((failure) {
+      emit(EquipmentCostFormFailure(draft, failure));
+      return null;
+    }, (item) => item);
+    if (created == null) return;
+    emit(EquipmentCostFormSuccess(draft, created));
+    final recalledRateId = draft.recalledRateId;
+    if (recalledRateId != null) {
+      await _yourRatesRepository.recordRateUse(recalledRateId);
+    }
   }
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {

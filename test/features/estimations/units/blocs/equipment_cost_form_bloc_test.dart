@@ -1,22 +1,29 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   group('EquipmentCostFormBloc', () {
     late EquipmentCostFormBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    late FakeYourRatesDatabase database;
+    late FakeClockImpl clock;
+    late YourRatesRepository yourRates;
 
     const testEquipmentType = 'Excavator';
     const testEstimateId = 'estimate-123';
@@ -31,6 +38,11 @@ void main() {
       );
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      database = FakeYourRatesDatabase();
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
+      clock = FakeClockImpl();
+      Modular.replaceInstance<Clock>(clock);
+      yourRates = Modular.get<YourRatesRepository>();
     });
 
     tearDownAll(() {
@@ -39,6 +51,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      database.reset();
       bloc = Modular.get<EquipmentCostFormBloc>();
     });
 
@@ -175,6 +188,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
+            rateId: 'rate-1',
             method: EquipmentPricingMethod.day,
             rate: 145,
           ),
@@ -201,6 +215,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
+            rateId: 'rate-1',
             method: EquipmentPricingMethod.job,
             rate: 400,
             fromRecents: true,
@@ -221,6 +236,7 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.job,
               rate: 400,
               fromRecents: true,
@@ -248,6 +264,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
+            rateId: 'rate-1',
             method: EquipmentPricingMethod.job,
             rate: 400,
           ),
@@ -267,6 +284,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
+            rateId: 'rate-1',
             method: EquipmentPricingMethod.job,
             rate: 400,
           ),
@@ -287,6 +305,7 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.job,
               rate: 400,
               fromRecents: true,
@@ -318,6 +337,7 @@ void main() {
             ..add(const EquipmentCostItemTypeChanged('mini excavator 1.5t'))
             ..add(
               const EquipmentSavedRateRecalledEvent(
+                rateId: 'rate-1',
                 method: EquipmentPricingMethod.day,
                 rate: 145,
               ),
@@ -340,6 +360,7 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.day,
               rate: 145,
             ),
@@ -363,6 +384,7 @@ void main() {
           ..add(const EquipmentRateUpdatedEvent('100'))
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.job,
               rate: 400,
             ),
@@ -395,6 +417,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(
           const EquipmentSavedRateRecalledEvent(
+            rateId: 'rate-1',
             method: EquipmentPricingMethod.day,
             rate: 145,
           ),
@@ -417,6 +440,7 @@ void main() {
           ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.job,
               rate: 400,
             ),
@@ -442,6 +466,7 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.job,
               rate: 400,
             ),
@@ -473,6 +498,7 @@ void main() {
           ..add(const EquipmentDurationUpdatedEvent('4'))
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.day,
               rate: 145,
             ),
@@ -498,6 +524,7 @@ void main() {
         act: (bloc) => bloc
           ..add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.day,
               rate: 145,
             ),
@@ -1323,6 +1350,188 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(const EquipmentOutsizedFeeDeclinedEvent()),
         expect: () => <EquipmentCostFormState>[],
+      );
+    });
+
+    group('recording the use of a saved rate', () {
+      const companyId = 'company-1';
+
+      Map<String, Object?> savedRate(String id, String savedAt) => {
+        'id': id,
+        'company_id': companyId,
+        'category': 'equipment',
+        'item_name': 'Excavator $id',
+        'rate_amount': 250.0,
+        'rate_currency': 'USD',
+        'unit': 'days',
+        'equipment_method': 'day',
+        'entry_label': null,
+        'saved_at': savedAt,
+        'last_used_at': null,
+        'created_at': savedAt,
+        'updated_at': savedAt,
+      };
+
+      Future<List<String>> recentsOrder() async {
+        final result = await yourRates.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: companyId,
+        );
+        return result.getRightOrNull()!.map((entry) => entry.id).toList();
+      }
+
+      void fillLine(EquipmentCostFormBloc bloc) {
+        bloc
+          ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+          ..add(const EquipmentDurationUpdatedEvent('5'));
+      }
+
+      void recall(EquipmentCostFormBloc bloc, String rateId) {
+        bloc.add(
+          EquipmentSavedRateRecalledEvent(
+            rateId: rateId,
+            method: EquipmentPricingMethod.day,
+            rate: 250,
+          ),
+        );
+      }
+
+      setUp(() {
+        clock.set(DateTime.utc(2026, 1, 15, 12));
+        database
+          ..seedRow(savedRate('older', '2026-01-01T00:00:00.000Z'))
+          ..seedRow(savedRate('newer', '2026-01-10T00:00:00.000Z'));
+      });
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'puts a rate first in recents once a line is added with it',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['older', 'newer']);
+          expect(database.updatedRowIds, ['older']);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'records the use in UTC from the injected clock',
+        build: () {
+          clock.set(DateTime(2026, 3, 2, 9, 30));
+          return bloc;
+        },
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        verify: (_) async {
+          final result = await yourRates.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: companyId,
+          );
+          final used = result.getRightOrNull()!.firstWhere(
+            (entry) => entry.id == 'older',
+          );
+          expect(used.lastUsedAt, clock.now().toUtc());
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when a saved rate is only picked',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when the line is added with a typed rate',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          bloc
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when adding the line fails',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.socket;
+          return bloc;
+        },
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when the item is renamed after the rate is '
+        'picked',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('Bulldozer'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'still shows the line as added when the use cannot be recorded',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          database.executeError = StateError('disk full');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
       );
     });
   });
