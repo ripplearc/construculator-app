@@ -141,7 +141,7 @@ void main() {
         var tape = press(const Tape(), '[Pitch] 6');
         expect(strip(tape), [
           'Pitch-degrees: 6°',
-          'Pitch-rise per 12in run: 1.3in/12in',
+          'Pitch-rise per 12in run: 1-1/4in/12in',
           'Pitch-grade: 10.5%',
         ]);
         expect(pill(tape), 'Input 6° as 6in/12in');

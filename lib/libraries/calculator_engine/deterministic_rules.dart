@@ -66,6 +66,19 @@ enum PolygonSpan {
   flats,
 }
 
+/// Why the rules answer nothing for a named value they would otherwise
+/// read (UX Design Doc Section 5.4, "A pitch has to be under 90°"): the
+/// strip shows the reason instead of its placeholder, and keeps showing it
+/// when a second dimension is named on top of the value (S89).
+enum RuleRefusal {
+  /// Pitch holds 90° or more, or 0° or less: at 90° the wall is vertical,
+  /// with no rise per 12in of run, and at 0° there is no slope at all.
+  pitchOutOfRange,
+
+  /// Slope holds 0% or less.
+  slopeOutOfRange,
+}
+
 /// An answer the named values on the tape earn (UX Design Doc Section 8):
 /// what it is called, what it is worth, and which named values it was
 /// computed from, so that it can be recomputed after one of them is edited
@@ -244,6 +257,33 @@ class DeterministicRules extends Equatable {
   /// Whether [key] labels a pitch answer, in any of its three spellings.
   static bool isPitchKey(String key) =>
       key == pitchRiseKey || key == pitchDegreesKey || key == pitchGradeKey;
+
+  /// The label of a pitch written in [spelling] (Section 8: one angle in
+  /// three spellings; a survey spelling reads under the degrees label).
+  static String pitchKeyFor(AngleSpelling spelling) => switch (spelling) {
+    AngleSpelling.risePerFoot => pitchRiseKey,
+    AngleSpelling.grade => pitchGradeKey,
+    AngleSpelling.degrees ||
+    AngleSpelling.degreesMinutesSeconds => pitchDegreesKey,
+  };
+
+  /// Why the rules answer nothing for the pitch or the slope in
+  /// [namedValues], or `null` when both are in range or absent: a pitch of
+  /// 0° or less or of 90° or more, a slope of 0% or less (Section 5.4). The
+  /// reason survives a Diag or any other value named on top (S89).
+  RuleRefusal? refusalFor(Map<String, Quantity> namedValues) {
+    if (namedValues[DimensionKey.pitch.id] case final value?) {
+      if (_pitchAngleOf(value) case final pitch? when !_isInRange(pitch)) {
+        return RuleRefusal.pitchOutOfRange;
+      }
+    }
+    if (namedValues[DimensionKey.slope.id] case Scalar(
+      :final value,
+    ) when value <= 0) {
+      return RuleRefusal.slopeOutOfRange;
+    }
+    return null;
+  }
 
   /// The answers [namedValues] earn, in the order the strip offers them;
   /// empty when no rule matches. [namedValues] maps a chip key to the
@@ -517,14 +557,8 @@ class DeterministicRules extends Equatable {
 
   (Angle, DimensionKey)? _pitchOf(Map<String, Quantity> namedValues) {
     final pitch = switch (namedValues[DimensionKey.pitch.id]) {
-      final Length rise => _angleOfRatio(
-        rise.preciseTicks /
-            Length.ticksPerInch /
-            QuantityFormatter.inchesPerFootOfRun,
-      ).spelledAs(AngleSpelling.risePerFoot),
-      final Angle angle => angle,
-      Scalar(:final value) => Angle(value),
-      _ => null,
+      final value? => _pitchAngleOf(value),
+      null => null,
     };
     if (pitch != null) return _inRange(pitch, DimensionKey.pitch);
     if (namedValues[DimensionKey.slope.id] case Scalar(:final value)) {
@@ -538,8 +572,22 @@ class DeterministicRules extends Equatable {
     return null;
   }
 
+  Angle? _pitchAngleOf(Quantity value) => switch (value) {
+    final Length rise => _angleOfRatio(
+      rise.preciseTicks /
+          Length.ticksPerInch /
+          QuantityFormatter.inchesPerFootOfRun,
+    ).spelledAs(AngleSpelling.risePerFoot),
+    final Angle angle => angle,
+    Scalar(:final value) => Angle(value),
+    _ => null,
+  };
+
   (Angle, DimensionKey)? _inRange(Angle pitch, DimensionKey key) =>
-      pitch.degrees > 0 && pitch.degrees < rightAngle ? (pitch, key) : null;
+      _isInRange(pitch) ? (pitch, key) : null;
+
+  bool _isInRange(Angle pitch) =>
+      pitch.degrees > 0 && pitch.degrees < rightAngle;
 
   List<Answer> _triangle(
     Map<DimensionKey, Length> lengths,
@@ -663,7 +711,7 @@ class DeterministicRules extends Equatable {
   }) => [
     for (final spelling in spellings)
       Answer(
-        key: _pitchKeyOf(spelling),
+        key: pitchKeyFor(spelling),
         value: pitch.spelledAs(spelling),
         sources: sources,
       ),
@@ -674,19 +722,12 @@ class DeterministicRules extends Equatable {
     return [
       for (final spelling in [first, first.nextPitchSpelling])
         Answer(
-          key: _pitchKeyOf(spelling),
+          key: pitchKeyFor(spelling),
           value: pitch.spelledAs(spelling),
           sources: sources,
         ),
     ];
   }
-
-  String _pitchKeyOf(AngleSpelling spelling) => switch (spelling) {
-    AngleSpelling.risePerFoot => pitchRiseKey,
-    AngleSpelling.grade => pitchGradeKey,
-    AngleSpelling.degrees ||
-    AngleSpelling.degreesMinutesSeconds => pitchDegreesKey,
-  };
 
   Answer? _leg(String key, double ticks, Unit unit, List<String> sources) {
     if (!ticks.isFinite || ticks.abs() > ChainArithmetic.maxTicks) return null;
