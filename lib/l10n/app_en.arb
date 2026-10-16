@@ -2820,6 +2820,17 @@
   "@yourRatesNewEquipmentCostAction": {
     "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"
   },
+  "equipmentRefusedDefaultNotice": "Your new default, {refused}, was not saved.{hasAccepted, select, true{ Your default is still {accepted}.} other{}}{hasEstimate, select, true{ {estimate} still uses {refused}.} other{}}",
+  "@equipmentRefusedDefaultNotice": {
+    "description": "Message above the Rate/Amount field on the first equipment form for an item after the server refused its saved default (storyboard CUJ 6, frame Not kept); refused and accepted are pre-formatted currency strings, hasAccepted is 'true' when the server ever accepted a price for the item (its middle sentence), and hasEstimate is 'true' when an estimate has a line at the refused amount (its last sentence) with estimate as that estimate's name",
+    "placeholders": {
+      "refused": {"type": "String", "example": "$450.00"},
+      "hasAccepted": {"type": "String", "example": "true"},
+      "accepted": {"type": "String", "example": "$400.00"},
+      "hasEstimate": {"type": "String", "example": "true"},
+      "estimate": {"type": "String", "example": "Bedroom 2"}
+    }
+  },
   "equipmentNoteLabel": "Note",
   "@equipmentNoteLabel": {
     "description": "Label for the optional note field inside the expanded delivery-fee editor (manually mode)"
