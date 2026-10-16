@@ -31,6 +31,7 @@ void main() {
       String? equipmentMethod = 'day',
       String? entryLabel,
       String savedAt = '2026-01-01T00:00:00.000Z',
+      String? lastUsedAt,
     }) {
       return {
         'id': id,
@@ -43,6 +44,7 @@ void main() {
         'equipment_method': equipmentMethod,
         'entry_label': entryLabel,
         'saved_at': savedAt,
+        'last_used_at': lastUsedAt,
         'created_at': savedAt,
         'updated_at': savedAt,
       };
@@ -207,14 +209,105 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
-          limit: 2,
           companyId: testCompanyId,
+          limit: 2,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
           'r2',
           'r3',
         ]);
+      });
+
+      test('orders rows with the same last use by their save date', () async {
+        seed([
+          row(
+            id: 'saved-earlier',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+          row(
+            id: 'saved-later',
+            savedAt: '2026-01-02T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'saved-later',
+          'saved-earlier',
+        ]);
+      });
+
+      test('puts a rate used after a newer save above that save', () async {
+        seed([
+          row(id: 'saved-later', savedAt: '2026-01-05T00:00:00.000Z'),
+          row(
+            id: 'used-later',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-06T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'used-later',
+          'saved-later',
+        ]);
+      });
+
+      test('sorts a never-used rate by its save date', () async {
+        seed([
+          row(
+            id: 'used-earlier',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-02T00:00:00.000Z',
+          ),
+          row(id: 'saved-later', savedAt: '2026-01-03T00:00:00.000Z'),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'saved-later',
+          'used-earlier',
+        ]);
+      });
+
+      test('applies the limit after ordering by last use', () async {
+        seed([
+          row(id: 'r1', savedAt: '2026-01-03T00:00:00.000Z'),
+          row(id: 'r2', savedAt: '2026-01-02T00:00:00.000Z'),
+          row(
+            id: 'r3',
+            savedAt: '2026-01-01T00:00:00.000Z',
+            lastUsedAt: '2026-01-09T00:00:00.000Z',
+          ),
+        ]);
+
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+          limit: 1,
+        );
+
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), ['r3']);
       });
 
       test(
@@ -463,6 +556,17 @@ void main() {
         expect(database.insertedRows, isEmpty);
         expect(database.updatedRowIds, isEmpty);
       });
+
+      test(
+        'leaves last_used_at out of the saved body, so a new save records no use',
+        () async {
+          await repository.save(buildEntry(amount: 300.0));
+
+          final inserted = database.insertedRows.single;
+          expect(inserted['last_used_at'], isNull);
+          expect(inserted['rate_amount'], 300.0);
+        },
+      );
 
       test(
         'rejects a labeled save whose label the grouping already has, leaving '

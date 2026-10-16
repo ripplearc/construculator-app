@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/presentation/helpers/your_rate_recency_label.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(days == 0\)" dotAll="false" id="recency.today.negate">
+            <mutation text="if (days != 0)"/>
+        </regex>
+        <regex pattern="if \(days == 1\)" dotAll="false" id="recency.yesterday.negate">
+            <mutation text="if (days != 1)"/>
+        </regex>
+        <regex pattern="days &lt; _daysInWeek\)" dotAll="false" id="recency.week_boundary.inclusive">
+            <mutation text="days &lt;= _daysInWeek)"/>
+        </regex>
+        <regex pattern="days &lt; _daysInMonth\)" dotAll="false" id="recency.month_boundary.inclusive">
+            <mutation text="days &lt;= _daysInMonth)"/>
+        </regex>
+        <regex pattern="_daysInWeek = 7" dotAll="false" id="recency.days_in_week.constant">
+            <mutation text="_daysInWeek = 8"/>
+        </regex>
+        <regex pattern="_daysInMonth = 30" dotAll="false" id="recency.days_in_month.constant">
+            <mutation text="_daysInMonth = 31"/>
+        </regex>
+        <regex pattern="_maxWeeks = 3" dotAll="false" id="recency.max_weeks.constant">
+            <mutation text="_maxWeeks = 4"/>
+        </regex>
+        <regex pattern="min\(days ~/ _daysInWeek, _maxWeeks\)" dotAll="false" id="recency.weeks.drop_cap">
+            <mutation text="days ~/ _daysInWeek"/>
+        </regex>
+        <regex pattern="final isUsed = lastUsedAt != null;" dotAll="false" id="recency.is_used.negate">
+            <mutation text="final isUsed = lastUsedAt == null;"/>
+        </regex>
+        <regex pattern="calendarDaysSince\(recencyAt" dotAll="false" id="recency.date.use_saved_at">
+            <mutation text="calendarDaysSince(savedAt"/>
+        </regex>
+        <regex pattern="final months = days ~/ _daysInMonth;" dotAll="false" id="recency.months.use_weeks">
+            <mutation text="final months = days ~/ _daysInWeek;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="recency" expected-return="0">flutter test test/features/estimations/units/presentation/helpers/your_rate_recency_label_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>
