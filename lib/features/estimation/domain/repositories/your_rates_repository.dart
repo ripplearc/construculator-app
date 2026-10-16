@@ -1,5 +1,6 @@
 // coverage:ignore-file
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
@@ -101,4 +102,30 @@ abstract class YourRatesRepository {
   /// Opening a rate, or saving its price again, does not call this. Nothing
   /// else about the saved rate changes.
   Future<Either<Failure, void>> recordRateUse(String rateId);
+
+  /// The default the server refused for the item called [itemName] of
+  /// [category] in [companyId] priced by [equipmentMethod], now and after every
+  /// change: null while the server has not refused it, after the "Not kept"
+  /// message was shown, after a new save for the item, and while the phone
+  /// holds a newer price for the item than the refused and the last accepted
+  /// one.
+  ///
+  /// Names match the way [save] matches them. A read that fails emits a
+  /// failure and the stream stays open.
+  Stream<Either<Failure, RefusedYourRate?>> watchUnshownRefusal({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  });
+
+  /// Records that the "Not kept" message for the item was shown, so
+  /// [watchUnshownRefusal] stops reporting it, including after a restart.
+  /// Does nothing if the item has no refusal.
+  Future<Either<Failure, void>> markRefusalShown({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  });
 }

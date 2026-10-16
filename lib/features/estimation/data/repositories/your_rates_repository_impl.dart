@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
@@ -156,6 +159,52 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, void>> recordRateUse(String rateId) async {
     try {
       await dataSource.stampLastUsedAtById(rateId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_handleError(e));
+    }
+  }
+
+  @override
+  Stream<Either<Failure, RefusedYourRate?>> watchUnshownRefusal({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  }) {
+    return refusalDataSource
+        .watchRefusalByItem(
+          companyId: companyId,
+          category: category.toJson(),
+          itemName: itemName,
+          equipmentMethod: equipmentMethod?.toJson(),
+        )
+        .map<Either<Failure, RefusedYourRate?>>((refusal) {
+          final unshown = refusal?.shownAt == null ? refusal : null;
+          return Right(unshown?.toEntity());
+        })
+        .transform(
+          StreamTransformer.fromHandlers(
+            handleError: (error, stack, sink) =>
+                sink.add(Left(_handleError(error))),
+          ),
+        );
+  }
+
+  @override
+  Future<Either<Failure, void>> markRefusalShown({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  }) async {
+    try {
+      await refusalDataSource.markRefusalShownByItem(
+        companyId: companyId,
+        category: category.toJson(),
+        itemName: itemName,
+        equipmentMethod: equipmentMethod?.toJson(),
+      );
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e));

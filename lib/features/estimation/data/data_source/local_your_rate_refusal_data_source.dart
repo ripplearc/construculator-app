@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_refusal_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -15,6 +17,29 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   static const _selectByIdSql =
       'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable} '
       'WHERE ${DatabaseConstants.idColumn} = ?';
+
+  // The refusal, unless the phone now holds a price for the same item and
+  // label that is neither the refused price nor the last accepted one: a newer
+  // save, on this phone or synced down from another, has replaced them.
+  static const _selectWhilePhonePriceIsOursSql =
+      'SELECT refusal.* FROM ${DatabaseConstants.yourRateRefusalsTable} refusal '
+      'WHERE refusal.${DatabaseConstants.idColumn} = ? AND NOT EXISTS ('
+      'SELECT 1 FROM ${DatabaseConstants.yourRatesTable} rate '
+      'WHERE rate.${DatabaseConstants.companyIdColumn} = '
+      'refusal.${DatabaseConstants.companyIdColumn} '
+      'AND rate.${DatabaseConstants.categoryColumn} = '
+      'refusal.${DatabaseConstants.categoryColumn} '
+      'AND rate.${DatabaseConstants.itemNameColumn} = '
+      'refusal.${DatabaseConstants.itemNameColumn} '
+      'AND rate.${DatabaseConstants.equipmentMethodColumn} IS '
+      'refusal.${DatabaseConstants.equipmentMethodColumn} '
+      'AND rate.${DatabaseConstants.entryLabelColumn} IS '
+      'refusal.${DatabaseConstants.entryLabelColumn} '
+      'AND rate.${DatabaseConstants.rateAmountColumn} != '
+      'refusal.${DatabaseConstants.refusedAmountColumn} '
+      'AND (refusal.${DatabaseConstants.acceptedAmountColumn} IS NULL '
+      'OR rate.${DatabaseConstants.rateAmountColumn} != '
+      'refusal.${DatabaseConstants.acceptedAmountColumn}))';
 
   static const _selectAllSql =
       'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable}';
@@ -81,6 +106,37 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       );
       rethrow;
     }
+  }
+
+  @override
+  Stream<YourRateRefusalDto?> watchRefusalByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
+    String? equipmentMethod,
+  }) {
+    return _database
+        .watch(
+          _selectWhilePhonePriceIsOursSql,
+          parameters: [_keyOf(companyId, category, itemName, equipmentMethod)],
+        )
+        .map(
+          (rows) =>
+              rows.isEmpty ? null : YourRateRefusalDto.fromJson(rows.first),
+        )
+        .distinct()
+        .transform(
+          StreamTransformer.fromHandlers(
+            handleError: (error, stack, sink) {
+              _logger.error(
+                'Failed to watch a refused default on the phone',
+                error,
+                stack,
+              );
+              sink.addError(error, stack);
+            },
+          ),
+        );
   }
 
   @override
