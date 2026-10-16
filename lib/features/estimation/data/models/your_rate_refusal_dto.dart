@@ -1,3 +1,5 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 
@@ -39,6 +41,18 @@ class YourRateRefusalDto extends Equatable {
       acceptedAmount: (json[DatabaseConstants.acceptedAmountColumn] as num?)
           ?.toDouble(),
       shownAt: json[DatabaseConstants.shownAtColumn] as String?,
+    );
+  }
+
+  RefusedYourRate toEntity() {
+    final method = equipmentMethod;
+    return RefusedYourRate(
+      itemName: itemName,
+      equipmentMethod: method == null
+          ? null
+          : EquipmentPricingMethod.fromJson(method),
+      refusedAmount: refusedAmount,
+      acceptedAmount: acceptedAmount,
     );
   }
 
