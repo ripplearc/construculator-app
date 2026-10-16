@@ -37,7 +37,7 @@
         <regex pattern="if \(digit == '\.'\) return EntryChanged\(this\);\s*return _replaceLast\(_withSegmentDigit\(last, digit\)\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
             <mutation text="return _replaceLast(_withSegmentDigit(last, digit));"/>
         </regex>
-        <regex pattern="if \(angle\.seconds case final seconds\?\) \{\s*return angle\.copyWith\(seconds: \(\) =&gt; '\$seconds\$digit'\);\s*\}" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
+        <regex pattern="if \(angle\.seconds case final seconds\?\) \{\s*return angle\.copyWith\(\s*seconds: \(\) =&gt; '\$seconds\$digit',\s*typedAs: \(\) =&gt; null,\s*\);\s*\}" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
             <mutation text=""/>
         </regex>
 
@@ -78,7 +78,7 @@
         <regex pattern="minutes: '\$\{carried % Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.minutes">
             <mutation text="minutes: '${carried % 100}',"/>
         </regex>
-        <regex pattern="if \(totalMinutes &gt; _largestExactSegments\) \{\s*return Token\(digits: degrees, minutes: minutes, seconds: ''\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
+        <regex pattern="if \(totalMinutes &gt; _largestExactSegments\) \{\s*return Token\(\s*digits: degrees,\s*minutes: minutes,\s*seconds: '',\s*typedAs: typedAs,\s*\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
             <mutation text=""/>
         </regex>
 
