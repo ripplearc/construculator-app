@@ -381,7 +381,7 @@ class Tape extends Equatable {
   /// there ([ValueChip.asksAnUndefinedTrig]).
   ///
   /// ÷ builds the ratio for ATAN (rule 4.11; Section 6, "Trig chips in a
-  /// chain"): the operand of an Arctangent chip reaches across every ÷ and
+  /// chain"; [ArctangentReach]): the operand of an Arctangent chip reaches across every ÷ and
   /// bare number typed after it, and the answer names the operand it took,
   /// so [ATAN] 16 ÷ 12 offers Arctangent(16 ÷ 12) 53.13° beside the Calc
   /// 1.33 of the same digits (scenario S111; walkthrough 23.3). A divisor
@@ -440,44 +440,37 @@ class Tape extends Equatable {
   get _trigQuestionAsked {
     final question = _trigQuestion;
     if (question == null) return null;
-    final (:chip, :divisors) = question;
+    final (:chip, :reach) = question;
     final function = chip.trigFunction;
     final number = chip.bareNumber;
     if (function == null || number == null) return null;
-    var operand = number;
-    for (final divisor in divisors) {
-      final divisorNumber = divisor.bareNumber;
-      if (divisorNumber == null || divisorNumber == 0) return null;
-      operand /= divisorNumber;
+    if (reach == null) {
+      return (function: function, operand: number, key: function.key);
     }
-    final ratio = [chip, ...divisors].map(_spelledInRatio).join(' ');
+    final ratio = reach.ratio;
+    if (ratio == null) return null;
     return (
       function: function,
-      operand: operand,
-      key: divisors.isEmpty ? function.key : '${function.key}($ratio)',
+      operand: ratio,
+      key: '${function.key}(${reach.spelling})',
     );
   }
 
-  ({ValueChip chip, List<ValueChip> divisors})? get _trigQuestion {
-    final divisors = <ValueChip>[];
-    for (final chip in chips.reversed) {
+  /// The trig chip the tape ends on, with the ratio it reaches across ÷
+  /// ([ArctangentReach]) when it does; `null` when the tape ends on
+  /// anything else.
+  ({ValueChip chip, ArctangentReach? reach})? get _trigQuestion {
+    for (var index = chips.length - 1; index >= 0; index--) {
+      final chip = chips[index];
       if (chip is! ValueChip) return null;
-      if (chip.trigFunction case final function?) {
-        if (divisors.isNotEmpty && function != TrigFunction.arctangent) {
-          return null;
-        }
-        return (chip: chip, divisors: divisors.reversed.toList());
-      }
-      if (!chip.dividesAnArctangentRatio) return null;
-      divisors.add(chip);
+      if (chip.trigFunction == null) continue;
+      if (index == chips.length - 1) return (chip: chip, reach: null);
+      final reach = ArctangentReach.from(chips, index);
+      if (reach == null || reach.end != chips.length) return null;
+      return (chip: chip, reach: reach);
     }
     return null;
   }
-
-  static String _spelledInRatio(ValueChip chip) => switch (chip.operator) {
-    final operator? => '${operator.symbol} ${chip.entry.text}',
-    null => chip.entry.text,
-  };
 
   /// A trig key (Section 3.5; rule 4.11), pressed after its number or
   /// before it.
@@ -865,9 +858,11 @@ class Tape extends Equatable {
   /// ÷ 0 earlier in the chain, or a bracket worth zero, lands the error chip
   /// at the end the way a Dimension Error does.
   ///
-  /// An Arctangent whose operand reaches across a ÷ lands its angle, not
-  /// the Calc of its digits: [ATAN] 16 ÷ 12 = is Arctangent(16 ÷ 12)
-  /// 53.13° (walkthrough 23.3; [trigAnswer]).
+  /// An Arctangent that starts the tape and reaches across a ÷ lands its
+  /// angle, not the Calc of its digits: [ATAN] 16 ÷ 12 = is Arctangent(16 ÷
+  /// 12) 53.13° (walkthrough 23.3; [trigAnswer]). One that continues a
+  /// chain lands the chain, with the ratio sealed into its angle (rule
+  /// 4.6): 5 + [ATAN] 16 ÷ 12 = is Calc 58.13°.
   TapeOutcome pressEquals() {
     if (openBracket != null) {
       return switch (closeBracket()) {
@@ -882,7 +877,10 @@ class Tape extends Equatable {
     if (tape.active case final chip? when !chip.entry.isEmpty) {
       if (tape._unfinished case final refusal?) return refusal;
     }
-    if (tape._trigQuestion case (chip: _, divisors: [_, ...])) {
+    if (tape._trigQuestion case (
+      chip: ValueChip(operator: null),
+      reach: ArctangentReach(),
+    )) {
       if (tape.trigAnswer case final answer?) {
         return TapeChanged(
           tape.append(ResultChip(key: answer.key, value: answer.value)),
