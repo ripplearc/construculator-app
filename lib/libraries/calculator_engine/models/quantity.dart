@@ -12,6 +12,12 @@ import 'package:equatable/equatable.dart';
 /// The subclasses are sealed so that arithmetic and formatting can switch
 /// over every dimension exhaustively.
 sealed class Quantity extends Equatable {
+  /// The largest number a value may show in the unit it is written in, the
+  /// limit Construction Master Pro keeps (Section 5, "Too large"; owner
+  /// decision of 3 October 2026). A typed number stops at it and an answer
+  /// above it reads "Too large"; there is no scientific form.
+  static const double largestShown = 19999999.99;
+
   const Quantity();
 
   /// The dimension this value measures.

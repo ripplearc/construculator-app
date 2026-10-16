@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
+import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
@@ -45,6 +46,12 @@ enum EntryRefusal {
 
   /// Backspace with nothing typed; the tape decides what to unwind.
   nothingToDelete,
+
+  /// A digit that would push the number being typed above
+  /// [Quantity.largestShown], the bottom number of a fraction included
+  /// ("Too large": "A number cannot be above 19,999,999.99. Press ⌫ to
+  /// change a number, or C to start again.").
+  tooLarge,
 }
 
 /// What a key did to the buffer.
@@ -142,15 +149,22 @@ class EntryBuffer extends Equatable {
       if (digit == '.') {
         return const EntryRefused(EntryRefusal.decimalInDenominator);
       }
-      return _replaceLast(
-        last.copyWith(denominator: () => '$denominator$digit'),
-      );
+      final digits = '$denominator$digit';
+      if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
+      return _replaceLast(last.copyWith(denominator: () => digits));
     }
     if (digit == '.' && last.digits.contains('.')) {
       return const EntryRefused(EntryRefusal.secondDecimalPoint);
     }
-    return _replaceLast(last.copyWith(digits: '${last.digits}$digit'));
+    final digits = '${last.digits}$digit';
+    if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
+    return _replaceLast(last.copyWith(digits: digits));
   }
+
+  // The same limit holds above and below the fraction line (Section 5.1):
+  // a denominator past it would overflow the exact fraction the parser keeps.
+  static bool _isTooLarge(String digits) =>
+      double.parse(digits) > Quantity.largestShown;
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.
   EntryOutcome typeFraction() {

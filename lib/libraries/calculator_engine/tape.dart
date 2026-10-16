@@ -1,9 +1,11 @@
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
+import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/unit_ladder.dart';
 import 'package:equatable/equatable.dart';
@@ -204,8 +206,19 @@ class Tape extends Equatable {
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
 
-  /// Folds the chips into the running total.
-  ChainEvaluator get evaluator => ChainEvaluator(parser: parser);
+  /// Folds the chips into the running total, refusing an answer that shows
+  /// a number above the limit under the tape's own ton: 19,000,000 long
+  /// tons is 21,280,000 short tons, and only the short ton is too large.
+  ChainEvaluator get evaluator => ChainEvaluator(
+    parser: parser,
+    formatter: QuantityFormatter(
+      preferences: CalculatorPreferences(
+        tonDefinition: poundsPerTon == TonDefinition.longTon.poundsPerTon
+            ? TonDefinition.longTon
+            : TonDefinition.shortTon,
+      ),
+    ),
+  );
 
   /// Whether nothing has been typed.
   bool get isEmpty => chips.isEmpty;
