@@ -154,6 +154,20 @@ final class ValueChip extends TapeChip {
         : AngleSpelling.degrees,
   );
 
+  /// The angle the chip's typed number reads as, in its spelling, or `null`
+  /// when the number is not one: a plain number under Pitch or a forward
+  /// trig key, or any number typed as degrees, minutes and seconds. What
+  /// the angle drawer files when the chip seals (rule 4.16: "anything that
+  /// reads as degrees or D:M:S"); a bare count, a grade and the ratio under
+  /// an inverse trig key are not angles and are not filed. A recalled or
+  /// converted angle is worth its exact value ([exact]), not its digits.
+  Angle? get typedAngle {
+    if (exactValue case final Angle angle) return angle;
+    return _isPlainNumber && (readsDegrees || entry.isDegreesMinutesSeconds)
+        ? _typedAngle
+        : null;
+  }
+
   QuantityParser _typedUnder(QuantityParser parser) {
     if (poundsPerTon case final typedUnder?
         when typedUnder != parser.poundsPerTon) {

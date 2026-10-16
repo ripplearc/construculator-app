@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/angle_memory.dart';
 import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/deterministic_rules.dart';
@@ -133,6 +134,10 @@ enum TapeRefusal {
   /// The Read-as pill tapped while the tape offers no other reading; the
   /// pill shows only while [Tape.readAsOffer] has one.
   nothingToReInput,
+
+  /// A remembered angle tapped with no empty chip under a key that takes
+  /// an angle to type it into; the memory chip shows only then (rule 4.16).
+  noChipToRecallInto,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -762,6 +767,28 @@ class Tape extends Equatable {
       return const TapeEntryRefused(EntryRefusal.secondDecimalPoint);
     }
     return _entry(chip, chip.entry.closeDegreesMinutesSeconds());
+  }
+
+  /// A remembered angle tapped on the strip (rule 4.16; S118): typed into
+  /// the empty chip the key opened, spelling intact, so [Pitch] after
+  /// [SIN] 38 [D:M:S] 03 = reads Pitch 38°03'. A recalled answer keeps its
+  /// full precision behind the digits on screen, the way a converted value
+  /// does ([ValueChip.exact]). The chip must be empty and under a key that
+  /// takes an angle ([AngleMemory.keyTakesAnAngle]); anywhere else the tap
+  /// is refused, since the memory chip is not shown there.
+  TapeOutcome recall(RememberedAngle angle) {
+    final chip = active;
+    if (chip != null && chip.entry.isEmpty) {
+      if (chip.key case final key? when AngleMemory.keyTakesAnAngle(key)) {
+        return _replaceLast(
+          chip.copyWith(
+            entry: angle.entry,
+            exact: () => (value: angle.value, spelled: angle.entry),
+          ),
+        );
+      }
+    }
+    return const TapeRefused(TapeRefusal.noChipToRecallInto);
   }
 
   /// The Read-as pill (term 2.14; rule 4.10): the other reading of a bare
