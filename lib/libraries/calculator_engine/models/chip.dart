@@ -102,6 +102,14 @@ final class ValueChip extends TapeChip {
   /// Whether the keyboard writes into this chip.
   final bool isActive;
 
+  /// Whether a second decimal point, or the D:M:S key, may read the chip's
+  /// number as degrees, minutes and seconds (Section 5.4, "A second decimal
+  /// point makes an angle"): a bare number, which the trig keys read as
+  /// degrees, and a key whose plain number is degrees, Pitch and the forward
+  /// trig keys ([readsDegrees]). Under Width, Slope, Sides or an inverse
+  /// trig key the point is refused and the number stays as typed.
+  bool get takesAnAngle => key == null || readsDegrees;
+
   const ValueChip({
     this.key,
     this.operator,
@@ -119,7 +127,10 @@ final class ValueChip extends TapeChip {
   /// without a unit is not a number yet — is a scalar, unless it sits under
   /// a function key that wants its unit (Section 5.1: Length 18 cannot be
   /// left); under Pitch, Slope or Sides it is the plain number those keys
-  /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]).
+  /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]). A
+  /// number typed as degrees, minutes and seconds is an angle whatever key
+  /// it sits under, in that spelling: the segments are its unit (rule 4.10),
+  /// so 38°30' [SIN] is the sine of 38.5° and 60° + 12°01' is 72.02°.
   ///
   /// A trig chip ([trigFunction]) is worth its answer, not its digits, so
   /// Sine 89° × 56 is 55.99 and Arccosine 0.8 × 6 is 221.22° (Section 6,
@@ -132,9 +143,16 @@ final class ValueChip extends TapeChip {
     }
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
     if (!_isPlainNumber) return null;
-    final number = entry.tokens.first.value;
-    return readsDegrees ? Angle(number) : Scalar(number);
+    if (entry.isDegreesMinutesSeconds || readsDegrees) return _typedAngle;
+    return Scalar(entry.tokens.first.value);
   }
+
+  Angle get _typedAngle => Angle(
+    entry.tokens.first.value,
+    spelling: entry.isDegreesMinutesSeconds
+        ? AngleSpelling.degreesMinutesSeconds
+        : AngleSpelling.degrees,
+  );
 
   QuantityParser _typedUnder(QuantityParser parser) {
     if (poundsPerTon case final typedUnder?
@@ -167,11 +185,12 @@ final class ValueChip extends TapeChip {
   TrigFunction? get trigFunction => TrigFunction.named(key);
 
   /// What a trig chip asks its function of: its bare number, in degrees
-  /// for SIN, COS and TAN and as a ratio for the inverse keys; `null` for
-  /// any other chip or before a number is typed.
+  /// for SIN, COS and TAN, spelled as it was typed (38°30'45" stays a
+  /// survey angle), and as a ratio for the inverse keys; `null` for any
+  /// other chip or before a number is typed.
   Quantity? get trigOperand => switch ((trigFunction, bareNumber)) {
     (final function?, final number?) =>
-      function.isInverse ? Scalar(number) : Angle(number),
+      function.isInverse ? Scalar(number) : _typedAngle,
     _ => null,
   };
 

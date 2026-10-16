@@ -485,9 +485,10 @@ void main() {
         );
       });
 
-      test('a second decimal point is refused', () {
+      test('a second decimal point is refused under a key that takes a '
+          'length', () {
         expect(
-          press(const Tape(), '3 0 . 4').typeDigit('.'),
+          press(const Tape(), '[Width] 3 0 . 4').typeDigit('.'),
           const TapeEntryRefused(EntryRefusal.secondDecimalPoint),
         );
       });
