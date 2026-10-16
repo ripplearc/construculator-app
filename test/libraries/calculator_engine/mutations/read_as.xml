@@ -51,7 +51,63 @@
             <mutation text="final promoted"/>
         </regex>
 
-        <!-- RULE 6: the tap keeps the old answer, or rebuilds it on the old
+        <!-- RULE 6: the Slope band -->
+        <regex pattern="if \(grade &lt;= 0 \|\| grade &gt; ReadAsOffer\.largestSlopeRatio\) return null;" dotAll="true" id="read_as.slope.band">
+            <mutation text="if (grade &lt;= 0) return null;"/>
+            <mutation text="if (grade &lt;= 0 || grade &gt;= ReadAsOffer.largestSlopeRatio) return null;"/>
+            <mutation text="if (grade &lt; 0 || grade &gt; ReadAsOffer.largestSlopeRatio) return null;"/>
+        </regex>
+        <regex pattern="if \(token\.isDegreesMinutesSeconds \|\| token\.digits\.endsWith\('\.'\)\) \{\s*return null;\s*\}\s*if \(token\.typedAs case final typed\?\) \{" dotAll="true" id="read_as.slope.trailing_point">
+            <mutation text="if (token.typedAs case final typed?) {"/>
+        </regex>
+
+        <!-- RULE 7: the ratio is the digits multiplied, or shifted wrong -->
+        <regex pattern="Token\(\s*digits: _shiftedByAHundred\(token\.digits\),\s*typedAs: token\.digits,\s*\)," dotAll="true" id="read_as.slope.ratio_digits">
+            <mutation text="Token(digits: '${token.value * 100}', typedAs: token.digits),"/>
+            <mutation text="Token(digits: _shiftedByAHundred(token.digits)),"/>
+        </regex>
+        <regex pattern="final shifted = '\$whole\$\{fraction\.substring\(0, 2\)\}'\.replaceFirst\(" dotAll="true" id="read_as.slope.shift_one_place">
+            <mutation text="final shifted = '$whole${fraction.substring(0, 1)}'.replaceFirst("/>
+        </regex>
+
+        <!-- RULE 8: the Pitch stops: the roof ceiling, the D:M:S of a whole
+             number, a trailing point's trade stop -->
+        <regex pattern="return rise != null &amp;&amp; rise &gt; 0 &amp;&amp; rise &lt;= ReadAsOffer\.largestRisePerFoot;" dotAll="true" id="read_as.pitch.roof_ceiling">
+            <mutation text="return rise != null &amp;&amp; rise &gt; 0;"/>
+            <mutation text="return rise != null &amp;&amp; rise &gt; 0 &amp;&amp; rise &lt; ReadAsOffer.largestRisePerFoot;"/>
+        </regex>
+        <regex pattern="if \(raw\.contains\('\.'\)\) NumberReading\.degreesMinutesSeconds," dotAll="true" id="read_as.pitch.whole_number_dms">
+            <mutation text="NumberReading.degreesMinutesSeconds,"/>
+        </regex>
+        <regex pattern="if \(!raw\.endsWith\('\.'\) &amp;&amp; _isARoofSomeoneCouldFrame\(raw\)\)" dotAll="true" id="read_as.pitch.trailing_point_trade">
+            <mutation text="if (_isARoofSomeoneCouldFrame(raw))"/>
+        </regex>
+
+        <!-- RULE 9: the current stop is misread, or the next one is the
+             current one -->
+        <regex pattern="final next = stops\[\(stops\.indexOf\(current\) \+ 1\) % stops\.length\];" dotAll="true" id="read_as.pitch.next_stop">
+            <mutation text="final next = stops[(stops.indexOf(current) + 2) % stops.length];"/>
+        </regex>
+        <regex pattern=": token\.unit == Unit\.inch\s*\? NumberReading\.risePerFoot\s*: NumberReading\.degrees;" dotAll="true" id="read_as.pitch.current_stop">
+            <mutation text=": NumberReading.degrees;"/>
+        </regex>
+
+        <!-- RULE 10: a settled D:M:S, a fraction or a length in feet is
+             asked about -->
+        <regex pattern="if \(token\.isDegreesMinutesSeconds &amp;&amp; !_openSegmentIsEmpty\(token\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.pitch.settled_angle">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(token\.unit != null &amp;&amp; token\.unit != Unit\.inch\) return null;" dotAll="true" id="read_as.pitch.feet">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 11: the lap does not come home: the way back reads the
+             current digits -->
+        <regex pattern="final raw = token\.typedAs \?\? token\.digits;" dotAll="true" id="read_as.pitch.raw_is_current">
+            <mutation text="final raw = token.digits;"/>
+        </regex>
+
+        <!-- RULE 12: the tap keeps the old answer, or rebuilds it on the old
              reading, or forgets the chips after -->
         <regex pattern="\?before\.rebuiltTrigAnswer\(answer\),\s*\.\.\.after\.sublist\(1\)," dotAll="true" id="read_as.re_input.answer_kept">
             <mutation text="answer, ...after.sublist(1),"/>
@@ -60,9 +116,16 @@
             <mutation text="return TapeChanged(before); } return const TapeRefused(TapeRefusal.nothingToReInput);"/>
         </regex>
 
-        <!-- RULE 7: the typed digits are forgotten on the promotion -->
+        <!-- RULE 13: the typed digits are forgotten on the promotion, or
+             kept through the next digit or through backspace -->
         <regex pattern="final typedAs = plain\.typedAs \?\? plain\.digits;" dotAll="true" id="read_as.typed_as.forgotten">
             <mutation text="final String? typedAs = null;"/>
+        </regex>
+        <regex pattern="last\.copyWith\(digits: '\$\{last\.digits\}\$digit', typedAs: \(\) =&gt; null\)," dotAll="true" id="read_as.typed_as.kept_through_digit">
+            <mutation text="last.copyWith(digits: '${last.digits}$digit'),"/>
+        </regex>
+        <regex pattern="digits: last\.digits\.substring\(0, last\.digits\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.kept_through_backspace">
+            <mutation text="digits: last.digits.substring(0, last.digits.length - 1),"/>
         </regex>
     </rules>
 
