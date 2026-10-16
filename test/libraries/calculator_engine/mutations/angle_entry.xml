@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE D:M:S ENTRY MUTATION TESTING (F2a CA-1070) -->
+    <!-- Targets: an angle typed as degrees, minutes and seconds — the token's
+         segments and value, the second decimal point and the D:M:S key on
+         the entry buffer (promotion, the over-60 carry, the padding that is
+         the seal, backspace), the keys the tape lets read an angle, the
+         unit and fraction refusals, and the D:M:S key converting an angle
+         answer in place. Critical path: a misread segment is a wrong angle
+         that looks right (38.30 read as 38.3°), and a minutes field read
+         in hundredths is a 0.2° error in every sine after it. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/models/token.dart</file>
+        <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the minutes are read in hundredths, or the seconds in
+             sixtieths of a degree -->
+        <regex pattern="_segment\(minutes\) / minutesPerDegree \+" dotAll="true" id="token.value.minutes_in_hundredths">
+            <mutation text="_segment(minutes) / 100 +"/>
+        </regex>
+        <regex pattern="_segment\(seconds\) / secondsPerDegree;" dotAll="true" id="token.value.seconds_in_minutes">
+            <mutation text="_segment(seconds) / minutesPerDegree;"/>
+        </regex>
+
+        <!-- RULE 2: an angle is only one once its seconds have opened -->
+        <regex pattern="bool get isDegreesMinutesSeconds =&gt; minutes != null;" dotAll="true" id="token.is_angle.needs_seconds">
+            <mutation text="bool get isDegreesMinutesSeconds =&gt; seconds != null;"/>
+        </regex>
+
+        <!-- RULE 3: a third point goes into a segment, or a digit goes into
+             the minutes once the seconds are open -->
+        <regex pattern="if \(digit == '\.'\) return EntryChanged\(this\);\s*return _replaceLast\(_withSegmentDigit\(last, digit\)\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
+            <mutation text="return _replaceLast(_withSegmentDigit(last, digit));"/>
+        </regex>
+        <regex pattern="if \(angle\.seconds case final seconds\?\) \{\s*return angle\.copyWith\(seconds: \(\) =&gt; '\$seconds\$digit'\);\s*\}" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 4: the second point promotes where no angle can live, or on
+             a number that continues a compound, or not at all -->
+        <regex pattern="if \(!readsAngles \|\| tokens\.length &gt; 1\) \{" dotAll="true" id="entry_buffer.angle.promotion_gate">
+            <mutation text="if (tokens.length &gt; 1) {"/>
+            <mutation text="if (!readsAngles) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 5: the second point leaves the minutes open, so the next
+             digit lengthens them -->
+        <regex pattern="return _replaceLast\(\s*_asDegreesMinutesSeconds\(last, closingMinutes: true\)\s*\);" dotAll="true" id="entry_buffer.angle.point_leaves_minutes_open">
+            <mutation text="return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: false));"/>
+        </regex>
+
+        <!-- RULE 6: a fourth press of the key re-closes the minutes and
+             drops the seconds, or a fraction is promoted -->
+        <regex pattern="if \(last\.seconds != null\) return EntryChanged\(this\);" dotAll="true" id="entry_buffer.dms_key.fourth_segment">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(last\.denominator != null\) \{\s*return const EntryRefused\(EntryRefusal\.fractionNeedsUnit\);\s*\}" dotAll="true" id="entry_buffer.dms_key.fraction_promoted">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 7: the key on a trailing point closes an empty minutes
+             segment, or on a decimal leaves the minutes open -->
+        <regex pattern="final closingMinutes =\s*last\.digits\.contains\('\.'\) &amp;&amp; !last\.digits\.endsWith\('\.'\);" dotAll="true" id="entry_buffer.dms_key.trailing_point">
+            <mutation text="final closingMinutes = last.digits.contains('.');"/>
+            <mutation text="final closingMinutes = false;"/>
+        </regex>
+
+        <!-- RULE 8: the carry is miscounted -->
+        <regex pattern="digits: '\$\{carried ~/ Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.degrees">
+            <mutation text="digits: '${carried ~/ 100}',"/>
+        </regex>
+        <regex pattern="minutes: '\$\{carried % Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.minutes">
+            <mutation text="minutes: '${carried % 100}',"/>
+        </regex>
+        <regex pattern="if \(totalMinutes &gt; _largestExactSegments\) \{\s*return Token\(digits: degrees, minutes: minutes, seconds: ''\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9: closed minutes are not padded, open ones are, or the
+             seconds are not normalised -->
+        <regex pattern="if \(seconds\.isEmpty\) return &quot;\$\{token\.digits\}°\$\{_twoDigits\(minutes\)\}'&quot;;" dotAll="true" id="entry_buffer.text.closed_minutes_unpadded">
+            <mutation text="if (seconds.isEmpty) return &quot;${token.digits}°$minutes'&quot;;"/>
+        </regex>
+        <regex pattern="return &quot;\$\{token\.digits\}°\$\{minutes\.isEmpty \? '' : &quot;\$minutes'&quot;\}&quot;;" dotAll="true" id="entry_buffer.text.open_minutes_padded">
+            <mutation text="return &quot;${token.digits}°${minutes.isEmpty ? '' : &quot;${_twoDigits(minutes)}'&quot;}&quot;;"/>
+        </regex>
+        <regex pattern="'\$\{rest % Token\.minutesPerDegree\}&quot;';" dotAll="true" id="entry_buffer.text.seconds_unnormalised">
+            <mutation text="'${seconds}&quot;';"/>
+        </regex>
+        <regex pattern="static String _twoDigits\(String segment\) =&gt; segment\.padLeft\(2, '0'\);" dotAll="true" id="entry_buffer.text.no_padding">
+            <mutation text="static String _twoDigits(String segment) =&gt; segment;"/>
+        </regex>
+
+        <!-- RULE 10: a unit closes an angle, or a fraction opens under one -->
+        <regex pattern="if \(last\.isDegreesMinutesSeconds\) \{\s*return const EntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}" dotAll="true" id="entry_buffer.close_with.angle_takes_unit">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(last\.digits\.contains\('\.'\) \|\| last\.isDegreesMinutesSeconds\) \{" dotAll="true" id="entry_buffer.type_fraction.on_angle">
+            <mutation text="if (last.digits.contains('.')) {"/>
+        </regex>
+
+        <!-- RULE 11: backspace skips a segment step -->
+        <regex pattern="if \(seconds\.isEmpty\) \{\s*return _replaceLast\(last\.copyWith\(seconds: \(\) =&gt; null\)\);\s*\}" dotAll="true" id="entry_buffer.backspace.seconds_stay_open">
+            <mutation text="if (seconds.isEmpty) { return _replaceLast(last); }"/>
+        </regex>
+        <regex pattern="if \(minutes\.isEmpty\) return _replaceLast\(Token\(digits: last\.digits\)\);" dotAll="true" id="entry_buffer.backspace.minutes_stay_open">
+            <mutation text="if (minutes.isEmpty) return _replaceLast(last);"/>
+        </regex>
+
+        <!-- RULE 12: a D:M:S number reads as a plain number, or loses its
+             spelling -->
+        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;" dotAll="true" id="chip.value.angle_as_scalar">
+            <mutation text="if (readsDegrees) return _typedAngle;"/>
+        </regex>
+        <regex pattern="spelling: entry\.isDegreesMinutesSeconds\s*\? AngleSpelling\.degreesMinutesSeconds\s*: AngleSpelling\.degrees," dotAll="true" id="chip.typed_angle.spelling">
+            <mutation text="spelling: AngleSpelling.degrees,"/>
+        </regex>
+
+        <!-- RULE 13: every chip takes an angle, or only a bare one does -->
+        <regex pattern="bool get takesAnAngle =&gt; key == null \|\| readsDegrees;" dotAll="true" id="chip.takes_an_angle">
+            <mutation text="bool get takesAnAngle =&gt; true;"/>
+            <mutation text="bool get takesAnAngle =&gt; key == null;"/>
+            <mutation text="bool get takesAnAngle =&gt; readsDegrees;"/>
+        </regex>
+        <regex pattern="chip\.entry\.typeDigit\(digit, readsAngles: chip\.takesAnAngle\)," dotAll="true" id="tape.type_digit.ignores_gate">
+            <mutation text="chip.entry.typeDigit(digit, readsAngles: true),"/>
+        </regex>
+
+        <!-- RULE 14: the D:M:S key on a length, under Width, or with nothing
+             typed -->
+        <regex pattern="if \(chip\.entry\.tokens\.any\(\(token\) =&gt; token\.unit != null\)\) \{\s*return const TapeRefused\(TapeRefusal\.dmsNeedsAPlainAngle\);\s*\}" dotAll="true" id="tape.dms_key.on_a_length">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(!chip\.takesAnAngle\) \{\s*return const TapeEntryRefused\(EntryRefusal\.secondDecimalPoint\);\s*\}\s*return _entry\(chip, chip\.entry\.closeDegreesMinutesSeconds\(\)\);" dotAll="true" id="tape.dms_key.under_any_key">
+            <mutation text="return _entry(chip, chip.entry.closeDegreesMinutesSeconds());"/>
+        </regex>
+        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.typeANumberFirst\);\s*\}\s*if \(chip\.entry\.tokens\.any" dotAll="true" id="tape.dms_key.empty_chip">
+            <mutation text="if (chip.entry.tokens.any"/>
+        </regex>
+
+        <!-- RULE 15: an angle answer is not converted, or is converted one
+             way only, or a pitch answer is -->
+        <regex pattern="=&gt;\s*_replaceLastChip\(\s*ResultChip\(\s*key: key,\s*value: _respelledAngle\(angle\),\s*operator: operator,\s*\),\s*\)," dotAll="true" id="tape.dms_key.answer_not_converted">
+            <mutation text="=&gt; TapeChanged(this),"/>
+        </regex>
+        <regex pattern="AngleSpelling\.degrees =&gt; angle\.spelledAs\(\s*AngleSpelling\.degreesMinutesSeconds,\s*\)," dotAll="true" id="tape.respell.degrees_stay">
+            <mutation text="AngleSpelling.degrees =&gt; angle,"/>
+        </regex>
+        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; angle\.spelledAs\(\s*AngleSpelling\.degrees,\s*\)," dotAll="true" id="tape.respell.dms_stays">
+            <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; angle,"/>
+        </regex>
+        <regex pattern="AngleSpelling\.risePerFoot \|\| AngleSpelling\.grade =&gt; angle," dotAll="true" id="tape.respell.pitch_converted">
+            <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; angle.spelledAs(AngleSpelling.degreesMinutesSeconds),"/>
+        </regex>
+
+        <!-- RULE 16: a unit key on an angle under a trig key says the trig
+             reason instead -->
+        <regex pattern="if \(chip\.entry\.isDegreesMinutesSeconds\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}\s*if \(chip\.trigFunction != null\) \{" dotAll="true" id="tape.press_unit.angle_under_trig">
+            <mutation text="if (chip.trigFunction != null) {"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="angle_entry" expected-return="0">flutter test test/libraries/calculator_engine/units/entry_buffer_test.dart test/libraries/calculator_engine/units/tape_dms_test.dart test/libraries/calculator_engine/units/models/token_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

@@ -29,7 +29,7 @@
         </regex>
 
         <!-- RULE 4: [/] is accepted on a decimal -->
-        <regex pattern="if \(last\.digits\.contains\('\.'\)\) \{\s*return const EntryRefused\(EntryRefusal\.decimalCannotTakeFraction\);" dotAll="true" id="entry_buffer.type_fraction.on_decimal">
+        <regex pattern="if \(last\.digits\.contains\('\.'\) \|\| last\.isDegreesMinutesSeconds\) \{\s*return const EntryRefused\(EntryRefusal\.decimalCannotTakeFraction\);" dotAll="true" id="entry_buffer.type_fraction.on_decimal">
             <mutation text="if (false) { return const EntryRefused(EntryRefusal.decimalCannotTakeFraction);"/>
         </regex>
 

@@ -398,6 +398,173 @@ void main() {
       });
     });
 
+    group('degrees, minutes and seconds (CA-1070)', () {
+      EntryBuffer typeAngle(
+        String keys, [
+        EntryBuffer start = const EntryBuffer(),
+      ]) {
+        var buffer = start;
+        for (final key in keys.split('')) {
+          buffer = changed(
+            key == ':'
+                ? buffer.closeDegreesMinutesSeconds()
+                : buffer.typeDigit(key, readsAngles: true),
+          );
+        }
+        return buffer;
+      }
+
+      test('a second point re-reads the number as degrees and minutes, and '
+          'the digits go on into the seconds (S85)', () {
+        expect(typeAngle('23.16').text, '23.16');
+        final promoted = typeAngle('23.16.');
+        expect(promoted.text, "23°16'");
+        expect(promoted.isDegreesMinutesSeconds, isTrue);
+        expect(promoted.tokens.single.minutes, '16');
+        expect(promoted.tokens.single.seconds, '');
+        expect(typeAngle('23.16.45').text, '23°16\'45"');
+        expect(
+          typeAngle('23.16.45').tokens.single.value,
+          23 + 16 / 60 + 45 / 3600,
+        );
+      });
+
+      test('a second point is refused where the number cannot be an angle', () {
+        expect(
+          type('30.4').typeDigit('.', readsAngles: false),
+          const EntryRefused(EntryRefusal.secondDecimalPoint),
+        );
+        final compound = changed(type('18').closeWith(Unit.foot));
+        expect(
+          type('8.5', compound).typeDigit('.', readsAngles: true),
+          const EntryRefused(EntryRefusal.secondDecimalPoint),
+        );
+      });
+
+      test('closing the minutes carries 60 and more into the degrees', () {
+        expect(typeAngle('30.89.').text, "31°29'");
+        expect(typeAngle('30.89.00').text, '31°29\'0"');
+        expect(
+          typeAngle('30.89.').tokens.single,
+          const Token(digits: '31', minutes: '29', seconds: ''),
+        );
+      });
+
+      test('a trailing point re-reads as whole degrees with no minutes', () {
+        expect(typeAngle('8..').text, "8°00'");
+        expect(typeAngle('8..').tokens.single.value, 8);
+      });
+
+      test('the D:M:S key closes one segment per press (walkthrough 16.3)', () {
+        expect(typeAngle('38:').text, '38°');
+        expect(typeAngle('38:30').text, "38°30'");
+        expect(typeAngle('38:30:').text, "38°30'");
+        expect(typeAngle('38:30:45').text, '38°30\'45"');
+        expect(typeAngle('38:30:45').tokens.single.value, 38.5125);
+      });
+
+      test('the D:M:S key on a decimal closes the minutes, and on a trailing '
+          'point leaves them open', () {
+        expect(typeAngle('38.3:').text, "38°03'");
+        expect(typeAngle('38.3:').tokens.single.seconds, '');
+        expect(typeAngle('38.:').text, '38°');
+        expect(typeAngle('38.:').tokens.single.minutes, '');
+      });
+
+      test('a fourth segment is refused without eating the third (S90), and '
+          'so is a third point', () {
+        final full = typeAngle('38:30:45');
+        expect(full.closeDegreesMinutesSeconds(), EntryChanged(full));
+        expect(full.typeDigit('.', readsAngles: true), EntryChanged(full));
+        final open = typeAngle('38:30:');
+        expect(open.closeDegreesMinutesSeconds(), EntryChanged(open));
+      });
+
+      test('the padding is the seal (S113): closed minutes read two digits, '
+          'open ones do not, seconds never', () {
+        expect(typeAngle('38:5').text, "38°5'");
+        expect(typeAngle('38:59').text, "38°59'");
+        expect(typeAngle('38:5:').text, "38°05'");
+        expect(typeAngle('38:5:9').text, '38°05\'9"');
+      });
+
+      test('seconds above 59 normalise at display', () {
+        expect(typeAngle('38:30:75').text, '38°31\'15"');
+        expect(typeAngle('0:0:3600').text, '1°00\'0"');
+      });
+
+      test('one angle spells the same whether typed or computed (S113)', () {
+        const formatter = QuantityFormatter();
+        for (final digits in ['45.2', '12.1', '6.0', '30.89', '38.5']) {
+          final entry = typeAngle('$digits:');
+          final spelled = formatter.format(
+            Angle(
+              entry.tokens.single.value,
+              spelling: AngleSpelling.degreesMinutesSeconds,
+            ),
+          );
+          expect(entry.text, spelled, reason: digits);
+        }
+      });
+
+      test('segments past 2⁵³ minutes are left as typed', () {
+        final huge = typeAngle('99999999999999999:5:');
+        expect(huge.text, "99999999999999999°05'");
+        expect(typeAngle('9', huge).text, '99999999999999999°05\'9"');
+      });
+
+      test(
+        'the key needs an open number, and a fraction cannot be an angle',
+        () {
+          expect(
+            const EntryBuffer().closeDegreesMinutesSeconds(),
+            const EntryRefused(EntryRefusal.nothingOpen),
+          );
+          expect(
+            changed(
+              type('38').closeWith(Unit.foot),
+            ).closeDegreesMinutesSeconds(),
+            const EntryRefused(EntryRefusal.nothingOpen),
+          );
+          expect(
+            type('7/16').closeDegreesMinutesSeconds(),
+            const EntryRefused(EntryRefusal.fractionNeedsUnit),
+          );
+          expect(
+            typeAngle('38:').typeFraction(),
+            const EntryRefused(EntryRefusal.decimalCannotTakeFraction),
+          );
+        },
+      );
+
+      test('an angle is refused a unit: it is already an angle', () {
+        expect(
+          typeAngle('38:30').closeWith(Unit.foot),
+          const EntryRefused(EntryRefusal.alreadyAnAngle),
+        );
+        expect(typeAngle('38:30').isOpen, isTrue);
+        expect(typeAngle('38:30').isComplete, isFalse);
+      });
+
+      test('backspace steps back through the segments', () {
+        var buffer = typeAngle('38:30:45');
+        buffer = changed(buffer.backspace());
+        expect(buffer.text, '38°30\'4"');
+        buffer = changed(buffer.backspace());
+        expect(buffer.tokens.single.seconds, '');
+        buffer = changed(buffer.backspace());
+        expect(buffer.tokens.single.seconds, isNull);
+        expect(buffer.text, "38°30'");
+        buffer = changed(buffer.backspace());
+        expect(buffer.text, "38°3'");
+        buffer = changed(buffer.backspace());
+        expect(buffer.text, '38°');
+        buffer = changed(buffer.backspace());
+        expect(buffer, type('38'));
+        expect(buffer.isDegreesMinutesSeconds, isFalse);
+      });
+    });
+
     group('backspace', () {
       test('unwinds Width 18ft 8in one token at a time (S07)', () {
         final feet = changed(type('18').closeWith(Unit.foot));

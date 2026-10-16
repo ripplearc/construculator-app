@@ -35,9 +35,18 @@ enum EntryRefusal {
   /// outside a bracket alike.
   zeroDenominator,
 
-  /// A second decimal point in one number; only an angle key may read it as
-  /// degrees:minutes:seconds ("A second decimal point makes an angle").
+  /// A second decimal point, or the D:M:S key, on a number that cannot be an
+  /// angle: under a key that takes a length, a grade or a ratio (Width,
+  /// Slope, Arcsine), or on a number that continues a compound ("A second
+  /// decimal point makes an angle"; Section 5.4). Only a bare number, a
+  /// number under Pitch or one under a forward trig key reads as
+  /// degrees:minutes:seconds.
   secondDecimalPoint,
+
+  /// A unit key on an angle typed as degrees, minutes and seconds (38°30'
+  /// then [Feet]): the value carries its unit in its own notation and has
+  /// no length ("That value is already an angle"; Section 5.4).
+  alreadyAnAngle,
 
   /// A unit key while [/] still waits for its denominator ("Finish the
   /// fraction").
@@ -131,6 +140,20 @@ final class EntryRefused extends EntryOutcome {
 /// tape can keep the buffer a tapped chip had before an edit. What the
 /// buffer holds is spelling, not value: [QuantityParser] reads a finished
 /// buffer as a quantity.
+///
+/// An angle is typed as degrees, minutes and seconds the way both reference
+/// calculators type it, with no degree key (rule 4.10; Section 3.5): a
+/// second decimal point, or the D:M:S key, re-reads the number as its
+/// segments (23.16.45 is 23°16'45", 38 [D:M:S] 30 [D:M:S] 45 the same), one
+/// segment closes when the next opens, and a segment that closes above 59
+/// carries into the one above it rather than being refused (30.89 reads
+/// 31°29'; Construction Master Pro redisplays such entries in the correct
+/// convention). The seal is the padding (Section 6, "Rounding at display"):
+/// a minutes segment that has closed is written to two digits the way a
+/// bearing is, 45°02', and one still being typed is not, 38°5', because a
+/// padded 38°05' would supply a zero the next digit takes away again. The
+/// seconds are the last segment, which nothing closes, so they are written
+/// unpadded and normalised at display.
 class EntryBuffer extends Equatable {
   /// The tokens typed so far; the last one may still be open.
   final List<Token> tokens;
@@ -139,6 +162,12 @@ class EntryBuffer extends Equatable {
 
   /// Whether nothing has been typed.
   bool get isEmpty => tokens.isEmpty;
+
+  /// Whether the buffer holds one angle typed as degrees, minutes and
+  /// seconds, which reads as an angle whatever key it sits under and takes
+  /// no unit key.
+  bool get isDegreesMinutesSeconds =>
+      tokens.length == 1 && tokens.first.isDegreesMinutesSeconds;
 
   /// Whether every token has its digits, its unit and a finite value, so
   /// the buffer can be read as a value; a fraction over zero (7/0in) is
@@ -192,11 +221,33 @@ class EntryBuffer extends Equatable {
     return text.toString();
   }
 
-  String _spelled(Token token) =>
-      '${token.digits}'
-      '${token.denominator == null ? '' : '/${token.denominator}'}'
-      '${token.unit?.suffix ?? ''}'
-      '${_exponent(token.power)}';
+  String _spelled(Token token) {
+    if (token.isDegreesMinutesSeconds) return _degreesMinutesSeconds(token);
+    return '${token.digits}'
+        '${token.denominator == null ? '' : '/${token.denominator}'}'
+        '${token.unit?.suffix ?? ''}'
+        '${_exponent(token.power)}';
+  }
+
+  String _degreesMinutesSeconds(Token token) {
+    final minutes = token.minutes ?? '';
+    final seconds = token.seconds;
+    if (seconds == null) {
+      return "${token.digits}°${minutes.isEmpty ? '' : "$minutes'"}";
+    }
+    if (seconds.isEmpty) return "${token.digits}°${_twoDigits(minutes)}'";
+    final totalSeconds = token.value * Token.secondsPerDegree;
+    if (totalSeconds > _largestExactSegments) {
+      return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
+    }
+    final total = totalSeconds.round();
+    final rest = total % Token.secondsPerDegree;
+    return '${total ~/ Token.secondsPerDegree}°'
+        "${_twoDigits('${rest ~/ Token.minutesPerDegree}')}'"
+        '${rest % Token.minutesPerDegree}"';
+  }
+
+  static String _twoDigits(String segment) => segment.padLeft(2, '0');
 
   static bool _isMixedNumber(Token whole, Token fraction) =>
       _isWholeInches(whole) &&
@@ -208,9 +259,11 @@ class EntryBuffer extends Equatable {
   ///
   /// Digits go into the open number, or into its denominator once [/] was
   /// pressed; after a finished token they start a new one (18ft then 8). A
-  /// leading point reads 0.; a second point is an angle's business and is
-  /// refused here.
-  EntryOutcome typeDigit(String digit) {
+  /// leading point reads 0.; a second point makes an angle where
+  /// [readsAngles] (23.16 then . reads 23°16' with the minutes closed, and
+  /// the digits go on into the seconds) and is refused anywhere else. A
+  /// third point changes nothing: an angle has three segments.
+  EntryOutcome typeDigit(String digit, {bool readsAngles = false}) {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null || last.unit != null) {
       return _changed([...tokens, Token(digits: digit == '.' ? '0.' : digit)]);
@@ -226,10 +279,75 @@ class EntryBuffer extends Equatable {
         last.copyWith(denominator: () => '$denominator$digit'),
       );
     }
+    if (last.isDegreesMinutesSeconds) {
+      if (digit == '.') return EntryChanged(this);
+      return _replaceLast(_withSegmentDigit(last, digit));
+    }
     if (digit == '.' && last.digits.contains('.')) {
-      return const EntryRefused(EntryRefusal.secondDecimalPoint);
+      if (!readsAngles || tokens.length > 1) {
+        return const EntryRefused(EntryRefusal.secondDecimalPoint);
+      }
+      return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
     }
     return _replaceLast(last.copyWith(digits: '${last.digits}$digit'));
+  }
+
+  /// The D:M:S key (Section 3.5): closes the segment being typed and opens
+  /// the next one. On a plain number it is the second decimal point made
+  /// visible: 38 reads 38° with the minutes open, 38.3 reads 38°03' with
+  /// the seconds open. Pressed with the seconds open it changes nothing,
+  /// since an angle has three segments and a fourth press never eats the
+  /// third (walkthrough 16.3, step 6). A fraction cannot be an angle.
+  EntryOutcome closeDegreesMinutesSeconds() {
+    final last = tokens.isEmpty ? null : tokens.last;
+    if (last == null || last.unit != null) {
+      return const EntryRefused(EntryRefusal.nothingOpen);
+    }
+    if (last.denominator != null) {
+      return const EntryRefused(EntryRefusal.fractionNeedsUnit);
+    }
+    if (last.seconds != null) return EntryChanged(this);
+    if (last.minutes case final minutes?) {
+      return _replaceLast(_withMinutesClosed(last.digits, minutes));
+    }
+    final closingMinutes =
+        last.digits.contains('.') && !last.digits.endsWith('.');
+    return _replaceLast(
+      _asDegreesMinutesSeconds(last, closingMinutes: closingMinutes),
+    );
+  }
+
+  Token _asDegreesMinutesSeconds(Token plain, {required bool closingMinutes}) {
+    final (degrees, decimals) = _wholeAndDecimals(plain.digits);
+    final minutes = decimals.isEmpty ? '' : decimals.substring(1);
+    if (!closingMinutes) return Token(digits: degrees, minutes: minutes);
+    return _withMinutesClosed(degrees, minutes);
+  }
+
+  Token _withMinutesClosed(String degrees, String minutes) {
+    final totalMinutes =
+        double.parse(degrees) * Token.minutesPerDegree +
+        (double.tryParse(minutes) ?? 0);
+    if (totalMinutes > _largestExactSegments) {
+      return Token(digits: degrees, minutes: minutes, seconds: '');
+    }
+    final carried = totalMinutes.round();
+    return Token(
+      digits: '${carried ~/ Token.minutesPerDegree}',
+      minutes: '${carried % Token.minutesPerDegree}',
+      seconds: '',
+    );
+  }
+
+  // 2⁵³, the last whole number a double holds exactly: past it the segments
+  // cannot be carried without inventing digits, so they are left as typed.
+  static const double _largestExactSegments = 9007199254740992;
+
+  Token _withSegmentDigit(Token angle, String digit) {
+    if (angle.seconds case final seconds?) {
+      return angle.copyWith(seconds: () => '$seconds$digit');
+    }
+    return angle.copyWith(minutes: () => '${angle.minutes}$digit');
   }
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.
@@ -245,7 +363,7 @@ class EntryBuffer extends Equatable {
             : EntryRefusal.fractionNeedsUnit,
       );
     }
-    if (last.digits.contains('.')) {
+    if (last.digits.contains('.') || last.isDegreesMinutesSeconds) {
       return const EntryRefused(EntryRefusal.decimalCannotTakeFraction);
     }
     return _replaceLast(last.copyWith(denominator: () => ''));
@@ -275,6 +393,9 @@ class EntryBuffer extends Equatable {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null || last.unit != null) {
       return const EntryRefused(EntryRefusal.nothingOpen);
+    }
+    if (last.isDegreesMinutesSeconds) {
+      return const EntryRefused(EntryRefusal.alreadyAnAngle);
     }
     if (last.denominator == '') {
       return const EntryRefused(EntryRefusal.finishTheFraction);
@@ -336,7 +457,9 @@ class EntryBuffer extends Equatable {
   /// (in³ → in² → in), the unit, a denominator digit, the [/], a digit —
   /// and drops the token when its last digit goes. A leading point was
   /// typed as 0., so one ⌫ leaves the 0 the prototype leaves and a second
-  /// clears it.
+  /// clears it. On an angle it steps back through the segments: a seconds
+  /// digit, the seconds (which reopens the minutes), a minutes digit, and
+  /// then the minutes, which leaves the whole degrees as a plain number.
   EntryOutcome backspace() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null) return const EntryRefused(EntryRefusal.nothingToDelete);
@@ -345,6 +468,20 @@ class EntryBuffer extends Equatable {
     }
     if (last.unit != null) {
       return _replaceLast(last.copyWith(unit: () => null));
+    }
+    if (last.seconds case final seconds?) {
+      if (seconds.isEmpty) {
+        return _replaceLast(last.copyWith(seconds: () => null));
+      }
+      return _replaceLast(
+        last.copyWith(seconds: () => seconds.substring(0, seconds.length - 1)),
+      );
+    }
+    if (last.minutes case final minutes?) {
+      if (minutes.isEmpty) return _replaceLast(Token(digits: last.digits));
+      return _replaceLast(
+        last.copyWith(minutes: () => minutes.substring(0, minutes.length - 1)),
+      );
     }
     if (last.denominator case final denominator?) {
       if (denominator.isEmpty) {
