@@ -297,7 +297,9 @@ class EntryBuffer extends Equatable {
       }
       return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
     }
-    return _replaceLast(last.copyWith(digits: '${last.digits}$digit'));
+    return _replaceLast(
+      last.copyWith(digits: '${last.digits}$digit', typedAs: () => null),
+    );
   }
 
   /// The D:M:S key (Section 3.5): closes the segment being typed and opens
@@ -316,7 +318,9 @@ class EntryBuffer extends Equatable {
     }
     if (last.seconds != null) return EntryChanged(this);
     if (last.minutes case final minutes?) {
-      return _replaceLast(_withMinutesClosed(last.digits, minutes));
+      return _replaceLast(
+        _withMinutesClosed(last.digits, minutes, typedAs: last.typedAs),
+      );
     }
     final closingMinutes =
         last.digits.contains('.') && !last.digits.endsWith('.');
@@ -328,22 +332,35 @@ class EntryBuffer extends Equatable {
   Token _asDegreesMinutesSeconds(Token plain, {required bool closingMinutes}) {
     final (degrees, decimals) = _wholeAndDecimals(plain.digits);
     final minutes = decimals.isEmpty ? '' : decimals.substring(1);
-    if (!closingMinutes) return Token(digits: degrees, minutes: minutes);
-    return _withMinutesClosed(degrees, minutes);
+    final typedAs = plain.typedAs ?? plain.digits;
+    if (!closingMinutes) {
+      return Token(digits: degrees, minutes: minutes, typedAs: typedAs);
+    }
+    return _withMinutesClosed(degrees, minutes, typedAs: typedAs);
   }
 
-  Token _withMinutesClosed(String degrees, String minutes) {
+  Token _withMinutesClosed(
+    String degrees,
+    String minutes, {
+    required String? typedAs,
+  }) {
     final totalMinutes =
         double.parse(degrees) * Token.minutesPerDegree +
         (double.tryParse(minutes) ?? 0);
     if (totalMinutes > _largestWholeNumberADoubleHolds) {
-      return Token(digits: degrees, minutes: minutes, seconds: '');
+      return Token(
+        digits: degrees,
+        minutes: minutes,
+        seconds: '',
+        typedAs: typedAs,
+      );
     }
     final carried = totalMinutes.round();
     return Token(
       digits: '${carried ~/ Token.minutesPerDegree}',
       minutes: '${carried % Token.minutesPerDegree}',
       seconds: '',
+      typedAs: typedAs,
     );
   }
 
@@ -351,9 +368,15 @@ class EntryBuffer extends Equatable {
 
   Token _withSegmentDigit(Token angle, String digit) {
     if (angle.seconds case final seconds?) {
-      return angle.copyWith(seconds: () => '$seconds$digit');
+      return angle.copyWith(
+        seconds: () => '$seconds$digit',
+        typedAs: () => null,
+      );
     }
-    return angle.copyWith(minutes: () => '${angle.minutes}$digit');
+    return angle.copyWith(
+      minutes: () => '${angle.minutes}$digit',
+      typedAs: () => null,
+    );
   }
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.

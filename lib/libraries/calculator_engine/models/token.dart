@@ -49,6 +49,14 @@ class Token extends Equatable {
   /// empty while open. Opening the seconds is what closes the minutes.
   final String? seconds;
 
+  /// The digits as they were typed before the number was re-read another
+  /// way (the 23.16 behind 23°16', the 0.65 behind a 65% grade read as a
+  /// ratio), so that the Read-as pill can bring them back untouched (term
+  /// 2.14; walkthrough 17.4: "each lap rebuilds from the typed digits").
+  /// `null` for a number that was never re-read; the next digit typed clears
+  /// it, since the way back belongs to the digits it was made from.
+  final String? typedAs;
+
   const Token({
     required this.digits,
     this.denominator,
@@ -56,6 +64,7 @@ class Token extends Equatable {
     this.power = 1,
     this.minutes,
     this.seconds,
+    this.typedAs,
   }) : assert(power >= 1 && power <= 3, 'the unit ladder stops at cubic'),
        assert(
          seconds == null || minutes != null,
@@ -95,8 +104,8 @@ class Token extends Equatable {
   static double _segment(String? digits) => double.tryParse(digits ?? '') ?? 0;
 
   /// Returns a copy with the given fields replaced. [denominator], [unit],
-  /// [minutes] and [seconds] take a `Function()?` wrapper so that clearing
-  /// them to `null` can be told apart from leaving them as they are.
+  /// [minutes], [seconds] and [typedAs] take a `Function()?` wrapper so that
+  /// clearing them to `null` can be told apart from leaving them as they are.
   Token copyWith({
     String? digits,
     String? Function()? denominator,
@@ -104,6 +113,7 @@ class Token extends Equatable {
     int? power,
     String? Function()? minutes,
     String? Function()? seconds,
+    String? Function()? typedAs,
   }) {
     return Token(
       digits: digits ?? this.digits,
@@ -112,6 +122,7 @@ class Token extends Equatable {
       power: power ?? this.power,
       minutes: minutes != null ? minutes() : this.minutes,
       seconds: seconds != null ? seconds() : this.seconds,
+      typedAs: typedAs != null ? typedAs() : this.typedAs,
     );
   }
 
@@ -123,5 +134,6 @@ class Token extends Equatable {
     power,
     minutes,
     seconds,
+    typedAs,
   ];
 }
