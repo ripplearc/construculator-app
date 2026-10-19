@@ -1316,6 +1316,81 @@ void main() {
         },
       );
 
+      Future<void> signInAndAwaitAuthenticated() async {
+        final authenticated = authNotifier.onAuthStateChanged.firstWhere(
+          (state) => state.status == AuthStatus.authenticated,
+        );
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await authenticated;
+      }
+
+      test('signing in asks the server to ensure the user has a company, and '
+          'keeps the id it returns', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          'new-company',
+        );
+
+        await signInAndAwaitAuthenticated();
+
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'new-company',
+        );
+        expect(
+          supabaseWrapper
+              .getMethodCallsFor('rpc')
+              .map((call) => call['functionName']),
+          [DatabaseConstants.ensureMyCompanyRpcFunction],
+        );
+      });
+
+      test('signing in again in the same session does not ask the server to '
+          'ensure the company a second time', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          'new-company',
+        );
+
+        await signInAndAwaitAuthenticated();
+        await signInAndAwaitAuthenticated();
+        await currentCompanyResolver.resolve();
+
+        expect(
+          supabaseWrapper
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.ensureMyCompanyRpcFunction,
+              ),
+          hasLength(1),
+        );
+      });
+
+      test('signing in still succeeds and the user still resolves their '
+          'company when the ensure step fails', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'existing-company',
+        );
+
+        final authenticated = authNotifier.onAuthStateChanged.firstWhere(
+          (state) => state.status == AuthStatus.authenticated,
+        );
+        final result = await authManager.loginWithEmail(
+          testEmail,
+          testPassword,
+        );
+        await authenticated;
+
+        expect(result.isSuccess, isTrue);
+        expect(
+          (await currentCompanyResolver.resolve()).getRightOrNull(),
+          'existing-company',
+        );
+      });
+
       test('signing in keeps the company id on the device without anything '
           'else asking for it', () async {
         supabaseWrapper.setRpcResponse(

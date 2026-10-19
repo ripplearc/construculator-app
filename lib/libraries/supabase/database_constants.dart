@@ -82,6 +82,12 @@ class DatabaseConstants {
   /// explicit user id param is required or accepted.
   static const String getMyCompanyIdRpcFunction = 'get_my_company_id';
 
+  /// The RPC that returns the caller's company id, creating the caller's
+  /// personal company first when none exists (CA-1262). Safe to call twice:
+  /// the second call returns the same company. `SECURITY DEFINER` on the
+  /// backend, scoped internally to the caller's own auth id.
+  static const String ensureMyCompanyRpcFunction = 'ensure_my_company';
+
   /// Parameter name for the `user_id` argument of
   /// [projectSearchSuggestionsRpcFunction].
   static const String projectSearchSuggestionsUserIdParam = 'user_id';
