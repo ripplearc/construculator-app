@@ -13,18 +13,34 @@ const int _recentsLimit = 4;
 
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
-EventTransformer<E> _restartable<E>() =>
-    (events, mapper) => events.switchMap(mapper);
-
-EventTransformer<YourRatesSearched> _searchTransformer(Duration debounce) =>
+/// Waits [debounce] for a non-empty query and runs only the newest event. An
+/// empty query waits a zero-length timer, so the event still runs a moment
+/// after it was added.
+EventTransformer<E> _debouncedSearch<E>(
+  Duration debounce,
+  String Function(E event) queryOf,
+) =>
     (events, mapper) => events
         .debounce(
           (event) => TimerStream<void>(
             null,
-            event.query.isEmpty ? Duration.zero : debounce,
+            queryOf(event).isEmpty ? Duration.zero : debounce,
           ),
         )
         .switchMap(mapper);
+
+/// Runs only the newest event. A blank query runs at once, with no timer, and
+/// any other query waits [debounce] first. A newer event drops an older one
+/// that is still waiting out its debounce or already running.
+EventTransformer<E> _searchTransformer<E>(
+  Duration debounce,
+  String Function(E event) queryOf,
+) =>
+    (events, mapper) => events.switchMap(
+      (event) => queryOf(event).isEmpty
+          ? mapper(event)
+          : TimerStream<void>(null, debounce).switchMap((_) => mapper(event)),
+    );
 
 EventTransformer<E> _ignoreWhileInFlight<E>() =>
     (events, mapper) => events.exhaustMap(mapper);
@@ -50,19 +66,29 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
   final CurrentCompanyResolver _companyResolver;
 
-  /// Debounce applied to a [YourRatesSearched] with a non-empty query. An empty
-  /// query (every saved rate) runs at once. Defaults to
-  /// [_kQueryDebounceDuration]; overridable so tests can pass [Duration.zero]
-  /// instead of waiting out the real debounce window.
+  /// Debounce applied to a [YourRatesSearched] with a non-empty query, and to a
+  /// [YourRatesRecentsQueried] with a query that is not blank. An empty query
+  /// (every saved rate), a blank one and [YourRatesRefreshRecents] run at once.
+  /// Defaults to [_kQueryDebounceDuration]; overridable so tests can pass
+  /// [Duration.zero] instead of waiting out the real debounce window.
   YourRatesBloc({
     required this._repository,
     required this._companyResolver,
     Duration queryDebounce = _kQueryDebounceDuration,
   }) : super(const YourRatesLoading()) {
-    on<YourRatesRefreshRecents>(_onRefreshRecents, transformer: _restartable());
     on<YourRatesSearched>(
       _onSearched,
-      transformer: _searchTransformer(queryDebounce),
+      transformer: _debouncedSearch(queryDebounce, (event) => event.query),
+    );
+    on<YourRatesRecentsEvent>(
+      _onRecentsEvent,
+      transformer: _searchTransformer(
+        queryDebounce,
+        (event) => switch (event) {
+          YourRatesRecentsQueried(:final query) => query.trim(),
+          YourRatesRefreshRecents() => '',
+        },
+      ),
     );
     on<YourRatesSaveRequested>(
       _onSaveRequested,
@@ -130,6 +156,22 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       (failure) => emit(YourRatesError(failure)),
       (entries) => emit(YourRatesSearchResults(entries)),
     );
+  }
+
+  Future<void> _onRecentsEvent(
+    YourRatesRecentsEvent event,
+    Emitter<YourRatesState> emit,
+  ) {
+    return switch (event) {
+      YourRatesRefreshRecents() => _onRefreshRecents(event, emit),
+      YourRatesRecentsQueried(:final query, :final category)
+          when query.trim().isEmpty =>
+        _onRefreshRecents(YourRatesRefreshRecents(category), emit),
+      YourRatesRecentsQueried(:final query, :final category) => _onSearched(
+        YourRatesSearched(query, category: category),
+        emit,
+      ),
+    };
   }
 
   Future<void> _onSaveRequested(
