@@ -30,7 +30,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         category: category?.toJson(),
         companyId: companyId,
       );
-      final entries = dtos.map((dto) => dto.toEntity()).toList()
+      final entries = dtos.map(_toEntry).toList()
         ..sort(_mostRecentlyUsedFirst);
 
       final words = query
@@ -146,7 +146,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       companyId: companyId,
     );
     return dtos
-        .map((dto) => dto.toEntity())
+        .map(_toEntry)
         .where((entry) => _matchKey(entry.itemName) == nameKey)
         .toList();
   }
@@ -159,9 +159,17 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
   }
 
+  static YourRateEntry _toEntry(YourRateEntryDto dto) {
+    try {
+      return dto.toEntity();
+    } catch (e, stack) {
+      _logger.error('Could not read a stored Your rates row', e, stack);
+      rethrow;
+    }
+  }
+
   Failure _handleError(Object error) {
     if (error is FormatException || error is TypeError) {
-      _logger.error('Could not read a stored Your rates row: $error');
       return const EstimationFailure(
         errorType: EstimationErrorType.parsingError,
       );
