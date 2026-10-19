@@ -3,9 +3,11 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -152,6 +154,19 @@ void main() {
       await tester.pumpAndSettle();
       await enter(tester, 'delivery_fee_field', '85');
       await expectSheetGolden(tester, 'day_ready_delivery', suffix);
+    });
+
+    testWidgets('save failed', (tester) async {
+      await openSheet(tester, theme);
+      await enter(tester, 'equipment_name_field', 'Scissor lift');
+      await enter(tester, 'duration_field', '4');
+      await enter(tester, 'rate_field', '145');
+      fakeSupabase.shouldThrowOnInsert = true;
+      fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+      fakeSupabase.insertErrorMessage = 'Connection failed';
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pumpAndSettle();
+      await expectSheetGolden(tester, 'save_failed', suffix);
     });
 
     testWidgets('job amount missing', (tester) async {

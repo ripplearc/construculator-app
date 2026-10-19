@@ -886,8 +886,8 @@ void main() {
         );
       });
 
-      testWidgets('keeps the sheet open and shows an error when the save '
-          'fails', (tester) async {
+      testWidgets('keeps the sheet open and shows the error line above the '
+          'button when the save fails', (tester) async {
         await openEquipmentSheet(tester);
         await fillValidDayForm(tester);
         fakeSupabase.shouldThrowOnInsert = true;
@@ -898,7 +898,13 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
-        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(AddToEstimateFooter.errorKey),
+            matching: find.text(l10n.addToEstimateFailedError),
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Added to Bedroom 2'), findsNothing);
 
         fakeSupabase.shouldThrowOnInsert = false;
@@ -1093,6 +1099,37 @@ void main() {
         );
       });
 
+      testWidgets('hides the error line while the next save runs', (
+        tester,
+      ) async {
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+        fakeSupabase.shouldThrowOnInsert = true;
+        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.insertErrorMessage = 'Connection failed';
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+
+        fakeSupabase.shouldThrowOnInsert = false;
+        fakeSupabase.shouldDelayOperations = true;
+        final heldSave = Completer<void>();
+        fakeSupabase.completer = heldSave;
+        addTearDown(() {
+          if (!heldSave.isCompleted) heldSave.complete();
+        });
+        await tester.tap(addButton());
+        await tester.pump();
+
+        expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
+
+        heldSave.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+      });
+
       testWidgets('a save that fails after the sheet was dismissed still shows '
           'the error', (tester) async {
         await openEquipmentSheet(tester);
@@ -1178,10 +1215,7 @@ void main() {
         fakeSupabase.insertErrorMessage = 'Connection failed';
         await tester.tap(addButton());
         await tester.pumpAndSettle();
-        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
-        await tester.tap(find.text(l10n.closeLabel));
-        await tester.pumpAndSettle();
-        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
+        expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
 
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
         await tester.pumpAndSettle();

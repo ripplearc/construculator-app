@@ -3211,9 +3211,9 @@
       }
     }
   },
-  "addToEstimateFailedError": "Couldn't add this cost. Try again.",
+  "addToEstimateFailedError": "This cost was not added. Try again.",
   "@addToEstimateFailedError": {
-    "description": "Error toast when saving an equipment cost line fails. No Figma frame covers this case.",
+    "description": "Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.",
     "context": "N/A"
   }
 }

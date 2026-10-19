@@ -5,14 +5,14 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The equipment sheet's "Adds to this estimate" card and "Add to estimate"
 /// button, driven by [EquipmentCostFormBloc].
 ///
 /// The button only sends [EquipmentCostSubmittedEvent]; the bloc validates and
 /// decides whether the outsized-fee question comes first. A successful add
-/// closes the sheet.
+/// closes the sheet. A failed save keeps the sheet open and says so in a line
+/// above the button, which goes away while the next save runs.
 class EquipmentAddToEstimateFooter extends StatelessWidget {
   /// The estimate the line is added to.
   final String estimateId;
@@ -38,14 +38,9 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
         switch (state) {
           case EquipmentCostFormSuccess():
             Navigator.of(context).pop();
-          case EquipmentCostFormFailure():
-            CoreToast.showError(
-              context,
-              l10n.addToEstimateFailedError,
-              l10n.closeLabel,
-            );
           case EquipmentCostFormInitial():
           case EquipmentCostFormEditing():
+          case EquipmentCostFormFailure():
           case EquipmentCostFormOutsizedFeeConfirm():
           case EquipmentCostFormSubmitting():
             break;
@@ -63,6 +58,9 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
           isSubmitting:
               state is EquipmentCostFormSubmitting ||
               state is EquipmentCostFormSuccess,
+          errorMessage: state is EquipmentCostFormFailure
+              ? l10n.addToEstimateFailedError
+              : null,
           onAdd: () => context.read<EquipmentCostFormBloc>().add(
             EquipmentCostSubmittedEvent(estimateId: estimateId),
           ),

@@ -3884,10 +3884,10 @@ abstract class AppLocalizations {
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
 
-  /// Error toast when saving an equipment cost line fails. No Figma frame covers this case.
+  /// Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t add this cost. Try again.'**
+  /// **'This cost was not added. Try again.'**
   String get addToEstimateFailedError;
 }
 
