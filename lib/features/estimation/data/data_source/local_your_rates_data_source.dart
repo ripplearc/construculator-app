@@ -156,12 +156,10 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
     handle?.unsubscribe();
   }
 
-  Future<void> _ensureSyncing() => _ready ??= _startSyncing().catchError((
-    Object error,
-  ) {
-    _ready = null;
-    throw error;
-  });
+  Future<void> _ensureSyncing() async {
+    if (_streamHandle != null) return;
+    await (_ready ??= _startSyncing().whenComplete(() => _ready = null));
+  }
 
   Future<void> _startSyncing() async {
     final handle = await _database.syncStream(_streamName);
