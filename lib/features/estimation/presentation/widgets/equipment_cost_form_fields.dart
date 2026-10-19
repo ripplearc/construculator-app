@@ -398,6 +398,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       case YourRatesSaveSucceeded():
         setState(() => _rateSaveStatus = _RateSaveStatus.saved);
       case YourRatesLoading():
+      case YourRatesRetrying():
       case YourRatesLoaded():
       case YourRatesSearchResults():
       case YourRatesError():
@@ -1274,6 +1275,7 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
           YourRatesSaveNoCompany():
         Navigator.of(context).pop();
       case YourRatesLoading() ||
+          YourRatesRetrying() ||
           YourRatesLoaded() ||
           YourRatesSearchResults() ||
           YourRatesError() ||

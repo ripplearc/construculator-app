@@ -305,7 +305,7 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-// TODO: [CA-1249](https://ripplearc.youtrack.cloud/issue/CA-1249) Replace with CoreUI's error row once it exists.
+// TODO: [CA-1316] replace with the CoreUI inline error row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1316
 class _LoadErrorRow extends StatelessWidget {
   final VoidCallback onTryAgain;
 
