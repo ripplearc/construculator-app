@@ -42,4 +42,10 @@ class MaterialRateUpdated extends MaterialCostFormEvent {
   final String value;
 }
 
-// TODO(CA-294): add MaterialCostFormSubmitted event with estimateId and other field values
+/// Fired when the user taps Add to estimate.
+class MaterialCostFormSubmitted extends MaterialCostFormEvent {
+  const MaterialCostFormSubmitted({required this.estimateId});
+
+  /// The estimate this cost item is being added to.
+  final String estimateId;
+}
