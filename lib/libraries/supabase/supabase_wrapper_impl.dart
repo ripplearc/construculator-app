@@ -3,17 +3,28 @@ import 'dart:async';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/secure_session_local_storage.dart';
 import 'package:construculator/libraries/supabase/utils/jwt_parser.dart';
+import 'package:http/http.dart' as http;
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseWrapperImpl implements SupabaseWrapper {
   late supabase.SupabaseClient _supabaseClient;
   final EnvLoader _envLoader;
+  final SecureStorageWrapper _secureStorage;
+  final http.Client? _httpClient;
   static final _logger = AppLogger().tag('SupabaseWrapperImpl');
 
-  SupabaseWrapperImpl({required this._envLoader});
+  /// The login session is kept in [secureStorage]. [httpClient] stands in for
+  /// the network in tests; production omits it.
+  SupabaseWrapperImpl({
+    required this._envLoader,
+    required this._secureStorage,
+    this._httpClient,
+  });
 
   @override
   Future<void> initialize() async {
@@ -24,6 +35,15 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         url: supabaseUrl,
         publishableKey: supabaseAnonKey,
         debug: _envLoader.get('DEBUG_MODE') == 'true',
+        httpClient: _httpClient,
+        authOptions: supabase.FlutterAuthClientOptions(
+          localStorage: SecureSessionLocalStorage(
+            secureStorage: _secureStorage,
+            persistSessionKey: SecureSessionLocalStorage.persistSessionKeyFor(
+              supabaseUrl,
+            ),
+          ),
+        ),
       );
       _supabaseClient = supabase.Supabase.instance.client;
       return;
