@@ -21,4 +21,9 @@ abstract class SecureStorageWrapper {
   ///
   /// Throws when the platform store cannot be written.
   Future<void> delete(String key);
+
+  /// Removes every value this app has stored.
+  ///
+  /// Throws when the platform store cannot be written.
+  Future<void> deleteAll();
 }
