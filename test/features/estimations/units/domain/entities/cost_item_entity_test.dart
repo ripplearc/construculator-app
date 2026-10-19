@@ -309,6 +309,31 @@ void main() {
     });
   });
 
+  group('QuantityProvenance enum', () {
+    test('fromJson creates correct enum from string', () {
+      expect(QuantityProvenance.fromJson('manual'), QuantityProvenance.manual);
+      expect(
+        QuantityProvenance.fromJson('from_calculator'),
+        QuantityProvenance.fromCalculator,
+      );
+    });
+
+    test('fromJson returns manual for invalid value', () {
+      expect(QuantityProvenance.fromJson('invalid'), QuantityProvenance.manual);
+    });
+
+    test('toJson uses snake_case values', () {
+      expect(QuantityProvenance.manual.toJson(), 'manual');
+      expect(QuantityProvenance.fromCalculator.toJson(), 'from_calculator');
+    });
+
+    test('round-trip serialization preserves all values', () {
+      for (final provenance in QuantityProvenance.values) {
+        expect(QuantityProvenance.fromJson(provenance.toJson()), provenance);
+      }
+    });
+  });
+
   group('MaterialCostItem', () {
     final testItem = MaterialCostItem(
       id: 'item-1',
@@ -321,6 +346,8 @@ void main() {
       currency: 'USD',
       unitPrice: const Money(amount: 100.0, currency: 'USD'),
       quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
+      rateStatus: RateStatus.ownRateConfirmed,
+      quantityProvenance: QuantityProvenance.manual,
       productLink: 'https://example.com/concrete',
       description: 'High quality concrete',
     );
@@ -391,6 +418,8 @@ void main() {
         currency: 'USD',
         unitPrice: const Money(amount: 100.0),
         quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
+        rateStatus: RateStatus.ownRateConfirmed,
+        quantityProvenance: QuantityProvenance.manual,
       );
 
       final item2 = MaterialCostItem(
@@ -404,6 +433,8 @@ void main() {
         currency: 'USD',
         unitPrice: const Money(amount: 100.0),
         quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
+        rateStatus: RateStatus.ownRateConfirmed,
+        quantityProvenance: QuantityProvenance.manual,
       );
 
       expect(item1, item2);
@@ -417,6 +448,111 @@ void main() {
         expect(testItem, isNot(item2));
       },
     );
+
+    group('v2 fields', () {
+      final calculatorItem = testItem.copyWith(
+        wastePercent: 10.0,
+        rateStatus: RateStatus.sampleRateUnverified,
+        quantityProvenance: QuantityProvenance.fromCalculator,
+        calculatorFormula: '47.24in x 94.49in',
+      );
+
+      test('holds each v2 field that was set', () {
+        expect(calculatorItem.wastePercent, 10.0);
+        expect(calculatorItem.rateStatus, RateStatus.sampleRateUnverified);
+        expect(
+          calculatorItem.quantityProvenance,
+          QuantityProvenance.fromCalculator,
+        );
+        expect(calculatorItem.calculatorFormula, '47.24in x 94.49in');
+      });
+
+      test('wastePercent distinguishes unset from an explicit zero', () {
+        expect(testItem.wastePercent, isNull);
+        expect(testItem.copyWith(wastePercent: 0.0).wastePercent, 0.0);
+        expect(testItem.copyWith(wastePercent: 0.0), isNot(testItem));
+      });
+
+      test('copyWith preserves v2 fields when not specified', () {
+        final updated = calculatorItem.copyWith(itemName: 'Renamed');
+
+        expect(updated.wastePercent, 10.0);
+        expect(updated.rateStatus, RateStatus.sampleRateUnverified);
+        expect(updated.quantityProvenance, QuantityProvenance.fromCalculator);
+        expect(updated.calculatorFormula, '47.24in x 94.49in');
+      });
+
+      test('copyWith can clear wastePercent using clearField', () {
+        expect(
+          calculatorItem.copyWith(wastePercent: clearField).wastePercent,
+          isNull,
+        );
+      });
+
+      test('copyWith can reset to manual while clearing the formula', () {
+        final updated = calculatorItem.copyWith(
+          quantityProvenance: QuantityProvenance.manual,
+          calculatorFormula: clearField,
+        );
+
+        expect(updated.quantityProvenance, QuantityProvenance.manual);
+        expect(updated.calculatorFormula, isNull);
+      });
+
+      test('copyWith can replace rateStatus', () {
+        final updated = testItem.copyWith(rateStatus: RateStatus.missing);
+
+        expect(updated.rateStatus, RateStatus.missing);
+      });
+
+      test('items differing in a single v2 field are not equal', () {
+        expect(
+          calculatorItem,
+          isNot(calculatorItem.copyWith(wastePercent: 5.0)),
+        );
+        expect(
+          calculatorItem,
+          isNot(calculatorItem.copyWith(rateStatus: RateStatus.missing)),
+        );
+        expect(
+          calculatorItem,
+          isNot(calculatorItem.copyWith(calculatorFormula: '10in x 10in')),
+        );
+        expect(
+          calculatorItem,
+          isNot(
+            calculatorItem.copyWith(
+              quantityProvenance: QuantityProvenance.manual,
+              calculatorFormula: clearField,
+            ),
+          ),
+        );
+      });
+
+      test('a manual line with a calculator formula throws', () {
+        expect(
+          () => testItem.copyWith(calculatorFormula: '10in x 10in'),
+          throwsAssertionError,
+        );
+      });
+
+      test('switching to manual without clearing the formula throws', () {
+        expect(
+          () => calculatorItem.copyWith(
+            quantityProvenance: QuantityProvenance.manual,
+          ),
+          throwsAssertionError,
+        );
+      });
+
+      test('a calculator line may have no formula', () {
+        final item = testItem.copyWith(
+          quantityProvenance: QuantityProvenance.fromCalculator,
+        );
+
+        expect(item.calculatorFormula, isNull);
+      });
+    });
   });
 
   group('LaborCostItem', () {
@@ -804,6 +940,8 @@ void main() {
           currency: 'USD',
           unitPrice: const Money(amount: 100.0),
           quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
+          rateStatus: RateStatus.ownRateConfirmed,
+          quantityProvenance: QuantityProvenance.manual,
         ),
         LaborCostItem(
           id: 'item-2',
@@ -852,6 +990,8 @@ void main() {
           currency: 'USD',
           unitPrice: const Money(amount: 100.0),
           quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
+          rateStatus: RateStatus.ownRateConfirmed,
+          quantityProvenance: QuantityProvenance.manual,
         ),
         LaborCostItem(
           id: 'item-2',

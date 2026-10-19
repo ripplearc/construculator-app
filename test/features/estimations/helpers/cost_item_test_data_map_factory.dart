@@ -14,7 +14,10 @@ class CostItemTestDataMapFactory {
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
     String? currency,
-    String? brand,
+    double? wastePercent,
+    String? rateStatus,
+    String? quantityProvenance,
+    String? calculatorFormula,
   }) {
     return {
       'id': id ?? 'item-material-1',
@@ -30,7 +33,7 @@ class CostItemTestDataMapFactory {
       'daily_rate': null,
       'job_amount': null,
       'delivery_fee': null,
-      'rate_status': null,
+      'rate_status': rateStatus ?? 'missing',
       'product_link': productLink,
       'labor_calc_method': null,
       'labor_days': null,
@@ -43,7 +46,9 @@ class CostItemTestDataMapFactory {
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
       'currency': currency ?? 'USD',
-      'brand': brand,
+      'waste_percent': wastePercent,
+      'quantity_provenance': quantityProvenance ?? 'manual',
+      'calculator_formula': calculatorFormula,
     };
   }
 
@@ -64,7 +69,6 @@ class CostItemTestDataMapFactory {
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
     String? currency,
-    String? brand,
   }) {
     return {
       'id': id ?? 'item-labor-1',
@@ -93,7 +97,9 @@ class CostItemTestDataMapFactory {
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
       'currency': currency ?? 'USD',
-      'brand': brand,
+      'waste_percent': null,
+      'quantity_provenance': null,
+      'calculator_formula': null,
     };
   }
 
@@ -114,7 +120,6 @@ class CostItemTestDataMapFactory {
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
     String? currency,
-    String? brand,
   }) {
     final method = pricingMethod ?? 'day';
     final days = duration ?? 3.0;
@@ -152,7 +157,9 @@ class CostItemTestDataMapFactory {
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
       'currency': currency ?? 'USD',
-      'brand': brand,
+      'waste_percent': null,
+      'quantity_provenance': null,
+      'calculator_formula': null,
     };
   }
 
