@@ -2,12 +2,14 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/equipment_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -43,6 +45,11 @@ class CostItemFormScreen extends StatefulWidget {
   /// not-a-module-file reasoning as [yourRatesBlocFactory].
   final Clock clock;
 
+  /// The estimate the equipment sheet adds to; its name and total fill the
+  /// "Adds to this estimate" card. Null while the estimate has not loaded,
+  /// and the sheet works without it.
+  final CostEstimate? estimate;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -52,6 +59,7 @@ class CostItemFormScreen extends StatefulWidget {
     this.presentAsSheet = false,
     this.initialRateEntry,
     required this.clock,
+    this.estimate,
   });
 
   @override
@@ -80,8 +88,11 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             children: [
               _buildSheetHeader(context),
               Flexible(child: _buildBody(context)),
-              // TODO: [CA-355] replace the Total bar with the "Adds to this estimate" panel and the full-width button. https://ripplearc.youtrack.cloud/issue/CA-355
-              _buildBottomBar(context),
+              EquipmentAddToEstimateFooter(
+                estimateId: widget.estimationId,
+                estimateName: widget.estimate?.estimateName ?? '',
+                estimateTotal: widget.estimate?.totalCost ?? 0,
+              ),
             ],
           ),
         ),
@@ -294,7 +305,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 ],
               ),
             ),
-            // TODO: [CA-355] [Cost Estimation] Implement Add To Cost Button Logic https://ripplearc.youtrack.cloud/issue/CA-355/Cost-Estimation-Implement-Add-To-Cost-Button-Logic
+            // TODO: [CA-1183] Material: wire this button to the material form bloc's submit. https://ripplearc.youtrack.cloud/issue/CA-1183
+            // TODO: [CA-1259] Labour: wire this button to the labour form bloc's submit. https://ripplearc.youtrack.cloud/issue/CA-1259
             CoreButton(
               key: const Key('add_to_cost_button'),
               label: l10n.addToCostButton,
