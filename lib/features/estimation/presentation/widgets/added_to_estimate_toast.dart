@@ -5,17 +5,16 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The dark "Added to Bedroom 2" toast shown after a cost line is added.
 // TODO: [CA-1256] use a CoreUI dark success toast instead of these hardcoded numbers. https://ripplearc.youtrack.cloud/issue/CA-1256
 class AddedToEstimateToast extends StatelessWidget {
-  // ignore: avoid_static_colors
-  static const _fill = Color(0xFF1D2939);
-  // ignore: avoid_static_colors
-  static const _onFill = Color(0xFFFFFFFF);
-
   final String message;
 
   const AddedToEstimateToast({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colorTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fill = isDark ? colors.backgroundGrayMid : colors.backgroundDarkGray;
+    final onFill = isDark ? colors.textHeadline : colors.textInverse;
     return Semantics(
       container: true,
       liveRegion: true,
@@ -23,14 +22,13 @@ class AddedToEstimateToast extends StatelessWidget {
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: _fill,
+            color: fill,
             borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                // ignore: avoid_static_colors
-                color: Color(0x47101828),
+                color: colors.shadowGrey18,
                 blurRadius: 24,
-                offset: Offset(0, 8),
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -39,9 +37,8 @@ class AddedToEstimateToast extends StatelessWidget {
             child: Row(
               children: [
                 DecoratedBox(
-                  decoration: const BoxDecoration(
-                    // ignore: avoid_static_colors
-                    color: Color(0xFF009E69),
+                  decoration: BoxDecoration(
+                    color: colors.statusSuccess,
                     shape: BoxShape.circle,
                   ),
                   child: Padding(
@@ -49,7 +46,7 @@ class AddedToEstimateToast extends StatelessWidget {
                     child: CoreIconWidget(
                       icon: CoreIcons.checkMark,
                       size: CoreIconSize.size16,
-                      color: _onFill,
+                      color: onFill,
                     ),
                   ),
                 ),
@@ -58,7 +55,7 @@ class AddedToEstimateToast extends StatelessWidget {
                   child: Text(
                     message,
                     style: context.textTheme.bodyMediumSemiBold.copyWith(
-                      color: _onFill,
+                      color: onFill,
                     ),
                   ),
                 ),
