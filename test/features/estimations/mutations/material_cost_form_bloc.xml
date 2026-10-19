@@ -103,6 +103,9 @@
         <regex pattern="hasRate &amp;&amp;\s+fitsLineTotal" dotAll="true" id="bloc.line_total.skip_check">
             <mutation text="hasRate &amp;&amp; true"/>
         </regex>
+        <regex pattern="MaterialCostFormFailure\(:final failure\) =&gt;\s*MaterialCostFormFailure\(\s*next,\s*failure,?\s*\)," dotAll="true" id="bloc.emit.failure_cleared_by_edit">
+            <mutation text="MaterialCostFormFailure() =&gt; MaterialCostFormEditing(next),"/>
+        </regex>
     </rules>
 
     <commands>

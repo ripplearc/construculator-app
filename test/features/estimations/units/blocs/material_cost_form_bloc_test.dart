@@ -284,6 +284,22 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'stays failed while a field is edited, with the edited value',
+        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          b.add(const MaterialQuantityUpdated('8'));
+        },
+        verify: (b) {
+          final failed = b.state as MaterialCostFormFailure;
+          expect(failed.data.quantity, 8);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves once when Add is tapped twice while the first save runs',
         setUp: () {
           fakeSupabase.shouldDelayOperations = true;

@@ -88,6 +88,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  void holdInserts() {
+    final held = Completer<void>();
+    fakeSupabase.completer = held;
+    addTearDown(() {
+      if (!held.isCompleted) held.complete();
+    });
+  }
+
   bool isButtonDisabled(WidgetTester tester) => tester
       .widget<CoreButton>(find.byKey(AddToEstimateFooter.buttonKey))
       .isDisabled;
@@ -274,7 +282,7 @@ void main() {
       await pumpFooter(tester);
       await fillAll(tester);
       fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer<void>();
+      holdInserts();
 
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
@@ -305,7 +313,7 @@ void main() {
       expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
 
       fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer<void>();
+      holdInserts();
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
@@ -315,6 +323,31 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+    });
+
+    testWidgets('keeps the error line while a field is edited and removes it '
+        'when Add is tapped again', (tester) async {
+      fakeSupabase.shouldThrowOnInsert = true;
+      await pumpFooter(tester);
+      await fillAll(tester);
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+
+      bloc.add(const MaterialQuantityUpdated('8'));
+      await tester.pump();
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsOneWidget);
+
+      fakeSupabase.shouldDelayOperations = true;
+      holdInserts();
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pump();
+      expect(find.byKey(AddToEstimateFooter.errorKey), findsNothing);
+
+      fakeSupabase.completer!.complete();
+      fakeSupabase.shouldDelayOperations = false;
+      await tester.pumpAndSettle();
     });
 
     testWidgets('adds the line on a second try and closes the sheet', (

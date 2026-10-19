@@ -77,7 +77,14 @@ class MaterialCostFormBloc
         state is MaterialCostFormSuccess) {
       return;
     }
-    emit(MaterialCostFormEditing(_validated(update(_current()))));
+    final next = _validated(update(_current()));
+    emit(switch (state) {
+      MaterialCostFormFailure(:final failure) => MaterialCostFormFailure(
+        next,
+        failure,
+      ),
+      _ => MaterialCostFormEditing(next),
+    });
   }
 
   Future<void> _onSubmitted(
