@@ -81,7 +81,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<void> _openEquipmentSheet(YourRateEntry? entry) async {
+  Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) async {
     final l10n = context.l10n;
     final formBloc = widget.equipmentCostFormBlocFactory();
     try {
@@ -105,6 +105,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
                   ? summary.estimate
                   : null,
               initialRateEntry: entry,
+              initialEquipmentName: name,
             ),
           ),
         ),
@@ -294,8 +295,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         return;
       case YourRatesRecentsPicked(:final entry):
         await _openEquipmentSheet(entry);
-      case YourRatesRecentsNewEquipmentCost():
-        await _openEquipmentSheet(null);
+      case YourRatesRecentsNewEquipmentCost(:final name):
+        await _openEquipmentSheet(null, name: name);
     }
   }
 }
