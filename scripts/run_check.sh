@@ -111,6 +111,10 @@ pre_check() {
   # CA-1240: self-test the nightly iOS build decision against a fake curl
   bash scripts/ci/main_needs_ios_build_test.sh
 
+  # CA-1240: self-test the iOS skip rules and the commit status poster
+  bash scripts/ci/ios_build_needed_test.sh
+  bash scripts/ci/post_commit_status_test.sh
+
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 
