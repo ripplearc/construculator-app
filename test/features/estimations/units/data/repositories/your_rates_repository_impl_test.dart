@@ -209,8 +209,8 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
-          limit: 2,
           companyId: testCompanyId,
+          limit: 2,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
