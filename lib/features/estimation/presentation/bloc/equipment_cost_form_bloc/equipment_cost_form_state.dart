@@ -137,8 +137,9 @@ class EquipmentCostFormData extends Equatable {
       fieldErrors[EquipmentFormField.itemType];
 
   /// The cost before delivery: duration x daily rate for Day, the amount for
-  /// Job, rounded to the cent (half a cent rounds up). Empty fields count as
-  /// zero.
+  /// Job. The rate and the amount are rounded to the cent first, then the
+  /// product is rounded to the cent (half a cent rounds up). Empty fields
+  /// count as zero.
   double get baseCost => _baseCents / 100;
 
   /// [baseCost] plus the delivery fee, rounded to the cent. Delivery is added
