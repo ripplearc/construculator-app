@@ -10,6 +10,19 @@
 #   scripts/perf/capture_perf_run.sh --device-id <id> --output-dir <dir> \
 #     [--iterations <n>] [--flavor <flavor>]
 #
+# Environment (all optional):
+#   PERF_DRIVE_TIMEOUT       time limit for one `flutter drive` attempt, a whole
+#                            number with an optional s, m, h or d (default: 10m)
+#   ENSURE_ATTACH_SCRIPT     script that re-attaches the phone between failed
+#                            drive attempts (default: ensure_lab_device_attached.sh)
+#
+# A drive leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach of
+# up to 5 minutes after each of the first two. At the default that is 40 minutes
+# and has to fit in the 60 minute limit of the capture step in
+# .github/workflows/weekly_system_health.yml, so change them together.
+#
+# Needs GNU `timeout` (`gtimeout` on a Mac with coreutils from Homebrew).
+#
 # Layout of --output-dir after a successful run:
 #   meta.json                         run provenance (device, sdk, commit)
 #   cold/run-<n>/start_up_info.json   one per cold iteration
@@ -24,6 +37,10 @@ set -euo pipefail
 JOURNEY="pre_login_v1"
 JOURNEY_TARGET="integration_test/perf/pre_login_journey_test.dart"
 DRIVER="test_driver/perf_driver.dart"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DRIVE_TIMEOUT="${PERF_DRIVE_TIMEOUT:-10m}"
+ENSURE_ATTACH_SCRIPT="${ENSURE_ATTACH_SCRIPT:-$SCRIPT_DIR/ensure_lab_device_attached.sh}"
 
 DEVICE_ID=""
 OUTPUT_DIR=""
@@ -47,6 +64,17 @@ fi
 
 if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]] || [[ "$ITERATIONS" -lt 1 ]]; then
   echo "❌ --iterations must be a positive integer, got: $ITERATIONS" >&2
+  exit 1
+fi
+
+if ! [[ "$DRIVE_TIMEOUT" =~ ^[0-9]+[smhd]?$ ]]; then
+  echo "❌ PERF_DRIVE_TIMEOUT must be a whole number with an optional s, m, h or d, got: $DRIVE_TIMEOUT" >&2
+  exit 1
+fi
+
+TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
+if [[ -z "$TIMEOUT_BIN" ]]; then
+  echo "❌ GNU timeout not found. On a Mac, run: brew install coreutils" >&2
   exit 1
 fi
 
@@ -116,6 +144,11 @@ capture_startup() {
 # rest passed through. Retries a few times because the drive legs occasionally
 # fail on a transient VM-service race (a rerun clears it).
 #
+# Each attempt has a time limit. The USB link to the lab phone can freeze
+# `adb install` partway through the APK upload, and `flutter drive` then waits
+# forever instead of failing, so the retry below would never run. A timed-out
+# attempt re-attaches the phone before the next one.
+#
 # The jank leg passes --no-dds: the integration_test binding's traceAction opens
 # its own VM-service connection to record the timeline, and DDS in front of the
 # service refuses it. The memory leg does the opposite - it keeps DDS (which
@@ -133,7 +166,7 @@ drive_journey() {
   adb -s "$DEVICE_ID" forward --remove-all || true
   local attempt
   for attempt in 1 2 3; do
-    if PERF_OUTPUT_DIR="$perf_out" fvm flutter drive \
+    if PERF_OUTPUT_DIR="$perf_out" "$TIMEOUT_BIN" --kill-after=30 "$DRIVE_TIMEOUT" fvm flutter drive \
       --profile \
       --flavor "$FLAVOR" \
       --dart-define=ENVIRONMENT=dev \
@@ -143,8 +176,12 @@ drive_journey() {
       "$@"; then
       return 0
     fi
-    echo "⚠️  drive leg attempt $attempt/3 failed; resetting forwards and retrying..." >&2
-    adb -s "$DEVICE_ID" forward --remove-all || true
+    if [[ "$attempt" -lt 3 ]]; then
+      echo "⚠️  drive leg attempt $attempt/3 failed; re-attaching the phone and retrying..." >&2
+      bash "$ENSURE_ATTACH_SCRIPT" --device-id "$DEVICE_ID" \
+        || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
+      adb -s "$DEVICE_ID" forward --remove-all || true
+    fi
   done
   echo "❌ drive leg failed after 3 attempts" >&2
   return 1
