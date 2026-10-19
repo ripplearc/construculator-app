@@ -5,7 +5,10 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -14,18 +17,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late AppLocalizations l10n;
 
   setUpAll(() {
     final clock = FakeClockImpl(DateTime(2026, 1, 15));
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     l10n = lookupAppLocalizations(const Locale('en'));
   });
 
@@ -34,12 +41,13 @@ void main() {
   });
 
   setUp(() {
+    database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
     );
-    fakeSupabase.addTableData('your_rates', [
+    database.seedRows([
       for (var i = 0; i < 4; i++)
         {
           'id': 'rate-$i',
@@ -56,6 +64,7 @@ void main() {
 
   tearDown(() {
     fakeSupabase.reset();
+    database.reset();
   });
 
   Future<void> openSheet(
@@ -93,6 +102,25 @@ void main() {
     await tester.tap(find.byKey(const Key('open_sheet')));
     await tester.pumpAndSettle();
   }
+
+  group('YourRatesLookupSheet – with no signal', () {
+    testWidgets('shows the saved prices, not the no-saved-rates text', (
+      tester,
+    ) async {
+      final user = FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00Z');
+      await Modular.get<CurrentCompanyResolver>().clearCache();
+      database.keepCompanyOnPhone(userId: user.id, companyId: 'company-1');
+      fakeSupabase
+        ..setCurrentUser(user)
+        ..shouldThrowOnRpc = true
+        ..rpcExceptionType = SupabaseExceptionType.socket;
+
+      await openSheet(tester, []);
+
+      expect(find.byKey(const Key('your_rate_row_rate-0')), findsOneWidget);
+      expect(find.byKey(const Key('your_rates_empty_state')), findsNothing);
+    });
+  });
 
   group('YourRatesLookupSheet – header', () {
     testWidgets('shows a back arrow next to the Look up a rate title', (
@@ -180,11 +208,12 @@ void main() {
       tester,
     ) async {
       fakeSupabase.reset();
+      database.reset();
       fakeSupabase.setRpcResponse(
         DatabaseConstants.getMyCompanyIdRpcFunction,
         'company-1',
       );
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         for (var i = 0; i < 6; i++) row('day-$i', 'Excavator $i'),
         row('job-1', 'Dumpster', method: 'job'),
       ]);
@@ -201,11 +230,12 @@ void main() {
       'a Job rate is listed when the newest rates are all Day rates',
       (tester) async {
         fakeSupabase.reset();
+        database.reset();
         fakeSupabase.setRpcResponse(
           DatabaseConstants.getMyCompanyIdRpcFunction,
           'company-1',
         );
-        fakeSupabase.addTableData('your_rates', [
+        database.seedRows([
           row(
             'job-1',
             'Dumpster',
@@ -249,13 +279,12 @@ void main() {
       tester,
     ) async {
       fakeSupabase.reset();
+      database.reset();
       fakeSupabase.setRpcResponse(
         DatabaseConstants.getMyCompanyIdRpcFunction,
         'company-1',
       );
-      fakeSupabase.addTableData('your_rates', [
-        row('job-1', 'Dumpster', method: 'job', amount: 400),
-      ]);
+      database.seedRows([row('job-1', 'Dumpster', method: 'job', amount: 400)]);
       final results = <YourRateEntry?>[];
       await openSheet(tester, results, method: EquipmentPricingMethod.job);
 
@@ -334,7 +363,7 @@ void main() {
     testWidgets('shows the error row, never the no-saved-rates text', (
       tester,
     ) async {
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
 
       await openSheet(tester, []);
 
@@ -351,10 +380,10 @@ void main() {
     testWidgets('Try again searches again and shows the rows when it works', (
       tester,
     ) async {
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
       await openSheet(tester, []);
 
-      fakeSupabase.shouldThrowOnSelectMatch = false;
+      database.getAllError = null;
       await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
       await tester.pumpAndSettle();
 
@@ -366,11 +395,11 @@ void main() {
       tester,
     ) async {
       await openSheet(tester, []);
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
       await search(tester, '1');
       expect(find.byKey(const Key('your_rates_load_error')), findsOneWidget);
 
-      fakeSupabase.shouldThrowOnSelectMatch = false;
+      database.getAllError = null;
       await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();

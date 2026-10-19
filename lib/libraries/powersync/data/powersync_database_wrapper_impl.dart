@@ -105,4 +105,7 @@ class _PowerSyncStreamHandle implements SyncStreamHandle {
 
   @override
   void unsubscribe() => _subscription.unsubscribe();
+
+  @override
+  Future<void> waitForFirstSync() => _subscription.waitForFirstSync();
 }
