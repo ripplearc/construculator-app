@@ -101,9 +101,24 @@ void main() {
 
       await wrapper.initialize();
 
-      expect(wrapper.currentSession?.accessToken, _accessToken);
-      expect(wrapper.currentSession?.refreshToken, _refreshToken);
-      expect(wrapper.currentUser?.id, _userId);
+      expect(
+        wrapper.currentSession,
+        isA<supabase.Session>()
+            .having(
+              (session) => session.accessToken,
+              'accessToken',
+              _accessToken,
+            )
+            .having(
+              (session) => session.refreshToken,
+              'refreshToken',
+              _refreshToken,
+            ),
+      );
+      expect(
+        wrapper.currentUser,
+        isA<supabase.User>().having((user) => user.id, 'id', _userId),
+      );
       expect(secure.peek(_sessionKey), contains(_refreshToken));
       expect(await preferenceKeys(), isEmpty);
     });
@@ -114,7 +129,10 @@ void main() {
 
       await wrapper.initialize();
 
-      expect(wrapper.currentUser?.id, _userId);
+      expect(
+        wrapper.currentUser,
+        isA<supabase.User>().having((user) => user.id, 'id', _userId),
+      );
     });
 
     test('signing out removes the session from secure storage', () async {
