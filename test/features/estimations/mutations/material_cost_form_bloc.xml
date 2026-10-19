@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- MATERIAL COST FORM BLOC MUTATION TESTING -->
+    <!-- Targets: Add enablement, quantity and rate bounds, rate status -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import .*$" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="rate &gt;= _minRate" dotAll="false" id="bloc.rate.min_boundary">
+            <mutation text="rate &gt; _minRate"/>
+        </regex>
+        <regex pattern="rate &lt;= _maxRate" dotAll="false" id="bloc.rate.max_boundary">
+            <mutation text="rate &lt; _maxRate"/>
+        </regex>
+        <regex pattern="_minRate = 0\.01" dotAll="false" id="bloc.rate.min_constant">
+            <mutation text="_minRate = 0.0"/>
+        </regex>
+        <regex pattern="_maxRate = 999999\.99" dotAll="false" id="bloc.rate.max_constant">
+            <mutation text="_maxRate = 1000000.0"/>
+        </regex>
+        <regex pattern="quantity &gt; 0 &amp;&amp;" dotAll="false" id="bloc.quantity.positive_boundary">
+            <mutation text="quantity &gt;= 0 &amp;&amp;"/>
+        </regex>
+        <regex pattern="quantity &gt;= _quantityColumnLimit" dotAll="false" id="bloc.quantity.limit_boundary">
+            <mutation text="quantity &gt; _quantityColumnLimit"/>
+        </regex>
+        <regex pattern="if \(quantity == null\) return false;" dotAll="false" id="bloc.quantity.skip_null">
+            <mutation text="if (quantity == null) return true;"/>
+        </regex>
+        <regex pattern="if \(rate == null\) return false;" dotAll="false" id="bloc.rate.skip_null">
+            <mutation text="if (rate == null) return true;"/>
+        </regex>
+        <regex pattern="draft\.isItemNameValid &amp;&amp;" dotAll="false" id="bloc.valid.skip_name">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="draft\.unit != null &amp;&amp;" dotAll="false" id="bloc.valid.skip_unit">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="RateStatus\.ownRateConfirmed" dotAll="false" id="bloc.rate_status.typed_confirmed">
+            <mutation text="RateStatus.sampleRateUnverified"/>
+        </regex>
+        <regex pattern="rate == null\s*\? RateStatus\.missing" dotAll="true" id="bloc.rate_status.cleared_missing">
+            <mutation text="rate == null ? RateStatus.ownRateConfirmed"/>
+        </regex>
+        <regex pattern="errors\[MaterialFormField\.quantity\] =\s*MaterialFieldError\.quantityNotPositive" dotAll="true" id="bloc.quantity.error_kind">
+            <mutation text="errors[MaterialFormField.quantity] = MaterialFieldError.quantityTooLarge"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="bloc" expected-return="0">fvm flutter test test/features/estimations/units/blocs/material_cost_form_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
