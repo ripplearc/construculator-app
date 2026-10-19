@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SUPABASE POWERSYNC CONNECTOR MUTATION TESTING -->
+    <!-- Targets: which refused your_rates changes are skipped, and when two phones' saves are treated as the same entry -->
+
+    <files>
+        <file>lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Only your_rates changes may be skipped -->
+        <regex pattern="if \(operation\.table != DatabaseConstants\.yourRatesTable\) return false;" dotAll="true" id="connector.refused.skip_table_check">
+            <mutation text="if (false) return false;"/>
+        </regex>
+
+        <!-- RULE 2: A value the server rejects is no longer skipped -->
+        <regex pattern="code == PostgresErrorCode\.checkViolation \|\|" dotAll="true" id="connector.refused.drop_check_violation">
+            <mutation text="false ||"/>
+        </regex>
+
+        <!-- RULE 3: A duplicate from another phone is no longer skipped -->
+        <regex pattern="code == PostgresErrorCode\.uniqueViolation \|\|" dotAll="true" id="connector.refused.drop_unique_violation">
+            <mutation text="false ||"/>
+        </regex>
+
+        <!-- RULE 4: A PATCH for a missing row is no longer skipped -->
+        <regex pattern="operation\.op == UpdateType\.patch &amp;&amp;" dotAll="true" id="connector.refused.patch_guard_removed">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="code == PostgresErrorCode\.noDataFound\)" dotAll="true" id="connector.refused.drop_no_data_found">
+            <mutation text="false)"/>
+        </regex>
+
+        <!-- RULE 5: A refused PATCH could be turned into an overwrite -->
+        <regex pattern="operation\.op != UpdateType\.put \|\| rate == null" dotAll="true" id="connector.overwrite.put_guard_removed">
+            <mutation text="rate == null"/>
+        </regex>
+
+        <!-- RULE 6: Only a duplicate may become an overwrite -->
+        <regex pattern="PostgresErrorCode\.uniqueViolation\) \{\s*return false;" dotAll="true" id="connector.overwrite.unique_check_removed">
+            <mutation text="PostgresErrorCode.unknownError) { return false;"/>
+        </regex>
+
+        <!-- RULE 7: Names no longer ignore capital letters -->
+        <regex pattern="\.toLowerCase\(\)" dotAll="true" id="connector.key.drop_lower_case">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 8: Names and labels no longer ignore extra spaces -->
+        <regex pattern="\.replaceAll\(RegExp\(r'\\s\+'\), ' '\)" dotAll="true" id="connector.key.drop_collapse">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9: Names and labels no longer ignore spaces at the ends -->
+        <regex pattern="\?\s*\.trim\(\)" dotAll="true" id="connector.key.drop_trim">
+            <mutation text="?"/>
+        </regex>
+
+        <!-- RULE 10: A different pricing method is treated as the same entry -->
+        <regex pattern="saved\[DatabaseConstants\.equipmentMethodColumn\] ==" dotAll="true" id="connector.key.ignore_method">
+            <mutation text="true ||"/>
+        </regex>
+
+        <!-- RULE 11: A different label is treated as the same entry -->
+        <regex pattern="&amp;&amp;\s*_rateKey\(saved\[DatabaseConstants\.entryLabelColumn\]\) ==" dotAll="true" id="connector.key.ignore_label">
+            <mutation text="&amp;&amp; true ||"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="supabase_powersync_connector" expected-return="0">flutter test test/libraries/powersync/units/connectors/supabase_powersync_connector_test.dart</command>
+    </commands>
+
+    <threshold failure="70">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

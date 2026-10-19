@@ -3,6 +3,7 @@
 /// Postgres error codes
 ///
 /// [uniqueViolation] corresponds to the error code 23505 and is used when a unique constraint is violated
+/// [checkViolation] corresponds to the error code 23514 and is used when a check constraint rejects a value
 /// [unableToConnect] corresponds to the error code 08001 and is used when the connection to the server is lost
 /// [connectionFailure] corresponds to the error code 08006 and is used when the connection to the server is lost
 /// [connectionDoesNotExist] corresponds to the error code 08003 and is used when the connection to the server is lost
@@ -11,6 +12,7 @@
 /// [unknownError] is used when the error is unknown
 enum PostgresErrorCode {
   uniqueViolation,
+  checkViolation,
   unableToConnect,
   connectionFailure,
   connectionDoesNotExist,
@@ -22,6 +24,8 @@ enum PostgresErrorCode {
     switch (code) {
       case '23505':
         return PostgresErrorCode.uniqueViolation;
+      case '23514':
+        return PostgresErrorCode.checkViolation;
       case '08001':
         return PostgresErrorCode.unableToConnect;
       case '08006':
@@ -42,6 +46,8 @@ enum PostgresErrorCode {
     switch (this) {
       case PostgresErrorCode.uniqueViolation:
         return '23505';
+      case PostgresErrorCode.checkViolation:
+        return '23514';
       case PostgresErrorCode.unableToConnect:
         return '08001';
       case PostgresErrorCode.connectionFailure:
@@ -61,6 +67,8 @@ enum PostgresErrorCode {
     switch (this) {
       case PostgresErrorCode.uniqueViolation:
         return 'This value already exists.';
+      case PostgresErrorCode.checkViolation:
+        return 'This value is not valid.';
       case PostgresErrorCode.unableToConnect:
         return 'Unable to connect to the database.';
       case PostgresErrorCode.connectionFailure:
