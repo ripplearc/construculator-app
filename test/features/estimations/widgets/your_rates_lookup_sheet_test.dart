@@ -456,6 +456,10 @@ void main() {
 
     void seed(List<Map<String, dynamic>> rows) {
       fakeSupabase.reset();
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.getMyCompanyIdRpcFunction,
+        'company-1',
+      );
       fakeSupabase.addTableData('your_rates', rows);
     }
 
