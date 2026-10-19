@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
@@ -32,6 +33,11 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
+  /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
+  /// total for the equipment cost sheet. Same not-a-module-file reasoning as
+  /// [equipmentCostFormBlocFactory].
+  final EstimateSummaryBloc Function() estimateSummaryBlocFactory;
+
   /// Backs the equipment form's "Save as my rate" and look-up-a-rate
   /// features. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
@@ -47,6 +53,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
+    required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
     required this.clock,
   });
@@ -58,6 +65,44 @@ class CostEstimationDetailsPage extends StatefulWidget {
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
+  late final EstimateSummaryBloc _summaryBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _summaryBloc = widget.estimateSummaryBlocFactory()
+      ..add(EstimateSummaryRequested(widget.estimationId));
+  }
+
+  @override
+  void dispose() {
+    unawaited(_summaryBloc.close());
+    super.dispose();
+  }
+
+  Future<void> _openEquipmentSheet(YourRateEntry? entry) {
+    return CoreQuickSheet.show<void>(
+      context: context,
+      backgroundColor: sheetSurface(context),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<EquipmentCostFormBloc>(
+            create: (_) => widget.equipmentCostFormBlocFactory(),
+          ),
+          BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
+        ],
+        child: CostItemFormScreen(
+          type: CostItemType.equipment,
+          estimationId: widget.estimationId,
+          router: widget.router,
+          presentAsSheet: true,
+          yourRatesBlocFactory: widget.yourRatesBlocFactory,
+          clock: widget.clock,
+          initialRateEntry: entry,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -209,28 +254,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       case YourRatesRecentsDismissed():
         return;
       case YourRatesRecentsPicked(:final entry):
-        await _openEquipmentForm(context, entry);
+        await _openEquipmentSheet(entry);
       case YourRatesRecentsNewEquipmentCost():
-        await _openEquipmentForm(context, null);
+        await _openEquipmentSheet(null);
     }
-  }
-
-  Future<void> _openEquipmentForm(BuildContext context, YourRateEntry? entry) {
-    return CoreQuickSheet.show(
-      context: context,
-      backgroundColor: sheetSurface(context),
-      child: BlocProvider<EquipmentCostFormBloc>(
-        create: (_) => widget.equipmentCostFormBlocFactory(),
-        child: CostItemFormScreen(
-          type: CostItemType.equipment,
-          estimationId: widget.estimationId,
-          router: widget.router,
-          presentAsSheet: true,
-          yourRatesBlocFactory: widget.yourRatesBlocFactory,
-          clock: widget.clock,
-          initialRateEntry: entry,
-        ),
-      ),
-    );
   }
 }
