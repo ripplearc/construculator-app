@@ -91,8 +91,9 @@ void main() {
             backgroundColor: sheetSurface(context),
             body: BlocProvider<YourRatesBloc>(
               create: (_) => Modular.get<YourRatesBloc>(),
-              child: const YourRatesLookupSheet(
+              child: YourRatesLookupSheet(
                 method: EquipmentPricingMethod.job,
+                clock: FakeClockImpl(DateTime(2026, 1, 15)),
               ),
             ),
           ),
@@ -192,8 +193,9 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      database.getAllGate = Completer<void>();
-      addTearDown(() => database.getAllGate?.complete());
+      final gate = Completer<void>();
+      database.getAllGate = gate;
+      addTearDown(gate.complete);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -204,8 +206,9 @@ void main() {
           home: Scaffold(
             body: BlocProvider<YourRatesBloc>(
               create: (_) => Modular.get<YourRatesBloc>(),
-              child: const YourRatesLookupSheet(
+              child: YourRatesLookupSheet(
                 method: EquipmentPricingMethod.job,
+                clock: FakeClockImpl(DateTime(2026, 1, 15)),
               ),
             ),
           ),

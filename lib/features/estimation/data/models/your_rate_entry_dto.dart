@@ -5,7 +5,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// Mirrors the `your_rates` table: snake_case JSON keys matching the backend
 /// column names exactly (`company_id`, `item_name`, `rate_amount`,
-/// `rate_currency`, `equipment_method`, `entry_label`, `saved_at`).
+/// `rate_currency`, `equipment_method`, `entry_label`, `saved_at`, `last_used_at`).
 ///
 /// [toJson] returns only the columns a caller chooses to write: it excludes
 /// `id`, `created_at`, and `updated_at`, which the local data source sets
@@ -46,6 +46,11 @@ class YourRateEntryDto extends Equatable {
   /// ISO 8601 timestamp for when this rate was saved, client-supplied.
   final String savedAt;
 
+  /// ISO 8601 timestamp for when a cost line was last added with this rate;
+  /// null until the first use. Client-supplied. [toJson] leaves it out when
+  /// null, so saving a rate never clears a use already recorded on the row.
+  final String? lastUsedAt;
+
   /// ISO 8601 timestamp when the row was created, stamped on the phone.
   final String? createdAt;
 
@@ -61,6 +66,7 @@ class YourRateEntryDto extends Equatable {
     required this.rateAmount,
     required this.rateCurrency,
     required this.savedAt,
+    this.lastUsedAt,
     this.unit,
     this.equipmentMethod,
     this.entryLabel,
@@ -81,6 +87,7 @@ class YourRateEntryDto extends Equatable {
       equipmentMethod: json['equipment_method'] as String?,
       entryLabel: json['entry_label'] as String?,
       savedAt: json['saved_at'] as String,
+      lastUsedAt: json['last_used_at'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -99,12 +106,14 @@ class YourRateEntryDto extends Equatable {
     'equipment_method': equipmentMethod,
     'entry_label': entryLabel,
     'saved_at': savedAt,
+    'last_used_at': ?lastUsedAt,
   };
 
   /// Converts this DTO to a domain [YourRateEntry] entity.
   YourRateEntry toEntity() {
     final unit = this.unit;
     final equipmentMethod = this.equipmentMethod;
+    final lastUsedAt = this.lastUsedAt;
     return YourRateEntry(
       id: id,
       companyId: companyId,
@@ -113,6 +122,7 @@ class YourRateEntryDto extends Equatable {
       rate: Money(amount: rateAmount, currency: rateCurrency),
       unit: unit != null ? Unit.fromJson(unit) : null,
       savedAt: DateTime.parse(savedAt),
+      lastUsedAt: lastUsedAt != null ? DateTime.parse(lastUsedAt) : null,
       equipmentMethod: equipmentMethod != null
           ? EquipmentPricingMethod.fromJson(equipmentMethod)
           : null,
@@ -136,6 +146,7 @@ class YourRateEntryDto extends Equatable {
       equipmentMethod: entry.equipmentMethod?.toJson(),
       entryLabel: entry.entryLabel,
       savedAt: entry.savedAt.toUtc().toIso8601String(),
+      lastUsedAt: entry.lastUsedAt?.toUtc().toIso8601String(),
     );
   }
 
@@ -151,6 +162,7 @@ class YourRateEntryDto extends Equatable {
     equipmentMethod,
     entryLabel,
     savedAt,
+    lastUsedAt,
     createdAt,
     updatedAt,
   ];

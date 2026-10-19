@@ -170,6 +170,7 @@ class DatabaseConstants {
   static const String unitColumn = 'unit';
   static const String equipmentMethodColumn = 'equipment_method';
   static const String entryLabelColumn = 'entry_label';
+  static const String lastUsedAtColumn = 'last_used_at';
 
   // Consent columns (id and user_id use the shared columns above; these
   // tables timestamp with published_at and recorded_at, not created_at)

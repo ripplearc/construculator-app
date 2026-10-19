@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -14,19 +15,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late FakeClockImpl clock;
   YourRatesRecentsResult? result;
 
   setUpAll(() {
     clock = FakeClockImpl(DateTime(2026, 1, 15));
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -35,13 +40,14 @@ void main() {
 
   setUp(() {
     result = null;
+    database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
     );
     clock.set(DateTime(2026, 1, 15));
-    fakeSupabase.addTableData('your_rates', [
+    database.seedRows([
       {
         'id': 'day-rate',
         'company_id': 'company-1',
@@ -73,6 +79,7 @@ void main() {
 
   tearDown(() {
     fakeSupabase.reset();
+    database.reset();
   });
 
   Future<void> openSheet(WidgetTester tester) async {
@@ -130,7 +137,7 @@ void main() {
     testWidgets('counts calendar days: 4 pm yesterday seen at 9 am reads '
         '"Used yesterday"', (tester) async {
       clock.set(DateTime(2026, 1, 15, 9));
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'yesterday-rate',
           'company_id': 'company-1',
@@ -139,7 +146,8 @@ void main() {
           'rate_amount': 90,
           'rate_currency': 'USD',
           'equipment_method': 'day',
-          'saved_at': DateTime(2026, 1, 14, 16).toIso8601String(),
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+          'last_used_at': DateTime(2026, 1, 14, 16).toIso8601String(),
         },
       ]);
       await openSheet(tester);
@@ -149,6 +157,77 @@ void main() {
           of: find.byKey(const Key('your_rate_row_yesterday-rate')),
           matching: find.text('Used yesterday'),
         ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a rate never added to an estimate reads "Saved …", not '
+        '"Used …"', (tester) async {
+      clock.set(DateTime(2026, 1, 15, 9));
+      database.seedRows([
+        {
+          'id': 'never-added-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 15, 8).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      final row = find.byKey(const Key('your_rate_row_never-added-rate'));
+      expect(
+        find.descendant(of: row, matching: find.text('Saved today')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.textContaining('Used')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('puts a rate used after a newer save above that save', (
+      tester,
+    ) async {
+      clock.set(DateTime(2026, 1, 15, 9));
+      database.seedRows([
+        {
+          'id': 'saved-later-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 10).toIso8601String(),
+        },
+        {
+          'id': 'used-today-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Excavator',
+          'rate_amount': 250,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2025, 12, 1).toIso8601String(),
+          'last_used_at': DateTime(2026, 1, 15, 8).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      final usedToday = find.byKey(const Key('your_rate_row_used-today-rate'));
+      final savedLater = find.byKey(
+        const Key('your_rate_row_saved-later-rate'),
+      );
+      expect(
+        tester.getTopLeft(usedToday).dy,
+        lessThan(tester.getTopLeft(savedLater).dy),
+      );
+      expect(
+        find.descendant(of: usedToday, matching: find.text('Used today')),
         findsOneWidget,
       );
     });

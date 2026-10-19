@@ -29,15 +29,16 @@ abstract class YourRatesRepository {
   /// `Mini excavator - 1.5 ton`.
   ///
   /// Passing an empty [query] returns every matching row for [category] (or
-  /// every category when null), ordered by [YourRateEntry.savedAt]
-  /// descending (most recently saved first). There is no separate "recents"
+  /// every category when null), ordered by [YourRateEntry.recencyAt]
+  /// descending (most recently used first, or saved when never used). There
+  /// is no separate "recents"
   /// method on this interface — this empty-query form is the primitive
   /// `YourRatesBloc` uses to build its recents list.
   ///
-  /// [limit] caps the row count before any name matching. Only applied when
-  /// [query] is empty: a non-empty query is matched client-side against the
-  /// loaded rows, and a cap applied before that match would
-  /// drop matches outside the row window.
+  /// [limit] keeps only the first rows after ordering by last use (else save
+  /// date), and only when [query] is empty: a non-empty query is matched
+  /// against every loaded row, so a cap applied before that match would drop
+  /// matches outside the window.
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,

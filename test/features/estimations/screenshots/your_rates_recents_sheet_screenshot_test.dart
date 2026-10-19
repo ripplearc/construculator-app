@@ -59,6 +59,7 @@ void main() {
     required double amount,
     required EquipmentPricingMethod method,
     required DateTime savedAt,
+    DateTime? lastUsedAt,
   }) {
     seededRows = [
       ...seededRows,
@@ -71,6 +72,7 @@ void main() {
         'rate_currency': 'USD',
         'equipment_method': method.name,
         'saved_at': savedAt.toIso8601String(),
+        'last_used_at': lastUsedAt?.toIso8601String(),
       },
     ];
     fakeSupabase.addTableData(table, seededRows);
@@ -129,13 +131,15 @@ void main() {
           itemName: 'Scissor lift — 19ft',
           amount: 120,
           method: EquipmentPricingMethod.day,
-          savedAt: clock.now().subtract(const Duration(days: 10)),
+          savedAt: clock.now().subtract(const Duration(days: 60)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 10)),
         );
         seedRate(
           itemName: 'Dumpster — 30 yd',
           amount: 400,
           method: EquipmentPricingMethod.job,
-          savedAt: clock.now().subtract(const Duration(days: 20)),
+          savedAt: clock.now().subtract(const Duration(days: 60)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 20)),
         );
 
         await pumpSheet(tester: tester, theme: theme);
@@ -147,6 +151,58 @@ void main() {
           find.byType(YourRatesRecentsSheet),
           matchesGoldenFile(
             'goldens/your_rates_recents_sheet/${size.width}x${size.height}/recents$suffix.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'displays Used rows ordered by last use above a never-added Saved row',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+        clock.set(DateTime(2026, 1, 15, 12));
+
+        seedRate(
+          itemName: 'Mini excavator',
+          amount: 250,
+          method: EquipmentPricingMethod.day,
+          savedAt: clock.now().subtract(const Duration(days: 90)),
+          lastUsedAt: clock.now().subtract(const Duration(hours: 2)),
+        );
+        seedRate(
+          itemName: 'Scissor lift — 19ft',
+          amount: 120,
+          method: EquipmentPricingMethod.day,
+          savedAt: clock.now().subtract(const Duration(days: 3)),
+        );
+        seedRate(
+          itemName: 'Dumpster — 30 yd',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+          savedAt: clock.now().subtract(const Duration(days: 120)),
+          lastUsedAt: clock.now().subtract(const Duration(days: 45)),
+        );
+
+        await pumpSheet(tester: tester, theme: theme);
+
+        expect(find.text('Used today'), findsOneWidget);
+        expect(find.text('Saved 3 days ago'), findsOneWidget);
+        expect(find.text('Used last month'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Mini excavator')).dy,
+          lessThan(tester.getTopLeft(find.text('Scissor lift — 19ft')).dy),
+        );
+        expect(
+          tester.getTopLeft(find.text('Scissor lift — 19ft')).dy,
+          lessThan(tester.getTopLeft(find.text('Dumpster — 30 yd')).dy),
+        );
+
+        await expectLater(
+          find.byType(YourRatesRecentsSheet),
+          matchesGoldenFile(
+            'goldens/your_rates_recents_sheet/${size.width}x${size.height}/recents_used_and_saved$suffix.png',
           ),
         );
       },
