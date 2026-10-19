@@ -42,8 +42,8 @@
         <regex pattern="draft\.unit != null &amp;&amp;" dotAll="false" id="bloc.valid.skip_unit">
             <mutation text="true &amp;&amp;"/>
         </regex>
-        <regex pattern="RateStatus\.ownRateConfirmed" dotAll="false" id="bloc.rate_status.typed_confirmed">
-            <mutation text="RateStatus.sampleRateUnverified"/>
+        <regex pattern="RateStatus\.ownRateUnconfirmed" dotAll="false" id="bloc.rate_status.typed_unconfirmed">
+            <mutation text="RateStatus.ownRateConfirmed"/>
         </regex>
         <regex pattern="rate == null\s*\? RateStatus\.missing" dotAll="true" id="bloc.rate_status.cleared_missing">
             <mutation text="rate == null ? RateStatus.ownRateConfirmed"/>
