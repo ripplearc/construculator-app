@@ -203,6 +203,23 @@ So the ruleset source of the iOS check stays "Codemagic only", and the repositor
 
 If posting the skipped status fails, the iOS build is started instead, so a pull request is never left without an `Ios Debug Build` result.
 
+### Not starting a build that already has a result, and cancelling old ones
+
+Writing `#RunCheck` twice on the same commit starts every build twice and gives the same answer. Pushing a fix while an earlier run is still going keeps paying for a run on an outdated commit. `scripts/ci/plan_runcheck.sh` plans both:
+
+- **Skip:** a workflow is not started when Codemagic already has a check run for it on the pull request head commit that is queued, running, passed or failed. A canceled or timed-out run is not a result. The workflow then comments on the pull request, listing each skipped build with its result and link.
+- **Force:** `#RunCheck force` starts a workflow again after a finished run, for example after a flaky test or a network error. It never starts a second copy of a build that is still running.
+- **Cancel:** queued or running builds on the 10 most recent older commits of the pull request are cancelled (`scripts/ci/cancel_codemagic_builds.sh`). The build on the head commit and builds of other pull requests are never touched.
+- **Fails safe:** if GitHub cannot be read, nothing is skipped and nothing is cancelled. A failed cancel or comment never stops the builds from starting.
+- **No loops:** comments made by the workflow do not start it again (a comment made with the workflow's `GITHUB_TOKEN` starts no workflow, and comments from bots are ignored as well). Runs for one pull request go one at a time (GitHub keeps one waiting run and replaces an older waiting one with a newer), so two quick comments cannot both pass the check.
+
+It stays off until the repository variable `RUNCHECK_DEDUPE` is `true`. Until then every `#RunCheck` writes "Plan (observation only)" to the job summary with what it would have skipped and cancelled. To switch on: `gh variable set RUNCHECK_DEDUPE --body true`. To go back: `gh variable delete RUNCHECK_DEDUPE`. Nothing in GitHub settings needs to change.
+
+Known gaps:
+- A build that failed while Codemagic was fetching the sources counts as a result, so `#RunCheck force` is needed to run it again. The ticket asks for a rerun without the force word. How such a build shows up in the check run has not been seen yet.
+- Builds on commits that were removed by a force push, or older than the 10 most recent older commits, are not cancelled. The commit list is read once with 100 entries, so a pull request with more than 100 commits is not covered.
+- Editing a comment that contains `#RunCheck` runs the workflow again. With the skip on, an unchanged commit starts nothing.
+
 ### Testing a trigger change without spending Codemagic minutes
 
 GitHub runs an `issue_comment` workflow from the version on `main`, so a `#RunCheck` comment on a branch never uses that branch's `run_c_check.yml`. To try a branch's version, run it by hand:
