@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
@@ -82,26 +84,20 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               child: Row(
                 spacing: CoreSpacing.space2,
                 children: [
-                  IntrinsicWidth(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minWidth: CoreSpacing.space12,
-                      ),
-                      child: _SheetTextField(
-                        key: const Key('material_quantity_field'),
-                        readOnly: _isSaving(state),
-                        controller: _quantityController,
-                        focusNode: _quantityFocus,
-                        label: l10n.materialQuantityLabel,
-                        hintText: l10n.materialQuantityPlaceholder,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [_decimalLimitFormatter(decimals: 4)],
-                        onChanged: (value) =>
-                            bloc.add(MaterialQuantityUpdated(value)),
-                      ),
+                  _SheetTextField(
+                    key: const Key('material_quantity_field'),
+                    fitsText: true,
+                    readOnly: _isSaving(state),
+                    controller: _quantityController,
+                    focusNode: _quantityFocus,
+                    label: l10n.materialQuantityLabel,
+                    hintText: l10n.materialQuantityPlaceholder,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    inputFormatters: [_decimalLimitFormatter(decimals: 4)],
+                    onChanged: (value) =>
+                        bloc.add(MaterialQuantityUpdated(value)),
                   ),
                   UnitPill(
                     key: const Key('material_unit_pill'),
@@ -120,27 +116,20 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               child: Row(
                 spacing: CoreSpacing.space2,
                 children: [
-                  IntrinsicWidth(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minWidth: CoreSpacing.space12,
-                      ),
-                      child: _SheetTextField(
-                        key: const Key('material_rate_field'),
-                        readOnly: _isSaving(state),
-                        controller: _rateController,
-                        focusNode: _rateFocus,
-                        label: l10n.materialRateLabel,
-                        hintText: l10n.materialRatePlaceholder,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [_decimalLimitFormatter(decimals: 2)],
-                        // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
-                        onChanged: (value) =>
-                            bloc.add(MaterialRateUpdated(value)),
-                      ),
+                  _SheetTextField(
+                    key: const Key('material_rate_field'),
+                    fitsText: true,
+                    readOnly: _isSaving(state),
+                    controller: _rateController,
+                    focusNode: _rateFocus,
+                    label: l10n.materialRateLabel,
+                    hintText: l10n.materialRatePlaceholder,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    inputFormatters: [_decimalLimitFormatter(decimals: 2)],
+                    // TODO: [CA-1218] show the rate as currency ($52.00) like Figma. https://ripplearc.youtrack.cloud/issue/CA-1218
+                    onChanged: (value) => bloc.add(MaterialRateUpdated(value)),
                   ),
                   if (state.data.unit case final unit?)
                     Text(
@@ -175,6 +164,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
 class _SheetTextField extends StatelessWidget {
   static const double _drawnHeight = CoreSpacing.space6;
   static const double _tapHeight = CoreSpacing.space12;
+  static const double _tapWidth = CoreSpacing.space12;
+  static const double _cursorAllowance = 3;
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -185,6 +176,11 @@ class _SheetTextField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final bool readOnly;
 
+  /// Sizes the field to the text it shows, so a unit next to it follows the
+  /// typed value. The tap area stays at least 48 dp wide and may overlap the
+  /// unit next to it.
+  final bool fitsText;
+
   const _SheetTextField({
     super.key,
     required this.controller,
@@ -193,6 +189,7 @@ class _SheetTextField extends StatelessWidget {
     required this.hintText,
     required this.onChanged,
     required this.readOnly,
+    this.fitsText = false,
     this.keyboardType,
     this.inputFormatters,
   });
@@ -201,40 +198,63 @@ class _SheetTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    return SizedBox(
-      height: _drawnHeight,
-      child: OverflowBox(
-        alignment: Alignment.centerLeft,
-        minHeight: _tapHeight,
-        maxHeight: _tapHeight,
-        child: Semantics(
-          label: label,
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            readOnly: readOnly,
-            keyboardType: keyboardType,
-            inputFormatters: inputFormatters,
-            onChanged: onChanged,
-            maxLines: 1,
-            cursorColor: colorTheme.textHeadline,
-            style: textTheme.bodyLargeRegular.copyWith(
-              color: colorTheme.textHeadline,
-            ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: (_tapHeight - _drawnHeight) / 2,
-              ),
-              hintText: hintText,
-              hintStyle: textTheme.bodyLargeRegular.copyWith(
-                color: colorTheme.textDisable,
+    final textStyle = textTheme.bodyLargeRegular.copyWith(
+      color: colorTheme.textHeadline,
+    );
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final width = fitsText ? _textWidth(context, textStyle) : null;
+        return SizedBox(
+          height: _drawnHeight,
+          width: width,
+          child: OverflowBox(
+            alignment: Alignment.centerLeft,
+            minHeight: _tapHeight,
+            maxHeight: _tapHeight,
+            minWidth: width == null ? null : math.max(width, _tapWidth),
+            maxWidth: width == null ? null : math.max(width, _tapWidth),
+            child: Semantics(
+              label: label,
+              child: TextField(
+                controller: controller,
+                focusNode: focusNode,
+                readOnly: readOnly,
+                keyboardType: keyboardType,
+                inputFormatters: inputFormatters,
+                onChanged: onChanged,
+                maxLines: 1,
+                cursorColor: colorTheme.textHeadline,
+                style: textStyle,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: (_tapHeight - _drawnHeight) / 2,
+                  ),
+                  hintText: hintText,
+                  hintStyle: textTheme.bodyLargeRegular.copyWith(
+                    color: colorTheme.textDisable,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  double _textWidth(BuildContext context, TextStyle style) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: controller.text.isEmpty ? hintText : controller.text,
+        style: Theme.of(context).textTheme.bodyLarge!.merge(style),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    return painter.width + _cursorAllowance;
   }
 }

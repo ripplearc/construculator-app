@@ -120,6 +120,31 @@ void main() {
       expect(tester.getSize(drawn.first).height, 32);
     });
 
+    testWidgets('the unit button follows a short quantity at 8 dp', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.enterText(quantityField, '7');
+      await tester.pump();
+
+      final field = tester.getRect(quantityField);
+      expect(field.width, lessThan(20));
+      expect(tester.getRect(unitPill).left - field.right, 8);
+    });
+
+    testWidgets('the unit after the rate follows the typed rate at 8 dp', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '52');
+      bloc.add(const MaterialUnitSelected(Unit.liters));
+      await tester.pump();
+
+      final field = tester.getRect(rateField);
+      expect(field.width, lessThan(50));
+      expect(tester.getRect(find.text('/ Liters')).left - field.right, 8);
+    });
+
     testWidgets('the rate row leaves 8 dp between its label and value', (
       tester,
     ) async {
