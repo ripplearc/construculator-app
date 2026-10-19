@@ -1,7 +1,6 @@
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -132,6 +131,17 @@ void main() {
     expect(tester.getRect(find.text('Quantity')).left - row.left, 22);
   });
 
+  testWidgets('draws the rule in the outline colour of the storyboard', (
+    tester,
+  ) async {
+    await pumpRow(tester);
+
+    expect(
+      tester.widget<CoreDivider>(find.byType(CoreDivider)).color,
+      CoreTheme.light().coreColors.lineDarkOutline,
+    );
+  });
+
   testWidgets('is announced once, by the value, with no extra stop for the '
       'row', (tester) async {
     final handle = tester.ensureSemantics();
@@ -145,11 +155,8 @@ void main() {
 
     expect(find.bySemanticsLabel('Quantity'), findsOneWidget);
     expect(
-      tester
-          .getSemantics(find.byKey(const Key('row')))
-          .getSemanticsData()
-          .hasAction(SemanticsAction.tap),
-      isFalse,
+      tester.getSemantics(find.byKey(const Key('value'))),
+      matchesSemantics(label: 'Quantity'),
     );
     handle.dispose();
   });

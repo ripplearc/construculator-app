@@ -75,7 +75,8 @@ class SheetFieldRow extends StatelessWidget {
             ),
           ),
         ),
-        const CoreDivider(
+        CoreDivider(
+          color: colorTheme.lineDarkOutline,
           indent: CoreSpacing.space5,
           endIndent: CoreSpacing.space5,
         ),
