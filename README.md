@@ -511,7 +511,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 
 #### 1. pre-check (Pull Request Validation)
 
-**Trigger:** Pull requests
+**Trigger:** Manual via `#RunCheck` comment (left out when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`, see `docs/Testing/CI-Scripts.md`)
 **Instance:** linux_x2
 **Purpose:** Fast feedback for PRs
 
@@ -530,8 +530,11 @@ The project uses **CodeMagic** for continuous integration and deployment.
 **Purpose:** Full validation before merge
 
 **Checks:**
+- Block `[skip ci]` commits
 - Full codebase analysis
 - All unit + widget tests with coverage
+- Changed tests with coverage (same rules as pre-check)
+- CI script self-tests
 - Screenshot tests
 - Mutation testing (changed configs only)
 - Android APK build (fishfood flavor)
@@ -559,7 +562,7 @@ To manually trigger CI checks on a PR, add a comment with:
 #runcheck
 ```
 
-This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows.
+This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows. `pre-check` is left out when `RUNCHECK_SKIP_PRECHECK` is `true`.
 
 ---
 

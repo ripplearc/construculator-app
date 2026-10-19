@@ -8,6 +8,7 @@ set -euo pipefail
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID  required unless DRY_RUN=true
 #   CODEMAGIC_API_URL                      defaults to https://api.codemagic.io
 #   DRY_RUN=true                           print each request body and send nothing
+#   SKIP_WORKFLOWS                         space-separated workflow ids to leave out
 #
 # Every workflow is attempted even if an earlier one fails. The script exits
 # non-zero if any request fails or the response has no buildId.
@@ -35,7 +36,21 @@ write_summary() {
 
 FAILURES=0
 
+is_skipped() {
+  local skipped
+  for skipped in ${SKIP_WORKFLOWS:-}; do
+    [ "$skipped" = "$1" ] && return 0
+  done
+  return 1
+}
+
 for WORKFLOW_ID in "$@"; do
+  if is_skipped "$WORKFLOW_ID"; then
+    echo "Skipping $WORKFLOW_ID: listed in SKIP_WORKFLOWS"
+    write_summary "- Skipped \`$WORKFLOW_ID\`: listed in SKIP_WORKFLOWS"
+    continue
+  fi
+
   BODY=$(jq -nc \
     --arg appId "${CODEMAGIC_APP_ID:-}" \
     --arg workflowId "$WORKFLOW_ID" \

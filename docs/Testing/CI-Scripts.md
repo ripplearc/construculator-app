@@ -173,7 +173,15 @@ When triggered, the workflow starts these Codemagic pipelines for the PR source 
 - `comprehensive-check`
 - `ios-debug-build`
 
-The three pipelines start independently through `scripts/ci/trigger_codemagic_builds.sh`. A failure in one does not stop the others from starting. If Codemagic rejects a request, or answers without a `buildId`, the workflow run turns red instead of reporting success.
+The Comprehensive Check also runs everything the Pre-check runs (see below), so the separate Pre-check build only repeats machine start-up and analysis. It is skipped when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`. The variable is unset today, so all three pipelines still start. Switch over in this order, because the GitHub ruleset "Merge to Main Branch" requires a `Pre-check` status from Codemagic:
+
+1. A repository owner removes the `Pre-check` required status check from the ruleset "Merge to Main Branch". While Pre-check still runs, nothing is blocked.
+2. Set the variable: `gh variable set RUNCHECK_SKIP_PRECHECK --body true`.
+3. To go back, delete the variable: `gh variable delete RUNCHECK_SKIP_PRECHECK`. `#RunCheck` then starts all three pipelines again. Restore the required `Pre-check` status in the ruleset only after that. While it is required, a PR with no Pre-check status cannot merge.
+
+The `pre-check` workflow stays in `codemagic.yaml` for manual runs.
+
+The pipelines start independently through `scripts/ci/trigger_codemagic_builds.sh`. A failure in one does not stop the others from starting. If Codemagic rejects a request, or answers without a `buildId`, the workflow run turns red instead of reporting success.
 
 ### Testing a trigger change without spending Codemagic minutes
 
@@ -211,6 +219,8 @@ CI mirrors this quick check:
   - The base is the pull request target. When there is none, as for `#RunCheck`, it is `main`. `#RunCheck` starts builds by branch, so Codemagic gives no pull request target, and the script never compares against an empty branch name. If it cannot find the merge base it fails. It never treats that as "no tests changed".
 - Publishes the test report to `coverage/changed/flutter.json`.
 
+The Comprehensive Check runs the same changed-test step, so `#RunCheck` does not need this workflow once `RUNCHECK_SKIP_PRECHECK` is `true`.
+
 If this passes, proceed to full validation with `--all` or `--comp`.
 
 ### `comprehensive-check` workflow (Linux)
@@ -241,8 +251,12 @@ docker exec -it construculator-app-flutter-1 bash
 
 CI mirrors this full validation:
 
+- Fails when `scripts/ci/check_flutter_version_pins.sh` finds a Flutter version that differs from `.fvmrc`.
+- Fails when the last commit message contains `[skip ci]` or `[ci skip]`.
 - Runs full code analysis across the entire project.
 - Runs all unit/widget tests with comprehensive coverage validation.
+- Runs the changed tests again with coverage (`scripts/ci/run_changed_tests_with_coverage.sh`, same rules as the Pre-check). It writes to `coverage/changed/`, so the full run's `coverage/lcov.info` is not overwritten.
+- Runs every `scripts/ci/*_test.sh` and `scripts/perf/*_test.sh` self-test.
 - Runs screenshot (golden) tests (if present).
 - Runs mutation tests when mutation XML files changed from base.
 - Asserts flavor/environment pairing, then builds Android debug APK (`--flavor fishfood`) to verify no build regressions.

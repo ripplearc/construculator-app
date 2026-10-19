@@ -159,6 +159,25 @@ assert_true "records the dry run in the job summary" \
   summary_contains "DRY RUN: would start \`pre-check\`"
 assert_true "dry run shows the request body" output_contains '"workflowId":"comprehensive-check","branch":"feature/x"' 
 
+export CODEMAGIC_API_TOKEN="test-token"
+export CODEMAGIC_APP_ID="test-app"
+
+SKIP_WORKFLOWS="pre-check" run_target ok feature/x pre-check comprehensive-check ios-debug-build
+assert_true "starts the remaining workflows when one is skipped" exit_code_is 0
+assert_true "sends one request fewer" requests_sent 2
+assert_true "does not send the skipped workflow" body_field_is 1 .workflowId comprehensive-check
+assert_true "says which workflow it skipped" output_contains "Skipping pre-check"
+assert_true "records the skip in the job summary" summary_contains "Skipped \`pre-check\`"
+
+SKIP_WORKFLOWS="pre-check ios-debug-build" run_target ok feature/x pre-check comprehensive-check ios-debug-build
+assert_true "can skip more than one workflow" requests_sent 1
+
+SKIP_WORKFLOWS="pre" run_target ok feature/x pre-check
+assert_true "skips only an exact workflow id" requests_sent 1
+
+SKIP_WORKFLOWS="" run_target ok feature/x pre-check comprehensive-check
+assert_true "an empty skip list skips nothing" requests_sent 2
+
 run_target ok feature/x
 assert_true "rejects a call with no workflow ids" exit_code_is 2
 
