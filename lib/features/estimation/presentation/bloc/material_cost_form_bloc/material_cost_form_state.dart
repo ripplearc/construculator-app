@@ -27,6 +27,29 @@ enum MaterialFieldError {
   rateOutOfRange,
 }
 
+/// Whether the field that blocks Add has no value yet or has a bad one.
+enum MaterialBlockerKind {
+  /// The field is still empty.
+  missing,
+
+  /// The field holds a value that can't be used.
+  invalid,
+}
+
+/// The first field, reading top to bottom, that keeps Add disabled.
+class MaterialFormBlocker extends Equatable {
+  const MaterialFormBlocker(this.field, this.kind);
+
+  /// The field that blocks Add.
+  final MaterialFormField field;
+
+  /// Whether [field] is empty or holds a bad value.
+  final MaterialBlockerKind kind;
+
+  @override
+  List<Object?> get props => [field, kind];
+}
+
 /// Base sealed class for all material cost form states.
 sealed class MaterialCostFormState {
   const MaterialCostFormState();
@@ -83,6 +106,23 @@ class MaterialCostFormData extends Equatable {
 
   /// Whether the name field contains a non-empty value.
   bool get isItemNameValid => itemName.trim().isNotEmpty;
+
+  /// The first field that keeps Add disabled, or null when [isValid].
+  MaterialFormBlocker? get blocker {
+    if (isValid) return null;
+    return _blockerFor(MaterialFormField.itemName, !isItemNameValid) ??
+        _blockerFor(MaterialFormField.quantity, quantity == null) ??
+        _blockerFor(MaterialFormField.unit, unit == null) ??
+        _blockerFor(MaterialFormField.rate, rate == null);
+  }
+
+  MaterialFormBlocker? _blockerFor(MaterialFormField field, bool isEmpty) {
+    if (fieldErrors.containsKey(field)) {
+      return MaterialFormBlocker(field, MaterialBlockerKind.invalid);
+    }
+    if (isEmpty) return MaterialFormBlocker(field, MaterialBlockerKind.missing);
+    return null;
+  }
 
   /// Returns a copy with the given fields replaced. For a nullable field, an
   /// explicit value sets it, `null` clears it, and omitting the parameter
