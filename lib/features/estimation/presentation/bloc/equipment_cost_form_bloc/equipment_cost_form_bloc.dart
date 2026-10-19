@@ -21,6 +21,7 @@ class EquipmentCostFormBloc
     extends Bloc<EquipmentCostFormEvent, EquipmentCostFormState> {
   final CostItemRepository _repository;
   final Clock _clock;
+  EquipmentCostFormData _formValuesAtOpening = const EquipmentCostFormData();
 
   EquipmentCostFormBloc({required this._repository, required this._clock})
     : super(const EquipmentCostFormInitial()) {
@@ -70,9 +71,11 @@ class EquipmentCostFormBloc
           recalledFromRecents: e.fromRecents,
           recalledRate: e.fromRecents ? e.rate : d.recalledRate,
         );
-        return e.method == EquipmentPricingMethod.day
+        final withRate = e.method == EquipmentPricingMethod.day
             ? recalled.copyWith(dailyRate: e.rate)
             : recalled.copyWith(jobAmount: e.rate);
+        if (e.fromRecents) _formValuesAtOpening = withRate;
+        return withRate;
       });
     });
     on<EquipmentRecalledAmountSavedEvent>((e, emit) {
@@ -107,7 +110,10 @@ class EquipmentCostFormBloc
     Emitter<EquipmentCostFormState> emit,
     EquipmentCostFormData Function(EquipmentCostFormData) update,
   ) {
-    final next = _validated(update(state.formData));
+    final validated = _validated(update(state.formData));
+    final next = validated.copyWith(
+      hasUnsavedChanges: _differsFromOpened(validated),
+    );
     emit(switch (state) {
       EquipmentCostFormFailure(:final failure) => EquipmentCostFormFailure(
         next,
@@ -116,6 +122,15 @@ class EquipmentCostFormBloc
       _ => EquipmentCostFormEditing(next),
     });
   }
+
+  bool _differsFromOpened(EquipmentCostFormData data) =>
+      data.method != _formValuesAtOpening.method ||
+      data.equipmentType.trim() != _formValuesAtOpening.equipmentType.trim() ||
+      data.duration != _formValuesAtOpening.duration ||
+      data.dailyRate != _formValuesAtOpening.dailyRate ||
+      data.jobAmount != _formValuesAtOpening.jobAmount ||
+      data.deliveryFee != _formValuesAtOpening.deliveryFee ||
+      data.description != _formValuesAtOpening.description;
 
   Future<void> _onSubmitted(
     EquipmentCostSubmittedEvent event,
