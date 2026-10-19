@@ -104,8 +104,9 @@ jobs:
         # so a changed USB port or a second phone cannot misdirect it.
         # Only this one machine uses usbipd; a future native Linux or macOS lab
         # host has no PERF_USBIPD_BUSID set, so the `if:` below skips this step
-        # entirely, and it stays in the workflow rather than in
-        # capture_perf_run.sh.
+        # entirely. This step does the first attach. capture_perf_run.sh runs
+        # the same script again between failed drive attempts, and that run
+        # skips itself when the machine has no usbipd.
         if: vars.PERF_USBIPD_BUSID != ''
         env:
           DEVICE_ID: ${{ steps.params.outputs.device_id }}
@@ -115,6 +116,7 @@ jobs:
 
       - name: Capture performance run
         id: capture
+        timeout-minutes: 60
         run: |
           bash scripts/perf/capture_perf_run.sh \
             --device-id "${{ steps.params.outputs.device_id }}" \
