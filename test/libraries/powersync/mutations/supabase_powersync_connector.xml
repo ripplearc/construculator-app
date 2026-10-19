@@ -62,6 +62,11 @@
             <mutation text="?"/>
         </regex>
 
+        <!-- RULE 9b: A label of only spaces is no longer the same as no label -->
+        <regex pattern="return \(key == null \|\| key\.isEmpty\) \? null : key;" dotAll="true" id="connector.key.empty_to_null_removed">
+            <mutation text="return key;"/>
+        </regex>
+
         <!-- RULE 10: A different pricing method is treated as the same entry -->
         <regex pattern="saved\[DatabaseConstants\.equipmentMethodColumn\] ==" dotAll="true" id="connector.key.ignore_method">
             <mutation text="true ||"/>

@@ -410,6 +410,15 @@ void main() {
             expect(update['filterValue'], 'server-1');
           });
 
+          test('a label of only spaces is the same as no label', () async {
+            fakeSupabase.addTableData('your_rates', [serverRate()]);
+
+            await uploadSecondPhone(label: '   ');
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+          });
+
           test('an accented name matches in other capital letters', () async {
             fakeSupabase.addTableData('your_rates', [
               serverRate()..['item_name'] = 'Élévateur',
