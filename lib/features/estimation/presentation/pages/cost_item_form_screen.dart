@@ -102,16 +102,27 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           ),
         ),
       );
-      return widget.type == CostItemType.material
-          ? DiscardLineGuard<MaterialCostFormBloc, MaterialCostFormState>(
-              hasUnsavedChanges: (state) =>
-                  (state is MaterialCostFormEditing ||
-                      state is MaterialCostFormFailure) &&
-                  state.data.hasUnsavedChanges,
-              itemNameOf: (state) => state.data.itemName,
-              child: sheet,
-            )
-          : sheet;
+      return switch (widget.type) {
+        CostItemType.material =>
+          DiscardLineGuard<MaterialCostFormBloc, MaterialCostFormState>(
+            hasUnsavedChanges: (state) =>
+                (state is MaterialCostFormEditing ||
+                    state is MaterialCostFormFailure) &&
+                state.data.hasUnsavedChanges,
+            itemNameOf: (state) => state.data.itemName,
+            child: sheet,
+          ),
+        CostItemType.equipment =>
+          DiscardLineGuard<EquipmentCostFormBloc, EquipmentCostFormState>(
+            hasUnsavedChanges: (state) =>
+                (state is EquipmentCostFormEditing ||
+                    state is EquipmentCostFormFailure) &&
+                state.formData.hasUnsavedChanges,
+            itemNameOf: (state) => state.formData.equipmentType,
+            child: sheet,
+          ),
+        CostItemType.labor => sheet,
+      };
     }
     return Scaffold(
       key: const Key('cost_item_form_screen'),

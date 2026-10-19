@@ -90,6 +90,7 @@ class EquipmentCostFormData extends Equatable {
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
+    this.hasUnsavedChanges = false,
   });
 
   /// Pricing strategy currently selected: by the day or by the job.
@@ -144,6 +145,11 @@ class EquipmentCostFormData extends Equatable {
   /// button names what is missing, so an empty field is never shown as an
   /// error.
   final Map<EquipmentFormField, EquipmentFieldError> fieldErrors;
+
+  /// Whether any field differs from how the form opened: empty, or filled from
+  /// the Your recents row it was opened from. Closing the form asks first
+  /// while this is true.
+  final bool hasUnsavedChanges;
 
   /// Validation error key for the item type field, or null when valid.
   EquipmentFieldError? get itemTypeError =>
@@ -220,6 +226,7 @@ class EquipmentCostFormData extends Equatable {
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
+    bool? hasUnsavedChanges,
   }) {
     return EquipmentCostFormData(
       method: method ?? this.method,
@@ -248,6 +255,7 @@ class EquipmentCostFormData extends Equatable {
           : description as String?,
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
+      hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
     );
   }
 
@@ -268,6 +276,7 @@ class EquipmentCostFormData extends Equatable {
     description,
     isValid,
     fieldErrors,
+    hasUnsavedChanges,
   ];
 }
 

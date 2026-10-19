@@ -1229,6 +1229,8 @@ void main() {
 
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
         await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
         expect(find.text(l10n.addToEstimateFailedError), findsNothing);
