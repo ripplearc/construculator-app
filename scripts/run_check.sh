@@ -101,6 +101,10 @@ pre_check() {
   # Self-test the Codemagic trigger script against a fake curl
   bash scripts/ci/trigger_codemagic_builds_test.sh
 
+  # CA-1240: CI pins no Flutter version of its own; .fvmrc is the only source
+  bash scripts/ci/check_flutter_version_pins_test.sh
+  bash scripts/ci/check_flutter_version_pins.sh
+
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 

@@ -46,7 +46,7 @@ Flutter's performance instrumentation is host-side. The tooling drives the devic
 | Cold start, TTID, warm start | `run_cold.dart` guards `if (traceStartup)` on a live `device.vmService`, then `downloadStartupTrace` writes the trace to a host path | A host-side VM-service connection |
 | Memory | `drive_service.dart` shells out to `dart devtools --record-memory-profile=<path>` | A host process and a host filesystem |
 
-Line references are `packages/flutter_tools/lib/src/run_cold.dart:113` and `packages/flutter_tools/lib/src/drive/drive_service.dart:252` in Flutter 3.32.0, the version `codemagic.yaml` pins. The same mechanism is present in 3.44.4 (`run_cold.dart:103`, `drive_service.dart:255`), so this is not a version artifact.
+Line references are `packages/flutter_tools/lib/src/run_cold.dart:113` and `packages/flutter_tools/lib/src/drive/drive_service.dart:252` in Flutter 3.32.0, the version `codemagic.yaml` pinned before CA-1240. The same mechanism is present in 3.44.4 (`run_cold.dart:103`, `drive_service.dart:255`), so this is not a version artifact.
 
 FTL runs an instrumentation package inside Google's cloud with no host attachment and returns pass/fail; the Android runner does not surface `reportData`. There is nowhere for the trace or the memory profile to be written, and no host process to write it.
 
