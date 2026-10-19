@@ -1,0 +1,149 @@
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+/// A two-answer question over a sheet: a title, one line of body text, an
+/// outlined secondary button and a filled primary button, the same dialog the
+/// equipment form raises for an outsized delivery fee.
+///
+/// The destructive answer belongs on the secondary button, so it is never the
+/// filled, default-tap one.
+///
+// TODO: [CA-1315] move this into ripplearc_coreui and move the Equipment delivery-fee dialog onto it. https://ripplearc.youtrack.cloud/issue/CA-1315
+class ConfirmationDialog extends StatelessWidget {
+  /// Key of the title text.
+  static const titleKey = Key('confirmation_dialog_title');
+
+  /// Key of the body text.
+  static const bodyKey = Key('confirmation_dialog_body');
+
+  /// Key of the outlined secondary button.
+  static const secondaryButtonKey = Key('confirmation_dialog_secondary_button');
+
+  /// Key of the filled primary button.
+  static const primaryButtonKey = Key('confirmation_dialog_primary_button');
+
+  static const double _buttonLabelSize = 16;
+  static const double _sideBySideLabelSizeLimit = 18;
+
+  /// The question, in one line.
+  final String title;
+
+  /// The text under the title. A [TextSpan] with bold parts lets a caller
+  /// emphasise amounts or names.
+  final InlineSpan body;
+
+  /// Label of the outlined secondary button, which carries the destructive
+  /// answer.
+  final String secondaryLabel;
+
+  /// Label of the filled primary button.
+  final String primaryLabel;
+
+  const ConfirmationDialog({
+    super.key,
+    required this.title,
+    required this.body,
+    required this.secondaryLabel,
+    required this.primaryLabel,
+  });
+
+  /// Shows the dialog and returns true for the primary button, false for the
+  /// secondary one, and null when it is dismissed by a tap outside or the
+  /// phone's back gesture.
+  static Future<bool?> show(
+    BuildContext context, {
+    required String title,
+    required InlineSpan body,
+    required String secondaryLabel,
+    required String primaryLabel,
+  }) => showDialog<bool>(
+    context: context,
+    builder: (_) => ConfirmationDialog(
+      title: title,
+      body: body,
+      secondaryLabel: secondaryLabel,
+      primaryLabel: primaryLabel,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Dialog(
+      backgroundColor: sheetSurface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(CoreSpacing.space5),
+      ),
+      // 22px padding and the 340 width come directly from the Figma spec
+      // (node 65354:146175) and don't land on a named CoreSpacing step.
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                key: titleKey,
+                style: textTheme.titleMediumSemiBold.copyWith(
+                  color: colorTheme.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              Text.rich(
+                body,
+                key: bodyKey,
+                style: textTheme.bodyMediumRegular.copyWith(
+                  color: colorTheme.textBody,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space3),
+              if (_stacksAnswers(context))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: CoreSpacing.space3,
+                  children: [
+                    _primaryButton(context),
+                    _secondaryButton(context),
+                  ],
+                )
+              else
+                Row(
+                  spacing: CoreSpacing.space3,
+                  children: [
+                    Expanded(child: _secondaryButton(context)),
+                    Expanded(child: _primaryButton(context)),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  bool _stacksAnswers(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(_buttonLabelSize) >
+      _sideBySideLabelSizeLimit;
+
+  Widget _secondaryButton(BuildContext context) => CoreButton(
+    key: secondaryButtonKey,
+    label: secondaryLabel,
+    variant: CoreButtonVariant.secondary,
+    size: CoreButtonSize.medium,
+    onPressed: () => Navigator.of(context).pop(false),
+  );
+
+  Widget _primaryButton(BuildContext context) => CoreButton(
+    key: primaryButtonKey,
+    label: primaryLabel,
+    variant: CoreButtonVariant.primary,
+    size: CoreButtonSize.medium,
+    onPressed: () => Navigator.of(context).pop(true),
+  );
+}
