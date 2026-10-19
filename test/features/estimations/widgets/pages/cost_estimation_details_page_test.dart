@@ -98,11 +98,11 @@ void main() {
   Future<void> pumpAppAtRoute(
     WidgetTester tester,
     String route, {
-    void Function()? beforeNavigate,
+    void Function()? beforePump,
   }) async {
+    beforePump?.call();
     await tester.pumpWidget(makeApp());
     await tester.pumpAndSettle();
-    beforeNavigate?.call();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
   }
@@ -774,7 +774,7 @@ void main() {
         await pumpAppAtRoute(
           tester,
           testEstimationRoute,
-          beforeNavigate: () {
+          beforePump: () {
             fakeSupabase.shouldThrowOnSelect = true;
             fakeSupabase.selectExceptionType = SupabaseExceptionType.socket;
           },
@@ -796,7 +796,7 @@ void main() {
         await pumpAppAtRoute(
           tester,
           testEstimationRoute,
-          beforeNavigate: () {
+          beforePump: () {
             fakeSupabase.shouldDelayOperations = true;
             fakeSupabase.completer = Completer();
           },
