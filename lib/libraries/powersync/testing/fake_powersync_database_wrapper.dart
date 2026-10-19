@@ -67,6 +67,18 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// would).
   Object? writeTransactionError;
 
+  /// While set, every [SyncStreamHandle.waitForFirstSync] waits for it to
+  /// complete, so a test can hold a first sync open.
+  Completer<void>? firstSyncGate;
+
+  /// Completes the first time [SyncStreamHandle.waitForFirstSync] is called,
+  /// so a test can wait for the read to reach the first sync instead of for a
+  /// number of event loop turns.
+  var _firstSyncRequested = Completer<void>();
+
+  /// Completes once [SyncStreamHandle.waitForFirstSync] has been called.
+  Future<void> get firstSyncRequested => _firstSyncRequested.future;
+
   /// When set, every [syncStream] call throws this error on every call until
   /// explicitly cleared (`syncStreamError = null`) or [reset] is called — it
   /// does NOT self-clear after one use.
@@ -200,6 +212,9 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
       if (unsubscribed != null && !unsubscribed.isCompleted) {
         unsubscribed.complete();
       }
+    }, () async {
+      if (!_firstSyncRequested.isCompleted) _firstSyncRequested.complete();
+      await firstSyncGate?.future;
     });
   }
 
@@ -223,6 +238,8 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     syncStreamInvokedSignal = null;
     watchInvokedSignal = null;
     syncStreamUnsubscribeSignal = null;
+    firstSyncGate = null;
+    _firstSyncRequested = Completer<void>();
     _closeWatchControllers();
   }
 
@@ -251,9 +268,13 @@ class _FakeWriteContext implements WriteContext {
 
 class _FakeSyncStreamHandle implements SyncStreamHandle {
   final void Function() _onUnsubscribe;
+  final Future<void> Function() _onWaitForFirstSync;
 
-  _FakeSyncStreamHandle(this._onUnsubscribe);
+  _FakeSyncStreamHandle(this._onUnsubscribe, this._onWaitForFirstSync);
 
   @override
   void unsubscribe() => _onUnsubscribe();
+
+  @override
+  Future<void> waitForFirstSync() => _onWaitForFirstSync();
 }

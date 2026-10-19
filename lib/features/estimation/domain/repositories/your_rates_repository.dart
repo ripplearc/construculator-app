@@ -6,16 +6,14 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
-/// RLS alone does not scope a read to one company, for a user who belongs to
-/// more than one: the optional `companyId` parameter some methods below
-/// accept is what actually scopes a read to one company, the same role it
-/// plays in `your_rates`' backend README (be#57). RLS still gates access to
-/// rows the caller has no membership in at all; `companyId` is what narrows
-/// among the companies the caller does belong to. It also makes company
-/// isolation testable, since `FakeSupabaseWrapper` has no concept of RLS and
-/// so cannot otherwise catch a cross-company read in a test. [save] always
-/// writes a [YourRateEntry.companyId] the backend checks against the
-/// caller's actual company membership.
+/// Reads and writes go through the phone's own database, so they work with
+/// no signal. A save is kept on the phone at once and uploaded when a signal
+/// returns.
+///
+/// The phone holds the rates of every company the user belongs to, so the
+/// optional `companyId` parameter some methods below accept is what narrows a
+/// read to one company. [save] always writes a [YourRateEntry.companyId] the
+/// backend checks against the caller's actual company membership.
 ///
 /// Names match without regard to capital letters or extra spaces, so
 /// `Mini excavator` and ` MINI  excavator ` are one name. A name saved with a
@@ -37,11 +35,10 @@ abstract class YourRatesRepository {
   /// method on this interface — this empty-query form is the primitive
   /// `YourRatesBloc` uses to build its recents list.
   ///
-  /// [limit] keeps only the first rows after ordering, and only when [query]
-  /// is empty: a non-empty query is matched against every fetched row, so a
-  /// cap applied before that match would drop matches outside the window. The
-  /// database cannot order by "last use, else save date", so the order and the
-  /// cap are applied here.
+  /// [limit] keeps only the first rows after ordering by last use (else save
+  /// date), and only when [query] is empty: a non-empty query is matched
+  /// against every loaded row, so a cap applied before that match would drop
+  /// matches outside the window.
   Future<Either<Failure, List<YourRateEntry>>> search(
     String query, {
     CostItemType? category,

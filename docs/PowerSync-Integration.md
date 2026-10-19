@@ -190,8 +190,14 @@ abstract class PowerSyncDatabaseWrapper {
 
 abstract class SyncStreamHandle {
   void unsubscribe();
+  Future<void> waitForFirstSync();
 }
 ```
+
+`waitForFirstSync()` completes once the stream has delivered its first rows. It
+returns at once for a stream that synced in an earlier session. For a stream that has
+never synced it waits, and with no signal that never ends, so callers bound the wait
+(`LocalYourRatesDataSource` waits up to 3 seconds, then reads what the phone holds).
 
 `PowerSyncManagerImpl` is registered with `addSingleton` (not lazy) specifically so it's
 instantiated eagerly at app start and begins listening to auth events without any caller
