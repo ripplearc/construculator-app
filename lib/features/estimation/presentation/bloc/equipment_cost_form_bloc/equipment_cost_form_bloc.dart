@@ -96,7 +96,14 @@ class EquipmentCostFormBloc
     Emitter<EquipmentCostFormState> emit,
     EquipmentCostFormData Function(EquipmentCostFormData) update,
   ) {
-    emit(EquipmentCostFormEditing(_validated(update(state.formData))));
+    final next = _validated(update(state.formData));
+    emit(switch (state) {
+      EquipmentCostFormFailure(:final failure) => EquipmentCostFormFailure(
+        next,
+        failure,
+      ),
+      _ => EquipmentCostFormEditing(next),
+    });
   }
 
   Future<void> _onSubmitted(

@@ -1205,6 +1205,34 @@ void main() {
           ),
         ],
       );
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'stays failed while a field is edited, with the edited value',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.socket;
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormFailure);
+          bloc.add(const EquipmentDurationUpdatedEvent('7'));
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormFailure>().having(
+            (s) => s.data.duration,
+            'duration',
+            7,
+          ),
+        ],
+      );
     });
 
     group('outsized delivery fee', () {
