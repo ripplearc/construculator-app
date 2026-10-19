@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/discard_line_guard.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
@@ -82,7 +83,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     if (widget.presentAsSheet) {
-      return ColoredBox(
+      final sheet = ColoredBox(
         key: const Key('cost_item_form_screen'),
         color: sheetSurface(context),
         child: Padding(
@@ -100,6 +101,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           ),
         ),
       );
+      return widget.type == CostItemType.material
+          ? DiscardLineGuard(child: sheet)
+          : sheet;
     }
     return Scaffold(
       key: const Key('cost_item_form_screen'),
