@@ -43,8 +43,9 @@ EventTransformer<E> _ignoreWhileInFlight<E>() =>
 ///
 /// A resolver result of `Right(null)` (no `company_users` row yet) is
 /// treated as "zero saved rates" for recents/search, per
-/// [CurrentCompanyResolver.resolve]'s own contract, and as a save failure
-/// for [YourRatesSaveRequested] — there is no company to scope the write to.
+/// [CurrentCompanyResolver.resolve]'s own contract, and as
+/// [YourRatesSaveNoCompany] for [YourRatesSaveRequested] — there is no
+/// company to scope the write to.
 class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
   final CurrentCompanyResolver _companyResolver;
@@ -132,14 +133,9 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     YourRatesSaveRequested event,
     Emitter<YourRatesState> emit,
   ) async {
-    // TODO: [CA-1249] show a message that retrying cannot fix when the user has no company. https://ripplearc.youtrack.cloud/issue/CA-1249
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesSaveFailed(failure)),
-      onNoCompany: () => emit(
-        const YourRatesSaveFailed(
-          EstimationFailure(errorType: EstimationErrorType.permissionDenied),
-        ),
-      ),
+      onNoCompany: () => emit(const YourRatesSaveNoCompany()),
     );
     if (companyId == null) return;
     final entry = event.entry.copyWith(companyId: companyId);
