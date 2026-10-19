@@ -586,8 +586,16 @@ void main() {
       await tester.tap(find.byKey(const Key('your_rates_use_button')));
       await tester.pumpAndSettle();
 
-      expect(results.single?.id, 'job-1');
-      expect(results.single?.equipmentMethod, EquipmentPricingMethod.job);
+      expect(
+        results.single,
+        isA<YourRateEntry>()
+            .having((entry) => entry.id, 'id', 'job-1')
+            .having(
+              (entry) => entry.equipmentMethod,
+              'equipmentMethod',
+              EquipmentPricingMethod.job,
+            ),
+      );
     });
 
     testWidgets('a match under neither method keeps the plain no-match line', (
