@@ -12,14 +12,18 @@
 #
 # Environment (all optional):
 #   PERF_DRIVE_TIMEOUT       time limit for one `flutter drive` attempt, a whole
-#                            number with an optional s, m, h or d (default: 10m)
+#                            number above 0 with an optional s, m, h or d
+#                            (default: 10m)
 #   ENSURE_ATTACH_SCRIPT     script that re-attaches the phone between failed
 #                            drive attempts (default: ensure_lab_device_attached.sh)
 #
-# A drive leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach of
-# up to 5 minutes after each of the first two. At the default that is 40 minutes
-# and has to fit in the 60 minute limit of the capture step in
-# .github/workflows/weekly_system_health.yml, so change them together.
+# The capture step runs the startup phases (about 5 minutes), then two drive
+# legs. One leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach
+# of up to 5 minutes after each of the first two: 40 minutes at the default.
+# One leg that fails all 3 attempts fits in the 60 minute step limit in
+# .github/workflows/weekly_system_health.yml. A run where both legs need
+# retries can pass 60 minutes. The step limit then stops it, and the upload
+# keeps the phases already copied. Change these numbers together.
 #
 # Needs GNU `timeout` (`gtimeout` on a Mac with coreutils from Homebrew).
 #
@@ -67,8 +71,8 @@ if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]] || [[ "$ITERATIONS" -lt 1 ]]; then
   exit 1
 fi
 
-if ! [[ "$DRIVE_TIMEOUT" =~ ^[0-9]+[smhd]?$ ]]; then
-  echo "❌ PERF_DRIVE_TIMEOUT must be a whole number with an optional s, m, h or d, got: $DRIVE_TIMEOUT" >&2
+if ! [[ "$DRIVE_TIMEOUT" =~ ^[1-9][0-9]*[smhd]?$ ]]; then
+  echo "❌ PERF_DRIVE_TIMEOUT must be a whole number above 0 with an optional s, m, h or d, got: $DRIVE_TIMEOUT" >&2
   exit 1
 fi
 
