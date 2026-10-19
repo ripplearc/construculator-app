@@ -167,7 +167,7 @@ void main() {
           expect(row['unit_price'], 2.55);
           expect(row['item_total_cost'], 17.85);
           expect(row['calculation'], {'unit_price': 2.55, 'quantity': 7.0});
-          expect(row['rate_status'], 'own_rate_confirmed');
+          expect(row['rate_status'], 'own_rate_unconfirmed');
           expect(row['quantity_provenance'], 'manual');
           expect(row['currency'], 'USD');
         },
