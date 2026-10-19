@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
@@ -34,8 +35,13 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
+  /// Builds a [MaterialCostFormBloc] for the material cost sheet the FAB
+  /// launches. Same not-a-module-file reasoning as
+  /// [equipmentCostFormBlocFactory].
+  final MaterialCostFormBloc Function() materialCostFormBlocFactory;
+
   /// Builds the [EstimateSummaryBloc] that loads this estimate's name and
-  /// total for the equipment cost sheet. Same not-a-module-file reasoning as
+  /// total for the cost sheets. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
   final EstimateSummaryBloc Function() estimateSummaryBlocFactory;
 
@@ -54,6 +60,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.estimationId,
     required this.router,
     required this.equipmentCostFormBlocFactory,
+    required this.materialCostFormBlocFactory,
     required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -63,6 +70,8 @@ class CostEstimationDetailsPage extends StatefulWidget {
   State<CostEstimationDetailsPage> createState() =>
       _CostEstimationDetailsPageState();
 }
+
+enum _SheetOutcome { editing, submitting, added, failed }
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   CostEstimationTab _selectedTab = CostEstimationTab.material;
@@ -81,21 +90,53 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) async {
+  Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) =>
+      _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
+        type: CostItemType.equipment,
+        entry: entry,
+        name: name,
+        blocFactory: widget.equipmentCostFormBlocFactory,
+        outcomeOf: (state) => switch (state) {
+          EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
+          EquipmentCostFormSuccess() => _SheetOutcome.added,
+          EquipmentCostFormFailure() => _SheetOutcome.failed,
+          _ => _SheetOutcome.editing,
+        },
+      );
+
+  Future<void> _openMaterialSheet() =>
+      _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
+        type: CostItemType.material,
+        blocFactory: widget.materialCostFormBlocFactory,
+        outcomeOf: (state) => switch (state) {
+          MaterialCostFormSubmitting() => _SheetOutcome.submitting,
+          MaterialCostFormSuccess() => _SheetOutcome.added,
+          MaterialCostFormFailure() => _SheetOutcome.failed,
+          _ => _SheetOutcome.editing,
+        },
+      );
+
+  Future<void> _openCostSheet<B extends BlocBase<S>, S>({
+    required CostItemType type,
+    required B Function() blocFactory,
+    required _SheetOutcome Function(S state) outcomeOf,
+    YourRateEntry? entry,
+    String? name,
+  }) async {
     final l10n = context.l10n;
-    final formBloc = widget.equipmentCostFormBlocFactory();
+    final formBloc = blocFactory();
     try {
       await CoreQuickSheet.show<void>(
         context: context,
         backgroundColor: sheetSurface(context),
         child: MultiBlocProvider(
           providers: [
-            BlocProvider<EquipmentCostFormBloc>.value(value: formBloc),
+            BlocProvider<B>.value(value: formBloc),
             BlocProvider<EstimateSummaryBloc>.value(value: _summaryBloc),
           ],
           child: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
             builder: (context, summary) => CostItemFormScreen(
-              type: CostItemType.equipment,
+              type: type,
               estimationId: widget.estimationId,
               router: widget.router,
               presentAsSheet: true,
@@ -111,18 +152,18 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         ),
       );
       final wasSavingWhenDismissed =
-          formBloc.state is EquipmentCostFormSubmitting;
+          outcomeOf(formBloc.state) == _SheetOutcome.submitting;
       if (wasSavingWhenDismissed) {
         await formBloc.stream.firstWhere(
-          (s) => s is! EquipmentCostFormSubmitting,
+          (s) => outcomeOf(s) != _SheetOutcome.submitting,
           orElse: () => formBloc.state,
         );
       }
       if (!mounted) return;
       final summary = _summaryBloc.state;
       _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
-      switch (formBloc.state) {
-        case EquipmentCostFormSuccess() when summary is EstimateSummaryLoaded:
+      switch (outcomeOf(formBloc.state)) {
+        case _SheetOutcome.added when summary is EstimateSummaryLoaded:
           CoreToast.showCustomToast(
             context,
             (_) => AddedToEstimateToast(
@@ -130,7 +171,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             ),
             duration: const Duration(seconds: 4),
           );
-        case EquipmentCostFormFailure() when wasSavingWhenDismissed:
+        case _SheetOutcome.failed when wasSavingWhenDismissed:
           CoreToast.showError(
             context,
             l10n.addToEstimateFailedError,
@@ -276,9 +317,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () => widget.router.pushNamed(
-          '$fullAddMaterialCostRoute/${widget.estimationId}',
-        ),
+        onPressed: _openMaterialSheet,
       ),
     };
   }
