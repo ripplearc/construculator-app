@@ -3052,6 +3052,60 @@ abstract class AppLocalizations {
   /// **'No matches for “{query}”'**
   String yourRatesNoMatchState(String query);
 
+  /// Shown in the Look-up-a-rate sheet, in place of the rows, when Day is the active method, the search matches no day rate and matches only job prices (storyboard CUJ 6, frame A price on the other method; Figma X3b). One match names its amount; several give the count and the range. The query is in curly quotes
+  ///
+  /// In en, this message translates to:
+  /// **'No day rates for “{query}”. It has {count, plural, =1{a job price of {lowest}} other{{count} job prices, from {lowest} to {highest}}}.'**
+  String yourRatesOtherMethodJobPrices(
+    String query,
+    int count,
+    String lowest,
+    String highest,
+  );
+
+  /// Shown in the Look-up-a-rate sheet, in place of the rows, when Job is the active method, the search matches no job price and matches only day rates (storyboard CUJ 6, frame A price on the other method, the other way). One match names its amount; several give the count and the range. The query is in curly quotes
+  ///
+  /// In en, this message translates to:
+  /// **'No job prices for “{query}”. It has {count, plural, =1{a day rate of {lowest}} other{{count} day rates, from {lowest} to {highest}}}.'**
+  String yourRatesOtherMethodDayRates(
+    String query,
+    int count,
+    String lowest,
+    String highest,
+  );
+
+  /// Like the job-prices message in the Look-up-a-rate sheet, for two or more job prices that all cost the same, so there is no range to give
+  ///
+  /// In en, this message translates to:
+  /// **'No day rates for “{query}”. It has {count} job prices of {amount}.'**
+  String yourRatesOtherMethodJobPricesSameAmount(
+    String query,
+    int count,
+    String amount,
+  );
+
+  /// Like the day-rates message in the Look-up-a-rate sheet, for two or more day rates that all cost the same, so there is no range to give
+  ///
+  /// In en, this message translates to:
+  /// **'No job prices for “{query}”. It has {count} day rates of {amount}.'**
+  String yourRatesOtherMethodDayRatesSameAmount(
+    String query,
+    int count,
+    String amount,
+  );
+
+  /// Text button under the no-day-rates message in the Look-up-a-rate sheet; does what tapping Job on the equipment form does and keeps the typed words (storyboard CUJ 6, frame A price on the other method; Figma X3b)
+  ///
+  /// In en, this message translates to:
+  /// **'Show job prices'**
+  String get yourRatesShowJobPrices;
+
+  /// Text button under the no-job-prices message in the Look-up-a-rate sheet; does what tapping Day on the equipment form does and keeps the typed words (storyboard CUJ 6, frame A price on the other method, the other way)
+  ///
+  /// In en, this message translates to:
+  /// **'Show day rates'**
+  String get yourRatesShowDayRates;
+
   /// Suffix after a day-priced rate amount in the Look-up-a-rate sheet's result rows
   ///
   /// In en, this message translates to:

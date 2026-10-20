@@ -1662,6 +1662,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String yourRatesOtherMethodJobPrices(
+    String query,
+    int count,
+    String lowest,
+    String highest,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count job prices, from $lowest to $highest',
+      one: 'a job price of $lowest',
+    );
+    return 'No day rates for “$query”. It has $_temp0.';
+  }
+
+  @override
+  String yourRatesOtherMethodDayRates(
+    String query,
+    int count,
+    String lowest,
+    String highest,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count day rates, from $lowest to $highest',
+      one: 'a day rate of $lowest',
+    );
+    return 'No job prices for “$query”. It has $_temp0.';
+  }
+
+  @override
+  String yourRatesOtherMethodJobPricesSameAmount(
+    String query,
+    int count,
+    String amount,
+  ) {
+    return 'No day rates for “$query”. It has $count job prices of $amount.';
+  }
+
+  @override
+  String yourRatesOtherMethodDayRatesSameAmount(
+    String query,
+    int count,
+    String amount,
+  ) {
+    return 'No job prices for “$query”. It has $count day rates of $amount.';
+  }
+
+  @override
+  String get yourRatesShowJobPrices => 'Show job prices';
+
+  @override
+  String get yourRatesShowDayRates => 'Show day rates';
+
+  @override
   String get yourRatesDaySuffix => '/day';
 
   @override
