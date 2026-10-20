@@ -556,30 +556,29 @@ void main() {
       );
     });
 
-    testWidgets(
-      'keeps the compact saved-rate screen after the amount is edited',
-      (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = 1.0;
-        await pumpWidget(
-          tester: tester,
-          theme: theme,
-          initialRateEntry: savedRate(
-            'Dumpster — 30 yd',
-            400,
-            EquipmentPricingMethod.job,
-          ),
-        );
-        await tester.enterText(find.byKey(const Key('amount_field')), '450');
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(EquipmentCostFormFields),
-          matchesGoldenFile(
-            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
-          ),
-        );
-      },
-    );
+    testWidgets('keeps the compact saved-rate screen after the amount is edited', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400,
+          EquipmentPricingMethod.job,
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
+        ),
+      );
+    });
 
     testWidgets('keeps the full form after a look-up pick', (tester) async {
       final repository = Modular.get<YourRatesRepository>();
