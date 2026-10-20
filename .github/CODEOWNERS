@@ -1,6 +1,7 @@
 /.github/CODEOWNERS @ripplearc/construculator-devop
 /.github/workflows/run_c_check.yml @ripplearc/construculator-devop
 /.github/workflows/nightly_ios_build.yml @ripplearc/construculator-devop
+/scripts/ci/main_needs_ios_build.sh @ripplearc/construculator-devop
 codemagic.yaml  @ripplearc/construculator-devop
 mutation_test_rules.xml @ripplearc/construculator-devop
 analysis_options.yaml @ripplearc/construculator-devop

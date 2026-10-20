@@ -129,6 +129,14 @@ set_checks "{\"check_runs\":[$(check_run codemagic-ci-cd completed timed_out)]}"
 run_target
 assert_true "builds again after a timed-out run" answer_is build
 
+set_checks "{\"check_runs\":[$(check_run codemagic-ci-cd completed skipped)]}"
+run_target
+assert_true "builds again after a skipped run" answer_is build
+
+set_checks "{\"check_runs\":[$(check_run codemagic-ci-cd completed neutral)]}"
+run_target
+assert_true "builds again after a neutral run" answer_is build
+
 set_checks "{\"check_runs\":[$(check_run github-actions completed success)]}"
 run_target
 assert_true "ignores a same-named check run from another app" answer_is build
