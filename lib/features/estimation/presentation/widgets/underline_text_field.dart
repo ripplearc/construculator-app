@@ -104,6 +104,11 @@ class UnderlineTextField extends StatefulWidget {
 const double _labelToValueGap = 3;
 const double _valueToRuleGap = 10;
 
+/// How far a larger value style (24px) sits lower in the field than the
+/// default one, so the label-to-value gap matches the storyboard (17 dp). The
+/// field keeps the same total height.
+const double _largeValueDrop = 5;
+
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
   late final FocusNode _focusNode;
   bool _wasFocused = false;
@@ -172,6 +177,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         : colorTheme.lineMid;
     final ruleHeight = _focusNode.hasFocus || hasError ? 1.5 : 1.0;
     final valueStyle = widget.valueStyle ?? textTheme.bodyLargeRegular;
+    final valueDrop = widget.valueStyle == null ? 0.0 : _largeValueDrop;
     final textField = TextField(
       controller: widget.controller,
       focusNode: _focusNode,
@@ -213,7 +219,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 ],
               ],
             ),
-            const SizedBox(height: _labelToValueGap),
+            SizedBox(height: _labelToValueGap + valueDrop),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -245,7 +251,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 ],
               ],
             ),
-            const SizedBox(height: _valueToRuleGap),
+            SizedBox(height: _valueToRuleGap - valueDrop),
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               height: ruleHeight,

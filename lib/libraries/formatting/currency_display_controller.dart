@@ -9,15 +9,26 @@ import 'package:flutter/widgets.dart';
 /// [text] keep working, and the user edits the raw number once the field
 /// takes focus. Text that is not a number is painted as typed.
 class CurrencyDisplayController extends TextEditingController {
+  /// The focus node of the field this controller paints for. The controller
+  /// listens to it to switch between the money format and the raw number.
   final FocusNode focusNode;
 
+  /// Creates a controller that paints its number as currency while
+  /// [focusNode] is not focused.
   CurrencyDisplayController({required this.focusNode}) {
-    focusNode.addListener(notifyListeners);
+    focusNode.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    if (focusNode.hasFocus) {
+      selection = TextSelection.collapsed(offset: text.length);
+    }
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    focusNode.removeListener(notifyListeners);
+    focusNode.removeListener(_onFocusChanged);
     super.dispose();
   }
 

@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/presentation/widgets/currency_display_controller.dart';
+import 'package:construculator/libraries/formatting/currency_display_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -100,5 +100,30 @@ void main() {
 
   testWidgets('paints nothing for empty text', (tester) async {
     expect(await paintedText(tester), '');
+  });
+
+  testWidgets('puts the caret at the end of the number when the field gains '
+      'focus', (tester) async {
+    controller.text = '145';
+    await paintedText(tester);
+
+    focusNode.requestFocus();
+    await tester.pump();
+
+    expect(controller.selection, const TextSelection.collapsed(offset: 3));
+  });
+
+  testWidgets('keeps the number the user typed when the field loses focus', (
+    tester,
+  ) async {
+    controller.text = '145';
+    await paintedText(tester);
+    focusNode.requestFocus();
+    await tester.pump();
+
+    focusNode.unfocus();
+    await tester.pump();
+
+    expect(controller.text, '145');
   });
 }

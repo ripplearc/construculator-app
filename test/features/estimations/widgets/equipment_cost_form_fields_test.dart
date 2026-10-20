@@ -190,7 +190,7 @@ void main() {
     return '${l10n.equipmentDeliveryRowLabel} $value';
   }
 
-  // Matches the compact header's Subtitle text (e.g. "$145.00 /day · your
+  // Matches the compact header's Subtitle text (e.g. "$145.00 / day · your
   // default") shown once a rate is recalled from Your Rates (CA-1146,
   // Figma nodes 66337:158600/66337:159434).
   String recalledRateSubtitleText(
@@ -198,7 +198,7 @@ void main() {
     EquipmentPricingMethod method,
   ) {
     final unit = method == EquipmentPricingMethod.day
-        ? l10n.yourRatesDaySuffix
+        ? l10n.equipmentRecalledRateDayUnit
         : l10n.yourRatesJobSuffix;
     return l10n.equipmentRecalledRateSubtitle(
       DisplayFormatter.currency.format(amount),

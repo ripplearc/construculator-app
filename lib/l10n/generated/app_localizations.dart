@@ -3000,6 +3000,12 @@ abstract class AppLocalizations {
   /// **'{amount} {unit} · your default'**
   String equipmentRecalledRateSubtitle(String amount, String unit);
 
+  /// Day unit in the saved-rate header subtitle, with a space on each side of the slash as in the storyboard (CUJ 6, B 2); the Your recents rows keep yourRatesDaySuffix
+  ///
+  /// In en, this message translates to:
+  /// **'/ day'**
+  String get equipmentRecalledRateDayUnit;
+
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:

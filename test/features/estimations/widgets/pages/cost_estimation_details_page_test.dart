@@ -630,7 +630,7 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('Scissor lift — 19ft'), findsOneWidget);
-        expect(find.text(r'$120.00 /day · your default'), findsOneWidget);
+        expect(find.text(r'$120.00 / day · your default'), findsOneWidget);
         expect(find.byKey(const Key('equipment_name_field')), findsNothing);
         expect(find.byKey(const Key('day_method_chip')), findsNothing);
         expect(find.byKey(const Key('rate_field')), findsNothing);

@@ -1622,6 +1622,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get equipmentRecalledRateDayUnit => '/ day';
+
+  @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override
