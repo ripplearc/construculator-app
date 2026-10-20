@@ -1,0 +1,61 @@
+import 'package:construculator/libraries/secure_storage/testing/fake_secure_storage_wrapper.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group('FakeSecureStorageWrapper', () {
+    late FakeSecureStorageWrapper fake;
+
+    setUp(() => fake = FakeSecureStorageWrapper());
+
+    test('stores, reads and deletes values', () async {
+      await fake.write('k', 'v');
+      expect(await fake.read('k'), 'v');
+      expect(fake.storedKeys, ['k']);
+
+      await fake.delete('k');
+
+      expect(await fake.read('k'), isNull);
+      expect(fake.storedKeys, isEmpty);
+    });
+
+    test('seed and peek bypass the throwing switches', () async {
+      fake.shouldThrowOnRead = true;
+      fake.shouldThrowOnWrite = true;
+
+      fake.seed('k', 'v');
+
+      expect(fake.peek('k'), 'v');
+    });
+
+    test('each switch makes only its own operation throw', () async {
+      fake.shouldThrowOnRead = true;
+      await fake.write('k', 'v');
+      await fake.delete('k');
+      expect(() => fake.read('k'), throwsA(isA<PlatformException>()));
+
+      fake.reset();
+      fake.shouldThrowOnWrite = true;
+      expect(() => fake.write('k', 'v'), throwsA(isA<PlatformException>()));
+      expect(await fake.read('k'), isNull);
+
+      fake.reset();
+      fake.shouldThrowOnDelete = true;
+      expect(() => fake.delete('k'), throwsA(isA<PlatformException>()));
+    });
+
+    test('reset empties the store and clears the switches', () async {
+      fake.seed('k', 'v');
+      fake.shouldThrowOnRead = true;
+      fake.shouldThrowOnWrite = true;
+      fake.shouldThrowOnDelete = true;
+
+      fake.reset();
+
+      expect(fake.storedKeys, isEmpty);
+      await fake.write('k', 'v');
+      expect(await fake.read('k'), 'v');
+      await fake.delete('k');
+    });
+  });
+}
