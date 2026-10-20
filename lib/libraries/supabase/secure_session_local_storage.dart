@@ -13,9 +13,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// Supabase calls [hasAccessToken] while starting the app and does not catch
 /// errors from it. A session that cannot be read therefore reads as no
-/// session, which signs the user out, rather than stopping the app from
-/// starting. [SecureStorageWrapper] logs that failure, but Sentry is not
-/// running yet at that point, so the log reaches the console only.
+/// session, which signs the user out.
+/// On iOS the read throws, and [SecureStorageWrapper] logs it.
+/// On Android the plugin (resetOnError, on by default) deletes the value
+/// and returns null, so nothing is logged.
+// TODO: [CA-1333] start Sentry before Supabase so the iOS start-up failure reaches Sentry
 class SecureSessionLocalStorage extends LocalStorage {
   final SecureStorageWrapper _secureStorage;
 

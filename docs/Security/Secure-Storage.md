@@ -13,7 +13,7 @@ What it does:
 - **Update from an earlier app version:** on start-up, a session found in `shared_preferences` under the same key is copied to secure storage and then deleted from `shared_preferences`, so signed-in users stay signed in. If the copy fails, the old entry stays and the copy is tried again on the next start. If secure storage already holds a session, it wins and the old entry is deleted.
 - **Sign-out:** the session is removed from secure storage, and from `shared_preferences` if an old copy is still there.
   Supabase does not surface a failed removal. It logs a warning and carries on, so the session stays in secure storage and the user is signed in again at the next launch. When the device is online, sign-out also asks the server to end the session, which stops the stored copy from working. Offline, the stored copy keeps working until it is removed.
-- **Unreadable session:** if secure storage cannot be read (for example the Android Keystore key is gone), the app starts signed out. Supabase calls the read during start-up without catching errors, so a thrown error would stop the app from starting. `SecureStorageWrapperImpl` logs the failure once. Sentry is not running yet during start-up, so that log reaches the console only.
+- **Unreadable session:** the app starts signed out. Supabase calls the read during start-up without catching errors, so a thrown error would stop the app from starting. On iOS the read throws, and `SecureStorageWrapperImpl` logs it once. Sentry is not running yet during start-up, so that log reaches the console only (CA-1333). On Android the plugin deletes a value it cannot decrypt, and also all values if the Keystore key is lost, and the read returns null. Nothing is logged.
 
 Not covered:
 - Supabase also keeps the PKCE code verifier in `shared_preferences` (`SharedPreferencesGotrueAsyncStorage`). It is a short-lived value used while a sign-in link is being completed, not a session token, and it is not moved.
@@ -38,7 +38,7 @@ Since `flutter_secure_storage` 10 the plugin no longer uses Jetpack `EncryptedSh
 
 - Version 11 needs Android API 24 or newer, which is also the minimum Flutter 3.35 and later supports.
 - Whether the Keystore key is hardware-backed depends on the device.
-- `android:allowBackup="false"` is set in `AndroidManifest.xml`. The Keystore key is never backed up, so a restored copy of the encrypted values cannot be decrypted and the plugin throws `InvalidKeyException: Failed to unwrap key`. The plugin README recommends turning backup off for this reason. The cost is that Android's cloud backup and device-to-device transfer no longer carry any of the app's local data.
+- `android:allowBackup="false"` and `android:dataExtractionRules` (`res/xml/data_extraction_rules.xml`, which excludes everything from cloud backup and device transfer) are set in `AndroidManifest.xml`. `allowBackup` alone does not stop device-to-device transfer on Android 12 and later. The Keystore key is never backed up, so a restored copy of the encrypted values cannot be decrypted. With the default `resetOnError: true`, the plugin deletes those values and the read returns null, so the user starts signed out. The plugin README recommends turning backup off for this reason. The cost is that Android's cloud backup and device-to-device transfer no longer carry any of the app's local data.
 
 ## Critical Gotcha — Data Persists After Uninstall (iOS)
 
