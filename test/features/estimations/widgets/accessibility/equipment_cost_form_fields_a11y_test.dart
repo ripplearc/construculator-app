@@ -152,6 +152,7 @@ void main() {
               find.byKey(const Key('amount_field')),
               '450',
             );
+            FocusManager.instance.primaryFocus!.unfocus();
             await tester.pumpAndSettle();
           },
         );

@@ -3030,6 +3030,18 @@ abstract class AppLocalizations {
   /// **'Your default is now {amount}.'**
   String equipmentRecalledAmountSavedHint(String amount);
 
+  /// Confirmation under the Job amount of a recalled saved price after the edited amount was saved under its own name, so the saved default did not change; amount is the pre-formatted default that stays
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a second price. Your default stays {amount}.'**
+  String equipmentRecalledAmountSavedSecondPriceHint(String amount);
+
+  /// Error line under the 'Save as my default' button of a recalled saved price when the save fails (CUJ 6, Default not saved); it names the default because the price on this line is not affected
+  ///
+  /// In en, this message translates to:
+  /// **'Your default was not saved. Try again.'**
+  String get equipmentRecalledAmountSaveFailedError;
+
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:

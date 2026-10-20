@@ -2697,9 +2697,28 @@ void main() {
         await recallRate(tester, 'Dumpster');
       }
 
-      Future<void> editAmount(WidgetTester tester, String amount) async {
+      Future<void> typeAmount(WidgetTester tester, String amount) async {
         await tester.enterText(find.byKey(const Key('amount_field')), amount);
         await tester.pump();
+      }
+
+      Future<void> editAmount(WidgetTester tester, String amount) async {
+        await typeAmount(tester, amount);
+        FocusManager.instance.primaryFocus!.unfocus();
+        await tester.pump();
+      }
+
+      Future<void> saveUnderLabel(WidgetTester tester) async {
+        await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('entry_label_field')),
+          'Supplier B',
+        );
+        await tester.tap(
+          find.byKey(const Key('entry_label_dialog_save_button')),
+        );
+        await tester.pumpAndSettle();
       }
 
       testWidgets('shows neither the hint nor the button before an edit', (
@@ -2753,30 +2772,73 @@ void main() {
         );
       });
 
+      testWidgets('shows neither the hint nor the button for a zero amount', (
+        tester,
+      ) async {
+        await recallDumpster(tester);
+
+        await editAmount(tester, '0');
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('shows neither the hint nor the button for an empty amount', (
+        tester,
+      ) async {
+        await recallDumpster(tester);
+
+        await editAmount(tester, '');
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('hides the hint and the button while the amount is being '
+          'typed and shows them once the field is left', (tester) async {
+        await recallDumpster(tester);
+
+        await typeAmount(tester, '450');
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+
+        FocusManager.instance.primaryFocus!.unfocus();
+        await tester.pump();
+
+        expect(find.byKey(const Key('recalled_amount_hint')), findsOneWidget);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsOneWidget,
+        );
+      });
+
       testWidgets(
-        'saving asks for a label, then confirms the new default and updates '
-        'the header',
+        'saving asks for a name, then says it was saved as a second price and '
+        'keeps the old default in the header',
         (tester) async {
           await recallDumpster(tester);
           await editAmount(tester, '450');
 
-          await tester.tap(
-            find.byKey(const Key('save_recalled_amount_button')),
-          );
-          await tester.pumpAndSettle();
-          await tester.enterText(
-            find.byKey(const Key('entry_label_field')),
-            'Supplier B',
-          );
-          await tester.tap(
-            find.byKey(const Key('entry_label_dialog_save_button')),
-          );
-          await tester.pumpAndSettle();
+          await saveUnderLabel(tester);
 
           expect(
-            find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+            find.text(
+              l10n.equipmentRecalledAmountSavedSecondPriceHint('\$400.00'),
+            ),
             findsOneWidget,
           );
+          expect(find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+              findsNothing);
           expect(
             find.byKey(const Key('save_recalled_amount_button')),
             findsNothing,
@@ -2784,7 +2846,7 @@ void main() {
           expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
           expect(
             find.text(
-              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+              recalledRateSubtitleText(400, EquipmentPricingMethod.job),
             ),
             findsOneWidget,
           );
@@ -2804,7 +2866,33 @@ void main() {
       );
 
       testWidgets(
-        'a further edit after saving is compared with the new default',
+        'a further edit after saving is still compared with the saved default',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          await saveUnderLabel(tester);
+
+          await editAmount(tester, '500');
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$400.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveButton('\$500.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              l10n.equipmentRecalledAmountSavedSecondPriceHint('\$400.00'),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'a failed save says the default was not saved, under the button',
         (tester) async {
           await recallDumpster(tester);
           await editAmount(tester, '450');
@@ -2812,6 +2900,7 @@ void main() {
             find.byKey(const Key('save_recalled_amount_button')),
           );
           await tester.pumpAndSettle();
+          fakeSupabase.shouldThrowOnInsert = true;
           await tester.enterText(
             find.byKey(const Key('entry_label_field')),
             'Supplier B',
@@ -2821,19 +2910,61 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          await editAmount(tester, '500');
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveFailedError),
+            findsOneWidget,
+          );
+          expect(find.text(l10n.yourRatesSaveFailedError), findsNothing);
+          expect(
+            tester.getTopLeft(find.byKey(const Key('save_as_my_rate_error'))).dy,
+            greaterThanOrEqualTo(
+              tester
+                  .getBottomLeft(
+                    find.byKey(const Key('save_recalled_amount_button')),
+                  )
+                  .dy,
+            ),
+          );
+          expect(
+            find.byKey(const Key('save_recalled_amount_button')),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'a price saved with no clash becomes the new default in the header',
+        (tester) async {
+          await tester.pumpWidget(
+            makeWidget(
+              initialRateEntry: YourRateEntry(
+                id: '',
+                companyId: 'company-1',
+                itemName: 'Dumpster',
+                category: CostItemType.equipment,
+                rate: Money(amount: 400),
+                savedAt: DateTime(2026, 1, 1),
+                equipmentMethod: EquipmentPricingMethod.job,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await editAmount(tester, '450');
+
+          await tester.tap(
+            find.byKey(const Key('save_recalled_amount_button')),
+          );
+          await tester.pumpAndSettle();
 
           expect(
-            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$450.00')),
-            findsOneWidget,
-          );
-          expect(
-            find.text(l10n.equipmentRecalledAmountSaveButton('\$500.00')),
-            findsOneWidget,
-          );
-          expect(
             find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
-            findsNothing,
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
           );
         },
       );

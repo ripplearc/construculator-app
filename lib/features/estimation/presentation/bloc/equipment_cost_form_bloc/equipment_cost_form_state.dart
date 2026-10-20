@@ -180,10 +180,12 @@ class EquipmentCostFormData extends Equatable {
   /// Whether a line opened from a Your recents row now carries a Job amount
   /// that differs from that row's saved price. The Day rate cannot be edited
   /// on the compact screen, so only the Job amount is compared.
+  ///
+  /// An empty or zero amount does not count: there is nothing to save.
   bool get isRecalledAmountEdited =>
       recalledFromRecents &&
       method == EquipmentPricingMethod.job &&
-      jobAmount != null &&
+      (jobAmount ?? 0) > 0 &&
       jobAmount != recalledRate;
 
   /// Returns a copy with the given fields replaced. For a nullable field, an

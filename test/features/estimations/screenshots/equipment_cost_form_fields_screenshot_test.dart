@@ -571,6 +571,7 @@ void main() {
         ),
       );
       await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      FocusManager.instance.primaryFocus!.unfocus();
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
@@ -593,6 +594,7 @@ void main() {
         ),
       );
       await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      FocusManager.instance.primaryFocus!.unfocus();
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
       await tester.pumpAndSettle();

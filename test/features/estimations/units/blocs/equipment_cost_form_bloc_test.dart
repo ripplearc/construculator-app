@@ -355,6 +355,22 @@ void main() {
         );
 
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is not edited when the amount is zero',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentRateUpdatedEvent('0')),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
           'is not edited when the line was not opened from a recents row',
           build: () => bloc,
           act: (bloc) => bloc
