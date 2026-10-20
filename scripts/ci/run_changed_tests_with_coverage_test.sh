@@ -193,6 +193,17 @@ run_target main
 assert_true "ignores new generated files" exit_code_is 0
 
 new_repo
+in_work bash -c 'git rm -q test/features/x/units/existing_test.dart; git commit -q -m t'
+run_target main
+assert_true "passes when the only change deletes a test" exit_code_is 0
+assert_true "does not pass a deleted test to flutter" no_tests_run
+
+new_repo
+in_work bash -c 'mkdir -p lib/f test/features/x/units; printf "int a() => 1;\n" >"lib/f/café.dart"; echo "void main() { }" >test/features/x/units/cafe_test.dart; git add -A; git commit -q -m t'
+FAKE_LCOV_FILES="lib/f/café.dart" FAKE_LF=10 FAKE_LH=10 run_target main
+assert_true "handles a file name with a non-English letter" exit_code_is 0
+
+new_repo
 in_work bash -c 'echo "void main() { }" >test/utils/helper_test.dart; git add -A; git commit -q -m t'
 run_target main
 assert_true "does not run a test outside the units and widgets folders" no_tests_run

@@ -55,7 +55,7 @@ check_dependencies() {
     fi
   done
 
-  if [[ "$RUN_MUTATIONS" == true || "$RUN_COMPREHENSIVE" == true ]] && [[ -z "$(command -v lcov)" ]]; then
+  if [[ "$RUN_PRE" == true || "$RUN_MUTATIONS" == true || "$RUN_COMPREHENSIVE" == true ]] && [[ -z "$(command -v lcov)" ]]; then
     missing+=("lcov")
   fi
 

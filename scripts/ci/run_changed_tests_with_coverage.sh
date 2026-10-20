@@ -81,12 +81,12 @@ if [ -n "$TEST_DIRS" ]; then
   while IFS= read -r dir; do
     PATTERNS+=("$dir/*.dart")
   done <<< "$TEST_DIRS"
-  CHANGED_TESTS=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "${PATTERNS[@]}")
+  CHANGED_TESTS=$(git -c core.quotePath=false diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "${PATTERNS[@]}")
 fi
 
-CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD -- 'lib/*.dart' |
+CHANGED_SOURCE_FILES=$(git -c core.quotePath=false diff --name-only --diff-filter=A "$BASE_COMMIT" HEAD -- 'lib/*.dart' |
   without_generated_or_ignored)
-CHANGED_LIB_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- 'lib/*.dart' |
+CHANGED_LIB_FILES=$(git -c core.quotePath=false diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- 'lib/*.dart' |
   without_generated_or_ignored)
 
 if [ -z "$CHANGED_TESTS" ]; then
