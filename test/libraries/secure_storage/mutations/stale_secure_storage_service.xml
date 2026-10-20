@@ -14,18 +14,18 @@
 
     <rules>
         <!-- RULE 1: Empty secure storage on every launch -->
-        <regex pattern="if \(preferences\.getBool\(_hasLaunchedBeforeKey\) \?\? false\) return;" dotAll="true" id="stale.skip_first_run_guard">
+        <regex pattern="if \(preferences\.getBool\(_hasLaunchedBeforeKey\) \?\? false\) return true;" dotAll="true" id="stale.skip_first_run_guard">
             <mutation text=""/>
         </regex>
 
         <!-- RULE 2: Treat an unset flag as already launched -->
-        <regex pattern="\?\? false\) return;" dotAll="true" id="stale.unset_flag_means_launched">
-            <mutation text="?? true) return;"/>
+        <regex pattern="\?\? false\) return true;" dotAll="true" id="stale.unset_flag_means_launched">
+            <mutation text="?? true) return true;"/>
         </regex>
 
         <!-- RULE 3: Stop after the first launch only when the flag is false -->
-        <regex pattern="if \(preferences\.getBool\(_hasLaunchedBeforeKey\) \?\? false\) return;" dotAll="true" id="stale.invert_first_run_guard">
-            <mutation text="if (!(preferences.getBool(_hasLaunchedBeforeKey) ?? false)) return;"/>
+        <regex pattern="if \(preferences\.getBool\(_hasLaunchedBeforeKey\) \?\? false\) return true;" dotAll="true" id="stale.invert_first_run_guard">
+            <mutation text="if (!(preferences.getBool(_hasLaunchedBeforeKey) ?? false)) return true;"/>
         </regex>
 
         <!-- RULE 4: Empty secure storage on an update too -->
@@ -49,12 +49,12 @@
         </regex>
 
         <!-- RULE 8: Let a failed wipe stop the app from starting -->
-        <regex pattern="\} on PlatformException \{\s*return;\s*\}" dotAll="true" id="stale.rethrow_failed_wipe">
+        <regex pattern="\} on PlatformException \{\s*return false;\s*\}" dotAll="true" id="stale.rethrow_failed_wipe">
             <mutation text="} on PlatformException {rethrow;}"/>
         </regex>
 
         <!-- RULE 9: Record the launch even when the wipe failed -->
-        <regex pattern="\} on PlatformException \{\s*return;\s*\}" dotAll="true" id="stale.record_after_failed_wipe">
+        <regex pattern="\} on PlatformException \{\s*return false;\s*\}" dotAll="true" id="stale.record_after_failed_wipe">
             <mutation text="} on PlatformException {}"/>
         </regex>
 
@@ -66,6 +66,21 @@
         <!-- RULE 11: Record the launch as not yet launched -->
         <regex pattern="setBool\(_hasLaunchedBeforeKey, true\)" dotAll="true" id="stale.record_false">
             <mutation text="setBool(_hasLaunchedBeforeKey, false)"/>
+        </regex>
+
+        <!-- RULE 12: Report a failed wipe as a clean store -->
+        <regex pattern="\} on PlatformException \{\s*return false;\s*\}" dotAll="true" id="stale.failed_wipe_reports_clean">
+            <mutation text="} on PlatformException {return true;}"/>
+        </regex>
+
+        <!-- RULE 13: Report a finished launch as an unclean store -->
+        <regex pattern="await preferences\.setBool\(_hasLaunchedBeforeKey, true\);\s*return true;" dotAll="true" id="stale.finished_launch_reports_unclean">
+            <mutation text="await preferences.setBool(_hasLaunchedBeforeKey, true); return false;"/>
+        </regex>
+
+        <!-- RULE 14: Report an already-launched app as an unclean store -->
+        <regex pattern="\?\? false\) return true;" dotAll="true" id="stale.launched_app_reports_unclean">
+            <mutation text="?? false) return false;"/>
         </regex>
     </rules>
 

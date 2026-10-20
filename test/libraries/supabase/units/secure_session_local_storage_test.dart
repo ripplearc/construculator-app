@@ -81,6 +81,37 @@ void main() {
       });
     });
 
+    group('when the stored session is to be ignored', () {
+      late SecureSessionLocalStorage ignoring;
+
+      setUp(() {
+        secure.seed(_key, _session);
+        // ignore: no_direct_instantiation, reason: the class under test is built around the fake secure store
+        ignoring = SecureSessionLocalStorage(
+          secureStorage: secure,
+          persistSessionKey: _key,
+          ignoreStoredSession: true,
+        );
+      });
+
+      test('reports no session although one is stored', () async {
+        expect(await ignoring.accessToken(), isNull);
+        expect(await ignoring.hasAccessToken(), isFalse);
+      });
+
+      test('keeps a session saved by a new sign-in', () async {
+        await ignoring.persistSession('{"access_token":"a2"}');
+
+        expect(secure.peek(_key), '{"access_token":"a2"}');
+      });
+
+      test('signing out still removes the stored session', () async {
+        await ignoring.removePersistedSession();
+
+        expect(secure.storedKeys, isEmpty);
+      });
+    });
+
     group('removing the session', () {
       test('clears secure storage', () async {
         secure.seed(_key, _session);

@@ -17,6 +17,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// On iOS the read throws, and [SecureStorageWrapper] logs it.
 /// On Android the plugin (resetOnError, on by default) deletes the value
 /// and returns null, so nothing is logged.
+///
+/// When [ignoreStoredSession] is true, whatever is stored reads as no session,
+/// so the app starts signed out. A new sign-in saves over the stored value.
 // TODO: [CA-1333] start Sentry before Supabase so the iOS start-up failure reaches Sentry
 class SecureSessionLocalStorage extends LocalStorage {
   final SecureStorageWrapper _secureStorage;
@@ -25,10 +28,17 @@ class SecureSessionLocalStorage extends LocalStorage {
   /// `shared_preferences` copy.
   final String persistSessionKey;
 
+  /// Whether to treat the stored session as absent for this launch.
+  ///
+  /// Set when secure storage could not be emptied after a fresh install, so a
+  /// previous user's session may still be in it.
+  final bool ignoreStoredSession;
+
   /// Creates storage that saves the session under [persistSessionKey].
   const SecureSessionLocalStorage({
     required this._secureStorage,
     required this.persistSessionKey,
+    this.ignoreStoredSession = false,
   });
 
   /// The key Supabase's default storage uses for [supabaseUrl].
@@ -58,6 +68,7 @@ class SecureSessionLocalStorage extends LocalStorage {
 
   @override
   Future<String?> accessToken() async {
+    if (ignoreStoredSession) return null;
     try {
       return await _secureStorage.read(persistSessionKey);
     } on PlatformException {

@@ -14,8 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// update still has it and keeps its secure storage.
 ///
 /// If emptying secure storage fails, the flag stays unset and the next launch
-/// tries again. [SecureStorageWrapper] logs the failure, but Sentry is not
-/// running yet at that point, so the log reaches the console only.
+/// tries again. The caller is told the store may still hold the previous
+/// user's session, so that launch can start signed out. [SecureStorageWrapper]
+/// logs the failure, but Sentry is not running yet at that point, so the log
+/// reaches the console only.
 class StaleSecureStorageService {
   static const _hasLaunchedBeforeKey = 'has_launched_before';
 
@@ -29,16 +31,20 @@ class StaleSecureStorageService {
   ///
   /// [earlierVersionKey] is a `shared_preferences` key an earlier app version
   /// wrote. Finding it means the app is being updated, not freshly installed.
-  Future<void> clearIfFreshInstall({required String earlierVersionKey}) async {
+  ///
+  /// Returns false when emptying secure storage failed, so a previous user's
+  /// session may still be in it. Returns true otherwise.
+  Future<bool> clearIfFreshInstall({required String earlierVersionKey}) async {
     final preferences = await SharedPreferences.getInstance();
-    if (preferences.getBool(_hasLaunchedBeforeKey) ?? false) return;
+    if (preferences.getBool(_hasLaunchedBeforeKey) ?? false) return true;
     if (!preferences.containsKey(earlierVersionKey)) {
       try {
         await _secureStorage.deleteAll();
       } on PlatformException {
-        return;
+        return false;
       }
     }
     await preferences.setBool(_hasLaunchedBeforeKey, true);
+    return true;
   }
 }

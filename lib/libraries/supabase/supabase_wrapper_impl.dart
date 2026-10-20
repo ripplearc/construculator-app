@@ -35,7 +35,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
       final persistSessionKey = SecureSessionLocalStorage.persistSessionKeyFor(
         supabaseUrl,
       );
-      await StaleSecureStorageService(
+      final secureStorageIsClean = await StaleSecureStorageService(
         secureStorage: _secureStorage,
       ).clearIfFreshInstall(earlierVersionKey: persistSessionKey);
       await supabase.Supabase.initialize(
@@ -47,6 +47,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
           localStorage: SecureSessionLocalStorage(
             secureStorage: _secureStorage,
             persistSessionKey: persistSessionKey,
+            ignoreStoredSession: !secureStorageIsClean,
           ),
         ),
       );

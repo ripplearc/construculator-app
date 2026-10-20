@@ -163,6 +163,71 @@ void main() {
       },
     );
 
+    test(
+      'a reinstall whose Keychain cannot be emptied starts signed out',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson()));
+        secure.shouldThrowOnDelete = true;
+        final wrapper = buildWrapper(secure, _authServer());
+
+        await wrapper.initialize();
+
+        expect(wrapper.currentSession, isNull);
+        expect(wrapper.currentUser, isNull);
+      },
+    );
+
+    test(
+      'the next launch empties the Keychain after a failed attempt',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson()));
+        secure.shouldThrowOnDelete = true;
+        await buildWrapper(secure, _authServer()).initialize();
+        await supabase.Supabase.instance.dispose();
+        secure.shouldThrowOnDelete = false;
+
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+
+        expect(wrapper.currentSession, isNull);
+        expect(secure.storedKeys, isEmpty);
+      },
+    );
+
+    test(
+      'a user who signs in after a failed attempt replaces the old session',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson(accessToken: 'old')));
+        secure.shouldThrowOnDelete = true;
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+
+        await wrapper.signInWithPassword(
+          email: 'user@example.com',
+          password: 'pw',
+        );
+        await secure.untilWritten(_sessionKey);
+
+        expect(secure.peek(_sessionKey), contains(_accessToken));
+        expect(secure.peek(_sessionKey), isNot(contains('old')));
+      },
+    );
+
+    test(
+      'an update keeps other secure storage items, so the earlier session key is checked',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          _sessionKey: jsonEncode(_sessionJson()),
+        });
+        secure.seed('another-item', 'kept');
+        final wrapper = buildWrapper(secure, _authServer());
+
+        await wrapper.initialize();
+
+        expect(secure.peek('another-item'), 'kept');
+      },
+    );
+
     test('signing out removes the session from secure storage', () async {
       final wrapper = buildWrapper(secure, _authServer());
       await wrapper.initialize();

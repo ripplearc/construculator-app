@@ -14,7 +14,7 @@ void main() {
     late FakeSecureStorageWrapper secure;
     late StaleSecureStorageService service;
 
-    Future<void> launch() =>
+    Future<bool> launch() =>
         service.clearIfFreshInstall(earlierVersionKey: _earlierVersionKey);
 
     setUp(() {
@@ -27,9 +27,10 @@ void main() {
     test('empties items a previous install left in the Keychain', () async {
       secure.seed('stale', 'previous-user');
 
-      await launch();
+      final isClean = await launch();
 
       expect(secure.storedKeys, isEmpty);
+      expect(isClean, isTrue);
     });
 
     test(
@@ -38,9 +39,10 @@ void main() {
         SharedPreferences.setMockInitialValues({_earlierVersionKey: 'session'});
         secure.seed('kept', 'value');
 
-        await launch();
+        final isClean = await launch();
 
         expect(secure.peek('kept'), 'value');
+        expect(isClean, isTrue);
       },
     );
 
@@ -79,13 +81,26 @@ void main() {
         await expectLater(launch(), completes);
       });
 
+      test('reports that the previous session may still be there', () async {
+        expect(await launch(), isFalse);
+      });
+
       test('tries again on the next launch', () async {
         await launch();
         secure.shouldThrowOnDelete = false;
 
-        await launch();
+        final isClean = await launch();
 
         expect(secure.storedKeys, isEmpty);
+        expect(isClean, isTrue);
+      });
+
+      test('reports a clean store once a launch has finished', () async {
+        secure.shouldThrowOnDelete = false;
+        await launch();
+        secure.shouldThrowOnDelete = true;
+
+        expect(await launch(), isTrue);
       });
     });
   });
