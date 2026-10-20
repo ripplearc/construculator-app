@@ -21,13 +21,12 @@ permissions:
   checks: read
   statuses: write
 
-concurrency:
-  group: runcheck-${{ github.event.issue.number || inputs.pr_number }}
-  cancel-in-progress: false
-
 jobs:
   trigger:
     runs-on: ubuntu-latest
+    concurrency:
+      group: runcheck-${{ github.event.issue.number || inputs.pr_number }}
+      cancel-in-progress: false
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.pull_request &&
