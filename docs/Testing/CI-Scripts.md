@@ -275,7 +275,7 @@ MacOS developers should always verify iOS builds pass locally before creating PR
 
 ### Toolchain
 
-- Flutter: `3.32.0` (via Codemagic environment + FVM).
+- Flutter: the version in `.fvmrc`, installed by FVM. `codemagic.yaml` pins no Flutter version of its own, and `scripts/ci/check_flutter_version_pins.sh` fails the Comprehensive Check (and `./scripts/run_check.sh --pre`, with its test) if it, or a `flutter-version:` in a GitHub workflow, differs from `.fvmrc`.
 - FVM is the standard entrypoint for local and CI commands.
 
 ### Required tools (local)
@@ -354,7 +354,7 @@ POSTHOG_HOST=         (empty - PostHog is dev-only for now)
 - `ARC_CODE_COVERAGE_TARGET`: standard required coverage.
 - `CODE_COVERAGE_MINIMUM`: fallback target used in specific commit-message scenarios (`#DeltaCoverageLow` or `DCL` in CI).
 - `TARGET_BRANCH`: local script compare/rebase target (default `main`).
-- `BASE_BRANCH`, `CM_PULL_REQUEST_DEST`, `CM_COMMIT`, `CM_REPO_URL`: CI branch/commit context.
+- `BASE_BRANCH`, `CM_PULL_REQUEST_DEST`: CI branch context.
 - `FORCE_FAIL`: optional CI hard fail switch in selected workflows.
 
 ### Variable precedence notes
