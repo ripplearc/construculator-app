@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 class FakeSecureStorageWrapper implements SecureStorageWrapper {
   final Map<String, String> _values = {};
 
-  /// Makes [read] throw, as when the Keystore key was lost after a restore.
+  /// Makes [read] throw, as when the platform store is unavailable.
   bool shouldThrowOnRead = false;
 
   /// Makes [write] throw, as when the platform store is unavailable.

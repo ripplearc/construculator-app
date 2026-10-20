@@ -7,8 +7,9 @@
 abstract class SecureStorageWrapper {
   /// Returns the value stored under [key], or null when there is none.
   ///
-  /// Throws when the platform store cannot be read, for example when the
-  /// Keystore key was lost after a device restore.
+  /// On Android, a value that cannot be decrypted (for example after a
+  /// restore) is deleted and this returns null. Throws for other platform
+  /// errors.
   Future<String?> read(String key);
 
   /// Stores [value] under [key], replacing any earlier value.

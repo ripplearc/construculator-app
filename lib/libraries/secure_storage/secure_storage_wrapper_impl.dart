@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/secure_storage/interfaces/secure_storage_wrapper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -12,23 +13,25 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// the Keystore.
 ///
 /// A failed call is logged once here and rethrown, so the caller decides
-/// whether the failure matters. Sentry only receives the log after it has
-/// started, so a failure during app start-up reaches the console only.
+/// whether the failure matters. A failure before Sentry has started reaches
+/// the console only.
 class SecureStorageWrapperImpl implements SecureStorageWrapper {
-  static final _logger = AppLogger().tag('SecureStorageWrapperImpl');
+  AppLogger get _logger => AppLogger().tag('SecureStorageWrapperImpl');
 
   final FlutterSecureStorage _storage;
 
   /// [storage] stands in for the plugin in tests; production omits it.
   SecureStorageWrapperImpl({FlutterSecureStorage? storage})
-    : _storage = storage ?? _pluginStorage;
+    : _storage = storage ?? defaultStorage;
 
   /// The Keychain options every item is written with.
   static const iosOptions = IOSOptions(
     accessibility: KeychainAccessibility.first_unlock_this_device,
   );
 
-  static const _pluginStorage = FlutterSecureStorage(iOptions: iosOptions);
+  /// The plugin store production uses, exposed so a test can check its options.
+  @visibleForTesting
+  static const defaultStorage = FlutterSecureStorage(iOptions: iosOptions);
 
   @override
   Future<String?> read(String key) =>

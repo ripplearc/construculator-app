@@ -1,11 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
      <uses-permission
         android:name="android.permission.INTERNET"/>
-    <!-- allowBackup is off because the Keystore key that decrypts the saved
-         session is never backed up; a restored copy of the encrypted data
-         could not be read. See docs/Security/Secure-Storage.md. -->
+    <!-- Cloud backup is off, and the extraction rules stop phone-to-phone
+         transfer too (allowBackup alone does not on Android 12 and later).
+         The Keystore key that decrypts the saved session never leaves the
+         phone, so a copied session could not be read. See
+         docs/Security/Secure-Storage.md. -->
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="Construculator"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

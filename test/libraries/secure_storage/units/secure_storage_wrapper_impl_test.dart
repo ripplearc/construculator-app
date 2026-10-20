@@ -1,4 +1,6 @@
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/secure_storage/secure_storage_wrapper_impl.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -92,6 +94,14 @@ void main() {
       );
     });
 
+    test('the real store writes iOS items with first_unlock_this_device', () {
+      expect(
+        SecureStorageWrapperImpl.defaultStorage.iOptions
+            .toMap()['accessibility'],
+        KeychainAccessibility.first_unlock_this_device.name,
+      );
+    });
+
     group('when the platform store fails', () {
       late SecureStorageWrapperImpl wrapper;
 
@@ -114,6 +124,16 @@ void main() {
 
       test('delete rethrows so a surviving session is not hidden', () {
         expect(() => wrapper.delete('k'), throwsA(isA<PlatformException>()));
+      });
+
+      test('reports the failure to Sentry once', () async {
+        final sentry = FakeSentryWrapper();
+        AppLogger.setSentryWrapper(sentry);
+        addTearDown(() => AppLogger.setSentryWrapper(null));
+
+        await expectLater(wrapper.read('k'), throwsA(isA<PlatformException>()));
+
+        expect(sentry.exceptions, hasLength(1));
       });
     });
   });
