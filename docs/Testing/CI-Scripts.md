@@ -289,6 +289,17 @@ resolve per flavor here; that applies once a signed iOS workflow exists.
 
 MacOS developers should always verify iOS builds pass locally before creating PR changes.
 
+### Nightly iOS debug build
+
+`.github/workflows/nightly_ios_build.yml` runs at 01:17 UTC every day. It starts the `ios-debug-build` Codemagic workflow on `main` only when the tip of `main` has no `Ios Debug Build` result yet, so a day with no merge costs nothing.
+
+- The decision lives in `scripts/ci/main_needs_ios_build.sh`. It reads the check runs on the tip of `main`. Codemagic reports through GitHub check runs from the `codemagic-ci-cd` app, not through commit statuses.
+- A queued, running, successful or failed run from Codemagic counts as a result. A canceled or timed-out run does not, and neither does a check run with the same name from another app.
+- If GitHub cannot be read, the answer is "build". A lookup problem can cost one build, but it never hides a broken `main`.
+- A failing nightly build reports through the normal Codemagic failure message to `#build-notifications`.
+- If Codemagic does not start the build (for example, an expired API token), only the GitHub run turns red. GitHub emails the person who last changed the cron line. Check the Actions tab after a token change.
+- Run it by hand with `gh workflow run nightly_ios_build.yml -f dry_run=false` (`dry_run` defaults to `true` for manual runs and prints the request without sending it).
+
 ## Environment and Configuration
 
 ### Toolchain
