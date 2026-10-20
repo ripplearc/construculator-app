@@ -449,7 +449,7 @@ workflows:
       - name: Install Flutter version via FVM
         script: fvm install
       - name: Checkout Base Branch
-        script: git checkout "$BASE_BRANCH"
+        script: git checkout "${BASE_BRANCH:?BASE_BRANCH must be set for periodic-check}"
 
       - name: Install Dependencies
         script: |

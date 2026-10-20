@@ -26,7 +26,7 @@ FAILURES=0
 
 CODEMAGIC="$ROOT/codemagic.yaml"
 if [ -f "$CODEMAGIC" ]; then
-  PINS=$(grep -n -E '^[[:space:]]+flutter:[[:space:]]*v?[0-9]' "$CODEMAGIC" || true)
+  PINS=$(grep -n -E '^[[:space:]]+flutter:[[:space:]]*["'"'"']?v?[0-9]' "$CODEMAGIC" || true)
   if [ -n "$PINS" ]; then
     echo "❌ codemagic.yaml pins a Flutter version. The version comes from .fvmrc ($EXPECTED):"
     echo "$PINS"
@@ -40,6 +40,7 @@ for WORKFLOW in "$ROOT"/.github/workflows/*.yml "$ROOT"/.github/workflows/*.yaml
     /^[[:space:]]*#/ { next }
     /flutter-version:/ {
       value = $0
+      sub(/[[:space:]]+#.*/, "", value)
       sub(/.*flutter-version:[[:space:]]*/, "", value)
       gsub(/["'"'"'[:space:]]/, "", value)
       if (value != expected) { print FNR ": flutter-version " value }

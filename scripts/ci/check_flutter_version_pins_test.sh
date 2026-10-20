@@ -82,6 +82,16 @@ run_target
 assert_true "fails on an unquoted .yaml workflow that differs" exit_code_is 1
 
 new_repo 3.44.4
+add_workflow e2e.yml 'flutter-version: "3.44.4" # keep in sync'
+run_target
+assert_true "passes a matching version followed by a comment" exit_code_is 0
+
+new_repo 3.44.4
+add_workflow e2e.yml 'flutter-version: "3.32.0" # keep in sync'
+run_target
+assert_true "fails a wrong version followed by a comment" exit_code_is 1
+
+new_repo 3.44.4
 add_workflow e2e.yml '# flutter-version: "3.32.0"'
 run_target
 assert_true "ignores a commented-out version" exit_code_is 0
@@ -96,6 +106,16 @@ new_repo 3.44.4
 printf '      flutter: v3.44.4\n' >>"${WORK_DIR}/repo/codemagic.yaml"
 run_target
 assert_true "fails on a v-prefixed pin, even one equal to .fvmrc" exit_code_is 1
+
+new_repo 3.44.4
+printf '      flutter: "3.32.0"\n' >>"${WORK_DIR}/repo/codemagic.yaml"
+run_target
+assert_true "fails on a double-quoted pin" exit_code_is 1
+
+new_repo 3.44.4
+printf "      flutter: '3.32.0'\n" >>"${WORK_DIR}/repo/codemagic.yaml"
+run_target
+assert_true "fails on a single-quoted pin" exit_code_is 1
 
 new_repo 3.44.4
 printf '      flutter: stable\n' >>"${WORK_DIR}/repo/codemagic.yaml"
