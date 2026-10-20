@@ -1,22 +1,25 @@
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:flutter/services.dart';
 
 /// Keeps the Delivery field to a dollar amount the storyboard accepts: digits
-/// with at most two decimals, up to [largestFee] (CUJ 6, "Accepted values").
+/// with at most two decimals, up to [largestMoneyAmount] (CUJ 6, "Accepted
+/// values").
 ///
-/// A keystroke or paste that would break the shape or go above [largestFee] is
-/// dropped and the field keeps its text. Only the too-large case calls
-/// [onTooLarge], so the form can say why nothing happened.
+/// A keystroke or paste that would add a third decimal or go above
+/// [largestMoneyAmount] is dropped and the field keeps its text. Both cases
+/// call [onLimitReached], so the form can say why nothing happened. Other
+/// wrong input (letters, a comma, a second point) is dropped silently.
 class DeliveryFeeInputFormatter extends TextInputFormatter {
-  /// The largest delivery fee the form accepts, the same bound as a rate.
-  static const double largestFee = 999999.99;
+  /// Called when an edit is dropped for adding a third decimal or going above
+  /// [largestMoneyAmount].
+  final VoidCallback? onLimitReached;
 
-  /// Called when an edit is dropped for going above [largestFee].
-  final VoidCallback? onTooLarge;
+  static final _twoDecimalsAtMost = RegExp(r'^\d*\.?\d{0,2}$');
+  static final _digitsAndOnePoint = RegExp(r'^\d*\.?\d*$');
 
-  static final _shape = RegExp(r'^\d*\.?\d{0,2}$');
-
-  /// Creates a formatter that reports a too-large edit through [onTooLarge].
-  DeliveryFeeInputFormatter({this.onTooLarge});
+  /// Creates a formatter that reports a refused limit edit through
+  /// [onLimitReached].
+  DeliveryFeeInputFormatter({this.onLimitReached});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -25,10 +28,13 @@ class DeliveryFeeInputFormatter extends TextInputFormatter {
   ) {
     final text = newValue.text;
     if (text.isEmpty) return newValue;
-    if (!_shape.hasMatch(text)) return oldValue;
+    if (!_twoDecimalsAtMost.hasMatch(text)) {
+      if (_digitsAndOnePoint.hasMatch(text)) onLimitReached?.call();
+      return oldValue;
+    }
     final value = double.tryParse(text);
-    if (value != null && value > largestFee) {
-      onTooLarge?.call();
+    if (value != null && value > largestMoneyAmount) {
+      onLimitReached?.call();
       return oldValue;
     }
     return newValue;

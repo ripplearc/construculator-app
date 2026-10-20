@@ -125,8 +125,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   bool _deliveryExpanded = false;
   bool _showDeliveryLimitHint = false;
+  String _lastDeliveryText = '';
   late final _deliveryFeeFormatter = DeliveryFeeInputFormatter(
-    onTooLarge: _showDeliveryLimit,
+    onLimitReached: _showDeliveryLimit,
   );
 
   String _lastDailyRateText = '';
@@ -227,18 +228,22 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onDeliveryFeeChanged() {
-    if (_showDeliveryLimitHint) {
+    final text = _deliveryFeeController.text;
+    if (_showDeliveryLimitHint && text.length < _lastDeliveryText.length) {
       setState(() => _showDeliveryLimitHint = false);
     }
+    _lastDeliveryText = text;
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentDeliveryFeeUpdatedEvent(_deliveryFeeController.text),
+      EquipmentDeliveryFeeUpdatedEvent(text == '.' ? '' : text),
     );
     _notifyTotal();
   }
 
   void _onDeliveryFocusChanged() {
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      if (!_deliveryFocusNode.hasFocus) _showDeliveryLimitHint = false;
+    });
   }
 
   void _onDescriptionChanged() {
@@ -516,7 +521,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         _RateSaveStatus.failed => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _rateSaveMessage(
+            _hintRow(
               context,
               key: const Key('save_as_my_rate_helper_text'),
               icon: CoreIcons.info,
@@ -524,7 +529,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               text: _hintText(context, data, saved: false),
             ),
             const SizedBox(height: CoreSpacing.space1),
-            _rateSaveMessage(
+            _hintRow(
               context,
               key: const Key('save_as_my_rate_error'),
               icon: CoreIcons.error,
@@ -538,14 +543,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
           ],
         ),
-        _RateSaveStatus.saved => _rateSaveMessage(
+        _RateSaveStatus.saved => _hintRow(
           context,
           key: const Key('save_as_my_rate_helper_text'),
           icon: CoreIcons.info,
           iconColor: context.colorTheme.iconGrayMid,
           text: _hintText(context, data, saved: true),
         ),
-        _RateSaveStatus.idle => _rateSaveMessage(
+        _RateSaveStatus.idle => _hintRow(
           context,
           key: const Key('save_as_my_rate_helper_text'),
           icon: CoreIcons.info,
@@ -556,7 +561,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  Widget _rateSaveMessage(
+  Widget _hintRow(
     BuildContext context, {
     required Key key,
     required CoreIconData icon,
@@ -1141,18 +1146,21 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
             if (_showDeliveryLimitHint)
               Padding(
-                padding: const EdgeInsets.only(top: CoreSpacing.space1),
+                padding: const EdgeInsets.only(top: CoreSpacing.space2),
                 child: Semantics(
                   liveRegion: true,
-                  child: Text(
+                  child: _hintRow(
+                    context,
                     key: const Key('delivery_fee_limit_hint'),
-                    l10n.equipmentDeliveryFeeLimitHint(
-                      DisplayFormatter.currency.format(
-                        DeliveryFeeInputFormatter.largestFee,
+                    icon: CoreIcons.info,
+                    iconColor: colorTheme.iconGrayMid,
+                    text: Text(
+                      l10n.equipmentDeliveryFeeLimitHint(
+                        DisplayFormatter.currency.format(largestMoneyAmount),
                       ),
-                    ),
-                    style: textTheme.bodySmallRegular.copyWith(
-                      color: colorTheme.textBody,
+                      style: textTheme.bodySmallRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
                     ),
                   ),
                 ),

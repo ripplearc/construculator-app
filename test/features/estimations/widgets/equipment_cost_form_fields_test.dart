@@ -1850,18 +1850,22 @@ void main() {
         );
       });
 
-      testWidgets('refuses a third decimal without the hint', (tester) async {
+      testWidgets('refuses a third decimal and says why', (tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
         await expandDeliveryField(tester);
         await tester.enterText(deliveryField(), '85.50');
         await tester.pump();
+        expect(limitHint(), findsNothing);
 
         await tester.enterText(deliveryField(), '85.505');
         await tester.pump();
 
         expect(typedDelivery(tester), '85.50');
-        expect(limitHint(), findsNothing);
+        expect(
+          find.text('The largest delivery fee is \$999,999.99.'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('refuses letters and a second decimal point', (tester) async {
@@ -1882,22 +1886,105 @@ void main() {
         expect(typedDelivery(tester), '8.5');
       });
 
-      testWidgets('the hint goes away on the next accepted edit', (
-        tester,
-      ) async {
+      Future<void> showLimitHint(WidgetTester tester) async {
         await tester.pumpWidget(makeWidget());
         await tester.pumpAndSettle();
         await expandDeliveryField(tester);
-        await tester.enterText(deliveryField(), '999999.99');
+        await tester.enterText(deliveryField(), '100000');
         await tester.pump();
-        await tester.enterText(deliveryField(), '9999999.99');
+        await tester.enterText(deliveryField(), '1000000');
         await tester.pump();
         expect(limitHint(), findsOneWidget);
+      }
 
-        await tester.enterText(deliveryField(), '99999');
+      testWidgets('the hint goes away when a digit is deleted', (tester) async {
+        await showLimitHint(tester);
+
+        await tester.enterText(deliveryField(), '10000');
         await tester.pump();
 
         expect(limitHint(), findsNothing);
+      });
+
+      testWidgets('the hint stays when a longer value is accepted', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        await tester.enterText(deliveryField(), '100000.');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '100000.');
+        expect(limitHint(), findsOneWidget);
+      });
+
+      testWidgets('the hint stays when only the cursor moves', (tester) async {
+        await showLimitHint(tester);
+        final controller = tester
+            .widget<TextField>(
+              find.descendant(
+                of: deliveryField(),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller!;
+
+        controller.selection = const TextSelection.collapsed(offset: 2);
+        await tester.pump();
+
+        expect(limitHint(), findsOneWidget);
+      });
+
+      testWidgets('the hint goes away when the user leaves the field', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        await tester.tap(find.byKey(const Key('delivery_note_field')));
+        await tester.pumpAndSettle();
+
+        expect(limitHint(), findsNothing);
+      });
+
+      testWidgets('the hint has the info icon, like the Rate hint', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        expect(
+          find.descendant(
+            of: limitHint(),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is CoreIconWidget && widget.icon == CoreIcons.info,
+            ),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a lone decimal point counts as no fee in the total', (
+        tester,
+      ) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '2');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
+        await tester.pump();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '.5');
+        await tester.pump();
+        expect(capturedTotal, 400.5);
+
+        await tester.enterText(deliveryField(), '.');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '.');
+        expect(capturedTotal, 400.0);
       });
     });
 
