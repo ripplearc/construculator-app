@@ -24,9 +24,11 @@ trap cleanup EXIT
 
 mkdir -p "${WORK_DIR}/bin" "${WORK_DIR}/fake"
 
-# FAKE_CURL_FAIL=true makes the fake fail the way curl --fail-with-body does.
+# FAKE_CURL_FAIL=true makes the fake fail the way curl does: exit 22 only when
+# --fail-with-body is passed, otherwise exit 0 with the error body.
 cat >"${WORK_DIR}/bin/curl" <<'EOF2'
 #!/bin/bash
+all_args=" $* "
 body=""
 url=""
 while [ "$#" -gt 0 ]; do
@@ -38,7 +40,8 @@ echo "$url" >"$FAKE_DIR/url"
 echo "$body" >"$FAKE_DIR/body"
 if [ "${FAKE_CURL_FAIL:-false}" = "true" ]; then
   echo '{"message":"Resource not accessible by integration"}'
-  exit 22
+  case "$all_args" in *" --fail-with-body "*) exit 22 ;; esac
+  exit 0
 fi
 echo '{"id":1}'
 EOF2
