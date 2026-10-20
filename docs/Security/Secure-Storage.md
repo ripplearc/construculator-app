@@ -4,32 +4,41 @@
 This guide evaluates local encryption options for protecting Personally Identifiable Information (PII) and preparing the codebase to pass security audits. It acknowledges our current Supabase token management flow and recommends a path forward as that dependency may evolve.
 
 ## Current State — Supabase Token Flow
-Supabase's Flutter SDK (`supabase_flutter`) handles session tokens automatically. Internally, it uses `flutter_secure_storage` under the hood to persist the access token and refresh token on-device. This means we are already relying on secure storage — just indirectly.
+`supabase_flutter` saves the login session (access token and refresh token) through a `LocalStorage` object. Its default, `SharedPreferencesLocalStorage`, writes plain text to `shared_preferences`. It does **not** use `flutter_secure_storage`, and `flutter_secure_storage` is not a dependency of `supabase_flutter`.
 
-**What this means for us:**
-- Tokens are encrypted at rest through platform-native mechanisms (Keychain on iOS, Keystore / EncryptedSharedPreferences on Android)
-- If Supabase's token strategy changes (e.g., moving to in-memory only, or introducing a custom adapter), we will need our own secure storage layer to remain in control
-- Any additional PII we store beyond auth tokens — names, IDs, private information, etc. — is not covered by Supabase. We are fully responsible for that
+The app replaces that default. `SupabaseWrapperImpl.initialize()` passes `SecureSessionLocalStorage` (`lib/libraries/supabase/secure_session_local_storage.dart`) to `Supabase.initialize` through `authOptions`. It saves the session through `SecureStorageWrapper` (`lib/libraries/secure_storage/`), which wraps `flutter_secure_storage`. Tests use `FakeSecureStorageWrapper` in its place.
+
+What it does:
+- **New sign-in:** the session is written to secure storage under the key `sb-<project>-auth-token`. Nothing is written to `shared_preferences`.
+- **Update from an earlier app version:** on start-up, a session found in `shared_preferences` under the same key is copied to secure storage and then deleted from `shared_preferences`, so signed-in users stay signed in. If the copy fails, the old entry stays and the copy is tried again on the next start. If secure storage already holds a session, it wins and the old entry is deleted.
+- **Sign-out:** the session is removed from secure storage, and from `shared_preferences` if an old copy is still there.
+  Supabase does not surface a failed removal. It logs a warning and carries on, so the session stays in secure storage and the user is signed in again at the next launch. When the device is online, sign-out also asks the server to end the session, which stops the stored copy from working. Offline, the stored copy keeps working until it is removed.
+- **Unreadable session:** the app starts signed out. Supabase calls the read during start-up without catching errors, so a thrown error would stop the app from starting. On iOS the read throws, and `SecureStorageWrapperImpl` logs it once. Sentry is not running yet during start-up, so that log reaches the console only (CA-1333). On Android the plugin deletes a value it cannot decrypt, and also all values if the Keystore key is lost, and the read returns null. Nothing is logged.
+
+Not covered:
+- Supabase also keeps the PKCE code verifier in `shared_preferences` (`SharedPreferencesGotrueAsyncStorage`). It is a short-lived value used while a sign-in link is being completed, not a session token, and it is not moved.
+- Any additional PII we store beyond auth tokens — names, IDs, private information, etc. — is not covered by Supabase. We are fully responsible for that.
 
 ## Native Security Layers
 
 ### iOS — Keychain Services
-By default, `flutter_secure_storage` utilizes the `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` attribute. While this offers maximum security, it prevents the app from accessing data (like Auth Tokens) during background updates or silent notifications if the user's device is locked.
-To support background processes, we must manually configure the storage to use `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` by passing `accessibility: KeychainAccessibility.first_unlock_this_device_only` to `IOSOptions` in `flutter_secure_storage` ios configuration.
+`flutter_secure_storage` writes items with `kSecAttrAccessibleWhenUnlocked` unless told otherwise (`KeychainAccessibility.unlocked`). Those items cannot be read while the phone is locked, which blocks a background token refresh, and they can move to a new phone through an encrypted backup.
+
+`SecureStorageWrapperImpl` passes `IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device)` instead, which is `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
 
 ## Security Properties
-- Hardware Encryption: Data remains encrypted via the device’s Secure Enclave.
+- Encrypted at rest: iOS encrypts Keychain items; the device must be unlocked once after a restart before items with this setting can be read.
 - Post-Reboot Protection: Data is inaccessible after a restart until the user enters their passcode for the first time.
 - Background Ready: Once the "First Unlock" occurs, the app can securely retrieve tokens to perform silent syncs even while the screen is locked.
-- No Cloud Leakage: Because we use the ThisDeviceOnly suffix, the keys are never synced to iCloud or included in unencrypted backups.
+- Stays on this device: the `ThisDeviceOnly` setting keeps items out of iCloud Keychain and prevents them being restored onto a different phone.
 
 
-### Android — Keystore + EncryptedSharedPreferences
-To ensure higher security on Android, manually enable `EncryptedSharedPreferences` by passing `encryptedSharedPreferences: true`, as this feature is disabled by default. This way the encryption key lives in hardware on supported devices and is never exposed to the app in plaintext.
+### Android — Keystore
+Since `flutter_secure_storage` 10 the plugin no longer uses Jetpack `EncryptedSharedPreferences`. Version 11 removed the `encryptedSharedPreferences` option altogether, and the app pins 11.2.0, so there is nothing to switch on. The default `AndroidOptions()` wraps a random AES-GCM key with an RSA-OAEP key held in the Android Keystore, and stores the encrypted values in app-private shared preferences.
 
-- On Android 6.0+ (API 23+), hardware-backed key storage is available
-- On older devices, it falls back to software-backed storage — still encrypted, but without hardware guarantees
-- This is considered enterprise-safe for most compliance requirements (GDPR, HIPAA-adjacent)
+- Version 11 needs Android API 24 or newer, which is also the minimum Flutter 3.35 and later supports.
+- Whether the Keystore key is hardware-backed depends on the device.
+- `android:allowBackup="false"` and `android:dataExtractionRules` (`res/xml/data_extraction_rules.xml`, which excludes everything from cloud backup and device transfer) are set in `AndroidManifest.xml`. `allowBackup` alone does not stop device-to-device transfer on Android 12 and later. The Keystore key is never backed up, so a restored copy of the encrypted values cannot be decrypted. With the default `resetOnError: true`, the plugin deletes those values and the read returns null, so the user starts signed out. The plugin README recommends turning backup off for this reason. The cost is that Android's cloud backup and device-to-device transfer no longer carry any of the app's local data.
 
 ## Critical Gotcha — Data Persists After Uninstall (iOS)
 
@@ -39,8 +48,10 @@ Keychain data can persist across app uninstalls unless explicitly cleared, where
 
 **The risk:** A user uninstalls the app, reinstalls it, and the app silently picks up stale tokens, cached PII, or old flags — without the user's awareness.
 
-**Solution:**
+**Solution (not yet implemented, tracked by [CA-519](https://ripplearc.youtrack.cloud/issue/CA-519)):**
 On first launch after a fresh install, check for a 'first-run' flag stored in regular `SharedPreferences` (which does get cleared on uninstall). If the flag is absent, run a `deleteAll()` on `flutter_secure_storage` to wipe any stale data.
+
+> ⚠️ Because the session now lives in secure storage, the flag check alone is not safe. An app that was installed before the flag existed also has no flag, so a plain `deleteAll()` would sign out every user who updates. An absent flag with a session still in `shared_preferences` is an update, not a fresh install, and must not wipe.
 
 ```dart
 // Run during app initialization
@@ -63,7 +74,7 @@ if (isFirstRun) {
 | Aspect | Details |
 |--------|---------|
 | **Best for** | Small, discrete secrets (tokens, keys, user IDs) |
-| **Encryption** | Platform-native (Keychain / EncryptedSharedPreferences) |
+| **Encryption** | Platform-native (Keychain / Keystore-wrapped AES-GCM) |
 | **Data structure** | Simple key-value pairs |
 | **Max data size** | Not designed for large datasets — degrades past ~100 keys |
 | **Performance** | Very fast for reads/writes of small values |
@@ -133,15 +144,15 @@ If we ever need to store larger structured data locally — offline user profile
 If a future audit explicitly mandates SQLCipher, or if we evolve into storing complex relational PII data, it is worth revisiting. For now it introduces more complexity than it solves.
 
 ### Regarding Supabase
-No immediate changes are required to the token flow. The recommended action is to implement the first-run stale data wipe and ensure any PII we store beyond Supabase-managed tokens is explicitly routed through `flutter_secure_storage`, not written to regular `SharedPreferences` or local files.
+The login session is kept in secure storage by `SecureSessionLocalStorage` (see Current State above). Ensure any PII we store beyond Supabase-managed tokens is explicitly routed through `flutter_secure_storage`, not written to regular `SharedPreferences` or local files.
 
 ## Action Items
 
-- [ ] **Priority: High** — Implement first-run stale data wipe on iOS to handle the uninstall persistence issue
+- [ ] **Priority: High** — Implement first-run stale data wipe on iOS to handle the uninstall persistence issue ([CA-519](https://ripplearc.youtrack.cloud/issue/CA-519)), keeping the update-versus-fresh-install check above
 - [ ] **Priority: High** — Audit existing code for any PII written to `SharedPreferences`, local files, or logs — migrate to `flutter_secure_storage`
 - [ ] **Priority: Medium** — Document the key management strategy if Hive is adopted: where the AES key lives and how it is rotated
-- [ ] **Priority: Ongoing** — Monitor Supabase SDK changelogs for any changes to their storage adapter — if they shift away from `flutter_secure_storage`, we need our own token persistence layer
-- [ ] **Priority: Medium** — [Pin the `flutter_secure_storage` version in `pubspec.yaml` and establish a policy for reviewing it after major iOS/Android OS releases](https://ripplearc.youtrack.cloud/issue/CA-518/SecurityInfrastructure-Pin-fluttersecurestorage-Version-and-Establish-Review-Policy)
+- [ ] **Priority: Ongoing** — Monitor Supabase SDK changelogs for changes to the `LocalStorage` interface that `SecureSessionLocalStorage` extends
+- [ ] **Priority: Medium** — The version is pinned to 11.2.0 in `pubspec.yaml`. [Establish a policy for reviewing it after major iOS/Android OS releases](https://ripplearc.youtrack.cloud/issue/CA-518/SecurityInfrastructure-Pin-fluttersecurestorage-Version-and-Establish-Review-Policy)
 
 ## Related Documentation
 
