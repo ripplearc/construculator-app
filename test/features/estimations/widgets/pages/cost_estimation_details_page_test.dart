@@ -12,6 +12,7 @@ import 'package:construculator/features/estimation/presentation/widgets/your_rat
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -77,7 +78,8 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
-    Modular.get<CurrentCompanyResolver>().clearCache();
+    Modular.dispose<AuthManager>();
+    Modular.dispose<CurrentCompanyResolver>();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
@@ -113,6 +115,7 @@ void main() {
     String userId = 'user-1',
     String? profilePhotoUrl,
   }) {
+    Modular.get<AuthManager>();
     fakeSupabase.setCurrentUser(
       FakeUser(
         id: credentialId,

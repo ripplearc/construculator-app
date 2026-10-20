@@ -13,7 +13,10 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
+import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
+import 'package:construculator/libraries/company/data/data_source/powersync_local_current_company_data_source.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/company/testing/fake_current_company_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -1280,11 +1283,11 @@ void main() {
         'logout clears the current-company cache so the next user is '
         'resolved fresh',
         () async {
-          await authManager.loginWithEmail(testEmail, testPassword);
           supabaseWrapper.setRpcResponse(
             DatabaseConstants.getMyCompanyIdRpcFunction,
             'company-a',
           );
+          await authManager.loginWithEmail(testEmail, testPassword);
           expect(
             (await currentCompanyResolver.resolve()).getRightOrNull(),
             'company-a',
@@ -1312,6 +1315,62 @@ void main() {
           );
         },
       );
+
+      test('signing in keeps the company id on the device without anything '
+          'else asking for it', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+
+        final saved =
+            Modular.get<FakeCurrentCompanyDatabase>().nextInsertApplied;
+
+        await authManager.loginWithEmail(testEmail, testPassword);
+        await saved;
+
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(
+          await deviceStore.loadCompanyId(supabaseWrapper.currentUser!.id),
+          'company-a',
+        );
+      });
+
+      test('logout clears the company id kept on the device', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        final userId = supabaseWrapper.currentUser!.id;
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        await currentCompanyResolver.resolve();
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(await deviceStore.loadCompanyId(userId), 'company-a');
+
+        await authManager.logout();
+
+        expect(await deviceStore.loadCompanyId(userId), isNull);
+      });
+
+      test('a signed-out event that does not come from logout() clears the '
+          'company id kept on the device', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        final userId = supabaseWrapper.currentUser!.id;
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          'company-a',
+        );
+        await currentCompanyResolver.resolve();
+        final deviceStore = Modular.get<LocalCurrentCompanyDataSource>();
+
+        final cleared =
+            Modular.get<FakeCurrentCompanyDatabase>().nextDeleteApplied;
+
+        await supabaseWrapper.signOut();
+        await cleared;
+
+        expect(await deviceStore.loadCompanyId(userId), isNull);
+      });
 
       test(
         'a signed-out event that does not come from logout() clears the '
@@ -1381,8 +1440,19 @@ class _TestAppModule extends Module {
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
     i.addSingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
+    i.addSingleton<FakeCurrentCompanyDatabase>(
+      () => FakeCurrentCompanyDatabase(),
+    );
+    i.addSingleton<LocalCurrentCompanyDataSource>(
+      () => PowerSyncLocalCurrentCompanyDataSource(
+        database: i<FakeCurrentCompanyDatabase>(),
+      ),
+    );
     i.addSingleton<CurrentCompanyResolver>(
-      () => CurrentCompanyResolverImpl(supabaseWrapper: i()),
+      () => CurrentCompanyResolverImpl(
+        supabaseWrapper: i(),
+        localDataSource: i(),
+      ),
     );
     i.add<AuthManager>(
       () => AuthManagerImpl(
