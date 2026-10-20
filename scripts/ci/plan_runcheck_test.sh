@@ -150,6 +150,12 @@ set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed timed_ou
 run_target
 assert_true "a timed-out run is not a result" field_is .skip '[]'
 
+for conclusion in neutral stale skipped action_required; do
+  set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed "$conclusion" b1)"
+  run_target
+  assert_true "a run that ended $conclusion is not a result" field_is .skip '[]'
+done
+
 set_runs headsha0123456 "$(run_json github-actions 'Comprehensive Check' completed success b1)"
 run_target
 assert_true "ignores a same-named check run from another app" field_is .skip '[]'
