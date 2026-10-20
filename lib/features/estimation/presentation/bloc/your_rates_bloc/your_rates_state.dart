@@ -62,3 +62,10 @@ class YourRatesSaveFailed extends YourRatesState {
   const YourRatesSaveFailed(this.failure);
   final Failure failure;
 }
+
+/// State after [YourRatesSaveRequested] when the signed-in user has no company
+/// to save under. Separate from [YourRatesSaveFailed] because the account has
+/// no company yet. A retry works only after a company exists.
+class YourRatesSaveNoCompany extends YourRatesState {
+  const YourRatesSaveNoCompany();
+}

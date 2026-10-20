@@ -510,7 +510,7 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
-        'emits SaveFailed when the caller has no company to save under',
+        'emits SaveNoCompany when the caller has no company to save under',
         setUp: () {
           fakeSupabaseWrapper.setRpcResponse(
             DatabaseConstants.getMyCompanyIdRpcFunction,
@@ -519,13 +519,7 @@ void main() {
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [
-          isA<YourRatesSaveFailed>().having(
-            (s) => (s.failure as EstimationFailure).errorType,
-            'errorType',
-            EstimationErrorType.permissionDenied,
-          ),
-        ],
+        expect: () => [isA<YourRatesSaveNoCompany>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
