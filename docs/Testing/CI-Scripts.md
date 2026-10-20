@@ -193,10 +193,13 @@ A `#RunCheck` comment can leave out the iOS build when the pull request changes 
 - **Safety net:** the nightly iOS build on `main` (see below). The Android build in the Comprehensive Check is not skipped. It still compiles the Dart code on every comment, which is why leaving out the iOS build is safe.
 - **New top-level paths:** `ios_build_needed_test.sh` fails until every top-level path in the repository is classified in `ios_build_paths.conf`, so a new directory cannot be forgotten.
 
-Switch it on in this order. The ruleset "Ios Debug Build" requires the status `Ios Debug Build` from the Codemagic app only, and a status posted by GitHub Actions is not expected to count until that restriction is removed. Confirm it on the first skipped pull request before relying on it.
+Switch it on in this order. The ruleset "Ios Debug Build" requires the status `Ios Debug Build` from the Codemagic app only, so a status posted by GitHub Actions does not count until the owner allows that source. Confirm it on the first skipped pull request before relying on it, and after a `#RunCheck ios` on a skipped commit, confirm that a failing Codemagic result still blocks the merge.
 
 1. Nothing to do at first. While the repository variable `RUNCHECK_SKIP_IOS` is not `true`, every `#RunCheck` still starts the iOS build, and the job summary shows what the decision would have been ("observation only"). Compare it with the real iOS results for a while.
-2. **Owner action:** in the ruleset "Ios Debug Build", set the source of the required status check to "Any source". Codemagic's own result still satisfies it.
+2. **Owner actions**, all before step 3:
+   - In the ruleset "Ios Debug Build", let the required status check come from Codemagic and from the GitHub Actions app only. Do not choose "Any source". With "Any source", any workflow token that has `statuses: write` could post a passing iOS result with no build.
+   - Make the default workflow token read-only: `gh api -X PUT repos/ripplearc/construculator-app/actions/permissions/workflow -f default_workflow_permissions=read`. A workflow then gets `statuses: write` only when its own file asks for it. Every workflow that needs more than read already has a `permissions:` block. `e2e_env_smoke.yml` has none and needs only read.
+   - `.github/CODEOWNERS` covers all of `.github/workflows/` and the scripts that decide or post the result, so a new workflow that asks for `statuses: write` needs approval from devops.
 3. `gh variable set RUNCHECK_SKIP_IOS --body true`.
 4. To go back, delete the variable: `gh variable delete RUNCHECK_SKIP_IOS`. The ruleset can stay as it is.
 

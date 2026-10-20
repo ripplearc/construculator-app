@@ -175,9 +175,9 @@ reset_fake
 set_files 1 "${FIRST_PAGE[@]}"
 i=2
 while [ "$i" -le 30 ]; do set_files "$i" "${FIRST_PAGE[@]}"; i=$((i + 1)); done
-set_files 31 lib/x.dart
+printf '[]' >"${WORK_DIR}/fake/files_31.json"
 run_target
-assert_true "runs iOS when the file list may be cut off at 3000 files" contains "at most 3000 files"
+assert_true "runs iOS when GitHub stops at exactly 3000 files" contains "at most 3000 files"
 
 reset_fake
 rm -f "${WORK_DIR}/fake/files_1.json"
@@ -213,6 +213,12 @@ set_files 1 lib/a.dart
 printf '{"check_runs":[{"name":"Ios Debug Build","conclusion":"cancelled","app":{"slug":"codemagic-ci-cd"}}]}' >"${WORK_DIR}/fake/checks.json"
 run_target
 assert_true "a canceled Codemagic run does not block the skip" starts_with "skip:"
+
+reset_fake
+set_files 1 lib/a.dart
+printf '{"check_runs":[{"name":"Ios Debug Build","conclusion":"timed_out","app":{"slug":"codemagic-ci-cd"}}]}' >"${WORK_DIR}/fake/checks.json"
+run_target
+assert_true "a timed-out Codemagic run does not block the skip" starts_with "skip:"
 
 reset_fake
 set_files 1 lib/a.dart
