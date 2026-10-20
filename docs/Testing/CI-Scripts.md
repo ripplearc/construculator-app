@@ -173,7 +173,7 @@ When triggered, the workflow starts these Codemagic pipelines for the PR source 
 - `comprehensive-check`
 - `ios-debug-build`
 
-The Comprehensive Check also runs everything the Pre-check runs (see below), so the separate Pre-check build only repeats machine start-up and analysis. It is skipped when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`. The variable is unset today, so all three pipelines still start. Switch over in this order, because the GitHub ruleset "Merge to Main Branch" requires a `Pre-check` status from Codemagic:
+The Comprehensive Check also runs everything the Pre-check runs (see below), so the separate Pre-check build only repeats machine start-up, analysis and the changed-test run. It is skipped when the repository variable `RUNCHECK_SKIP_PRECHECK` is `true`. The variable is unset today, so all three pipelines still start. Switch over in this order, because the GitHub ruleset "Merge to Main Branch" requires a `Pre-check` status from Codemagic:
 
 1. A repository owner removes the `Pre-check` required status check from the ruleset "Merge to Main Branch". While Pre-check still runs, nothing is blocked.
 2. Set the variable: `gh variable set RUNCHECK_SKIP_PRECHECK --body true`.
