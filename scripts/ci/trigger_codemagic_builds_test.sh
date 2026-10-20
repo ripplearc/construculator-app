@@ -24,13 +24,16 @@ trap cleanup EXIT
 
 mkdir -p "${WORK_DIR}/bin"
 
-# The fake records each request body under $FAKE_CURL_DIR/body.N and answers
+# The fake records each request body under $FAKE_CURL_DIR/body.N, every
+# argument it was called with under $FAKE_CURL_DIR/args.N, and answers
 # according to FAKE_CURL_MODE:
 #   ok            200 with a buildId
 #   reject_first  HTTP error for the first request only, then ok
 #   no_build_id   200 without a buildId
 cat >"${WORK_DIR}/bin/curl" <<'EOF'
 #!/bin/bash
+n=$(find "$FAKE_CURL_DIR" -name 'body.*' | wc -l | tr -d ' ')
+printf '%s\n' "$@" >"$FAKE_CURL_DIR/args.$((n + 1))"
 body=""
 while [ "$#" -gt 0 ]; do
   if [ "$1" = "-d" ]; then
@@ -101,6 +104,7 @@ exit_code_is() { [ "$EXIT_CODE" -eq "$1" ]; }
 output_contains() { echo "$OUTPUT" | grep -Fq -- "$1"; }
 requests_sent() { [ "$(request_count)" -eq "$1" ]; }
 summary_contains() { grep -Fq -- "$1" "${WORK_DIR}/summary.md"; }
+args_contain() { grep -Fxq -- "$2" "${WORK_DIR}/calls/args.$1"; }
 body_field_is() { [ "$(jq -r "$2" "${WORK_DIR}/calls/body.$1")" = "$3" ]; }
 
 export CODEMAGIC_API_TOKEN="test-token"
@@ -113,6 +117,9 @@ assert_true "sends the workflow id" body_field_is 2 .workflowId comprehensive-ch
 assert_true "sends the app id" body_field_is 1 .appId test-app
 assert_true "disables FORCE_FAIL" body_field_is 3 .environment.variables.FORCE_FAIL false
 assert_true "records each started build in the job summary" summary_contains "Started \`comprehensive-check\` on \`feature/x\`: build \`build-2\`"
+assert_true "sends the token header" args_contain 1 "x-auth-token: test-token"
+assert_true "posts to /builds" args_contain 1 "https://api.codemagic.io/builds"
+assert_true "fails on an HTTP error" args_contain 1 "--fail-with-body"
 
 # shellcheck disable=SC2016 # the shell metacharacters must stay literal
 HOSTILE_BRANCH='a";touch pwned;"$(touch pwned)'
@@ -128,6 +135,11 @@ assert_true "records the rejection in the job summary" summary_contains "\`pre-c
 
 run_target no_build_id feature/x comprehensive-check
 assert_true "fails when the response has no buildId" exit_code_is 1
+assert_true "records a missing buildId in the job summary" \
+  summary_contains "\`comprehensive-check\` returned no buildId"
+
+run_target ok "" pre-check
+assert_true "rejects an empty branch" exit_code_is 2
 
 unset CODEMAGIC_API_TOKEN CODEMAGIC_APP_ID
 
@@ -136,10 +148,15 @@ assert_true "fails loudly when the token is missing" exit_code_is 1
 assert_true "names the missing token" output_contains "CODEMAGIC_API_TOKEN is not set"
 assert_true "sends nothing when the token is missing" requests_sent 0
 
+CODEMAGIC_API_TOKEN="test-token" CODEMAGIC_APP_ID="" run_target ok feature/x pre-check
+assert_true "names the missing app id" output_contains "CODEMAGIC_APP_ID is not set"
+
 DRY_RUN=true run_target ok feature/x pre-check comprehensive-check
 assert_true "dry run succeeds without credentials" exit_code_is 0
 assert_true "dry run sends nothing" requests_sent 0
 assert_true "dry run names the workflow it would start" output_contains "would start comprehensive-check on feature/x"
+assert_true "records the dry run in the job summary" \
+  summary_contains "DRY RUN: would start \`pre-check\`"
 assert_true "dry run shows the request body" output_contains '"workflowId":"comprehensive-check","branch":"feature/x"' 
 
 run_target ok feature/x
