@@ -183,6 +183,69 @@ void main() {
         );
       });
 
+      test('an angle typed with the D:M:S key has one reading, so no pill '
+          'offers to drop its minutes', () {
+        expect(
+          press(const Tape(), '[Pitch] 8 DMS 4 5 DMS').readAsOffer,
+          isNull,
+        );
+        expect(
+          press(const Tape(), '[Pitch] 1 2 DMS 3 0 DMS').readAsOffer,
+          isNull,
+        );
+        expect(
+          pill(press(const Tape(), '[Pitch] 8 . 4 5 .')),
+          "Input 8°45' as 8.45°",
+          reason: 'typed digits exist to go back to',
+        );
+      });
+
+      test('⌫ on a minutes digit after the laps drops the pill', () {
+        var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill pill');
+        expect(pill(tape), "Input 8°45' as 8.45°");
+        tape = press(tape, '⌫ ⌫ ⌫');
+        expect(chipText(tape, 0), '8°');
+        expect(tape.readAsOffer, isNull);
+      });
+
+      test('a digit after the tap continues the number, read by default', () {
+        var tape = press(const Tape(), '[Pitch] 1 pill');
+        expect(chipText(tape, 0), '1in');
+        tape = press(tape, '2');
+        expect(chipText(tape, 0), '12');
+        expect(strip(tape).first, 'Pitch-degrees: 12°');
+        expect(pill(tape), 'Input 12° as 12in/12in');
+        final steep = press(const Tape(), '[Pitch] 6 pill 5');
+        expect(chipText(steep, 0), '65');
+        expect(strip(steep).first, 'Pitch-degrees: 65°');
+        expect(
+          steep.readAsOffer,
+          isNull,
+          reason: '65in/12in: nobody frames it',
+        );
+        expect(chipText(press(const Tape(), '[Pitch] 6 pill ⌫ 5'), 0), '65');
+      });
+
+      test('a squared inch is not a rise, so the pill leaves it alone', () {
+        expect(press(const Tape(), '[Pitch] 6 in in').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 6 pill in').readAsOffer, isNull);
+      });
+
+      test('term 2.14: a stop the rules refuse as a pitch is skipped', () {
+        expect(press(const Tape(), '[Pitch] 8 9 . 9 9').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 8 9 . 6 0').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 1 0 0 . 5').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 0 . 0').readAsOffer, isNull);
+        var tape = press(const Tape(), '[Pitch] 8 . 9 9 9 9');
+        expect(pill(tape), 'Input 8.9999° as 8.9999in/12in');
+        tape = press(tape, 'pill');
+        expect(
+          pill(tape),
+          'Input 8.9999in/12in as 8.9999°',
+          reason: "174°39' is no pitch, so the lap skips it",
+        );
+      });
+
       test('a length in feet, a fraction and a whole number ask nothing', () {
         expect(press(const Tape(), '[Pitch] 8 ft').readAsOffer, isNull);
         expect(press(const Tape(), '[Pitch] 7 / 1 6').readAsOffer, isNull);
@@ -190,13 +253,14 @@ void main() {
         expect(press(const Tape(), '[Pitch]').readAsOffer, isNull);
       });
 
-      test('a 30.45in pitch typed with [Inch] is past the band, so the pill '
-          'walks the two readings left', () {
-        var tape = press(const Tape(), '[Pitch] 3 0 . 4 5 in');
-        expect(pill(tape), 'Input 30.45in/12in as 30.45°');
-        tape = press(tape, 'pill');
-        expect(chipText(tape, 0), '30.45');
-        expect(pill(tape), "Input 30.45° as 30°45'");
+      test('rule 4.10: a number the Inch key made steeper than 24in/12in gets '
+          'no pill', () {
+        expect(press(const Tape(), '[Pitch] 3 0 . 4 5 in').readAsOffer, isNull);
+        expect(press(const Tape(), '[Pitch] 2 5 in').readAsOffer, isNull);
+        expect(
+          pill(press(const Tape(), '[Pitch] 2 4 in')),
+          'Input 24in/12in as 24°',
+        );
       });
     });
 
@@ -223,7 +287,14 @@ void main() {
         expect(press(const Tape(), '[Slope] 1 .').readAsOffer, isNull);
       });
 
-      test('the digits are shifted, never multiplied', () {
+      test('a fraction or a length under Slope is not a grade, so no pill', () {
+        expect(press(const Tape(), '[Slope] 1 / 2').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 2 in').readAsOffer, isNull);
+        expect(press(const Tape(), '[Slope] 1 ft').readAsOffer, isNull);
+      });
+
+      test('the digits are shifted, never multiplied: 0.65 × 100 is '
+          '65.00000000000001 and the pill promises the digits back', () {
         expect(
           pill(press(const Tape(), '[Slope] 0 . 0 7')),
           'Input 0.07% as 7%',

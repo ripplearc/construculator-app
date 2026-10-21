@@ -821,9 +821,15 @@ class Tape extends Equatable {
   /// then the way back. Under Pitch it walks every reading of the digits,
   /// degrees, inches of rise per 12in of run and D:M:S (8.45° → 8.45in/12in
   /// → 8°45' → 8.45°, walkthrough 17.4), skipping the roof nobody could
-  /// frame (over 24in/12in, the same line Slope draws at a ratio of 2) and
-  /// the D:M:S of a whole number, which is itself; a reading the user has
-  /// typed in full, a fraction, or a length in feet or metres asks nothing.
+  /// frame (over 24in/12in, the same line Slope draws at a ratio of 2; a
+  /// number the Inch key made that steep gets no pill either), the
+  /// D:M:S of a whole number, which is itself, and any stop the rules would
+  /// refuse as a pitch, 0° or less or 90° or more (8.9999 skips 174°39');
+  /// a reading the user has typed in full, an angle typed with the D:M:S
+  /// key, a fraction, a squared inch, or a length in feet or metres asks
+  /// nothing. The rise the pill reads a bare number as is not a unit the
+  /// user typed: a digit after the tap continues the number (6in/12in then
+  /// 5 is 65, read by default as 65°).
   ReadAsOffer? get readAsOffer {
     if (openBracket != null) return null;
     if (_chipReadAsDegrees case (:final index, :final chip)) {
@@ -994,16 +1000,21 @@ class Tape extends Equatable {
     if (chip.entry.tokens.length != 1) return null;
     final token = chip.entry.tokens.single;
     if (token.denominator != null || token.digits.isEmpty) return null;
-    if (token.unit != null && token.unit != Unit.inch) return null;
-    if (token.isDegreesMinutesSeconds && !_openSegmentIsEmpty(token)) {
+    if (token.unit != null && (token.unit != Unit.inch || token.power != 1)) {
+      return null;
+    }
+    if (token.isDegreesMinutesSeconds &&
+        (token.typedAs == null || !_openSegmentIsEmpty(token))) {
       return null;
     }
     final raw = token.typedAs ?? token.digits;
+    if (token.unit == Unit.inch && !_isARoofSomeoneCouldFrame(raw)) return null;
     final stops = [
       NumberReading.degrees,
       if (!raw.endsWith('.') && _isARoofSomeoneCouldFrame(raw))
         NumberReading.risePerFoot,
-      if (raw.contains('.')) NumberReading.degreesMinutesSeconds,
+      if (_isAPitch(_readAsDegreesMinutesSeconds(raw)?.tokens.single.value))
+        NumberReading.degreesMinutesSeconds,
     ];
     if (stops.length < 2) return null;
     final current = token.isDegreesMinutesSeconds
@@ -1015,7 +1026,7 @@ class Tape extends Equatable {
     final entry = switch (next) {
       NumberReading.degrees => _plain(raw),
       NumberReading.risePerFoot => EntryBuffer(
-        List.unmodifiable([Token(digits: raw, unit: Unit.inch)]),
+        List.unmodifiable([Token(digits: raw, unit: Unit.inch, typedAs: raw)]),
       ),
       _ => _readAsDegreesMinutesSeconds(raw),
     };
@@ -1031,6 +1042,9 @@ class Tape extends Equatable {
     return rise != null && rise > 0 && rise <= ReadAsOffer.largestRisePerFoot;
   }
 
+  static bool _isAPitch(double? degrees) =>
+      degrees != null && degrees > 0 && degrees < _degreesInARightAngle;
+
   static EntryBuffer _plain(String digits) =>
       EntryBuffer(List.unmodifiable([Token(digits: digits)]));
 
@@ -1042,8 +1056,6 @@ class Tape extends Equatable {
     };
   }
 
-  // Done on the digits rather than × 100, because 0.65 × 100 is
-  // 65.00000000000001 and the pill promises the digits come back untouched.
   static String _shiftedByAHundred(String digits) {
     final point = digits.indexOf('.');
     final whole = point < 0 ? digits : digits.substring(0, point);
