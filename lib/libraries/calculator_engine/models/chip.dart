@@ -135,12 +135,14 @@ final class ValueChip extends TapeChip {
   /// A trig chip ([trigFunction]) is worth its answer, not its digits, so
   /// Sine 89° × 56 is 55.99 and Arccosine 0.8 × 6 is 221.22° (Section 6,
   /// "Trig chips in a chain"); one whose function has no value at its
-  /// operand (Tangent 90°, Arcsine 2) is worth nothing.
+  /// operand (Tangent 90°, Arcsine 2) is worth nothing. An angle recalled
+  /// from the drawer under a forward trig key ([exact]) is the operand, so
+  /// Sine 45° recalled and × 10 is 7.07, as it is typed by hand.
   Quantity? value(QuantityParser parser) {
-    if (exactValue case final value?) return value;
     if (trigOperand case final operand?) {
       return trigFunction?.answerTo(operand);
     }
+    if (exactValue case final value?) return value;
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
     if (!_isPlainNumber) return null;
     if (entry.isDegreesMinutesSeconds || readsDegrees) return _typedAngle;
@@ -201,10 +203,16 @@ final class ValueChip extends TapeChip {
   /// What a trig chip asks its function of: its bare number, in degrees
   /// for SIN, COS and TAN, spelled as it was typed (38°30'45" stays a
   /// survey angle), and as a ratio for the inverse keys; `null` for any
-  /// other chip or before a number is typed.
+  /// other chip or before a number is typed. A recalled angle is read at
+  /// its exact value, so the sine of a recalled 53.13° is 0.8, not 0.799999.
   Quantity? get trigOperand => switch ((trigFunction, bareNumber)) {
     (final function?, final number?) =>
-      function.isInverse ? Scalar(number) : _typedAngle,
+      function.isInverse
+          ? Scalar(number)
+          : switch (exactValue) {
+              final Angle recalled => recalled,
+              _ => _typedAngle,
+            },
     _ => null,
   };
 

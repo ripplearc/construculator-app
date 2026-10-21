@@ -81,8 +81,10 @@ class Token extends Equatable {
 
   /// The typed number: the digits divided by the denominator when there is
   /// one, or the decimal degrees of an angle typed as degrees, minutes and
-  /// seconds. Exact only in the sense the user typed it; a length becomes
-  /// exact once it is turned into ticks.
+  /// seconds, where a minus on the degrees is the whole angle's (-30°30' is
+  /// -30.5°, the way the angle drawer files a negative answer, rule 4.16).
+  /// Exact only in the sense the user typed it; a length becomes exact once
+  /// it is turned into ticks.
   ///
   /// A zero denominator has no finite value: 7/0 reads as infinity and 0/0
   /// as NaN. The token does not guard this, because the digits must stay
@@ -92,9 +94,11 @@ class Token extends Equatable {
   double get value {
     final numerator = double.tryParse(digits) ?? 0;
     if (minutes case final minutes?) {
-      return numerator +
+      final magnitude =
+          numerator.abs() +
           _segment(minutes) / minutesPerDegree +
           _segment(seconds) / secondsPerDegree;
+      return digits.startsWith('-') ? -magnitude : magnitude;
     }
     final denominatorValue = double.tryParse(denominator ?? '');
     if (denominatorValue == null) return numerator;

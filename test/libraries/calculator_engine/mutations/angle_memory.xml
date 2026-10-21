@@ -13,6 +13,7 @@
         <file>lib/libraries/calculator_engine/angle_memory.dart</file>
         <file>lib/libraries/calculator_engine/models/chip.dart</file>
         <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/models/token.dart</file>
     </files>
 
     <rules>
@@ -25,9 +26,11 @@
         </regex>
 
         <!-- RULE 2: the drawer offers its oldest, or offers to any key -->
-        <regex pattern="keyTakesAnAngle\(key\) \? remembered\.firstOrNull : null;" dotAll="true" id="angle_memory.newest_for">
-            <mutation text="keyTakesAnAngle(key) ? remembered.lastOrNull : null;"/>
-            <mutation text="remembered.firstOrNull;"/>
+        <regex pattern="if \(!keyTakesAnAngle\(key\)\) return const \[\];\s*return List\.unmodifiable\(remembered\.take\(rowHasAnswers \? 1 : depth\)\);" dotAll="true" id="angle_memory.offered_for">
+            <mutation text="return List.unmodifiable(remembered.take(rowHasAnswers ? 1 : depth));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.take(1));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.take(depth));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.reversed.take(rowHasAnswers ? 1 : depth));"/>
         </regex>
 
         <!-- RULE 3: a value that is not an angle is filed -->
@@ -41,35 +44,46 @@
 
         <!-- RULE 4: the drawer grows past three, keeps duplicates, or files
              at the back -->
-        <regex pattern="\]\.take\(depth\)," dotAll="true" id="angle_memory.depth">
-            <mutation text="].take(depth + 1),"/>
+        <regex pattern="if \(kept\.length == depth\) break;" dotAll="true" id="angle_memory.depth">
+            <mutation text="if (kept.length == depth + 1) break;"/>
         </regex>
-        <regex pattern="\.\.\.remembered\.where\(\(kept\) =&gt; kept\.entry != angle\.entry\)," dotAll="true" id="angle_memory.duplicates">
-            <mutation text="...remembered,"/>
+        <regex pattern="if \(kept\.any\(\(earlier\) =&gt; earlier\.entry\.text == angle\.entry\.text\)\) \{\s*continue;\s*\}" dotAll="true" id="angle_memory.duplicates">
+            <mutation text=""/>
+            <mutation text="if (kept.any((earlier) =&gt; earlier.entry == angle.entry)) { continue; }"/>
         </regex>
-        <regex pattern="angle,\s*\.\.\.remembered\.where" dotAll="true" id="angle_memory.filed_at_the_back">
-            <mutation text="...remembered.where((kept) =&gt; kept.entry != angle.entry), angle, ...remembered.where"/>
+        <regex pattern="AngleMemory\.of\(\[angle, \.\.\.remembered\]\);" dotAll="true" id="angle_memory.filed_at_the_back">
+            <mutation text="AngleMemory.of([...remembered, angle]);"/>
         </regex>
 
         <!-- RULE 5: an answer is filed at its two decimals, or a D:M:S
              answer as decimal degrees, or its seconds are kept at zero -->
-        <regex pattern="RememberedAngle\(entry: _spelled\(angle, formatter\), value: angle\)," dotAll="true" id="angle_memory.answer.two_decimals">
-            <mutation text="RememberedAngle(entry: _spelled(angle, formatter), value: Angle(double.parse(_spelled(angle, formatter).tokens.single.digits), spelling: angle.spelling)),"/>
+        <regex pattern="return _withFront\(RememberedAngle\(entry: entry, value: angle\)\);" dotAll="true" id="angle_memory.answer.two_decimals">
+            <mutation text="return _withFront(RememberedAngle(entry: entry, value: Angle(entry.tokens.single.value, spelling: angle.spelling)));"/>
         </regex>
-        <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; _degreesMinutesSeconds\(answer\)," dotAll="true" id="angle_memory.answer.dms_as_degrees">
-            <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; Token(digits: formatter.format(answer.spelledAs(AngleSpelling.degrees), groupThousands: false).replaceFirst('°', '')),"/>
+        <regex pattern="seconds: match\[3\] \?\? ''\)," dotAll="true" id="angle_memory.answer.seconds_dropped">
+            <mutation text="seconds: ''),"/>
         </regex>
-        <regex pattern="seconds: seconds == 0 \? '' : '\$seconds'," dotAll="true" id="angle_memory.answer.zero_seconds">
-            <mutation text="seconds: '$seconds',"/>
+        <regex pattern="if \(_degreesMinutesSeconds\.firstMatch\(rendered\) case final match\?\) \{" dotAll="true" id="angle_memory.answer.dms_as_degrees">
+            <mutation text="if (false case final match?) {"/>
         </regex>
-        <regex pattern="groupThousands: false," dotAll="true" id="angle_memory.answer.grouped">
-            <mutation text="groupThousands: true,"/>
+        <regex pattern="groupThousands: false\)" dotAll="true" id="angle_memory.answer.grouped">
+            <mutation text="groupThousands: true)"/>
         </regex>
         <regex pattern="AngleSpelling\.risePerFoot \|\|\s*AngleSpelling\.grade =&gt; answer\.spelledAs\(AngleSpelling\.degrees\)," dotAll="true" id="angle_memory.answer.pitch_spelling_kept">
             <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; answer,"/>
         </regex>
         <regex pattern="if \(exactValue case final Angle angle\) return angle;" dotAll="true" id="chip.typed_angle.ignores_exact">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE 5b (R1): a recalled angle under a forward trig key is the
+             chip's value instead of the function's operand, or the operand
+             is read at the two decimals on screen -->
+        <regex pattern="if \(trigOperand case final operand\?\) \{\s*return trigFunction\?\.answerTo\(operand\);\s*\}\s*if \(exactValue case final value\?\) return value;" dotAll="true" id="chip.value.exact_before_trig">
+            <mutation text="if (exactValue case final value?) return value; if (trigOperand case final operand?) { return trigFunction?.answerTo(operand); }"/>
+        </regex>
+        <regex pattern=": switch \(exactValue\) \{\s*final Angle recalled =&gt; recalled,\s*_ =&gt; _typedAngle,\s*\}," dotAll="true" id="chip.trig_operand.recalled_at_digits">
+            <mutation text=": _typedAngle,"/>
         </regex>
 
         <!-- RULE 6: a recalled angle lands on a filled chip, a bare chip or
@@ -80,6 +94,53 @@
         </regex>
         <regex pattern="exact: \(\) =&gt; \(value: angle\.value, spelled: angle\.entry\)," dotAll="true" id="tape.recall.loses_precision">
             <mutation text=""/>
+        </regex>
+        <regex pattern="final operand = switch \(chip\.trigOperand\) \{\s*final Angle angle =&gt; angle\.degrees,\s*Scalar\(:final value\) =&gt; value,\s*_ =&gt; number,\s*\};" dotAll="true" id="tape.trig_answer.recalled_at_digits">
+            <mutation text="final operand = number;"/>
+        </regex>
+
+        <!-- RULE 7 (R1): the minus sign is lost on filing, or applied to the
+             degrees alone; Pitch takes a recalled angle of 0° or less; a
+             digit joins a recalled value -->
+        <regex pattern="'\^\(-\?\\\\d\+\)°" dotAll="true" id="angle_memory.answer.minus_sign_dropped">
+            <mutation text="'^(\\d+)°"/>
+        </regex>
+        <regex pattern="\.replaceFirst\(QuantityFormatter\.minusSign, '-'\)," dotAll="true" id="angle_memory.answer.typographic_minus">
+            <mutation text=","/>
+        </regex>
+        <regex pattern="return digits\.startsWith\('-'\) \? -magnitude : magnitude;" dotAll="true" id="token.value.sign_on_degrees_only">
+            <mutation text="return numerator + magnitude - numerator.abs();"/>
+        </regex>
+        <regex pattern="if \(angle\.value\.degrees &lt;= 0\) \{\s*return const TapeRefused\(TapeRefusal\.pitchNeedsAnAngleAboveZero\);\s*\}" dotAll="true" id="tape.recall.pitch_takes_below_zero">
+            <mutation text=""/>
+            <mutation text="if (angle.value.degrees &lt; 0) { return const TapeRefused(TapeRefusal.pitchNeedsAnAngleAboveZero); }"/>
+        </regex>
+        <regex pattern="if \(key == PlainNumberKeys\.pitch\) \{\s*if \(angle\.value\.degrees &lt;= 0\)" dotAll="true" id="tape.recall.every_key_refuses">
+            <mutation text="if (true) { if (angle.value.degrees &lt;= 0)"/>
+        </regex>
+        <regex pattern="if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.joins_recalled">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9 (R1, review of 22 Oct): a recalled angle gets the Read-as
+             pill, the D:M:S key leaves it as it is or drops its exact value,
+             or Pitch takes a recalled angle of 90° or more -->
+        <regex pattern="return _holdsARecalledAngle\(chip\) \? null : _angleOffer\(index, chip\);" dotAll="true" id="tape.read_as.recalled_under_trig">
+            <mutation text="return _angleOffer(index, chip);"/>
+        </regex>
+        <regex pattern="if \(chip == null \|\| _holdsARecalledAngle\(chip\)\) return null;" dotAll="true" id="tape.read_as.recalled_under_pitch">
+            <mutation text="if (chip == null) return null;"/>
+        </regex>
+        <regex pattern="final angle = _respelledAngle\(recalled\);" dotAll="true" id="tape.dms_key.recalled_not_converted">
+            <mutation text="final angle = recalled;"/>
+        </regex>
+        <regex pattern="chip\.copyWith\(\s*entry: entry,\s*exact: \(\) =&gt; \(value: angle, spelled: entry\),\s*\)," dotAll="true" id="tape.dms_key.recalled_loses_exact">
+            <mutation text="chip.copyWith(entry: entry, exact: () =&gt; null),"/>
+            <mutation text="chip.copyWith(entry: entry),"/>
+        </regex>
+        <regex pattern="if \(angle\.value\.degrees &gt;= _degreesInARightAngle\) \{\s*return const TapeRefused\(\s*TapeRefusal\.pitchNeedsAnAngleUnderARightAngle,\s*\);\s*\}" dotAll="true" id="tape.recall.pitch_takes_right_angle">
+            <mutation text=""/>
+            <mutation text="if (angle.value.degrees &gt; _degreesInARightAngle) { return const TapeRefused(TapeRefusal.pitchNeedsAnAngleUnderARightAngle); }"/>
         </regex>
     </rules>
 
