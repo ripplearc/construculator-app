@@ -18,8 +18,8 @@ enum NumberReading {
 /// is being typed; "Re-input 38.30° as 38°30'" once a trig answer stands on
 /// the tape and the tap will rewrite it (walkthrough 16.4).
 final class ReadAsOffer extends Equatable {
-  /// The place on the tape of the chip the offer re-reads, which can sit
-  /// behind the active chip: [SIN] 12.1 ÷ 3.5 still offers the 12.1.
+  /// The place on the tape of the chip the offer re-reads: the active chip,
+  /// or the operand chip before the answer a postfix trig key landed.
   final int chipIndex;
 
   /// How the number reads now.

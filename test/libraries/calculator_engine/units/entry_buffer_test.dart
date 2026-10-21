@@ -598,6 +598,40 @@ void main() {
         }
       });
 
+      test('the way back: the D:M:S key keeps the typed digits, a segment '
+          'digit typed or removed forgets them, reopening keeps them', () {
+        final closed = typeAngle('45.2:');
+        expect(closed.tokens.single.typedAs, '45.2');
+        expect(typeAngle('45.2:5').tokens.single.typedAs, isNull);
+        final reopened = changed(closed.backspace());
+        expect(reopened.text, "45°2'");
+        expect(reopened.tokens.single.typedAs, '45.2');
+        final shortened = changed(reopened.backspace());
+        expect(shortened.text, '45°');
+        expect(shortened.tokens.single.typedAs, isNull);
+        expect(
+          typeAngle('38:').tokens.single.typedAs,
+          isNull,
+          reason: 'a whole number has one reading, so no way back',
+        );
+        expect(typeAngle('38.:').tokens.single.typedAs, '38.');
+        expect(typeAngle('38.:3').tokens.single.typedAs, isNull);
+        final reclosed = changed(
+          changed(typeAngle('38.30:').backspace()).closeDegreesMinutesSeconds(),
+        );
+        expect(reclosed.text, "38°30'");
+        expect(
+          reclosed.tokens.single.typedAs,
+          '38.30',
+          reason: 'the key re-closes the same digits',
+        );
+        expect(
+          const Token(digits: '38', minutes: '30', typedAs: '38.30'),
+          isNot(const Token(digits: '38', minutes: '30')),
+          reason: 'two tokens that differ only in the way back are not equal',
+        );
+      });
+
       test('segments past 2⁵³ minutes are left as typed', () {
         final huge = typeAngle('99999999999999999:5:');
         expect(huge.text, "99999999999999999°05'");

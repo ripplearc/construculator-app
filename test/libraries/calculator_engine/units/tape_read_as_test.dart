@@ -12,6 +12,7 @@ void main() {
   TapeOutcome pressKey(Tape tape, String key) => switch (key) {
     'DMS' => tape.pressDmsKey(),
     'SIN' => tape.pressTrigKey(TrigFunction.sine),
+    'COS' => tape.pressTrigKey(TrigFunction.cosine),
     'TAN' => tape.pressTrigKey(TrigFunction.tangent),
     'ASIN' => tape.pressTrigKey(TrigFunction.arcsine),
     'ACOS' => tape.pressTrigKey(TrigFunction.arccosine),
@@ -26,6 +27,7 @@ void main() {
     '/' => tape.typeFraction(),
     '=' => tape.pressEquals(),
     '(' => tape.pressBracket(),
+    '⌫' => tape.backspace(),
     _ when key.startsWith('[') => tape.pressFunctionKey(
       key.substring(1, key.length - 1),
       keyWantsUnit: !PlainNumberKeys.all.contains(
@@ -52,7 +54,6 @@ void main() {
         NumberReading.degreesMinutesSeconds => '',
       };
 
-  /// The pill as the prototype spells it: "Input 8.45° as 8.45in/12in".
   String? pill(Tape tape) {
     final offer = tape.readAsOffer;
     if (offer == null) return null;
@@ -100,23 +101,38 @@ void main() {
         expect(press(const Tape(), '3 × 4 = − 1 2 . 1').readAsOffer, isNull);
       });
 
-      test('S114: the question follows the angle through an operator and '
-          'points behind the active chip', () {
-        var tape = press(const Tape(), 'SIN 1 2 . 1 ÷ 3 . 5');
-        expect(pill(tape), "Input 12.1° as 12°01'");
-        expect(tape.readAsOffer!.chipIndex, 0);
-        tape = press(tape, 'pill');
-        expect(chipText(tape, 0), "12°01'");
-        expect(chipText(tape, 1), '3.5');
-        expect(tape.active!.entry.text, '3.5');
+      test('term 2.14: the pill offers readings only for the number on the '
+          'display, so an operator that moves on from the angle ends it', () {
+        final moved = press(const Tape(), 'SIN 1 2 . 1 ÷ 3 . 5');
+        expect(moved.active!.entry.text, '3.5');
+        expect(moved.readAsOffer, isNull);
+        expect(press(const Tape(), 'SIN 1 2 . 1 ÷').readAsOffer, isNull);
       });
 
-      test('S114: a bare number beside an angle is degrees, so 60° + 12°01\' '
-          'is 72.02°', () {
-        var tape = press(const Tape(), '0 . 5 ACOS + 1 2 . 1');
-        expect(pill(tape), "Input 12.1 as 12°01'");
-        tape = press(tape, 'pill =');
-        expect(lastResult(tape), 'Calc 72.02°');
+      test('term 2.14: a number under a trig key after an operator gets the '
+          'pill like any other', () {
+        var tape = press(const Tape(), '5 × SIN 1 2 . 1');
+        expect(pill(tape), "Input 12.1° as 12°01'");
+        tape = press(tape, 'pill');
+        expect(tape.active!.entry.text, "12°01'");
+        expect(lastResult(press(tape, '=')), 'Calc 1.04');
+        expect(
+          pill(press(const Tape(), 'SIN 1 2 . 1 × COS 3 3 . 3')),
+          "Input 33.3° as 33°03'",
+          reason: 'the number on the display is the 33.3',
+        );
+        expect(
+          pill(press(const Tape(), '[Width] 3 ft × SIN 1 2 . 1')),
+          "Input 12.1° as 12°01'",
+        );
+      });
+
+      test('term 2.14: a plain number added to an angle answer gets no pill, '
+          'because it can only be degrees', () {
+        final sum = press(const Tape(), '0 . 5 ACOS + 1 2 . 1');
+        expect(sum.readAsOffer, isNull);
+        expect(lastResult(press(sum, '=')), 'Calc 72.1°');
+        expect(press(const Tape(), '0 . 5 ACOS − 1 2 . 1').readAsOffer, isNull);
       });
 
       test('S114: the prefix order asks while typing, the postfix order '
@@ -157,33 +173,97 @@ void main() {
         expect(chipText(tape, 0), "45°02'");
       });
 
-      test('S116: the pill names the number it is talking about, even once '
-          'the display has moved on', () {
+      test('S116: the pill goes with the display: once it shows 3.5 nothing '
+          'names the 12.1', () {
         final tape = press(const Tape(), 'SIN 1 2 . 1 ÷ 3 . 5');
         expect(tape.active!.entry.text, '3.5');
-        expect(pill(tape), "Input 12.1° as 12°01'");
+        expect(tape.readAsOffer, isNull);
       });
 
-      test('an answer that cannot be rebuilt is removed (Section 5.5)', () {
-        var tape = press(const Tape(), '8 9 . 6 0 TAN');
-        expect(lastResult(tape), 'Tangent 143.237122');
-        expect(pill(tape), "Re-input 89.60° as 90°00'");
-        tape = press(tape, 'pill');
-        expect(tape.chips, hasLength(1));
-        expect(chipText(tape, 0), "90°00'");
-      });
-
-      test('the question follows the angle through a named chip, and stops '
-          'at an answer', () {
+      test('term 2.14: no pill whose reading gives no answer under the key, '
+          'and no message says so', () {
+        final answered = press(const Tape(), '8 9 . 6 0 TAN');
+        expect(lastResult(answered), 'Tangent 143.237122');
+        expect(answered.readAsOffer, isNull);
         expect(
-          pill(press(const Tape(), 'SIN 1 2 . 1 × [Width] 3')),
-          "Input 12.1° as 12°01'",
+          answered.reInput(),
+          const TapeRefused(TapeRefusal.nothingToReInput),
+        );
+        expect(press(const Tape(), 'TAN 8 9 . 6 0').readAsOffer, isNull);
+        expect(press(const Tape(), 'TAN 8 9 . 6 0 ÷ 2').readAsOffer, isNull);
+        expect(
+          press(const Tape(), 'SIN 8 9 . 6 0').readAsOffer,
+          isNull,
+          reason: 'a reading of 90° or more is never offered, under any key',
+        );
+        expect(press(const Tape(), 'COS 8 9 . 6 0').readAsOffer, isNull);
+        expect(press(const Tape(), 'SIN 9 0 . 3 0').readAsOffer, isNull);
+        expect(
+          press(const Tape(), 'TAN 9 0 . 0 0 .').readAsOffer,
+          isNull,
+          reason: 'the way back to 90.00 has no tangent either',
+        );
+        expect(
+          pill(press(const Tape(), 'SIN 9 0 . 0 0 .')),
+          "Input 90°00' as 90.00°",
+        );
+        expect(
+          pill(press(const Tape(), 'SIN 8 9 . 5 9')),
+          "Input 89.59° as 89°59'",
+        );
+      });
+
+      test('a named chip being typed is not an angle, and an answer ends the '
+          'question', () {
+        expect(
+          press(const Tape(), 'SIN 1 2 . 1 × [Width] 3').readAsOffer,
+          isNull,
         );
         final answered = press(const Tape(), '1 2 . 1 SIN');
         expect(
           answered.append(const ValueChip(operator: Operator.add)).readAsOffer,
           isNull,
         );
+      });
+
+      test('the offer names its readings the right way round, and the way '
+          'back the other', () {
+        var tape = press(const Tape(), 'SIN 3 8 . 3 0');
+        var offer = tape.readAsOffer!;
+        expect(offer.from, NumberReading.degrees);
+        expect(offer.to, NumberReading.degreesMinutesSeconds);
+        tape = press(tape, 'pill');
+        offer = tape.readAsOffer!;
+        expect(offer.from, NumberReading.degreesMinutesSeconds);
+        expect(offer.to, NumberReading.degrees);
+        expect(offer.next.text, '38.30');
+      });
+
+      test('the way back belongs to the digits it was made from: ⌫ on a '
+          'segment digit removes the pill, reopening a segment keeps it', () {
+        var tape = press(const Tape(), 'SIN 3 8 . 3 0 pill');
+        expect(pill(tape), "Input 38°30' as 38.30°");
+        tape = press(tape, '⌫');
+        expect(chipText(tape, 0), "38°30'");
+        expect(pill(tape), "Input 38°30' as 38.30°", reason: 'same digits');
+        expect(
+          pill(press(tape, 'DMS')),
+          "Input 38°30' as 38.30°",
+          reason: 'the key re-closes the same digits',
+        );
+        tape = press(tape, '⌫');
+        expect(chipText(tape, 0), "38°3'");
+        expect(tape.readAsOffer, isNull);
+        expect(formatter.format(tape.trigAnswer!.value), '0.616349');
+        expect(
+          press(const Tape(), 'SIN 3 8 DMS').readAsOffer,
+          isNull,
+          reason:
+              'a whole number read as D:M:S has no second reading to go back to',
+        );
+        final postfix = press(const Tape(), '3 8 . 3 0 SIN pill ⌫ ⌫ ⌫');
+        expect(chipText(postfix, 0), "38°3'");
+        expect(postfix.readAsOffer, isNull);
       });
     });
 
