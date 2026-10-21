@@ -89,8 +89,11 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     YourRatesRefreshRecents event,
     Emitter<YourRatesState> emit,
   ) async {
-    emit(const YourRatesLoading());
-    // TODO: [CA-1249] The Your recents sheet shows an empty list for YourRatesError; show its error message instead. https://ripplearc.youtrack.cloud/issue/CA-1249
+    emit(
+      state is YourRatesError
+          ? const YourRatesRetrying()
+          : const YourRatesLoading(),
+    );
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
       onNoCompany: () => emit(const YourRatesLoaded([])),
