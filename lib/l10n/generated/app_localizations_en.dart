@@ -2180,4 +2180,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addToEstimateFailedError => 'This cost was not added. Try again.';
+
+  @override
+  String get addsToEstimateNeedsQuantityNote =>
+      'Needs a quantity before it can total';
+
+  @override
+  String get addsToEstimateNeedsQuantityAboveZeroNote =>
+      'Needs a quantity above zero before it can total';
+
+  @override
+  String get addsToEstimateInvalidQuantityNote =>
+      'Needs a valid quantity before it can total';
+
+  @override
+  String get addsToEstimateNeedsUnitNote => 'Needs a unit before it can total';
+
+  @override
+  String get enterMaterialNameToContinueButton =>
+      'Enter a material name to continue';
+
+  @override
+  String get enterQuantityToContinueButton => 'Enter a quantity to continue';
+
+  @override
+  String get enterUnitToContinueButton => 'Enter a unit to continue';
+
+  @override
+  String get fixQuantityToContinueButton => 'Fix the quantity to continue';
 }

@@ -284,6 +284,22 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'stays failed while a field is edited, with the edited value',
+        setUp: () => fakeSupabase.shouldThrowOnInsert = true,
+        build: () => bloc,
+        act: (b) async {
+          filledEvents.forEach(b.add);
+          b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
+          await b.stream.firstWhere((s) => s is MaterialCostFormFailure);
+          b.add(const MaterialQuantityUpdated('8'));
+        },
+        verify: (b) {
+          final failed = b.state as MaterialCostFormFailure;
+          expect(failed.data.quantity, 8);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'saves once when Add is tapped twice while the first save runs',
         setUp: () {
           fakeSupabase.shouldDelayOperations = true;
@@ -385,6 +401,131 @@ void main() {
         },
         verify: (_) =>
             expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
+      );
+    });
+
+    group('line total', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is zero until both quantity and rate are set',
+        build: () => bloc,
+        act: (b) => b.add(const MaterialQuantityUpdated('3')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 0),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is quantity times rate rounded to the cent',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('1.5'))
+          ..add(const MaterialRateUpdated('2.55')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 3.83),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a half cent from a part quantity',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('0.5'))
+          ..add(const MaterialRateUpdated('2.01')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 1.01),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'is zero when a value is not a finite number',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('Infinity'))
+          ..add(const MaterialRateUpdated('2')),
+        verify: (b) => expect(_dataOf(b.state).lineTotal, 0),
+      );
+    });
+
+    group('line total column', () {
+      Future<void> fill(
+        MaterialCostFormBloc b,
+        String quantity,
+        String rate,
+      ) async {
+        b
+          ..add(const MaterialCostItemTypeChanged('Paint'))
+          ..add(MaterialQuantityUpdated(quantity))
+          ..add(const MaterialUnitSelected(Unit.liters))
+          ..add(MaterialRateUpdated(rate));
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'accepts a line total just under what the column holds',
+        build: () => bloc,
+        act: (b) => fill(b, '9999999999', '999999.99'),
+        verify: (b) {
+          expect(_dataOf(b.state).isValid, isTrue);
+          expect(_dataOf(b.state).lineTotal, greaterThan(9.99e15));
+          expect(_dataOf(b.state).lineTotal.isFinite, isTrue);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'accepts a line total one step under the limit',
+        build: () => bloc,
+        act: (b) => fill(b, '19999999999', '500000'),
+        verify: (b) => expect(_dataOf(b.state).isValid, isTrue),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'refuses a line total of exactly the limit',
+        build: () => bloc,
+        act: (b) => fill(b, '20000000000', '500000'),
+        verify: (b) {
+          expect(_dataOf(b.state).isValid, isFalse);
+          expect(
+            _dataOf(b.state).fieldErrors[MaterialFormField.quantity],
+            MaterialFieldError.quantityTooLarge,
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'flags the quantity when quantity times rate cannot be stored',
+        build: () => bloc,
+        act: (b) => fill(b, '20000000000', '999999.99'),
+        verify: (b) {
+          expect(_dataOf(b.state).isValid, isFalse);
+          expect(
+            _dataOf(b.state).fieldErrors[MaterialFormField.quantity],
+            MaterialFieldError.quantityTooLarge,
+          );
+          expect(
+            _dataOf(b.state).blocker,
+            const MaterialFormBlocker(
+              MaterialFormField.quantity,
+              MaterialBlockerKind.invalid,
+            ),
+          );
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the largest allowed quantity and rate from overflowing the '
+        'total',
+        build: () => bloc,
+        act: (b) => fill(b, '99999999999999', '999999.99'),
+        verify: (b) {
+          expect(_dataOf(b.state).isValid, isFalse);
+          expect(_dataOf(b.state).lineTotal, greaterThan(9.9e19));
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'saves nothing when the total cannot be stored',
+        build: () => bloc,
+        act: (b) {
+          fill(b, '20000000000', '999999.99');
+          b.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
+        },
+        verify: (b) {
+          expect(b.state, isA<MaterialCostFormEditing>());
+          expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+        },
       );
     });
 
