@@ -65,6 +65,18 @@ void main() {
     expect((box.border! as Border).top.color, colors.lineLight);
   });
 
+  for (final isHighlighted in [true, false]) {
+    testWidgets(
+      'draws the library card shadow when '
+      '${isHighlighted ? 'highlighted' : 'not highlighted'}',
+      (tester) async {
+        await pumpFrame(tester, isHighlighted: isHighlighted);
+
+        expect(decoration(tester).boxShadow, CoreShadows.small);
+      },
+    );
+  }
+
   testWidgets('keeps the same corners and padding when highlighted', (
     tester,
   ) async {
@@ -78,14 +90,16 @@ void main() {
     expect(tester.getSize(find.byKey(const Key('line_frame'))), plainSize);
   });
 
-  testWidgets('has no shadow and no animation when highlighted', (
+  testWidgets('adds no shadow of its own and no animation when highlighted', (
     tester,
   ) async {
     await pumpFrame(tester, isHighlighted: true);
-
-    expect(decoration(tester).boxShadow, isNull);
+    final highlighted = decoration(tester).boxShadow;
     expect(find.byType(AnimatedContainer), findsNothing);
     expect(tester.hasRunningAnimations, isFalse);
+
+    await pumpFrame(tester, isHighlighted: false);
+    expect(highlighted, decoration(tester).boxShadow);
   });
 
   testWidgets('reports a tap on the line', (tester) async {
