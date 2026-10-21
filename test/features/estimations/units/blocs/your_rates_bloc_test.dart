@@ -302,9 +302,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Retrying then Loaded when the read works the second time',
         setUp: () {
-          fakeSupabaseWrapper.addTableData(DatabaseConstants.yourRatesTable, [
-            row(id: 'r1'),
-          ]);
+          database.seedRows([row(id: 'r1')]);
         },
         build: () => bloc,
         seed: () => const YourRatesError(failure),
@@ -316,7 +314,7 @@ void main() {
       blocTest<YourRatesBloc, YourRatesState>(
         'emits Retrying then Error when the read fails again',
         setUp: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+          database.getAllError = StateError('database locked');
         },
         build: () => bloc,
         seed: () => const YourRatesError(failure),

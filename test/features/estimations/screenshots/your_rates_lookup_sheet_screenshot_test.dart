@@ -205,8 +205,9 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      database.getAllGate = Completer<void>();
-      addTearDown(() => database.getAllGate?.complete());
+      final gate = Completer<void>();
+      database.getAllGate = gate;
+      addTearDown(gate.complete);
 
       await tester.pumpWidget(
         MaterialApp(

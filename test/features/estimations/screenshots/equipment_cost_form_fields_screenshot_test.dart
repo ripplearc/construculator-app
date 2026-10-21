@@ -308,7 +308,7 @@ void main() {
     ) async {
       tester.view.physicalSize = const Size(390, 800);
       tester.view.devicePixelRatio = 1.0;
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'rate-1',
           'company_id': 'company-1',

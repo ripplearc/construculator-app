@@ -3,6 +3,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -14,19 +16,23 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late FakeClockImpl clock;
 
   setUpAll(() {
     clock = FakeClockImpl(DateTime(2026, 1, 15));
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -34,11 +40,13 @@ void main() {
   });
 
   setUp(() {
+    database.reset();
+    Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
     );
-    fakeSupabase.addTableData('your_rates', [
+    database.seedRows([
       {
         'id': 'rate-1',
         'company_id': 'company-1',
@@ -55,6 +63,7 @@ void main() {
 
   tearDown(() {
     fakeSupabase.reset();
+    database.reset();
   });
 
   Widget makeWidget(

@@ -260,12 +260,8 @@ void main() {
 
     testWidgets('dates each saved rate: Used when added to an estimate, Saved '
         'when never added', (tester) async {
-      fakeSupabase.reset();
-      fakeSupabase.setRpcResponse(
-        DatabaseConstants.getMyCompanyIdRpcFunction,
-        'company-1',
-      );
-      fakeSupabase.addTableData('your_rates', [
+      database.reset();
+      database.seedRows([
         row(
           'used-rate',
           'Mini excavator',
@@ -296,12 +292,8 @@ void main() {
     testWidgets('lists a rate used after a newer save above that save', (
       tester,
     ) async {
-      fakeSupabase.reset();
-      fakeSupabase.setRpcResponse(
-        DatabaseConstants.getMyCompanyIdRpcFunction,
-        'company-1',
-      );
-      fakeSupabase.addTableData('your_rates', [
+      database.reset();
+      database.seedRows([
         row('saved-later', 'Scissor lift', savedAt: DateTime(2026, 1, 10)),
         row(
           'used-later',
@@ -484,12 +476,8 @@ void main() {
     const actionKey = Key('your_rates_other_method_action');
 
     void seed(List<Map<String, dynamic>> rows) {
-      fakeSupabase.reset();
-      fakeSupabase.setRpcResponse(
-        DatabaseConstants.getMyCompanyIdRpcFunction,
-        'company-1',
-      );
-      fakeSupabase.addTableData('your_rates', rows);
+      database.reset();
+      database.seedRows(rows);
     }
 
     testWidgets(
@@ -674,7 +662,7 @@ void main() {
     ) async {
       seed([row('job-1', 'Dumpster', method: 'job')]);
       await openSheet(tester, []);
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
 
       await search(tester, 'dumpster');
 

@@ -562,9 +562,7 @@ void main() {
         () async {
           await repository.save(buildEntry(amount: 300.0));
 
-          final body =
-              fakeSupabaseWrapper.getMethodCallsFor('insert').single['data']
-                  as Map<String, dynamic>;
+          final body = database.insertedRows.single;
           expect(body.containsKey('last_used_at'), isFalse);
           expect(body['rate_amount'], 300.0);
         },
