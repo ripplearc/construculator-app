@@ -36,6 +36,9 @@ class EquipmentCostFormBloc
         (d) => d.copyWith(
           equipmentType: e.value,
           recalledRateId: e.value == d.equipmentType ? d.recalledRateId : null,
+          recalledRateMethod: e.value == d.equipmentType
+              ? d.recalledRateMethod
+              : null,
         ),
       ),
     );
@@ -80,6 +83,7 @@ class EquipmentCostFormBloc
               ? d.otherMethodRateStatus
               : d.rateStatus,
           recalledRateId: e.rateId,
+          recalledRateMethod: e.method,
           recalledFromRecents: e.fromRecents,
           recalledRate: e.fromRecents ? e.rate : d.recalledRate,
         );
@@ -193,7 +197,7 @@ class EquipmentCostFormBloc
     if (created == null) return;
     emit(EquipmentCostFormSuccess(draft, created));
     final recalledRateId = draft.recalledRateId;
-    if (recalledRateId != null) {
+    if (recalledRateId != null && draft.method == draft.recalledRateMethod) {
       await _yourRatesRepository.recordRateUse(recalledRateId);
     }
   }

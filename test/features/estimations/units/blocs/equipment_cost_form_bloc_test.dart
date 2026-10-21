@@ -4,8 +4,8 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -1624,6 +1624,64 @@ void main() {
           fillLine(bloc);
           bloc
             ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when the line was switched to Job and priced '
+        'by hand',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc
+            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+            ..add(const EquipmentRateUpdatedEvent('900'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'records the use when the line is switched to Job and back to Day',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc
+            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job))
+            ..add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['older', 'newer']);
+          expect(database.updatedRowIds, ['older']);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when the name is changed after the rate was '
+        'picked',
+        build: () => bloc,
+        act: (bloc) {
+          fillLine(bloc);
+          recall(bloc, 'older');
+          bloc
+            ..add(const EquipmentCostItemTypeChanged('Another machine'))
             ..add(
               const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
             );

@@ -86,6 +86,7 @@ class EquipmentCostFormData extends Equatable {
     this.recalledFromRecents = false,
     this.recalledRate,
     this.recalledRateId,
+    this.recalledRateMethod,
     this.description,
     this.isValid = false,
     this.fieldErrors = const {},
@@ -124,6 +125,12 @@ class EquipmentCostFormData extends Equatable {
   /// the look-up. Adding the line records a use of that rate. Null when the
   /// rate was typed.
   final String? recalledRateId;
+
+  /// The pricing method of the saved rate in [recalledRateId]. Adding the line
+  /// records a use only while the line is still on this method: a saved day
+  /// rate is not used by a line that was switched to Job and priced by hand.
+  /// Null when [recalledRateId] is null.
+  final EquipmentPricingMethod? recalledRateMethod;
 
   /// Freeform description/note for this item.
   final String? description;
@@ -209,6 +216,7 @@ class EquipmentCostFormData extends Equatable {
     bool? recalledFromRecents,
     Object? recalledRate = _unset,
     Object? recalledRateId = _unset,
+    Object? recalledRateMethod = _unset,
     Object? description = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
@@ -229,6 +237,9 @@ class EquipmentCostFormData extends Equatable {
       recalledRateId: recalledRateId == _unset
           ? this.recalledRateId
           : recalledRateId as String?,
+      recalledRateMethod: recalledRateMethod == _unset
+          ? this.recalledRateMethod
+          : recalledRateMethod as EquipmentPricingMethod?,
       recalledRate: recalledRate == _unset
           ? this.recalledRate
           : recalledRate as double?,
@@ -253,6 +264,7 @@ class EquipmentCostFormData extends Equatable {
     recalledFromRecents,
     recalledRate,
     recalledRateId,
+    recalledRateMethod,
     description,
     isValid,
     fieldErrors,
