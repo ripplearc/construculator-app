@@ -13,7 +13,15 @@ void main() {
     hasAnswered = false;
   });
 
-  Future<void> openDialog(WidgetTester tester, {double textScale = 1.0}) async {
+  Future<void> openDialog(
+    WidgetTester tester, {
+    double textScale = 1.0,
+    String primaryLabel = 'Keep editing',
+    double phoneWidth = 412,
+  }) async {
+    tester.view.physicalSize = Size(phoneWidth, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),
@@ -39,7 +47,7 @@ void main() {
                       text: 'Interior paint has not been added.',
                     ),
                     secondaryLabel: 'Discard',
-                    primaryLabel: 'Keep editing',
+                    primaryLabel: primaryLabel,
                   );
                   hasAnswered = true;
                 },
@@ -95,46 +103,132 @@ void main() {
   });
 
   group('layout', () {
-    testWidgets('puts the two answers side by side at the normal text size', (
-      tester,
-    ) async {
+    Rect rectOf(WidgetTester tester, Key key) =>
+        tester.getRect(find.byKey(key));
+
+    // The drawn button inside its tap area.
+    Rect drawnRectOf(WidgetTester tester, Key key) => tester.getRect(
+      find
+          .descendant(of: find.byKey(key), matching: find.byType(DecoratedBox))
+          .first,
+    );
+
+    Size labelSizeOf(WidgetTester tester, Key key) => tester.getSize(
+      find.descendant(of: find.byKey(key), matching: find.byType(Text)),
+    );
+
+    for (final scale in [1.0, 1.12, 1.15, 1.3, 2.0]) {
+      testWidgets(
+        'stacks the answers at ${(scale * 100).round()} percent text, primary '
+        'first, 8 dp apart',
+        (tester) async {
+          await openDialog(tester, textScale: scale);
+
+          final primary = drawnRectOf(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
+          final secondary = drawnRectOf(
+            tester,
+            ConfirmationDialog.secondaryButtonKey,
+          );
+
+          expect(secondary.top - primary.bottom, 8);
+          expect(primary.width, secondary.width);
+        },
+      );
+
+      testWidgets(
+        'shows each label in full at ${(scale * 100).round()} percent text',
+        (tester) async {
+          await openDialog(tester, textScale: scale);
+
+          for (final key in [
+            ConfirmationDialog.primaryButtonKey,
+            ConfirmationDialog.secondaryButtonKey,
+          ]) {
+            final button = drawnRectOf(tester, key);
+            final label = labelSizeOf(tester, key);
+            expect(label.width, lessThanOrEqualTo(button.width - 2 * 20));
+            expect(label.height + 2 * 8, lessThanOrEqualTo(button.height));
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    testWidgets('draws each answer 40 dp tall at the normal text size, in a '
+        '48 dp tap area', (tester) async {
       await openDialog(tester);
 
-      final secondary = tester.getRect(
-        find.byKey(ConfirmationDialog.secondaryButtonKey),
-      );
-      final primary = tester.getRect(
-        find.byKey(ConfirmationDialog.primaryButtonKey),
-      );
-
-      expect(primary.top, secondary.top);
-      expect(primary.left, greaterThan(secondary.right));
+      for (final key in [
+        ConfirmationDialog.primaryButtonKey,
+        ConfirmationDialog.secondaryButtonKey,
+      ]) {
+        expect(drawnRectOf(tester, key).height, 40);
+        expect(rectOf(tester, key).height, greaterThanOrEqualTo(48));
+      }
     });
 
-    testWidgets('stacks the answers, primary first, at a large text size', (
-      tester,
-    ) async {
-      await openDialog(tester, textScale: 1.3);
-
-      final secondary = tester.getRect(
-        find.byKey(ConfirmationDialog.secondaryButtonKey),
-      );
-      final primary = tester.getRect(
-        find.byKey(ConfirmationDialog.primaryButtonKey),
-      );
-
-      expect(primary.bottom, lessThan(secondary.top));
-      expect(primary.width, secondary.width);
-    });
-
-    testWidgets('keeps both answers readable in full at a large text size', (
+    testWidgets('lets the answers grow past 40 dp at 200 percent text', (
       tester,
     ) async {
       await openDialog(tester, textScale: 2.0);
 
-      expect(find.text('Keep editing'), findsOneWidget);
-      expect(find.text('Discard'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+      for (final key in [
+        ConfirmationDialog.primaryButtonKey,
+        ConfirmationDialog.secondaryButtonKey,
+      ]) {
+        expect(drawnRectOf(tester, key).height, greaterThan(40));
+      }
+    });
+
+    testWidgets('wraps a long label instead of cutting it at 200 percent', (
+      tester,
+    ) async {
+      await openDialog(
+        tester,
+        textScale: 2.0,
+        primaryLabel: 'Keep editing this material line',
+      );
+
+      final button = drawnRectOf(tester, ConfirmationDialog.primaryButtonKey);
+      final label = labelSizeOf(tester, ConfirmationDialog.primaryButtonKey);
+      expect(label.width, lessThanOrEqualTo(button.width - 2 * 20));
+      expect(label.height, greaterThan(24 * 2));
+    });
+
+    testWidgets('is at most 340 dp wide and keeps 36 dp on each side of a '
+        '412 dp phone', (tester) async {
+      await openDialog(tester);
+
+      // The dialog is the answer's width plus its 22 dp padding on each side.
+      final answer = rectOf(tester, ConfirmationDialog.primaryButtonKey);
+      final dialogWidth = answer.width + 2 * 22;
+      final dialogLeft = answer.left - 22;
+      expect(dialogWidth, lessThanOrEqualTo(340));
+      expect(dialogLeft, greaterThanOrEqualTo(36));
+      expect(412 - (dialogLeft + dialogWidth), greaterThanOrEqualTo(36));
+    });
+
+    testWidgets('keeps 36 dp on each side of a 360 dp phone', (tester) async {
+      await openDialog(tester, phoneWidth: 360);
+
+      final answer = rectOf(tester, ConfirmationDialog.primaryButtonKey);
+      expect(answer.left - 22, greaterThanOrEqualTo(36));
+      expect(360 - (answer.right + 22), greaterThanOrEqualTo(36));
+    });
+
+    testWidgets('writes the body in 16 dp text with 24 dp lines', (
+      tester,
+    ) async {
+      await openDialog(tester);
+
+      final style = tester
+          .widget<Text>(find.byKey(ConfirmationDialog.bodyKey))
+          .style!;
+      expect(style.fontSize, 16);
+      expect(style.fontSize! * style.height!, 24);
     });
   });
 }
