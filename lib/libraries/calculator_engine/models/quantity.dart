@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
@@ -321,6 +323,18 @@ final class Angle extends Quantity {
   final AngleSpelling spelling;
 
   const Angle(this.degrees, {this.spelling = AngleSpelling.degrees});
+
+  /// The pitch of [inches] of rise per 12in of run, in that spelling (UX
+  /// Design Doc rule 4.10; Section 8): 6in/12in is 26.57°.
+  factory Angle.ofRisePerFoot(double inches) => Angle(
+    math.atan(inches / inchesPerFootOfRun) * _degreesPerRadian,
+    spelling: AngleSpelling.risePerFoot,
+  );
+
+  /// Inches of run a pitch is quoted over: 6in/12in.
+  static const int inchesPerFootOfRun = 12;
+
+  static const double _degreesPerRadian = 180 / math.pi;
 
   @override
   Dimension get dimension => Dimension.angle;

@@ -57,7 +57,7 @@ class QuantityFormatter extends Equatable {
   static const int pitchDecimals = 1;
 
   /// Inches of run a pitch's rise is quoted against: 16in/12in.
-  static const int inchesPerFootOfRun = 12;
+  static const int inchesPerFootOfRun = Angle.inchesPerFootOfRun;
 
   /// A grade is a ratio in hundredths: a rise of 0.07 per unit of run is 7%.
   static const int percent = 100;
@@ -249,7 +249,7 @@ class QuantityFormatter extends Equatable {
   double _rise(Angle value) => math.tan(value.degrees * math.pi / 180);
 
   String _riseInInches(double inches, bool group) {
-    final ticks = inches.abs() * Length.ticksPerInch;
+    final ticks = _withoutFloatNoise(inches.abs() * Length.ticksPerInch);
     var whole = ticks ~/ Length.ticksPerInch;
     final fraction = _fractionOfInch(
       Length.computed(ticks % Length.ticksPerInch, unit: Unit.inch).inches,
@@ -353,6 +353,11 @@ class QuantityFormatter extends Equatable {
   // instead of clamping it at 2^63 or throwing; reachable since × landed
   // in #642. https://ripplearc.youtrack.cloud/issue/CA-1201
   int _jsMathRound(double value) => (value + 0.5).floor();
+
+  static double _withoutFloatNoise(double ticks) =>
+      (ticks * _ticksPrecision).roundToDouble() / _ticksPrecision;
+
+  static const double _ticksPrecision = 1e6;
 
   @override
   List<Object?> get props => [preferences];
