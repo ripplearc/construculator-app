@@ -2208,4 +2208,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fixQuantityToContinueButton => 'Fix the quantity to continue';
+
+  @override
+  String get unitPillEmptyLabel => 'Unit';
+
+  @override
+  String get unitPillEmptySemanticLabel => 'Choose a unit';
+
+  @override
+  String unitPillSemanticLabel(String unit) {
+    return 'Unit: $unit. Tap to change';
+  }
 }
