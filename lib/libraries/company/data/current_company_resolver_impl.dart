@@ -13,7 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Supabase-backed [CurrentCompanyResolver].
 ///
-/// Calls the [DatabaseConstants.getMyCompanyIdRpcFunction] RPC (CA-710)
+/// Calls the [DatabaseConstants.getMyCompanyIdRpcFunction] RPC (CA-710), or
+/// [DatabaseConstants.ensureMyCompanyRpcFunction] at sign-in (CA-1262),
 /// directly — there is exactly one caller-scoped value to fetch, so no
 /// separate remote data-source layer sits in front of [SupabaseWrapper].
 ///
@@ -34,6 +35,9 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
   String? _cachedCompanyId;
   String? _sessionUserId;
   Future<Either<Failure, String?>>? _inFlight;
+  static const _functionNotFoundCode = 'PGRST202';
+
+  bool _isEnsurePending = false;
   int _cacheGeneration = 0;
 
   /// Creates a [CurrentCompanyResolverImpl].
@@ -44,23 +48,36 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
 
   @override
   Future<Either<Failure, String?>> resolve() {
-    final userId = _supabaseWrapper.currentUser?.id;
-    if (_sessionUserId != userId) {
-      _resetSession();
-      _sessionUserId = userId;
-    }
+    _startSessionForCurrentUser();
     if (_hasResolved) {
       return Future.value(Right(_cachedCompanyId));
     }
-    return _inFlight ??= _fetch(_cacheGeneration);
+    return _inFlight ??= _fetch(
+      _cacheGeneration,
+      createIfMissing: _isEnsurePending,
+    );
   }
 
-  Future<Either<Failure, String?>> _fetch(int requestGeneration) async {
+  @override
+  Future<Either<Failure, String?>> resolveAfterSignIn() {
+    _startSessionForCurrentUser();
+    if (_hasResolved) {
+      return Future.value(Right(_cachedCompanyId));
+    }
+    _isEnsurePending = true;
+    return _inFlight ??= _fetch(_cacheGeneration, createIfMissing: true);
+  }
+
+  Future<Either<Failure, String?>> _fetch(
+    int requestGeneration, {
+    bool createIfMissing = false,
+  }) async {
     final userId = _supabaseWrapper.currentUser?.id;
     try {
       _logger.debug('Resolving current company id');
-      final companyId = await _supabaseWrapper.rpc<String?>(
-        DatabaseConstants.getMyCompanyIdRpcFunction,
+      final companyId = await _lookUpCompanyId(
+        requestGeneration: requestGeneration,
+        createIfMissing: createIfMissing,
       );
 
       // A stale fetch (clearCache ran while this one was in flight) must
@@ -92,8 +109,56 @@ class CurrentCompanyResolverImpl implements CurrentCompanyResolver {
     }
   }
 
+  Future<String?> _lookUpCompanyId({
+    required int requestGeneration,
+    required bool createIfMissing,
+  }) async {
+    if (createIfMissing) {
+      try {
+        final companyId = await _supabaseWrapper.rpc<String?>(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+        );
+        if (requestGeneration == _cacheGeneration) {
+          _isEnsurePending = false;
+        }
+        return companyId;
+      } on TimeoutException {
+        rethrow;
+      } on SocketException {
+        rethrow;
+      } catch (e) {
+        _logEnsureFailure(e);
+      }
+    }
+    return _supabaseWrapper.rpc<String?>(
+      DatabaseConstants.getMyCompanyIdRpcFunction,
+    );
+  }
+
+  void _logEnsureFailure(Object error) {
+    final isFunctionNotDeployedYet =
+        error is supabase.PostgrestException &&
+        error.code == _functionNotFoundCode;
+    if (isFunctionNotDeployedYet) {
+      _logger.warning(
+        'ensure_my_company is not on the server yet, using the lookup',
+      );
+      return;
+    }
+    _logger.error('Could not ensure the company exists: $error');
+  }
+
+  void _startSessionForCurrentUser() {
+    final userId = _supabaseWrapper.currentUser?.id;
+    if (_sessionUserId != userId) {
+      _resetSession();
+      _sessionUserId = userId;
+    }
+  }
+
   void _resetSession() {
     _hasResolved = false;
+    _isEnsurePending = false;
     _cachedCompanyId = null;
     _inFlight = null;
     _cacheGeneration++;

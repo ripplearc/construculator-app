@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:construculator/libraries/company/data/current_company_resolver_impl.dart';
 import 'package:construculator/libraries/company/data/data_source/interfaces/local_current_company_data_source.dart';
@@ -7,7 +8,10 @@ import 'package:construculator/libraries/company/domain/current_company_resolver
 import 'package:construculator/libraries/company/domain/types/company_error_type.dart';
 import 'package:construculator/libraries/company/testing/fake_current_company_database.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -15,8 +19,12 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
+  final sentry = FakeSentryWrapper();
+  AppLogger.setSentryWrapper(sentry);
+
   group('CurrentCompanyResolverImpl', () {
     late FakeSupabaseWrapper supabaseWrapper;
     late FakeCurrentCompanyDatabase localDatabase;
@@ -49,6 +57,7 @@ void main() {
     tearDownAll(() {
       Modular.destroy();
       localDatabase.dispose();
+      AppLogger.setSentryWrapper(null);
     });
 
     setUp(() {
@@ -668,6 +677,241 @@ void main() {
         );
       });
     });
+
+    group('resolveAfterSignIn', () {
+      int callsTo(String function) => supabaseWrapper
+          .getMethodCallsFor('rpc')
+          .where((call) => call['functionName'] == function)
+          .length;
+
+      void answerEnsureWith(String? companyId) {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.ensureMyCompanyRpcFunction,
+          companyId,
+        );
+      }
+
+      void answerLookupWith(String? companyId) {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.getMyCompanyIdRpcFunction,
+          companyId,
+        );
+      }
+
+      test('returns the id the ensure call made for an account with no '
+          'company', () async {
+        answerEnsureWith('new-company');
+
+        final result = await resolver.resolveAfterSignIn();
+
+        expect(result.getRightOrNull(), 'new-company');
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 0);
+      });
+
+      test('asks the server to ensure the company once, and later lookups '
+          'reuse the id', () async {
+        answerEnsureWith('new-company');
+
+        await resolver.resolveAfterSignIn();
+        await resolver.resolveAfterSignIn();
+        final lookup = await resolver.resolve();
+
+        expect(lookup.getRightOrNull(), 'new-company');
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 0);
+      });
+
+      test('keeps the new id on the device', () async {
+        answerEnsureWith('new-company');
+
+        await resolver.resolveAfterSignIn();
+
+        final store = Modular.get<LocalCurrentCompanyDataSource>();
+        expect(await store.loadCompanyId(_userOne.id), 'new-company');
+      });
+
+      test('returns Right(null) and does not cache it when the account has '
+          'no profile yet', () async {
+        answerEnsureWith(null);
+        answerLookupWith('company-after-signup');
+
+        final signIn = await resolver.resolveAfterSignIn();
+        final later = await resolver.resolve();
+
+        expect(signIn.getRightOrNull(), isNull);
+        expect(signIn.isRight(), isTrue);
+        expect(later.getRightOrNull(), 'company-after-signup');
+      });
+
+      test('tries the plain lookup after a failed ensure call, and returns '
+          'its failure when that fails too', () async {
+        supabaseWrapper.shouldThrowOnRpc = true;
+        supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+        final signIn = await resolver.resolveAfterSignIn();
+
+        expect(signIn.isLeft(), isTrue);
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 1);
+        expect(callsTo(DatabaseConstants.getMyCompanyIdRpcFunction), 1);
+      });
+
+      test('a different user signing in gets their own ensure call', () async {
+        answerEnsureWith('company-one');
+        await resolver.resolveAfterSignIn();
+
+        supabaseWrapper.setCurrentUser(_userTwo);
+        answerEnsureWith('company-two');
+        final result = await resolver.resolveAfterSignIn();
+
+        expect(result.getRightOrNull(), 'company-two');
+        expect(callsTo(DatabaseConstants.ensureMyCompanyRpcFunction), 2);
+      });
+
+      group('when only the ensure call can fail', () {
+        late _ScriptedRpcWrapper scripted;
+        late CurrentCompanyResolver scriptedResolver;
+
+        setUp(() async {
+          // ignore: no_direct_instantiation, reason: a test-local wrapper that answers or fails each rpc function separately
+          scripted = _ScriptedRpcWrapper()..setCurrentUser(_userOne);
+          await Modular.get<LocalCurrentCompanyDataSource>().clearCompanyId();
+          scriptedResolver = _resolverOver(scripted);
+        });
+
+        test('a server with no ensure step yet still answers from the '
+            'lookup', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              Exception('function not found');
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          final result = await scriptedResolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'existing-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+            DatabaseConstants.getMyCompanyIdRpcFunction,
+          ]);
+        });
+
+        test('a server without ensure_my_company (PGRST202) is a warning, not '
+            'an error', () async {
+          sentry.reset();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              supabase.PostgrestException(
+                message: 'function not found',
+                code: 'PGRST202',
+              );
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          await scriptedResolver.resolveAfterSignIn();
+
+          expect(sentry.messages, isEmpty);
+          expect(sentry.exceptions, isEmpty);
+          expect(
+            sentry.breadcrumbs.map((b) => b.level),
+            contains(SentryEventLevel.warning),
+          );
+        });
+
+        test('any other failure of ensure_my_company is logged as an '
+            'error', () async {
+          sentry.reset();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              supabase.PostgrestException(
+                message: 'permission denied',
+                code: '42501',
+              );
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          await scriptedResolver.resolveAfterSignIn();
+
+          expect(sentry.messages.map((m) => m.level), [SentryEventLevel.error]);
+        });
+
+        test('with no signal it goes straight to the kept id without a '
+            'second doomed call', () async {
+          await Modular.get<LocalCurrentCompanyDataSource>().saveCompanyId(
+            userId: _userOne.id,
+            companyId: 'kept-company',
+          );
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              const SocketException('offline');
+
+          final result = await scriptedResolver.resolveAfterSignIn();
+
+          expect(result.getRightOrNull(), 'kept-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+          ]);
+        });
+
+        test('a plain lookup that starts while sign-in runs gets the lookup '
+            'answer when the ensure call fails', () async {
+          scripted.hold = Completer<void>();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              Exception('function not found');
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'existing-company';
+
+          final signIn = scriptedResolver.resolveAfterSignIn();
+          final lookup = scriptedResolver.resolve();
+          scripted.hold!.complete();
+
+          expect((await lookup).getRightOrNull(), 'existing-company');
+          expect((await signIn).getRightOrNull(), 'existing-company');
+        });
+
+        test('a later lookup creates the company after sign-in could not '
+            'reach the server', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              const SocketException('offline');
+          await scriptedResolver.resolveAfterSignIn();
+          scripted.calls.clear();
+
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              'new-company';
+          final later = await scriptedResolver.resolve();
+
+          expect(later.getRightOrNull(), 'new-company');
+          expect(scripted.calls, [
+            DatabaseConstants.ensureMyCompanyRpcFunction,
+          ]);
+        });
+
+        test('stops trying to create the company once the server has '
+            'answered, even with no company yet', () async {
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] = null;
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] = null;
+          await scriptedResolver.resolveAfterSignIn();
+          scripted.calls.clear();
+
+          await scriptedResolver.resolve();
+
+          expect(scripted.calls, [DatabaseConstants.getMyCompanyIdRpcFunction]);
+        });
+
+        test('an ensure call still running when the session is cleared does '
+            'not leak its id to the next user', () async {
+          scripted.hold = Completer<void>();
+          scripted.answers[DatabaseConstants.ensureMyCompanyRpcFunction] =
+              'company-a';
+
+          final stale = scriptedResolver.resolveAfterSignIn();
+          await scriptedResolver.clearCache();
+          scripted.hold!.complete();
+          expect((await stale).getRightOrNull(), 'company-a');
+
+          scripted.hold = null;
+          scripted.answers[DatabaseConstants.getMyCompanyIdRpcFunction] =
+              'company-b';
+          final next = await scriptedResolver.resolve();
+
+          expect(next.getRightOrNull(), 'company-b');
+        });
+      });
+    });
   });
 }
 
@@ -722,6 +966,30 @@ class _CompanyTestAppModule extends Module {
       ),
       key: 'failingReads',
     );
+  }
+}
+
+CurrentCompanyResolver _resolverOver(FakeSupabaseWrapper wrapper) =>
+    // ignore: no_direct_instantiation, reason: needs a wrapper that answers or fails each rpc function separately, which Modular's shared fake cannot do
+    CurrentCompanyResolverImpl(
+      supabaseWrapper: wrapper,
+      localDataSource: Modular.get<LocalCurrentCompanyDataSource>(),
+    );
+
+class _ScriptedRpcWrapper extends FakeSupabaseWrapper {
+  _ScriptedRpcWrapper() : super(clock: FakeClockImpl());
+
+  final Map<String, Object?> answers = {};
+  final List<String> calls = [];
+  Completer<void>? hold;
+
+  @override
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
+    calls.add(functionName);
+    await hold?.future;
+    final answer = answers[functionName];
+    if (answer is Exception) throw answer;
+    return answer as T;
   }
 }
 
