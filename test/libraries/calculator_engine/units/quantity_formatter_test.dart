@@ -218,15 +218,15 @@ void main() {
         const tiny = Rational(-1, 128);
         expect(
           formatter.format(const Length.exact(tiny, unit: Unit.inch)),
-          'Short by under 1/16in',
+          'Below zero',
         );
         expect(
           formatter.format(const Length.exact(tiny, unit: Unit.footInch)),
-          'Short by under 1/16in',
+          'Below zero',
         );
         expect(
           formatter.format(Length.computed(-0.9, unit: Unit.footInch)),
-          'Short by under 1/16in',
+          'Below zero',
         );
         const firstStep = Rational(-1, 16);
         expect(
@@ -244,9 +244,9 @@ void main() {
       const tick = Length(1, unit: Unit.footInch);
       const minusTick = Length(-1, unit: Unit.footInch);
 
-      test('Example 2: a compound is Under 1/16in, or Short by under', () {
+      test('Example 2: a compound is Under 1/16in, or Below zero', () {
         expect(formatter.format(tick), 'Under 1/16in');
-        expect(formatter.format(minusTick), 'Short by under 1/16in');
+        expect(formatter.format(minusTick), 'Below zero');
         expect(
           formatter.format(const Length(0, unit: Unit.footInch)),
           '0ft 0in',
@@ -264,7 +264,7 @@ void main() {
         );
         expect(
           formatter.format(const Length(-1, unit: Unit.inch)),
-          'Short by under 1/16in',
+          'Below zero',
         );
         expect(formatter.format(const Length(0, unit: Unit.inch)), '0in');
         const sixtyFourths = QuantityFormatter(
@@ -284,7 +284,7 @@ void main() {
         );
         expect(
           formatter.format(const Length(-1, unit: Unit.yard)),
-          'Short by under 0.01yd',
+          'Below zero',
         );
         expect(
           formatter.format(const Length(1, unit: Unit.millimetre)),
@@ -305,7 +305,7 @@ void main() {
         expect(formatter.format(eighthSquared), 'Under 0.01ft²');
         expect(
           formatter.format(const Area(-64, unit: Unit.metre)),
-          'Short by under 0.01m²',
+          'Below zero',
         );
         expect(
           formatter.format(eighthSquared.spelledIn(Unit.acre)),
@@ -315,7 +315,7 @@ void main() {
         expect(formatter.format(const Volume(1e-4)), 'Under 0.01ft³');
         expect(
           formatter.format(const Volume(-1e-4, unit: Unit.yard)),
-          'Short by under 0.01yd³',
+          'Below zero',
         );
         expect(
           formatter.format(const Volume(1e-4, unit: Unit.boardFoot)),
@@ -332,6 +332,35 @@ void main() {
         expect(formatter.isTooLarge(const Scalar(-20000000)), isTrue);
         expect(formatter.isTooLarge(const Scalar(19999999.98 + 0.01)), isFalse);
         expect(formatter.isTooLarge(const Scalar(double.infinity)), isTrue);
+      });
+
+      test('a very large negative value is too large before it is written, '
+          'whatever its kind', () {
+        expect(formatter.isTooLarge(const Scalar(-1e40)), isTrue);
+        expect(
+          formatter.isTooLarge(const Length(-(1 << 53), unit: Unit.foot)),
+          isTrue,
+        );
+        expect(formatter.isTooLarge(const Area(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Volume(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Weight(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Angle(-1e40)), isTrue);
+        expect(
+          formatter.isTooLarge(const Volume(-1e40, unit: Unit.yard)),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(const Weight(-1e40, unit: Unit.ton)),
+          isTrue,
+        );
+        for (final infinite in [
+          const Area(double.infinity),
+          const Volume(double.infinity),
+          const Weight(double.infinity),
+          const Angle(double.negativeInfinity),
+        ]) {
+          expect(formatter.isTooLarge(infinite), isTrue, reason: '$infinite');
+        }
       });
 
       test('in the unit the value is written in', () {

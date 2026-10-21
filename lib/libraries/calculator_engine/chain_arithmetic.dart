@@ -78,6 +78,13 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// A pair the table has no row for is a dimension error whatever the
 /// numbers: 12lbs ÷ 0ft is refused for its dimensions, and ÷ 0 is its own
 /// error only for a pair the table can divide.
+///
+/// A sum or difference of two values kept as doubles (areas, volumes,
+/// weights, angles and bare numbers) that is zero within the floating-point
+/// error of its operands is zero: 2.5m × 2.5m leaves a residue of a few
+/// ulps against a typed 6.25m², which would otherwise read "Under 0.01m²"
+/// for a true zero (Section 6, "A true zero still reads 0"). Lengths are
+/// exact and need no such rounding.
 class ChainArithmetic extends Equatable {
   /// The largest tick count a length answer may reach: 2⁵³, the last whole
   /// number a double still holds exactly, so every kept length was rounded
@@ -181,7 +188,10 @@ class ChainArithmetic extends Equatable {
         _ => null,
       };
     }
-    final magnitude = _magnitude(left) + sign * _magnitude(right);
+    final magnitude = _zeroWithinFloatNoise(
+      _magnitude(left) + sign * _magnitude(right),
+      of: _magnitude(left).abs() + _magnitude(right).abs(),
+    );
     return switch (left) {
       Length() => _exactLength(
         sign > 0
@@ -205,6 +215,11 @@ class ChainArithmetic extends Equatable {
           right.spelling == AngleSpelling.degreesMinutesSeconds
       ? AngleSpelling.degreesMinutesSeconds
       : AngleSpelling.degrees;
+
+  static double _zeroWithinFloatNoise(double value, {required double of}) =>
+      value.abs() <= of * _floatNoise ? 0 : value;
+
+  static const double _floatNoise = 1e-12;
 
   bool _canDivide(Quantity left, Quantity right) => switch ((left, right)) {
     (_, Scalar()) ||

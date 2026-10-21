@@ -448,6 +448,62 @@ void main() {
         );
       });
 
+      test('a difference that is zero within the float noise of its operands '
+          'is zero, and a real small difference is kept', () {
+        const noise = 1e-7;
+        expect(
+          arithmetic.combine(
+            const Area(1e6 + noise),
+            Operator.subtract,
+            const Area(1e6),
+          ),
+          const ArithmeticValue(Area(0)),
+        );
+        expect(
+          arithmetic.combine(
+            const Volume(1e6),
+            Operator.add,
+            const Volume(-1e6 - noise),
+          ),
+          const ArithmeticValue(Volume(0)),
+        );
+        expect(
+          arithmetic.combine(
+            const Weight(1e6 + noise),
+            Operator.subtract,
+            const Weight(1e6),
+          ),
+          const ArithmeticValue(Weight(0)),
+        );
+        final sum = arithmetic.combine(
+          const Scalar(0.1),
+          Operator.add,
+          const Scalar(0.2),
+        );
+        expect(
+          arithmetic.combine(
+            (sum as ArithmeticValue).value,
+            Operator.subtract,
+            const Scalar(0.3),
+          ),
+          const ArithmeticValue(Scalar(0)),
+        );
+        const kept = 0.0009765625;
+        expect(
+          arithmetic.combine(
+            const Area(1048576 + kept),
+            Operator.subtract,
+            const Area(1048576),
+          ),
+          const ArithmeticValue(Area(kept)),
+          reason: 'one part in a billion is a real difference',
+        );
+        expect(
+          arithmetic.combine(const Area(0), Operator.subtract, const Area(0)),
+          const ArithmeticValue(Area(0)),
+        );
+      });
+
       test('a bare number joined to an angle can only be degrees', () {
         expect(
           arithmetic.combine(const Angle(30), Operator.add, const Scalar(6)),
