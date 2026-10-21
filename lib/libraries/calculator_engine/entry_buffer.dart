@@ -468,8 +468,6 @@ class EntryBuffer extends Equatable {
     );
   }
 
-  // The same limit holds above and below the fraction line (Section 5.1):
-  // a denominator past it would overflow the exact fraction the parser keeps.
   static bool _isTooLarge(String digits) =>
       double.parse(digits) > Quantity.largestShown;
 

@@ -18,8 +18,8 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'lbs' => current.pressUnit(Unit.pound),
-        'cm' => current.pressUnit(Unit.centimetre),
         'm' => current.pressUnit(Unit.metre),
+        'cm' => current.pressUnit(Unit.centimetre),
         'mm' => current.pressUnit(Unit.millimetre),
         'ton' => current.pressUnit(Unit.ton),
         'bf' => current.pressUnit(Unit.boardFoot),
@@ -639,9 +639,41 @@ void main() {
         );
         expect(
           landed(press(const Tape(), '5 ft − 5 ft 1 / 6 4 in =')),
-          'Short by under 1/16in',
+          'Below zero',
         );
         expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      },
+    );
+
+    test(
+      'Section 6: a true zero reads 0, not "Under": an area or a volume made '
+      'from lengths less the same area typed is zero within float noise',
+      () {
+        expect(
+          landed(press(const Tape(), '2 . 5 m × 2 . 5 m − 6 . 2 5 m m =')),
+          '0m²',
+        );
+        expect(
+          landed(press(const Tape(), '4 . 2 m × 3 . 1 m − 1 3 . 0 2 m m =')),
+          '0m²',
+        );
+        expect(
+          landed(
+            press(const Tape(), '1 0 0 0 m × 1 0 0 0 m − 1 0 0 0 0 0 0 m m ='),
+          ),
+          '0m²',
+        );
+        expect(
+          landed(press(const Tape(), '1 m × 1 m × 1 m − 1 m m m =')),
+          '0m³',
+        );
+        expect(
+          landed(
+            press(const Tape(), '2 . 5 m × 2 . 5 m − 6 . 2 4 9 9 9 9 m m ='),
+          ),
+          'Under 0.01m²',
+          reason: 'a real tiny difference still reads in words',
+        );
       },
     );
 
