@@ -332,7 +332,8 @@ class EntryBuffer extends Equatable {
   Token _asDegreesMinutesSeconds(Token plain, {required bool closingMinutes}) {
     final (degrees, decimals) = _wholeAndDecimals(plain.digits);
     final minutes = decimals.isEmpty ? '' : decimals.substring(1);
-    final typedAs = plain.typedAs ?? plain.digits;
+    final typedAs =
+        plain.typedAs ?? (plain.digits.contains('.') ? plain.digits : null);
     if (!closingMinutes) {
       return Token(digits: degrees, minutes: minutes, typedAs: typedAs);
     }
@@ -507,6 +508,9 @@ class EntryBuffer extends Equatable {
   /// clears it. On an angle it steps back through the segments: a seconds
   /// digit, the seconds (which reopens the minutes), a minutes digit, and
   /// then the minutes, which leaves the whole degrees as a plain number.
+  /// A minutes digit removed clears the way back ([Token.typedAs]), as a
+  /// digit typed does; reopening a segment keeps the digits, so it keeps
+  /// the way back. (A seconds digit was typed, which already cleared it.)
   EntryOutcome backspace() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null) return const EntryRefused(EntryRefusal.nothingToDelete);
@@ -527,7 +531,10 @@ class EntryBuffer extends Equatable {
     if (last.minutes case final minutes?) {
       if (minutes.isEmpty) return _replaceLast(Token(digits: last.digits));
       return _replaceLast(
-        last.copyWith(minutes: () => minutes.substring(0, minutes.length - 1)),
+        last.copyWith(
+          minutes: () => minutes.substring(0, minutes.length - 1),
+          typedAs: () => null,
+        ),
       );
     }
     if (last.denominator case final denominator?) {

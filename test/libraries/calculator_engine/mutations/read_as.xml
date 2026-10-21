@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- CALCULATOR ENGINE READ-AS PILL MUTATION TESTING (F2b CA-1303) -->
-    <!-- Targets: which number the pill asks about (a number read as degrees,
-         a Slope number inside the 0..2 band, a Pitch number with more than
-         one reading), where each tap goes (the stops and their order, the
-         roof ceiling, the way back from the typed digits) and what the tap
-         does (re-input from the digits, rebuild the trig answer behind
-         them). Critical path: a pill that offers the wrong reading, or
-         rebuilds the wrong answer, rewrites the user's number under a label
-         that says it is helping. -->
+    <!-- Targets: which number the pill asks about (the number on the display
+         under a forward trig key, after an operator too, and the number a
+         postfix trig key answered; never a number an operator has moved on
+         from, a plain number beside an angle answer, or a reading of 90° or
+         more), where the tap goes (the D:M:S reading, the way back from the
+         typed digits) and what the tap does (re-input from the digits,
+         rebuild the trig answer behind them). Critical path: a pill that offers the wrong
+         reading, or rebuilds the wrong answer, rewrites the user's number
+         under a label that says it is helping. -->
 
     <files>
         <file>lib/libraries/calculator_engine/tape.dart</file>
         <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+        <file>lib/libraries/calculator_engine/models/token.dart</file>
     </files>
 
     <rules>
@@ -22,21 +24,13 @@
             <mutation text="bool _isSoloForwardTrig(ValueChip chip) =&gt; _isSolo(chip) &amp;&amp; chip.trigFunction != null;"/>
         </regex>
 
-        <!-- RULE 2: the question does not follow the angle through an
-             operator, or follows it past a named chip or an answer -->
-        <regex pattern="if \(_isSoloForwardTrig\(earlier\)\) return \(index: behind, chip: earlier\);" dotAll="true" id="read_as.degrees.not_behind_operator">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="if \(earlier is! ValueChip\) return null;" dotAll="true" id="read_as.degrees.past_an_answer">
-            <mutation text="if (earlier is! ValueChip) continue;"/>
+        <!-- RULE 2 (R1): an operator before the trig chip silences the pill,
+             or the display's number is not the one asked about -->
+        <regex pattern="final index = chips\.length - 1;\s*return _isSoloForwardTrig\(chip\) \? \(index: index, chip: chip\) : null;" dotAll="true" id="read_as.degrees.operator_silences">
+            <mutation text="final index = chips.length - 1; return chip.operator == null &amp;&amp; _isSoloForwardTrig(chip) ? (index: index, chip: chip) : null;"/>
+            <mutation text="final index = chips.length - 1; return _isSolo(chip) ? (index: index, chip: chip) : null;"/>
         </regex>
 
-        <!-- RULE 3: a bare number beside an angle answer is not asked, or
-             one beside any answer is -->
-        <regex pattern="if \(chips\[index - 1\] case ResultChip\(value: Angle\(\)\)\) \{\s*return \(index: index, chip: chip\);\s*\}" dotAll="true" id="read_as.degrees.beside_an_angle">
-            <mutation text=""/>
-            <mutation text="if (chips[index - 1] case ResultChip()) { return (index: index, chip: chip); }"/>
-        </regex>
 
         <!-- RULE 4: the postfix order never asks, or the verb is wrong -->
         <regex pattern="if \(chips\.length &lt; 2 \|\| !_answersForwardTrig\(chips\.length - 1\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.degrees.postfix_never">
@@ -46,23 +40,56 @@
             <mutation text="final rebuilds = false;"/>
         </regex>
 
+        <!-- RULE 5b: a D:M:S reading of 90° or more is offered, or the
+             boundary is off by one -->
+        <regex pattern="if \(promoted\.tokens\.single\.value &gt;= _degreesInARightAngle\) return null;" dotAll="true" id="read_as.degrees.right_angle_offered">
+            <mutation text=""/>
+            <mutation text="if (promoted.tokens.single.value &gt; _degreesInARightAngle) return null;"/>
+        </regex>
+
         <!-- RULE 5: a trailing point is asked about -->
         <regex pattern="if \(token\.digits\.endsWith\('\.'\)\) return null;\s*final promoted" dotAll="true" id="read_as.degrees.trailing_point">
             <mutation text="final promoted"/>
         </regex>
 
         <!-- RULE 6: the tap keeps the old answer, or rebuilds it on the old
-             reading, or forgets the chips after -->
-        <regex pattern="\?before\.rebuiltTrigAnswer\(answer\),\s*\.\.\.after\.sublist\(1\)," dotAll="true" id="read_as.re_input.answer_kept">
-            <mutation text="answer, ...after.sublist(1),"/>
-        </regex>
-        <regex pattern="return TapeChanged\(_with\(\[\.\.\.before\.chips, \.\.\.after\]\)\);\s*\}\s*return const TapeRefused\(TapeRefusal\.nothingToReInput\);" dotAll="true" id="read_as.re_input.chips_after_dropped">
-            <mutation text="return TapeChanged(before); } return const TapeRefused(TapeRefusal.nothingToReInput);"/>
+             reading -->
+        <regex pattern="_with\(\[\.\.\.before\.chips, \?before\.rebuiltTrigAnswer\(answer\)\]\)," dotAll="true" id="read_as.re_input.answer_kept">
+            <mutation text="_with([...before.chips, answer]),"/>
         </regex>
 
         <!-- RULE 7: the typed digits are forgotten on the promotion -->
-        <regex pattern="final typedAs = plain\.typedAs \?\? plain\.digits;" dotAll="true" id="read_as.typed_as.forgotten">
+        <regex pattern="final typedAs =\s*plain\.typedAs \?\? \(plain\.digits\.contains\('\.'\) \? plain\.digits : null\);" dotAll="true" id="read_as.typed_as.forgotten">
             <mutation text="final String? typedAs = null;"/>
+            <mutation text="final typedAs = plain.typedAs ?? plain.digits;"/>
+        </regex>
+
+        <!-- RULE 8 (R1): the way back outlives the digits it was made from
+             (⌫ on a segment digit, a minutes digit typed), the D:M:S key
+             forgets it, or two tokens that differ only in it compare
+             equal -->
+        <regex pattern="minutes: \(\) =&gt; minutes\.substring\(0, minutes\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_backspace">
+            <mutation text="minutes: () =&gt; minutes.substring(0, minutes.length - 1),"/>
+        </regex>
+
+        <regex pattern="minutes: \(\) =&gt; '\$\{angle\.minutes\}\$digit',\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_digit">
+            <mutation text="minutes: () =&gt; '${angle.minutes}$digit',"/>
+        </regex>
+        <regex pattern="_withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
+            <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null),"/>
+        </regex>
+        <regex pattern="seconds,\s*typedAs,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
+            <mutation text="seconds, ];"/>
+        </regex>
+
+        <!-- RULE 9 (R1): a pill whose reading has no answer under the key
+             is offered, or the way back names its readings the wrong way
+             round -->
+        <regex pattern="if \(reRead\.asksAnUndefinedTrig\) return null;" dotAll="true" id="read_as.degrees.dead_end_offered">
+            <mutation text="if (false) return null;"/>
+        </regex>
+        <regex pattern="from: NumberReading\.degreesMinutesSeconds,\s*to: NumberReading\.degrees," dotAll="true" id="read_as.way_back.readings_swapped">
+            <mutation text="from: NumberReading.degrees, to: NumberReading.degreesMinutesSeconds,"/>
         </regex>
     </rules>
 
