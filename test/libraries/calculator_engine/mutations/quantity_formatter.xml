@@ -206,8 +206,9 @@
         <regex pattern="return _under\('\$step\$suffix', negative: amount &lt; 0\);" dotAll="true" id="quantity_formatter.under.sign">
             <mutation text="return _under('$step$suffix', negative: amount &gt; 0);"/>
         </regex>
-        <regex pattern="'\$\{negative \? shortByUnder : under\} \$step';" dotAll="true" id="quantity_formatter.under.words_swapped">
-            <mutation text="'${negative ? under : shortByUnder} $step';"/>
+        <regex pattern="negative \? belowZero : '\$under \$step';" dotAll="true" id="quantity_formatter.under.words_swapped">
+            <mutation text="negative ? '$under $step' : belowZero;"/>
+            <mutation text="'$under $step';"/>
         </regex>
         <regex pattern="if \(whole == 0 &amp;&amp; fraction\.text\.isEmpty &amp;&amp; magnitude\.numerator != 0\) \{" dotAll="true" id="quantity_formatter.under.inch_zero">
             <mutation text="if (whole == 0 &amp;&amp; fraction.text.isEmpty) {"/>
@@ -238,9 +239,12 @@
         </regex>
         <regex pattern="if \(!\(_amountShown\(value\)\.abs\(\) &lt; _firstWholeNumberPastTheLimit\)\) \{" dotAll="true" id="quantity_formatter.too_large.no_guard">
             <mutation text="if (false) {"/>
+            <mutation text="if (!(_amountShown(value) &lt; _firstWholeNumberPastTheLimit)) {"/>
         </regex>
         <regex pattern="Area\(\) =&gt; _areaInUnit\(value\),\s*Volume\(\) =&gt; _volumeInUnit\(value\),\s*Weight\(\) =&gt; _weightInUnit\(value\),\s*Angle\(\)" dotAll="true" id="quantity_formatter.too_large.area_unguarded">
             <mutation text="Area() =&gt; 0, Volume() =&gt; _volumeInUnit(value), Weight() =&gt; _weightInUnit(value), Angle()"/>
+            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; 0, Weight() =&gt; _weightInUnit(value), Angle()"/>
+            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; _volumeInUnit(value), Weight() =&gt; 0, Angle()"/>
         </regex>
         <regex pattern="Length\(unit: Unit\.footInch\) =&gt; value\.amountIn\(Unit\.foot\)," dotAll="true" id="quantity_formatter.too_large.compound_in_inches">
             <mutation text="Length(unit: Unit.footInch) =&gt; value.amountIn(Unit.inch),"/>
