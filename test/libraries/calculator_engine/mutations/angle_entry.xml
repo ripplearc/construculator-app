@@ -32,9 +32,11 @@
             <mutation text="bool get isDegreesMinutesSeconds =&gt; seconds != null;"/>
         </regex>
 
-        <!-- RULE 3: a third point goes into a segment, or a digit goes into
-             the minutes once the seconds are open -->
-        <regex pattern="if \(digit == '\.'\) return EntryChanged\(this\);\s*return _replaceLast\(_withSegmentDigit\(last, digit\)\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
+        <!-- RULE 3 (R1): a point on an angle is swallowed or typed into a
+             segment, or a digit goes into the minutes once the seconds are
+             open -->
+        <regex pattern="if \(digit == '\.'\) return closeDegreesMinutesSeconds\(\);\s*return _replaceLast\(_withSegmentDigit\(last, digit\)\);" dotAll="true" id="entry_buffer.angle.third_point_typed">
+            <mutation text="if (digit == '.') return EntryChanged(this); return _replaceLast(_withSegmentDigit(last, digit));"/>
             <mutation text="return _replaceLast(_withSegmentDigit(last, digit));"/>
         </regex>
         <regex pattern="if \(angle\.seconds case final seconds\?\) \{\s*return angle\.copyWith\(seconds: \(\) =&gt; '\$seconds\$digit'\);\s*\}" dotAll="true" id="entry_buffer.angle.digit_into_minutes">
@@ -78,8 +80,15 @@
         <regex pattern="minutes: '\$\{carried % Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.minutes">
             <mutation text="minutes: '${carried % 100}',"/>
         </regex>
-        <regex pattern="if \(totalMinutes &gt; _largestExactSegments\) \{\s*return Token\(digits: degrees, minutes: minutes, seconds: ''\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
+        <regex pattern="if \(totalMinutes &gt; _largestWholeNumberADoubleHolds\) \{\s*return Token\(digits: degrees, minutes: minutes, seconds: ''\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
             <mutation text=""/>
+            <mutation text="if (totalMinutes &gt;= _largestWholeNumberADoubleHolds) { return Token(digits: degrees, minutes: minutes, seconds: ''); }"/>
+        </regex>
+
+        <!-- RULE 8b (R1): the seconds are cut instead of rounded, so a
+             60.999… lands one second short -->
+        <regex pattern="final total = totalSeconds\.round\(\);" dotAll="true" id="entry_buffer.text.seconds_floored">
+            <mutation text="final total = totalSeconds.floor();"/>
         </regex>
 
         <!-- RULE 9: closed minutes are not padded, open ones are, or the
@@ -144,19 +153,22 @@
             <mutation text="if (chip.entry.tokens.any"/>
         </regex>
 
-        <!-- RULE 15: an angle answer is not converted, or is converted one
-             way only, or a pitch answer is -->
+        <!-- RULE 15 (R1): an angle answer is not converted, or is converted
+             one way only, or a pitch answer is converted or changed in
+             silence -->
         <regex pattern="=&gt;\s*_replaceLastChip\(\s*ResultChip\(\s*key: key,\s*value: _respelledAngle\(angle\),\s*operator: operator,\s*\),\s*\)," dotAll="true" id="tape.dms_key.answer_not_converted">
             <mutation text="=&gt; TapeChanged(this),"/>
         </regex>
-        <regex pattern="AngleSpelling\.degrees =&gt; angle\.spelledAs\(\s*AngleSpelling\.degreesMinutesSeconds,\s*\)," dotAll="true" id="tape.respell.degrees_stay">
-            <mutation text="AngleSpelling.degrees =&gt; angle,"/>
+        <regex pattern="AngleSpelling\.degrees \|\|\s*AngleSpelling\.risePerFoot \|\|\s*AngleSpelling\.grade =&gt; angle\.spelledAs\(\s*AngleSpelling\.degreesMinutesSeconds,?\s*\)," dotAll="true" id="tape.respell.degrees_stay">
+            <mutation text="AngleSpelling.degrees || AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; angle,"/>
         </regex>
         <regex pattern="AngleSpelling\.degreesMinutesSeconds =&gt; angle\.spelledAs\(\s*AngleSpelling\.degrees,\s*\)," dotAll="true" id="tape.respell.dms_stays">
             <mutation text="AngleSpelling.degreesMinutesSeconds =&gt; angle,"/>
         </regex>
-        <regex pattern="AngleSpelling\.risePerFoot \|\| AngleSpelling\.grade =&gt; angle," dotAll="true" id="tape.respell.pitch_converted">
-            <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; angle.spelledAs(AngleSpelling.degreesMinutesSeconds),"/>
+        <regex pattern="ResultChip\(:final key\) when DeterministicRules\.isPitchKey\(key\) =&gt;\s*const TapeRefused\(TapeRefusal\.pitchHasNoDms\)," dotAll="true" id="tape.dms_key.pitch_answer_converted">
+            <mutation text=""/>
+            <mutation text="ResultChip(:final key) when DeterministicRules.isPitchKey(key) =&gt; TapeChanged(this),"/>
+            <mutation text="ResultChip(key: DeterministicRules.pitchDegreesKey) =&gt; const TapeRefused(TapeRefusal.pitchHasNoDms),"/>
         </regex>
 
         <!-- RULE 16: a unit key on an angle under a trig key says the trig

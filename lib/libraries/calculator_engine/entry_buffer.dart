@@ -243,7 +243,7 @@ class EntryBuffer extends Equatable {
     }
     if (seconds.isEmpty) return "${token.digits}°${_twoDigits(minutes)}'";
     final totalSeconds = token.value * Token.secondsPerDegree;
-    if (totalSeconds > _largestExactSegments) {
+    if (totalSeconds > _largestWholeNumberADoubleHolds) {
       return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
     }
     final total = totalSeconds.round();
@@ -267,8 +267,10 @@ class EntryBuffer extends Equatable {
   /// pressed; after a finished token they start a new one (18ft then 8). A
   /// leading point reads 0.; a second point makes an angle where
   /// [readsAngles] (23.16 then . reads 23°16' with the minutes closed, and
-  /// the digits go on into the seconds) and is refused anywhere else. A
-  /// third point changes nothing: an angle has three segments.
+  /// the digits go on into the seconds) and is refused anywhere else. On an
+  /// angle the point is the D:M:S key ([closeDegreesMinutesSeconds]): after
+  /// 38 [D:M:S] 30 it opens the seconds, and a third point changes nothing,
+  /// since an angle has three segments.
   EntryOutcome typeDigit(String digit, {bool readsAngles = false}) {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null || last.unit != null) {
@@ -286,7 +288,7 @@ class EntryBuffer extends Equatable {
       );
     }
     if (last.isDegreesMinutesSeconds) {
-      if (digit == '.') return EntryChanged(this);
+      if (digit == '.') return closeDegreesMinutesSeconds();
       return _replaceLast(_withSegmentDigit(last, digit));
     }
     if (digit == '.' && last.digits.contains('.')) {
@@ -334,7 +336,7 @@ class EntryBuffer extends Equatable {
     final totalMinutes =
         double.parse(degrees) * Token.minutesPerDegree +
         (double.tryParse(minutes) ?? 0);
-    if (totalMinutes > _largestExactSegments) {
+    if (totalMinutes > _largestWholeNumberADoubleHolds) {
       return Token(digits: degrees, minutes: minutes, seconds: '');
     }
     final carried = totalMinutes.round();
@@ -345,9 +347,7 @@ class EntryBuffer extends Equatable {
     );
   }
 
-  // 2⁵³, the last whole number a double holds exactly: past it the segments
-  // cannot be carried without inventing digits, so they are left as typed.
-  static const double _largestExactSegments = 9007199254740992;
+  static const double _largestWholeNumberADoubleHolds = 9007199254740992;
 
   Token _withSegmentDigit(Token angle, String digit) {
     if (angle.seconds case final seconds?) {

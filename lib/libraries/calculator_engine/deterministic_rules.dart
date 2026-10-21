@@ -241,6 +241,10 @@ class DeterministicRules extends Equatable {
 
   const DeterministicRules();
 
+  /// Whether [key] labels a pitch answer, in any of its three spellings.
+  static bool isPitchKey(String key) =>
+      key == pitchRiseKey || key == pitchDegreesKey || key == pitchGradeKey;
+
   /// The answers [namedValues] earn, in the order the strip offers them;
   /// empty when no rule matches. [namedValues] maps a chip key to the
   /// value under it, as [Tape.namedValues] collects them.

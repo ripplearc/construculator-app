@@ -552,6 +552,33 @@ void main() {
         expect(typeAngle('0:0:3600').text, '1°00\'0"');
       });
 
+      test('the seconds are rounded, not cut: 0°01\'1" is 60.999… seconds '
+          'in floating point', () {
+        expect(typeAngle('0:1:1').text, '0°01\'1"');
+        expect(typeAngle('0:0:1').text, '0°00\'1"');
+      });
+
+      test('a point on an angle is the key: it opens the next segment, and '
+          'a third one changes nothing', () {
+        expect(typeAngle('38:30.45').text, '38°30\'45"');
+        expect(typeAngle('38.30.45').text, '38°30\'45"');
+        final full = typeAngle('38:30:45');
+        expect(full.typeDigit('.', readsAngles: true), EntryChanged(full));
+      });
+
+      test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
+        expect(
+          typeAngle('150119987579015:92:').text,
+          "150119987579016°32'",
+          reason: '9,007,199,254,740,992 minutes, the last exact carry',
+        );
+        expect(
+          typeAngle('150119987579015:94:').text,
+          "150119987579015°94'",
+          reason: 'two past it: the segments are left as typed',
+        );
+      });
+
       test('one angle spells the same whether typed or computed (S113)', () {
         const formatter = QuantityFormatter();
         for (final digits in ['45.2', '12.1', '6.0', '30.89', '38.5']) {
