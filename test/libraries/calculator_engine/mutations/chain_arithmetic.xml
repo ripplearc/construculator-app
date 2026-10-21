@@ -167,6 +167,14 @@
         <regex pattern="b\.ticksPerUnit &lt; a\.ticksPerUnit \? b : a;" dotAll="true" id="chain_arithmetic.metric_unit.largest_wins">
             <mutation text="b.ticksPerUnit &gt; a.ticksPerUnit ? b : a;"/>
         </regex>
+
+        <!-- RULE CA-1236 (R2): a difference that is zero within the float
+             noise of its operands is kept as a residue, or the noise band
+             is so wide that a real small difference is lost -->
+        <regex pattern="value\.abs\(\) &lt;= of \* _floatNoise \? 0 : value;" dotAll="true" id="chain_arithmetic.zero_within_noise">
+            <mutation text="value;"/>
+            <mutation text="value.abs() &lt;= of * 1e-6 ? 0 : value;"/>
+        </regex>
     </rules>
 
     <commands>

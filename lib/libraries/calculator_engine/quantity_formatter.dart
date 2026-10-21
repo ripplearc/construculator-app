@@ -48,7 +48,7 @@ import 'package:equatable/equatable.dart';
 /// A real value smaller than the rounding is written in words, never as
 /// zero, because a zero says two lengths match when they do not (owner
 /// decision of 4 October 2026): 5ft 1/64in − 5ft reads "Under 1/16in" at the
-/// 1/16 resolution, 5ft − 5ft 1/64in "Short by under 1/16in", and 1/8in ×
+/// 1/16 resolution, 5ft − 5ft 1/64in "Below zero", and 1/8in ×
 /// 1/8in "Under 0.01ft²". The step is the smallest one the value's unit and
 /// setting show, so lengths, areas and volumes in every unit read alike; a
 /// true zero still reads 0ft 0in, and the exact value stays stored.
@@ -92,9 +92,9 @@ class QuantityFormatter extends Equatable {
   /// rounding reads as: "Under 1/16in".
   static const String under = 'Under';
 
-  /// The words before the smallest step a real negative value smaller than
-  /// the rounding reads as: "Short by under 1/16in".
-  static const String shortByUnder = 'Short by under';
+  /// The words a real negative value smaller than the rounding reads as, in
+  /// place of a number (Section 6: never 0ft 0in and never -0ft 0in).
+  static const String belowZero = 'Below zero';
 
   /// The settings this formatter renders by.
   final CalculatorPreferences preferences;
@@ -254,7 +254,7 @@ class QuantityFormatter extends Equatable {
   );
 
   String _under(String step, {required bool negative}) =>
-      '${negative ? shortByUnder : under} $step';
+      negative ? belowZero : '$under $step';
 
   String _numberOrUnder(
     String number,
