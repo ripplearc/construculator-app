@@ -381,13 +381,15 @@ class Tape extends Equatable {
   /// there ([ValueChip.asksAnUndefinedTrig]).
   ///
   /// ÷ builds the ratio for ATAN (rule 4.11; Section 6, "Trig chips in a
-  /// chain"; [ArctangentReach]): the operand of an Arctangent chip reaches across every ÷ and
-  /// bare number typed after it, and the answer names the operand it took,
-  /// so [ATAN] 16 ÷ 12 offers Arctangent(16 ÷ 12) 53.13° beside the Calc
-  /// 1.33 of the same digits (scenario S111; walkthrough 23.3). A divisor
-  /// of 0 leaves no ratio.
+  /// chain"; [ArctangentReach]): the operand of an Arctangent chip reaches
+  /// across every ÷ and bare number typed after it, and the answer names
+  /// the operand it took, so [ATAN] 16 ÷ 12 offers Arctangent(16 ÷ 12)
+  /// 53.13° beside the Calc 1.33 of the same digits (scenario S111;
+  /// walkthrough 23.3). A divisor of 0 leaves no ratio; a bracket closed
+  /// right after ÷ is a divisor worth its value, so the answer is offered
+  /// on it too ([ATAN] 16 ÷ (3 + 1) offers Arctangent(16 ÷ 4) 75.96°).
   Answer? get trigAnswer {
-    if (active == null) return null;
+    if (active == null && chips.lastOrNull is! BracketChip) return null;
     final question = _trigQuestionAsked;
     if (question == null) return null;
     final (:function, :operand, :key) = question;
@@ -404,13 +406,15 @@ class Tape extends Equatable {
   /// Arctangent 38.19°), or on the ratio an Arctangent builds across ÷,
   /// named for its new digits (Arctangent(14 ÷ 12) 49.4°). `null` when the
   /// edit leaves no answer, and the chip is removed (Section 5.5, "A result
-  /// that can no longer be computed").
+  /// that can no longer be computed"). Only a trig answer is rebuilt: the
+  /// Calc of a chain an Arctangent continues (5 + [ATAN] 16 ÷ 12 = is Calc
+  /// 58.13°) is the chain's to recompute, so for it the answer is `null`.
   ResultChip? rebuiltTrigAnswer(ResultChip answer) {
     if (_trigQuestionAsked case (
       :final function,
       :final operand,
       :final key,
-    ) when key != function.key) {
+    ) when key != function.key && _isAnswerOf(answer, function)) {
       final rebuilt = TrigFunction.rebuilt(
         ResultChip(
           key: function.key,
@@ -436,6 +440,9 @@ class Tape extends Equatable {
     return TrigFunction.rebuilt(answer, operand);
   }
 
+  static bool _isAnswerOf(ResultChip answer, TrigFunction function) =>
+      answer.key == function.key || answer.key.startsWith('${function.key}(');
+
   ({TrigFunction function, double operand, String key})?
   get _trigQuestionAsked {
     final question = _trigQuestion;
@@ -456,16 +463,15 @@ class Tape extends Equatable {
     );
   }
 
-  /// The trig chip the tape ends on, with the ratio it reaches across ÷
-  /// ([ArctangentReach]) when it does; `null` when the tape ends on
-  /// anything else.
   ({ValueChip chip, ArctangentReach? reach})? get _trigQuestion {
     for (var index = chips.length - 1; index >= 0; index--) {
       final chip = chips[index];
+      if (chip case ErrorChip(error: CalculationError.divisionByZero)) continue;
+      if (chip case BracketChip(isOpen: false)) continue;
       if (chip is! ValueChip) return null;
       if (chip.trigFunction == null) continue;
       if (index == chips.length - 1) return (chip: chip, reach: null);
-      final reach = ArctangentReach.from(chips, index);
+      final reach = ArctangentReach.from(chips, index, evaluator: evaluator);
       if (reach == null || reach.end != chips.length) return null;
       return (chip: chip, reach: reach);
     }

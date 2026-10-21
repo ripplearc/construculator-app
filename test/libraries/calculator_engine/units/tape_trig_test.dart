@@ -642,6 +642,70 @@ void main() {
         expect(calc(landed), 'Calc 26.57°');
       });
 
+      test('the divisor ÷ 0 reopened still joins the ratio (rule 4.11)', () {
+        final retyped = press(const Tape(), 'ATAN 1 6 ÷ 0 = 1 2');
+        expect(
+          retyped.chips[1],
+          const ErrorChip(CalculationError.divisionByZero),
+        );
+        expect(answerText(retyped), 'Arctangent(16 ÷ 12) 53.13°');
+        expect(calc(retyped), 'Calc 1.33');
+        expect(lastResult(press(retyped, '=')), 'Arctangent(16 ÷ 12) 53.13°');
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ 0 = 4 =')),
+          'Arctangent(16 ÷ 4) 75.96°',
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ 1 2 ÷ 0 = 4 =')),
+          'Arctangent(16 ÷ 12 ÷ 4) 18.43°',
+        );
+        expect(
+          lastResult(press(const Tape(), '5 + ATAN 1 6 ÷ 0 = 1 2 =')),
+          'Calc 58.13°',
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ 0 = 1 2 × 2 =')),
+          'Calc 106.26°',
+        );
+        final twice = press(const Tape(), 'ATAN 1 6 ÷ 0 = 0 =');
+        expect(twice.chips.length, 3, reason: 'one error chip, reopened again');
+        expect(twice.trigAnswer, isNull);
+        expect(press(const Tape(), 'ATAN 1 6 ÷ 0 =').trigAnswer, isNull);
+        final sine = press(const Tape(), 'SIN 3 0 ÷ 0 = 2');
+        expect(sine.trigAnswer, isNull, reason: 'only an Arctangent reaches');
+        expect(lastResult(press(sine, '=')), 'Calc 0.25');
+      });
+
+      test('a bracket right after ÷ joins the ratio, named by its value', () {
+        final open = press(const Tape(), 'ATAN 1 6 ÷ ( 3 + 1');
+        expect(open.trigAnswer, isNull);
+        final closed = press(open, '(');
+        expect(answerText(closed), 'Arctangent(16 ÷ 4) 75.96°');
+        expect(calc(closed), 'Calc 4');
+        expect(lastResult(press(closed, '=')), 'Arctangent(16 ÷ 4) 75.96°');
+        expect(
+          lastResult(press(const Tape(), '5 + ATAN 1 6 ÷ ( 3 + 1 ( =')),
+          'Calc 80.96°',
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ ( 2 × 2 ( ÷ 2 =')),
+          'Arctangent(16 ÷ 4 ÷ 2) 63.43°',
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ 0 = ( 3 + 1 ( =')),
+          'Arctangent(16 ÷ 4) 75.96°',
+        );
+        expect(
+          lastResult(press(const Tape(), 'ATAN 1 6 ÷ ( 1 ÷ 3 ( =')),
+          'Arctangent(16 ÷ 0.33) 88.81°',
+        );
+        final lengths = press(const Tape(), 'ATAN 1 6 ÷ ( 3 ft + 1 ft (');
+        expect(lengths.trigAnswer, isNull, reason: 'a length is not a ratio');
+        expect(lengths.runningTotal, isA<ChainFailed>());
+        final beside = press(const Tape(), 'ATAN 1 6 ÷ 1 2 ( 3 + 1 (');
+        expect(beside.trigAnswer, isNull, reason: 'a bracket with no ÷');
+      });
+
       test('S102: an answer is rebuilt on the tape an edit left before it', () {
         ValueChip retyped(TapeChip chip, String digits) => (chip as ValueChip)
             .copyWith(entry: EntryBuffer([Token(digits: digits)]));
@@ -682,6 +746,15 @@ void main() {
         expect(
           rebuilt(press(const Tape(), 'ATAN 1 4 ÷ 1 2'), reach.chips.last),
           'Arctangent(14 ÷ 12) 49.4°',
+        );
+        final chain = press(const Tape(), '5 + ATAN 1 6 ÷ 1 2 =');
+        expect(
+          press(
+            const Tape(),
+            '5 + ATAN 1 4 ÷ 1 2',
+          ).rebuiltTrigAnswer(chain.chips.last as ResultChip),
+          isNull,
+          reason: 'a Calc is the chain\'s to recompute, not a trig answer',
         );
       });
 
