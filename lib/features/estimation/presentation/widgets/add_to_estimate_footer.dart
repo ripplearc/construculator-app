@@ -72,10 +72,11 @@ class AddToEstimateFooter extends StatelessWidget {
               block: block,
             ),
             if (errorMessage case final message?) ...[
-              const SizedBox(height: CoreSpacing.space3),
+              const SizedBox(height: CoreSpacing.space4),
               _ErrorLine(message: message),
-            ],
-            const SizedBox(height: CoreSpacing.space4),
+              const SizedBox(height: CoreSpacing.space2),
+            ] else
+              const SizedBox(height: CoreSpacing.space4),
             CoreButton(
               key: buttonKey,
               label: block?.buttonLabel ?? l10n.addToEstimateButton,
