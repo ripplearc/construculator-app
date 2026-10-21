@@ -5,6 +5,11 @@ sealed class MaterialCostFormEvent {
   const MaterialCostFormEvent();
 }
 
+/// Fired when the form opens, so it can select the unit this account used last.
+class MaterialCostFormStarted extends MaterialCostFormEvent {
+  const MaterialCostFormStarted();
+}
+
 /// Fired when the user changes the material name.
 class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   const MaterialCostItemTypeChanged(this.value);

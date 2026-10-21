@@ -5,6 +5,7 @@
 
     <files>
         <file>lib/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart</file>
+        <file>lib/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_state.dart</file>
     </files>
 
     <exclude>
@@ -47,6 +48,15 @@
         </regex>
         <regex pattern="rate == null\s*\? RateStatus\.missing" dotAll="true" id="bloc.rate_status.cleared_missing">
             <mutation text="rate == null ? RateStatus.ownRateConfirmed"/>
+        </regex>
+        <regex pattern="if \(isValid\) return null;" dotAll="false" id="state.blocker.valid_null">
+            <mutation text="if (!isValid) return null;"/>
+        </regex>
+        <regex pattern="MaterialBlockerKind\.invalid\);" dotAll="false" id="state.blocker.invalid_kind">
+            <mutation text="MaterialBlockerKind.missing);"/>
+        </regex>
+        <regex pattern="if \(fieldErrors\.containsKey\(field\)\)" dotAll="false" id="state.blocker.skip_error_check">
+            <mutation text="if (false)"/>
         </regex>
         <regex pattern="errors\[MaterialFormField\.quantity\] =\s*MaterialFieldError\.quantityNotPositive" dotAll="true" id="bloc.quantity.error_kind">
             <mutation text="errors[MaterialFormField.quantity] = MaterialFieldError.quantityTooLarge"/>
