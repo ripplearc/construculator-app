@@ -124,6 +124,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   bool _deliveryExpanded = false;
 
+  String _lastDailyRateText = '';
+  String _lastJobAmountText = '';
+
   late final YourRatesBloc _yourRatesBloc;
   _RateSaveStatus _rateSaveStatus = _RateSaveStatus.idle;
 
@@ -196,16 +199,20 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onDailyRateChanged() {
+    final rate = _dailyRateController.text;
+    if (rate == _lastDailyRateText) return;
+    _lastDailyRateText = rate;
     _clearRateSaveStatus();
-    context.read<EquipmentCostFormBloc>().add(
-      EquipmentRateUpdatedEvent(_dailyRateController.text),
-    );
+    context.read<EquipmentCostFormBloc>().add(EquipmentRateUpdatedEvent(rate));
   }
 
   void _onJobAmountChanged() {
+    final amount = _jobAmountController.text;
+    if (amount == _lastJobAmountText) return;
+    _lastJobAmountText = amount;
     _clearRateSaveStatus();
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentRateUpdatedEvent(_jobAmountController.text),
+      EquipmentRateUpdatedEvent(amount),
     );
   }
 
