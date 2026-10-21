@@ -12,8 +12,12 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const int _maxNameLength = 80;
 
+const int _maxWholeDigits = 9;
+
 const double _quantityValueGap = 3;
 const double _quantityBottomPadding = 6;
+const double _nameValueGap = 10;
+const double _nameBottomPadding = 6;
 
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
@@ -61,6 +65,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           children: [
             SheetFieldRow(
               label: l10n.materialNameLabel,
+              valueGap: _nameValueGap,
+              bottomPadding: _nameBottomPadding,
               onTap: _nameFocus.requestFocus,
               child: _SheetTextField(
                 key: const Key('material_name_field'),
@@ -114,7 +120,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               valueGap: CoreSpacing.space2,
               onTap: _rateFocus.requestFocus,
               child: Row(
-                spacing: CoreSpacing.space2,
+                spacing: CoreSpacing.space1,
                 children: [
                   _SheetTextField(
                     key: const Key('material_rate_field'),
@@ -134,13 +140,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                   if (state.data.unit case final unit?)
                     Text(
                       l10n.materialRatePerUnitSuffix(unit.displayName(l10n)),
-                      style: context.textTheme.bodyLargeRegular.copyWith(
+                      style: context.textTheme.bodyMediumRegular.copyWith(
                         color: context.colorTheme.textBody,
                       ),
                     ),
                 ],
               ),
             ),
+            const SizedBox(height: CoreSpacing.space4),
           ],
         ),
       ),
@@ -151,7 +158,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       state is MaterialCostFormSubmitting || state is MaterialCostFormSuccess;
 
   TextInputFormatter _decimalLimitFormatter({required int decimals}) {
-    final allowed = RegExp('^\\d*\\.?\\d{0,$decimals}\$');
+    final allowed = RegExp(
+      '^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$',
+    );
     return TextInputFormatter.withFunction((previous, next) {
       // A phone set to a comma-decimal language shows a comma key.
       final text = next.text.replaceAll(',', '.');
@@ -176,9 +185,6 @@ class _SheetTextField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final bool readOnly;
 
-  /// Sizes the field to the text it shows, so a unit next to it follows the
-  /// typed value. The tap area stays at least 48 dp wide and may overlap the
-  /// unit next to it.
   final bool fitsText;
 
   const _SheetTextField({
@@ -249,7 +255,7 @@ class _SheetTextField extends StatelessWidget {
     final painter = TextPainter(
       text: TextSpan(
         text: controller.text.isEmpty ? hintText : controller.text,
-        style: Theme.of(context).textTheme.bodyLarge!.merge(style),
+        style: Theme.of(context).textTheme.bodyLarge?.merge(style) ?? style,
       ),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),

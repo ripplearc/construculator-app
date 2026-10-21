@@ -4040,10 +4040,10 @@ abstract class AppLocalizations {
   /// **'Set your rate'**
   String get materialRatePlaceholder;
 
-  /// Shown after a typed material rate to say which unit it is the price of, for example '/ Liters'
+  /// Shown after a typed material rate to say which unit it is the price of, for example '/Liters', with no space after the slash as in the Verify frame and in yourRatesDaySuffix
   ///
   /// In en, this message translates to:
-  /// **'/ {unit}'**
+  /// **'/{unit}'**
   String materialRatePerUnitSuffix(String unit);
 
   /// Title of the bottom sheet for adding a material cost to an estimate

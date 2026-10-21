@@ -3357,9 +3357,9 @@
     "description": "Placeholder in the rate field while it is empty",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65688-160654"
   },
-  "materialRatePerUnitSuffix": "/ {unit}",
+  "materialRatePerUnitSuffix": "/{unit}",
   "@materialRatePerUnitSuffix": {
-    "description": "Shown after a typed material rate to say which unit it is the price of, for example '/ Liters'",
+    "description": "Shown after a typed material rate to say which unit it is the price of, for example '/Liters', with no space after the slash as in the Verify frame and in yourRatesDaySuffix",
     "context": "Storyboard CUJ 4, Verify frame: the rate reads $52.00 /gal",
     "placeholders": {
       "unit": {
