@@ -270,9 +270,16 @@ class EntryBuffer extends Equatable {
   /// the digits go on into the seconds) and is refused anywhere else. On an
   /// angle the point is the D:M:S key ([closeDegreesMinutesSeconds]): after
   /// 38 [D:M:S] 30 it opens the seconds, and a third point changes nothing,
-  /// since an angle has three segments.
+  /// since an angle has three segments. An inch the Read-as pill read a
+  /// bare number as ([Token.typedAs] behind the unit) is not a unit the
+  /// user typed, so the next digit continues the number instead of starting
+  /// a compound: 6in then 5 is 65. Only the pill under Pitch writes such an
+  /// inch, so no other key meets one.
   EntryOutcome typeDigit(String digit, {bool readsAngles = false}) {
     final last = tokens.isEmpty ? null : tokens.last;
+    if (last case Token(unit: Unit.inch, typedAs: _?)) {
+      return _replaceLast(Token(digits: '${last.digits}$digit'));
+    }
     if (last == null || last.unit != null) {
       return _changed([...tokens, Token(digits: digit == '.' ? '0.' : digit)]);
     }
