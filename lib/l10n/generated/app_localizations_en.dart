@@ -2275,7 +2275,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String materialRatePerUnitSuffix(String unit) {
-    return '/ $unit';
+    return '/$unit';
   }
 
   @override

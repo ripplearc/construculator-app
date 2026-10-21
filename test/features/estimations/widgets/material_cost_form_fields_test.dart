@@ -132,7 +132,7 @@ void main() {
       expect(tester.getRect(unitPill).left - field.right, 8);
     });
 
-    testWidgets('the unit after the rate follows the typed rate at 8 dp', (
+    testWidgets('the unit after the rate follows the typed rate at 4 dp', (
       tester,
     ) async {
       await pumpFields(tester);
@@ -142,7 +142,17 @@ void main() {
 
       final field = tester.getRect(rateField);
       expect(field.width, lessThan(50));
-      expect(tester.getRect(find.text('/ Liters')).left - field.right, 8);
+      expect(tester.getRect(find.text('/Liters')).left - field.right, 4);
+    });
+
+    testWidgets('the name row leaves 10 dp between its label and value', (
+      tester,
+    ) async {
+      await pumpFields(tester);
+
+      final label = tester.getRect(find.text('Material'));
+      final value = tester.getRect(find.text('Name the material'));
+      expect(value.top - label.bottom, 10);
     });
 
     testWidgets('the rate row leaves 8 dp between its label and value', (
@@ -233,7 +243,21 @@ void main() {
       bloc.add(const MaterialUnitSelected(Unit.liters));
       await tester.pump();
 
-      expect(find.text('/ Liters'), findsOneWidget);
+      expect(find.text('/Liters'), findsOneWidget);
+    });
+
+    testWidgets('writes the unit with no space after the slash, in smaller '
+        'text than the rate', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '52');
+      bloc.add(const MaterialUnitSelected(Unit.liters));
+      await tester.pump();
+
+      final unit = tester.widget<Text>(find.text('/Liters'));
+      final rate = tester.widget<TextField>(
+        find.descendant(of: rateField, matching: find.byType(TextField)),
+      );
+      expect(unit.style!.fontSize, lessThan(rate.style!.fontSize!));
     });
 
     testWidgets('shows the unit even before a rate is typed', (tester) async {
@@ -241,7 +265,7 @@ void main() {
       bloc.add(const MaterialUnitSelected(Unit.liters));
       await tester.pump();
 
-      expect(find.text('/ Liters'), findsOneWidget);
+      expect(find.text('/Liters'), findsOneWidget);
     });
 
     testWidgets('shows no unit after the rate while none is picked', (
@@ -317,6 +341,18 @@ void main() {
       await tester.pump();
 
       expect(textOf(tester, quantityField), '1.2');
+    });
+
+    testWidgets('stops at nine whole digits, so the row cannot outgrow the '
+        'screen', (tester) async {
+      await pumpFields(tester);
+
+      await tester.enterText(quantityField, '123456789');
+      await tester.enterText(quantityField, '1234567890');
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '123456789');
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('ignores a fifth decimal digit', (tester) async {
@@ -395,6 +431,16 @@ void main() {
 
       expect(textOf(tester, rateField), '52.5');
       expect(dataOf().rate, 52.5);
+    });
+
+    testWidgets('stops at nine whole digits', (tester) async {
+      await pumpFields(tester);
+
+      await tester.enterText(rateField, '123456789');
+      await tester.enterText(rateField, '1234567890');
+      await tester.pump();
+
+      expect(textOf(tester, rateField), '123456789');
     });
 
     testWidgets('ignores a third decimal digit', (tester) async {
