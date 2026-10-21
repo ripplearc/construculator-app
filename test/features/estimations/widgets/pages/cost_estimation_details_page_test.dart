@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
@@ -15,6 +14,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -33,6 +33,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -54,6 +55,7 @@ class _CostEstimationDetailsPageTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late Clock clock;
   late AppBootstrap appBootstrap;
 
@@ -64,12 +66,14 @@ void main() {
     CoreToast.disableTimers();
 
     clock = FakeClockImpl();
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
 
     appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationDetailsPageTestModule(appBootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     Modular.setInitialRoute(testEstimationRoute);
   });
 
@@ -80,6 +84,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    database.reset();
     Modular.dispose<AuthManager>();
     Modular.dispose<CurrentCompanyResolver>();
     fakeSupabase.setRpcResponse(
@@ -568,24 +573,28 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
     });
 
+    var seededRecents = 0;
+
     Future<void> seedRecent({
       required String itemName,
       required double amount,
       required EquipmentPricingMethod method,
     }) async {
-      final saveResult = await Modular.get<YourRatesRepository>().save(
-        YourRateEntry(
-          id: '',
-          companyId: 'company-1',
-          itemName: itemName,
-          category: CostItemType.equipment,
-          rate: Money(amount: amount),
-          savedAt: clock.now().subtract(const Duration(days: 10)),
-          lastUsedAt: clock.now().subtract(const Duration(days: 10)),
-          equipmentMethod: method,
-        ),
-      );
-      saveResult.fold((f) => throw StateError('seed failed: $f'), (_) {});
+      final savedAt = clock.now().subtract(const Duration(days: 10));
+      seededRecents++;
+      database.seedRows([
+        {
+          'id': 'recent-$seededRecents',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': itemName,
+          'rate_amount': amount,
+          'rate_currency': 'USD',
+          'equipment_method': method.name,
+          'saved_at': savedAt.toIso8601String(),
+          'last_used_at': savedAt.toIso8601String(),
+        },
+      ]);
     }
 
     Future<void> openRecents(WidgetTester tester) async {

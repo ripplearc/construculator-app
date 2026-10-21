@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -16,19 +17,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   late FakeClockImpl clock;
   YourRatesRecentsResult? result;
 
   setUpAll(() {
     clock = FakeClockImpl(DateTime(2026, 1, 15));
+    database = FakeYourRatesDatabase();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(() {
@@ -37,13 +42,14 @@ void main() {
 
   setUp(() {
     result = null;
+    database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
     );
     clock.set(DateTime(2026, 1, 15));
-    fakeSupabase.addTableData('your_rates', [
+    database.seedRows([
       {
         'id': 'day-rate',
         'company_id': 'company-1',
@@ -75,7 +81,12 @@ void main() {
 
   tearDown(() {
     fakeSupabase.reset();
+    database.reset();
   });
+
+  int yourRatesReads() => database.getAllCalls
+      .where((call) => call.sql.contains('your_rates'))
+      .length;
 
   Future<void> openSheet(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -132,7 +143,7 @@ void main() {
     testWidgets('counts calendar days: 4 pm yesterday seen at 9 am reads '
         '"Used yesterday"', (tester) async {
       clock.set(DateTime(2026, 1, 15, 9));
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'yesterday-rate',
           'company_id': 'company-1',
@@ -159,7 +170,7 @@ void main() {
     testWidgets('a rate never added to an estimate reads "Saved …", not '
         '"Used …"', (tester) async {
       clock.set(DateTime(2026, 1, 15, 9));
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'never-added-rate',
           'company_id': 'company-1',
@@ -188,7 +199,7 @@ void main() {
       tester,
     ) async {
       clock.set(DateTime(2026, 1, 15, 9));
-      fakeSupabase.addTableData('your_rates', [
+      database.seedRows([
         {
           'id': 'saved-later-rate',
           'company_id': 'company-1',
@@ -344,7 +355,7 @@ void main() {
     const tryAgainKey = Key('your_rates_recents_try_again_button');
 
     Future<void> openFailedSheet(WidgetTester tester) async {
-      fakeSupabase.shouldThrowOnSelectMatch = true;
+      database.getAllError = StateError('database locked');
       await openSheet(tester);
     }
 
@@ -377,7 +388,7 @@ void main() {
     testWidgets('Try again replaces the message with the recent list when the '
         'read works', (tester) async {
       await openFailedSheet(tester);
-      fakeSupabase.shouldThrowOnSelectMatch = false;
+      database.getAllError = null;
 
       await tester.tap(find.byKey(tryAgainKey));
       await tester.pumpAndSettle();
@@ -396,7 +407,7 @@ void main() {
       expect(find.byKey(errorKey), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsNothing);
 
-      fakeSupabase.shouldThrowOnSelectMatch = false;
+      database.getAllError = null;
       await tester.tap(find.byKey(tryAgainKey));
       await tester.pumpAndSettle();
 
@@ -407,9 +418,9 @@ void main() {
     testWidgets('while Try again runs, the label stays, there is no spinner '
         'and a second tap reads nothing', (tester) async {
       await openFailedSheet(tester);
-      fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer<void>();
-      final readsBefore = fakeSupabase.getMethodCallsFor('selectMatch').length;
+      database.getAllError = null;
+      database.getAllGate = Completer<void>();
+      final readsBefore = yourRatesReads();
 
       await tester.tap(find.byKey(tryAgainKey));
       await tester.pump();
@@ -419,11 +430,11 @@ void main() {
       expect(find.text('Try again'), findsOneWidget);
       expect(find.byType(CoreLoadingIndicator), findsNothing);
       expect(
-        fakeSupabase.getMethodCallsFor('selectMatch').length,
+        yourRatesReads(),
         readsBefore + 1,
       );
 
-      fakeSupabase.completer!.complete();
+      database.getAllGate!.complete();
       await tester.pumpAndSettle();
     });
 
