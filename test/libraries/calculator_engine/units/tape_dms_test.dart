@@ -192,6 +192,19 @@ void main() {
         );
       });
 
+      test('a point after the key opens the next segment, as the key does', () {
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 3 0 . 4 5')),
+          '38°30\'45"',
+        );
+        expect(
+          activeText(press(const Tape(), '[Pitch] 3 8 DMS . 4 5')),
+          '38°00\'45"',
+        );
+        final full = press(const Tape(), '3 8 DMS 3 0 DMS 4 5');
+        expect(full.typeDigit('.'), TapeChanged(full));
+      });
+
       test('S113: the padding is the seal, on the entry side', () {
         expect(activeText(press(const Tape(), '3 8 DMS 5')), "38°5'");
         expect(activeText(press(const Tape(), '3 8 DMS 5 9')), "38°59'");
@@ -301,21 +314,33 @@ void main() {
         expect(lastResult(press(roof, 'DMS DMS')), 'Arctangent 27.55°');
       });
 
-      test('a pitch answer keeps its own cycle and is left as it is', () {
-        final pitch = const Tape().append(
-          ResultChip(
-            key: DeterministicRules.pitchRiseKey,
-            value: const Angle(26.57, spelling: AngleSpelling.risePerFoot),
-          ),
+      test('Section 8: a pitch answer has no D:M:S, in any of its three '
+          'spellings, and the key says why', () {
+        const pitches = {
+          DeterministicRules.pitchRiseKey: AngleSpelling.risePerFoot,
+          DeterministicRules.pitchDegreesKey: AngleSpelling.degrees,
+          DeterministicRules.pitchGradeKey: AngleSpelling.grade,
+        };
+        for (final MapEntry(:key, value: spelling) in pitches.entries) {
+          final pitch = const Tape().append(
+            ResultChip(
+              key: key,
+              value: Angle(26.57, spelling: spelling),
+            ),
+          );
+          expect(
+            pitch.pressDmsKey(),
+            const TapeRefused(TapeRefusal.pitchHasNoDms),
+            reason: key,
+          );
+        }
+        final calc = press(const Tape(), '0 . 5 ASIN × 2 =');
+        expect(lastResult(calc), 'Calc 60°');
+        expect(
+          lastResult(press(calc, 'DMS')),
+          "Calc 60°00'",
+          reason: 'an angle answer under any other key still converts',
         );
-        expect(pitch.pressDmsKey(), TapeChanged(pitch));
-        final grade = const Tape().append(
-          ResultChip(
-            key: DeterministicRules.pitchGradeKey,
-            value: const Angle(26.57, spelling: AngleSpelling.grade),
-          ),
-        );
-        expect(grade.pressDmsKey(), TapeChanged(grade));
       });
     });
 

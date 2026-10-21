@@ -130,6 +130,13 @@ enum TapeRefusal {
 
   /// [( )] to close with nothing open.
   noBracketToClose,
+
+  /// The D:M:S key on a pitch answer, in any of its three spellings
+  /// (Pitch-rise per 12in run 6in/12in, Pitch-degrees 26.57°, Pitch-grade
+  /// 50%): nothing changes, and the strip note reads "Pitch has no D:M:S.
+  /// Press Pitch for other readings." until the next key (Section 8; 1.8).
+  /// D:M:S is not a pitch reading; the Pitch key cycles the three that are.
+  pitchHasNoDms,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -742,9 +749,11 @@ class Tape extends Equatable {
   ///
   /// On a finished angle answer the same key converts: Arcsine 31.45° reads
   /// 31°26'56" and back, the value untouched (Section 6, "Conversions
-  /// offered": angle answers offer their D:M:S spelling). A pitch answer
-  /// keeps its own cycle and is left as it is. Inside a bracket the key is
-  /// refused, as a function key is.
+  /// offered": angle answers offer their D:M:S spelling). A pitch answer,
+  /// whichever of its three spellings is on the display, is left as it is
+  /// and the key says why ([TapeRefusal.pitchHasNoDms]): D:M:S is not a
+  /// pitch reading, and the Pitch key cycles the three that are (Section
+  /// 8). Inside a bracket the key is refused, as a function key is.
   TapeOutcome pressDmsKey() {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
@@ -752,6 +761,8 @@ class Tape extends Equatable {
     final chip = active;
     if (chip == null) {
       return switch (chips.lastOrNull) {
+        ResultChip(:final key) when DeterministicRules.isPitchKey(key) =>
+          const TapeRefused(TapeRefusal.pitchHasNoDms),
         ResultChip(value: final Angle angle, :final key, :final operator) =>
           _replaceLastChip(
             ResultChip(
@@ -776,13 +787,12 @@ class Tape extends Equatable {
   }
 
   Angle _respelledAngle(Angle angle) => switch (angle.spelling) {
-    AngleSpelling.degrees => angle.spelledAs(
-      AngleSpelling.degreesMinutesSeconds,
-    ),
     AngleSpelling.degreesMinutesSeconds => angle.spelledAs(
       AngleSpelling.degrees,
     ),
-    AngleSpelling.risePerFoot || AngleSpelling.grade => angle,
+    AngleSpelling.degrees ||
+    AngleSpelling.risePerFoot ||
+    AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
 
   /// [/] goes into the active chip.
