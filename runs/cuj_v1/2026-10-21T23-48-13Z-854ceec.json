@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "suite": "cuj_v1",
+  "captured_at": "2026-10-21T23:48:13Z",
+  "commit": "854ceec",
+  "attempt_count": 1,
+  "duration_ms": 17490.0,
+  "total_duration_ms": 17490.0,
+  "totals": {
+    "cases": 1,
+    "ran": 1,
+    "passed": 1,
+    "flaked": 0,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": 1.0,
+    "flake_rate": 0.0
+  },
+  "cases": [
+    {
+      "name": "runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]",
+      "classname": "com.ripplearc.construculator.MainActivityTest",
+      "status": "passed",
+      "duration_ms": 14371.0,
+      "attempts": [
+        {
+          "attempt": 2,
+          "status": "passed",
+          "duration_ms": 14371.0
+        }
+      ]
+    }
+  ]
+}
