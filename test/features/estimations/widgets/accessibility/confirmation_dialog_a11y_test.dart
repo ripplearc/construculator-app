@@ -2,13 +2,20 @@ import 'package:construculator/features/estimation/presentation/widgets/confirma
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 
 void main() {
-  Widget makeWidget(ThemeData theme) => MaterialApp(
+  Widget makeWidget(ThemeData theme, {double textScale = 1.0}) => MaterialApp(
     theme: theme,
     locale: const Locale('en'),
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: TextScaler.linear(textScale)),
+      child: child!,
+    ),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: const Scaffold(
@@ -47,5 +54,33 @@ void main() {
         find.byKey(ConfirmationDialog.secondaryButtonKey),
       );
     });
+
+    // The guideline check above skips a button with no tap action in the
+    // semantics tree, so these measure the tap area itself: 48 by 48 dp on
+    // Android and 44 by 44 dp on iOS.
+    for (final entry in {
+      'the primary button': ConfirmationDialog.primaryButtonKey,
+      'the secondary button': ConfirmationDialog.secondaryButtonKey,
+    }.entries) {
+      final key = entry.value;
+      testWidgets('a11y: ${entry.key} has a tap area of '
+          'at least 48 by 48 dp', (tester) async {
+        await setupA11yTest(tester);
+        await tester.pumpWidget(makeWidget(CoreTheme.light()));
+
+        expect(
+          tester.getSize(find.byKey(key)),
+          predicate<Size>((size) => size.width >= 48 && size.height >= 48),
+        );
+      });
+
+      testWidgets('a11y: ${entry.key} grows its tap '
+          'area with a 200 percent text size', (tester) async {
+        await setupA11yTest(tester);
+        await tester.pumpWidget(makeWidget(CoreTheme.light(), textScale: 2.0));
+
+        expect(tester.getSize(find.byKey(key)).height, greaterThan(48));
+      });
+    }
   });
 }

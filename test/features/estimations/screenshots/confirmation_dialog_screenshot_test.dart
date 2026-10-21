@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(412, 420);
+  const width = 412.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
@@ -17,8 +17,9 @@ void main() {
     Future<void> pumpDialog(
       WidgetTester tester, {
       required double textScale,
+      double height = 420,
     }) async {
-      tester.view.physicalSize = size;
+      tester.view.physicalSize = Size(width, height);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
@@ -51,7 +52,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('renders the two answers side by side', (tester) async {
+    testWidgets('renders the two answers stacked at the normal text size', (
+      tester,
+    ) async {
       await pumpDialog(tester, textScale: 1.0);
 
       await expectLater(
@@ -62,17 +65,26 @@ void main() {
       );
     });
 
-    testWidgets('renders the two answers stacked at 130 percent text', (
-      tester,
-    ) async {
-      await pumpDialog(tester, textScale: 1.3);
+    for (final entry in {
+      '112': (1.12, 'confirmation_dialog_text_112', 420.0),
+      '130': (1.3, 'confirmation_dialog_large_text', 420.0),
+      '200': (2.0, 'confirmation_dialog_text_200', 560.0),
+    }.entries) {
+      testWidgets('renders the two answers stacked at ${entry.key} percent '
+          'text', (tester) async {
+        await pumpDialog(
+          tester,
+          textScale: entry.value.$1,
+          height: entry.value.$3,
+        );
 
-      await expectLater(
-        find.byType(ConfirmationDialog),
-        matchesGoldenFile(
-          'goldens/confirmation_dialog/confirmation_dialog_large_text$suffix.png',
-        ),
-      );
-    });
+        await expectLater(
+          find.byType(ConfirmationDialog),
+          matchesGoldenFile(
+            'goldens/confirmation_dialog/${entry.value.$2}$suffix.png',
+          ),
+        );
+      });
+    }
   });
 }
