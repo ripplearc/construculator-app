@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
@@ -69,17 +70,23 @@ final class ChainEmpty extends ChainOutcome {
 /// the same. The one place the reach is walked: the chain evaluator reads
 /// it to fold the chips, the tape to offer and name the answer.
 ///
-/// Only ÷ and a bare number with no key join the ratio
-/// ([ValueChip.dividesAnArctangentRatio]); the walk stops at anything else,
-/// a result, a bracket, an operator or a named chip included. The
-/// Arctangent chip's own operator is the chain's, not the ratio's: 5 +
-/// [ATAN] 16 ÷ 12 is 5 plus the arctangent of 16 ÷ 12 (rule 4.6).
+/// ÷ and a bare number with no key join the ratio
+/// ([ValueChip.dividesAnArctangentRatio]), and so does a closed bracket
+/// right after ÷ that is worth a plain number, named by what it is worth:
+/// [ATAN] 16 ÷ (3 + 1) is Arctangent(16 ÷ 4) 75.96° (rule 4.11). The
+/// divisor ÷ 0 reopens after its error chip (Section 5, "Division by
+/// zero"), so the walk steps over that one chip to the divisor typed again:
+/// [ATAN] 16 ÷ 0 = then 12 = is Arctangent(16 ÷ 12) 53.13°. The walk stops
+/// at anything else, a result, an open bracket, an operator or a named
+/// chip included. The Arctangent chip's own operator is the chain's, not
+/// the ratio's: 5 + [ATAN] 16 ÷ 12 is 5 plus the arctangent of 16 ÷ 12
+/// (rule 4.6).
 final class ArctangentReach {
   /// The Arctangent chip the ratio starts from.
   final ValueChip chip;
 
-  /// The chips that divide it, each ÷ and a bare number, at least one.
-  final List<ValueChip> divisors;
+  /// The divisors, in tape order, at least one.
+  final List<ArctangentDivisor> divisors;
 
   /// The place on the tape just past the last divisor.
   final int end;
@@ -96,24 +103,27 @@ final class ArctangentReach {
   });
 
   /// The reach from [chips] at [index], or `null` when the chip there is
-  /// not an Arctangent chip with a number, or nothing divides it.
-  static ArctangentReach? from(List<TapeChip> chips, int index) {
+  /// not an Arctangent chip with a number, or nothing divides it. A bracket
+  /// divisor is worth what [evaluator] folds its inside to.
+  static ArctangentReach? from(
+    List<TapeChip> chips,
+    int index, {
+    ChainEvaluator evaluator = const ChainEvaluator(),
+  }) {
     final chip = chips[index];
     if (chip is! ValueChip || chip.trigFunction != TrigFunction.arctangent) {
       return null;
     }
     final digits = chip.bareNumber;
     if (digits == null) return null;
-    final divisors = <ValueChip>[];
+    final divisors = <ArctangentDivisor>[];
     var end = index + 1;
     while (end < chips.length) {
-      if (chips[end] case final ValueChip divisor
-          when divisor.dividesAnArctangentRatio) {
-        divisors.add(divisor);
-        end++;
-      } else {
-        break;
-      }
+      final next = _pastDivisionByZero(chips, end);
+      final divisor = _divisorOf(chips[next], evaluator);
+      if (divisor == null) break;
+      divisors.add(divisor);
+      end = next + 1;
     }
     if (divisors.isEmpty) return null;
     return ArctangentReach._(
@@ -124,13 +134,42 @@ final class ArctangentReach {
     );
   }
 
+  static int _pastDivisionByZero(List<TapeChip> chips, int index) {
+    if (chips[index] case ErrorChip(
+      error: CalculationError.divisionByZero,
+    ) when index + 1 < chips.length) {
+      return index + 1;
+    }
+    return index;
+  }
+
+  static ArctangentDivisor? _divisorOf(
+    TapeChip chip,
+    ChainEvaluator evaluator,
+  ) => switch (chip) {
+    ValueChip(:final bareNumber?, :final entry)
+        when chip.dividesAnArctangentRatio =>
+      (number: bareNumber, text: entry.text),
+    BracketChip(operator: Operator.divide, isOpen: false, :final inner) =>
+      switch (evaluator.fold(inner)) {
+        ChainValue(value: Scalar(:final value)) => (
+          number: value,
+          text: const QuantityFormatter().format(
+            Scalar(value),
+            groupThousands: false,
+          ),
+        ),
+        ChainValue() || ChainFailed() || ChainEmpty() => null,
+      },
+    ValueChip() || BracketChip() || ResultChip() || ErrorChip() => null,
+  };
+
   /// The ratio the divisors build, or `null` when one of them is 0.
   double? get ratio {
     var ratio = digits;
     for (final divisor in divisors) {
-      final number = divisor.bareNumber ?? 0;
-      if (number == 0) return null;
-      ratio /= number;
+      if (divisor.number == 0) return null;
+      ratio /= divisor.number;
     }
     return ratio;
   }
@@ -142,13 +181,16 @@ final class ArctangentReach {
   };
 
   /// The ratio as the tape writes it, "16 ÷ 12", without the Arctangent
-  /// chip's own operator.
+  /// chip's own operator; a bracket divisor is written as its value.
   String get spelling => [
     chip.entry.text,
-    for (final divisor in divisors)
-      '${Operator.divide.symbol} ${divisor.entry.text}',
+    for (final divisor in divisors) '${Operator.divide.symbol} ${divisor.text}',
   ].join(' ');
 }
+
+/// One divisor of an [ArctangentReach]: the number it is worth and the text
+/// the answer names it by, the digits typed or the value a bracket folds to.
+typedef ArctangentDivisor = ({double number, String text});
 
 /// Folds the tape left to right with no precedence (UX Design Doc rule
 /// 4.6, Section 7): 2 + 3 × 4 = 20, the way the handheld calculators work
@@ -209,12 +251,12 @@ class ChainEvaluator extends Equatable {
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
         case ValueChip(:final operator) || BracketChip(:final operator):
-          final reach = ArctangentReach.from(chips, index);
+          final reach = ArctangentReach.from(chips, index, evaluator: this);
           final ({Quantity value, int steps})? reading;
           if (reach != null && reach.end == chips.length && operator == null) {
             reading = (value: Scalar(reach.digits), steps: 0);
           } else if (reach case ArctangentReach(:final angle?, :final end)) {
-            reading = (value: angle, steps: end - index - 1);
+            reading = (value: angle, steps: reach.divisors.length);
             next = end;
           } else {
             reading = _readingOf(chip);

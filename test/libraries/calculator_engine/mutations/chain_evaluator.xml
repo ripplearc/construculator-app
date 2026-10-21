@@ -20,9 +20,9 @@
         </regex>
 
         <!-- RULE 2: a result chip does not restart the count of steps -->
-        <regex pattern="return \(total: value, steps: 0, failure: null\);" dotAll="true" id="chain_evaluator.fold.result_keeps_steps">
+        <regex pattern="return \(total: value, steps: stepsInside, failure: null\);" dotAll="true" id="chain_evaluator.fold.result_keeps_steps">
             <mutation text="return (total: value, steps: running.steps, failure: null);"/>
-            <mutation text="return (total: value, steps: 0, failure: running.failure);"/>
+            <mutation text="return (total: value, steps: stepsInside, failure: running.failure);"/>
         </regex>
 
         <!-- RULE 3: an error chip empties the whole tape instead of ending
@@ -50,13 +50,13 @@
 
         <!-- RULE 4: an unreadable chip is skipped instead of stopping the
              fold -->
-        <regex pattern="if \(value == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
-            <mutation text="if (value == null) continue;"/>
+        <regex pattern="if \(reading == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
+            <mutation text="if (reading == null) { index = next; continue; }"/>
         </regex>
 
         <!-- RULE 5: steps are never counted, so no Calc is ever offered -->
-        <regex pattern="steps: running\.steps \+ 1," dotAll="true" id="chain_evaluator.fold.no_steps">
-            <mutation text="steps: running.steps,"/>
+        <regex pattern="steps: running\.steps \+ 1 \+ stepsInside," dotAll="true" id="chain_evaluator.fold.no_steps">
+            <mutation text="steps: running.steps + stepsInside,"/>
         </regex>
 
         <!-- RULE 6: a second operator stacks a chip instead of changing the

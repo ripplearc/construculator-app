@@ -210,25 +210,25 @@
             <mutation text="? TapeRefusal.tangentUndefined : TapeRefusal.ratioOutOfRange,"/>
         </regex>
 
-        <!-- RULE 18 (F1b, R1): the ratio ATAN reaches across is built wrong,
-             reached by another function, joined by any chip, walked past an
-             answer, or a lone ATAN is read at its digits -->
-        <regex pattern="if \(number == 0\) return null;" dotAll="true" id="trig.reach.divides_by_zero">
+        <!-- RULE 18 (F1b, R1, R2): the ratio ATAN reaches across is built
+             wrong, reached by another function, joined by any chip, walked
+             past an answer, or a lone ATAN is read at its digits -->
+        <regex pattern="if \(divisor\.number == 0\) return null;" dotAll="true" id="trig.reach.divides_by_zero">
             <mutation text="if (false) return null;"/>
         </regex>
-        <regex pattern="ratio /= number;" dotAll="true" id="trig.reach.multiplies">
-            <mutation text="ratio *= number;"/>
+        <regex pattern="ratio /= divisor\.number;" dotAll="true" id="trig.reach.multiplies">
+            <mutation text="ratio *= divisor.number;"/>
         </regex>
         <regex pattern="if \(chip is! ValueChip \|\| chip\.trigFunction != TrigFunction\.arctangent\) \{\s*return null;\s*\}\s*final digits = chip\.bareNumber;" dotAll="true" id="trig.reach.any_function">
             <mutation text="if (chip is! ValueChip || chip.trigFunction == null) { return null; } final digits = chip.bareNumber;"/>
             <mutation text="if (chip is! ValueChip) { return null; } final digits = chip.bareNumber;"/>
         </regex>
-        <regex pattern="if \(chips\[end\] case final ValueChip divisor\s*when divisor\.dividesAnArctangentRatio\) \{" dotAll="true" id="trig.reach.any_operator">
-            <mutation text="if (chips[end] case final ValueChip divisor) {"/>
+        <regex pattern="ValueChip\(:final bareNumber\?, :final entry\)\s*when chip\.dividesAnArctangentRatio =&gt;" dotAll="true" id="trig.reach.any_operator">
+            <mutation text="ValueChip(:final bareNumber?, :final entry) =&gt;"/>
         </regex>
-        <regex pattern="\} else \{\s*break;\s*\}\s*\}\s*if \(divisors\.isEmpty\) return null;" dotAll="true" id="trig.reach.walks_past_an_answer">
-            <mutation text="} else { end++; } } if (divisors.isEmpty) return null;"/>
-            <mutation text="} else { break; } }"/>
+        <regex pattern="if \(divisor == null\) break;\s*divisors\.add\(divisor\);\s*end = next \+ 1;\s*\}\s*if \(divisors\.isEmpty\) return null;" dotAll="true" id="trig.reach.walks_past_an_answer">
+            <mutation text="if (divisor == null) { end = next + 1; continue; } divisors.add(divisor); end = next + 1; } if (divisors.isEmpty) return null;"/>
+            <mutation text="if (divisor == null) break; divisors.add(divisor); end = next + 1; }"/>
         </regex>
         <regex pattern="key == null &amp;&amp; operator == Operator\.divide &amp;&amp; bareNumber != null;" dotAll="true" id="trig.reach.named_divisor">
             <mutation text="operator == Operator.divide &amp;&amp; bareNumber != null;"/>
@@ -237,9 +237,33 @@
         <regex pattern="key: '\$\{function\.key\}\(\$\{reach\.spelling\}\)'," dotAll="true" id="trig.reach.unnamed_operand">
             <mutation text="key: function.key,"/>
         </regex>
-        <regex pattern="chip\.entry\.text,\s*for \(final divisor in divisors\)\s*'\$\{Operator\.divide\.symbol\} \$\{divisor\.entry\.text\}'," dotAll="true" id="trig.reach.no_operator_in_name">
-            <mutation text="'${chip.operator?.symbol ?? ''} ${chip.entry.text}', for (final divisor in divisors) '${Operator.divide.symbol} ${divisor.entry.text}',"/>
-            <mutation text="chip.entry.text, for (final divisor in divisors) divisor.entry.text,"/>
+        <regex pattern="chip\.entry\.text,\s*for \(final divisor in divisors\) '\$\{Operator\.divide\.symbol\} \$\{divisor\.text\}'," dotAll="true" id="trig.reach.no_operator_in_name">
+            <mutation text="'${chip.operator?.symbol ?? ''} ${chip.entry.text}', for (final divisor in divisors) '${Operator.divide.symbol} ${divisor.text}',"/>
+            <mutation text="chip.entry.text, for (final divisor in divisors) divisor.text,"/>
+        </regex>
+
+        <!-- RULE 18b (F1b, R2): the divisor ÷ 0 reopened after its error
+             chip is dropped from the ratio, or the tape's question stops at
+             that error chip -->
+        <regex pattern="if \(chips\[index\] case ErrorChip\(\s*error: CalculationError\.divisionByZero,\s*\) when index \+ 1 &lt; chips\.length\) \{\s*return index \+ 1;\s*\}" dotAll="true" id="trig.reach.error_chip_stops">
+            <mutation text="if (false) { return index + 1; }"/>
+        </regex>
+        <regex pattern="if \(chip case ErrorChip\(error: CalculationError\.divisionByZero\)\) continue;\s*if \(chip case BracketChip\(isOpen: false\)\) continue;" dotAll="true" id="trig.question.stops_at_error_or_bracket">
+            <mutation text="if (chip case BracketChip(isOpen: false)) continue;"/>
+            <mutation text="if (chip case ErrorChip(error: CalculationError.divisionByZero)) continue;"/>
+        </regex>
+
+        <!-- RULE 18c (F1b, R2): a bracket joins the ratio without a ÷, is
+             named by its raw double, or offers no answer while it ends the
+             tape -->
+        <regex pattern="BracketChip\(operator: Operator\.divide, isOpen: false, :final inner\) =&gt;" dotAll="true" id="trig.reach.bracket_without_divide">
+            <mutation text="BracketChip(isOpen: false, :final inner) =&gt;"/>
+        </regex>
+        <regex pattern="text: const QuantityFormatter\(\)\.format\(\s*Scalar\(value\),\s*groupThousands: false,\s*\)," dotAll="true" id="trig.reach.bracket_named_raw">
+            <mutation text="text: '$value',"/>
+        </regex>
+        <regex pattern="if \(active == null &amp;&amp; chips\.lastOrNull is! BracketChip\) return null;" dotAll="true" id="trig.answer.silent_on_bracket">
+            <mutation text="if (active == null) return null;"/>
         </regex>
 
         <!-- RULE 19 (F1b, R1): = lands the Calc of the digits, lands the lone
@@ -259,8 +283,8 @@
             <mutation text="if (reach != null &amp;&amp; operator == null) {"/>
             <mutation text="if (reach != null &amp;&amp; reach.end == chips.length) {"/>
         </regex>
-        <regex pattern="reading = \(value: angle, steps: end - index - 1\);\s*next = end;" dotAll="true" id="trig.chain.sealed_keeps_divisors">
-            <mutation text="reading = (value: angle, steps: end - index - 1);"/>
+        <regex pattern="reading = \(value: angle, steps: reach\.divisors\.length\);\s*next = end;" dotAll="true" id="trig.chain.sealed_keeps_divisors">
+            <mutation text="reading = (value: angle, steps: reach.divisors.length);"/>
         </regex>
 
         <!-- RULE 21 (F1b): postfix inverse leaves its ratio a bare number, so
@@ -269,13 +293,15 @@
             <mutation text="this, function, value,"/>
         </regex>
 
-        <!-- RULE 22 (F1b): a rebuilt answer reads a trig operand chip at its
-             answer, or a reach answer as a lone function -->
+        <!-- RULE 22 (F1b, R2): a rebuilt answer reads a trig operand chip at
+             its answer, a reach answer as a lone function, or rewrites a
+             Calc that is not a trig answer -->
         <regex pattern="final ValueChip chip when chip\.trigFunction != null =&gt; chip\.trigOperand," dotAll="true" id="trig.rebuilt.operand_at_answer">
             <mutation text=""/>
         </regex>
-        <regex pattern="\) when key != function\.key\) \{" dotAll="true" id="trig.rebuilt.reach_lost">
+        <regex pattern="\) when key != function\.key &amp;&amp; _isAnswerOf\(answer, function\)\) \{" dotAll="true" id="trig.rebuilt.reach_lost">
             <mutation text=") when false) {"/>
+            <mutation text=") when key != function.key) {"/>
         </regex>
     </rules>
 
