@@ -91,6 +91,10 @@ void main() {
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
     );
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.ensureMyCompanyRpcFunction,
+      'company-1',
+    );
     (Modular.get<AppRouter>() as FakeAppRouter).reset();
   });
 
