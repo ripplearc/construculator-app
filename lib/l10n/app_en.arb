@@ -3200,11 +3200,6 @@
     "description": "Disabled submit button label while the Job amount has an error. No Figma frame covers this case.",
     "context": "N/A"
   },
-  "fixDeliveryFeeToContinueButton": "Fix the delivery fee to continue",
-  "@fixDeliveryFeeToContinueButton": {
-    "description": "Disabled submit button label while the delivery fee has an error. No Figma frame covers this case.",
-    "context": "N/A"
-  },
   "addedToEstimateToast": "Added to {estimateName}",
   "@addedToEstimateToast": {
     "description": "Toast shown after an equipment cost line is added; names the estimate it went into",
@@ -3215,5 +3210,10 @@
         "example": "Bedroom 2"
       }
     }
+  },
+  "addToEstimateFailedError": "This cost was not added. Try again.",
+  "@addToEstimateFailedError": {
+    "description": "Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.",
+    "context": "N/A"
   }
 }

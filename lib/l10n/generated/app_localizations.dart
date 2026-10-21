@@ -3878,17 +3878,17 @@ abstract class AppLocalizations {
   /// **'Fix the amount to continue'**
   String get fixAmountToContinueButton;
 
-  /// Disabled submit button label while the delivery fee has an error. No Figma frame covers this case.
-  ///
-  /// In en, this message translates to:
-  /// **'Fix the delivery fee to continue'**
-  String get fixDeliveryFeeToContinueButton;
-
   /// Toast shown after an equipment cost line is added; names the estimate it went into
   ///
   /// In en, this message translates to:
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
+
+  /// Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.
+  ///
+  /// In en, this message translates to:
+  /// **'This cost was not added. Try again.'**
+  String get addToEstimateFailedError;
 }
 
 class _AppLocalizationsDelegate
