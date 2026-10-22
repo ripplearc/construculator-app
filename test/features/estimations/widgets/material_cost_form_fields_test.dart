@@ -95,10 +95,10 @@ void main() {
       find.ancestor(of: find.text(label), matching: find.byType(SheetFieldRow)),
     );
 
-    testWidgets('the name row is 73 dp tall with its divider', (tester) async {
+    testWidgets('the name row is 67 dp tall with its divider', (tester) async {
       await pumpFields(tester);
 
-      expect(rowSize(tester, 'Material').height, 72 + 1);
+      expect(rowSize(tester, 'Material').height, 66 + 1);
     });
 
     testWidgets('the quantity row is 74 dp tall as in the storyboard, so the '
@@ -145,14 +145,14 @@ void main() {
       expect(tester.getRect(find.text('/Liters')).left - field.right, 4);
     });
 
-    testWidgets('the name row leaves 10 dp between its label and value', (
+    testWidgets('the name row leaves 4 dp between its label and value', (
       tester,
     ) async {
       await pumpFields(tester);
 
       final label = tester.getRect(find.text('Material'));
       final value = tester.getRect(find.text('Name the material'));
-      expect(value.top - label.bottom, 10);
+      expect(value.top - label.bottom, 4);
     });
 
     testWidgets('the rate row leaves 8 dp between its label and value', (

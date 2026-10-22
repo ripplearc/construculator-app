@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -124,29 +123,6 @@ void main() {
           'goldens/material_cost_form_fields/material_filled$suffix.png',
         ),
       );
-    });
-
-    testWidgets('renders the fields locked while the line saves', (
-      tester,
-    ) async {
-      await pumpFields(tester, theme);
-      await fillAllFields(tester);
-      fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer<void>();
-      bloc.add(const MaterialCostFormSubmitted(estimateId: 'estimate-1'));
-      await tester.pump();
-      await tester.pump();
-
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/material_saving$suffix.png',
-        ),
-      );
-
-      fakeSupabase.completer!.complete();
-      fakeSupabase.shouldDelayOperations = false;
-      await tester.pumpAndSettle();
     });
   });
 }

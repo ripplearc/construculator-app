@@ -16,7 +16,6 @@ const int _maxWholeDigits = 9;
 
 const double _quantityValueGap = 3;
 const double _quantityBottomPadding = 6;
-const double _nameValueGap = 10;
 const double _nameBottomPadding = 6;
 
 /// The material name, quantity with its unit, and rate rows of the "New
@@ -65,7 +64,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           children: [
             SheetFieldRow(
               label: l10n.materialNameLabel,
-              valueGap: _nameValueGap,
               bottomPadding: _nameBottomPadding,
               onTap: _nameFocus.requestFocus,
               child: _SheetTextField(
