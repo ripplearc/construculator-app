@@ -38,6 +38,7 @@ jobs:
     permissions:
       contents: write # Appends the run to the orphan e2e-data branch.
       pull-requests: read
+      packages: read # Pulls the Supabase database image from ghcr.io as a logged-in user.
     steps:
       - name: Extract PR head ref
         id: extract-branch

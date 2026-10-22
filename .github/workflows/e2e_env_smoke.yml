@@ -13,6 +13,11 @@ on:
         required: false
         default: "master"
 
+permissions:
+  contents: read
+  # Pulls the Supabase database image from ghcr.io as an authenticated user.
+  packages: read
+
 jobs:
   smoke:
     name: E2E Environment Smoke
