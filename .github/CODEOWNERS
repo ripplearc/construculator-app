@@ -28,6 +28,11 @@
 /test/libraries/analytics/           @ripplearc/construculator-techlead
 /test/libraries/app_lifecycle/       @ripplearc/construculator-techlead
 
+# Test tooling for the foundation work: end-to-end, performance, results dashboard
+/scripts/e2e/                        @ripplearc/construculator-techlead
+/scripts/perf/                       @ripplearc/construculator-techlead
+/scripts/dashboard/                  @ripplearc/construculator-techlead
+
 # Calculator
 /lib/features/calculator/            @ripplearc/construculator-calculator
 /lib/features/calculations/          @ripplearc/construculator-calculator
@@ -35,6 +40,9 @@
 /test/features/calculator/           @ripplearc/construculator-calculator
 /test/features/calculations/         @ripplearc/construculator-calculator
 /test/libraries/calculator_engine/   @ripplearc/construculator-calculator
+/scripts/golden/                     @ripplearc/construculator-calculator
+/test/golden/                        @ripplearc/construculator-calculator
+/test/tools/golden/                  @ripplearc/construculator-calculator
 
 # Estimation
 /lib/features/estimation/            @ripplearc/construculator-estimation
@@ -43,7 +51,9 @@
 /test/libraries/estimation/          @ripplearc/construculator-estimation
 
 # Build, CI and dependencies. Last, so these always need devop.
-/scripts/                            @ripplearc/construculator-devop
+# Devop owns the pipeline only. Feature code, tests and test data belong to their feature team.
+/scripts/ci/                         @ripplearc/construculator-devop
+/scripts/run_check.sh                @ripplearc/construculator-devop
 /codemagic.yaml                      @ripplearc/construculator-devop
 /analysis_options.yaml               @ripplearc/construculator-devop
 /custom_lint.yaml                    @ripplearc/construculator-devop
