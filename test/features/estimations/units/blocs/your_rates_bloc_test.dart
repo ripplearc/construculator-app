@@ -151,11 +151,13 @@ void main() {
         },
         expect: () => [
           isA<YourRatesLoading>(),
-          isA<YourRatesSearchResults>().having(
-            (s) => s.results.map((e) => e.itemName).toList(),
-            'results',
-            ['Excavator'],
-          ),
+          isA<YourRatesSearchResults>()
+              .having(
+                (s) => s.results.map((e) => e.itemName).toList(),
+                'results',
+                ['Excavator'],
+              )
+              .having((s) => s.query, 'query', 'excav'),
         ],
       );
 

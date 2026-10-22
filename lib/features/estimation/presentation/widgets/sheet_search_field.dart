@@ -29,6 +29,7 @@ class SheetSearchField extends StatelessWidget {
         border: Border.all(color: colorTheme.lineMid),
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
       ),
+      // TODO: [CA-1251](https://ripplearc.youtrack.cloud/issue/CA-1251) Drop this theme override once CoreUI has a white sheet surface.
       child: Theme(
         data: theme.copyWith(
           extensions: [

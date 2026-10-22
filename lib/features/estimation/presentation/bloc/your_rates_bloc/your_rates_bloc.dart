@@ -153,7 +153,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     );
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
-      onNoCompany: () => emit(const YourRatesSearchResults([])),
+      onNoCompany: () => emit(YourRatesSearchResults(const [], query.trim())),
     );
     if (companyId == null) return;
     final result = await _repository.search(
@@ -163,7 +163,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     );
     result.fold(
       (failure) => emit(YourRatesError(failure)),
-      (entries) => emit(YourRatesSearchResults(entries)),
+      (entries) => emit(YourRatesSearchResults(entries, query.trim())),
     );
   }
 
