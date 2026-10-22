@@ -43,7 +43,9 @@ void main() {
       ).enterText(TestConfig.registerPassword);
       // The submit button sits below the fold on this form once the soft
       // keyboard is up — scroll it into the (keyboard-resized) viewport first.
-      await $(const Key('create_account_submit_button')).scrollTo().tap();
+      // It stays disabled until the form validation settles, so the tap waits.
+      await $(const Key('create_account_submit_button')).scrollTo();
+      await tapWhenEnabled($, const Key('create_account_submit_button'));
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.
