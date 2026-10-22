@@ -147,16 +147,17 @@ final class EntryRefused extends EntryOutcome {
 /// segments (23.16.45 is 23°16'45", 38 [D:M:S] 30 [D:M:S] 45 the same), one
 /// segment closes when the next opens, and a segment that closes above 59
 /// carries into the one above it rather than being refused (30.89 reads
-/// 31°29'; Construction Master Pro redisplays such entries in the correct
-/// convention). The seal is the padding (Section 6, "Rounding at display"):
-/// a minutes segment that has closed is written to two digits the way a
-/// bearing is, 45°02', and one still being typed is not, 38°5', because a
-/// padded 38°05' would supply a zero the next digit takes away again. The
-/// seconds are the last segment, which nothing closes, so they are written
-/// as typed, and a segment typed past 59 is carried at display (38°30'75"
-/// reads 38°31'15"). An entry the drawer read off the formatter (rule 4.16)
-/// is written as given: its minus sign stays in front of the whole angle
-/// (-11°32'13"), and its two-digit seconds stay two digits (38°30'04").
+/// 31°29'00"; Construction Master Pro redisplays such entries in the
+/// correct convention). An angle is always written with its three fields
+/// (Section 6, "Rounding at display"): 38 [D:M:S] 30 reads 38°30'00" with
+/// the seconds still to come. The seal is the padding: a field that has
+/// closed is written to two digits the way a bearing is, 45°02'00", and
+/// one still being typed shows exactly what was typed, 38°5'00" and
+/// 38°05'9", because a padded 38°05' would supply a zero the next digit
+/// takes away again. The minutes close when the seconds open; the seconds
+/// close when a key leaves the chip ([sealed]), as rule 4.10 has it: any
+/// operator, =, a closing bracket or a function key closes the open field,
+/// so 38°75' becomes 39°15'00" on the tape and on the chip at once.
 class EntryBuffer extends Equatable {
   /// The tokens typed so far; the last one may still be open.
   final List<Token> tokens;
@@ -242,28 +243,65 @@ class EntryBuffer extends Equatable {
     final minutes = token.minutes ?? '';
     final seconds = token.seconds;
     if (seconds == null) {
-      return "${token.digits}°${minutes.isEmpty ? '' : "$minutes'"}";
+      return minutes.isEmpty
+          ? '${token.digits}°'
+          : "${token.digits}°$minutes'$_emptyField\"";
     }
-    if (seconds.isEmpty) return "${token.digits}°${_twoDigits(minutes)}'";
-    if (_isBelowAMinute(minutes) && _isBelowAMinute(seconds)) {
-      return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
-    }
-    final totalSeconds = token.value * Token.secondsPerDegree;
-    if (totalSeconds > _largestWholeNumberADoubleHolds) {
-      return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
-    }
-    final total = totalSeconds.round();
-    final rest = total % Token.secondsPerDegree;
-    return '${total ~/ Token.secondsPerDegree}°'
-        "${_twoDigits('${rest ~/ Token.minutesPerDegree}')}'"
-        '${rest % Token.minutesPerDegree}"';
+    return "${token.digits}°${_twoDigits(minutes)}'"
+        '${seconds.isEmpty ? _emptyField : seconds}"';
   }
 
-  static bool _isBelowAMinute(String segment) =>
-      (int.tryParse(segment) ?? Token.minutesPerDegree) <
-      Token.minutesPerDegree;
+  static const String _emptyField = '00';
 
   static String _twoDigits(String segment) => segment.padLeft(2, '0');
+
+  /// The buffer as a key that leaves the chip seals it: an angle's open
+  /// field closes, with the carry and the padding a closed field has
+  /// (38°75' seals as 39°15'00", 38°05'9" as 38°05'09", 38°30'75" as
+  /// 38°31'15", and 38 [D:M:S] alone as 38°00'00"), so that the chip and
+  /// the tape read the sealed angle at once (rule 4.10). Any other buffer,
+  /// and an angle whose fields have all closed, is returned as it is, so
+  /// sealing twice changes nothing and a chip keeps the exact value behind
+  /// a spelling it already had.
+  /// A chip ⌫ makes active again keeps the sealed spelling: the field was
+  /// closed, and what it holds is what ⌫ now steps through.
+  EntryBuffer get sealed {
+    if (!isDegreesMinutesSeconds) return this;
+    final angle = tokens.single;
+    final closed = _withFieldsClosed(
+      angle.digits,
+      angle.minutes ?? '',
+      angle.seconds ?? '',
+    );
+    final token = angle.copyWith(
+      digits: closed.degrees,
+      minutes: () => closed.minutes,
+      seconds: () => closed.seconds,
+    );
+    return token == angle ? this : EntryBuffer(List.unmodifiable([token]));
+  }
+
+  static ({String degrees, String minutes, String seconds}) _withFieldsClosed(
+    String degrees,
+    String minutes,
+    String seconds,
+  ) {
+    final totalSeconds =
+        (double.tryParse(degrees) ?? 0).abs() * Token.secondsPerDegree +
+        (double.tryParse(minutes) ?? 0) * Token.minutesPerDegree +
+        (double.tryParse(seconds) ?? 0);
+    if (totalSeconds > _largestWholeNumberADoubleHolds) {
+      return (degrees: degrees, minutes: minutes, seconds: _twoDigits(seconds));
+    }
+    final total = totalSeconds.toInt();
+    final rest = total % Token.secondsPerDegree;
+    final sign = degrees.startsWith('-') ? '-' : '';
+    return (
+      degrees: '$sign${total ~/ Token.secondsPerDegree}',
+      minutes: '${rest ~/ Token.minutesPerDegree}',
+      seconds: _twoDigits('${rest % Token.minutesPerDegree}'),
+    );
+  }
 
   static bool _isMixedNumber(Token whole, Token fraction) =>
       _isWholeInches(whole) &&
@@ -276,8 +314,8 @@ class EntryBuffer extends Equatable {
   /// Digits go into the open number, or into its denominator once [/] was
   /// pressed; after a finished token they start a new one (18ft then 8). A
   /// leading point reads 0.; a second point makes an angle where
-  /// [readsAngles] (23.16 then . reads 23°16' with the minutes closed, and
-  /// the digits go on into the seconds) and is refused anywhere else. On an
+  /// [readsAngles] (23.16 then . reads 23°16'00" with the minutes closed,
+  /// and the digits go on into the seconds) and is refused anywhere else. On an
   /// angle the point is the D:M:S key ([closeDegreesMinutesSeconds]): after
   /// 38 [D:M:S] 30 it opens the seconds, and a third point changes nothing,
   /// since an angle has three segments. An inch the Read-as pill read a
@@ -329,8 +367,8 @@ class EntryBuffer extends Equatable {
 
   /// The D:M:S key (Section 3.5): closes the segment being typed and opens
   /// the next one. On a plain number it is the second decimal point made
-  /// visible: 38 reads 38° with the minutes open, 38.3 reads 38°03' with
-  /// the seconds open. Pressed with the seconds open it changes nothing,
+  /// visible: 38 reads 38° with the minutes open, 38.3 reads 38°03'00"
+  /// with the seconds open. Pressed with the seconds open it changes nothing,
   /// since an angle has three segments and a fourth press never eats the
   /// third (walkthrough 16.3, step 6). A fraction cannot be an angle.
   EntryOutcome closeDegreesMinutesSeconds() {

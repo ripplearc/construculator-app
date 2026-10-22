@@ -85,25 +85,48 @@
             <mutation text="if (totalMinutes &gt;= _largestWholeNumberADoubleHolds) { return Token(digits: degrees, minutes: minutes, seconds: '', typedAs: typedAs); }"/>
         </regex>
 
-        <!-- RULE 8b (R1): the seconds are cut instead of rounded, so a
-             60.999… lands one second short -->
-        <regex pattern="final total = totalSeconds\.round\(\);" dotAll="true" id="entry_buffer.text.seconds_floored">
-            <mutation text="final total = totalSeconds.floor();"/>
+        <!-- RULE 9 (CA-1070 2/2): the three fields — whole degrees alone
+             grow empty fields, open minutes are padded, closed minutes are
+             not, open seconds are padded, or empty seconds are dropped -->
+        <regex pattern="return minutes\.isEmpty\s*\? '\$\{token\.digits\}°'\s*: &quot;\$\{token\.digits\}°\$minutes'\$_emptyField\\&quot;&quot;;" dotAll="true" id="entry_buffer.text.open_minutes">
+            <mutation text="return &quot;${token.digits}°$minutes'$_emptyField\&quot;&quot;;"/>
+            <mutation text="return minutes.isEmpty ? '${token.digits}°' : &quot;${token.digits}°${_twoDigits(minutes)}'$_emptyField\&quot;&quot;;"/>
         </regex>
-
-        <!-- RULE 9: closed minutes are not padded, open ones are, or the
-             seconds are not normalised -->
-        <regex pattern="if \(seconds\.isEmpty\) return &quot;\$\{token\.digits\}°\$\{_twoDigits\(minutes\)\}'&quot;;" dotAll="true" id="entry_buffer.text.closed_minutes_unpadded">
-            <mutation text="if (seconds.isEmpty) return &quot;${token.digits}°$minutes'&quot;;"/>
-        </regex>
-        <regex pattern="return &quot;\$\{token\.digits\}°\$\{minutes\.isEmpty \? '' : &quot;\$minutes'&quot;\}&quot;;" dotAll="true" id="entry_buffer.text.open_minutes_padded">
-            <mutation text="return &quot;${token.digits}°${minutes.isEmpty ? '' : &quot;${_twoDigits(minutes)}'&quot;}&quot;;"/>
-        </regex>
-        <regex pattern="'\$\{rest % Token\.minutesPerDegree\}&quot;';" dotAll="true" id="entry_buffer.text.seconds_unnormalised">
-            <mutation text="'${seconds}&quot;';"/>
+        <regex pattern="return &quot;\$\{token\.digits\}°\$\{_twoDigits\(minutes\)\}'&quot;\s*'\$\{seconds\.isEmpty \? _emptyField : seconds\}&quot;';" dotAll="true" id="entry_buffer.text.open_seconds">
+            <mutation text="return &quot;${token.digits}°$minutes'&quot; '${seconds.isEmpty ? _emptyField : seconds}&quot;';"/>
+            <mutation text="return &quot;${token.digits}°${_twoDigits(minutes)}'&quot; '${_twoDigits(seconds)}&quot;';"/>
+            <mutation text="return &quot;${token.digits}°${_twoDigits(minutes)}'&quot; '$seconds&quot;';"/>
         </regex>
         <regex pattern="static String _twoDigits\(String segment\) =&gt; segment\.padLeft\(2, '0'\);" dotAll="true" id="entry_buffer.text.no_padding">
             <mutation text="static String _twoDigits(String segment) =&gt; segment;"/>
+        </regex>
+
+        <!-- RULE 9b (CA-1070 2/2): the seal — a plain buffer is sealed as
+             an angle, the carry is miscounted, the minus is dropped, or the
+             limit past 2⁵³ is lost or leaves the seconds unpadded -->
+        <regex pattern="if \(!isDegreesMinutesSeconds\) return this;\s*final angle = tokens\.single;" dotAll="true" id="entry_buffer.seal.plain_buffer">
+            <mutation text="final angle = tokens.single;"/>
+        </regex>
+        <regex pattern="degrees: '\$sign\$\{total ~/ Token\.secondsPerDegree\}'," dotAll="true" id="entry_buffer.seal.degrees_carry">
+            <mutation text="degrees: '$sign${total ~/ Token.minutesPerDegree}',"/>
+            <mutation text="degrees: '${total ~/ Token.secondsPerDegree}',"/>
+        </regex>
+        <regex pattern="minutes: '\$\{rest ~/ Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.seal.minutes_carry">
+            <mutation text="minutes: '${rest ~/ 100}',"/>
+        </regex>
+        <regex pattern="seconds: _twoDigits\('\$\{rest % Token\.minutesPerDegree\}'\)," dotAll="true" id="entry_buffer.seal.seconds_carry">
+            <mutation text="seconds: _twoDigits('${rest % 100}'),"/>
+            <mutation text="seconds: '${rest % Token.minutesPerDegree}',"/>
+        </regex>
+        <regex pattern="if \(totalSeconds &gt; _largestWholeNumberADoubleHolds\) \{\s*return \(degrees: degrees, minutes: minutes, seconds: _twoDigits\(seconds\)\);\s*\}" dotAll="true" id="entry_buffer.seal.no_limit">
+            <mutation text=""/>
+            <mutation text="if (totalSeconds &gt; _largestWholeNumberADoubleHolds) { return (degrees: degrees, minutes: minutes, seconds: seconds); }"/>
+        </regex>
+
+        <!-- RULE 9c (CA-1070 2/2): the tape seals the chip without closing
+             its open field -->
+        <regex pattern="final entry = chip\.entry\.sealed;" dotAll="true" id="tape.sealed.field_left_open">
+            <mutation text="final entry = chip.entry;"/>
         </regex>
 
         <!-- RULE 10: a unit closes an angle, or a fraction opens under one -->

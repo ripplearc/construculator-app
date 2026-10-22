@@ -49,6 +49,17 @@
             <mutation text="(final Angle angle, final Scalar degrees) when false =&gt; Angle("/>
         </regex>
 
+        <!-- RULE 7b (CA-1070 2/2): a sum of D:M:S angles loses the form, or
+             one D:M:S operand is enough to give it -->
+        <regex pattern="Angle\(\) =&gt; Angle\(magnitude, spelling: _sumSpelling\(left, right as Angle\)\)," dotAll="true" id="chain_arithmetic.add.sum_loses_dms">
+            <mutation text="Angle() =&gt; Angle(magnitude),"/>
+        </regex>
+        <regex pattern="left\.spelling == AngleSpelling\.degreesMinutesSeconds &amp;&amp;\s*right\.spelling == AngleSpelling\.degreesMinutesSeconds" dotAll="true" id="chain_arithmetic.add.one_dms_operand">
+            <mutation text="left.spelling == AngleSpelling.degreesMinutesSeconds"/>
+            <mutation text="right.spelling == AngleSpelling.degreesMinutesSeconds"/>
+            <mutation text="left.spelling == AngleSpelling.degreesMinutesSeconds || right.spelling == AngleSpelling.degreesMinutesSeconds"/>
+        </regex>
+
         <!-- RULE 8: any two dimensions add -->
         <regex pattern="if \(left\.dimension != right\.dimension\) \{" dotAll="true" id="chain_arithmetic.add.mixed_dimensions">
             <mutation text="if (false) {"/>

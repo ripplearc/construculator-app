@@ -72,7 +72,7 @@ void main() {
         expect(activeText(tape), '23.16');
         expect(strip(tape).first, 'Pitch-degrees: 23.16°');
         tape = press(tape, '.');
-        expect(activeText(tape), "23°16'");
+        expect(activeText(tape), '23°16\'00"');
         expect(activeOf(tape).entry.isDegreesMinutesSeconds, isTrue);
         tape = press(tape, '4 5');
         expect(activeText(tape), '23°16\'45"');
@@ -107,27 +107,27 @@ void main() {
         );
       });
 
-      test('S85: closing the minutes carries 89 into 31°29\', and the seconds '
-          'land normalised', () {
+      test('S85: closing the minutes carries 89 into 31°29\'00", and typed '
+          'seconds show as typed until the seal', () {
         var tape = press(const Tape(), '[Pitch] 3 0 . 8 9');
         expect(activeText(tape), '30.89');
         tape = press(tape, '.');
-        expect(activeText(tape), "31°29'");
+        expect(activeText(tape), '31°29\'00"');
         tape = press(tape, '0 0');
         expect(activeText(tape), '31°29\'00"');
       });
 
       test('a bare number takes the point, and the trig keys read the '
-          'angle (S87): 38°30\' [SIN] is the sine of 38.5°', () {
+          'angle (S87): 38°30\'00" [SIN] is the sine of 38.5°', () {
         final angle = press(const Tape(), '3 8 . 3 0 .');
-        expect(activeText(angle), "38°30'");
+        expect(activeText(angle), '38°30\'00"');
         expect(activeOf(angle).key, isNull);
         expect(lastResult(press(angle, 'SIN')), 'Sine 0.622515');
         expect(lastResult(press(const Tape(), '3 8 . 5 SIN')), 'Sine 0.622515');
       });
 
       test('a forward trig chip takes the point, an inverse one does not', () {
-        expect(activeText(press(const Tape(), 'SIN 1 2 . 1 .')), "12°01'");
+        expect(activeText(press(const Tape(), 'SIN 1 2 . 1 .')), '12°01\'00"');
         expect(
           press(const Tape(), 'ASIN 0 . 5').typeDigit('.'),
           const TapeEntryRefused(EntryRefusal.secondDecimalPoint),
@@ -166,7 +166,7 @@ void main() {
         var tape = press(const Tape(), '3 8 DMS');
         expect(activeText(tape), '38°');
         tape = press(tape, '3 0');
-        expect(activeText(tape), "38°30'");
+        expect(activeText(tape), '38°30\'00"');
         tape = press(tape, 'DMS 4 5');
         expect(activeText(tape), '38°30\'45"');
         final full = press(tape, 'DMS');
@@ -184,7 +184,7 @@ void main() {
 
       test('the key is the second decimal point made visible: 38.3 [D:M:S] '
           'closes the minutes', () {
-        expect(activeText(press(const Tape(), '3 8 . 3 DMS')), "38°03'");
+        expect(activeText(press(const Tape(), '3 8 . 3 DMS')), '38°03\'00"');
         expect(activeText(press(const Tape(), '3 8 . DMS')), '38°');
         expect(
           activeText(press(const Tape(), '[Pitch] 2 3 . 1 6 DMS 4 5')),
@@ -206,9 +206,9 @@ void main() {
       });
 
       test('S113: the padding is the seal, on the entry side', () {
-        expect(activeText(press(const Tape(), '3 8 DMS 5')), "38°5'");
-        expect(activeText(press(const Tape(), '3 8 DMS 5 9')), "38°59'");
-        expect(activeText(press(const Tape(), '3 8 DMS 5 DMS')), "38°05'");
+        expect(activeText(press(const Tape(), '3 8 DMS 5')), '38°5\'00"');
+        expect(activeText(press(const Tape(), '3 8 DMS 5 9')), '38°59\'00"');
+        expect(activeText(press(const Tape(), '3 8 DMS 5 DMS')), '38°05\'00"');
         expect(activeText(press(const Tape(), '3 8 DMS 5 DMS 9')), '38°05\'9"');
       });
 
@@ -273,10 +273,54 @@ void main() {
         var tape = press(const Tape(), '3 8 DMS 3 0 DMS 4 5 ⌫');
         expect(activeText(tape), '38°30\'4"');
         tape = press(tape, '⌫ ⌫ ⌫');
-        expect(activeText(tape), "38°3'");
+        expect(activeText(tape), '38°3\'00"');
         tape = press(tape, '⌫ ⌫');
         expect(activeText(tape), '38');
         expect(activeOf(tape).value(parser), const Scalar(38));
+      });
+    });
+
+    group('a key that leaves the chip closes the open field (rule 4.10)', () {
+      String firstText(Tape tape) => (tape.chips.first as ValueChip).entry.text;
+
+      test('38 [D:M:S] 75 [SIN] reads 39°15\'00" on the chip and answers '
+          'from 39.25°', () {
+        final tape = press(const Tape(), '3 8 DMS 7 5 SIN');
+        expect(firstText(tape), '39°15\'00"');
+        expect(lastResult(tape), 'Sine 0.632705');
+      });
+
+      test('an operator, a function key and a closing bracket close the '
+          'field alike, and whole degrees alone seal to 38°00\'00"', () {
+        expect(firstText(press(const Tape(), '3 8 DMS 7 5 +')), '39°15\'00"');
+        expect(firstText(press(const Tape(), '3 8 DMS +')), '38°00\'00"');
+        expect(lastResult(press(const Tape(), '3 8 DMS SIN')), 'Sine 0.615661');
+        expect(
+          firstText(press(const Tape(), '3 8 DMS 5 [Pitch]')),
+          '38°05\'00"',
+        );
+        final bracket = press(const Tape(), '( 2 3 . 1 6 . 5 (');
+        expect((bracket.chips.last as BracketChip).expression, '(23°16\'05")');
+      });
+
+      test('typed seconds pad when the field closes, and carry past 59', () {
+        expect(
+          firstText(press(const Tape(), '3 8 DMS 3 0 DMS 5 ×')),
+          '38°30\'05"',
+        );
+        final carried = press(const Tape(), '3 8 DMS 3 0 DMS 7 5 + 1 =');
+        expect(firstText(carried), '38°31\'15"');
+        expect(lastResult(carried), 'Calc 39.52°');
+      });
+
+      test('⌫ brings the chip back as it was sealed, and steps through the '
+          'closed field; sealing it again changes nothing', () {
+        final sealed = press(const Tape(), '3 8 DMS 7 5 +');
+        var tape = press(sealed, '⌫');
+        expect(activeText(tape), '39°15\'00"');
+        expect(press(tape, '+'), sealed);
+        tape = press(tape, '⌫');
+        expect(activeText(tape), '39°15\'0"');
       });
     });
 
@@ -302,11 +346,11 @@ void main() {
           'round trip is lossless', () {
         expect(
           lastResult(press(const Tape(), '1 ACOS DMS')),
-          "Arccosine 0°00'",
+          'Arccosine 0°00\'00"',
         );
         expect(
           lastResult(press(const Tape(), '0 . 5 ASIN DMS')),
-          "Arcsine 30°00'",
+          'Arcsine 30°00\'00"',
         );
         final roof = press(const Tape(), '1 2 ÷ 2 3 ATAN');
         expect(lastResult(roof), 'Arctangent 27.55°');
@@ -338,19 +382,19 @@ void main() {
         expect(lastResult(calc), 'Calc 60°');
         expect(
           lastResult(press(calc, 'DMS')),
-          "Calc 60°00'",
+          'Calc 60°00\'00"',
           reason: 'an angle answer under any other key still converts',
         );
       });
     });
 
     group('an angle typed as D:M:S is an angle in the arithmetic', () {
-      test('S114: 60° + 12°01\' = 72.02°', () {
+      test('S114: 60° + 12°01\'00" = 72.02°', () {
         final tape = press(const Tape(), '0 . 5 ACOS + 1 2 . 1 . =');
         expect(lastResult(tape), 'Calc 72.02°');
       });
 
-      test('38°30\' × 2 is 77°, and × 2ft is a Dimension Error', () {
+      test('38°30\'00" × 2 is 77°, and × 2ft is a Dimension Error', () {
         expect(
           lastResult(press(const Tape(), '3 8 DMS 3 0 × 2 =')),
           'Calc 77°',

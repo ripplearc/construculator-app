@@ -324,8 +324,8 @@ void main() {
         test(
           'S107: a whole-degree answer keeps its minutes, zero included',
           () {
-            expect(dms(0), "0°00'");
-            expect(dms(degreesOf(math.asin(0.5))), "30°00'");
+            expect(dms(0), '0°00\'00"');
+            expect(dms(degreesOf(math.asin(0.5))), '30°00\'00"');
           },
         );
 
@@ -342,27 +342,35 @@ void main() {
         });
 
         test('pads minutes and seconds to two digits, never degrees', () {
-          expect(dms(45.0333), "45°02'");
+          expect(dms(45.0333), '45°02\'00"');
           expect(dms(5 + 5 / 60 + 5 / 3600), '5°05\'05"');
-          expect(dms(120), "120°00'");
+          expect(dms(120), '120°00\'00"');
         });
 
         test('rounds to the nearest second and carries into the degree', () {
-          expect(dms(29.99999), "30°00'");
+          expect(dms(29.99999), '30°00\'00"');
           expect(dms(29.5 / 3600 + 10), '10°00\'30"');
         });
 
         test('a negative angle carries the prototype\'s minus sign', () {
-          expect(dms(-30.5), "−30°30'");
+          expect(dms(-30.5), '-30°30\'00"');
         });
 
-        test('a negative angle that rounds to zero reads 0°00\'', () {
-          expect(dms(-0.00001), "0°00'");
+        test('a negative angle that rounds to zero reads 0°00\'00"', () {
+          expect(dms(-0.00001), '0°00\'00"');
+        });
+
+        test('a negative angle takes a hyphen in both spellings', () {
+          expect(dms(-31.448981389379565), '-31°26\'56"');
+          expect(
+            const QuantityFormatter().format(const Angle(-38.5)),
+            '-38.5°',
+          );
         });
 
         test('groups the thousands of the degrees as a result, not as an '
             'entry', () {
-          expect(dms(1234.5), "1,234°30'");
+          expect(dms(1234.5), '1,234°30\'00"');
           expect(
             formatter.format(
               const Angle(
@@ -371,7 +379,7 @@ void main() {
               ),
               groupThousands: false,
             ),
-            "1234°30'",
+            '1234°30\'00"',
           );
         });
 
@@ -381,8 +389,8 @@ void main() {
             formatter.format(const Angle(1e16)),
             '10,000,000,000,000,000°',
           );
-          expect(dms(1e16), "10,000,000,000,000,000°00'");
-          expect(dms(1e12 + 0.5), "1,000,000,000,000°30'");
+          expect(dms(1e16), '10,000,000,000,000,000°00\'00"');
+          expect(dms(1e12 + 0.5), '1,000,000,000,000°30\'00"');
         });
       });
 

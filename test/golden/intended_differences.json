@@ -20,6 +20,198 @@
    "checkpoint": "the edit is cancelled: 2, +(3×4) and Calc14 are back, no group open, nothing dashed",
    "reason": "The prototype brings the old bracket back after backspacing an emptied bracket. The design removes the bracket, as on any empty bracket (UX doc Section 7, Editing a bracket; review edit of 26 September). Fix asked for on the prototype. The prototype's own check reads the DOM, so only the Dart answer is evaluated here: no group open, and no bracket chip where the group was.",
    "dart": {"kind": "all", "checks": [{"kind": "bracketOpen", "equals": false}, {"kind": "tapeBracketAt", "index": 1, "equals": false}]}
+  },
+  {
+   "scenario": "S85",
+   "checkpoint": "the second point promotes it — and says so",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "23°16'00\""}, {"kind": "label", "equals": "Pitch · D:M:S…"}]}
+  },
+  {
+   "scenario": "S85",
+   "checkpoint": "closing the segment carries the 89 minutes: 31°29'",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "31°29'00\""}
+  },
+  {
+   "scenario": "S85",
+   "checkpoint": "lands normalised, never an error",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "31°29'00\""}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "a trailing point can only go to D:M:S",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 8. as 8°00'00\""}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "…and the pill names where the next tap goes",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 8.45in/12in as 8°45'00\""}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "stop 3: D:M:S — 8.75°, the same digits re-read",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "8°45'00\""}, {"kind": "stripAt", "index": 0, "equals": "Pitch-degrees: 8.75°"}]}
+  },
+  {
+   "scenario": "S86",
+   "checkpoint": "…and the over-60 carry was previewed, not sprung",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "9°29'00\""}
+  },
+  {
+   "scenario": "S87",
+   "checkpoint": "an unnamed buffer may still hold an angle — trig wants one",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "38°30'00\""}
+  },
+  {
+   "scenario": "S88",
+   "checkpoint": "a decimal point changes what is likely — D:M:S takes the slot",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 6. as 6°00'00\""}
+  },
+  {
+   "scenario": "S90",
+   "checkpoint": "the minutes land where they were typed",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "38°30'00\""}
+  },
+  {
+   "scenario": "S91",
+   "checkpoint": "…and the moment [SIN] names it, the question arrives with the answer",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "depKey", "equals": "Re-input 38.30° as 38°30'00\""}, {"kind": "value", "equals": "0.619779"}]}
+  },
+  {
+   "scenario": "S91",
+   "checkpoint": "one tap re-reads the angle AND rebuilds the answer behind it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 0, "equals": "38°30'00\""}, {"kind": "value", "equals": "0.622515"}]}
+  },
+  {
+   "scenario": "S95",
+   "checkpoint": "…and 89.56 is asked which reading it meant",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 89.56° as 89°56'00\""}
+  },
+  {
+   "scenario": "S95",
+   "checkpoint": "89°56′ is a different angle, and the answer follows it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "89°56'00\""}, {"kind": "stripAt", "index": 0, "equals": "Sine: 0.999999"}]}
+  },
+  {
+   "scenario": "S95",
+   "checkpoint": "…with the way back still on offer",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 89°56'00\" as 89.56°"}
+  },
+  {
+   "scenario": "S107",
+   "checkpoint": "zero degrees, written like a bearing",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "0°00'00\""}, {"kind": "stripAny", "equals": "Conv: 0°"}]}
+  },
+  {
+   "scenario": "S107",
+   "checkpoint": "a whole-degree answer keeps its minutes segment",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "30°00'00\""}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "…and the other reading is offered the way a bearing is written",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 45.2° as 45°02'00\""}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "the tap closes the minutes, and the padding is how you can tell",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "45°02'00\""}, {"kind": "tapeAt", "index": 0, "equals": "Sine45°02'00\""}]}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "…and the banked chip keeps it — nothing re-opens a closed field",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 0, "equals": "45°02'00\""}, {"kind": "value", "equals": "0.707518"}]}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "a field still being typed is NOT padded — the next digit belongs to it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "38°5'00\""}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "…and there it goes: the 5 never moved, no zero appeared and vanished",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "38°59'00\""}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "closing the field is the thing that pads it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "38°05'00\""}
+  },
+  {
+   "scenario": "S113",
+   "checkpoint": "the answer half is exactly as rev 11 left it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "value", "equals": "0°00'00\""}
+  },
+  {
+   "scenario": "S114",
+   "checkpoint": "…and the key that names it brings the question with the answer",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "depKey", "equals": "Re-input 12.1° as 12°01'00\""}, {"kind": "value", "equals": "0.209619"}]}
+  },
+  {
+   "scenario": "S115",
+   "checkpoint": "…one notch past the band, and the trade stop is gone",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 24.5° as 24°05'00\""}
+  },
+  {
+   "scenario": "S115",
+   "checkpoint": "the case that started this: two sensible readings, no 68.5° wall",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "value", "equals": "30.45°"}, {"kind": "depKey", "equals": "Input 30.45° as 30°45'00\""}]}
+  },
+  {
+   "scenario": "S116",
+   "checkpoint": "the pill names the number it is talking about",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "depKey", "equals": "Input 12.1° as 12°01'00\""}
+  },
+  {
+   "scenario": "S116",
+   "checkpoint": "an answer already exists here, so the verb says the tap will redo it",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "all", "checks": [{"kind": "depKey", "equals": "Re-input 38.30° as 38°30'00\""}, {"kind": "value", "equals": "0.619779"}]}
+  },
+  {
+   "scenario": "S118",
+   "checkpoint": "the sine of a D:M:S angle",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "tape", "equals": ["38°03'00\"", "Sine =0.616349"]}
+  },
+  {
+   "scenario": "S118",
+   "checkpoint": "the angle comes back — filed under Sine, offered to Pitch",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "memory", "equals": "38°03'00\""}
+  },
+  {
+   "scenario": "S118",
+   "checkpoint": "tapping it fills the pitch with the angle, D:M:S spelling intact",
+   "reason": "UX doc Section 6, 'Rounding at display' (owner decision of 18 October 2026): D:M:S is always written with three fields (38°30′00″), the minutes and seconds padded to two digits once their field has closed, an open field showing exactly what was typed. The prototype writes two fields and leaves typed seconds unpadded.",
+   "dart": {"kind": "tape", "equals": ["Pitch38°03'00\""]}
   }
  ]
 }

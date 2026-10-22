@@ -899,7 +899,7 @@ class Tape extends Equatable {
 
   /// A remembered angle tapped on the strip (rule 4.16; S118): typed into
   /// the empty chip the key opened, spelling intact, so [Pitch] after
-  /// [SIN] 38 [D:M:S] 03 = reads Pitch 38°03'. A recalled answer keeps its
+  /// [SIN] 38 [D:M:S] 03 = reads Pitch 38°03'00". A recalled answer keeps its
   /// full precision behind the digits on screen, the way a converted value
   /// does ([ValueChip.exact]). The chip must be empty and under a key that
   /// takes an angle ([AngleMemory.keyTakesAnAngle]); anywhere else the tap
@@ -1146,10 +1146,7 @@ class Tape extends Equatable {
     if (token.unit != null && (token.unit != Unit.inch || token.power != 1)) {
       return null;
     }
-    if (token.isDegreesMinutesSeconds &&
-        (token.typedAs == null || !_openSegmentIsEmpty(token))) {
-      return null;
-    }
+    if (token.isDegreesMinutesSeconds && token.typedAs == null) return null;
     final raw = token.typedAs ?? token.digits;
     if (token.unit == Unit.inch && !_isARoofSomeoneCouldFrame(raw)) return null;
     final stops = [
@@ -1176,9 +1173,6 @@ class Tape extends Equatable {
     if (entry == null) return null;
     return ReadAsOffer(chipIndex: index, from: current, to: next, next: entry);
   }
-
-  static bool _openSegmentIsEmpty(Token angle) =>
-      (angle.seconds ?? angle.minutes ?? '').isEmpty;
 
   bool _isARoofSomeoneCouldFrame(String raw) {
     final rise = double.tryParse(raw);
@@ -1738,7 +1732,17 @@ class Tape extends Equatable {
   Tape _sealed() {
     final chip = active;
     if (chip == null) return this;
-    return _replaceActive(chip.copyWith(isActive: false));
+    final entry = chip.entry.sealed;
+    return _replaceActive(
+      chip.copyWith(
+        isActive: false,
+        entry: entry,
+        exact: switch (chip.exactValue) {
+          final value? => () => (value: value, spelled: entry),
+          null => null,
+        },
+      ),
+    );
   }
 
   TapeOutcome _replaceLast(ValueChip chip) => TapeChanged(_replaceActive(chip));
