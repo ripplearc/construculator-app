@@ -128,10 +128,11 @@ class ChainEvaluator extends Equatable {
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
 
   bool _continuesAfter(List<TapeChip> chips, int index) =>
+      chips[index] == const ErrorChip(CalculationError.divisionByZero) &&
       index + 1 < chips.length &&
       switch (chips[index + 1]) {
         ValueChip(:final operator) ||
-        BracketChip(:final operator) => operator != null,
+        BracketChip(:final operator) => operator == Operator.divide,
         ResultChip() || ErrorChip() => false,
       };
 

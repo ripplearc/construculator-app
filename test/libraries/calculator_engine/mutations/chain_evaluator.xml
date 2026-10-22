@@ -39,6 +39,15 @@
             <mutation text="ResultChip() || ErrorChip() =&gt; true,"/>
         </regex>
 
+        <!-- RULE: a chain continues through any error chip, or through any
+             operator after ÷ 0, not only the reopened ÷ -->
+        <regex pattern="chips\[index\] == const ErrorChip\(CalculationError\.divisionByZero\) &amp;&amp;\s*index \+ 1 &lt; chips\.length &amp;&amp;" dotAll="true" id="chain_evaluator.continues_after.any_error">
+            <mutation text="index + 1 &lt; chips.length &amp;&amp;"/>
+        </regex>
+        <regex pattern="BracketChip\(:final operator\) =&gt; operator == Operator\.divide," dotAll="true" id="chain_evaluator.continues_after.any_operator">
+            <mutation text="BracketChip(:final operator) =&gt; operator != null,"/>
+        </regex>
+
         <!-- RULE 4: an unreadable chip is skipped instead of stopping the
              fold -->
         <regex pattern="if \(value == null\) return const ChainEmpty\(\);" dotAll="true" id="chain_evaluator.fold.skip_unreadable">
@@ -113,11 +122,15 @@
 
         <!-- RULE: ⌫ and an operator change on the reopened divisor keep the
              error chip, or a bare chip typed after an error repairs it -->
-        <regex pattern="if \(chips\.length &lt; 2 \|\| chips\[chips\.length - 2\] is! ErrorChip\) return null;" dotAll="true" id="tape.divisor_repaired.never">
+        <regex pattern="if \(chips\.length &lt; 2 \|\| active\?\.operator != Operator\.divide\) return null;" dotAll="true" id="tape.divisor_repaired.never">
             <mutation text="if (true) return null;"/>
+            <mutation text="if (chips.length &lt; 2 || active == null) return null;"/>
+            <mutation text="if (chips.length &lt; 2 || active?.operator == null) return null;"/>
         </regex>
-        <regex pattern="if \(active case ValueChip\(operator: null\) \|\| null\) return null;" dotAll="true" id="tape.divisor_repaired.bare_chip">
-            <mutation text="if (active == null) return null;"/>
+        <!-- RULE: any error chip, not only ÷ 0, lets ⌫ or an operator repair
+             the chip after it -->
+        <regex pattern="if \(chips\[chips\.length - 2\] !=\s*const ErrorChip\(CalculationError\.divisionByZero\)\) \{\s*return null;\s*\}" dotAll="true" id="tape.divisor_repaired.any_error">
+            <mutation text="if (chips[chips.length - 2] is! ErrorChip) { return null; }"/>
         </regex>
         <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(" dotAll="true" id="tape.press_operator.keeps_error_chip">
             <mutation text="return _replaceLast("/>

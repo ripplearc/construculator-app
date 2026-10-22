@@ -396,6 +396,59 @@ void main() {
         },
       );
 
+      test('an operator after a Dimension Error is refused', () {
+        final mismatched = press(const Tape(), '7 8 lbs ÷ 1 2 ft =');
+        expect(
+          mismatched.pressOperator(Operator.multiply),
+          const TapeRefused(TapeRefusal.typeAValueFirst),
+        );
+      });
+
+      test('the repair is only for ÷ 0 and only through its own ÷', () {
+        const five = ValueChip(
+          entry: EntryBuffer([Token(digits: '5')]),
+          isActive: false,
+        );
+        const afterDimensionError = Tape(
+          chips: [
+            five,
+            ErrorChip(CalculationError.dimensionError),
+            ValueChip(operator: Operator.divide),
+          ],
+        );
+        expect(
+          afterDimensionError.backspace(),
+          const TapeChanged(
+            Tape(chips: [five, ErrorChip(CalculationError.dimensionError)]),
+          ),
+        );
+        expect(
+          afterDimensionError.pressOperator(Operator.multiply),
+          const TapeChanged(
+            Tape(
+              chips: [
+                five,
+                ErrorChip(CalculationError.dimensionError),
+                ValueChip(operator: Operator.multiply),
+              ],
+            ),
+          ),
+        );
+        const addedAfterDivisionByZero = Tape(
+          chips: [
+            five,
+            ErrorChip(CalculationError.divisionByZero),
+            ValueChip(operator: Operator.add),
+          ],
+        );
+        expect(
+          addedAfterDivisionByZero.backspace(),
+          const TapeChanged(
+            Tape(chips: [five, ErrorChip(CalculationError.divisionByZero)]),
+          ),
+        );
+      });
+
       test('a bracket worth zero is not reopened', () {
         var tape = press(const Tape(), '5 ÷');
         tape = (tape.pressBracket() as TapeChanged).tape;
@@ -461,6 +514,45 @@ void main() {
         ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
       ];
       expect(evaluator.fold(chips), const ChainValue(Scalar(5), steps: 1));
+    });
+
+    test('only ÷ 0 continues the chain, and only through its own ÷', () {
+      const five = ValueChip(
+        entry: EntryBuffer([Token(digits: '5')]),
+        isActive: false,
+      );
+      const twoDividing = ValueChip(
+        operator: Operator.divide,
+        entry: EntryBuffer([Token(digits: '2')]),
+      );
+      const twoAdded = ValueChip(
+        operator: Operator.add,
+        entry: EntryBuffer([Token(digits: '2')]),
+      );
+      expect(
+        evaluator.fold(const [
+          five,
+          ErrorChip(CalculationError.dimensionError),
+          twoDividing,
+        ]),
+        const ChainValue(Scalar(2), steps: 0),
+      );
+      expect(
+        evaluator.fold(const [
+          five,
+          ErrorChip(CalculationError.divisionByZero),
+          twoAdded,
+        ]),
+        const ChainValue(Scalar(2), steps: 0),
+      );
+      expect(
+        evaluator.fold(const [
+          five,
+          ErrorChip(CalculationError.divisionByZero),
+          twoDividing,
+        ]),
+        const ChainValue(Scalar(2.5), steps: 1),
+      );
     });
 
     test('a result after an error chip starts a new chain', () {
