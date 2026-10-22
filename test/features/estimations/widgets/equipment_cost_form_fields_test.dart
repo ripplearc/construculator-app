@@ -2900,7 +2900,7 @@ void main() {
             find.byKey(const Key('save_recalled_amount_button')),
           );
           await tester.pumpAndSettle();
-          fakeSupabase.shouldThrowOnInsert = true;
+          database.executeError = StateError('disk full');
           await tester.enterText(
             find.byKey(const Key('entry_label_field')),
             'Supplier B',
