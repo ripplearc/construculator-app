@@ -1389,16 +1389,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costFilePlaceholder => 'Select cost file';
 
   @override
-  String get materialTypeLabel => 'Material type*';
-
-  @override
   String get quantityLabel => 'Quantity*';
-
-  @override
-  String get perUnitCostLabel => 'Per unit cost*';
-
-  @override
-  String get unitOfMeasurementHint => 'UOM';
 
   @override
   String get selectUnitTitle => 'Select unit';
@@ -1441,15 +1432,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unitSheets => 'Sheets';
-
-  @override
-  String get otherMaterialDetailsButton => 'Other material details';
-
-  @override
-  String get brandLabel => 'Brand';
-
-  @override
-  String get productLinkLabel => 'Product link';
 
   @override
   String get labourTypeLabel => 'Labour type*';
@@ -1522,9 +1504,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rateHourLabel => 'Rate/Hour:';
-
-  @override
-  String get materialTypeRequiredError => 'Material type is required';
 
   @override
   String get labourTypeRequiredError => 'Labour type is required';

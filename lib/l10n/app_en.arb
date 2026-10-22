@@ -2201,21 +2201,9 @@
   "@costFilePlaceholder": {
     "description": "Placeholder text for the cost file dropdown on cost item form screens"
   },
-  "materialTypeLabel": "Material type*",
-  "@materialTypeLabel": {
-    "description": "Hint label for the material type field on the material cost form"
-  },
   "quantityLabel": "Quantity*",
   "@quantityLabel": {
     "description": "Hint label for the quantity field on material and equipment cost forms"
-  },
-  "perUnitCostLabel": "Per unit cost*",
-  "@perUnitCostLabel": {
-    "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
-  },
-  "unitOfMeasurementHint": "UOM",
-  "@unitOfMeasurementHint": {
-    "description": "Hint text shown inside the unit of measurement selector when no unit is selected"
   },
   "selectUnitTitle": "Select unit",
   "@selectUnitTitle": {
@@ -2272,18 +2260,6 @@
   "unitSheets": "Sheets",
   "@unitSheets": {
     "description": "Unit of measurement: sheets"
-  },
-  "otherMaterialDetailsButton": "Other material details",
-  "@otherMaterialDetailsButton": {
-    "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
-  },
-  "brandLabel": "Brand",
-  "@brandLabel": {
-    "description": "Hint label for the brand dropdown in the other material details section"
-  },
-  "productLinkLabel": "Product link",
-  "@productLinkLabel": {
-    "description": "Hint label for the product link text field in the other material details section"
   },
   "labourTypeLabel": "Labour type*",
   "@labourTypeLabel": {
@@ -2385,10 +2361,6 @@
   "rateHourLabel": "Rate/Hour:",
   "@rateHourLabel": {
     "description": "Rate label inside the calculation method card when per-hours method is selected (from cost file mode)"
-  },
-  "materialTypeRequiredError": "Material type is required",
-  "@materialTypeRequiredError": {
-    "description": "Validation error shown below the material type field when it is submitted empty"
   },
   "labourTypeRequiredError": "Labour type is required",
   "@labourTypeRequiredError": {
