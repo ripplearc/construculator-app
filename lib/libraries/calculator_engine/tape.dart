@@ -564,8 +564,11 @@ class Tape extends Equatable {
   }
 
   Tape? get _withDivisorRepaired {
-    if (chips.length < 2 || chips[chips.length - 2] is! ErrorChip) return null;
-    if (active case ValueChip(operator: null) || null) return null;
+    if (chips.length < 2 || active?.operator != Operator.divide) return null;
+    if (chips[chips.length - 2] !=
+        const ErrorChip(CalculationError.divisionByZero)) {
+      return null;
+    }
     return _with([...chips.sublist(0, chips.length - 2), chips.last]);
   }
 
