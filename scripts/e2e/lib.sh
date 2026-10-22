@@ -160,13 +160,35 @@ e2e_powersync_compose() {
     -f "$E2E_BACKEND_DIR/powersync/compose.yaml" "$@"
 }
 
+# Prints the state of every stack container (Supabase and PowerSync) and the
+# recent logs of each one that is neither healthy nor cleanly finished, so a
+# readiness timeout shows why the service did not come up. Best effort: it only
+# runs on a path that is about to fail, so a Docker error here is ignored
+# rather than allowed to replace the real "did not become ready" message.
+e2e_dump_container_diagnostics() {
+  local name status
+  e2e_warn "Stack containers:"
+  docker ps -a --filter "name=$E2E_DB_PROJECT" --filter "name=powersync" \
+    --format '{{.Names}}  {{.Status}}' >&2 || return 0
+  docker ps -a --filter "name=$E2E_DB_PROJECT" --filter "name=powersync" \
+    --format '{{.Names}}|{{.Status}}' 2>/dev/null |
+    while IFS='|' read -r name status; do
+      case "$status" in *"(healthy)"* | "Exited (0)"*) continue ;; esac
+      e2e_warn "Last log lines of $name ($status):"
+      docker logs --tail 40 "$name" >&2 2>&1 || true
+    done
+}
+
 # Polls until the URL answers or the timeout expires.
 e2e_wait_for_http() {
   local url="$1" label="$2" timeout="${3:-120}" waited=0
   e2e_log "Waiting for $label ($url)"
   while ! curl -fsS -o /dev/null "$url" 2>/dev/null; do
     waited=$((waited + 2))
-    [ "$waited" -ge "$timeout" ] && e2e_die "$label did not become ready within ${timeout}s."
+    if [ "$waited" -ge "$timeout" ]; then
+      e2e_dump_container_diagnostics
+      e2e_die "$label did not become ready within ${timeout}s."
+    fi
     sleep 2
   done
 }
