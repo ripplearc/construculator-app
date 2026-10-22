@@ -136,8 +136,35 @@
         </regex>
 
         <!-- RULE 19: the corner angle is the exterior angle -->
-        <regex pattern="value: Angle\(\(sides - 2\) \* 180 / sides\)," dotAll="true" id="deterministic_rules.polygon.exterior_angle">
+        <regex pattern="value: Angle\(180 - 360 / sides\)," dotAll="true" id="deterministic_rules.polygon.exterior_angle">
             <mutation text="value: Angle(360 / sides),"/>
+            <mutation text="value: Angle((sides - 2) * 180 / sides),"/>
+        </regex>
+
+        <!-- RULE 22: the polygon answers forget their unit -->
+        <regex pattern="value: polygonArea\(span, sides, unit: unit\)," dotAll="true" id="deterministic_rules.polygon.area_unit">
+            <mutation text="value: polygonArea(span, sides),"/>
+        </regex>
+        <regex pattern="value: Length\(_wholeTicks\(side\), unit: unit\)," dotAll="true" id="deterministic_rules.polygon.side_unit">
+            <mutation text="value: Length(_wholeTicks(side), unit: Unit.foot),"/>
+        </regex>
+        <regex pattern="value: Length\(_wholeTicks\(sides \* side\), unit: unit\)," dotAll="true" id="deterministic_rules.polygon.perimeter_unit">
+            <mutation text="value: Length(_wholeTicks(sides * side), unit: Unit.foot),"/>
+            <mutation text="value: Length(sides * _wholeTicks(side), unit: unit),"/>
+        </regex>
+
+        <!-- RULE 23: an odd span loses half a tick before the circle or the
+             polygon is computed -->
+        <regex pattern="final halfTicks = span\.ticks / 2;" dotAll="true" id="deterministic_rules.circle.half_tick_dropped">
+            <mutation text="final halfTicks = (span.ticks ~/ 2).toDouble();"/>
+        </regex>
+        <regex pattern="PolygonSpan\.corners =&gt; diameter\.ticks / 2," dotAll="true" id="deterministic_rules.polygon.half_tick_dropped">
+            <mutation text="PolygonSpan.corners =&gt; (diameter.ticks ~/ 2).toDouble(),"/>
+        </regex>
+
+        <!-- RULE 24: polygonArea takes any count of sides -->
+        <regex pattern="assert\(sides &gt;= fewestSides, 'a polygon has at least \$fewestSides sides'\);" dotAll="true" id="deterministic_rules.polygon_area.no_precondition">
+            <mutation text=""/>
         </regex>
 
         <!-- RULE 20: the side length forgets the sine -->

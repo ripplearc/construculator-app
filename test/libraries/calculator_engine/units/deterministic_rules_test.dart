@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -405,6 +407,35 @@ void main() {
         expect(texts(answers).first, 'Radius: 6ft');
       });
 
+      test('an odd span keeps its half tick in the area, not in a length', () {
+        const oddSpan = Length(9217, unit: Unit.foot);
+        final answers = rules.answersFor({'Diameter': oddSpan});
+        expect(answers, [
+          const Answer(
+            key: 'Radius',
+            value: Length(4609, unit: Unit.foot),
+            sources: ['Diameter'],
+          ),
+          Answer(
+            key: 'Circle area',
+            value: Area(math.pi * 4608.5 * 4608.5, unit: Unit.foot),
+            sources: const ['Diameter'],
+          ),
+          const Answer(
+            key: 'Circumference',
+            value: Length(28956, unit: Unit.foot),
+            sources: ['Diameter'],
+          ),
+        ]);
+      });
+
+      test('a Radius at the 19,999,999ft limit doubles without wrapping', () {
+        const limit = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
+        final answers = texts(rules.answersFor({'Radius': limit}));
+        expect(answers.first, 'Diameter: 39,999,998ft');
+        expect(answers.last, 'Circumference: 125,663,699.86ft');
+      });
+
       test('a metric radius answers in metres', () {
         final answers = rules.answersFor({
           'Radius': const Length(2520, unit: Unit.metre),
@@ -458,6 +489,62 @@ void main() {
           expect(answers.first.sources, ['Radius', 'Sides']);
         },
       );
+
+      test('a metric polygon answers in square metres and metres', () {
+        final answers = rules.answersFor({
+          'Diameter': const Length(2520, unit: Unit.metre),
+          'Sides': const Scalar(6),
+        });
+        expect(texts(answers), [
+          'Polygon area: 0.65m²',
+          'Side length: 0.5m',
+          'Perimeter: 3m',
+          'Corner angle: 120°',
+        ]);
+      });
+
+      test('an odd span gives exact areas and whole-tick lengths', () {
+        const oddSpan = Length(9217, unit: Unit.foot);
+        final answers = rules.answersFor({
+          'Diameter': oddSpan,
+          'Sides': const Scalar(4),
+        });
+        expect(answers.take(3), [
+          Answer(
+            key: 'Polygon area',
+            value: Area(
+              0.5 * 4 * 4608.5 * 4608.5 * math.sin(2 * math.pi / 4),
+              unit: Unit.foot,
+            ),
+            sources: const ['Diameter', 'Sides'],
+          ),
+          const Answer(
+            key: 'Side length',
+            value: Length(6517, unit: Unit.foot),
+            sources: ['Diameter', 'Sides'],
+          ),
+          const Answer(
+            key: 'Perimeter',
+            value: Length(26070, unit: Unit.foot),
+            sources: ['Diameter', 'Sides'],
+          ),
+        ]);
+      });
+
+      test(
+        'a Sides of 10¹⁷ reads a Corner angle of 180°, not a wrapped one',
+        () {
+          final answers = texts(
+            rules.answersFor({'Diameter': feet12, 'Sides': const Scalar(1e17)}),
+          );
+          expect(answers.last, 'Corner angle: 180°');
+        },
+      );
+
+      test('polygonArea refuses fewer than three sides', () {
+        expect(() => rules.polygonArea(feet12, 2), throwsAssertionError);
+        expect(formatter.format(rules.polygonArea(feet12, 3)), '46.77ft²');
+      });
 
       test('fewer than three sides, or a fraction of a side, is a circle', () {
         expect(
