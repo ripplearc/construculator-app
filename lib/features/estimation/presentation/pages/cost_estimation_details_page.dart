@@ -99,6 +99,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) =>
       _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
         type: CostItemType.equipment,
+        asksBeforeClosing: true,
         entry: entry,
         name: name,
         blocFactory: widget.equipmentCostFormBlocFactory,
