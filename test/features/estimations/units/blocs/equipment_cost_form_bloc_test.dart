@@ -330,6 +330,7 @@ void main() {
 
       group('an edited recalled Job amount', () {
         const recalledJob = EquipmentSavedRateRecalledEvent(
+          rateId: 'rate-1',
           method: EquipmentPricingMethod.job,
           rate: 400,
           fromRecents: true,
@@ -395,6 +396,7 @@ void main() {
           act: (bloc) => bloc
             ..add(
               const EquipmentSavedRateRecalledEvent(
+                rateId: 'rate-1',
                 method: EquipmentPricingMethod.job,
                 rate: 400,
               ),
@@ -415,6 +417,7 @@ void main() {
           build: () => bloc,
           act: (bloc) => bloc.add(
             const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
               method: EquipmentPricingMethod.day,
               rate: 145,
               fromRecents: true,
