@@ -197,6 +197,28 @@ void main() {
         expect(carried(type('3', yards).closeWith(Unit.foot)), '3yd 0ft');
       });
 
+      test('the carry runs on up the ladder (CA-1234)', () {
+        String carried(EntryOutcome outcome) =>
+            (outcome as EntryCarried).buffer.text;
+        final metres = changed(type('1').closeWith(Unit.metre));
+        final centimetres = changed(
+          type('95', metres).closeWith(Unit.centimetre),
+        );
+        expect(
+          carried(type('100', centimetres).closeWith(Unit.millimetre)),
+          '2m 5cm 0mm',
+        );
+        final yards = changed(type('2').closeWith(Unit.yard));
+        final feet = changed(type('2', yards).closeWith(Unit.foot));
+        expect(carried(type('24', feet).closeWith(Unit.inch)), '3yd 1ft 0in');
+        expect(carried(type('13', feet).closeWith(Unit.inch)), '3yd 0ft 1in');
+        final oneFoot = changed(type('1', yards).closeWith(Unit.foot));
+        expect(
+          carried(type('13', oneFoot).closeWith(Unit.inch)),
+          '2yd 2ft 1in',
+        );
+      });
+
       test('a decimal part is carried on its whole inches', () {
         final feet = changed(type('18').closeWith(Unit.foot));
         String carried(EntryOutcome outcome) =>
@@ -229,6 +251,11 @@ void main() {
           expect(
             changed(type('13/2', feet).closeWith(Unit.inch)).text,
             '18ft 13/2in',
+          );
+          final fractionFeet = changed(type('3/4').closeWith(Unit.foot));
+          expect(
+            changed(type('13', fractionFeet).closeWith(Unit.inch)).text,
+            '3/4ft 13in',
           );
           final decimalFeet = changed(type('18.5').closeWith(Unit.foot));
           expect(

@@ -69,12 +69,15 @@
 
         <!-- RULE: the carry starts one part too late, or a fraction's
              numerator is carried as whole parts -->
-        <regex pattern="if \(parts == null \|\| wholeAbove == null \|\| parts &lt; partsPerUnit\) \{" dotAll="true" id="entry_buffer.carry.threshold">
-            <mutation text="if (parts == null || wholeAbove == null || parts &lt;= partsPerUnit) {"/>
-            <mutation text="if (true) {"/>
+        <regex pattern="if \(parts == null \|\| wholeAbove == null \|\| parts &lt; partsPerUnit\) \{\s*return null;\s*\}" dotAll="true" id="entry_buffer.carry.threshold">
+            <mutation text="if (parts == null || wholeAbove == null || parts &lt;= partsPerUnit) { return null; }"/>
+            <mutation text="if (true) { return null; }"/>
         </regex>
-        <regex pattern="final parts = closed\.denominator == null \? int\.tryParse\(whole\) : null;" dotAll="true" id="entry_buffer.carry.fraction_numerator">
+        <regex pattern="final parts = part\.denominator == null \? int\.tryParse\(whole\) : null;" dotAll="true" id="entry_buffer.carry.fraction_numerator">
             <mutation text="final parts = int.tryParse(whole);"/>
+        </regex>
+        <regex pattern="final wholeAbove = previous\.denominator == null\s*\?\s*int\.tryParse\(previous\.digits\)\s*:\s*null;" dotAll="true" id="entry_buffer.carry.into_a_fraction">
+            <mutation text="final wholeAbove = int.tryParse(previous.digits);"/>
         </regex>
 
         <!-- RULE: a decimal part is never carried, or loses its decimals -->
@@ -87,9 +90,15 @@
         <regex pattern="previous\.copyWith\(digits: '\$\{wholeAbove \+ parts ~/ partsPerUnit\}'\)," dotAll="true" id="entry_buffer.carry.quotient">
             <mutation text="previous.copyWith(digits: '${wholeAbove + 1}'),"/>
         </regex>
-        <regex pattern="closed\.copyWith\(digits: '\$\{parts % partsPerUnit\}\$decimals'\)," dotAll="true" id="entry_buffer.carry.remainder">
-            <mutation text="closed.copyWith(digits: '${parts - partsPerUnit}$decimals'),"/>
-            <mutation text="closed.copyWith(digits: '${parts % partsPerUnit}'),"/>
+        <regex pattern="part\.copyWith\(digits: '\$\{parts % partsPerUnit\}\$decimals'\)," dotAll="true" id="entry_buffer.carry.remainder">
+            <mutation text="part.copyWith(digits: '${parts - partsPerUnit}$decimals'),"/>
+            <mutation text="part.copyWith(digits: '${parts % partsPerUnit}'),"/>
+        </regex>
+
+        <!-- RULE: the carry stops after one step, so a part above can be as
+             large as its own unit -->
+        <regex pattern="return _carryInto\(carried, index - 1, higher, above\) \?\? carried;" dotAll="true" id="entry_buffer.carry.once">
+            <mutation text="return carried;"/>
         </regex>
 
         <!-- RULE: a key that takes lengths takes a weight, or answers the
