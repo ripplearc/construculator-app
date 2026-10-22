@@ -51,6 +51,9 @@ class EstimationRoutesModule extends Module {
           router: Modular.get<AppRouter>(),
           equipmentCostFormBlocFactory: () =>
               Modular.get<EquipmentCostFormBloc>(),
+          materialCostFormBlocFactory: () =>
+              Modular.get<MaterialCostFormBloc>()
+                ..add(const MaterialCostFormStarted()),
           estimateSummaryBlocFactory: () => Modular.get<EstimateSummaryBloc>(),
           yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
           clock: Modular.get<Clock>(),
