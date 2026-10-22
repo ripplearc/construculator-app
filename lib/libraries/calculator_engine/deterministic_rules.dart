@@ -175,13 +175,16 @@ class DeterministicRules extends Equatable {
   /// R = D ÷ 2, or (D ÷ 2) ÷ cos(π ÷ n) across the flats; area =
   /// ½ n R² sin(2π ÷ n)), in square ticks. The port of the prototype's
   /// `polygonArea`, shared with the Across pill so that flipping the pill
-  /// recomputes through the same formula.
+  /// recomputes through the same formula. [sides] must be at least
+  /// [fewestSides], as [answersFor] guarantees before it calls this: fewer
+  /// is no polygon, and the formula would answer with a number anyway.
   Area polygonArea(
     Length diameter,
     int sides, {
     PolygonSpan across = PolygonSpan.corners,
     Unit unit = Unit.foot,
   }) {
+    assert(sides >= fewestSides, 'a polygon has at least $fewestSides sides');
     final cornerRadius = switch (across) {
       PolygonSpan.corners => diameter.ticks / 2,
       PolygonSpan.flats => diameter.ticks / 2 / math.cos(math.pi / sides),
@@ -204,6 +207,9 @@ class DeterministicRules extends Equatable {
   List<Answer> _shape(Map<DimensionKey, Length> lengths, int? sides) {
     final diameter = lengths[DimensionKey.diameter];
     final radius = lengths[DimensionKey.radius];
+    // TODO: [CA-1236] The int doubling wraps past 2^62 ticks, about 6 × 10^15ft
+    // a radius; the 19,999,999.99 limit refuses such a radius after CA-1236
+    // merges. https://ripplearc.youtrack.cloud/issue/CA-1236
     final span =
         diameter ??
         (radius == null ? null : Length(2 * radius.ticks, unit: radius.unit));
@@ -266,7 +272,7 @@ class DeterministicRules extends Equatable {
       ),
       Answer(
         key: cornerAngleKey,
-        value: Angle((sides - 2) * 180 / sides),
+        value: Angle(180 - 360 / sides),
         sources: sources,
       ),
     ];
