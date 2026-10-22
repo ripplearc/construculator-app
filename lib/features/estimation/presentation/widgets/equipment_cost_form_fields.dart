@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delivery_fee_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -123,6 +124,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _jobSelected = ValueNotifier<bool>(false);
 
   bool _deliveryExpanded = false;
+  bool _showDeliveryLimitHint = false;
+  String _lastDeliveryText = '';
+  late final _deliveryFeeFormatter = DeliveryFeeInputFormatter(
+    onLimitReached: _showDeliveryLimit,
+  );
 
   String _lastDailyRateText = '';
   String _lastJobAmountText = '';
@@ -216,16 +222,28 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  void _showDeliveryLimit() {
+    if (!mounted) return;
+    setState(() => _showDeliveryLimitHint = true);
+  }
+
   void _onDeliveryFeeChanged() {
+    final text = _deliveryFeeController.text;
+    if (_showDeliveryLimitHint && text.length < _lastDeliveryText.length) {
+      setState(() => _showDeliveryLimitHint = false);
+    }
+    _lastDeliveryText = text;
     context.read<EquipmentCostFormBloc>().add(
-      EquipmentDeliveryFeeUpdatedEvent(_deliveryFeeController.text),
+      EquipmentDeliveryFeeUpdatedEvent(text == '.' ? '' : text),
     );
     _notifyTotal();
   }
 
   void _onDeliveryFocusChanged() {
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      if (!_deliveryFocusNode.hasFocus) _showDeliveryLimitHint = false;
+    });
   }
 
   void _onDescriptionChanged() {
@@ -236,7 +254,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _toggleDeliveryExpanded() {
     if (_deliveryExpanded) {
-      setState(() => _deliveryExpanded = false);
+      setState(() {
+        _deliveryExpanded = false;
+        _showDeliveryLimitHint = false;
+      });
       _deliveryFocusNode.unfocus();
       return;
     }
@@ -500,7 +521,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         _RateSaveStatus.failed => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _rateSaveMessage(
+            _hintRow(
               context,
               key: const Key('save_as_my_rate_helper_text'),
               icon: CoreIcons.info,
@@ -508,7 +529,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               text: _hintText(context, data, saved: false),
             ),
             const SizedBox(height: CoreSpacing.space1),
-            _rateSaveMessage(
+            _hintRow(
               context,
               key: const Key('save_as_my_rate_error'),
               icon: CoreIcons.error,
@@ -522,14 +543,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             ),
           ],
         ),
-        _RateSaveStatus.saved => _rateSaveMessage(
+        _RateSaveStatus.saved => _hintRow(
           context,
           key: const Key('save_as_my_rate_helper_text'),
           icon: CoreIcons.info,
           iconColor: context.colorTheme.iconGrayMid,
           text: _hintText(context, data, saved: true),
         ),
-        _RateSaveStatus.idle => _rateSaveMessage(
+        _RateSaveStatus.idle => _hintRow(
           context,
           key: const Key('save_as_my_rate_helper_text'),
           icon: CoreIcons.info,
@@ -540,7 +561,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  Widget _rateSaveMessage(
+  Widget _hintRow(
     BuildContext context, {
     required Key key,
     required CoreIconData icon,
@@ -1115,6 +1136,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              inputFormatters: [_deliveryFeeFormatter],
               prefix: Text(
                 '\$',
                 style: textTheme.bodyLargeRegular.copyWith(
@@ -1122,6 +1144,27 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 ),
               ),
             ),
+            if (_showDeliveryLimitHint)
+              Padding(
+                padding: const EdgeInsets.only(top: CoreSpacing.space2),
+                child: Semantics(
+                  liveRegion: true,
+                  child: _hintRow(
+                    context,
+                    key: const Key('delivery_fee_limit_hint'),
+                    icon: CoreIcons.info,
+                    iconColor: colorTheme.iconGrayMid,
+                    text: Text(
+                      l10n.equipmentDeliveryFeeLimitHint(
+                        DisplayFormatter.currency.format(largestMoneyAmount),
+                      ),
+                      style: textTheme.bodySmallRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: CoreSpacing.space3),
             UnderlineTextField(
               key: const Key('delivery_note_field'),

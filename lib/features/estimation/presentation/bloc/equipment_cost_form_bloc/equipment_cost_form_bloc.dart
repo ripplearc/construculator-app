@@ -9,7 +9,10 @@ part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
 
 const double _minRate = 0.01;
-const double _maxRate = 999999.99;
+
+/// The largest dollar amount an equipment cost field accepts (a rate or a
+/// delivery fee).
+const double largestMoneyAmount = 999999.99;
 const double _durationColumnMax = 99999999.99;
 
 /// BLoC for managing the equipment cost form: item type, Day/Job pricing,
@@ -74,7 +77,8 @@ class EquipmentCostFormBloc
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
-      final usable = fee != null && fee.isFinite && fee >= 0 && fee <= _maxRate;
+      final usable =
+          fee != null && fee.isFinite && fee >= 0 && fee <= largestMoneyAmount;
       // Empty text clears the fee. A value that cannot be kept is ignored,
       // and the delivery field stops the key before it gets here.
       if (e.value.isNotEmpty && !usable) return;
@@ -230,7 +234,10 @@ class EquipmentCostFormBloc
   ) {
     if (rate == null) return false;
     final inRange =
-        !rate.isNaN && !rate.isInfinite && rate >= _minRate && rate <= _maxRate;
+        !rate.isNaN &&
+        !rate.isInfinite &&
+        rate >= _minRate &&
+        rate <= largestMoneyAmount;
     if (!inRange) {
       errors[field] = EquipmentFieldError.rateOutOfRange;
     }

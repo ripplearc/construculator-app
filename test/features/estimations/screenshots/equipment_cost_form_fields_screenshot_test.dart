@@ -186,6 +186,26 @@ void main() {
       await expectFieldsGolden(tester, 'delivery_open_fee', suffix);
     });
 
+    testWidgets('renders the Delivery fee at the limit with its hint', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '100000',
+      );
+      await tester.enterText(
+        find.byKey(const Key('delivery_fee_field')),
+        '1000000',
+      );
+      await tester.pumpAndSettle();
+      await expectFieldsGolden(tester, 'delivery_limit_hint', suffix);
+    });
+
     testWidgets('renders the Delivery panel with the Note field filled', (
       tester,
     ) async {

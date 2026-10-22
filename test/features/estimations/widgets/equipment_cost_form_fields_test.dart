@@ -193,10 +193,7 @@ void main() {
   // Matches the compact header's Subtitle text (e.g. "$145.00 / day · your
   // default") shown once a rate is recalled from Your Rates (CA-1146,
   // Figma nodes 66337:158600/66337:159434).
-  String recalledRateSubtitleText(
-    double amount,
-    EquipmentPricingMethod method,
-  ) {
+  String recalledRateSubtitleText(double amount, EquipmentPricingMethod method) {
     final unit = method == EquipmentPricingMethod.day
         ? l10n.equipmentRecalledRateDayUnit
         : l10n.yourRatesJobSuffix;
@@ -1817,6 +1814,177 @@ void main() {
       expect(capturedTotal, 400.0);
     });
 
+    group('delivery fee limit', () {
+      Finder deliveryField() => find.byKey(const Key('delivery_fee_field'));
+      Finder limitHint() => find.byKey(const Key('delivery_fee_limit_hint'));
+
+      String typedDelivery(WidgetTester tester) => tester
+          .widget<TextField>(
+            find.descendant(
+              of: deliveryField(),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller!
+          .text;
+
+      testWidgets('refuses a digit that would go above the largest fee and '
+          'says why', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '999999.99');
+        await tester.pump();
+        expect(limitHint(), findsNothing);
+
+        await tester.enterText(deliveryField(), '9999999.99');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '999999.99');
+        expect(
+          find.text('The largest delivery fee is \$999,999.99.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('refuses a third decimal and says why', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '85.50');
+        await tester.pump();
+        expect(limitHint(), findsNothing);
+
+        await tester.enterText(deliveryField(), '85.505');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '85.50');
+        expect(
+          find.text('The largest delivery fee is \$999,999.99.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('refuses letters and a second decimal point', (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '85');
+        await tester.pump();
+
+        await tester.enterText(deliveryField(), '85a');
+        await tester.pump();
+        expect(typedDelivery(tester), '85');
+
+        await tester.enterText(deliveryField(), '8.5');
+        await tester.pump();
+        await tester.enterText(deliveryField(), '8.5.');
+        await tester.pump();
+        expect(typedDelivery(tester), '8.5');
+      });
+
+      Future<void> showLimitHint(WidgetTester tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '100000');
+        await tester.pump();
+        await tester.enterText(deliveryField(), '1000000');
+        await tester.pump();
+        expect(limitHint(), findsOneWidget);
+      }
+
+      testWidgets('the hint goes away when a digit is deleted', (tester) async {
+        await showLimitHint(tester);
+
+        await tester.enterText(deliveryField(), '10000');
+        await tester.pump();
+
+        expect(limitHint(), findsNothing);
+      });
+
+      testWidgets('the hint stays when a longer value is accepted', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        await tester.enterText(deliveryField(), '100000.');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '100000.');
+        expect(limitHint(), findsOneWidget);
+      });
+
+      testWidgets('the hint stays when only the cursor moves', (tester) async {
+        await showLimitHint(tester);
+        final controller = tester
+            .widget<TextField>(
+              find.descendant(
+                of: deliveryField(),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller!;
+
+        controller.selection = const TextSelection.collapsed(offset: 2);
+        await tester.pump();
+
+        expect(limitHint(), findsOneWidget);
+      });
+
+      testWidgets('the hint goes away when the user leaves the field', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        await tester.tap(find.byKey(const Key('delivery_note_field')));
+        await tester.pumpAndSettle();
+
+        expect(limitHint(), findsNothing);
+      });
+
+      testWidgets('the hint has the info icon, like the Rate hint', (
+        tester,
+      ) async {
+        await showLimitHint(tester);
+
+        expect(
+          find.descendant(
+            of: limitHint(),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is CoreIconWidget && widget.icon == CoreIcons.info,
+            ),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a lone decimal point counts as no fee in the total', (
+        tester,
+      ) async {
+        double? capturedTotal;
+        await tester.pumpWidget(
+          makeWidget(onTotalChanged: (total) => capturedTotal = total),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '2');
+        await tester.pump();
+        await tester.enterText(find.byKey(const Key('rate_field')), '200');
+        await tester.pump();
+        await expandDeliveryField(tester);
+        await tester.enterText(deliveryField(), '.5');
+        await tester.pump();
+        expect(capturedTotal, 400.5);
+
+        await tester.enterText(deliveryField(), '.');
+        await tester.pump();
+
+        expect(typedDelivery(tester), '.');
+        expect(capturedTotal, 400.0);
+      });
+    });
+
     testWidgets('an unset delivery fee does not affect the total', (
       tester,
     ) async {
@@ -2260,26 +2428,31 @@ void main() {
         },
       );
 
-      testWidgets('shows the equipment name as a Title and the saved rate as a '
-          'Subtitle, with Duration as the only field', (tester) async {
-        await seedRate(
-          itemName: 'Scissor lift',
-          amount: 145,
-          method: EquipmentPricingMethod.day,
-        );
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
+      testWidgets(
+        'shows the equipment name as a Title and the saved rate as a '
+        'Subtitle, with Duration as the only field',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          await tester.pumpWidget(makeWidget());
+          await tester.pumpAndSettle();
 
-        await recallRate(tester, 'Scissor lift');
+          await recallRate(tester, 'Scissor lift');
 
-        expect(find.text('Scissor lift'), findsOneWidget);
-        expect(
-          find.text(recalledRateSubtitleText(145, EquipmentPricingMethod.day)),
-          findsOneWidget,
-        );
-        expect(find.byKey(const Key('rate_field')), findsNothing);
-        expect(find.byKey(const Key('duration_field')), findsOneWidget);
-      });
+          expect(find.text('Scissor lift'), findsOneWidget);
+          expect(
+            find.text(
+              recalledRateSubtitleText(145, EquipmentPricingMethod.day),
+            ),
+            findsOneWidget,
+          );
+          expect(find.byKey(const Key('rate_field')), findsNothing);
+          expect(find.byKey(const Key('duration_field')), findsOneWidget);
+        },
+      );
 
       testWidgets('labels the duration field "How many days?"', (tester) async {
         await seedRate(
@@ -2334,26 +2507,27 @@ void main() {
         },
       );
 
-      testWidgets('Add to estimate stays disabled until Duration is entered', (
-        tester,
-      ) async {
-        await seedRate(
-          itemName: 'Scissor lift',
-          amount: 145,
-          method: EquipmentPricingMethod.day,
-        );
-        var saveEnabled = true;
-        await recallRate(
-          tester,
-          'Scissor lift',
-          onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
-        );
-        expect(saveEnabled, isFalse);
+      testWidgets(
+        'Add to estimate stays disabled until Duration is entered',
+        (tester) async {
+          await seedRate(
+            itemName: 'Scissor lift',
+            amount: 145,
+            method: EquipmentPricingMethod.day,
+          );
+          var saveEnabled = true;
+          await recallRate(
+            tester,
+            'Scissor lift',
+            onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
+          );
+          expect(saveEnabled, isFalse);
 
-        await tester.enterText(find.byKey(const Key('duration_field')), '3');
-        await tester.pump();
-        expect(saveEnabled, isTrue);
-      });
+          await tester.enterText(find.byKey(const Key('duration_field')), '3');
+          await tester.pump();
+          expect(saveEnabled, isTrue);
+        },
+      );
 
       testWidgets(
         'the total is duration × the recalled rate, same as the full form',
@@ -2439,33 +2613,38 @@ void main() {
         },
       );
 
-      testWidgets('shows the equipment name as a Title, the saved price as a '
-          'Subtitle, and Amount pre-filled and editable', (tester) async {
-        await seedRate(
-          itemName: 'Dumpster',
-          amount: 400,
-          method: EquipmentPricingMethod.job,
-        );
-        var saveEnabled = false;
-        await recallRate(
-          tester,
-          'Dumpster',
-          onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
-        );
+      testWidgets(
+        'shows the equipment name as a Title, the saved price as a '
+        'Subtitle, and Amount pre-filled and editable',
+        (tester) async {
+          await seedRate(
+            itemName: 'Dumpster',
+            amount: 400,
+            method: EquipmentPricingMethod.job,
+          );
+          var saveEnabled = false;
+          await recallRate(
+            tester,
+            'Dumpster',
+            onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
+          );
 
-        expect(find.text('Dumpster'), findsOneWidget);
-        expect(
-          find.text(recalledRateSubtitleText(400, EquipmentPricingMethod.job)),
-          findsOneWidget,
-        );
-        // A confirmation, not a form: nothing else to fill in before Add
-        // is available.
-        expect(saveEnabled, isTrue);
+          expect(find.text('Dumpster'), findsOneWidget);
+          expect(
+            find.text(
+              recalledRateSubtitleText(400, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
+          // A confirmation, not a form: nothing else to fill in before Add
+          // is available.
+          expect(saveEnabled, isTrue);
 
-        await tester.enterText(find.byKey(const Key('amount_field')), '450');
-        await tester.pump();
-        expect(find.text('450'), findsOneWidget);
-      });
+          await tester.enterText(find.byKey(const Key('amount_field')), '450');
+          await tester.pump();
+          expect(find.text('450'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'hides the equipment-name field, Day/Job toggle, rate-status badge, '
@@ -2481,7 +2660,7 @@ void main() {
           await tester.tap(find.byKey(const Key('job_method_chip')));
           await tester.pump();
 
-          await recallRate(tester, 'Dumpster');
+        await recallRate(tester, 'Dumpster');
 
           expectFullFormChromeAbsent(tester);
         },
