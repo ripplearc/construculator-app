@@ -477,7 +477,7 @@ void main() {
           'the digits go on into the seconds (S85)', () {
         expect(typeAngle('23.16').text, '23.16');
         final promoted = typeAngle('23.16.');
-        expect(promoted.text, "23°16'");
+        expect(promoted.text, '23°16\'00"');
         expect(promoted.isDegreesMinutesSeconds, isTrue);
         expect(promoted.tokens.single.minutes, '16');
         expect(promoted.tokens.single.seconds, '');
@@ -501,7 +501,7 @@ void main() {
       });
 
       test('closing the minutes carries 60 and more into the degrees', () {
-        expect(typeAngle('30.89.').text, "31°29'");
+        expect(typeAngle('30.89.').text, '31°29\'00"');
         expect(typeAngle('30.89.00').text, '31°29\'00"');
         expect(
           typeAngle('30.89.').tokens.single,
@@ -515,21 +515,21 @@ void main() {
       });
 
       test('a trailing point re-reads as whole degrees with no minutes', () {
-        expect(typeAngle('8..').text, "8°00'");
+        expect(typeAngle('8..').text, '8°00\'00"');
         expect(typeAngle('8..').tokens.single.value, 8);
       });
 
       test('the D:M:S key closes one segment per press (walkthrough 16.3)', () {
         expect(typeAngle('38:').text, '38°');
-        expect(typeAngle('38:30').text, "38°30'");
-        expect(typeAngle('38:30:').text, "38°30'");
+        expect(typeAngle('38:30').text, '38°30\'00"');
+        expect(typeAngle('38:30:').text, '38°30\'00"');
         expect(typeAngle('38:30:45').text, '38°30\'45"');
         expect(typeAngle('38:30:45').tokens.single.value, 38.5125);
       });
 
       test('the D:M:S key on a decimal closes the minutes, and on a trailing '
           'point leaves them open', () {
-        expect(typeAngle('38.3:').text, "38°03'");
+        expect(typeAngle('38.3:').text, '38°03\'00"');
         expect(typeAngle('38.3:').tokens.single.seconds, '');
         expect(typeAngle('38.:').text, '38°');
         expect(typeAngle('38.:').tokens.single.minutes, '');
@@ -546,21 +546,17 @@ void main() {
 
       test('the padding is the seal (S113): closed minutes read two digits, '
           'open ones do not, seconds never', () {
-        expect(typeAngle('38:5').text, "38°5'");
-        expect(typeAngle('38:59').text, "38°59'");
-        expect(typeAngle('38:5:').text, "38°05'");
+        expect(typeAngle('38:5').text, '38°5\'00"');
+        expect(typeAngle('38:59').text, '38°59\'00"');
+        expect(typeAngle('38:5:').text, '38°05\'00"');
         expect(typeAngle('38:5:9').text, '38°05\'9"');
       });
 
-      test('seconds above 59 normalise at display', () {
-        expect(typeAngle('38:30:75').text, '38°31\'15"');
-        expect(typeAngle('38:30:60').text, '38°31\'0"');
-        expect(typeAngle('0:0:3600').text, '1°00\'0"');
-        expect(
-          typeAngle('0:0:119').text,
-          '0°01\'59"',
-          reason: '119 seconds is 118.999… in floating point, rounded not cut',
-        );
+      test('an open seconds field shows exactly what was typed, 59 and '
+          'more included: the carry waits for the seal', () {
+        expect(typeAngle('38:30:75').text, '38°30\'75"');
+        expect(typeAngle('0:0:3600').text, '0°00\'3600"');
+        expect(typeAngle('0:0:1').text, '0°00\'1"');
       });
 
       test('rule 4.16: an entry read off the formatter is written as given: '
@@ -583,10 +579,80 @@ void main() {
         );
       });
 
-      test('the seconds are rounded, not cut: 0°01\'1" is 60.999… seconds '
-          'in floating point', () {
-        expect(typeAngle('0:1:1').text, '0°01\'1"');
-        expect(typeAngle('0:0:1').text, '0°00\'1"');
+      group('the seal (rule 4.10: a key that leaves the chip closes the '
+          'open field)', () {
+        test('an open minutes field closes with its carry and its padding, '
+            'and the seconds read 00', () {
+          final sealed = typeAngle('38:75').sealed;
+          expect(sealed.text, '39°15\'00"');
+          expect(
+            sealed.tokens.single,
+            const Token(digits: '39', minutes: '15', seconds: '00'),
+          );
+          expect(typeAngle('38:5').sealed.text, '38°05\'00"');
+        });
+
+        test('typed seconds pad to two digits, and carry past 59', () {
+          expect(typeAngle('38:5:9').sealed.text, '38°05\'09"');
+          expect(typeAngle('38:30:75').sealed.text, '38°31\'15"');
+          expect(typeAngle('0:0:3600').sealed.text, '1°00\'00"');
+        });
+
+        test('a one-digit seconds field pads to two at the seal', () {
+          expect(typeAngle('0:1:1').sealed.text, '0°01\'01"');
+        });
+
+        test('whole degrees alone seal to three fields: 38 [D:M:S] is '
+            '38°00\'00"', () {
+          final sealed = typeAngle('38:').sealed;
+          expect(sealed.text, '38°00\'00"');
+          expect(sealed.tokens.single.value, 38);
+        });
+
+        test('the value and the way back are what they were', () {
+          final sealed = typeAngle('45.2.').sealed;
+          expect(sealed.tokens.single.value, 45 + 2 / 60);
+          expect(sealed.tokens.single.typedAs, '45.2');
+          expect(
+            typeAngle('38:30:75').sealed.tokens.single.value,
+            38.520833333333336,
+          );
+        });
+
+        test('a minus on the degrees stays on the whole angle', () {
+          const negative = EntryBuffer([
+            Token(digits: '-30', minutes: '75', seconds: ''),
+          ]);
+          expect(negative.sealed.text, '-31°15\'00"');
+          expect(negative.sealed.tokens.single.value, -31.25);
+        });
+
+        test('a buffer that is not an angle is unchanged, and sealing twice '
+            'changes nothing', () {
+          final plain = type('38');
+          expect(plain.sealed, plain);
+          expect(const EntryBuffer().sealed, const EntryBuffer());
+          final feet = changed(type('18').closeWith(Unit.foot));
+          expect(feet.sealed, feet);
+          final sealed = typeAngle('38:5:9').sealed;
+          expect(sealed.sealed, sealed);
+        });
+
+        test('past 2⁵³ seconds the fields are padded and left as typed', () {
+          expect(
+            typeAngle('150119987579015:4:7').sealed.text,
+            '150119987579015°04\'07"',
+          );
+        });
+
+        test('⌫ on a sealed angle steps through the closed field', () {
+          final sealed = typeAngle('38:30:5').sealed;
+          expect(changed(sealed.backspace()).text, '38°30\'0"');
+          expect(
+            changed(changed(sealed.backspace()).backspace()).text,
+            '38°30\'00"',
+          );
+        });
       });
 
       test('a point on an angle is the key: it opens the next segment, and '
@@ -600,12 +666,12 @@ void main() {
       test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
         expect(
           typeAngle('150119987579015:92:').text,
-          "150119987579016°32'",
+          '150119987579016°32\'00"',
           reason: '9,007,199,254,740,992 minutes, the last exact carry',
         );
         expect(
           typeAngle('150119987579015:94:').text,
-          "150119987579015°94'",
+          '150119987579015°94\'00"',
           reason: 'two past it: the segments are left as typed',
         );
       });
@@ -630,7 +696,7 @@ void main() {
         expect(closed.tokens.single.typedAs, '45.2');
         expect(typeAngle('45.2:5').tokens.single.typedAs, isNull);
         final reopened = changed(closed.backspace());
-        expect(reopened.text, "45°2'");
+        expect(reopened.text, '45°2\'00"');
         expect(reopened.tokens.single.typedAs, '45.2');
         final shortened = changed(reopened.backspace());
         expect(shortened.text, '45°');
@@ -645,7 +711,7 @@ void main() {
         final reclosed = changed(
           changed(typeAngle('38.30:').backspace()).closeDegreesMinutesSeconds(),
         );
-        expect(reclosed.text, "38°30'");
+        expect(reclosed.text, '38°30\'00"');
         expect(
           reclosed.tokens.single.typedAs,
           '38.30',
@@ -660,7 +726,7 @@ void main() {
 
       test('segments past 2⁵³ minutes are left as typed', () {
         final huge = typeAngle('99999999999999999:5:');
-        expect(huge.text, "99999999999999999°05'");
+        expect(huge.text, '99999999999999999°05\'00"');
         expect(typeAngle('9', huge).text, '99999999999999999°05\'9"');
       });
 
@@ -705,9 +771,9 @@ void main() {
         expect(buffer.tokens.single.seconds, '');
         buffer = changed(buffer.backspace());
         expect(buffer.tokens.single.seconds, isNull);
-        expect(buffer.text, "38°30'");
+        expect(buffer.text, '38°30\'00"');
         buffer = changed(buffer.backspace());
-        expect(buffer.text, "38°3'");
+        expect(buffer.text, '38°3\'00"');
         buffer = changed(buffer.backspace());
         expect(buffer.text, '38°');
         buffer = changed(buffer.backspace());

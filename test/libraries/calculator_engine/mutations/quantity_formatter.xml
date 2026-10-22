@@ -129,15 +129,16 @@
             <mutation text="final minutes = totalSeconds.toInt() ~/ secondsPerMinute;"/>
         </regex>
 
-        <!-- RULE 19: the minus sign is dropped -->
-        <regex pattern="final sign = degrees &lt; 0 &amp;&amp; totalSeconds &gt; 0 \? minusSign : '';" dotAll="true" id="quantity_formatter.dms.no_sign">
+        <!-- RULE 19: the minus is dropped, or written on a zero -->
+        <regex pattern="final sign = degrees &lt; 0 &amp;&amp; totalSeconds &gt; 0 \? '-' : '';" dotAll="true" id="quantity_formatter.dms.no_sign">
             <mutation text="final sign = '';"/>
-            <mutation text="final sign = degrees &lt; 0 ? minusSign : '';"/>
+            <mutation text="final sign = degrees &lt; 0 ? '-' : '';"/>
         </regex>
 
-        <!-- RULE 20: zero seconds are written as 00" -->
-        <regex pattern="final secondsText = seconds == 0 \? '' : '\$\{_twoDigits\(seconds\)\}&quot;';" dotAll="true" id="quantity_formatter.dms.always_seconds">
-            <mutation text="final secondsText = '${_twoDigits(seconds)}&quot;';"/>
+        <!-- RULE 20 (CA-1070 2/2): zero seconds are dropped, so 30°00'00"
+             reads 30°00' -->
+        <regex pattern="&quot;\$\{_twoDigits\(minutes\)\}'\$\{_twoDigits\(seconds\)\}\\&quot;&quot;;" dotAll="true" id="quantity_formatter.dms.seconds_dropped">
+            <mutation text="&quot;${_twoDigits(minutes)}'${seconds == 0 ? '' : '${_twoDigits(seconds)}\&quot;'}&quot;;"/>
         </regex>
 
         <!-- RULE 21: segments are no longer padded, so 45°02' reads 45°2' -->
