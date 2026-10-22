@@ -96,8 +96,11 @@ final class Answer extends Equatable {
 /// with Rise read as the height — give the arc (BuildCalc [Arc] p13):
 /// radius R = (c² ÷ 8h) + h ÷ 2, central angle 2 asin(c ÷ 2R), taken as
 /// the major arc when the height exceeds half the chord, and arc length
-/// R × angle. Entered as Run and Rise the triangle's Diagonal comes first
-/// and the arc follows; which one leads the strip is the arbiter's.
+/// R × angle. An arc whose radius would pass [Length.maxTicks] is left
+/// out, as a Diagonal is: a chord at the size limit over a one-tick height
+/// has no radius a length can hold. Entered as Run and Rise the triangle's
+/// Diagonal comes first and the arc follows; which one leads the strip is
+/// the arbiter's.
 ///
 /// Derived lengths follow the entry system (Section 8): metres when every
 /// side the rule read was metric, feet otherwise, so a chip no rule used
@@ -228,6 +231,7 @@ class DeterministicRules extends Equatable {
     final c = chord.ticks.toDouble();
     final h = height.ticks.toDouble();
     final radius = (h * h + c * c / 4) / (2 * h);
+    if (radius > Length.maxTicks) return const [];
     final minorAngle =
         2 * math.asin(math.min(1, c / (2 * radius))) * 180 / math.pi;
     final angle = h > c / 2 ? fullTurn - minorAngle : minorAngle;

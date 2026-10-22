@@ -253,7 +253,12 @@ void main() {
     group('a right triangle from Rise and Run', () {
       test('S41: Rise 12ft and Run 15ft give Diagonal 19.21ft', () {
         final answers = rules.answersFor({'Rise': feet12, 'Run': feet15});
-        expect(texts(answers).first, 'Diagonal: 19.21ft');
+        expect(texts(answers), [
+          'Diagonal: 19.21ft',
+          'Arc angle: 231.98°',
+          'Arc radius: 8.34ft',
+          'Arc length: 33.78ft',
+        ]);
         expect(answers.first.sources, ['Rise', 'Run']);
       });
 
@@ -303,11 +308,14 @@ void main() {
           'Rise': feet12,
           'Run': feet15,
         });
-        expect(answers.map((answer) => answer.key).take(4), [
+        expect(answers.map((answer) => answer.key), [
           'Area',
           'Diagonal',
           'Perimeter',
           'Diagonal',
+          'Arc angle',
+          'Arc radius',
+          'Arc length',
         ]);
       });
     });
@@ -318,7 +326,12 @@ void main() {
 
       test('S60: Rise 3.1m and Run 4.2m give Diagonal 5.22m', () {
         final answers = rules.answersFor({'Rise': rise, 'Run': run});
-        expect(texts(answers).first, 'Diagonal: 5.22m');
+        expect(texts(answers), [
+          'Diagonal: 5.22m',
+          'Arc angle: 223.54°',
+          'Arc radius: 2.26m',
+          'Arc length: 8.82m',
+        ]);
       });
 
       test('two metric sides answer in metres', () {
@@ -636,6 +649,53 @@ void main() {
         ]);
       });
 
+      test('a half circle on a very long chord is still 180°', () {
+        const chord = Length(189817298, unit: Unit.foot);
+        const rise = Length(94908649, unit: Unit.foot);
+        expect(
+          texts(rules.answersFor({'Chord': chord, 'Rise': rise})).first,
+          'Arc angle: 180°',
+        );
+      });
+
+      test('one tick either side of half the chord crosses 180°', () {
+        const chord4 = Length(4 * Length.ticksPerFoot, unit: Unit.foot);
+        const aboveHalf = Length(1537, unit: Unit.foot);
+        const belowHalf = Length(1535, unit: Unit.foot);
+        expect(
+          texts(rules.answersFor({'Chord': chord4, 'Rise': aboveHalf})).first,
+          'Arc angle: 180.07°',
+        );
+        expect(
+          texts(rules.answersFor({'Chord': chord4, 'Rise': belowHalf})).first,
+          'Arc angle: 179.93°',
+        );
+      });
+
+      test('the radius and the length each round to their own tick', () {
+        const chord4 = Length(4 * Length.ticksPerFoot, unit: Unit.foot);
+        const rise = Length(809, unit: Unit.foot);
+        final answers = rules.answersFor({'Chord': chord4, 'Rise': rise});
+        expect(answers.skip(1), const [
+          Answer(
+            key: 'Arc radius',
+            value: Length(1863, unit: Unit.foot),
+            sources: ['Chord', 'Rise'],
+          ),
+          Answer(
+            key: 'Arc length',
+            value: Length(3612, unit: Unit.foot),
+            sources: ['Chord', 'Rise'],
+          ),
+        ]);
+      });
+
+      test('a chord at the limit over a one-tick height has no arc', () {
+        const chord = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
+        const oneTick = Length(1, unit: Unit.foot);
+        expect(rules.answersFor({'Chord': chord, 'Rise': oneTick}), isEmpty);
+      });
+
       test('a height of exactly half the chord is a half circle', () {
         const chord4 = Length(4 * Length.ticksPerFoot, unit: Unit.foot);
         const rise2 = Length(2 * Length.ticksPerFoot, unit: Unit.foot);
@@ -657,6 +717,11 @@ void main() {
           );
           expect(
             rules.answersFor({'Chord': nothing, 'Rise': rise3ft6}),
+            isEmpty,
+          );
+          const belowNothing = Length(-768, unit: Unit.foot);
+          expect(
+            rules.answersFor({'Chord': run9ft10, 'Rise': belowNothing}),
             isEmpty,
           );
         },

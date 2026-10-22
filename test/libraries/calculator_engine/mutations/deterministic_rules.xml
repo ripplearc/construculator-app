@@ -185,7 +185,28 @@
         <!-- RULE 22: a tall segment is never the major arc -->
         <regex pattern="final angle = h &gt; c / 2 \? fullTurn - minorAngle : minorAngle;" dotAll="true" id="deterministic_rules.arc.never_major">
             <mutation text="final angle = minorAngle;"/>
-            <mutation text="final angle = h &gt;= c / 2 ? fullTurn - minorAngle : minorAngle;"/>
+        </regex>
+
+        <!-- RULE 27: the half-circle clamp is dropped, so a long chord's
+             c / 2R of 1.0000000000000002 makes asin NaN -->
+        <regex pattern="math\.asin\(math\.min\(1, c / \(2 \* radius\)\)\)" dotAll="true" id="deterministic_rules.arc.no_clamp">
+            <mutation text="math.asin(c / (2 * radius))"/>
+        </regex>
+
+        <!-- RULE 28: a radius past 2^53 ticks is still answered, stuck at
+             the largest int -->
+        <regex pattern="if \(radius &gt; Length\.maxTicks\) return const \[\];" dotAll="true" id="deterministic_rules.arc.no_radius_limit">
+            <mutation text="if (false) return const [];"/>
+        </regex>
+
+        <!-- RULE 29: the arc radius and length are truncated instead of
+             rounded, or the length is taken from the rounded radius -->
+        <regex pattern="value: Length\(_wholeTicks\(radius\), unit: unit\)," dotAll="true" id="deterministic_rules.arc.radius_truncated">
+            <mutation text="value: Length(radius.floor(), unit: unit),"/>
+        </regex>
+        <regex pattern="value: Length\(_wholeTicks\(radius \* angle \* math\.pi / 180\), unit: unit\)," dotAll="true" id="deterministic_rules.arc.length_rounding">
+            <mutation text="value: Length((radius * angle * math.pi / 180).floor(), unit: unit),"/>
+            <mutation text="value: Length(_wholeTicks(_wholeTicks(radius) * angle * math.pi / 180), unit: unit),"/>
         </regex>
 
         <!-- RULE 23: the radius forgets the height's own square -->
