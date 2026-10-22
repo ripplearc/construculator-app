@@ -873,7 +873,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       color: colorTheme.textBody,
     );
     final savedPrice = DisplayFormatter.currency.format(data.recalledRate ?? 0);
-    Widget hint(String key, String text) => _rateSaveMessage(
+    Widget hint(String key, String text) => _hintRow(
       context,
       key: Key(key),
       icon: CoreIcons.info,
@@ -946,7 +946,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               ),
             ),
           if (_rateSaveStatus == _RateSaveStatus.failed)
-            _rateSaveMessage(
+            _hintRow(
               context,
               key: const Key('save_as_my_rate_error'),
               icon: CoreIcons.error,
