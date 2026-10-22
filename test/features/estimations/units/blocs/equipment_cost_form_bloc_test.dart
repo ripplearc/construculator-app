@@ -309,6 +309,136 @@ void main() {
         ],
       );
 
+      group('an edited recalled Job amount', () {
+        const recalledJob = EquipmentSavedRateRecalledEvent(
+          method: EquipmentPricingMethod.job,
+          rate: 400,
+          fromRecents: true,
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is not edited until the amount changes',
+          build: () => bloc,
+          act: (bloc) => bloc.add(recalledJob),
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is edited once the amount differs from the saved price, and not '
+          'edited again after typing the saved price back',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentRateUpdatedEvent('450'))
+            ..add(const EquipmentRateUpdatedEvent('400')),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>()
+                .having(
+                  (s) => s.data.isRecalledAmountEdited,
+                  'isRecalledAmountEdited',
+                  true,
+                )
+                .having((s) => s.data.recalledRate, 'recalledRate', 400),
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is not edited when the amount is zero',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentRateUpdatedEvent('0')),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'is not edited when the line was not opened from a recents row',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(
+              const EquipmentSavedRateRecalledEvent(
+                method: EquipmentPricingMethod.job,
+                rate: 400,
+              ),
+            )
+            ..add(const EquipmentRateUpdatedEvent('450')),
+          skip: 1,
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'a Day rate recalled from recents is never edited',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const EquipmentSavedRateRecalledEvent(
+              method: EquipmentPricingMethod.day,
+              rate: 145,
+              fromRecents: true,
+            ),
+          ),
+          expect: () => [
+            isA<EquipmentCostFormEditing>().having(
+              (s) => s.data.isRecalledAmountEdited,
+              'isRecalledAmountEdited',
+              false,
+            ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'saving the edited amount makes it the saved price, so a further '
+          'edit is compared with it',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentRateUpdatedEvent('450'))
+            ..add(const EquipmentRecalledAmountSavedEvent())
+            ..add(const EquipmentRateUpdatedEvent('500')),
+          skip: 2,
+          expect: () => [
+            isA<EquipmentCostFormEditing>()
+                .having((s) => s.data.recalledRate, 'recalledRate', 450)
+                .having(
+                  (s) => s.data.isRecalledAmountEdited,
+                  'isRecalledAmountEdited',
+                  false,
+                ),
+            isA<EquipmentCostFormEditing>()
+                .having((s) => s.data.recalledRate, 'recalledRate', 450)
+                .having(
+                  (s) => s.data.isRecalledAmountEdited,
+                  'isRecalledAmountEdited',
+                  true,
+                ),
+          ],
+        );
+      });
+
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'keeps the equipment name that was already typed, because picking a '
         'price never renames the line',

@@ -3012,6 +3012,36 @@ abstract class AppLocalizations {
   /// **'/ day'**
   String get equipmentRecalledRateDayUnit;
 
+  /// Hint under the Job amount of a recalled saved price once the amount was edited (CUJ 6, Figma node 66343:182442); amount is the pre-formatted saved price that stays the default
+  ///
+  /// In en, this message translates to:
+  /// **'Used on this line only. Your default stays {amount}.'**
+  String equipmentRecalledAmountUsedOnceHint(String amount);
+
+  /// Text button under the edited Job amount of a recalled saved price that saves the edited amount as the new default (CUJ 6, Figma node 66343:182442); amount is the pre-formatted edited amount
+  ///
+  /// In en, this message translates to:
+  /// **'Save {amount} as my default'**
+  String equipmentRecalledAmountSaveButton(String amount);
+
+  /// Confirmation under the Job amount of a recalled saved price after the edited amount was saved as the new default (CUJ 6, Figma node 66343:182478); amount is the pre-formatted new default
+  ///
+  /// In en, this message translates to:
+  /// **'Your default is now {amount}.'**
+  String equipmentRecalledAmountSavedHint(String amount);
+
+  /// Confirmation under the Job amount of a recalled saved price after the edited amount was saved under its own name, so the saved default did not change; amount is the pre-formatted default that stays
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a second price. Your default stays {amount}.'**
+  String equipmentRecalledAmountSavedSecondPriceHint(String amount);
+
+  /// Error line under the 'Save as my default' button of a recalled saved price when the save fails (CUJ 6, Default not saved); it names the default because the price on this line is not affected
+  ///
+  /// In en, this message translates to:
+  /// **'Your default was not saved. Try again.'**
+  String get equipmentRecalledAmountSaveFailedError;
+
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
   /// In en, this message translates to:

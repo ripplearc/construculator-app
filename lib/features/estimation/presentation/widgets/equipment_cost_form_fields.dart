@@ -24,6 +24,8 @@ String _formatTrimmedNumber(double value) => value == value.roundToDouble()
 
 enum _RateSaveStatus { idle, saved, failed }
 
+enum _RecalledFooter { none, editedWithButton, savedSecondPrice, savedDefault }
+
 TextSpan _withBold(
   String text,
   String boldPart, {
@@ -135,6 +137,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   late final YourRatesBloc _yourRatesBloc;
   _RateSaveStatus _rateSaveStatus = _RateSaveStatus.idle;
+  bool _savedUnderLabel = false;
 
   @override
   void initState() {
@@ -145,6 +148,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.addListener(_onDurationChanged);
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
+    _jobAmountFocusNode.addListener(_onJobAmountFocusChanged);
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
@@ -237,6 +241,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       EquipmentDeliveryFeeUpdatedEvent(text == '.' ? '' : text),
     );
     _notifyTotal();
+  }
+
+  void _onJobAmountFocusChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _onDeliveryFocusChanged() {
@@ -423,6 +432,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _saveAsMyRate(EquipmentCostFormData data) {
     _clearRateSaveStatus();
+    _savedUnderLabel = false;
     _yourRatesBloc.add(YourRatesSaveRequested(_buildYourRateEntry(data)));
   }
 
@@ -433,7 +443,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
     switch (state) {
+      // TODO: [CA-1336] a recalled price that collides should ask "Replace your saved rate?" and write over the saved row, not add a second price
       case YourRatesSaveCollision(:final entry):
+        _savedUnderLabel = true;
         unawaited(_promptEntryLabel(context, entry));
       case YourRatesSaveLabelTaken():
         break;
@@ -443,6 +455,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         setState(() => _rateSaveStatus = _RateSaveStatus.failed);
       case YourRatesSaveSucceeded():
         setState(() => _rateSaveStatus = _RateSaveStatus.saved);
+        if (!_savedUnderLabel) {
+          context.read<EquipmentCostFormBloc>().add(
+            const EquipmentRecalledAmountSavedEvent(),
+          );
+        }
       case YourRatesLoading():
       case YourRatesRetrying():
       case YourRatesLoaded():
@@ -790,7 +807,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  // TODO: [CA-1219] show "Used on this line only. Your default stays ..." and the "Save ... as my default" button once the amount differs from the saved price. https://ripplearc.youtrack.cloud/issue/CA-1219
   Widget _amountField(
     BuildContext context,
     EquipmentCostFormData data, {
@@ -824,6 +840,126 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       errorTextList: _errorList(_amountErrorText(context, data)),
       touched: _touchedFieldKeys.contains('amount_field'),
       onTouched: () => _touchedFieldKeys.add('amount_field'),
+    );
+  }
+
+  _RecalledFooter _recalledFooterFor(EquipmentCostFormData data) {
+    if (_jobAmountFocusNode.hasFocus) return _RecalledFooter.none;
+    final saved = _rateSaveStatus == _RateSaveStatus.saved;
+    if (data.isRecalledAmountEdited) {
+      return saved && _savedUnderLabel
+          ? _RecalledFooter.savedSecondPrice
+          : _RecalledFooter.editedWithButton;
+    }
+    return saved ? _RecalledFooter.savedDefault : _RecalledFooter.none;
+  }
+
+  double _gapAfterRecalledFooter(EquipmentCostFormData data) =>
+      switch (_recalledFooterFor(data)) {
+        _RecalledFooter.none => CoreSpacing.space5,
+        _RecalledFooter.editedWithButton => CoreSpacing.space3,
+        _RecalledFooter.savedSecondPrice ||
+        _RecalledFooter.savedDefault => CoreSpacing.space4,
+      };
+
+  Widget _recalledAmountFooter(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final hintStyle = textTheme.bodySmallRegular.copyWith(
+      color: colorTheme.textBody,
+    );
+    final savedPrice = DisplayFormatter.currency.format(data.recalledRate ?? 0);
+    Widget hint(String key, String text) => _hintRow(
+      context,
+      key: Key(key),
+      icon: CoreIcons.info,
+      iconColor: colorTheme.iconGrayMid,
+      text: Text(text, style: hintStyle),
+    );
+    return switch (_recalledFooterFor(data)) {
+      _RecalledFooter.none => const SizedBox.shrink(),
+      _RecalledFooter.savedDefault => Padding(
+        padding: const EdgeInsets.only(top: CoreSpacing.space2),
+        child: hint(
+          'recalled_amount_saved_hint',
+          l10n.equipmentRecalledAmountSavedHint(savedPrice),
+        ),
+      ),
+      _RecalledFooter.savedSecondPrice => Padding(
+        padding: const EdgeInsets.only(top: CoreSpacing.space2),
+        child: hint(
+          'recalled_amount_saved_second_price_hint',
+          l10n.equipmentRecalledAmountSavedSecondPriceHint(savedPrice),
+        ),
+      ),
+      _RecalledFooter.editedWithButton => _editedAmountFooter(
+        context,
+        data,
+        hint(
+          'recalled_amount_hint',
+          l10n.equipmentRecalledAmountUsedOnceHint(savedPrice),
+        ),
+      ),
+    };
+  }
+
+  Widget _editedAmountFooter(
+    BuildContext context,
+    EquipmentCostFormData data,
+    Widget hint,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final saveLabel = l10n.equipmentRecalledAmountSaveButton(
+      DisplayFormatter.currency.format(data.jobAmount ?? 0),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          hint,
+          if (_isSavableRate(data))
+            Semantics(
+              button: true,
+              label: saveLabel,
+              excludeSemantics: true,
+              child: GestureDetector(
+                key: const Key('save_recalled_amount_button'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _saveAsMyRate(data),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    saveLabel,
+                    style: textTheme.bodyLargeSemiBold.copyWith(
+                      color: colorTheme.textLink,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (_rateSaveStatus == _RateSaveStatus.failed)
+            _hintRow(
+              context,
+              key: const Key('save_as_my_rate_error'),
+              icon: CoreIcons.error,
+              iconColor: colorTheme.iconRed,
+              text: Text(
+                l10n.equipmentRecalledAmountSaveFailedError,
+                style: textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textError,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -889,7 +1025,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   isDay
                       ? _durationField(context, data, recalled: true)
                       : _amountField(context, data, recalled: true),
-                  const SizedBox(height: CoreSpacing.space5),
+                  if (!isDay) _recalledAmountFooter(context, data),
+                  SizedBox(height: _gapAfterRecalledFooter(data)),
                   _buildDeliveryFeeSection(context, data),
                 ],
               );

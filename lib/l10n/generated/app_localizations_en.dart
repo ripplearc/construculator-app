@@ -1630,6 +1630,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentRecalledRateDayUnit => '/ day';
 
   @override
+  String equipmentRecalledAmountUsedOnceHint(String amount) {
+    return 'Used on this line only. Your default stays $amount.';
+  }
+
+  @override
+  String equipmentRecalledAmountSaveButton(String amount) {
+    return 'Save $amount as my default';
+  }
+
+  @override
+  String equipmentRecalledAmountSavedHint(String amount) {
+    return 'Your default is now $amount.';
+  }
+
+  @override
+  String equipmentRecalledAmountSavedSecondPriceHint(String amount) {
+    return 'Saved as a second price. Your default stays $amount.';
+  }
+
+  @override
+  String get equipmentRecalledAmountSaveFailedError =>
+      'Your default was not saved. Try again.';
+
+  @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';
 
   @override

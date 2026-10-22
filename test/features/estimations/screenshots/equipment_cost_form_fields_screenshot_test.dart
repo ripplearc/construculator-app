@@ -571,11 +571,37 @@ void main() {
         ),
       );
       await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      FocusManager.instance.primaryFocus!.unfocus();
       await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
           'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the saved job price default (X1b)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400,
+          EquipmentPricingMethod.job,
+        ),
+      );
+      await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      FocusManager.instance.primaryFocus!.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_saved$suffix.png',
         ),
       );
     });
