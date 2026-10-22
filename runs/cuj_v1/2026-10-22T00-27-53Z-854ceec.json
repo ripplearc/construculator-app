@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "suite": "cuj_v1",
+  "captured_at": "2026-10-22T00:27:53Z",
+  "commit": "854ceec",
+  "attempt_count": 2,
+  "duration_ms": 67178.0,
+  "total_duration_ms": 146081.0,
+  "totals": {
+    "cases": 2,
+    "ran": 2,
+    "passed": 1,
+    "flaked": 0,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.5,
+    "flake_rate": 0.0
+  },
+  "cases": [
+    {
+      "name": "runDartTest[features.auth.cuj_1_login_test CUJ-1: Login — returning user lands on the dashboard]",
+      "classname": "com.ripplearc.construculator.MainActivityTest",
+      "status": "passed",
+      "duration_ms": 7169.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "passed",
+          "duration_ms": 7169.0
+        }
+      ]
+    },
+    {
+      "name": "runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]",
+      "classname": "com.ripplearc.construculator.MainActivityTest",
+      "status": "failed",
+      "duration_ms": 64733.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "duration_ms": 66621.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following StateError was thrown running a test:\nBad state: No OTP email arrived for\ncuj2-1792628661557670@example.com within 0:01:00.000000 (saw a\nmessage for this address but no code in it: false). Last polling\nerror: HttpException: Connection closed before full…"
+        },
+        {
+          "attempt": 2,
+          "status": "failed",
+          "duration_ms": 64733.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following StateError was thrown running a test:\nBad state: No OTP email arrived for\ncuj2-1792628803779294@example.com within 0:01:00.000000 (saw a\nmessage for this address but no code in it: false). Last polling\nerror: HttpException: Connection closed before full…"
+        }
+      ]
+    }
+  ]
+}
