@@ -24,10 +24,12 @@ class YourRatesLoaded extends YourRatesState {
   final List<YourRateEntry> recents;
 }
 
-/// State after [YourRatesSearched] succeeds: every matching entry.
+/// State after a search succeeds: every matching entry, with the trimmed text
+/// they answer.
 class YourRatesSearchResults extends YourRatesState {
-  const YourRatesSearchResults(this.results);
+  const YourRatesSearchResults(this.results, this.query);
   final List<YourRateEntry> results;
+  final String query;
 }
 
 /// State when a recents load or search failed.

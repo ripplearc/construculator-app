@@ -547,22 +547,23 @@ void main() {
       },
     );
 
-    testWidgets('a name with no match is centred, with 24 dp above and below', (
-      tester,
-    ) async {
-      await openSheet(tester);
+    testWidgets(
+      'a name with no match is centred, with 24 dp above and 32 dp below',
+      (tester) async {
+        await openSheet(tester);
 
-      await typeQuery(tester, 'stump grinder');
+        await typeQuery(tester, 'stump grinder');
 
-      final line = find.text('No matches for “stump grinder”');
-      expect(tester.widget<Text>(line).textAlign, TextAlign.center);
-      final box = tester.getRect(
-        find.byKey(const Key('your_rates_recents_no_match')),
-      );
-      final text = tester.getRect(line);
-      expect(text.top - box.top, 24);
-      expect(box.bottom - text.bottom, 24);
-    });
+        final line = find.text('No matches for “stump grinder”');
+        expect(tester.widget<Text>(line).textAlign, TextAlign.center);
+        final box = tester.getRect(
+          find.byKey(const Key('your_rates_recents_no_match')),
+        );
+        final text = tester.getRect(line);
+        expect(text.top - box.top, 24);
+        expect(box.bottom - text.bottom, 32);
+      },
+    );
 
     testWidgets('keeps the rows and the Create row on screen while a search '
         'runs', (tester) async {
@@ -607,6 +608,35 @@ void main() {
 
       expect(result, isA<YourRatesRecentsPicked>());
       expect((result! as YourRatesRecentsPicked).entry.id, 'day-rate');
+    });
+
+    testWidgets('Create tapped inside the search wait on a saved name still '
+        'opens its saved price, on the method used last', (tester) async {
+      await openSheet(tester);
+
+      await tester.enterText(searchField, 'Scissor lift');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsPicked>());
+      expect((result! as YourRatesRecentsPicked).entry.id, 'day-rate');
+    });
+
+    testWidgets('Create tapped inside the search wait on a name that is not '
+        'saved opens the form with just the name', (tester) async {
+      await openSheet(tester);
+
+      await tester.enterText(searchField, 'stump grinder');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(
+        (result! as YourRatesRecentsNewEquipmentCost).name,
+        'stump grinder',
+      );
     });
 
     testWidgets('Create on a name that is not saved opens the form with just '

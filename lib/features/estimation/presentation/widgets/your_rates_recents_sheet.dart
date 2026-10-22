@@ -65,6 +65,7 @@ class YourRatesRecentsSheet extends StatefulWidget {
 class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   final _searchController = TextEditingController();
   List<YourRateEntry> _lastEntries = const [];
+  String? _createPendingFor;
 
   @override
   void initState() {
@@ -105,7 +106,32 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   void _onNewEquipmentCost() =>
       Navigator.of(context).pop(const YourRatesRecentsNewEquipmentCost());
 
-  void _onCreateTypedEquipment(String name, List<YourRateEntry> savedRows) {
+  void _onCreateTypedEquipment(String name) {
+    if (_createPendingFor != null) return;
+    final bloc = context.read<YourRatesBloc>();
+    final state = bloc.state;
+    if (state is YourRatesSearchResults && state.query == name) {
+      _popForTypedName(name, state.results);
+      return;
+    }
+    _createPendingFor = name;
+    bloc.add(
+      YourRatesRecentsQueried(name, CostItemType.equipment, immediate: true),
+    );
+  }
+
+  void _onStateChanged(BuildContext context, YourRatesState state) {
+    final pendingName = _createPendingFor;
+    if (pendingName == null) return;
+    if (state is YourRatesSearchResults && state.query == pendingName) {
+      _createPendingFor = null;
+      _popForTypedName(pendingName, state.results);
+    } else if (state is YourRatesError) {
+      _createPendingFor = null;
+    }
+  }
+
+  void _popForTypedName(String name, List<YourRateEntry> savedRows) {
     final saved = savedRows
         .where(
           (entry) => entry.itemName.trim().toLowerCase() == name.toLowerCase(),
@@ -129,11 +155,10 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       children: [
         SheetHeader(title: l10n.yourRatesRecentsTitle),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CoreSpacing.space5,
-            CoreSpacing.space2,
-            CoreSpacing.space5,
-            CoreSpacing.space2,
+          padding: const EdgeInsets.only(
+            left: CoreSpacing.space5,
+            right: CoreSpacing.space5,
+            bottom: CoreSpacing.space2,
           ),
           child: SheetSearchField(
             controller: _searchController,
@@ -146,7 +171,8 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              BlocBuilder<YourRatesBloc, YourRatesState>(
+              BlocConsumer<YourRatesBloc, YourRatesState>(
+                listener: _onStateChanged,
                 builder: (context, state) {
                   final typedName = _searchController.text.trim();
                   final isSearching = typedName.isNotEmpty;
@@ -234,9 +260,11 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                       if (hasNoMatch)
                         Padding(
                           key: const Key('your_rates_recents_no_match'),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: CoreSpacing.space5,
-                            vertical: CoreSpacing.space6,
+                          padding: const EdgeInsets.only(
+                            left: CoreSpacing.space5,
+                            top: CoreSpacing.space6,
+                            right: CoreSpacing.space5,
+                            bottom: CoreSpacing.space6 + CoreSpacing.space2,
                           ),
                           child: Text(
                             l10n.yourRatesNoMatchState(typedName),
@@ -251,8 +279,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         _NewEquipmentCostRow(
                           key: const Key('create_typed_equipment_row'),
                           label: l10n.yourRatesCreateEquipmentAction(typedName),
-                          onTap: () =>
-                              _onCreateTypedEquipment(typedName, entries),
+                          onTap: () => _onCreateTypedEquipment(typedName),
                         )
                       else
                         _NewEquipmentCostRow(
