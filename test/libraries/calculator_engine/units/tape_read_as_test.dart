@@ -90,7 +90,7 @@ void main() {
         var tape = press(const Tape(), '[Pitch] 8');
         expect(pill(tape), 'Input 8° as 8in/12in');
         tape = press(tape, '.');
-        expect(pill(tape), "Input 8. as 8°00'");
+        expect(pill(tape), 'Input 8. as 8°00\'00"');
         tape = press(tape, '4 5');
         expect(chipText(tape, 0), '8.45');
         expect(pill(tape), 'Input 8.45° as 8.45in/12in');
@@ -101,12 +101,12 @@ void main() {
         // 8.45in is kept exactly (CA-1190): atan(8.45/12) is 35.15°, where the
         // tick-rounded 541/64in read 35.16°.
         expect(strip(tape).first, 'Pitch-degrees: 35.15°');
-        expect(pill(tape), "Input 8.45in/12in as 8°45'");
+        expect(pill(tape), 'Input 8.45in/12in as 8°45\'00"');
 
         tape = press(tape, 'pill');
-        expect(chipText(tape, 0), "8°45'");
+        expect(chipText(tape, 0), '8°45\'00"');
         expect(strip(tape).first, 'Pitch-degrees: 8.75°');
-        expect(pill(tape), "Input 8°45' as 8.45°");
+        expect(pill(tape), 'Input 8°45\'00" as 8.45°');
 
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '8.45');
@@ -119,9 +119,9 @@ void main() {
         var tape = press(const Tape(), '[Pitch] 8 . 8 9');
         expect(pill(tape), 'Input 8.89° as 8.89in/12in');
         tape = press(tape, 'pill');
-        expect(pill(tape), "Input 8.89in/12in as 9°29'");
+        expect(pill(tape), 'Input 8.89in/12in as 9°29\'00"');
         tape = press(tape, 'pill');
-        expect(chipText(tape, 0), "9°29'");
+        expect(chipText(tape, 0), '9°29\'00"');
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '8.89');
       });
@@ -152,7 +152,7 @@ void main() {
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '6');
         tape = press(tape, '.');
-        expect(pill(tape), "Input 6. as 6°00'");
+        expect(pill(tape), 'Input 6. as 6°00\'00"');
         tape = press(tape, '5');
         expect(pill(tape), 'Input 6.5° as 6.5in/12in');
         final twelve = press(const Tape(), '[Pitch] 1 2');
@@ -167,11 +167,11 @@ void main() {
         );
         expect(
           pill(press(const Tape(), '[Pitch] 2 4 . 5')),
-          "Input 24.5° as 24°05'",
+          'Input 24.5° as 24°05\'00"',
         );
         expect(
           pill(press(const Tape(), '[Pitch] 3 0 . 4 5')),
-          "Input 30.45° as 30°45'",
+          'Input 30.45° as 30°45\'00"',
         );
         expect(press(const Tape(), '[Pitch] 1 0 0').readAsOffer, isNull);
         expect(
@@ -197,14 +197,14 @@ void main() {
         );
         expect(
           pill(press(const Tape(), '[Pitch] 8 . 4 5 .')),
-          "Input 8°45' as 8.45°",
+          'Input 8°45\'00" as 8.45°',
           reason: 'typed digits exist to go back to',
         );
       });
 
       test('⌫ on a minutes digit after the laps drops the pill', () {
         var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill pill');
-        expect(pill(tape), "Input 8°45' as 8.45°");
+        expect(pill(tape), 'Input 8°45\'00" as 8.45°');
         tape = press(tape, '⌫ ⌫ ⌫');
         expect(chipText(tape, 0), '8°');
         expect(tape.readAsOffer, isNull);
@@ -235,8 +235,8 @@ void main() {
           var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill');
           expect(chipText(tape, 0), '8.45in');
           tape = press(tape, '.');
-          expect(chipText(tape, 0), "8°45'");
-          expect(pill(tape), "Input 8°45' as 8.45°");
+          expect(chipText(tape, 0), '8°45\'00"');
+          expect(pill(tape), 'Input 8°45\'00" as 8.45°');
           tape = press(tape, '3 0');
           expect(chipText(tape, 0), '8°45\'30"');
           expect(tape.readAsOffer, isNull);
@@ -248,7 +248,7 @@ void main() {
           );
           expect(
             chipText(press(const Tape(), '[Pitch] 0 . 5 pill .'), 0),
-            "0°05'",
+            '0°05\'00"',
           );
           expect(chipText(press(const Tape(), '[Pitch] 6 pill .'), 0), '6.');
         },
@@ -272,11 +272,11 @@ void main() {
       test('term 2.14: a rise the 1/64in rounding leaves at 0 has no answer, '
           'so its reading is not offered; the D:M:S reading still is', () {
         final tiny = press(const Tape(), '[Pitch] 0 . 0 0 1');
-        expect(pill(tiny), "Input 0.001° as 0°01'");
-        expect(pill(press(tiny, 'pill')), "Input 0°01' as 0.001°");
+        expect(pill(tiny), 'Input 0.001° as 0°01\'00"');
+        expect(pill(press(tiny, 'pill')), 'Input 0°01\'00" as 0.001°');
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 0 0 7')),
-          "Input 0.007° as 0°07'",
+          'Input 0.007° as 0°07\'00"',
         );
         expect(
           pill(press(const Tape(), '[Pitch] 0 . 0 0 8')),
@@ -300,7 +300,7 @@ void main() {
         expect(
           pill(tape),
           'Input 8.9999in/12in as 8.9999°',
-          reason: "174°39' is no pitch, so the lap skips it",
+          reason: '174°39\'00" is no pitch, so the lap skips it',
         );
       });
 
@@ -375,6 +375,15 @@ void main() {
       });
     });
 
+    test('rule 4.10: the way back survives the seal: [Pitch] 8.45, pill, '
+        'pill, + then ⌫ still offers 8.45°', () {
+      final sealed = press(const Tape(), '[Pitch] 8 . 4 5 pill pill +');
+      expect((sealed.chips.first as ValueChip).entry.text, '8°45\'00"');
+      final reopened = press(sealed, '⌫');
+      expect(pill(reopened), 'Input 8°45\'00" as 8.45°');
+      expect(chipText(press(reopened, 'pill'), 0), '8.45');
+    });
+
     group('a number read as degrees (walkthrough 16.4)', () {
       test('S91: an open keypad is not context; [SIN] brings the question '
           'with the answer, and the tap rebuilds it', () {
@@ -382,9 +391,9 @@ void main() {
         expect(tape.readAsOffer, isNull);
         tape = press(tape, 'SIN');
         expect(lastResult(tape), 'Sine 0.619779');
-        expect(pill(tape), "Re-input 38.30° as 38°30'");
+        expect(pill(tape), 'Re-input 38.30° as 38°30\'00"');
         tape = press(tape, 'pill');
-        expect(chipText(tape, 0), "38°30'");
+        expect(chipText(tape, 0), '38°30\'00"');
         expect(lastResult(tape), 'Sine 0.622515');
         tape = press(tape, 'pill');
         expect(chipText(tape, 0), '38.30');
@@ -411,18 +420,18 @@ void main() {
       test('term 2.14: a number under a trig key after an operator gets the '
           'pill like any other', () {
         var tape = press(const Tape(), '5 × SIN 1 2 . 1');
-        expect(pill(tape), "Input 12.1° as 12°01'");
+        expect(pill(tape), 'Input 12.1° as 12°01\'00"');
         tape = press(tape, 'pill');
-        expect(tape.active!.entry.text, "12°01'");
+        expect(tape.active!.entry.text, '12°01\'00"');
         expect(lastResult(press(tape, '=')), 'Calc 1.04');
         expect(
           pill(press(const Tape(), 'SIN 1 2 . 1 × COS 3 3 . 3')),
-          "Input 33.3° as 33°03'",
+          'Input 33.3° as 33°03\'00"',
           reason: 'the number on the display is the 33.3',
         );
         expect(
           pill(press(const Tape(), '[Width] 3 ft × SIN 1 2 . 1')),
-          "Input 12.1° as 12°01'",
+          'Input 12.1° as 12°01\'00"',
         );
       });
 
@@ -438,12 +447,12 @@ void main() {
           'once the key lands', () {
         expect(
           pill(press(const Tape(), 'SIN 1 2 . 1')),
-          "Input 12.1° as 12°01'",
+          'Input 12.1° as 12°01\'00"',
         );
         var tape = press(const Tape(), '1 2 . 1');
         expect(tape.readAsOffer, isNull);
         tape = press(tape, 'SIN');
-        expect(pill(tape), "Re-input 12.1° as 12°01'");
+        expect(pill(tape), 'Re-input 12.1° as 12°01\'00"');
         expect(lastResult(tape), 'Sine 0.209619');
         expect(lastResult(press(tape, 'pill')), 'Sine 0.208196');
       });
@@ -485,19 +494,19 @@ void main() {
       test('S113: the tap closes the minutes, and the spelling survives the '
           'tape and the answer', () {
         var tape = press(const Tape(), 'SIN 4 5 . 2');
-        expect(pill(tape), "Input 45.2° as 45°02'");
+        expect(pill(tape), 'Input 45.2° as 45°02\'00"');
         tape = press(tape, 'pill');
-        expect(chipText(tape, 0), "45°02'");
+        expect(chipText(tape, 0), '45°02\'00"');
         final answer = tape.trigAnswer;
         tape = tape.append(ResultChip(key: answer!.key, value: answer.value));
         expect(lastResult(tape), 'Sine 0.707518');
-        expect(chipText(tape, 0), "45°02'");
+        expect(chipText(tape, 0), '45°02\'00"');
       });
 
       test('S116: the same wording on every pill that changes a number', () {
         expect(
           pill(press(const Tape(), '5 × SIN 1 2 . 1')),
-          "Input 12.1° as 12°01'",
+          'Input 12.1° as 12°01\'00"',
         );
         expect(pill(press(const Tape(), '[Pitch] 6')), 'Input 6° as 6in/12in');
         expect(
@@ -531,11 +540,11 @@ void main() {
         );
         expect(
           pill(press(const Tape(), 'SIN 9 0 . 0 0 .')),
-          "Input 90°00' as 90.00°",
+          'Input 90°00\'00" as 90.00°',
         );
         expect(
           pill(press(const Tape(), 'SIN 8 9 . 5 9')),
-          "Input 89.59° as 89°59'",
+          'Input 89.59° as 89°59\'00"',
         );
       });
 
@@ -568,17 +577,17 @@ void main() {
       test('the way back belongs to the digits it was made from: ⌫ on a '
           'segment digit removes the pill, reopening a segment keeps it', () {
         var tape = press(const Tape(), 'SIN 3 8 . 3 0 pill');
-        expect(pill(tape), "Input 38°30' as 38.30°");
+        expect(pill(tape), 'Input 38°30\'00" as 38.30°');
         tape = press(tape, '⌫');
-        expect(chipText(tape, 0), "38°30'");
-        expect(pill(tape), "Input 38°30' as 38.30°", reason: 'same digits');
+        expect(chipText(tape, 0), '38°30\'00"');
+        expect(pill(tape), 'Input 38°30\'00" as 38.30°', reason: 'same digits');
         expect(
           pill(press(tape, 'DMS')),
-          "Input 38°30' as 38.30°",
+          'Input 38°30\'00" as 38.30°',
           reason: 'the key re-closes the same digits',
         );
         tape = press(tape, '⌫');
-        expect(chipText(tape, 0), "38°3'");
+        expect(chipText(tape, 0), '38°3\'00"');
         expect(tape.readAsOffer, isNull);
         expect(formatter.format(tape.trigAnswer!.value), '0.616349');
         expect(
@@ -588,7 +597,7 @@ void main() {
               'a whole number read as D:M:S has no second reading to go back to',
         );
         final postfix = press(const Tape(), '3 8 . 3 0 SIN pill ⌫ ⌫ ⌫');
-        expect(chipText(postfix, 0), "38°3'");
+        expect(chipText(postfix, 0), '38°3\'00"');
         expect(postfix.readAsOffer, isNull);
       });
     });

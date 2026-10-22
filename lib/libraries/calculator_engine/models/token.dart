@@ -14,7 +14,7 @@ import 'package:equatable/equatable.dart';
 /// An angle typed as degrees, minutes and seconds (rule 4.10; Section 3.5,
 /// the D:M:S key) is one token in three segments: the degrees stay in
 /// [digits], the [minutes] and [seconds] are segments of their own, so that
-/// the tape can echo 38°30' while the seconds are still to come.
+/// the tape can echo 38°30'00" while the seconds are still to come.
 class Token extends Equatable {
   /// Minutes of arc in one degree.
   static const int minutesPerDegree = 60;
@@ -42,11 +42,12 @@ class Token extends Equatable {
   /// The minutes of an angle typed as degrees, minutes and seconds: `null`
   /// while the number is a plain one, empty while the segment is open with
   /// nothing typed in it yet. A segment is never left above 59: closing it
-  /// carries the excess into the degrees (30°89' reads 31°29').
+  /// carries the excess into the degrees (30°89' closes as 31°29'00").
   final String? minutes;
 
   /// The seconds of such an angle: `null` until the minutes have closed,
-  /// empty while open. Opening the seconds is what closes the minutes.
+  /// empty while open. Opening the seconds is what closes the minutes; a
+  /// key that leaves the chip closes the seconds ([EntryBuffer.sealed]).
   final String? seconds;
 
   /// The digits as they were typed before the number was re-read another
@@ -81,8 +82,8 @@ class Token extends Equatable {
 
   /// The typed number: the digits divided by the denominator when there is
   /// one, or the decimal degrees of an angle typed as degrees, minutes and
-  /// seconds, where a minus on the degrees is the whole angle's (-30°30' is
-  /// -30.5°, the way the angle drawer files a negative answer, rule 4.16).
+  /// seconds, where a minus on the degrees is the whole angle's (-30°30'00"
+  /// is -30.5°, the way the angle drawer files a negative answer, rule 4.16).
   /// Exact only in the sense the user typed it; a length becomes exact once
   /// it is turned into ticks.
   ///

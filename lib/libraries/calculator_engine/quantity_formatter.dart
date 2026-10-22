@@ -40,10 +40,11 @@ import 'package:equatable/equatable.dart';
 /// An angle reads in decimal degrees (27.55°) or, re-spelled, the way a
 /// survey sheet writes it (Section 6, "Rounding at display"; scenario
 /// S107): the whole seconds nearest the exact angle, degrees unpadded,
-/// minutes always present and padded to two digits, seconds only when there
-/// are some, so 30°30' is a reading where 30°30'00" would be a claim about
-/// precision. The port of the prototype's `degToDMS`, with the formatter's
-/// own rule for a value that rounds to zero: 0°00', never −0°00'.
+/// minutes and seconds always present and padded to two digits, 30°30'00"
+/// (owner decision of 18 October 2026, which departs from the prototype's
+/// `degToDMS` and its 30°30'). A negative angle takes a hyphen in both
+/// spellings, -38.5° and -38°30'00", the sign every other quantity takes,
+/// and a value that rounds to zero reads 0°00'00", never -0°00'00".
 ///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
@@ -73,9 +74,6 @@ class QuantityFormatter extends Equatable {
 
   /// Seconds of arc in one minute.
   static const int secondsPerMinute = 60;
-
-  /// The minus sign a D:M:S spelling carries, the prototype's U+2212.
-  static const String minusSign = '−';
 
   /// The settings this formatter renders by.
   final CalculatorPreferences preferences;
@@ -268,10 +266,9 @@ class QuantityFormatter extends Equatable {
     final wholeDegrees = (totalSeconds - rest) / secondsPerDegree;
     final minutes = rest ~/ secondsPerMinute;
     final seconds = rest % secondsPerMinute;
-    final sign = degrees < 0 && totalSeconds > 0 ? minusSign : '';
-    final secondsText = seconds == 0 ? '' : '${_twoDigits(seconds)}"';
+    final sign = degrees < 0 && totalSeconds > 0 ? '-' : '';
     return '$sign${_localeNumber(wholeDegrees, 0, group)}°'
-        "${_twoDigits(minutes)}'$secondsText";
+        "${_twoDigits(minutes)}'${_twoDigits(seconds)}\"";
   }
 
   String _twoDigits(int value) => value.toString().padLeft(2, '0');

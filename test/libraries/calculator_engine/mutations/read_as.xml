@@ -107,9 +107,8 @@
 
         <!-- RULE 10: a settled D:M:S, a fraction or a length in feet is
              asked about -->
-        <regex pattern="if \(token\.isDegreesMinutesSeconds &amp;&amp;\s*\(token\.typedAs == null \|\| !_openSegmentIsEmpty\(token\)\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.pitch.settled_angle">
+        <regex pattern="if \(token\.isDegreesMinutesSeconds &amp;&amp; token\.typedAs == null\) return null;" dotAll="true" id="read_as.pitch.settled_angle">
             <mutation text=""/>
-            <mutation text="if (token.isDegreesMinutesSeconds &amp;&amp; !_openSegmentIsEmpty(token)) { return null; }"/>
         </regex>
         <regex pattern="if \(token\.unit == Unit\.inch &amp;&amp; !_isARoofSomeoneCouldFrame\(raw\)\) return null;" dotAll="true" id="read_as.pitch.typed_roof_past_the_band">
             <mutation text=""/>
