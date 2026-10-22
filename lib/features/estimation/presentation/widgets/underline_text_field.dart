@@ -31,6 +31,10 @@ class UnderlineTextField extends StatefulWidget {
   /// Keyboard type shown when the field is focused.
   final TextInputType? keyboardType;
 
+  /// Text style of the value and the placeholder, before the empty-state
+  /// colour is applied. Defaults to `bodyLargeRegular`.
+  final TextStyle? valueStyle;
+
   /// Leading content at the start of the value row (e.g. the delivery-fee
   /// field's "$" icon, which sits before the digits rather than after them)
   /// — stays inline in the row, not inside a box.
@@ -81,6 +85,7 @@ class UnderlineTextField extends StatefulWidget {
     required this.controller,
     this.hintText,
     this.keyboardType,
+    this.valueStyle,
     this.prefix,
     this.suffix,
     this.hideSuffixWhenEmpty = false,
@@ -98,6 +103,11 @@ class UnderlineTextField extends StatefulWidget {
 
 const double _labelToValueGap = 3;
 const double _valueToRuleGap = 10;
+
+/// How far a larger value style (24px) sits lower in the field than the
+/// default one, so the label-to-value gap matches the storyboard (17 dp). The
+/// field keeps the same total height.
+const double _largeValueDrop = 5;
 
 class _UnderlineTextFieldState extends State<UnderlineTextField> {
   late final FocusNode _focusNode;
@@ -166,22 +176,22 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
         ? colorTheme.textHeadline
         : colorTheme.lineMid;
     final ruleHeight = _focusNode.hasFocus || hasError ? 1.5 : 1.0;
+    final valueStyle = widget.valueStyle ?? textTheme.bodyLargeRegular;
+    final valueDrop = widget.valueStyle == null ? 0.0 : _largeValueDrop;
     final textField = TextField(
       controller: widget.controller,
       focusNode: _focusNode,
       keyboardType: widget.keyboardType,
       cursorColor: colorTheme.textHeadline,
-      style: isEmpty
-          ? textTheme.bodyLargeRegular.copyWith(color: colorTheme.textDisable)
-          : textTheme.bodyLargeRegular.copyWith(color: colorTheme.textHeadline),
+      style: valueStyle.copyWith(
+        color: isEmpty ? colorTheme.textDisable : colorTheme.textHeadline,
+      ),
       decoration: InputDecoration(
         border: InputBorder.none,
         isDense: true,
         contentPadding: EdgeInsets.zero,
         hintText: suffix != null && !isEmpty ? null : widget.hintText,
-        hintStyle: textTheme.bodyLargeRegular.copyWith(
-          color: colorTheme.textDisable,
-        ),
+        hintStyle: valueStyle.copyWith(color: colorTheme.textDisable),
       ),
     );
 
@@ -209,7 +219,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 ],
               ],
             ),
-            const SizedBox(height: _labelToValueGap),
+            SizedBox(height: _labelToValueGap + valueDrop),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -241,7 +251,7 @@ class _UnderlineTextFieldState extends State<UnderlineTextField> {
                 ],
               ],
             ),
-            const SizedBox(height: _valueToRuleGap),
+            SizedBox(height: _valueToRuleGap - valueDrop),
             AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               height: ruleHeight,

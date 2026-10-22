@@ -4,7 +4,7 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/widgets.dart';
 
 /// The line under the equipment name on the compact saved-rate screen, such as
-/// `$120.00 /day · your default`. Both the sheet header and the form body
+/// `$120.00 / day · your default`. Both the sheet header and the form body
 /// build it here, from the saved [rate] and its pricing [method].
 String recalledRateSubtitle(
   BuildContext context, {
@@ -15,7 +15,7 @@ String recalledRateSubtitle(
   return l10n.equipmentRecalledRateSubtitle(
     DisplayFormatter.currency.format(rate),
     method == EquipmentPricingMethod.day
-        ? l10n.yourRatesDaySuffix
+        ? l10n.equipmentRecalledRateDayUnit
         : l10n.yourRatesJobSuffix,
   );
 }

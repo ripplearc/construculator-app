@@ -2347,6 +2347,10 @@
   "@equipmentDurationLabel": {
     "description": "Hint label for the duration field on the equipment cost form (Day pricing, manually mode)"
   },
+  "equipmentRecalledDaysLabel": "How many days?",
+  "@equipmentRecalledDaysLabel": {
+    "description": "Label of the duration field on the compact saved-day-rate confirmation (CUJ 6 Sub-flow B, Figma node 66337:158600); the manual-entry form keeps equipmentDurationLabel"
+  },
   "equipmentDurationPlaceholder": "Set the days",
   "@equipmentDurationPlaceholder": {
     "description": "Placeholder text for the duration field while it is empty (Day pricing, manually mode)",
@@ -2516,6 +2520,10 @@
         "example": "/day"
       }
     }
+  },
+  "equipmentRecalledRateDayUnit": "/ day",
+  "@equipmentRecalledRateDayUnit": {
+    "description": "Day unit in the saved-rate header subtitle, with a space on each side of the slash as in the storyboard (CUJ 6, B 2); the Your recents rows keep yourRatesDaySuffix"
   },
   "equipmentSaveAsMyRateLink": "Save as my default",
   "@equipmentSaveAsMyRateLink": {

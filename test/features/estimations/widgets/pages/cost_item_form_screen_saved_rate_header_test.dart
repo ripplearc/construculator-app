@@ -112,7 +112,7 @@ void main() {
       );
 
       expect(find.text('Scissor lift — 19ft'), findsOneWidget);
-      expect(find.text(r'$120.00 /day · your default'), findsOneWidget);
+      expect(find.text(r'$120.00 / day · your default'), findsOneWidget);
       expect(find.text('New equipment cost'), findsNothing);
       expect(find.byKey(SheetHeader.backButtonKey), findsOneWidget);
       expect(find.byKey(const Key('recalled_rate_title')), findsNothing);

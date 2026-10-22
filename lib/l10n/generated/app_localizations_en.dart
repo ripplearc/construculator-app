@@ -1497,6 +1497,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDurationLabel => 'Duration';
 
   @override
+  String get equipmentRecalledDaysLabel => 'How many days?';
+
+  @override
   String get equipmentDurationPlaceholder => 'Set the days';
 
   @override
@@ -1617,6 +1620,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String equipmentRecalledRateSubtitle(String amount, String unit) {
     return '$amount $unit · your default';
   }
+
+  @override
+  String get equipmentRecalledRateDayUnit => '/ day';
 
   @override
   String get equipmentSaveAsMyRateLink => 'Save as my default';

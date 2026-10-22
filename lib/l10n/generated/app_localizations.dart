@@ -2806,6 +2806,12 @@ abstract class AppLocalizations {
   /// **'Duration'**
   String get equipmentDurationLabel;
 
+  /// Label of the duration field on the compact saved-day-rate confirmation (CUJ 6 Sub-flow B, Figma node 66337:158600); the manual-entry form keeps equipmentDurationLabel
+  ///
+  /// In en, this message translates to:
+  /// **'How many days?'**
+  String get equipmentRecalledDaysLabel;
+
   /// Placeholder text for the duration field while it is empty (Day pricing, manually mode)
   ///
   /// In en, this message translates to:
@@ -2993,6 +2999,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{amount} {unit} · your default'**
   String equipmentRecalledRateSubtitle(String amount, String unit);
+
+  /// Day unit in the saved-rate header subtitle, with a space on each side of the slash as in the storyboard (CUJ 6, B 2); the Your recents rows keep yourRatesDaySuffix
+  ///
+  /// In en, this message translates to:
+  /// **'/ day'**
+  String get equipmentRecalledRateDayUnit;
 
   /// Link next to the Rate/Amount field's value that saves the entered rate to Your rates for future reuse (manually mode)
   ///
