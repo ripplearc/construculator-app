@@ -112,6 +112,18 @@ void main() {
         expect(texts(answers)[1], 'Diagonal: 14,142,135.62ft');
       });
 
+      test('a diagonal past 2⁵³ ticks is left out, the other answers stay', () {
+        const twelveTrillionFeet = Length(
+          12000000000000 * Length.ticksPerFoot,
+          unit: Unit.foot,
+        );
+        final answers = rules.answersFor({
+          'Length': twelveTrillionFeet,
+          'Width': twelveTrillionFeet,
+        });
+        expect(answers.map((answer) => answer.key), ['Area', 'Perimeter']);
+      });
+
       test('one named side is not a rectangle', () {
         expect(rules.answersFor({'Length': feet22}), isEmpty);
         expect(rules.answersFor({'Width': feet22, 'Rise': feet9}), isEmpty);
@@ -181,6 +193,21 @@ void main() {
         });
         expect(texts(answers).first, 'Diagonal: 14,142,135.62ft');
       });
+
+      test(
+        'Rise and Run whose diagonal passes 2⁵³ ticks offer no Diagonal',
+        () {
+          const twelveTrillionFeet = Length(
+            12000000000000 * Length.ticksPerFoot,
+            unit: Unit.foot,
+          );
+          final answers = rules.answersFor({
+            'Rise': twelveTrillionFeet,
+            'Run': twelveTrillionFeet,
+          });
+          expect(answers.where((answer) => answer.key == 'Diagonal'), isEmpty);
+        },
+      );
 
       test('a rectangle and a triangle on one tape answer in that order', () {
         final answers = rules.answersFor({

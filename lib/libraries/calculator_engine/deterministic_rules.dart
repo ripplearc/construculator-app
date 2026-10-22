@@ -73,7 +73,9 @@ final class Answer extends Equatable {
 /// diagonal's squares are taken in double math, because an `int` square
 /// wraps past 3,954,427ft, inside the limit CA-1236 will enforce; the
 /// perimeter's `int` sum wraps only past 6 × 10^15ft, a side that limit
-/// refuses once it lands.
+/// refuses once it lands. A diagonal past [Length.maxTicks], the 2⁵³ ticks
+/// a computed length holds, is left out and the other answers stay, until
+/// that limit refuses such a side.
 class DeterministicRules extends Equatable {
   /// The label of the area of two named sides.
   static const String areaKey = 'Area';
@@ -124,11 +126,7 @@ class DeterministicRules extends Equatable {
       value: Area(a * b.toDouble(), unit: unit),
       sources: sources,
     ),
-    Answer(
-      key: diagonalKey,
-      value: Length.computed(_hypotenuse(a, b), unit: unit),
-      sources: sources,
-    ),
+    ?_leg(diagonalKey, _hypotenuse(a, b), unit, sources),
     // TODO: [CA-1236] The int sum wraps past 6 × 10^15ft a side; the
     // 19,999,999.99 limit refuses such a side after CA-1236 merges.
     // https://ripplearc.youtrack.cloud/issue/CA-1236
@@ -144,13 +142,11 @@ class DeterministicRules extends Equatable {
     final run = lengths[DimensionKey.run];
     if (rise == null || run == null || run.ticks <= 0) return const [];
     return [
-      Answer(
-        key: diagonalKey,
-        value: Length.computed(
-          _hypotenuse(rise.ticks, run.ticks),
-          unit: _entrySystemUnit([rise, run]),
-        ),
-        sources: [DimensionKey.rise.id, DimensionKey.run.id],
+      ?_leg(
+        diagonalKey,
+        _hypotenuse(rise.ticks, run.ticks),
+        _entrySystemUnit([rise, run]),
+        [DimensionKey.rise.id, DimensionKey.run.id],
       ),
     ];
   }
@@ -159,6 +155,15 @@ class DeterministicRules extends Equatable {
       lengths.isNotEmpty && lengths.every((length) => length.unit.isMetric)
       ? Unit.metre
       : Unit.foot;
+
+  Answer? _leg(String key, double ticks, Unit unit, List<String> sources) {
+    if (ticks > Length.maxTicks) return null;
+    return Answer(
+      key: key,
+      value: Length.computed(ticks, unit: unit),
+      sources: sources,
+    );
+  }
 
   double _hypotenuse(int a, int b) =>
       math.sqrt(a.toDouble() * a + b.toDouble() * b);
