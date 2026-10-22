@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "run_count": 13,
+  "run_count": 14,
   "runs": [
     {
       "path": "runs/cuj_v1/2026-09-14T08-46-14Z-34c5a4c.json",
@@ -192,6 +192,21 @@
       "cases": 1,
       "ran": 1,
       "passed": 1,
+      "flaked": 0,
+      "failed": 0,
+      "pass_rate": 1.0,
+      "flake_rate": 0.0
+    },
+    {
+      "path": "runs/cuj_v1/2026-10-22T00-07-40Z-854ceec.json",
+      "suite": "cuj_v1",
+      "captured_at": "2026-10-22T00:07:40Z",
+      "commit": "854ceec",
+      "attempt_count": 1,
+      "duration_ms": 34845.0,
+      "cases": 2,
+      "ran": 2,
+      "passed": 2,
       "flaked": 0,
       "failed": 0,
       "pass_rate": 1.0,
