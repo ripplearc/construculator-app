@@ -1,10 +1,60 @@
-/.github/CODEOWNERS @ripplearc/construculator-devop
-/.github/workflows/run_c_check.yml @ripplearc/construculator-devop
-/.github/workflows/nightly_ios_build.yml @ripplearc/construculator-devop
-/scripts/ci/main_needs_ios_build.sh @ripplearc/construculator-devop
-codemagic.yaml  @ripplearc/construculator-devop
-mutation_test_rules.xml @ripplearc/construculator-devop
-analysis_options.yaml @ripplearc/construculator-devop
-run_check.sh.yaml @ripplearc/construculator-devop
-lib/app/app_bootstrap.dart @ripplearc/construculator-techlead
-lib/main.dart @ripplearc/construculator-techlead
+# Who must approve a change to these paths. Teams only, never single people.
+# When someone joins or leaves, change the team in GitHub, not this file.
+# GitHub uses the LAST matching line, so general lines come first.
+
+# Foundation: shared code every feature depends on
+/lib/main.dart                       @ripplearc/construculator-techlead
+/lib/app/                            @ripplearc/construculator-techlead
+/lib/libraries/powersync/            @ripplearc/construculator-techlead
+/lib/libraries/supabase/             @ripplearc/construculator-techlead
+/lib/libraries/storage/              @ripplearc/construculator-techlead
+/lib/libraries/secure_storage/       @ripplearc/construculator-techlead
+/lib/libraries/auth/                 @ripplearc/construculator-techlead
+/lib/libraries/router/               @ripplearc/construculator-techlead
+/lib/libraries/config/               @ripplearc/construculator-techlead
+/lib/libraries/errors/               @ripplearc/construculator-techlead
+/lib/libraries/sentry/               @ripplearc/construculator-techlead
+/lib/libraries/logging/              @ripplearc/construculator-techlead
+/lib/libraries/analytics/            @ripplearc/construculator-techlead
+/lib/libraries/app_lifecycle/        @ripplearc/construculator-techlead
+/test/libraries/powersync/           @ripplearc/construculator-techlead
+/test/libraries/supabase/            @ripplearc/construculator-techlead
+/test/libraries/secure_storage/      @ripplearc/construculator-techlead
+/test/libraries/auth/                @ripplearc/construculator-techlead
+/test/libraries/router/              @ripplearc/construculator-techlead
+/test/libraries/config/              @ripplearc/construculator-techlead
+/test/libraries/sentry/              @ripplearc/construculator-techlead
+/test/libraries/logging/             @ripplearc/construculator-techlead
+/test/libraries/analytics/           @ripplearc/construculator-techlead
+/test/libraries/app_lifecycle/       @ripplearc/construculator-techlead
+
+# Calculator
+/lib/features/calculator/            @ripplearc/construculator-calculator
+/lib/features/calculations/          @ripplearc/construculator-calculator
+/lib/libraries/calculator_engine/    @ripplearc/construculator-calculator
+/test/features/calculator/           @ripplearc/construculator-calculator
+/test/features/calculations/         @ripplearc/construculator-calculator
+/test/libraries/calculator_engine/   @ripplearc/construculator-calculator
+
+# Estimation
+/lib/features/estimation/            @ripplearc/construculator-estimation
+/lib/libraries/estimation/           @ripplearc/construculator-estimation
+/test/features/estimations/          @ripplearc/construculator-estimation
+/test/libraries/estimation/          @ripplearc/construculator-estimation
+
+# Build, CI and dependencies. Last, so these always need devop.
+/scripts/                            @ripplearc/construculator-devop
+/codemagic.yaml                      @ripplearc/construculator-devop
+/analysis_options.yaml               @ripplearc/construculator-devop
+/custom_lint.yaml                    @ripplearc/construculator-devop
+/.fvmrc                              @ripplearc/construculator-devop
+/pubspec.yaml                        @ripplearc/construculator-devop
+/pubspec.lock                        @ripplearc/construculator-devop
+/ios/Podfile                         @ripplearc/construculator-devop
+/ios/Podfile.lock                    @ripplearc/construculator-devop
+/ios/Runner.xcodeproj/               @ripplearc/construculator-devop
+/android/build.gradle                @ripplearc/construculator-devop
+/android/settings.gradle             @ripplearc/construculator-devop
+/android/app/build.gradle            @ripplearc/construculator-devop
+/android/app/flavorizr.gradle        @ripplearc/construculator-devop
+/.github/                            @ripplearc/construculator-devop
