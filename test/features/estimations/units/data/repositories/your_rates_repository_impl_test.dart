@@ -209,8 +209,8 @@ void main() {
         final result = await repository.search(
           '',
           category: CostItemType.equipment,
-          limit: 2,
           companyId: testCompanyId,
+          limit: 2,
         );
 
         expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
@@ -879,6 +879,62 @@ void main() {
           final result = await repository.save(buildEntry());
 
           expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.unexpectedDatabaseError,
+            ),
+          );
+        },
+      );
+    });
+
+    group('recordRateUse', () {
+      test('puts the used rate above a newer save', () async {
+        seed([
+          row(id: 'older', savedAt: '2026-01-01T00:00:00.000Z'),
+          row(id: 'newer', savedAt: '2026-01-10T00:00:00.000Z'),
+        ]);
+
+        final recorded = await repository.recordRateUse('older');
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(recorded.isRight(), true);
+        expect(result.getRightOrNull()!.map((e) => e.id).toList(), [
+          'older',
+          'newer',
+        ]);
+      });
+
+      test('keeps the saved price and label of the used rate', () async {
+        seed([row(id: 'used', rateAmount: 250.0, entryLabel: 'Supplier A')]);
+
+        await repository.recordRateUse('used');
+        final result = await repository.search(
+          '',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        final entry = result.getRightOrNull()!.single;
+        expect(entry.rate.amount, 250.0);
+        expect(entry.entryLabel, 'Supplier A');
+      });
+
+      test(
+        'reports a write the phone cannot do as a database failure',
+        () async {
+          seed([row(id: 'used')]);
+          database.executeError = StateError('disk full');
+
+          final result = await repository.recordRateUse('used');
+
           expect(
             result.getLeftOrNull(),
             isA<EstimationFailure>().having(

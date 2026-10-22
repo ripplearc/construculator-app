@@ -703,6 +703,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
     context.read<EquipmentCostFormBloc>().add(
       EquipmentSavedRateRecalledEvent(
+        rateId: entry.id,
         method: method,
         rate: entry.rate.amount,
         fromRecents: fromRecents,
