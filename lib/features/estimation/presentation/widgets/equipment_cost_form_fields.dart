@@ -24,7 +24,6 @@ String _formatTrimmedNumber(double value) => value == value.roundToDouble()
 
 enum _RateSaveStatus { idle, saved, failed }
 
-/// What the area under the recalled Job amount shows.
 enum _RecalledFooter { none, editedWithButton, savedSecondPrice, savedDefault }
 
 TextSpan _withBold(
