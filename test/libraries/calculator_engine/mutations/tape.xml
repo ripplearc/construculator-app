@@ -144,6 +144,12 @@
             <mutation text="entry.tokens.length;"/>
         </regex>
 
+        <!-- RULE 25: two chips typed under different ton definitions
+             compare equal -->
+        <regex pattern="exact,\s*poundsPerTon,\s*isActive,\s*\];" dotAll="true" id="chip.props.ignores_typed_ton">
+            <mutation text="exact, isActive, ];"/>
+        </regex>
+
         <!-- RULE 20: a key press forgets the settings -->
         <regex pattern="Tape _with\(List&lt;TapeChip&gt; chips\) =&gt;\s*Tape\(chips: chips, preferences: preferences\);" dotAll="true" id="tape.with.forgets_settings">
             <mutation text="Tape _with(List&lt;TapeChip&gt; chips) =&gt; Tape(chips: chips);"/>
