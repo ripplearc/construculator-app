@@ -2423,7 +2423,7 @@
   },
   "equipmentDeliveryFeeLimitHint": "The largest delivery fee is {amount}.",
   "@equipmentDeliveryFeeLimitHint": {
-    "description": "Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount",
+    "description": "Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount or would add a third decimal",
     "context": "N/A",
     "placeholders": {
       "amount": {
