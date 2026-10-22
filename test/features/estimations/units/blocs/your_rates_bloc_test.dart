@@ -333,6 +333,211 @@ void main() {
       );
     });
 
+    group('YourRatesRecentsQueried', () {
+      // ignore: no_direct_instantiation, reason: needs queryDebounce: Duration.zero, which Modular's registration can't supply per-test
+      YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
+        queryDebounce: Duration.zero,
+      );
+
+      // ignore: no_direct_instantiation, reason: needs a debounce far longer than the test, which Modular's registration can't supply per-test
+      YourRatesBloc longDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
+        queryDebounce: const Duration(days: 1),
+      );
+
+      void seedRates() {
+        database.seedRows([
+          row(id: 'r1', itemName: 'Excavator'),
+          row(id: 'r2', itemName: 'Bulldozer'),
+        ]);
+      }
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a typed query emits Loading then the matching SearchResults',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.map((e) => e.itemName).toList(),
+            'results',
+            ['Excavator'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a blank query brings the recents back',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          bloc.add(const YourRatesRecentsQueried('  ', CostItemType.equipment));
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesLoaded>().having((s) => s.recents.length, 'recents', 2),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'clearing the box drops a search that is still waiting out its debounce',
+        setUp: seedRates,
+        build: longDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          bloc.add(const YourRatesRecentsQueried('', CostItemType.equipment));
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+    });
+
+    group('YourRatesRecentsQueried against a running read', () {
+      // ignore: no_direct_instantiation, reason: needs queryDebounce: Duration.zero, which Modular's registration can't supply per-test
+      YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
+        queryDebounce: Duration.zero,
+      );
+
+      // ignore: no_direct_instantiation, reason: needs a debounce far longer than the test, which Modular's registration can't supply per-test
+      YourRatesBloc longDebounceBloc() => YourRatesBloc(
+        repository: Modular.get<YourRatesRepository>(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
+        queryDebounce: const Duration(days: 1),
+      );
+
+      void seedRates() {
+        database.seedRows([
+          row(id: 'r1', itemName: 'Excavator'),
+          row(id: 'r2', itemName: 'Bulldozer'),
+        ]);
+      }
+
+      // Holds every phone read until the test completes the gate, so a read
+      // is known to be running while a newer event arrives.
+      Completer<void> holdReads() {
+        final gate = Completer<void>();
+        database.getAllGate = gate;
+        return gate;
+      }
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search that is already running is dropped when a newer query '
+        'arrives',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          final gate = holdReads();
+          final firstLoading = bloc.stream.first;
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await firstLoading;
+          bloc.add(
+            const YourRatesRecentsQueried('bull', CostItemType.equipment),
+          );
+          gate.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.map((e) => e.itemName).toList(),
+            'results',
+            ['Bulldozer'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search that is already running is dropped when the box is cleared',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          final gate = holdReads();
+          final firstLoading = bloc.stream.first;
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await firstLoading;
+          bloc.add(const YourRatesRecentsQueried('', CostItemType.equipment));
+          gate.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a recents read that is still running cannot replace a typed search',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          final gate = holdReads();
+          final firstLoading = bloc.stream.first;
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+          await firstLoading;
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          gate.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesLoading>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.map((e) => e.itemName).toList(),
+            'results',
+            ['Excavator'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a typed search that is still running is dropped when the recents are '
+        'asked for again',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        act: (bloc) async {
+          final gate = holdReads();
+          final firstLoading = bloc.stream.first;
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await firstLoading;
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+          gate.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a query of only spaces does not wait out the debounce',
+        setUp: seedRates,
+        build: longDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('   ', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+    });
+
     group('YourRatesSearched', () {
       // These tests build their own bloc (bypassing the shared Modular
       // instance from setUp) with queryDebounce: Duration.zero, so they don't
