@@ -66,6 +66,7 @@ void main() {
     ValueChanged<bool>? onSaveEnabledChanged,
     String? estimateId,
     YourRateEntry? initialRateEntry,
+    String? initialEquipmentName,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -83,11 +84,71 @@ void main() {
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
             clock: FakeClockImpl(),
             initialRateEntry: initialRateEntry,
+            initialEquipmentName: initialEquipmentName,
           ),
         ),
       ),
     );
   }
+
+  group('a name typed on the recents search', () {
+    testWidgets('the typed name reaches the form bloc', (tester) async {
+      await tester.pumpWidget(
+        makeWidget(initialEquipmentName: 'mini excavator'),
+      );
+      await tester.pumpAndSettle();
+
+      final bloc = BlocProvider.of<EquipmentCostFormBloc>(
+        tester.element(find.byType(EquipmentCostFormFields)),
+      );
+      final state = bloc.state as EquipmentCostFormEditing;
+
+      expect(state.data.equipmentType, 'mini excavator');
+    });
+
+    testWidgets('fills the equipment name and leaves the rate empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeWidget(initialEquipmentName: 'mini excavator'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('mini excavator'), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('rate_field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        isEmpty,
+      );
+    });
+
+    testWidgets('is ignored when a saved rate is recalled', (tester) async {
+      await tester.pumpWidget(
+        makeWidget(
+          initialEquipmentName: 'mini excavator',
+          initialRateEntry: YourRateEntry(
+            id: 'saved',
+            companyId: 'company-1',
+            itemName: 'Scissor lift',
+            category: CostItemType.equipment,
+            rate: const Money(amount: 145),
+            equipmentMethod: EquipmentPricingMethod.day,
+            savedAt: DateTime(2026, 1, 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('mini excavator'), findsNothing);
+    });
+  });
 
   Future<void> unfocusAll(WidgetTester tester) async {
     final focus = FocusManager.instance.primaryFocus;
@@ -132,7 +193,10 @@ void main() {
   // Matches the compact header's Subtitle text (e.g. "$145.00 /day · your
   // default") shown once a rate is recalled from Your Rates (CA-1146,
   // Figma nodes 66337:158600/66337:159434).
-  String recalledRateSubtitleText(double amount, EquipmentPricingMethod method) {
+  String recalledRateSubtitleText(
+    double amount,
+    EquipmentPricingMethod method,
+  ) {
     final unit = method == EquipmentPricingMethod.day
         ? l10n.yourRatesDaySuffix
         : l10n.yourRatesJobSuffix;
@@ -2067,7 +2131,9 @@ void main() {
 
         expect(
           tester
-              .widget<ChoiceChipToggle>(find.byKey(const Key('job_method_chip')))
+              .widget<ChoiceChipToggle>(
+                find.byKey(const Key('job_method_chip')),
+              )
               .selected
               .value,
           isTrue,
@@ -2186,31 +2252,26 @@ void main() {
         },
       );
 
-      testWidgets(
-        'shows the equipment name as a Title and the saved rate as a '
-        'Subtitle, with Duration as the only field',
-        (tester) async {
-          await seedRate(
-            itemName: 'Scissor lift',
-            amount: 145,
-            method: EquipmentPricingMethod.day,
-          );
-          await tester.pumpWidget(makeWidget());
-          await tester.pumpAndSettle();
+      testWidgets('shows the equipment name as a Title and the saved rate as a '
+          'Subtitle, with Duration as the only field', (tester) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
 
-          await recallRate(tester, 'Scissor lift');
+        await recallRate(tester, 'Scissor lift');
 
-          expect(find.text('Scissor lift'), findsOneWidget);
-          expect(
-            find.text(
-              recalledRateSubtitleText(145, EquipmentPricingMethod.day),
-            ),
-            findsOneWidget,
-          );
-          expect(find.byKey(const Key('rate_field')), findsNothing);
-          expect(find.byKey(const Key('duration_field')), findsOneWidget);
-        },
-      );
+        expect(find.text('Scissor lift'), findsOneWidget);
+        expect(
+          find.text(recalledRateSubtitleText(145, EquipmentPricingMethod.day)),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('rate_field')), findsNothing);
+        expect(find.byKey(const Key('duration_field')), findsOneWidget);
+      });
 
       testWidgets(
         'hides the equipment-name field, Day/Job toggle, rate-status badge, '
@@ -2250,27 +2311,26 @@ void main() {
         },
       );
 
-      testWidgets(
-        'Add to estimate stays disabled until Duration is entered',
-        (tester) async {
-          await seedRate(
-            itemName: 'Scissor lift',
-            amount: 145,
-            method: EquipmentPricingMethod.day,
-          );
-          var saveEnabled = true;
-          await recallRate(
-            tester,
-            'Scissor lift',
-            onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
-          );
-          expect(saveEnabled, isFalse);
+      testWidgets('Add to estimate stays disabled until Duration is entered', (
+        tester,
+      ) async {
+        await seedRate(
+          itemName: 'Scissor lift',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        var saveEnabled = true;
+        await recallRate(
+          tester,
+          'Scissor lift',
+          onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
+        );
+        expect(saveEnabled, isFalse);
 
-          await tester.enterText(find.byKey(const Key('duration_field')), '3');
-          await tester.pump();
-          expect(saveEnabled, isTrue);
-        },
-      );
+        await tester.enterText(find.byKey(const Key('duration_field')), '3');
+        await tester.pump();
+        expect(saveEnabled, isTrue);
+      });
 
       testWidgets(
         'the total is duration × the recalled rate, same as the full form',
@@ -2356,38 +2416,33 @@ void main() {
         },
       );
 
-      testWidgets(
-        'shows the equipment name as a Title, the saved price as a '
-        'Subtitle, and Amount pre-filled and editable',
-        (tester) async {
-          await seedRate(
-            itemName: 'Dumpster',
-            amount: 400,
-            method: EquipmentPricingMethod.job,
-          );
-          var saveEnabled = false;
-          await recallRate(
-            tester,
-            'Dumpster',
-            onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
-          );
+      testWidgets('shows the equipment name as a Title, the saved price as a '
+          'Subtitle, and Amount pre-filled and editable', (tester) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        var saveEnabled = false;
+        await recallRate(
+          tester,
+          'Dumpster',
+          onSaveEnabledChanged: (enabled) => saveEnabled = enabled,
+        );
 
-          expect(find.text('Dumpster'), findsOneWidget);
-          expect(
-            find.text(
-              recalledRateSubtitleText(400, EquipmentPricingMethod.job),
-            ),
-            findsOneWidget,
-          );
-          // A confirmation, not a form: nothing else to fill in before Add
-          // is available.
-          expect(saveEnabled, isTrue);
+        expect(find.text('Dumpster'), findsOneWidget);
+        expect(
+          find.text(recalledRateSubtitleText(400, EquipmentPricingMethod.job)),
+          findsOneWidget,
+        );
+        // A confirmation, not a form: nothing else to fill in before Add
+        // is available.
+        expect(saveEnabled, isTrue);
 
-          await tester.enterText(find.byKey(const Key('amount_field')), '450');
-          await tester.pump();
-          expect(find.text('450'), findsOneWidget);
-        },
-      );
+        await tester.enterText(find.byKey(const Key('amount_field')), '450');
+        await tester.pump();
+        expect(find.text('450'), findsOneWidget);
+      });
 
       testWidgets(
         'hides the equipment-name field, Day/Job toggle, rate-status badge, '
@@ -2403,7 +2458,7 @@ void main() {
           await tester.tap(find.byKey(const Key('job_method_chip')));
           await tester.pump();
 
-        await recallRate(tester, 'Dumpster');
+          await recallRate(tester, 'Dumpster');
 
           expectFullFormChromeAbsent(tester);
         },
