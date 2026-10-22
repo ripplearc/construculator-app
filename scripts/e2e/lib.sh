@@ -160,13 +160,16 @@ e2e_powersync_compose() {
     -f "$E2E_BACKEND_DIR/powersync/compose.yaml" "$@"
 }
 
-# Prints the state of every stack container (Supabase and PowerSync) and the
-# recent logs of each one that is neither healthy nor cleanly finished, so a
-# readiness timeout shows why the service did not come up. Best effort: it only
-# runs on a path that is about to fail, so a Docker error here is ignored
-# rather than allowed to replace the real "did not become ready" message.
+# Explains a readiness timeout for the URL given. Prints what the URL answers,
+# the state of every stack container (Supabase and PowerSync), the recent logs
+# of each one that is neither healthy nor cleanly finished, and the Kong logs.
+# Best effort: it only runs on a path that is about to fail, so a Docker or curl
+# error here is ignored rather than allowed to replace the real "did not become
+# ready" message.
 e2e_dump_container_diagnostics() {
-  local name status
+  local url="$1" name status
+  e2e_warn "Response from $url:"
+  curl -sS -i --max-time 5 "$url" >&2 2>&1 || true
   e2e_warn "Stack containers:"
   docker ps -a --filter "name=$E2E_DB_PROJECT" --filter "name=powersync" \
     --format '{{.Names}}  {{.Status}}' >&2 || return 0
@@ -177,6 +180,9 @@ e2e_dump_container_diagnostics() {
       e2e_warn "Last log lines of $name ($status):"
       docker logs --tail 40 "$name" >&2 2>&1 || true
     done
+  # Kong fronts the API, so a healthy service that is still unreachable shows up here.
+  e2e_warn "Last log lines of the Kong container:"
+  docker logs --tail 20 "supabase_kong_${E2E_DB_PROJECT}" >&2 2>&1 || true
 }
 
 # Polls until the URL answers or the timeout expires.
@@ -186,7 +192,7 @@ e2e_wait_for_http() {
   while ! curl -fsS -o /dev/null "$url" 2>/dev/null; do
     waited=$((waited + 2))
     if [ "$waited" -ge "$timeout" ]; then
-      e2e_dump_container_diagnostics
+      e2e_dump_container_diagnostics "$url"
       e2e_die "$label did not become ready within ${timeout}s."
     fi
     sleep 2

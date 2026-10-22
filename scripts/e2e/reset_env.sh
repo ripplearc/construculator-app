@@ -50,6 +50,15 @@ e2e_log "Resetting database"
 # control to the next attempt. A CUJ that registers a new account right
 # after a reset sends its OTP through this same path, so a stack that is
 # still settling can silently miss it.
+#
+# Kong is not always among the recycled containers, and the recreated auth
+# container can come back at a new address that Kong's routing does not
+# follow. Auth then reports healthy while /auth/v1/health through Kong keeps
+# failing until the wait times out. Restarting Kong rebuilds its routing.
+e2e_log "Restarting Kong"
+docker restart "supabase_kong_${E2E_DB_PROJECT}" >/dev/null ||
+  e2e_die "could not restart the Kong container supabase_kong_${E2E_DB_PROJECT}."
+
 e2e_wait_for_http "http://127.0.0.1:${E2E_SUPABASE_API_PORT}/auth/v1/health" "Supabase auth"
 e2e_wait_for_http "http://127.0.0.1:${E2E_MAILPIT_PORT}/api/v1/messages" "Mailpit"
 
