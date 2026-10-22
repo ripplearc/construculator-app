@@ -29,11 +29,17 @@
         </regex>
 
         <!-- RULE 4: a diagonal is rounded to a whole tick before display -->
-        <regex pattern="value: Length\.computed\(_hypotenuse\(a, b\), unit: unit\)," dotAll="true" id="deterministic_rules.diagonal.whole_tick">
-            <mutation text="value: Length(_hypotenuse(a, b).round(), unit: unit),"/>
+        <regex pattern="\?_leg\(diagonalKey, _hypotenuse\(a, b\), unit, sources\)," dotAll="true" id="deterministic_rules.diagonal.whole_tick">
+            <mutation text="Answer(key: diagonalKey, value: Length(_hypotenuse(a, b).round(), unit: unit), sources: sources),"/>
         </regex>
-        <regex pattern="value: Length\.computed\(\s*_hypotenuse\(rise\.ticks, run\.ticks\)," dotAll="true" id="deterministic_rules.triangle.whole_tick">
-            <mutation text="value: Length(_hypotenuse(rise.ticks, run.ticks).round(),"/>
+        <regex pattern="\?_leg\(\s*diagonalKey,\s*_hypotenuse\(rise\.ticks, run\.ticks\),\s*_entrySystemUnit\(\[rise, run\]\),\s*\[DimensionKey\.rise\.id, DimensionKey\.run\.id\],\s*\)," dotAll="true" id="deterministic_rules.triangle.whole_tick">
+            <mutation text="Answer(key: diagonalKey, value: Length(_hypotenuse(rise.ticks, run.ticks).round(), unit: _entrySystemUnit([rise, run])), sources: [DimensionKey.rise.id, DimensionKey.run.id]),"/>
+        </regex>
+
+        <!-- RULE 12: a diagonal past 2^53 ticks is still computed, so
+             Length.computed asserts instead of the answer being left out -->
+        <regex pattern="if \(ticks &gt; Length\.maxTicks\) return null;" dotAll="true" id="deterministic_rules.leg.no_limit">
+            <mutation text="if (false) return null;"/>
         </regex>
 
         <!-- RULE 5: a run of nothing still gives a diagonal, and so does a
@@ -70,8 +76,8 @@
         </regex>
 
         <!-- RULE 11: the triangle votes its unit over every named length -->
-        <regex pattern="unit: _entrySystemUnit\(\[rise, run\]\)," dotAll="true" id="deterministic_rules.unit.triangle_whole_tape">
-            <mutation text="unit: _entrySystemUnit(lengths.values),"/>
+        <regex pattern="_entrySystemUnit\(\[rise, run\]\)," dotAll="true" id="deterministic_rules.unit.triangle_whole_tape">
+            <mutation text="_entrySystemUnit(lengths.values),"/>
         </regex>
 
         <!-- RULE 9: a value that is not a length is read as a side -->
