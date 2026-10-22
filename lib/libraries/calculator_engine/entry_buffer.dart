@@ -212,9 +212,11 @@ class EntryBuffer extends Equatable {
   /// [Feet] still starts 8ft as its own chip (rule 4.5). A part as large as
   /// the unit above it is carried up on its whole parts when the unit closes
   /// it ([EntryCarried]): 18ft 13in reads 19ft 1in and 18ft 13.5in reads
-  /// 19ft 1.5in (Section 6: any inch part as large as a foot). A fraction
-  /// (13/2 is a numerator over a line, not whole inches) or a decimal above
-  /// it (18.5ft 13in) is left as typed.
+  /// 19ft 1.5in (Section 6: any inch part as large as a foot), and the carry
+  /// runs on up the ladder while the part above is as large as its own unit
+  /// (1m 95cm 100mm reads 2m 5cm 0mm). A fraction (13/2 is a numerator over
+  /// a line, not whole inches), a fraction above it (3/4ft 13in) or a
+  /// decimal above it (18.5ft 13in) is left as typed.
   EntryOutcome closeWith(
     Unit unit, {
     bool editing = false,
@@ -254,22 +256,38 @@ class EntryBuffer extends Equatable {
   }
 
   EntryOutcome _carriedUp(Token previous, Unit above, Token closed, Unit unit) {
+    final replaced = [...tokens.take(tokens.length - 1), closed];
+    final carried = _carryInto(replaced, replaced.length - 1, above, unit);
+    if (carried == null) return _replaceLast(closed);
+    return EntryCarried(EntryBuffer(List.unmodifiable(carried)));
+  }
+
+  List<Token>? _carryInto(
+    List<Token> tokens,
+    int index,
+    Unit above,
+    Unit unit,
+  ) {
+    final part = tokens[index];
+    final previous = tokens[index - 1];
     final partsPerUnit = (above.ticksPerUnit / unit.ticksPerUnit).round();
-    final (whole, decimals) = _wholeAndDecimals(closed.digits);
-    final parts = closed.denominator == null ? int.tryParse(whole) : null;
-    final wholeAbove = int.tryParse(previous.digits);
+    final (whole, decimals) = _wholeAndDecimals(part.digits);
+    final parts = part.denominator == null ? int.tryParse(whole) : null;
+    final wholeAbove = previous.denominator == null
+        ? int.tryParse(previous.digits)
+        : null;
     if (parts == null || wholeAbove == null || parts < partsPerUnit) {
-      return _replaceLast(closed);
+      return null;
     }
-    return EntryCarried(
-      EntryBuffer(
-        List.unmodifiable([
-          ...tokens.take(tokens.length - 2),
-          previous.copyWith(digits: '${wholeAbove + parts ~/ partsPerUnit}'),
-          closed.copyWith(digits: '${parts % partsPerUnit}$decimals'),
-        ]),
-      ),
-    );
+    final carried = [
+      ...tokens.take(index - 1),
+      previous.copyWith(digits: '${wholeAbove + parts ~/ partsPerUnit}'),
+      part.copyWith(digits: '${parts % partsPerUnit}$decimals'),
+      ...tokens.skip(index + 1),
+    ];
+    final higher = index >= 2 ? tokens[index - 2].unit : null;
+    if (higher == null) return carried;
+    return _carryInto(carried, index - 1, higher, above) ?? carried;
   }
 
   static (String, String) _wholeAndDecimals(String digits) {
