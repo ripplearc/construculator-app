@@ -16,7 +16,7 @@ class FakeSecureStorageWrapper implements SecureStorageWrapper {
   /// Makes [write] throw, as when the platform store is unavailable.
   bool shouldThrowOnWrite = false;
 
-  /// Makes [delete] throw, as when the platform store is unavailable.
+  /// Makes [delete] and [deleteAll] throw, as when the platform store is unavailable.
   bool shouldThrowOnDelete = false;
 
   /// Every key that currently holds a value.
@@ -56,6 +56,13 @@ class FakeSecureStorageWrapper implements SecureStorageWrapper {
   Future<void> delete(String key) async {
     if (shouldThrowOnDelete) throw PlatformException(code: 'delete_failed');
     _values.remove(key);
+    _releaseWaiters();
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    if (shouldThrowOnDelete) throw PlatformException(code: 'delete_failed');
+    _values.clear();
     _releaseWaiters();
   }
 

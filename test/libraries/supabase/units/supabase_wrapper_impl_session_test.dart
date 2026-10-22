@@ -66,8 +66,16 @@ void main() {
   group('SupabaseWrapperImpl login session storage', () {
     late FakeSecureStorageWrapper secure;
 
-    Future<Set<String>> preferenceKeys() async =>
-        (await SharedPreferences.getInstance()).getKeys();
+    Future<List<Object?>> tokensInPreferences() async {
+      final preferences = await SharedPreferences.getInstance();
+      return [
+        for (final key in preferences.getKeys())
+          if ('$key ${preferences.get(key)}'.contains(_accessToken) ||
+              '$key ${preferences.get(key)}'.contains(_refreshToken) ||
+              key == _sessionKey)
+            key,
+      ];
+    }
 
     setUp(() {
       TestWidgetsFlutterBinding.ensureInitialized();
@@ -90,7 +98,7 @@ void main() {
       final storedSession = secure.peek(_sessionKey);
       expect(storedSession, contains(_accessToken));
       expect(storedSession, contains(_refreshToken));
-      expect(await preferenceKeys(), isEmpty);
+      expect(await tokensInPreferences(), isEmpty);
     });
 
     test('a user signed in before the update stays signed in', () async {
@@ -120,20 +128,105 @@ void main() {
         isA<supabase.User>().having((user) => user.id, 'id', _userId),
       );
       expect(secure.peek(_sessionKey), contains(_refreshToken));
-      expect(await preferenceKeys(), isEmpty);
+      expect(await tokensInPreferences(), isEmpty);
     });
 
-    test('a user already on secure storage stays signed in', () async {
-      secure.seed(_sessionKey, jsonEncode(_sessionJson()));
-      final wrapper = buildWrapper(secure, _authServer());
+    test('a user stays signed in when the app is relaunched', () async {
+      final firstLaunch = buildWrapper(secure, _authServer());
+      await firstLaunch.initialize();
+      await firstLaunch.signInWithPassword(
+        email: 'user@example.com',
+        password: 'pw',
+      );
+      await secure.untilWritten(_sessionKey);
+      await supabase.Supabase.instance.dispose();
 
-      await wrapper.initialize();
+      final secondLaunch = buildWrapper(secure, _authServer());
+      await secondLaunch.initialize();
 
       expect(
-        wrapper.currentUser,
+        secondLaunch.currentUser,
         isA<supabase.User>().having((user) => user.id, 'id', _userId),
       );
     });
+
+    test(
+      'a reinstall does not restore the previous user from the Keychain',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson()));
+        final wrapper = buildWrapper(secure, _authServer());
+
+        await wrapper.initialize();
+
+        expect(wrapper.currentSession, isNull);
+        expect(secure.storedKeys, isEmpty);
+      },
+    );
+
+    test(
+      'a reinstall whose Keychain cannot be emptied starts signed out',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson()));
+        secure.shouldThrowOnDelete = true;
+        final wrapper = buildWrapper(secure, _authServer());
+
+        await wrapper.initialize();
+
+        expect(wrapper.currentSession, isNull);
+        expect(wrapper.currentUser, isNull);
+      },
+    );
+
+    test(
+      'the next launch empties the Keychain after a failed attempt',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson()));
+        secure.shouldThrowOnDelete = true;
+        await buildWrapper(secure, _authServer()).initialize();
+        await supabase.Supabase.instance.dispose();
+        secure.shouldThrowOnDelete = false;
+
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+
+        expect(wrapper.currentSession, isNull);
+        expect(secure.storedKeys, isEmpty);
+      },
+    );
+
+    test(
+      'a user who signs in after a failed attempt replaces the old session',
+      () async {
+        secure.seed(_sessionKey, jsonEncode(_sessionJson(accessToken: 'old')));
+        secure.shouldThrowOnDelete = true;
+        final wrapper = buildWrapper(secure, _authServer());
+        await wrapper.initialize();
+
+        await wrapper.signInWithPassword(
+          email: 'user@example.com',
+          password: 'pw',
+        );
+        await secure.untilWritten(_sessionKey);
+
+        expect(secure.peek(_sessionKey), contains(_accessToken));
+        expect(secure.peek(_sessionKey), isNot(contains('old')));
+      },
+    );
+
+    test(
+      'an update keeps other secure storage items, so the earlier session key is checked',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          _sessionKey: jsonEncode(_sessionJson()),
+        });
+        secure.seed('another-item', 'kept');
+        final wrapper = buildWrapper(secure, _authServer());
+
+        await wrapper.initialize();
+
+        expect(secure.peek('another-item'), 'kept');
+      },
+    );
 
     test('signing out removes the session from secure storage', () async {
       final wrapper = buildWrapper(secure, _authServer());
@@ -148,7 +241,7 @@ void main() {
       await secure.untilRemoved(_sessionKey);
 
       expect(secure.storedKeys, isEmpty);
-      expect(await preferenceKeys(), isEmpty);
+      expect(await tokensInPreferences(), isEmpty);
     });
 
     test(

@@ -46,6 +46,9 @@ class SecureStorageWrapperImpl implements SecureStorageWrapper {
   Future<void> delete(String key) =>
       _guard('delete', () => _storage.delete(key: key));
 
+  @override
+  Future<void> deleteAll() => _guard('deleteAll', _storage.deleteAll);
+
   Future<T> _guard<T>(String operation, Future<T> Function() run) async {
     try {
       return await run();
