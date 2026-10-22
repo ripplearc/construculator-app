@@ -96,9 +96,11 @@
             <mutation text="_feetOf(length) * _feetOf(width),"/>
         </regex>
 
-        <!-- RULE 12: the wall area counts two walls, not four -->
+        <!-- RULE 12: the wall area counts two walls, not four; or its product
+             is taken in int math, which wraps past 2^63 square ticks -->
         <regex pattern="2 \* \(length\.ticks \+ width\.ticks\) \* height\.ticks\.toDouble\(\)," dotAll="true" id="deterministic_rules.wall_area.two_walls">
             <mutation text="(length.ticks + width.ticks) * height.ticks.toDouble(),"/>
+            <mutation text="(2 * (length.ticks + width.ticks) * height.ticks).toDouble(),"/>
         </regex>
 
         <!-- RULE 13: two sides are enough for a box -->

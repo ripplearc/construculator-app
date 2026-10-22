@@ -224,6 +224,19 @@ void main() {
         );
       });
 
+      test('a wall area of three 19,999,999ft sides does not wrap', () {
+        const side = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
+        final answers = rules.answersFor({
+          'Length': side,
+          'Width': side,
+          'Height': side,
+        });
+        expect(
+          texts(answers).singleWhere((text) => text.startsWith('Wall area')),
+          'Wall area: 1,599,999,840,000,004ft²',
+        );
+      });
+
       test('a metric box answers in cubic metres and square metres', () {
         const metre = Length(2520, unit: Unit.metre);
         final answers = rules.answersFor({

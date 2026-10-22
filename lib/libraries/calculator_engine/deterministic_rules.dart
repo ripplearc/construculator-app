@@ -80,7 +80,10 @@ final class Answer extends Equatable {
 /// and the other answers stay, until that limit refuses such a side. A
 /// volume is kept exact and rounded to two decimals only at display, as the
 /// Full Design Doc decides where the prototype pre-rounds it, so the text is
-/// the same 960ft³ and a cost later prices what is shown.
+/// the same 960ft³. A cost prices the displayed value (rule 4.15), so the
+/// cost step must round the volume to two decimals before it prices it:
+/// 986.6667ft³ reads 986.67ft³ and is priced as 986.67ft³, not as the exact
+/// volume.
 class DeterministicRules extends Equatable {
   /// The label of the area of two named sides.
   static const String areaKey = 'Area';
