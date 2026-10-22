@@ -61,31 +61,6 @@ class EstimationRoutesModule extends Module {
       },
     );
 
-    // TODO: [CA-1199] Reconcile this legacy full-screen route with the sheet presentation the material FAB now uses. It shows the new fields but has no Add button, and it never sends MaterialCostFormStarted. https://ripplearc.youtrack.cloud/issue/CA-1199
-    r.child(
-      addMaterialCostRoute,
-      guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) {
-        final estimationId = Modular.args.params['estimationId'];
-        if (estimationId == null || estimationId.isEmpty) {
-          throw ArgumentError(
-            'estimationId is required for CostItemFormScreen. '
-            'Ensure the route includes a valid estimationId parameter.',
-          );
-        }
-        return BlocProvider<MaterialCostFormBloc>(
-          create: (_) => Modular.get<MaterialCostFormBloc>(),
-          child: CostItemFormScreen(
-            type: CostItemType.material,
-            estimationId: estimationId,
-            router: Modular.get<AppRouter>(),
-            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
-            clock: Modular.get<Clock>(),
-          ),
-        );
-      },
-    );
-
     r.child(
       addLabourCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
@@ -101,31 +76,6 @@ class EstimationRoutesModule extends Module {
           create: (_) => Modular.get<LabourCostFormBloc>(),
           child: CostItemFormScreen(
             type: CostItemType.labor,
-            estimationId: estimationId,
-            router: Modular.get<AppRouter>(),
-            yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
-            clock: Modular.get<Clock>(),
-          ),
-        );
-      },
-    );
-
-    // TODO: [CA-1199] Reconcile this legacy full-screen route with the sheet presentation the equipment FAB now uses. https://ripplearc.youtrack.cloud/issue/CA-1199
-    r.child(
-      addEquipmentCostRoute,
-      guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) {
-        final estimationId = Modular.args.params['estimationId'];
-        if (estimationId == null || estimationId.isEmpty) {
-          throw ArgumentError(
-            'estimationId is required for CostItemFormScreen. '
-            'Ensure the route includes a valid estimationId parameter.',
-          );
-        }
-        return BlocProvider<EquipmentCostFormBloc>(
-          create: (_) => Modular.get<EquipmentCostFormBloc>(),
-          child: CostItemFormScreen(
-            type: CostItemType.equipment,
             estimationId: estimationId,
             router: Modular.get<AppRouter>(),
             yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),

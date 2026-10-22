@@ -44,9 +44,7 @@ void main() {
   late AppLocalizations l10n;
 
   const testEstimationId = 'test-estimation-id';
-  const materialRoute = '$fullAddMaterialCostRoute/$testEstimationId';
   const labourRoute = '$fullAddLabourCostRoute/$testEstimationId';
-  const equipmentRoute = '$fullAddEquipmentCostRoute/$testEstimationId';
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -56,7 +54,7 @@ void main() {
     appBootstrap = FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase);
 
     Modular.init(_CostItemFormScreenTestModule(appBootstrap));
-    Modular.setInitialRoute(materialRoute);
+    Modular.setInitialRoute(labourRoute);
 
     l10n = lookupAppLocalizations(const Locale('en'));
   });
@@ -107,18 +105,11 @@ void main() {
   }
 
   group('CostItemFormScreen', () {
-    testWidgets('renders material cost form screen', (tester) async {
-      setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
-
-      expect(find.byType(CostItemFormScreen), findsOneWidget);
-    });
-
     testWidgets('app bar is a CoreAppBar on the Figma Action Bar geometry', (
       tester,
     ) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byType(CoreAppBar), findsOneWidget);
       expect(
@@ -134,25 +125,11 @@ void main() {
       expect(find.byType(CostItemFormScreen), findsOneWidget);
     });
 
-    testWidgets('renders equipment cost form screen', (tester) async {
-      setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), equipmentRoute);
-
-      expect(find.byType(CostItemFormScreen), findsOneWidget);
-    });
-
     testWidgets('displays back button', (tester) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byKey(const Key('back_button')), findsOneWidget);
-    });
-
-    testWidgets('displays material cost screen title', (tester) async {
-      setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
-
-      expect(find.text(l10n.addMaterialCostsScreenTitle), findsOneWidget);
     });
 
     testWidgets('displays labour cost screen title', (tester) async {
@@ -162,18 +139,11 @@ void main() {
       expect(find.text(l10n.addLabourCostsScreenTitle), findsOneWidget);
     });
 
-    testWidgets('displays equipment cost screen title', (tester) async {
-      setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), equipmentRoute);
-
-      expect(find.text(l10n.addEquipmentCostsScreenTitle), findsOneWidget);
-    });
-
     testWidgets('displays mode toggle with manually selected by default', (
       tester,
     ) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byKey(const Key('mode_toggle_container')), findsOneWidget);
       expect(find.text(l10n.manuallyMode), findsOneWidget);
@@ -182,7 +152,7 @@ void main() {
 
     testWidgets('tapping from cost file pill switches mode', (tester) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       await tester.tap(find.byKey(const Key('from_cost_file_pill')));
       await tester.pump();
@@ -197,7 +167,7 @@ void main() {
       tester,
     ) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byKey(const Key('add_to_cost_button')), findsOneWidget);
       final semantics = tester.getSemantics(
@@ -208,21 +178,21 @@ void main() {
 
     testWidgets('displays edit title button', (tester) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byKey(const Key('edit_title_button')), findsOneWidget);
     });
 
     testWidgets('displays total label', (tester) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(find.byKey(const Key('cost_item_total_label')), findsOneWidget);
     });
 
     testWidgets('displays how to calculate label in body', (tester) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       expect(
         find.byKey(const Key('how_to_calculate_label')),

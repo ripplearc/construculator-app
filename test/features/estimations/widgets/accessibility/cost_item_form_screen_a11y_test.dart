@@ -44,7 +44,7 @@ void main() {
   late AppLocalizations l10n;
 
   const testEstimationId = 'test-estimation-id';
-  const materialRoute = '$fullAddMaterialCostRoute/$testEstimationId';
+  const labourRoute = '$fullAddLabourCostRoute/$testEstimationId';
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -54,7 +54,7 @@ void main() {
     appBootstrap = FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase);
 
     Modular.init(_CostItemFormScreenA11yTestModule(appBootstrap));
-    Modular.setInitialRoute(materialRoute);
+    Modular.setInitialRoute(labourRoute);
 
     l10n = lookupAppLocalizations(const Locale('en'));
   });
@@ -111,7 +111,7 @@ void main() {
       setUpAuthenticatedUser();
 
       await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -122,7 +122,7 @@ void main() {
         // still verified.
         checkTapTargetSize: false,
         setupAfterPump: (t) async {
-          Modular.to.navigate(materialRoute);
+          Modular.to.navigate(labourRoute);
           await t.pumpAndSettle();
         },
       );
@@ -131,7 +131,7 @@ void main() {
     testWidgets('a11y: back button meets the 48x48 tap target', (tester) async {
       setUpAuthenticatedUser();
 
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       // The global tap-target guideline stays off for this screen (the 32px
       // pills above), so the bar's own close target is pinned directly.
@@ -148,7 +148,7 @@ void main() {
       setUpAuthenticatedUser();
 
       await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), labourRoute);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -157,7 +157,7 @@ void main() {
         checkTapTargetSize: false, // 32px pills match CoreSelectButton design pattern
         checkTextContrast: false,
         setupAfterPump: (t) async {
-          Modular.to.navigate(materialRoute);
+          Modular.to.navigate(labourRoute);
           await t.pumpAndSettle();
         },
       );
