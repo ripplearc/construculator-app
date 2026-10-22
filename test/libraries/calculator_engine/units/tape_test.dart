@@ -677,6 +677,14 @@ void main() {
       expect(chip.copyWith(), chip);
     });
 
+    test('two chips typed under different ton definitions are not equal', () {
+      const entry = EntryBuffer([Token(digits: '78', unit: Unit.ton)]);
+      const shortTon = ValueChip(entry: entry, poundsPerTon: 2000);
+      const longTon = ValueChip(entry: entry, poundsPerTon: 2240);
+      expect(shortTon, isNot(equals(longTon)));
+      expect(shortTon, const ValueChip(entry: entry, poundsPerTon: 2000));
+    });
+
     test('a result chip and an error chip compare by what they carry', () {
       final key = 'Calc${int.parse('0') == 0 ? '' : 'x'}';
       expect(
