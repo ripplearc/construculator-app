@@ -13,10 +13,7 @@ const int _recentsLimit = 4;
 
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
-/// Waits [debounce] for a non-empty query and runs only the newest event. An
-/// empty query waits a zero-length timer, so the event still runs a moment
-/// after it was added.
-EventTransformer<E> _debouncedSearch<E>(
+EventTransformer<E> _lookupSearchTransformer<E>(
   Duration debounce,
   String Function(E event) queryOf,
 ) =>
@@ -29,10 +26,7 @@ EventTransformer<E> _debouncedSearch<E>(
         )
         .switchMap(mapper);
 
-/// Runs only the newest event. A blank query runs at once, with no timer, and
-/// any other query waits [debounce] first. A newer event drops an older one
-/// that is still waiting out its debounce or already running.
-EventTransformer<E> _searchTransformer<E>(
+EventTransformer<E> _recentsTransformer<E>(
   Duration debounce,
   String Function(E event) queryOf,
 ) =>
@@ -78,11 +72,14 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   }) : super(const YourRatesLoading()) {
     on<YourRatesSearched>(
       _onSearched,
-      transformer: _debouncedSearch(queryDebounce, (event) => event.query),
+      transformer: _lookupSearchTransformer(
+        queryDebounce,
+        (event) => event.query,
+      ),
     );
     on<YourRatesRecentsEvent>(
       _onRecentsEvent,
-      transformer: _searchTransformer(
+      transformer: _recentsTransformer(
         queryDebounce,
         (event) => switch (event) {
           YourRatesRecentsQueried(:final query) => query.trim(),
