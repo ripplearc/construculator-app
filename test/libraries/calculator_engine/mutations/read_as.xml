@@ -79,9 +79,15 @@
 
         <!-- RULE 8: the Pitch stops: the roof ceiling, the D:M:S of a whole
              number, a trailing point's trade stop -->
-        <regex pattern="return rise != null &amp;&amp; rise &gt; 0 &amp;&amp; rise &lt;= ReadAsOffer\.largestRisePerFoot;" dotAll="true" id="read_as.pitch.roof_ceiling">
-            <mutation text="return rise != null &amp;&amp; rise &gt; 0;"/>
-            <mutation text="return rise != null &amp;&amp; rise &gt; 0 &amp;&amp; rise &lt; ReadAsOffer.largestRisePerFoot;"/>
+        <regex pattern="if \(rise == null \|\| rise &lt;= 0 \|\| rise &gt; ReadAsOffer\.largestRisePerFoot\) \{\s*return false;\s*\}" dotAll="true" id="read_as.pitch.roof_ceiling">
+            <mutation text="if (rise == null || rise &lt;= 0) { return false; }"/>
+            <mutation text="if (rise == null || rise &lt;= 0 || rise &gt;= ReadAsOffer.largestRisePerFoot) { return false; }"/>
+        </regex>
+        <!-- RULE 8b (R2): a rise the 1/64in rounding leaves at 0 has no
+             answer under Pitch, so its reading is not offered -->
+        <regex pattern="return parser\.ticksOf\(Token\(digits: raw, unit: Unit\.inch\)\) &gt; 0;" dotAll="true" id="read_as.pitch.rise_rounds_to_nothing">
+            <mutation text="return true;"/>
+            <mutation text="return parser.ticksOf(Token(digits: raw, unit: Unit.inch)) &gt;= 0;"/>
         </regex>
         <regex pattern="if \(_isAPitch\(_readAsDegreesMinutesSeconds\(raw\)\?\.tokens\.single\.value\)\)\s*NumberReading\.degreesMinutesSeconds," dotAll="true" id="read_as.pitch.whole_number_dms">
             <mutation text="NumberReading.degreesMinutesSeconds,"/>
@@ -141,8 +147,11 @@
         <regex pattern="List\.unmodifiable\(\[Token\(digits: raw, unit: Unit\.inch, typedAs: raw\)\]\)," dotAll="true" id="read_as.pitch.rise_without_way_back">
             <mutation text="List.unmodifiable([Token(digits: raw, unit: Unit.inch)]),"/>
         </regex>
-        <regex pattern="if \(last case Token\(unit: Unit\.inch, typedAs: _\?\)\) \{\s*return _replaceLast\(Token\(digits: '\$\{last\.digits\}\$digit'\)\);\s*\}" dotAll="true" id="read_as.entry.digit_after_rise">
+        <regex pattern="if \(last case Token\(unit: Unit\.inch, power: 1, typedAs: _\?\)\) \{\s*return EntryBuffer\(\s*List\.unmodifiable\(\[\s*\.\.\.tokens\.sublist\(0, tokens\.length - 1\),\s*Token\(digits: last\.digits\),\s*\]\),\s*\)\.typeDigit\(digit, readsAngles: readsAngles\);\s*\}" dotAll="true" id="read_as.entry.digit_after_rise">
             <mutation text=""/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return _replaceLast(Token(digits: '${last.digits}$digit')); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit, readsAngles: readsAngles); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit); }"/>
         </regex>
 
         <!-- RULE 13: the typed digits are forgotten on the promotion, or
