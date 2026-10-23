@@ -47,7 +47,9 @@ class QuantityParser extends Equatable {
   /// The quantity the tokens spell, or `null` while any token is still open
   /// or the tokens cannot be one value (a length beside a weight, a raised
   /// unit inside a compound, a fraction over zero, a length too long to keep
-  /// exactly), so that the caller shows the error it already has.
+  /// exactly), so that the caller shows the error it already has. Only a
+  /// length is kept exactly: a weight, an area and a volume stay in double
+  /// math, so a number too long for a [Rational] is still a weight.
   ///
   /// A single token pressed twice or three times is an area or a volume in
   /// that unit; a single board-foot token is a volume; weight tokens add up
@@ -60,7 +62,6 @@ class QuantityParser extends Equatable {
         tokens.any((token) => !token.isComplete || !token.value.isFinite)) {
       return null;
     }
-    if (tokens.any((token) => _exactValueOf(token) == null)) return null;
     final first = tokens.first;
     final unit = first.unit;
     if (unit == null) return null;
@@ -86,6 +87,7 @@ class QuantityParser extends Equatable {
           return null;
         }
         if (unit.dimension == Dimension.length) {
+          if (_exactValueOf(token) == null) return null;
           inches += inchesOf(token);
         } else {
           hundredthsOfPound +=
