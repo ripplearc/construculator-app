@@ -83,6 +83,8 @@ enum TapeRefusal {
   /// An operator, =, a function key or the bracket key on a trig chip whose
   /// function has no value at its angle (Tangent 90°): "Tangent can't
   /// answer that" (Section 5.4); the digits are never used in its place.
+  /// Also a trig key after a number too long to be an angle (309 digits and
+  /// more read as infinity), for any of the three functions.
   trigCannotAnswer,
 
   /// = with no operator to apply and no value waiting for one ("Nothing to
@@ -435,7 +437,11 @@ class Tape extends Equatable {
   ) {
     final answer = function.of(degrees);
     if (answer == null) {
-      return const TapeRefused(TapeRefusal.tangentUndefined);
+      return TapeRefused(
+        degrees.isFinite
+            ? TapeRefusal.tangentUndefined
+            : TapeRefusal.trigCannotAnswer,
+      );
     }
     return TapeChanged(
       _replaceActive(

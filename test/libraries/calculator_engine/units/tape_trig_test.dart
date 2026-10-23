@@ -114,6 +114,26 @@ void main() {
         );
       });
 
+      test('a number too long to be an angle is refused, not NaN', () {
+        final tooLong = press(const Tape(), List.filled(310, '9').join(' '));
+        for (final function in TrigFunction.values) {
+          expect(
+            tooLong.pressTrigKey(function),
+            const TapeRefused(TapeRefusal.trigCannotAnswer),
+            reason: '$function',
+          );
+        }
+        expect(activeOf(tooLong).key, isNull);
+        final prefix = press(
+          const Tape(),
+          'SIN ${List.filled(310, '9').join(' ')}',
+        );
+        expect(
+          prefix.pressEquals(),
+          const TapeRefused(TapeRefusal.trigCannotAnswer),
+        );
+      });
+
       test('a fraction with no unit still wants its unit key', () {
         expect(
           press(const Tape(), '7 / 1 6').pressTrigKey(TrigFunction.sine),
