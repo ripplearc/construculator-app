@@ -80,14 +80,14 @@ void main() {
     test('S118: an angle typed under Sine is offered back to Pitch, D:M:S '
         'spelling intact', () {
       final sine = landed(press(const Tape(), 'SIN 3 8 DMS 0 3'));
-      expect(texts(sine), ["Sine38°03'", 'Sine 0.616349']);
+      expect(texts(sine), ['Sine38°03\'00"', 'Sine 0.616349']);
       final memory = const AngleMemory().filed(sine.chips.first as ValueChip);
       final offered = newest(memory, PlainNumberKeys.pitch);
-      expect(offered!.entry.text, "38°03'");
+      expect(offered!.entry.text, '38°03\'00"');
       expect(memory.remembered, hasLength(1), reason: 'one chip, never a menu');
 
       final pitch = changed(press(const Tape(), '[Pitch]').recall(offered));
-      expect(texts(pitch), ["Pitch38°03'"]);
+      expect(texts(pitch), ['Pitch38°03\'00"']);
       expect(
         activeOf(pitch).value(parser),
         const Angle(38 + 3 / 60, spelling: AngleSpelling.degreesMinutesSeconds),
@@ -131,7 +131,7 @@ void main() {
         const Angle(30, spelling: AngleSpelling.degreesMinutesSeconds),
         formatter: formatter,
       );
-      expect(newest(whole, 'Sine')!.entry.text, "30°00'");
+      expect(newest(whole, 'Sine')!.entry.text, '30°00\'00"');
       final big = const AngleMemory().filedAnswer(
         const Angle(1234.5),
         formatter: formatter,
@@ -162,6 +162,61 @@ void main() {
         newest(const AngleMemory().filed(recalled), 'Sine')!.value,
         const Angle(53.1301),
       );
+    });
+
+    test('rule 4.10: the key that seals a recalled angle keeps its exact '
+        'value behind the sealed spelling', () {
+      const answer = Angle(
+        31.448981389379565,
+        spelling: AngleSpelling.degreesMinutesSeconds,
+      );
+      final remembered = newest(
+        const AngleMemory().filedAnswer(answer, formatter: formatter),
+        'Sine',
+      )!;
+      expect(remembered.entry.text, '31°26\'56"');
+      final sealed = press(
+        changed(press(const Tape(), 'SIN').recall(remembered)),
+        '+',
+      );
+      final operand = sealed.chips.first as ValueChip;
+      expect(operand.isActive, isFalse);
+      expect(operand.entry.text, '31°26\'56"');
+      expect(operand.exactValue, answer);
+
+      final open = RememberedAngle(
+        entry: const EntryBuffer([Token(digits: '38', minutes: '5')]),
+        value: Angle(
+          38 + 5 / 60,
+          spelling: AngleSpelling.degreesMinutesSeconds,
+        ),
+      );
+      expect(
+        open.entry.text,
+        '38°5\'00"',
+        reason: 'a stored entry from before',
+      );
+      final closed = press(
+        changed(press(const Tape(), 'SIN').recall(open)),
+        '+',
+      );
+      final reclosed = closed.chips.first as ValueChip;
+      expect(reclosed.entry.text, '38°05\'00"');
+      expect(reclosed.exactValue, open.value);
+
+      final cleared = changed(
+        changed(press(const Tape(), 'SIN').recall(remembered)).backspace(),
+      );
+      expect(activeOf(cleared).entry.isEmpty, isTrue);
+      expect(
+        activeOf(cleared).exactValue,
+        isNull,
+        reason: '⌫ removes a recalled value whole (rule 4.16)',
+      );
+      final retyped = press(cleared, '3 1 DMS 2 6 DMS 5 +');
+      final digits = retyped.chips.first as ValueChip;
+      expect(digits.entry.text, '31°26\'05"');
+      expect(digits.exactValue, isNull, reason: 'typed, so worth its digits');
     });
 
     test('Section 6: a recalled angle under a forward trig key stays the '
@@ -279,6 +334,17 @@ void main() {
       );
     });
 
+    test('rule 4.10: a chip filed while still active is filed as it reads '
+        'once sealed, 38 [D:M:S] 75 as 39°15\'00"', () {
+      final typed = activeOf(press(const Tape(), '3 8 DMS 7 5'));
+      final memory = const AngleMemory().filed(typed);
+      expect(newest(memory, 'Sine')!.entry.text, '39°15\'00"');
+      expect(
+        newest(memory, 'Sine')!.value,
+        const Angle(39.25, spelling: AngleSpelling.degreesMinutesSeconds),
+      );
+    });
+
     test('rule 4.16: the drawer keeps the minus sign, a forward trig key '
         'takes the angle, and Pitch refuses it at the tap', () {
       final arcsine = press(const Tape(), '1 − 1 . 5 = ASIN');
@@ -294,7 +360,7 @@ void main() {
         formatter: formatter,
       );
       final remembered = newest(dms, 'Sine')!;
-      expect(remembered.entry.text, "-30°00'");
+      expect(remembered.entry.text, '-30°00\'00"');
       expect(remembered.entry.tokens.single.value, -30);
       expect(
         remembered.value,
@@ -304,11 +370,11 @@ void main() {
         const Angle(-30.5, spelling: AngleSpelling.degreesMinutesSeconds),
         formatter: formatter,
       );
-      expect(newest(halved, 'Sine')!.entry.text, "-30°30'");
+      expect(newest(halved, 'Sine')!.entry.text, '-30°30\'00"');
       expect(newest(halved, 'Sine')!.entry.tokens.single.value, -30.5);
 
       final sine = changed(press(const Tape(), 'SIN').recall(remembered));
-      expect(texts(sine), ["Sine-30°00'"]);
+      expect(texts(sine), ['Sine-30°00\'00"']);
       expect(formatter.format(sine.trigAnswer!.value), '-0.5');
       final pitch = press(const Tape(), '[Pitch]');
       expect(
@@ -360,26 +426,29 @@ void main() {
       expect(offered('Width', rowHasAnswers: false), isEmpty);
     });
 
-    test('rule 4.16: a typed 38°03\' and the answer 38.05° rendered as D:M:S '
-        'are one entry', () {
-      final answer = const Angle(
-        38.05,
-        spelling: AngleSpelling.degreesMinutesSeconds,
-      );
-      final chip = activeOf(press(const Tape(), '[Pitch] 3 8 DMS 0 3'));
-      final memory = const AngleMemory()
-          .filed(chip)
-          .filedAnswer(answer, formatter: formatter);
-      expect(memory.remembered, hasLength(1));
-      expect(memory.remembered.single.entry.text, "38°03'");
-      expect(
-        memory.remembered.single.entry.tokens.single,
-        isNot(chip.entry.tokens.single),
-        reason:
-            'the tokens differ (the answer has empty seconds); the text '
-            'is what makes them one value',
-      );
-    });
+    test(
+      'rule 4.16: a typed 38°03\'00" and the answer 38.05° rendered as D:M:S '
+      'are one entry',
+      () {
+        final answer = const Angle(
+          38.05,
+          spelling: AngleSpelling.degreesMinutesSeconds,
+        );
+        final chip = activeOf(press(const Tape(), '[Pitch] 3 8 DMS 0 3'));
+        final memory = const AngleMemory()
+            .filed(chip)
+            .filedAnswer(answer, formatter: formatter);
+        expect(memory.remembered, hasLength(1));
+        expect(memory.remembered.single.entry.text, '38°03\'00"');
+        expect(
+          memory.remembered.single.entry.tokens.single,
+          isNot(chip.entry.tokens.single),
+          reason:
+              'the tokens differ (the typed chip has empty seconds, the '
+              'answer 00); the text is what makes them one value',
+        );
+      },
+    );
 
     test('a D:M:S answer is filed as the formatter writes it: rounded to the '
         'second, the degrees never cut', () {
@@ -390,10 +459,10 @@ void main() {
         ),
         'Sine',
       )!.entry.text;
-      expect(filed(38.5), "38°30'");
-      expect(filed(59.99999), "60°00'");
+      expect(filed(38.5), '38°30\'00"');
+      expect(filed(59.99999), '60°00\'00"');
       expect(filed(31.4542), '31°27\'15"');
-      expect(filed(1234.5), "1234°30'");
+      expect(filed(1234.5), '1234°30\'00"');
       final grade = newest(
         const AngleMemory().filedAnswer(
           const Angle(4, spelling: AngleSpelling.grade),
@@ -530,7 +599,7 @@ void main() {
         'its fields on the chip, and the recalled chip reads as the answer '
         'did', () {
       final arcsine = press(const Tape(), '1 − 1 . 2 = ASIN DMS');
-      expect(texts(arcsine).last, 'Arcsine −11°32\'13"');
+      expect(texts(arcsine).last, 'Arcsine -11°32\'13"');
       final answer = (arcsine.chips.last as ResultChip).value as Angle;
       final remembered = newest(
         const AngleMemory().filedAnswer(answer, formatter: formatter),

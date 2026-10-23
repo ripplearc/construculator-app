@@ -172,10 +172,16 @@ class ChainArithmetic extends Equatable {
       ),
       Volume() => Volume(magnitude, unit: left.unit),
       Weight() => Weight(magnitude, unit: left.unit),
-      Angle() => Angle(magnitude),
+      Angle() => Angle(magnitude, spelling: _sumSpelling(left, right as Angle)),
       Scalar() => Scalar(magnitude),
     };
   }
+
+  static AngleSpelling _sumSpelling(Angle left, Angle right) =>
+      left.spelling == AngleSpelling.degreesMinutesSeconds &&
+          right.spelling == AngleSpelling.degreesMinutesSeconds
+      ? AngleSpelling.degreesMinutesSeconds
+      : AngleSpelling.degrees;
 
   bool _canDivide(Quantity left, Quantity right) => switch ((left, right)) {
     (_, Scalar()) ||

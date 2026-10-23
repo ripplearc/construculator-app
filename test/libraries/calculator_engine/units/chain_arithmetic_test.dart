@@ -449,6 +449,37 @@ void main() {
         );
       });
 
+      test('Section 6: a sum or difference of D:M:S angles keeps the D:M:S '
+          'form; one spelled in degrees, a bare number or × makes degrees', () {
+        const dms = AngleSpelling.degreesMinutesSeconds;
+        const thirty = Angle(30, spelling: dms);
+        const fifteen = Angle(15, spelling: dms);
+        expect(
+          arithmetic.combine(thirty, Operator.add, fifteen),
+          const ArithmeticValue(Angle(45, spelling: dms)),
+        );
+        expect(
+          arithmetic.combine(thirty, Operator.subtract, fifteen),
+          const ArithmeticValue(Angle(15, spelling: dms)),
+        );
+        expect(
+          arithmetic.combine(thirty, Operator.add, const Angle(15)),
+          const ArithmeticValue(Angle(45)),
+        );
+        expect(
+          arithmetic.combine(const Angle(30), Operator.add, fifteen),
+          const ArithmeticValue(Angle(45)),
+        );
+        expect(
+          arithmetic.combine(thirty, Operator.add, const Scalar(6)),
+          const ArithmeticValue(Angle(36)),
+        );
+        expect(
+          arithmetic.combine(thirty, Operator.multiply, const Scalar(2)),
+          const ArithmeticValue(Angle(60)),
+        );
+      });
+
       test('a number + feet and an area + a length are refused', () {
         const error = ArithmeticFailed(CalculationError.dimensionError);
         expect(

@@ -61,8 +61,8 @@
         <regex pattern="return _withFront\(RememberedAngle\(entry: entry, value: angle\)\);" dotAll="true" id="angle_memory.answer.two_decimals">
             <mutation text="return _withFront(RememberedAngle(entry: entry, value: Angle(entry.tokens.single.value, spelling: angle.spelling)));"/>
         </regex>
-        <regex pattern="seconds: match\[3\] \?\? ''\)," dotAll="true" id="angle_memory.answer.seconds_dropped">
-            <mutation text="seconds: ''),"/>
+        <regex pattern="Token\(digits: degrees, minutes: minutes, seconds: seconds\)," dotAll="true" id="angle_memory.answer.seconds_dropped">
+            <mutation text="Token(digits: degrees, minutes: minutes, seconds: ''),"/>
         </regex>
         <regex pattern="if \(_degreesMinutesSeconds\.firstMatch\(rendered\) case final match\?\) \{" dotAll="true" id="angle_memory.answer.dms_as_degrees">
             <mutation text="if (false case final match?) {"/>
@@ -106,9 +106,6 @@
         <regex pattern="'\^\(-\?\\\\d\+\)°" dotAll="true" id="angle_memory.answer.minus_sign_dropped">
             <mutation text="'^(\\d+)°"/>
         </regex>
-        <regex pattern="\.replaceFirst\(QuantityFormatter\.minusSign, '-'\)," dotAll="true" id="angle_memory.answer.typographic_minus">
-            <mutation text=","/>
-        </regex>
         <regex pattern="return digits\.startsWith\('-'\) \? -magnitude : magnitude;" dotAll="true" id="token.value.sign_on_degrees_only">
             <mutation text="return numerator + magnitude - numerator.abs();"/>
         </regex>
@@ -144,19 +141,6 @@
             <mutation text="if (angle.value.degrees &gt; _degreesInARightAngle) { return const TapeRefused(TapeRefusal.pitchNeedsAnAngleUnderARightAngle); }"/>
         </regex>
 
-        <!-- RULE 10 (R2): a negative D:M:S entry read off the formatter is
-             rebuilt from its value, where Dart's % counts the minutes and
-             seconds from the wrong side (-11°32'13" read -11°27'47"), or a
-             field of exactly 60 is written as typed instead of carried -->
-        <regex pattern="if \(_isBelowAMinute\(minutes\) &amp;&amp; _isBelowAMinute\(seconds\)\) \{\s*return &quot;\$\{token\.digits\}°\$\{_twoDigits\(minutes\)\}'\$seconds\\&quot;&quot;;\s*\}" dotAll="true" id="entry_buffer.text.filed_entry_rebuilt">
-            <mutation text=""/>
-            <mutation text="if (_isBelowAMinute(minutes)) { return &quot;${token.digits}°${_twoDigits(minutes)}'$seconds\&quot;&quot;; }"/>
-        </regex>
-        <regex pattern="\(int\.tryParse\(segment\) \?\? Token\.minutesPerDegree\) &lt; Token\.minutesPerDegree;" dotAll="true" id="entry_buffer.text.sixty_written_as_typed">
-            <mutation text="(int.tryParse(segment) ?? Token.minutesPerDegree) &lt;= Token.minutesPerDegree;"/>
-            <mutation text="(int.tryParse(segment) ?? 0) &lt; Token.minutesPerDegree;"/>
-        </regex>
-
         <!-- RULE 11 (R2): a unit key joins a recalled angle, or ⌫ edits a
              recalled value into typed digits -->
         <regex pattern="if \(_holdsARecalledAngle\(chip\)\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}\s*if \(chip\.entry\.isDegreesMinutesSeconds\)" dotAll="true" id="tape.press_unit.joins_recalled">
@@ -164,6 +148,21 @@
         </regex>
         <regex pattern="if \(chip != null &amp;&amp; _holdsARecalledAngle\(chip\)\) \{\s*return _replaceLast\(\s*chip\.copyWith\(entry: const EntryBuffer\(\), exact: \(\) =&gt; null\),\s*\);\s*\}" dotAll="true" id="tape.backspace.edits_recalled">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE 11 (CA-1070 2/2): a chip filed while active is filed with
+             its field left open -->
+        <regex pattern="RememberedAngle\(entry: chip\.entry\.sealed, value: angle\)" dotAll="true" id="angle_memory.filed.unsealed_entry">
+            <mutation text="RememberedAngle(entry: chip.entry, value: angle)"/>
+        </regex>
+
+        <!-- RULE 10 (CA-1070 2/2): the seal loses the exact value behind a
+             recalled angle whose field it closed, keeps it behind the old
+             spelling, or brings it back on an edited chip -->
+        <regex pattern="exact: switch \(chip\.exactValue\) \{\s*final value\? =&gt; \(\) =&gt; \(value: value, spelled: entry\),\s*null =&gt; null,\s*\}," dotAll="true" id="tape.sealed.exact_value">
+            <mutation text=""/>
+            <mutation text="exact: switch (chip.exactValue) { final value? =&gt; () =&gt; (value: value, spelled: chip.entry), null =&gt; null, },"/>
+            <mutation text="exact: switch (chip.exact?.value) { final value? =&gt; () =&gt; (value: value, spelled: entry), null =&gt; null, },"/>
         </regex>
     </rules>
 
