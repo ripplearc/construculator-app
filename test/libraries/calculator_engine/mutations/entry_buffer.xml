@@ -78,6 +78,16 @@
         <!-- RULE: [Inch] on a fraction after whole inches still splits -->
         <regex pattern="!\(unit == Unit\.inch &amp;&amp; endsWithFractionAfterWholeInches\)\) \{" dotAll="true" id="entry_buffer.close_with.fraction_after_inches_splits">
             <mutation text="true) {"/>
+            <mutation text="!endsWithFractionAfterWholeInches) {"/>
+        </regex>
+
+        <!-- RULE: a zero whole part is written as 0-1/2in, or the fraction
+             after a dropped zero is joined with a dash -->
+        <regex pattern="if \(isWholeOfMixed &amp;&amp; token\.digits == '0'\) continue;" dotAll="true" id="entry_buffer.text.zero_whole_part">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_isMixedNumber\(previous, token\) &amp;&amp; previous\.digits != '0' \? '-' : ' ',"  dotAll="true" id="entry_buffer.text.dash_after_dropped_zero">
+            <mutation text="_isMixedNumber(previous, token) ? '-' : ' ',"/>
         </regex>
 
         <!-- RULE: a zero under the line is accepted, or every 0 under the

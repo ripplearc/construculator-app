@@ -414,6 +414,23 @@ void main() {
     });
 
     group('digits and fractions', () {
+      test('a function key closes a fraction after whole inches first', () {
+        final named = press(const Tape(), '5 ft 7 in 1 / 2 [Width]');
+        expect(texts(named), ['5ft 7-1/2in', 'Width']);
+      });
+
+      test('closing a bracket closes a fraction after whole inches', () {
+        final opened = changed(press(const Tape(), '4 ft ×').pressBracket());
+        final closed = changed(press(opened, '7 in 1 / 2').pressBracket());
+        expect(closed.chips.last, isA<BracketChip>());
+        expect((closed.chips.last as BracketChip).expression, '×(7-1/2in)');
+      });
+
+      test('only [Inch] closes a fraction after whole inches as inches', () {
+        expect(texts(press(const Tape(), '7 in 1 / 2 ft')), ['7in', '1/2ft']);
+        expect(texts(press(const Tape(), '7 in 1 / 2 in')), ['7-1/2in']);
+      });
+
       test(
         '= closes a fraction after whole inches, then has nothing to compute',
         () {
