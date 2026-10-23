@@ -813,7 +813,9 @@ class Tape extends Equatable {
   /// offered, under any forward key (owner decision of 18 October 2026):
   /// 89.60 would read 90°00', which has no tangent, and under SIN or COS
   /// the same reading is not offered either; nothing says so (term 2.14).
-  /// The offers under Pitch and Slope are CA-1303's second PR.
+  /// A decimal with only zeros after the point (12.00, 0.0) has no other
+  /// reading, since 12°00' is 12°, so it gets no pill either. The offers
+  /// under Pitch and Slope are CA-1303's second PR.
   ReadAsOffer? get readAsOffer {
     if (openBracket != null) return null;
     if (_chipReadAsDegrees case (:final index, :final chip)) {
@@ -910,6 +912,7 @@ class Tape extends Equatable {
       return null;
     }
     if (token.digits.endsWith('.')) return null;
+    if (_decimalsAreAllZeros(token.digits)) return null;
     final promoted = _readAsDegreesMinutesSeconds(token.digits);
     if (promoted == null) return null;
     if (promoted.tokens.single.value >= _degreesInARightAngle) return null;
@@ -932,6 +935,14 @@ class Tape extends Equatable {
   }
 
   static const int _degreesInARightAngle = 90;
+
+  static bool _decimalsAreAllZeros(String digits) {
+    final point = digits.indexOf('.');
+    if (point < 0) return false;
+    final decimals = digits.substring(point + 1);
+    return decimals.isNotEmpty &&
+        decimals.split('').every((digit) => digit == '0');
+  }
 
   static EntryBuffer _plain(String digits) =>
       EntryBuffer(List.unmodifiable([Token(digits: digits)]));

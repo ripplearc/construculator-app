@@ -161,6 +161,28 @@ void main() {
         expect(press(const Tape(), 'SIN 3 8 . 3 0 . 4').readAsOffer, isNull);
       });
 
+      test(
+        'a decimal with only zeros after the point has no other reading',
+        () {
+          for (final keys in [
+            'SIN 1 2 . 0 0',
+            '1 2 . 0 0 SIN',
+            'SIN 0 . 0',
+            'SIN 1 2 . 0',
+          ]) {
+            expect(press(const Tape(), keys).readAsOffer, isNull, reason: keys);
+          }
+          expect(
+            pill(press(const Tape(), 'SIN 1 2 . 0 1')),
+            startsWith("Input 12.01° as 12°01'"),
+          );
+          expect(
+            pill(press(const Tape(), 'SIN 1 2 . 1 0')),
+            startsWith("Input 12.10° as 12°10'"),
+          );
+        },
+      );
+
       test('S113: the tap closes the minutes, and the spelling survives the '
           'tape and the answer', () {
         var tape = press(const Tape(), 'SIN 4 5 . 2');

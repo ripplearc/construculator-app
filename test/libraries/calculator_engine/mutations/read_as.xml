@@ -48,8 +48,9 @@
         </regex>
 
         <!-- RULE 5: a trailing point is asked about -->
-        <regex pattern="if \(token\.digits\.endsWith\('\.'\)\) return null;\s*final promoted" dotAll="true" id="read_as.degrees.trailing_point">
-            <mutation text="final promoted"/>
+        <regex pattern="if \(token\.digits\.endsWith\('\.'\)\) return null;\s*if \(_decimalsAreAllZeros\(token\.digits\)\) return null;\s*final promoted" dotAll="true" id="read_as.degrees.trailing_point">
+            <mutation text="if (_decimalsAreAllZeros(token.digits)) return null; final promoted"/>
+            <mutation text="if (token.digits.endsWith('.')) return null; final promoted"/>
         </regex>
 
         <!-- RULE 6: the tap keeps the old answer, or rebuilds it on the old
