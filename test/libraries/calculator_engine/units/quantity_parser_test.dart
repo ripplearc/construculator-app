@@ -174,6 +174,12 @@ void main() {
         expect(parser.parse(const [Token(digits: '22')]), isNull);
         expect(
           parser.parse(const [
+            Token(digits: '7', denominator: '', unit: Unit.pound),
+          ]),
+          isNull,
+        );
+        expect(
+          parser.parse(const [
             Token(digits: '1', unit: Unit.foot),
             Token(digits: '7', denominator: '', unit: Unit.inch),
           ]),

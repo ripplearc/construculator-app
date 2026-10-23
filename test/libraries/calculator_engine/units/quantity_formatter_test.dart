@@ -209,6 +209,32 @@ void main() {
           '-17-5/16in',
         );
       });
+
+      test('a negative length smaller than the first step reads zero with '
+          'no sign', () {
+        const tiny = Rational(-1, 128);
+        expect(
+          formatter.format(const Length.exact(tiny, unit: Unit.inch)),
+          '0in',
+        );
+        expect(
+          formatter.format(const Length.exact(tiny, unit: Unit.footInch)),
+          '0ft 0in',
+        );
+        expect(
+          formatter.format(Length.computed(-0.9, unit: Unit.footInch)),
+          '0ft 0in',
+        );
+        const firstStep = Rational(-1, 16);
+        expect(
+          formatter.format(const Length.exact(firstStep, unit: Unit.inch)),
+          '-0-1/16in',
+        );
+        expect(
+          formatter.format(const Length.exact(firstStep, unit: Unit.footInch)),
+          '-0ft 0-1/16in',
+        );
+      });
     });
 
     group('fractional resolution, one row per setting', () {
