@@ -463,6 +463,37 @@ void main() {
       },
     );
 
+    testWidgets(
+      'creating a typed name on "Your recents" opens the form with that name',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.text(l10n.equipmentsTab));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const Key('your_rates_search_field')),
+            matching: find.byType(EditableText),
+          ),
+          'mini excavator',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text('mini excavator'), findsOneWidget);
+      },
+    );
+
     testWidgets('swiping "Your recents" down opens no form', (
       WidgetTester tester,
     ) async {

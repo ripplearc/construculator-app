@@ -3322,6 +3322,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Saved last month} other{Saved {count} months ago}}'**
   String yourRatesSavedMonthsAgo(int count);
 
+  /// Last row of the 'Your recents' sheet while a name is typed in its search box; opens the equipment form with that name (storyboard CUJ 6, frame A name typed in the search). The name is in curly quotes
+  ///
+  /// In en, this message translates to:
+  /// **'Create “{name}” as a new equipment cost'**
+  String yourRatesCreateEquipmentAction(String name);
+
   /// Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate
   ///
   /// In en, this message translates to:
