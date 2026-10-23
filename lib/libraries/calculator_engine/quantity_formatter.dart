@@ -156,8 +156,12 @@ class QuantityFormatter extends Equatable {
     var whole = magnitude.floor();
     final fraction = _fractionOfInch(magnitude - Rational(whole));
     whole += fraction.carry;
-    return '${negative ? '-' : ''}${_localeNumber(whole.toDouble(), 0, group)}'
+    final text =
+        '${_localeNumber(whole.toDouble(), 0, group)}'
         '${fraction.text}${Unit.inch.suffix}';
+    return negative && (whole != 0 || fraction.text.isNotEmpty)
+        ? '-$text'
+        : text;
   }
 
   String _feetAndInches(Rational inches) {
@@ -172,7 +176,11 @@ class QuantityFormatter extends Equatable {
       feet += 1;
       wholeInches = 0;
     }
-    return '${negative ? '-' : ''}${feet}ft $wholeInches${fraction.text}in';
+    final text = '${feet}ft $wholeInches${fraction.text}in';
+    return negative &&
+            (feet != 0 || wholeInches != 0 || fraction.text.isNotEmpty)
+        ? '-$text'
+        : text;
   }
 
   ({String text, int carry}) _fractionOfInch(Rational remainderInches) {

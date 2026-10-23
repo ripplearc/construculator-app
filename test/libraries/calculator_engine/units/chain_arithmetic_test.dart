@@ -237,6 +237,21 @@ void main() {
         );
       });
 
+      test('an area ÷ length quotient is kept to 1/512 of a tick: '
+          '1 tick² ÷ 512 ticks', () {
+        final sliver =
+            value(
+                  arithmetic.combine(
+                    const Area(1),
+                    Operator.divide,
+                    const Length(512, unit: Unit.inch),
+                  ),
+                )
+                as Length;
+        expect(sliver.inches, const Rational(1, 32768));
+        expect(sliver.preciseTicks, 1 / 512);
+      });
+
       test('volume ÷ area is a length and volume ÷ length an area', () {
         expect(
           arithmetic.combine(const Volume(20), Operator.divide, squareFeet(60)),

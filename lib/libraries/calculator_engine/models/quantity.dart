@@ -93,19 +93,19 @@ final class Length extends Quantity {
   /// 13ft reads 18.38ft, where a whole tick would read 18.39ft. [ticks]
   /// must be finite and within [maxTicks]: a rule that computes a length
   /// answers nothing for a value past either, and the assert is the
-  /// backstop. Past 2⁴⁴ ticks the parts are halved until the numerator
-  /// fits a [Rational], down to whole ticks at the limit.
+  /// backstop. The reduced fraction always fits a [Rational]: a double
+  /// carries 53 significant bits, so once the power of two is divided out
+  /// the numerator is at most 2⁵³.
   factory Length.computed(double ticks, {required Unit unit}) {
     assert(
       ticks.isFinite && ticks.abs() <= maxTicks,
       'a computed length is finite and within range',
     );
-    var parts = partsPerTick;
-    while (parts > 1 && ticks.abs() * parts > Rational.maxMagnitude) {
-      parts >>= 1;
-    }
     return Length.exact(
-      Rational((ticks * parts).round(), ticksPerInch * parts),
+      Rational(
+        (ticks * partsPerTick).round(),
+        ticksPerInch * partsPerTick,
+      ).reduced,
       unit: unit,
     );
   }

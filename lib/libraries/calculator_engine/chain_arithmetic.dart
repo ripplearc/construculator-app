@@ -242,13 +242,7 @@ class ChainArithmetic extends Equatable {
 
   Length _keptLength(double ticks, Unit unit) {
     _wholeTicks(ticks);
-    return Length.exact(
-      Rational(
-        (ticks * Length.partsPerTick).round(),
-        Length.ticksPerInch * Length.partsPerTick,
-      ).reduced,
-      unit: unit,
-    );
+    return Length.computed(ticks, unit: unit);
   }
 
   Length _exactLength(Rational inches, Unit unit) {
