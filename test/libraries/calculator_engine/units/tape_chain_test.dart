@@ -684,6 +684,34 @@ void main() {
       );
     });
 
+    test('rule 4.15: a typed difference is never rounded away: 9999999 − '
+        '9999998.99999 is 0.00001, the same areas read Under, and a '
+        'difference in the thirteenth decimal is kept', () {
+      expect(
+        landed(
+          press(const Tape(), '9 9 9 9 9 9 9 − 9 9 9 9 9 9 8 . 9 9 9 9 9 ='),
+        ),
+        '0.00001',
+      );
+      expect(
+        landed(
+          press(
+            const Tape(),
+            '9 9 9 9 9 9 9 m m − 9 9 9 9 9 9 8 . 9 9 9 9 9 m m =',
+          ),
+        ),
+        'Under 0.01m²',
+      );
+      final thirteenth = press(
+        const Tape(),
+        '1 . 0 0 0 0 0 0 0 0 0 0 0 0 1 − 1 =',
+      );
+      expect(
+        (thirteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-13, 1e-15)),
+      );
+    });
+
     test('1 mm + 1 mm = is still 2mm', () {
       expect(landed(press(const Tape(), '1 mm + 1 mm =')), '2mm');
     });

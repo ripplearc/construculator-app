@@ -83,8 +83,13 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// weights, angles and bare numbers) that is zero within the floating-point
 /// error of its operands is zero: 2.5m × 2.5m leaves a residue of a few
 /// ulps against a typed 6.25m², which would otherwise read "Under 0.01m²"
-/// for a true zero (Section 6, "A true zero still reads 0"). Lengths are
-/// exact and need no such rounding.
+/// for a true zero (Section 6, "A true zero still reads 0"). The band is one
+/// part in 10¹⁴ of the operands' size: a hundred times the residue a product
+/// and a difference leave (under 3 × 10⁻¹⁶ across metric and imperial areas
+/// and volumes), and a fifth of the smallest difference two typed numbers
+/// hold (9999999 − 9999998.99999 is 5 × 10⁻¹³ of their size), so a typed
+/// difference is never rounded away (rule 4.15). Lengths are exact and need
+/// no such rounding.
 class ChainArithmetic extends Equatable {
   /// The largest tick count a length answer may reach: 2⁵³, the last whole
   /// number a double still holds exactly, so every kept length was rounded
@@ -213,7 +218,7 @@ class ChainArithmetic extends Equatable {
   static double _zeroWithinFloatNoise(double value, {required double of}) =>
       value.abs() <= of * _floatNoise ? 0 : value;
 
-  static const double _floatNoise = 1e-12;
+  static const double _floatNoise = 1e-14;
 
   bool _canDivide(Quantity left, Quantity right) => switch ((left, right)) {
     (_, Scalar()) ||
