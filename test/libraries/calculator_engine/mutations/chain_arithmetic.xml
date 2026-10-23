@@ -37,8 +37,8 @@
         </regex>
 
         <!-- RULE: a quotient length is rounded to a whole tick -->
-        <regex pattern="\(ticks \* _partsPerTick\)\.round\(\),\s*Length\.ticksPerInch \* _partsPerTick," dotAll="true" id="chain_arithmetic.kept_length.whole_tick">
-            <mutation text="ticks.round(), Length.ticksPerInch,"/>
+        <regex pattern="_wholeTicks\(ticks\);\s*return Length\.computed\(ticks, unit: unit\);" dotAll="true" id="chain_arithmetic.kept_length.whole_tick">
+            <mutation text="return Length(_wholeTicks(ticks), unit: unit);"/>
         </regex>
 
         <!-- RULE 4: volume ÷ area is no longer a length -->

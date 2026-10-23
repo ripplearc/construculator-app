@@ -145,24 +145,37 @@
             <mutation text="String _twoDigits(int value) =&gt; value.toString();"/>
         </regex>
 
-        <!-- RULE 24: a computed length is rounded to a tick before a decimal
+        <!-- RULE 24: a length is rounded to a tick before a decimal
              rendering, a compound rendering or a stored size reads it -->
-        <regex pattern="'\$\{_localeNumber\(value\.preciseTicks / value\.unit\.ticksPerUnit, decimals, group\)\}'" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
+        <regex pattern="'\$\{_localeNumber\(value\.amountIn\(value\.unit\), decimals, group\)\}'" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
             <mutation text="'${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'"/>
         </regex>
-        <regex pattern="Unit\.inch =&gt; _wholeInchesAndFraction\(value\.preciseTicks, group\),\s*Unit\.footInch =&gt; _feetAndInches\(value\.preciseTicks\)," dotAll="true" id="quantity_formatter.length.compound_from_whole_ticks">
-            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(value.ticks.toDouble(), group), Unit.footInch =&gt; _feetAndInches(value.preciseTicks),"/>
-            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(value.preciseTicks, group), Unit.footInch =&gt; _feetAndInches(value.ticks.toDouble()),"/>
+        <regex pattern="Unit\.inch =&gt; _wholeInchesAndFraction\(value\.inches, group\),\s*Unit\.footInch =&gt; _feetAndInches\(value\.inches\)," dotAll="true" id="quantity_formatter.length.compound_from_whole_ticks">
+            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(Rational(value.ticks, Length.ticksPerInch), group), Unit.footInch =&gt; _feetAndInches(value.inches),"/>
+            <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(value.inches, group), Unit.footInch =&gt; _feetAndInches(Rational(value.ticks, Length.ticksPerInch)),"/>
         </regex>
-        <regex pattern="final inches = value\.preciseTicks / Length\.ticksPerInch;" dotAll="true" id="quantity_formatter.stored_length.from_whole_ticks">
+        <regex pattern="final inches = value\.inches\.toDouble\(\);" dotAll="true" id="quantity_formatter.stored_length.from_whole_ticks">
             <mutation text="final inches = value.ticks / Length.ticksPerInch;"/>
         </regex>
 
-        <!-- RULE 25: a computed length's nearest tick is floored or ceiled
-             instead of rounded half up -->
-        <regex pattern="static int _nearestTick\(double ticks\) =&gt; \(ticks \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity.length.nearest_tick">
-            <mutation text="static int _nearestTick(double ticks) =&gt; ticks.floor();"/>
-            <mutation text="static int _nearestTick(double ticks) =&gt; ticks.ceil();"/>
+        <!-- RULE 25: a computed length's part of a tick is floored or ceiled
+             instead of rounded, or kept to 1/256 of a tick instead of 1/512 -->
+        <regex pattern="\(ticks \* partsPerTick\)\.round\(\)," dotAll="true" id="quantity.length.computed_rounding">
+            <mutation text="(ticks * partsPerTick).floor(),"/>
+            <mutation text="(ticks * partsPerTick).ceil(),"/>
+        </regex>
+        <regex pattern="static const int partsPerTick = 1 &lt;&lt; 9;" dotAll="true" id="quantity.length.parts_per_tick">
+            <mutation text="static const int partsPerTick = 1 &lt;&lt; 8;"/>
+        </regex>
+
+        <!-- RULE 26: a negative length smaller than the first step carries a
+             minus sign in front of zero -->
+        <regex pattern="return negative &amp;&amp; \(whole != 0 \|\| fraction\.text\.isNotEmpty\)\s*\? '-\$text'\s*: text;" dotAll="true" id="quantity_formatter.inches.sign_on_zero">
+            <mutation text="return negative ? '-$text' : text;"/>
+        </regex>
+        <regex pattern="return negative &amp;&amp;\s*\(feet != 0 \|\| wholeInches != 0 \|\| fraction\.text\.isNotEmpty\)\s*\? '-\$text'\s*: text;" dotAll="true" id="quantity_formatter.feet_inches.sign_on_zero">
+            <mutation text="return negative ? '-$text' : text;"/>
+            <mutation text="return negative &amp;&amp; (feet != 0 || wholeInches != 0) ? '-$text' : text;"/>
         </regex>
 
         <!-- RULE 23: a pitch's rise is quoted per inch of run, or its grade
