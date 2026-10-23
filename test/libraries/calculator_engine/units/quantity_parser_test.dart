@@ -174,6 +174,12 @@ void main() {
         expect(parser.parse(const [Token(digits: '22')]), isNull);
         expect(
           parser.parse(const [
+            Token(digits: '7', denominator: '', unit: Unit.pound),
+          ]),
+          isNull,
+        );
+        expect(
+          parser.parse(const [
             Token(digits: '1', unit: Unit.foot),
             Token(digits: '7', denominator: '', unit: Unit.inch),
           ]),
@@ -260,7 +266,7 @@ void main() {
       test('a number too long to keep exactly is no value at all', () {
         expect(
           parser.parse(const [
-            Token(digits: '1.0000000000000000001', unit: Unit.foot),
+            Token(digits: '10000000000000000', unit: Unit.foot),
           ]),
           isNull,
         );

@@ -6,6 +6,17 @@ void main() {
 
   group('QuantitySpeller', () {
     group('spell a length', () {
+      test('writes a typed length near the limit in metres instead of '
+          'throwing', () {
+        const huge = Length.exact(Rational(99999999999999), unit: Unit.inch);
+        expect(speller.spell(huge.spelledIn(Unit.metre)), const [
+          Token(digits: '2539999999999.975', unit: Unit.metre),
+        ]);
+        expect(speller.spell(huge.spelledIn(Unit.millimetre)), const [
+          Token(digits: '2539999999999974.5', unit: Unit.millimetre),
+        ]);
+      });
+
       test('writes 22ft in inches as 264in', () {
         expect(speller.spell(const Length(16896, unit: Unit.inch)), const [
           Token(digits: '264', unit: Unit.inch),

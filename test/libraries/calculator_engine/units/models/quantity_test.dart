@@ -37,6 +37,24 @@ void main() {
         expect(computed, isNot(const Length(14120, unit: Unit.foot)));
       });
 
+      test('a computed length is kept to 1/512 of a tick, a half rounded '
+          'away from zero', () {
+        expect(Length.computed(1 / 3, unit: Unit.inch).preciseTicks, 171 / 512);
+        expect(Length.computed(2 / 3, unit: Unit.inch).preciseTicks, 341 / 512);
+        expect(
+          Length.computed(1 / 1024, unit: Unit.inch).inches,
+          const Rational(1, 32768),
+        );
+        expect(
+          Length.computed(-1 / 1024, unit: Unit.inch).inches,
+          const Rational(-1, 32768),
+        );
+        expect(
+          Length.computed(1 / 1025, unit: Unit.inch).inches,
+          Rational.zero,
+        );
+      });
+
       test('a computed length refuses NaN, infinity and a value past the '
           'tick limit as an assertion', () {
         expect(

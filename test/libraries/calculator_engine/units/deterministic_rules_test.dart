@@ -103,7 +103,10 @@ void main() {
         );
         final unitDiagonal =
             rules.answersFor({'Length': one, 'Width': one})[1].value as Length;
-        expect(unitDiagonal.preciseTicks, closeTo(1.41421, 0.00001));
+        expect(
+          unitDiagonal.preciseTicks,
+          closeTo(1.41421, 1 / Length.partsPerTick),
+        );
         expect(unitDiagonal.ticks, 1);
       });
 
