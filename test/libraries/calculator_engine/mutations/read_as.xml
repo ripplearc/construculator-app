@@ -7,7 +7,12 @@
          from, a plain number beside an angle answer, or a reading of 90° or
          more), where the tap goes (the D:M:S reading, the way back from the
          typed digits) and what the tap does (re-input from the digits,
-         rebuild the trig answer behind them). Critical path: a pill that offers the wrong
+         rebuild the trig answer behind them). Under Pitch and Slope: the
+         stops the pill walks (degrees, inches of rise per 12in of run and
+         D:M:S under Pitch; a grade's ratio inside the 0 to 2 band under
+         Slope), the roof nobody could frame, a number the Inch key made
+         that steep, the digit typed after the tap, and the way back to the
+         typed digits. Critical path: a pill that offers the wrong
          reading, or rebuilds the wrong answer, rewrites the user's number
          under a label that says it is helping. -->
 
@@ -53,19 +58,116 @@
             <mutation text="if (token.digits.endsWith('.')) return null; final promoted"/>
         </regex>
 
-        <!-- RULE 6: the tap keeps the old answer, or rebuilds it on the old
+        <!-- RULE 6: the Slope band -->
+        <regex pattern="if \(grade &lt;= 0 \|\| grade &gt; ReadAsOffer\.largestSlopeRatio\) return null;" dotAll="true" id="read_as.slope.band">
+            <mutation text="if (grade &lt;= 0) return null;"/>
+            <mutation text="if (grade &lt;= 0 || grade &gt;= ReadAsOffer.largestSlopeRatio) return null;"/>
+            <mutation text="if (grade &lt; 0 || grade &gt; ReadAsOffer.largestSlopeRatio) return null;"/>
+        </regex>
+        <regex pattern="if \(token\.isDegreesMinutesSeconds \|\| token\.digits\.endsWith\('\.'\)\) \{\s*return null;\s*\}\s*if \(token\.typedAs case final typed\?\) \{" dotAll="true" id="read_as.slope.trailing_point">
+            <mutation text="if (token.typedAs case final typed?) {"/>
+        </regex>
+
+        <!-- RULE 7: the ratio is the digits multiplied, or shifted wrong -->
+        <regex pattern="Token\(\s*digits: _shiftedByAHundred\(token\.digits\),\s*typedAs: token\.digits,\s*\)," dotAll="true" id="read_as.slope.ratio_digits">
+            <mutation text="Token(digits: '${token.value * 100}', typedAs: token.digits),"/>
+            <mutation text="Token(digits: _shiftedByAHundred(token.digits)),"/>
+        </regex>
+        <regex pattern="final shifted = '\$whole\$\{fraction\.substring\(0, 2\)\}'\.replaceFirst\(" dotAll="true" id="read_as.slope.shift_one_place">
+            <mutation text="final shifted = '$whole${fraction.substring(0, 1)}'.replaceFirst("/>
+        </regex>
+
+        <!-- RULE 8: the Pitch stops: the roof ceiling, the D:M:S of a whole
+             number, a trailing point's trade stop -->
+        <regex pattern="if \(rise == null \|\| rise &lt;= 0 \|\| rise &gt; ReadAsOffer\.largestRisePerFoot\) \{\s*return false;\s*\}" dotAll="true" id="read_as.pitch.roof_ceiling">
+            <mutation text="if (rise == null || rise &lt;= 0) { return false; }"/>
+            <mutation text="if (rise == null || rise &lt;= 0 || rise &gt;= ReadAsOffer.largestRisePerFoot) { return false; }"/>
+        </regex>
+        <!-- RULE 8b (R2): a rise the 1/64in rounding leaves at 0 has no
+             answer under Pitch, so its reading is not offered -->
+        <regex pattern="return parser\.ticksOf\(Token\(digits: raw, unit: Unit\.inch\)\) &gt; 0;" dotAll="true" id="read_as.pitch.rise_rounds_to_nothing">
+            <mutation text="return true;"/>
+            <mutation text="return parser.ticksOf(Token(digits: raw, unit: Unit.inch)) &gt;= 0;"/>
+        </regex>
+        <regex pattern="if \(_isAPitch\(_readAsDegreesMinutesSeconds\(raw\)\?\.tokens\.single\.value\)\)\s*NumberReading\.degreesMinutesSeconds," dotAll="true" id="read_as.pitch.whole_number_dms">
+            <mutation text="NumberReading.degreesMinutesSeconds,"/>
+        </regex>
+        <regex pattern="if \(!raw\.endsWith\('\.'\) &amp;&amp; _isARoofSomeoneCouldFrame\(raw\)\)" dotAll="true" id="read_as.pitch.trailing_point_trade">
+            <mutation text="if (_isARoofSomeoneCouldFrame(raw))"/>
+        </regex>
+
+        <!-- RULE 9: the current stop is misread, or the next one is the
+             current one -->
+        <regex pattern="final next = stops\[\(stops\.indexOf\(current\) \+ 1\) % stops\.length\];" dotAll="true" id="read_as.pitch.next_stop">
+            <mutation text="final next = stops[(stops.indexOf(current) + 2) % stops.length];"/>
+        </regex>
+        <regex pattern=": token\.unit == Unit\.inch\s*\? NumberReading\.risePerFoot\s*: NumberReading\.degrees;" dotAll="true" id="read_as.pitch.current_stop">
+            <mutation text=": NumberReading.degrees;"/>
+        </regex>
+
+        <!-- RULE 10: a settled D:M:S, a fraction or a length in feet is
+             asked about -->
+        <regex pattern="if \(token\.isDegreesMinutesSeconds &amp;&amp;\s*\(token\.typedAs == null \|\| !_openSegmentIsEmpty\(token\)\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.pitch.settled_angle">
+            <mutation text=""/>
+            <mutation text="if (token.isDegreesMinutesSeconds &amp;&amp; !_openSegmentIsEmpty(token)) { return null; }"/>
+        </regex>
+        <regex pattern="if \(token\.unit == Unit\.inch &amp;&amp; !_isARoofSomeoneCouldFrame\(raw\)\) return null;" dotAll="true" id="read_as.pitch.typed_roof_past_the_band">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(token\.unit != null &amp;&amp; \(token\.unit != Unit\.inch \|\| token\.power != 1\)\) \{\s*return null;\s*\}" dotAll="true" id="read_as.pitch.feet">
+            <mutation text=""/>
+            <mutation text="if (token.unit != null &amp;&amp; token.unit != Unit.inch) { return null; }"/>
+        </regex>
+
+        <!-- RULE 11: the lap does not come home: the way back reads the
+             current digits -->
+        <regex pattern="final raw = token\.typedAs \?\? token\.digits;" dotAll="true" id="read_as.pitch.raw_is_current">
+            <mutation text="final raw = token.digits;"/>
+        </regex>
+
+        <!-- RULE 12: the tap keeps the old answer, or rebuilds it on the old
              reading -->
         <regex pattern="_with\(\[\.\.\.before\.chips, \?before\.rebuiltTrigAnswer\(answer\)\]\)," dotAll="true" id="read_as.re_input.answer_kept">
             <mutation text="_with([...before.chips, answer]),"/>
         </regex>
 
-        <!-- RULE 7: the typed digits are forgotten on the promotion -->
+        <!-- RULE 12b (R1): a stop the rules refuse as a pitch is offered,
+             Slope asks about a
+             fraction or a length, the rise the pill reads has no way back
+             so a digit after it starts a compound -->
+        <regex pattern="static bool _isAPitch\(double\? degrees\) =&gt;\s*degrees != null &amp;&amp; degrees &gt; 0 &amp;&amp; degrees &lt; _degreesInARightAngle;" dotAll="true" id="read_as.pitch.stop_the_rules_refuse">
+            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null;"/>
+            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null &amp;&amp; degrees &gt; 0 &amp;&amp; degrees &lt;= _degreesInARightAngle;"/>
+            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null &amp;&amp; degrees &gt;= 0 &amp;&amp; degrees &lt; _degreesInARightAngle;"/>
+        </regex>
+
+        <regex pattern="if \(!_isSolo\(chip\)\) return null;\s*final token = chip\.entry\.tokens\.single;\s*if \(token\.isDegreesMinutesSeconds \|\| token\.digits\.endsWith" dotAll="true" id="read_as.slope.fraction_or_length">
+            <mutation text="final token = chip.entry.tokens.single; if (token.isDegreesMinutesSeconds || token.digits.endsWith"/>
+        </regex>
+        <regex pattern="List\.unmodifiable\(\[Token\(digits: raw, unit: Unit\.inch, typedAs: raw\)\]\)," dotAll="true" id="read_as.pitch.rise_without_way_back">
+            <mutation text="List.unmodifiable([Token(digits: raw, unit: Unit.inch)]),"/>
+        </regex>
+        <regex pattern="if \(last case Token\(unit: Unit\.inch, power: 1, typedAs: _\?\)\) \{\s*return EntryBuffer\(\s*List\.unmodifiable\(\[\s*\.\.\.tokens\.sublist\(0, tokens\.length - 1\),\s*Token\(digits: last\.digits\),\s*\]\),\s*\)\.typeDigit\(digit, readsAngles: readsAngles\);\s*\}" dotAll="true" id="read_as.entry.digit_after_rise">
+            <mutation text=""/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return _replaceLast(Token(digits: '${last.digits}$digit')); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit, readsAngles: readsAngles); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit); }"/>
+        </regex>
+
+        <!-- RULE 13: the typed digits are forgotten on the promotion, or
+             kept through the next digit or through backspace -->
         <regex pattern="final typedAs =\s*plain\.typedAs \?\? \(plain\.digits\.contains\('\.'\) \? plain\.digits : null\);" dotAll="true" id="read_as.typed_as.forgotten">
             <mutation text="final String? typedAs = null;"/>
             <mutation text="final typedAs = plain.typedAs ?? plain.digits;"/>
         </regex>
+        <regex pattern="last\.copyWith\(digits: '\$\{last\.digits\}\$digit', typedAs: \(\) =&gt; null\)," dotAll="true" id="read_as.typed_as.kept_through_digit">
+            <mutation text="last.copyWith(digits: '${last.digits}$digit'),"/>
+        </regex>
+        <regex pattern="digits: last\.digits\.substring\(0, last\.digits\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.kept_through_backspace">
+            <mutation text="digits: last.digits.substring(0, last.digits.length - 1),"/>
+        </regex>
 
-        <!-- RULE 8 (R1): the way back outlives the digits it was made from
+        <!-- RULE 14 (R1): the way back outlives the digits it was made from
              (⌫ on a segment digit, a minutes digit typed), the D:M:S key
              forgets it, or two tokens that differ only in it compare
              equal -->
@@ -83,7 +185,7 @@
             <mutation text="seconds, ];"/>
         </regex>
 
-        <!-- RULE 9 (R1): a pill whose reading has no answer under the key
+        <!-- RULE 15 (R1): a pill whose reading has no answer under the key
              is offered, or the way back names its readings the wrong way
              round -->
         <regex pattern="if \(reRead\.asksAnUndefinedTrig\) return null;" dotAll="true" id="read_as.degrees.dead_end_offered">
