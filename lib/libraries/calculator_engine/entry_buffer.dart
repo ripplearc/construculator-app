@@ -153,7 +153,10 @@ final class EntryRefused extends EntryOutcome {
 /// bearing is, 45°02', and one still being typed is not, 38°5', because a
 /// padded 38°05' would supply a zero the next digit takes away again. The
 /// seconds are the last segment, which nothing closes, so they are written
-/// unpadded and normalised at display.
+/// as typed, and a segment typed past 59 is carried at display (38°30'75"
+/// reads 38°31'15"). An entry the drawer read off the formatter (rule 4.16)
+/// is written as given: its minus sign stays in front of the whole angle
+/// (-11°32'13"), and its two-digit seconds stay two digits (38°30'04").
 class EntryBuffer extends Equatable {
   /// The tokens typed so far; the last one may still be open.
   final List<Token> tokens;
@@ -242,6 +245,9 @@ class EntryBuffer extends Equatable {
       return "${token.digits}°${minutes.isEmpty ? '' : "$minutes'"}";
     }
     if (seconds.isEmpty) return "${token.digits}°${_twoDigits(minutes)}'";
+    if (_isBelowAMinute(minutes) && _isBelowAMinute(seconds)) {
+      return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
+    }
     final totalSeconds = token.value * Token.secondsPerDegree;
     if (totalSeconds > _largestWholeNumberADoubleHolds) {
       return "${token.digits}°${_twoDigits(minutes)}'$seconds\"";
@@ -252,6 +258,10 @@ class EntryBuffer extends Equatable {
         "${_twoDigits('${rest ~/ Token.minutesPerDegree}')}'"
         '${rest % Token.minutesPerDegree}"';
   }
+
+  static bool _isBelowAMinute(String segment) =>
+      (int.tryParse(segment) ?? Token.minutesPerDegree) <
+      Token.minutesPerDegree;
 
   static String _twoDigits(String segment) => segment.padLeft(2, '0');
 

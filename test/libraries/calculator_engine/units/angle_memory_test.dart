@@ -19,6 +19,8 @@ void main() {
     'ASIN' => tape.pressTrigKey(TrigFunction.arcsine),
     'ATAN' => tape.pressTrigKey(TrigFunction.arctangent),
     'ft' => tape.pressUnit(Unit.foot),
+    'in' => tape.pressUnit(Unit.inch),
+    '⌫' => tape.backspace(),
     '×' => tape.pressOperator(Operator.multiply),
     '+' => tape.pressOperator(Operator.add),
     '−' => tape.pressOperator(Operator.subtract),
@@ -522,6 +524,106 @@ void main() {
       final sine = changed(press(const Tape(), 'SIN').recall(remembered));
       expect(texts(sine), ['Sine45']);
       expect(formatter.format(sine.trigAnswer!.value), '0.707107');
+    });
+
+    test('rule 4.16: a negative D:M:S answer with seconds keeps its minus and '
+        'its fields on the chip, and the recalled chip reads as the answer '
+        'did', () {
+      final arcsine = press(const Tape(), '1 − 1 . 2 = ASIN DMS');
+      expect(texts(arcsine).last, 'Arcsine −11°32\'13"');
+      final answer = (arcsine.chips.last as ResultChip).value as Angle;
+      final remembered = newest(
+        const AngleMemory().filedAnswer(answer, formatter: formatter),
+        'Sine',
+      )!;
+      expect(remembered.entry.text, '-11°32\'13"');
+      expect(remembered.entry.tokens.single.value, closeTo(-11.53694, 1e-5));
+      final sine = changed(press(const Tape(), 'SIN').recall(remembered));
+      expect(texts(sine), ['Sine-11°32\'13"']);
+      expect(formatter.format(sine.trigAnswer!.value), '-0.2');
+      for (final (degrees, text) in [
+        (-4 / 3600, '-0°00\'04"'),
+        (-(30 + 30 / 60 + 15 / 3600), '-30°30\'15"'),
+        (-(12 + 20 / 60 + 44 / 3600), '-12°20\'44"'),
+        (-(1 + 2 / 3600), '-1°00\'02"'),
+        (38 + 30 / 60 + 4 / 3600, '38°30\'04"'),
+      ]) {
+        final filed = newest(
+          const AngleMemory().filedAnswer(
+            Angle(degrees, spelling: AngleSpelling.degreesMinutesSeconds),
+            formatter: formatter,
+          ),
+          'Sine',
+        )!;
+        expect(filed.entry.text, text);
+        expect(texts(changed(press(const Tape(), 'SIN').recall(filed))), [
+          'Sine$text',
+        ]);
+      }
+    });
+
+    test('rule 4.16: a unit key is refused on a recalled angle in either '
+        'spelling and under any key, and the angle keeps its value', () {
+      const answer = Angle(53.13010235415598);
+      final remembered = newest(
+        const AngleMemory().filedAnswer(answer, formatter: formatter),
+        PlainNumberKeys.pitch,
+      )!;
+      final pitch = changed(press(const Tape(), '[Pitch]').recall(remembered));
+      expect(
+        pitch.pressUnit(Unit.inch),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+      expect(
+        pitch.pressUnit(Unit.foot),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+      expect(activeOf(pitch).value(parser), answer);
+      expect(strip(pitch).first, 'Pitch-degrees: 53.13°');
+      final dms = changed(pitch.pressDmsKey());
+      expect(
+        dms.pressUnit(Unit.inch),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+      final sine = changed(press(const Tape(), 'SIN').recall(remembered));
+      expect(
+        sine.pressUnit(Unit.inch),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+    });
+
+    test('rule 4.16: ⌫ removes a recalled value whole, so the chip is empty '
+        'under its key again, a digit after it is a typed start, and the '
+        'drawer can be recalled once more', () {
+      final remembered = newest(
+        const AngleMemory().filedAnswer(
+          const Angle(53.1301),
+          formatter: formatter,
+        ),
+        PlainNumberKeys.pitch,
+      )!;
+      final pitch = changed(press(const Tape(), '[Pitch]').recall(remembered));
+      final cleared = press(pitch, '⌫');
+      expect(texts(cleared), ['Pitch']);
+      expect(activeOf(cleared).entry.isEmpty, isTrue);
+      expect(activeOf(cleared).exactValue, isNull);
+      expect(texts(press(cleared, '5')), ['Pitch5']);
+      expect(texts(changed(cleared.recall(remembered))), ['Pitch53.13']);
+      final negative = newest(
+        const AngleMemory().filedAnswer(const Angle(-30), formatter: formatter),
+        'Sine',
+      )!;
+      final sine = changed(press(const Tape(), 'SIN').recall(negative));
+      expect(texts(press(sine, '⌫ 5')), ['Sine5'], reason: 'never Sine-5');
+      final typed = landed(press(const Tape(), 'SIN 3 8 DMS 0 3'));
+      final dms = newest(
+        const AngleMemory().filed(typed.chips.first as ValueChip),
+        PlainNumberKeys.pitch,
+      )!;
+      final recalled = changed(press(const Tape(), '[Pitch]').recall(dms));
+      expect(texts(press(recalled, '⌫ 5')), [
+        'Pitch5',
+      ], reason: "never 38°035'");
     });
 
     test('rule 4.16: a recalled value is finished, so a digit after it '
