@@ -18,6 +18,7 @@ void main() {
     'ft' => tape.pressUnit(Unit.foot, holdsLengthOnly: true),
     'in' => tape.pressUnit(Unit.inch, holdsLengthOnly: true),
     '×' => tape.pressOperator(Operator.multiply),
+    '/' => tape.typeFraction(),
     '=' => tape.pressEquals(),
     _ when key.startsWith('[') => tape.pressFunctionKey(
       key.substring(1, key.length - 1),
@@ -199,10 +200,82 @@ void main() {
         );
       });
 
+      test('Section 6: a tie rounds half up, and a negative tie away from '
+          'zero, so 4.875in reads 5in/12in at the 1/4 setting', () {
+        const quarter = QuantityFormatter(
+          preferences: CalculatorPreferences(
+            fractionResolution: FractionResolution.quarter,
+          ),
+        );
+        expect(quarter.format(Angle.ofRisePerFoot(4.875)), '5in/12in');
+        expect(quarter.format(Angle.ofRisePerFoot(-4.875)), '-5in/12in');
+        expect(quarter.format(Angle.ofRisePerFoot(4.625)), '4-3/4in/12in');
+        expect(
+          const QuantityFormatter().format(Angle.ofRisePerFoot(4.875)),
+          '4-7/8in/12in',
+          reason: 'no tie at the 1/16 setting',
+        );
+        final typed = press(
+          const Tape(
+            preferences: CalculatorPreferences(
+              fractionResolution: FractionResolution.quarter,
+            ),
+          ),
+          '[Pitch] 4 . 8 7 5 in',
+        );
+        expect(
+          typed.formatter.format(rules.answersFor(typed.namedValues)[1].value),
+          '5in/12in',
+        );
+      });
+
       test('S88: a bare 6 is a near-flat 1-1/4in/12in roof', () {
         expect(
           strip(press(const Tape(), '[Pitch] 6'))[1],
           'Pitch-rise per 12in run: 1-1/4in/12in',
+        );
+      });
+    });
+
+    group('a fraction over 12 under Pitch is rise in 12 (rule 4.10)', () {
+      test('[Pitch] 6/12 reads 6in/12in, 26.57°, with no unit key', () {
+        final roof = press(const Tape(), '[Pitch] 6 / 1 2');
+        expect(strip(roof), [
+          'Pitch-degrees: 26.57°',
+          'Pitch-rise per 12in run: 6in/12in',
+          'Pitch-grade: 50%',
+        ]);
+        expect(
+          roof.active!.value(const QuantityParser()),
+          Angle.ofRisePerFoot(6),
+        );
+        expect(lastResult(press(roof, '× 2 =')), 'Calc 53.13°');
+        expect(roof.active!.typedAngle, isNull, reason: 'not degrees');
+        expect(roof.readAsOffer, isNull);
+      });
+
+      test('any other fraction keeps its usual reading and needs its unit', () {
+        final sixteenths = press(const Tape(), '[Pitch] 7 / 1 6');
+        expect(strip(sixteenths), isEmpty);
+        expect(
+          sixteenths.pressEquals(),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
+        );
+        expect(
+          strip(press(const Tape(), '[Pitch] 1 / 4 in'))[1],
+          'Pitch-rise per 12in run: 1/4in/12in',
+        );
+        expect(
+          strip(press(const Tape(), '[Pitch] 6 / 1 2 in'))[1],
+          'Pitch-rise per 12in run: 1/2in/12in',
+          reason: 'with a unit the fraction is half an inch of rise',
+        );
+        final sine = press(const Tape(), 'SIN 6 / 1 2');
+        expect(sine.trigAnswer, isNull);
+        expect(
+          sine.pressEquals(),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
+          reason: 'only Pitch reads a fraction over 12',
         );
       });
     });

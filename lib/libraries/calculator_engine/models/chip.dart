@@ -130,7 +130,10 @@ final class ValueChip extends TapeChip {
   /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]). A
   /// number typed as degrees, minutes and seconds is an angle whatever key
   /// it sits under, in that spelling: the segments are its unit (rule 4.10),
-  /// so 38°30' [SIN] is the sine of 38.5° and 60° + 12°01' is 72.02°.
+  /// so 38°30' [SIN] is the sine of 38.5° and 60° + 12°01' is 72.02°. Under
+  /// Pitch a bare fraction over 12 is the rise in 12 a roofer quotes, with
+  /// no unit key needed: [Pitch] 6/12 is 6in/12in, 26.57° (rule 4.10); any
+  /// other fraction keeps its usual reading and still needs its unit.
   ///
   /// A trig chip ([trigFunction]) is worth its answer, not its digits, so
   /// Sine 89° × 56 is 55.99 and Arccosine 0.8 × 6 is 221.22° (Section 6,
@@ -144,6 +147,9 @@ final class ValueChip extends TapeChip {
     }
     if (exactValue case final value?) return value;
     if (entry.isComplete) return _typedUnder(parser).parse(entry.tokens);
+    if (_isRiseOverTwelve) {
+      return Angle.ofRisePerFoot(double.parse(entry.tokens.single.digits));
+    }
     if (!_isPlainNumber) return null;
     if (entry.isDegreesMinutesSeconds || readsDegrees) return _typedAngle;
     return Scalar(entry.tokens.first.value);
@@ -192,9 +198,20 @@ final class ValueChip extends TapeChip {
   /// converted one, or a bare number with no function key or under a key
   /// that takes a plain number.
   bool get isReadable =>
-      exactValue != null || entry.isComplete || _isPlainNumber;
+      exactValue != null ||
+      entry.isComplete ||
+      _isPlainNumber ||
+      _isRiseOverTwelve;
 
   bool get _isPlainNumber => (key == null || !keyWantsUnit) && _isBareNumber;
+
+  bool get _isRiseOverTwelve =>
+      readsDegrees &&
+      trigFunction == null &&
+      entry.tokens.length == 1 &&
+      entry.tokens.single.unit == null &&
+      entry.tokens.single.denominator == '${Angle.inchesPerFootOfRun}' &&
+      double.tryParse(entry.tokens.single.digits) != null;
 
   /// The trig function the chip asks, when its key is a trig key (Sine…,
   /// Arcsine…), else `null`.
