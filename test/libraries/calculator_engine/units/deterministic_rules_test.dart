@@ -258,7 +258,7 @@ void main() {
       test('S41: Rise 12ft and Run 15ft give the pitch, then Diagonal', () {
         final answers = rules.answersFor({'Rise': feet12, 'Run': feet15});
         expect(texts(answers).take(4), [
-          'Pitch-rise per 12in run: 9.6in/12in',
+          'Pitch-rise per 12in run: 9-5/8in/12in',
           'Pitch-degrees: 38.66°',
           'Pitch-grade: 80%',
           'Diagonal: 19.21ft',
@@ -638,7 +638,7 @@ void main() {
             'Arc radius: 5.2ft',
             'Arc length: 12.88ft',
           ]);
-          expect(texts(answers).first, 'Pitch-rise per 12in run: 4.3in/12in');
+          expect(texts(answers).first, 'Pitch-rise per 12in run: 4-1/4in/12in');
           expect(answers[4].sources, ['Run', 'Rise']);
         },
       );
@@ -808,10 +808,10 @@ void main() {
         expect(fromRise.first.sources, ['Pitch', 'Rise']);
       });
 
-      test('S42: Slope 7 alone reads as 0.8in/12in and 4°', () {
+      test('S42: Slope 7 alone reads as 13/16in/12in and 4°', () {
         final answers = rules.answersFor({'Slope': const Scalar(7)});
         expect(texts(answers), [
-          'Pitch-rise per 12in run: 0.8in/12in',
+          'Pitch-rise per 12in run: 13/16in/12in',
           'Pitch-degrees: 4°',
         ]);
         expect(answers.first.sources, ['Slope']);
@@ -825,7 +825,7 @@ void main() {
         ]);
         expect(texts(rules.answersFor({'Pitch': const Scalar(6)})), [
           'Pitch-degrees: 6°',
-          'Pitch-rise per 12in run: 1.3in/12in',
+          'Pitch-rise per 12in run: 1-1/4in/12in',
           'Pitch-grade: 10.5%',
         ]);
         expect(rules.answersFor({'Pitch': const Scalar(30)}).first.sources, [
