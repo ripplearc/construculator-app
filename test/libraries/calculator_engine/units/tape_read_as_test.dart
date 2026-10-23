@@ -226,9 +226,65 @@ void main() {
         expect(chipText(press(const Tape(), '[Pitch] 6 pill ⌫ 5'), 0), '65');
       });
 
+      test(
+        'rule 4.10: a point after the tap is the number\'s second point, so '
+        'it opens D:M:S as it does without the tap, and the seconds go on',
+        () {
+          var tape = press(const Tape(), '[Pitch] 8 . 4 5 pill');
+          expect(chipText(tape, 0), '8.45in');
+          tape = press(tape, '.');
+          expect(chipText(tape, 0), "8°45'");
+          expect(pill(tape), "Input 8°45' as 8.45°");
+          tape = press(tape, '3 0');
+          expect(chipText(tape, 0), '8°45\'30"');
+          expect(tape.readAsOffer, isNull);
+          expect(strip(tape).first, 'Pitch-degrees: 8.76°');
+          expect(
+            chipText(press(const Tape(), '[Pitch] 8 . 4 5 . 3 0'), 0),
+            '8°45\'30"',
+            reason: 'the same keys without the tap read the same',
+          );
+          expect(
+            chipText(press(const Tape(), '[Pitch] 0 . 5 pill .'), 0),
+            "0°05'",
+          );
+          expect(chipText(press(const Tape(), '[Pitch] 6 pill .'), 0), '6.');
+        },
+      );
+
       test('a squared inch is not a rise, so the pill leaves it alone', () {
         expect(press(const Tape(), '[Pitch] 6 in in').readAsOffer, isNull);
         expect(press(const Tape(), '[Pitch] 6 pill in').readAsOffer, isNull);
+      });
+
+      test('rule 4.3: a square the Inch key typed on the pill\'s inch is the '
+          'user\'s, so a digit after it starts a new token', () {
+        final afterTheTap = press(const Tape(), '[Pitch] 6 pill in 5');
+        final typed = press(const Tape(), '[Pitch] 6 in in 5');
+        expect(chipText(afterTheTap, 0), '6in² 5');
+        expect(chipText(typed, 0), '6in² 5');
+        expect(afterTheTap.chips, hasLength(typed.chips.length));
+        expect(strip(afterTheTap), isEmpty);
+      });
+
+      test('term 2.14: a rise the 1/64in rounding leaves at 0 has no answer, '
+          'so its reading is not offered; the D:M:S reading still is', () {
+        final tiny = press(const Tape(), '[Pitch] 0 . 0 0 1');
+        expect(pill(tiny), "Input 0.001° as 0°01'");
+        expect(pill(press(tiny, 'pill')), "Input 0°01' as 0.001°");
+        expect(
+          pill(press(const Tape(), '[Pitch] 0 . 0 0 7')),
+          "Input 0.007° as 0°07'",
+        );
+        expect(
+          pill(press(const Tape(), '[Pitch] 0 . 0 0 8')),
+          'Input 0.008° as 0.008in/12in',
+          reason: '0.008in rounds to one tick, so the rise has an answer',
+        );
+        expect(
+          strip(press(const Tape(), '[Pitch] 0 . 0 0 8 pill')),
+          isNotEmpty,
+        );
       });
 
       test('term 2.14: a stop the rules refuse as a pitch is skipped', () {

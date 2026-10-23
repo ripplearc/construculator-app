@@ -1037,9 +1037,12 @@ class Tape extends Equatable {
   static bool _openSegmentIsEmpty(Token angle) =>
       (angle.seconds ?? angle.minutes ?? '').isEmpty;
 
-  static bool _isARoofSomeoneCouldFrame(String raw) {
+  bool _isARoofSomeoneCouldFrame(String raw) {
     final rise = double.tryParse(raw);
-    return rise != null && rise > 0 && rise <= ReadAsOffer.largestRisePerFoot;
+    if (rise == null || rise <= 0 || rise > ReadAsOffer.largestRisePerFoot) {
+      return false;
+    }
+    return parser.ticksOf(Token(digits: raw, unit: Unit.inch)) > 0;
   }
 
   static bool _isAPitch(double? degrees) =>

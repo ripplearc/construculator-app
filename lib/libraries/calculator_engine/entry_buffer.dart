@@ -272,13 +272,21 @@ class EntryBuffer extends Equatable {
   /// 38 [D:M:S] 30 it opens the seconds, and a third point changes nothing,
   /// since an angle has three segments. An inch the Read-as pill read a
   /// bare number as ([Token.typedAs] behind the unit) is not a unit the
-  /// user typed, so the next digit continues the number instead of starting
-  /// a compound: 6in then 5 is 65. Only the pill under Pitch writes such an
-  /// inch, so no other key meets one.
+  /// user typed, so the key goes to the number as if the inch were not
+  /// there, under the number's own rules: 6in then 5 is 65, and 8.45in then
+  /// . is 8°45' with the seconds open, the second point of 8.45 (rule 4.10).
+  /// Only the pill under Pitch writes such an inch, so no other key meets
+  /// one; an [Inch] pressed on it raises it to a square the user typed,
+  /// which the pill never wrote, so a digit after that starts a new token.
   EntryOutcome typeDigit(String digit, {bool readsAngles = false}) {
     final last = tokens.isEmpty ? null : tokens.last;
-    if (last case Token(unit: Unit.inch, typedAs: _?)) {
-      return _replaceLast(Token(digits: '${last.digits}$digit'));
+    if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) {
+      return EntryBuffer(
+        List.unmodifiable([
+          ...tokens.sublist(0, tokens.length - 1),
+          Token(digits: last.digits),
+        ]),
+      ).typeDigit(digit, readsAngles: readsAngles);
     }
     if (last == null || last.unit != null) {
       return _changed([...tokens, Token(digits: digit == '.' ? '0.' : digit)]);
