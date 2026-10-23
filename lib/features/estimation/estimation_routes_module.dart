@@ -58,6 +58,7 @@ class EstimationRoutesModule extends Module {
       },
     );
 
+    // TODO: [CA-1199] Reconcile this legacy full-screen route with the sheet presentation the material FAB now uses. It shows the new fields but has no Add button, and it never sends MaterialCostFormStarted. https://ripplearc.youtrack.cloud/issue/CA-1199
     r.child(
       addMaterialCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
