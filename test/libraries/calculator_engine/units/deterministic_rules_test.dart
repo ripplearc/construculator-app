@@ -860,6 +860,50 @@ void main() {
         expect(rules.answersFor({'Rise': feet13, 'Diag': feet5}), isEmpty);
       });
 
+      test('a flat triangle offers its 0° pitch, an upright one nothing', () {
+        const nothing = Length(0, unit: Unit.foot);
+        expect(
+          texts(rules.answersFor({'Rise': nothing, 'Run': feet6})).take(4),
+          [
+            'Pitch-rise per 12in run: 0in/12in',
+            'Pitch-degrees: 0°',
+            'Pitch-grade: 0%',
+            'Diagonal: 6ft',
+          ],
+        );
+        expect(texts(rules.answersFor({'Run': feet5, 'Diag': feet5})), [
+          'Rise: 0ft',
+          'Pitch-rise per 12in run: 0in/12in',
+          'Pitch-degrees: 0°',
+          'Pitch-grade: 0%',
+        ]);
+        expect(rules.answersFor({'Rise': feet5, 'Diag': feet5}), isEmpty);
+      });
+
+      test('a rise below zero, or a column of no size, answers nothing', () {
+        const dropOf3ft = Length(-3 * Length.ticksPerFoot, unit: Unit.foot);
+        const nineInches = Length(9 * Length.ticksPerInch, unit: Unit.inch);
+        const nothing = Length(0, unit: Unit.foot);
+        final dropped = rules.answersFor({'Rise': dropOf3ft, 'Run': feet6});
+        expect(
+          dropped.where((answer) => answer.key.startsWith('Pitch')),
+          isEmpty,
+        );
+        expect(dropped.where((answer) => answer.key == 'Diagonal'), isEmpty);
+        for (final namedValues in <Map<String, Quantity>>[
+          {'Height': dropOf3ft, 'Radius': nineInches},
+          {'Height': feet8, 'Radius': nothing},
+          {'Height': nothing, 'Radius': nineInches},
+          {'Height': feet8, 'Diameter': dropOf3ft},
+        ]) {
+          expect(
+            rules.answersFor(namedValues).map((answer) => answer.key),
+            isNot(anyElement(anyOf('Column', 'Cone'))),
+            reason: '$namedValues',
+          );
+        }
+      });
+
       test('a pitch of 0° or less, or of 90° or more, answers nothing', () {
         const outOfRange = <Map<String, Quantity>>[
           {'Pitch': Scalar(90), 'Run': feet12},

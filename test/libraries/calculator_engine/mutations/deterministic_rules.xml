@@ -38,9 +38,23 @@
 
         <!-- RULE 5: a run of nothing still gives a diagonal, and so does a
              missing run -->
-        <regex pattern="if \(run\.preciseTicks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.triangle.no_guard">
-            <mutation text="if (run.preciseTicks &lt; 0) return const [];"/>
+        <regex pattern="if \(run\.preciseTicks &lt;= 0 \|\| rise\.preciseTicks &lt; 0\) return const \[\];" dotAll="true" id="deterministic_rules.triangle.no_guard">
+            <mutation text="if (run.preciseTicks &lt; 0 || rise.preciseTicks &lt; 0) return const [];"/>
+            <mutation text="if (run.preciseTicks &lt;= 0) return const [];"/>
             <mutation text="if (false) return const [];"/>
+        </regex>
+
+        <!-- RULE: a column of no height, or of a radius of nothing or less,
+             still answers a volume -->
+        <regex pattern="if \(height\.preciseTicks &lt;= 0 \|\| radiusTicks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.column.no_size_guard">
+            <mutation text="if (radiusTicks &lt;= 0) return const [];"/>
+            <mutation text="if (height.preciseTicks &lt;= 0) return const [];"/>
+        </regex>
+
+        <!-- RULE: a Diagonal equal to the Rise still answers an upright
+             triangle -->
+        <regex pattern="if \(runTicks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.diagonal_leg.upright_answers">
+            <mutation text="if (runTicks &lt; 0) return const [];"/>
         </regex>
 
         <!-- RULE 6: a mixed tape answers in metres, and an all-metric one in

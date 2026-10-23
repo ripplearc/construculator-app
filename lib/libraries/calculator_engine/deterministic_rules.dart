@@ -118,7 +118,13 @@ final class Answer extends Equatable {
 /// a third of it), leading the circle facts, and reads the Diameter when
 /// both are named, as the circle facts do. A rise, a run or a diagonal the
 /// solver computes keeps its fraction of a tick ([Length.computed]) and is
-/// rounded once, at display, as the rectangle's diagonal is. A Diameter or a Radius gives the missing half
+/// rounded once, at display, as the rectangle's diagonal is. A rise below
+/// zero, or a column whose height or span is zero or less, answers nothing:
+/// a drop below grade is not a roof and a flat or hollow column is no
+/// column. A flat triangle offers its 0° pitch (Rise 0 with a Run, or a
+/// Diagonal equal to the Run), as the owner decided on 2026-10-15; an
+/// upright one (Run 0, or a Diagonal equal to the Rise) is no triangle, as
+/// Section 5.4 refuses 90°. A Diameter or a Radius gives the missing half
 /// of the pair first (what BuildCalc's first [Circle] press shows), then
 /// the circle's area and circumference; with Sides it gives a regular
 /// polygon instead, measured across the corners: area, side length,
@@ -273,6 +279,7 @@ class DeterministicRules extends Equatable {
       (null, null) => (null, 0.0, DimensionKey.radius),
     };
     if (height == null || span == null) return const [];
+    if (height.preciseTicks <= 0 || radiusTicks <= 0) return const [];
     final radiusFeet = radiusTicks / Length.ticksPerFoot;
     final column =
         math.pi *
@@ -551,7 +558,7 @@ class DeterministicRules extends Equatable {
   }
 
   List<Answer> _fromRiseAndRun(Length rise, Length run) {
-    if (run.preciseTicks <= 0) return const [];
+    if (run.preciseTicks <= 0 || rise.preciseTicks < 0) return const [];
     final sources = [DimensionKey.rise.id, DimensionKey.run.id];
     return [
       ..._pitchFamily(
