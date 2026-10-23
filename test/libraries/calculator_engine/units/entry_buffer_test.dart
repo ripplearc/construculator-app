@@ -502,7 +502,7 @@ void main() {
 
       test('closing the minutes carries 60 and more into the degrees', () {
         expect(typeAngle('30.89.').text, "31°29'");
-        expect(typeAngle('30.89.00').text, '31°29\'0"');
+        expect(typeAngle('30.89.00').text, '31°29\'00"');
         expect(
           typeAngle('30.89.').tokens.single,
           const Token(
@@ -554,7 +554,33 @@ void main() {
 
       test('seconds above 59 normalise at display', () {
         expect(typeAngle('38:30:75').text, '38°31\'15"');
+        expect(typeAngle('38:30:60').text, '38°31\'0"');
         expect(typeAngle('0:0:3600').text, '1°00\'0"');
+        expect(
+          typeAngle('0:0:119').text,
+          '0°01\'59"',
+          reason: '119 seconds is 118.999… in floating point, rounded not cut',
+        );
+      });
+
+      test('rule 4.16: an entry read off the formatter is written as given: '
+          'the minus stays in front of the whole angle and two-digit seconds '
+          'stay two digits', () {
+        EntryBuffer filed(String degrees, String minutes, String seconds) =>
+            EntryBuffer(
+              List.unmodifiable([
+                Token(digits: degrees, minutes: minutes, seconds: seconds),
+              ]),
+            );
+        expect(filed('-11', '32', '13').text, '-11°32\'13"');
+        expect(filed('-0', '00', '04').text, '-0°00\'04"');
+        expect(filed('-30', '30', '15').text, '-30°30\'15"');
+        expect(filed('-1', '00', '02').text, '-1°00\'02"');
+        expect(filed('38', '30', '04').text, '38°30\'04"');
+        expect(
+          filed('-11', '32', '13').tokens.single.value,
+          closeTo(-11.53694, 1e-5),
+        );
       });
 
       test('the seconds are rounded, not cut: 0°01\'1" is 60.999… seconds '

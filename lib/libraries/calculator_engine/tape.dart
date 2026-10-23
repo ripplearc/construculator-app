@@ -840,7 +840,8 @@ class Tape extends Equatable {
   /// or less is refused into Pitch, which keeps its old value
   /// ([TapeRefusal.pitchNeedsAnAngleAboveZero]); a forward trig key takes
   /// it. A recalled value is finished: a digit after it starts a new chip
-  /// rather than joining it ([typeDigit]).
+  /// rather than joining it ([typeDigit]), a unit key is refused on it
+  /// ([pressUnit]), and ⌫ removes it whole ([backspace]).
   TapeOutcome recall(RememberedAngle angle) {
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
@@ -1180,7 +1181,9 @@ class Tape extends Equatable {
   /// [Feet] cannot become a length the solver never reads. Pitch takes a
   /// length as inches of rise per 12in of run (rule 4.10). An angle typed
   /// as degrees, minutes and seconds is refused a unit under any key
-  /// (Section 5.4, "That value is already an angle").
+  /// (Section 5.4, "That value is already an angle"), and so is an angle
+  /// recalled from the drawer in either spelling: a recalled value is
+  /// finished, and a unit would make it a typed start (rule 4.16).
   TapeOutcome pressUnit(
     Unit unit, {
     bool holdsLengthOnly = false,
@@ -1210,6 +1213,9 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (_holdsARecalledAngle(chip)) {
+      return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
     }
     if (chip.entry.isDegreesMinutesSeconds) {
       return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
@@ -1409,6 +1415,11 @@ class Tape extends Equatable {
   /// the bracket itself ("on an empty bracket it removes the bracket"),
   /// one that ⌫ reopened included; an emptied operator chip stays, since
   /// it still holds the operator.
+  ///
+  /// A value recalled from the drawer is removed whole, exact value and
+  /// all, so the chip is empty under its key again and the drawer can be
+  /// offered once more: a recalled value is finished and never becomes a
+  /// typed start that ⌫ edits into one digit at a time (rule 4.16).
   TapeOutcome backspace() {
     if (openBracket case final bracket?) {
       if (bracket.inner.isEmpty) return TapeChanged(_removeBracket(bracket));
@@ -1420,6 +1431,11 @@ class Tape extends Equatable {
       }
     }
     final chip = active;
+    if (chip != null && _holdsARecalledAngle(chip)) {
+      return _replaceLast(
+        chip.copyWith(entry: const EntryBuffer(), exact: () => null),
+      );
+    }
     if (chip != null && !chip.entry.isEmpty) {
       return _entry(chip, chip.entry.backspace());
     }

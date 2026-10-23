@@ -114,7 +114,7 @@ void main() {
         tape = press(tape, '.');
         expect(activeText(tape), "31°29'");
         tape = press(tape, '0 0');
-        expect(activeText(tape), '31°29\'0"');
+        expect(activeText(tape), '31°29\'00"');
       });
 
       test('a bare number takes the point, and the trig keys read the '
