@@ -1,5 +1,6 @@
 // coverage:ignore-file
 
+export 'angle_memory.dart';
 export 'chain_arithmetic.dart';
 export 'chain_evaluator.dart';
 export 'deterministic_rules.dart';

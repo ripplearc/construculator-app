@@ -149,8 +149,8 @@
         <regex pattern="if \(!chip\.takesAnAngle\) \{\s*return const TapeEntryRefused\(EntryRefusal\.secondDecimalPoint\);\s*\}\s*return _entry\(chip, chip\.entry\.closeDegreesMinutesSeconds\(\)\);" dotAll="true" id="tape.dms_key.under_any_key">
             <mutation text="return _entry(chip, chip.entry.closeDegreesMinutesSeconds());"/>
         </regex>
-        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.typeANumberFirst\);\s*\}\s*if \(chip\.entry\.tokens\.any" dotAll="true" id="tape.dms_key.empty_chip">
-            <mutation text="if (chip.entry.tokens.any"/>
+        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.typeANumberFirst\);\s*\}\s*if \(chip\.exactValue case" dotAll="true" id="tape.dms_key.empty_chip">
+            <mutation text="if (chip.exactValue case"/>
         </regex>
 
         <!-- RULE 15 (R1): an angle answer is not converted, or is converted

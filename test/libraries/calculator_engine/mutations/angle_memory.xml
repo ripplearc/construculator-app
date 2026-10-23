@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE ANGLE DRAWER MUTATION TESTING (F2b CA-1303) -->
+    <!-- Targets: what the angle drawer files (a typed number that reads as
+         degrees or D:M:S, an angle answer at full precision), how it keeps
+         its three (newest first, no duplicates, re-filing moves to the
+         front), which key may have an angle back, and how a recalled angle
+         is typed into a chip. Critical path: a drawer that offers an angle
+         to an inverse key, or a count to Pitch, types the wrong kind of
+         value under a label that says it is helping. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/angle_memory.dart</file>
+        <file>lib/libraries/calculator_engine/models/chip.dart</file>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+        <file>lib/libraries/calculator_engine/models/token.dart</file>
+        <file>lib/libraries/calculator_engine/entry_buffer.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: any key has an angle back, or only Pitch does, or an
+             inverse key does -->
+        <regex pattern="static bool keyTakesAnAngle\(String key\) =&gt;\s*key == PlainNumberKeys\.pitch \|\|\s*TrigFunction\.named\(key\)\?\.isInverse == false;" dotAll="true" id="angle_memory.key_takes_an_angle">
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; true;"/>
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; key == PlainNumberKeys.pitch;"/>
+            <mutation text="static bool keyTakesAnAngle(String key) =&gt; key == PlainNumberKeys.pitch || TrigFunction.named(key) != null;"/>
+        </regex>
+
+        <!-- RULE 2: the drawer offers its oldest, or offers to any key -->
+        <regex pattern="if \(!keyTakesAnAngle\(key\)\) return const \[\];\s*return List\.unmodifiable\(remembered\.take\(rowHasAnswers \? 1 : depth\)\);" dotAll="true" id="angle_memory.offered_for">
+            <mutation text="return List.unmodifiable(remembered.take(rowHasAnswers ? 1 : depth));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.take(1));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.take(depth));"/>
+            <mutation text="if (!keyTakesAnAngle(key)) return const []; return List.unmodifiable(remembered.reversed.take(rowHasAnswers ? 1 : depth));"/>
+        </regex>
+
+        <!-- RULE 3: a value that is not an angle is filed -->
+        <regex pattern="final angle = chip\.typedAngle;\s*if \(angle == null\) return this;" dotAll="true" id="angle_memory.filed.not_an_angle">
+            <mutation text="final angle = chip.typedAngle ?? const Angle(0);"/>
+        </regex>
+        <regex pattern="_isPlainNumber &amp;&amp; \(readsDegrees \|\| entry\.isDegreesMinutesSeconds\)\s*\? _typedAngle\s*: null;" dotAll="true" id="chip.typed_angle">
+            <mutation text="_isPlainNumber ? _typedAngle : null;"/>
+            <mutation text="_isPlainNumber &amp;&amp; readsDegrees ? _typedAngle : null;"/>
+        </regex>
+
+        <!-- RULE 4: the drawer grows past three, keeps duplicates, or files
+             at the back -->
+        <regex pattern="if \(kept\.length == depth\) break;" dotAll="true" id="angle_memory.depth">
+            <mutation text="if (kept.length == depth + 1) break;"/>
+        </regex>
+        <regex pattern="if \(kept\.any\(\(earlier\) =&gt; earlier\.entry\.text == angle\.entry\.text\)\) \{\s*continue;\s*\}" dotAll="true" id="angle_memory.duplicates">
+            <mutation text=""/>
+            <mutation text="if (kept.any((earlier) =&gt; earlier.entry == angle.entry)) { continue; }"/>
+        </regex>
+        <regex pattern="AngleMemory\.of\(\[angle, \.\.\.remembered\]\);" dotAll="true" id="angle_memory.filed_at_the_back">
+            <mutation text="AngleMemory.of([...remembered, angle]);"/>
+        </regex>
+
+        <!-- RULE 5: an answer is filed at its two decimals, or a D:M:S
+             answer as decimal degrees, or its seconds are kept at zero -->
+        <regex pattern="return _withFront\(RememberedAngle\(entry: entry, value: angle\)\);" dotAll="true" id="angle_memory.answer.two_decimals">
+            <mutation text="return _withFront(RememberedAngle(entry: entry, value: Angle(entry.tokens.single.value, spelling: angle.spelling)));"/>
+        </regex>
+        <regex pattern="seconds: match\[3\] \?\? ''\)," dotAll="true" id="angle_memory.answer.seconds_dropped">
+            <mutation text="seconds: ''),"/>
+        </regex>
+        <regex pattern="if \(_degreesMinutesSeconds\.firstMatch\(rendered\) case final match\?\) \{" dotAll="true" id="angle_memory.answer.dms_as_degrees">
+            <mutation text="if (false case final match?) {"/>
+        </regex>
+        <regex pattern="groupThousands: false\)" dotAll="true" id="angle_memory.answer.grouped">
+            <mutation text="groupThousands: true)"/>
+        </regex>
+        <regex pattern="AngleSpelling\.risePerFoot \|\|\s*AngleSpelling\.grade =&gt; answer\.spelledAs\(AngleSpelling\.degrees\)," dotAll="true" id="angle_memory.answer.pitch_spelling_kept">
+            <mutation text="AngleSpelling.risePerFoot || AngleSpelling.grade =&gt; answer,"/>
+        </regex>
+        <regex pattern="if \(exactValue case final Angle angle\) return angle;" dotAll="true" id="chip.typed_angle.ignores_exact">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 5b (R1): a recalled angle under a forward trig key is the
+             chip's value instead of the function's operand, or the operand
+             is read at the two decimals on screen -->
+        <regex pattern="if \(trigOperand case final operand\?\) \{\s*return trigFunction\?\.answerTo\(operand\);\s*\}\s*if \(exactValue case final value\?\) return value;" dotAll="true" id="chip.value.exact_before_trig">
+            <mutation text="if (exactValue case final value?) return value; if (trigOperand case final operand?) { return trigFunction?.answerTo(operand); }"/>
+        </regex>
+        <regex pattern=": switch \(exactValue\) \{\s*final Angle recalled =&gt; recalled,\s*_ =&gt; _typedAngle,\s*\}," dotAll="true" id="chip.trig_operand.recalled_at_digits">
+            <mutation text=": _typedAngle,"/>
+        </regex>
+
+        <!-- RULE 6: a recalled angle lands on a filled chip, a bare chip or
+             a key that takes no angle, or loses its exact value -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*if \(chip\.key case final key\? when AngleMemory\.keyTakesAnAngle\(key\)\) \{" dotAll="true" id="tape.recall.guard">
+            <mutation text="if (chip != null) { if (chip.key case final key? when AngleMemory.keyTakesAnAngle(key)) {"/>
+            <mutation text="if (chip != null &amp;&amp; chip.entry.isEmpty) { if (chip.key case final key?) {"/>
+        </regex>
+        <regex pattern="exact: \(\) =&gt; \(value: angle\.value, spelled: angle\.entry\)," dotAll="true" id="tape.recall.loses_precision">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="final operand = switch \(chip\.trigOperand\) \{\s*final Angle angle =&gt; angle\.degrees,\s*Scalar\(:final value\) =&gt; value,\s*_ =&gt; number,\s*\};" dotAll="true" id="tape.trig_answer.recalled_at_digits">
+            <mutation text="final operand = number;"/>
+        </regex>
+
+        <!-- RULE 7 (R1): the minus sign is lost on filing, or applied to the
+             degrees alone; Pitch takes a recalled angle of 0° or less; a
+             digit joins a recalled value -->
+        <regex pattern="'\^\(-\?\\\\d\+\)°" dotAll="true" id="angle_memory.answer.minus_sign_dropped">
+            <mutation text="'^(\\d+)°"/>
+        </regex>
+        <regex pattern="\.replaceFirst\(QuantityFormatter\.minusSign, '-'\)," dotAll="true" id="angle_memory.answer.typographic_minus">
+            <mutation text=","/>
+        </regex>
+        <regex pattern="return digits\.startsWith\('-'\) \? -magnitude : magnitude;" dotAll="true" id="token.value.sign_on_degrees_only">
+            <mutation text="return numerator + magnitude - numerator.abs();"/>
+        </regex>
+        <regex pattern="if \(angle\.value\.degrees &lt;= 0\) \{\s*return const TapeRefused\(TapeRefusal\.pitchNeedsAnAngleAboveZero\);\s*\}" dotAll="true" id="tape.recall.pitch_takes_below_zero">
+            <mutation text=""/>
+            <mutation text="if (angle.value.degrees &lt; 0) { return const TapeRefused(TapeRefusal.pitchNeedsAnAngleAboveZero); }"/>
+        </regex>
+        <regex pattern="if \(key == PlainNumberKeys\.pitch\) \{\s*if \(angle\.value\.degrees &lt;= 0\)" dotAll="true" id="tape.recall.every_key_refuses">
+            <mutation text="if (true) { if (angle.value.degrees &lt;= 0)"/>
+        </regex>
+        <regex pattern="if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.joins_recalled">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9 (R1, review of 22 Oct): a recalled angle gets the Read-as
+             pill, the D:M:S key leaves it as it is or drops its exact value,
+             or Pitch takes a recalled angle of 90° or more -->
+        <regex pattern="return _holdsARecalledAngle\(chip\) \? null : _angleOffer\(index, chip\);" dotAll="true" id="tape.read_as.recalled_under_trig">
+            <mutation text="return _angleOffer(index, chip);"/>
+        </regex>
+        <regex pattern="if \(chip == null \|\| _holdsARecalledAngle\(chip\)\) return null;" dotAll="true" id="tape.read_as.recalled_under_pitch">
+            <mutation text="if (chip == null) return null;"/>
+        </regex>
+        <regex pattern="final angle = _respelledAngle\(recalled\);" dotAll="true" id="tape.dms_key.recalled_not_converted">
+            <mutation text="final angle = recalled;"/>
+        </regex>
+        <regex pattern="chip\.copyWith\(\s*entry: entry,\s*exact: \(\) =&gt; \(value: angle, spelled: entry\),\s*\)," dotAll="true" id="tape.dms_key.recalled_loses_exact">
+            <mutation text="chip.copyWith(entry: entry, exact: () =&gt; null),"/>
+            <mutation text="chip.copyWith(entry: entry),"/>
+        </regex>
+        <regex pattern="if \(angle\.value\.degrees &gt;= _degreesInARightAngle\) \{\s*return const TapeRefused\(\s*TapeRefusal\.pitchNeedsAnAngleUnderARightAngle,\s*\);\s*\}" dotAll="true" id="tape.recall.pitch_takes_right_angle">
+            <mutation text=""/>
+            <mutation text="if (angle.value.degrees &gt; _degreesInARightAngle) { return const TapeRefused(TapeRefusal.pitchNeedsAnAngleUnderARightAngle); }"/>
+        </regex>
+
+        <!-- RULE 10 (R2): a negative D:M:S entry read off the formatter is
+             rebuilt from its value, where Dart's % counts the minutes and
+             seconds from the wrong side (-11°32'13" read -11°27'47"), or a
+             field of exactly 60 is written as typed instead of carried -->
+        <regex pattern="if \(_isBelowAMinute\(minutes\) &amp;&amp; _isBelowAMinute\(seconds\)\) \{\s*return &quot;\$\{token\.digits\}°\$\{_twoDigits\(minutes\)\}'\$seconds\\&quot;&quot;;\s*\}" dotAll="true" id="entry_buffer.text.filed_entry_rebuilt">
+            <mutation text=""/>
+            <mutation text="if (_isBelowAMinute(minutes)) { return &quot;${token.digits}°${_twoDigits(minutes)}'$seconds\&quot;&quot;; }"/>
+        </regex>
+        <regex pattern="\(int\.tryParse\(segment\) \?\? Token\.minutesPerDegree\) &lt; Token\.minutesPerDegree;" dotAll="true" id="entry_buffer.text.sixty_written_as_typed">
+            <mutation text="(int.tryParse(segment) ?? Token.minutesPerDegree) &lt;= Token.minutesPerDegree;"/>
+            <mutation text="(int.tryParse(segment) ?? 0) &lt; Token.minutesPerDegree;"/>
+        </regex>
+
+        <!-- RULE 11 (R2): a unit key joins a recalled angle, or ⌫ edits a
+             recalled value into typed digits -->
+        <regex pattern="if \(_holdsARecalledAngle\(chip\)\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}\s*if \(chip\.entry\.isDegreesMinutesSeconds\)" dotAll="true" id="tape.press_unit.joins_recalled">
+            <mutation text="if (chip.entry.isDegreesMinutesSeconds)"/>
+        </regex>
+        <regex pattern="if \(chip != null &amp;&amp; _holdsARecalledAngle\(chip\)\) \{\s*return _replaceLast\(\s*chip\.copyWith\(entry: const EntryBuffer\(\), exact: \(\) =&gt; null\),\s*\);\s*\}" dotAll="true" id="tape.backspace.edits_recalled">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="angle_memory" expected-return="0">flutter test test/libraries/calculator_engine/units/angle_memory_test.dart test/libraries/calculator_engine/units/entry_buffer_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

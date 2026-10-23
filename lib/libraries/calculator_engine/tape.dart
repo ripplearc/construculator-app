@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/calculator_engine/angle_memory.dart';
 import 'package:construculator/libraries/calculator_engine/chain_arithmetic.dart';
 import 'package:construculator/libraries/calculator_engine/chain_evaluator.dart';
 import 'package:construculator/libraries/calculator_engine/deterministic_rules.dart';
@@ -139,9 +140,25 @@ enum TapeRefusal {
   /// D:M:S is not a pitch reading; the Pitch key cycles the three that are.
   pitchHasNoDms,
 
+  /// A remembered angle of 0° or less tapped into Pitch (rule 4.16): Pitch
+  /// keeps its old value, and the strip note says Pitch needs an angle
+  /// above 0° and names the key to press next (1.8). A forward trig key
+  /// takes the same angle.
+  pitchNeedsAnAngleAboveZero,
+
+  /// A remembered angle of 90° or more tapped into Pitch: Pitch keeps its
+  /// old value, and the strip note says a pitch must be under 90° (Section
+  /// 1.8, "A pitch has to be under 90°"). A forward trig key takes the
+  /// same angle.
+  pitchNeedsAnAngleUnderARightAngle,
+
   /// The Read-as pill tapped while the tape offers no other reading; the
   /// pill shows only while [Tape.readAsOffer] has one.
   nothingToReInput,
+
+  /// A remembered angle tapped with no empty chip under a key that takes
+  /// an angle to type it into; the memory chip shows only then (rule 4.16).
+  noChipToRecallInto,
 }
 
 /// Something the tape did that the user should be told about, though
@@ -469,7 +486,12 @@ class Tape extends Equatable {
     final number = chip.bareNumber;
     if (function == null || number == null) return null;
     if (reach == null) {
-      return (function: function, operand: number, key: function.key);
+      final operand = switch (chip.trigOperand) {
+        final Angle angle => angle.degrees,
+        Scalar(:final value) => value,
+        _ => number,
+      };
+      return (function: function, operand: operand, key: function.key);
     }
     final ratio = reach.ratio;
     if (ratio == null) return null;
@@ -731,12 +753,18 @@ class Tape extends Equatable {
   /// minutes and seconds (rule 4.10: 23.16.45 is 23°16'45") where the chip
   /// takes an angle ([ValueChip.takesAnAngle]), and is refused under a key
   /// that does not (Section 5.4, "A second decimal point makes an angle").
+  /// An angle recalled from the drawer is a finished value, never a typed
+  /// start that later digits join (rule 4.16): the digit seals it and
+  /// starts a chip of its own, as a digit after any finished value does.
   TapeOutcome typeDigit(String digit) {
     if (openBracket case final bracket?) {
       return _inside(bracket, (inner) => inner.typeDigit(digit));
     }
     if (_endsWithClosedBracket) {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
+    }
+    if (active case ValueChip(exactValue: Angle())) {
+      return _sealed().typeDigit(digit);
     }
     final chip = active ?? const ValueChip();
     return _entry(
@@ -782,6 +810,17 @@ class Tape extends Equatable {
     if (chip.entry.isEmpty) {
       return const TapeRefused(TapeRefusal.typeANumberFirst);
     }
+    if (chip.exactValue case final Angle recalled) {
+      final angle = _respelledAngle(recalled);
+      final entry = AngleMemory.spelledAnswer(angle, formatter: formatter);
+      if (entry == null) return TapeChanged(this);
+      return _replaceLast(
+        chip.copyWith(
+          entry: entry,
+          exact: () => (value: angle, spelled: entry),
+        ),
+      );
+    }
     if (chip.entry.tokens.any((token) => token.unit != null)) {
       return const TapeRefused(TapeRefusal.dmsNeedsAPlainAngle);
     }
@@ -789,6 +828,43 @@ class Tape extends Equatable {
       return const TapeEntryRefused(EntryRefusal.secondDecimalPoint);
     }
     return _entry(chip, chip.entry.closeDegreesMinutesSeconds());
+  }
+
+  /// A remembered angle tapped on the strip (rule 4.16; S118): typed into
+  /// the empty chip the key opened, spelling intact, so [Pitch] after
+  /// [SIN] 38 [D:M:S] 03 = reads Pitch 38°03'. A recalled answer keeps its
+  /// full precision behind the digits on screen, the way a converted value
+  /// does ([ValueChip.exact]). The chip must be empty and under a key that
+  /// takes an angle ([AngleMemory.keyTakesAnAngle]); anywhere else the tap
+  /// is refused, since the memory chip is not shown there. An angle of 0°
+  /// or less is refused into Pitch, which keeps its old value
+  /// ([TapeRefusal.pitchNeedsAnAngleAboveZero]); a forward trig key takes
+  /// it. A recalled value is finished: a digit after it starts a new chip
+  /// rather than joining it ([typeDigit]), a unit key is refused on it
+  /// ([pressUnit]), and ⌫ removes it whole ([backspace]).
+  TapeOutcome recall(RememberedAngle angle) {
+    final chip = active;
+    if (chip != null && chip.entry.isEmpty) {
+      if (chip.key case final key? when AngleMemory.keyTakesAnAngle(key)) {
+        if (key == PlainNumberKeys.pitch) {
+          if (angle.value.degrees <= 0) {
+            return const TapeRefused(TapeRefusal.pitchNeedsAnAngleAboveZero);
+          }
+          if (angle.value.degrees >= _degreesInARightAngle) {
+            return const TapeRefused(
+              TapeRefusal.pitchNeedsAnAngleUnderARightAngle,
+            );
+          }
+        }
+        return _replaceLast(
+          chip.copyWith(
+            entry: angle.entry,
+            exact: () => (value: angle.value, spelled: angle.entry),
+          ),
+        );
+      }
+    }
+    return const TapeRefused(TapeRefusal.noChipToRecallInto);
   }
 
   /// The Read-as pill (term 2.14; rule 4.10): the other reading of a bare
@@ -833,10 +909,10 @@ class Tape extends Equatable {
   ReadAsOffer? get readAsOffer {
     if (openBracket != null) return null;
     if (_chipReadAsDegrees case (:final index, :final chip)) {
-      return _angleOffer(index, chip);
+      return _holdsARecalledAngle(chip) ? null : _angleOffer(index, chip);
     }
     final chip = active;
-    if (chip == null) return null;
+    if (chip == null || _holdsARecalledAngle(chip)) return null;
     final index = chips.length - 1;
     return switch (chip.key) {
       PlainNumberKeys.slope => _slopeOffer(index, chip),
@@ -1048,6 +1124,8 @@ class Tape extends Equatable {
   static bool _isAPitch(double? degrees) =>
       degrees != null && degrees > 0 && degrees < _degreesInARightAngle;
 
+  static bool _holdsARecalledAngle(ValueChip chip) => chip.exactValue is Angle;
+
   static EntryBuffer _plain(String digits) =>
       EntryBuffer(List.unmodifiable([Token(digits: digits)]));
 
@@ -1103,7 +1181,9 @@ class Tape extends Equatable {
   /// [Feet] cannot become a length the solver never reads. Pitch takes a
   /// length as inches of rise per 12in of run (rule 4.10). An angle typed
   /// as degrees, minutes and seconds is refused a unit under any key
-  /// (Section 5.4, "That value is already an angle").
+  /// (Section 5.4, "That value is already an angle"), and so is an angle
+  /// recalled from the drawer in either spelling: a recalled value is
+  /// finished, and a unit would make it a typed start (rule 4.16).
   TapeOutcome pressUnit(
     Unit unit, {
     bool holdsLengthOnly = false,
@@ -1133,6 +1213,9 @@ class Tape extends Equatable {
             ? TapeRefusal.unitsApplyWhileTyping
             : TapeRefusal.typeANumberFirst,
       );
+    }
+    if (_holdsARecalledAngle(chip)) {
+      return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
     }
     if (chip.entry.isDegreesMinutesSeconds) {
       return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
@@ -1332,6 +1415,11 @@ class Tape extends Equatable {
   /// the bracket itself ("on an empty bracket it removes the bracket"),
   /// one that ⌫ reopened included; an emptied operator chip stays, since
   /// it still holds the operator.
+  ///
+  /// A value recalled from the drawer is removed whole, exact value and
+  /// all, so the chip is empty under its key again and the drawer can be
+  /// offered once more: a recalled value is finished and never becomes a
+  /// typed start that ⌫ edits into one digit at a time (rule 4.16).
   TapeOutcome backspace() {
     if (openBracket case final bracket?) {
       if (bracket.inner.isEmpty) return TapeChanged(_removeBracket(bracket));
@@ -1343,6 +1431,11 @@ class Tape extends Equatable {
       }
     }
     final chip = active;
+    if (chip != null && _holdsARecalledAngle(chip)) {
+      return _replaceLast(
+        chip.copyWith(entry: const EntryBuffer(), exact: () => null),
+      );
+    }
     if (chip != null && !chip.entry.isEmpty) {
       return _entry(chip, chip.entry.backspace());
     }
