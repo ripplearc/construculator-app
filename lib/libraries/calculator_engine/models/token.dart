@@ -50,9 +50,9 @@ class Token extends Equatable {
   final String? seconds;
 
   /// The digits as they were typed before the number was re-read another
-  /// way (the 23.16 behind 23°16', the 0.65 behind a 65% grade read as a
-  /// ratio), so that the Read-as pill can bring them back untouched (term
-  /// 2.14; walkthrough 17.4: "each lap rebuilds from the typed digits").
+  /// way (the 23.16 behind 23°16'), so that the Read-as pill can bring them
+  /// back untouched (term 2.14; walkthrough 17.4: "each lap rebuilds from
+  /// the typed digits").
   /// `null` for a number that was never re-read; the next digit typed clears
   /// it, since the way back belongs to the digits it was made from.
   final String? typedAs;
