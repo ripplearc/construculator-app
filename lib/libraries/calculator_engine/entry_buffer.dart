@@ -178,15 +178,21 @@ class EntryBuffer extends Equatable {
 
   /// The buffer exactly as the tape echoes it: "18ft 8", "7/16in", "2in³".
   /// A fraction closed in inches right after whole inches is written the
-  /// way the trade writes it, 5ft 7-1/2in (Section 6).
+  /// way the trade writes it, 5ft 7-1/2in (Section 6); a zero whole part is
+  /// left out, since the trade writes a half inch as 1/2in, not 0-1/2in
+  /// (0in 1/2 reads 1/2in, 5ft 0in 1/2 reads 5ft 1/2in).
   String get text {
     final text = StringBuffer();
     for (final (index, token) in tokens.indexed) {
-      if (index > 0) {
-        text.write(_isMixedNumber(tokens[index - 1], token) ? '-' : ' ');
-      }
       final isWholeOfMixed =
           index + 1 < tokens.length && _isMixedNumber(token, tokens[index + 1]);
+      if (isWholeOfMixed && token.digits == '0') continue;
+      if (text.isNotEmpty) {
+        final previous = tokens[index - 1];
+        text.write(
+          _isMixedNumber(previous, token) && previous.digits != '0' ? '-' : ' ',
+        );
+      }
       text.write(isWholeOfMixed ? token.digits : _spelled(token));
     }
     return text.toString();

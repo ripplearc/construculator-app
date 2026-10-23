@@ -468,6 +468,13 @@ void main() {
         );
       });
 
+      test('closing a bracket closes a fraction after whole inches', () {
+        final closed = press(const Tape(), '4 ft × ( 7 in 1 / 2 (');
+        expect(closed.chips.last, isA<BracketChip>());
+        expect((closed.chips.last as BracketChip).expression, '×(7-1/2in)');
+        expect(lastResult(press(closed, '=')), 'Calc 2.5ft²');
+      });
+
       test('a zero under the line is refused inside a bracket too', () {
         expect(
           press(const Tape(), '( 7 /').typeDigit('0'),

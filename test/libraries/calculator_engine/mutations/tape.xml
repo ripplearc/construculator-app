@@ -29,6 +29,7 @@
         <!-- RULE 2: an unfinished value can be left by a function key -->
         <regex pattern="final tape = _withFractionClosedAsInches\(\);\s*if \(tape\._unfinished case final refusal\?\) return refusal;\s*return TapeChanged\(\s*tape\._sealed\(\)\.append\(\s*ValueChip\(\s*key: key," dotAll="true" id="tape.function_key.leave_unfinished">
             <mutation text="final tape = _withFractionClosedAsInches(); return TapeChanged(tape._sealed().append(ValueChip(key: key,"/>
+            <mutation text="final tape = this; if (tape._unfinished case final refusal?) return refusal; return TapeChanged(tape._sealed().append(ValueChip(key: key,"/>
         </regex>
 
         <!-- RULE 2b: a new chip under a function key loses the key's unit
@@ -97,6 +98,12 @@
             <mutation text="if (chip == null) return null; if (chip.entry.endsWithUnitlessFraction) { return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit); } return const TapeRefused(TapeRefusal.finishThisValueFirst);"/>
             <mutation text="if (chip == null || chip.isReadable) return null; return const TapeRefused(TapeRefusal.finishThisValueFirst);"/>
             <mutation text="if (chip == null || chip.isReadable) return null; if (chip.entry.endsWithUnitlessFraction) { return const TapeEntryRefused(EntryRefusal.fractionNeedsUnit); } return const TapeRefused(TapeRefusal.typeANumberFirst);"/>
+        </regex>
+
+        <!-- RULE: closing a bracket leaves a fraction after whole inches
+             open, so ( 7 in 1 [/] 2 ) is refused -->
+        <regex pattern="var inner = _with\(bracket\.inner\)\._withFractionClosedAsInches\(\);" dotAll="true" id="tape.close_bracket.fraction_left_open">
+            <mutation text="var inner = _with(bracket.inner);"/>
         </regex>
 
         <!-- RULE 26: a fraction after whole inches is never closed by itself,

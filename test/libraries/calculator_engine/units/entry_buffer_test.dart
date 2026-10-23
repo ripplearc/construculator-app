@@ -169,6 +169,38 @@ void main() {
         );
       });
 
+      test('a zero whole part is left out: 0in 1/2 reads 1/2in', () {
+        final zeroInches = changed(type('0').closeWith(Unit.inch));
+        expect(
+          changed(type('1/2', zeroInches).closeWith(Unit.inch)).text,
+          '1/2in',
+        );
+        final feetAndZero = changed(
+          type(
+            '0',
+            changed(type('5').closeWith(Unit.foot)),
+          ).closeWith(Unit.inch),
+        );
+        expect(
+          changed(type('1/2', feetAndZero).closeWith(Unit.inch)).text,
+          '5ft 1/2in',
+        );
+        expect(zeroInches.text, '0in');
+      });
+
+      test('only [Inch] closes a fraction after whole inches as inches', () {
+        final half = type('1/2', changed(type('7').closeWith(Unit.inch)));
+        expect(
+          half.closeWith(Unit.foot),
+          const EntrySplit(
+            finished: EntryBuffer([Token(digits: '7', unit: Unit.inch)]),
+            started: EntryBuffer([
+              Token(digits: '1', denominator: '2', unit: Unit.foot),
+            ]),
+          ),
+        );
+      });
+
       test('a fraction closed as inches after whole inches reads 7-1/2in', () {
         final inches = changed(type('7').closeWith(Unit.inch));
         final half = type('1/2', inches);
