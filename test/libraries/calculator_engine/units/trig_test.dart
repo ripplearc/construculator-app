@@ -34,6 +34,15 @@ void main() {
       expect(TrigFunction.cosine.of(90), isNotNull);
     });
 
+    test('a number that reads as infinity has no ratio', () {
+      for (final function in TrigFunction.values) {
+        for (final degrees in [double.infinity, double.negativeInfinity]) {
+          expect(function.of(degrees), isNull, reason: '$function $degrees');
+        }
+        expect(function.of(double.nan), isNull, reason: '$function NaN');
+      }
+    });
+
     test('names the function its chip key stands for', () {
       expect(TrigFunction.named('Sine'), TrigFunction.sine);
       expect(TrigFunction.named('Cosine'), TrigFunction.cosine);

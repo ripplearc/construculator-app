@@ -45,8 +45,11 @@ enum TrigFunction {
   /// where the function has no value: the tangent of 90° and of every odd
   /// quarter turn, where the run is zero (Section 5.4, "The tangent of 90°
   /// is undefined"), which floating point would otherwise answer with
-  /// 16,331,239,353,195,370.
+  /// 16,331,239,353,195,370; and a number too long to be an angle, which
+  /// reads as infinity (309 digits and more) and would answer a ratio that
+  /// is not a number.
   Scalar? of(double degrees) {
+    if (!degrees.isFinite) return null;
     final radians = degrees * math.pi / _halfTurn;
     return switch (this) {
       sine => Scalar(math.sin(radians), decimals: ratioDecimals),

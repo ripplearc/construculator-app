@@ -32,6 +32,9 @@
 
         <!-- RULE 2: the tangent of 90° is answered, or only 90° itself is
              refused -->
+        <regex pattern="if \(!degrees\.isFinite\) return null;" dotAll="true" id="trig.infinite.answers">
+            <mutation text=""/>
+        </regex>
         <regex pattern="_isOddQuarterTurn\(degrees\)\s*\? null" dotAll="true" id="trig.tangent.no_guard">
             <mutation text="false ? null"/>
         </regex>
@@ -71,8 +74,9 @@
 
         <!-- RULE 7: the refused tangent says the wrong thing, or the eaten
              number does not become the trig chip the prefix order lands -->
-        <regex pattern="if \(answer == null\) \{\s*return const TapeRefused\(TapeRefusal\.tangentUndefined\);" dotAll="true" id="trig.key.tangent_reason">
-            <mutation text="if (answer == null) { return const TapeRefused(TapeRefusal.trigCannotAnswer);"/>
+        <regex pattern="degrees\.isFinite\s*\?\s*TapeRefusal\.tangentUndefined\s*:\s*TapeRefusal\.trigCannotAnswer," dotAll="true" id="trig.key.tangent_reason">
+            <mutation text="TapeRefusal.trigCannotAnswer,"/>
+            <mutation text="TapeRefusal.tangentUndefined,"/>
         </regex>
         <regex pattern="_replaceActive\(\s*_asTrigChip\(chip, function\),\s*\)" dotAll="true" id="trig.key.postfix_other_tape">
             <mutation text="_replaceActive(chip)"/>
