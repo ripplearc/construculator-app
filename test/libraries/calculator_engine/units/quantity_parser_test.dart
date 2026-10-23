@@ -282,6 +282,30 @@ void main() {
           throwsA(isA<RationalOverflow>()),
         );
       });
+
+      test('keeps a weight, an area and a volume too long for a Rational, '
+          'in double math', () {
+        const seventeenDigits = '12345678901234567';
+        final value = double.parse(seventeenDigits);
+        expect(
+          parser.parse(const [
+            Token(digits: seventeenDigits, unit: Unit.pound),
+          ]),
+          Weight(value * 100, unit: Unit.pound),
+        );
+        expect(
+          parser.parse(const [
+            Token(digits: seventeenDigits, unit: Unit.foot, power: 2),
+          ]),
+          Area(value * Length.ticksPerFoot * Length.ticksPerFoot),
+        );
+        expect(
+          parser.parse(const [
+            Token(digits: seventeenDigits, unit: Unit.boardFoot),
+          ]),
+          Volume(value / Volume.boardFeetPerCubicFoot, unit: Unit.boardFoot),
+        );
+      });
     });
 
     test('is equal to another parser with the same ton definition', () {

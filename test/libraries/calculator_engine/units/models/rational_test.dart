@@ -30,6 +30,16 @@ void main() {
       expect(Rational.tryParse('1234567890.1234567'), isNull);
     });
 
+    test('keeps a decimal of exactly 2⁵³ and refuses one more', () {
+      const limit = Rational.maxMagnitude;
+      expect(Rational.tryParse('$limit'), const Rational(limit));
+      expect(
+        Rational.tryParse('${limit ~/ 100}.92'),
+        const Rational(limit, 100),
+      );
+      expect(Rational.tryParse('${limit + 1}'), isNull);
+    });
+
     test('adds, subtracts, multiplies and divides exactly', () {
       const tenth = Rational(1, 10);
       var sum = Rational.zero;
@@ -66,6 +76,26 @@ void main() {
       expect(() => huge * const Rational(2), throwsA(isA<RationalOverflow>()));
       expect(
         () => const Rational(1, Rational.maxMagnitude) / const Rational(2),
+        throwsA(isA<RationalOverflow>()),
+      );
+    });
+
+    test('a result of exactly 2⁵³ is kept and one more is an overflow', () {
+      const limit = Rational.maxMagnitude;
+      expect(
+        const Rational(limit - 1) + const Rational(1),
+        const Rational(limit),
+      );
+      expect(
+        const Rational(1, limit ~/ 2) / const Rational(2),
+        const Rational(1, limit),
+      );
+      expect(
+        () => const Rational(limit) + const Rational(1),
+        throwsA(isA<RationalOverflow>()),
+      );
+      expect(
+        () => const Rational(1, limit + 1) * const Rational(1),
         throwsA(isA<RationalOverflow>()),
       );
     });

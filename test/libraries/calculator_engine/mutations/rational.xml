@@ -38,10 +38,13 @@
             <mutation text="final lowest = this;"/>
         </regex>
 
-        <!-- RULE 6: the overflow guard is off by one or gone -->
+        <!-- RULE 6: the overflow guard is off by one or gone, or refuses
+             exactly 2⁵³ -->
         <regex pattern="if \(result\.numerator\.abs\(\) &gt; maxMagnitude \|\|\s*result\.denominator &gt; maxMagnitude\) \{" dotAll="true" id="rational.checked.no_overflow">
             <mutation text="if (false) {"/>
             <mutation text="if (result.numerator.abs() &gt; maxMagnitude) {"/>
+            <mutation text="if (result.numerator.abs() &gt;= maxMagnitude || result.denominator &gt; maxMagnitude) {"/>
+            <mutation text="if (result.numerator.abs() &gt; maxMagnitude || result.denominator &gt;= maxMagnitude) {"/>
         </regex>
 
         <!-- RULE 7: division forgets the divisor's sign -->
@@ -54,9 +57,11 @@
             <mutation text="_product(numerator, other.denominator) + _product(other.numerator, denominator),"/>
         </regex>
 
-        <!-- RULE 9: a decimal with too many digits is kept anyway -->
+        <!-- RULE 9: a decimal with too many digits is kept anyway, or one
+             of exactly 2⁵³ is refused -->
         <regex pattern="if \(scale == null \|\| digits &gt; maxMagnitude\) return null;" dotAll="true" id="rational.parse.no_length_guard">
             <mutation text="if (scale == null) return null;"/>
+            <mutation text="if (scale == null || digits &gt;= maxMagnitude) return null;"/>
         </regex>
 
         <!-- RULE 10: a product on the way is not checked, so 2³² × 2³² wraps
