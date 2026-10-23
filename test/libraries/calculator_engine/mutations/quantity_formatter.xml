@@ -68,8 +68,8 @@
         </regex>
 
         <!-- RULE 11: the ton setting is ignored at display -->
-        <regex pattern="poundsPerTon: preferences\.poundsPerTon,\s*\);\s*final number" dotAll="true" id="quantity_formatter.weight.ignore_ton_setting">
-            <mutation text="poundsPerTon: 2000); final number"/>
+        <regex pattern="value\.unit\.hundredthsOfPoundPer\(poundsPerTon: preferences\.poundsPerTon\);" dotAll="true" id="quantity_formatter.weight.ignore_ton_setting">
+            <mutation text="value.unit.hundredthsOfPoundPer(poundsPerTon: 2000);"/>
         </regex>
 
         <!-- RULE 12: a stored size under Metric is shown in inches -->
@@ -147,8 +147,8 @@
 
         <!-- RULE 24: a length is rounded to a tick before a decimal
              rendering, a compound rendering or a stored size reads it -->
-        <regex pattern="'\$\{_localeNumber\(value\.amountIn\(value\.unit\), decimals, group\)\}'" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
-            <mutation text="'${_localeNumber(value.ticks / value.unit.ticksPerUnit, decimals, group)}'"/>
+        <regex pattern="final amount = value\.amountIn\(value\.unit\);" dotAll="true" id="quantity_formatter.length.decimal_from_whole_ticks">
+            <mutation text="final amount = value.ticks / value.unit.ticksPerUnit;"/>
         </regex>
         <regex pattern="Unit\.inch =&gt; _wholeInchesAndFraction\(value\.inches, group\),\s*Unit\.footInch =&gt; _feetAndInches\(value\.inches\)," dotAll="true" id="quantity_formatter.length.compound_from_whole_ticks">
             <mutation text="Unit.inch =&gt; _wholeInchesAndFraction(Rational(value.ticks, Length.ticksPerInch), group), Unit.footInch =&gt; _feetAndInches(value.inches),"/>
@@ -168,15 +168,6 @@
             <mutation text="static const int partsPerTick = 1 &lt;&lt; 8;"/>
         </regex>
 
-        <!-- RULE 26: a negative length smaller than the first step carries a
-             minus sign in front of zero -->
-        <regex pattern="return negative &amp;&amp; \(whole != 0 \|\| fraction\.text\.isNotEmpty\)\s*\? '-\$text'\s*: text;" dotAll="true" id="quantity_formatter.inches.sign_on_zero">
-            <mutation text="return negative ? '-$text' : text;"/>
-        </regex>
-        <regex pattern="return negative &amp;&amp;\s*\(feet != 0 \|\| wholeInches != 0 \|\| fraction\.text\.isNotEmpty\)\s*\? '-\$text'\s*: text;" dotAll="true" id="quantity_formatter.feet_inches.sign_on_zero">
-            <mutation text="return negative ? '-$text' : text;"/>
-            <mutation text="return negative &amp;&amp; (feet != 0 || wholeInches != 0) ? '-$text' : text;"/>
-        </regex>
 
         <!-- RULE 23: a pitch's rise is quoted per inch of run, or its grade
              per inch, or the rise is the sine and not the tangent -->
@@ -199,6 +190,69 @@
              instead of falling back to double math -->
         <regex pattern="\} on RationalOverflow \{\s*return inches\.toDouble\(\) / unit\.inchesPer\.toDouble\(\);" dotAll="true" id="quantity.amount_in.no_fallback">
             <mutation text="} on RationalOverflow { rethrow;"/>
+        </regex>
+
+        <!-- RULE CA-1236a: a real value under the rounding reads 0, a true
+             zero reads in words, or the words and the step are wrong -->
+        <regex pattern="if \(number != '0' \|\| amount == 0\) return '\$number\$suffix';" dotAll="true" id="quantity_formatter.under.never_or_zero">
+            <mutation text="if (true) return '$number$suffix';"/>
+            <mutation text="if (number != '0') return '$number$suffix';"/>
+        </regex>
+        <regex pattern="final step = decimals == 0 \? '1' : '0\.\$\{'0' \* \(decimals - 1\)\}1';" dotAll="true" id="quantity_formatter.under.step_off_by_one">
+            <mutation text="final step = decimals == 0 ? '1' : '0.${'0' * decimals}1';"/>
+            <mutation text="final step = '0.01';"/>
+        </regex>
+        <regex pattern="return _under\('\$step\$suffix', negative: amount &lt; 0\);" dotAll="true" id="quantity_formatter.under.sign">
+            <mutation text="return _under('$step$suffix', negative: amount &gt; 0);"/>
+        </regex>
+        <regex pattern="negative \? belowZero : '\$under \$step';" dotAll="true" id="quantity_formatter.under.words_swapped">
+            <mutation text="negative ? '$under $step' : belowZero;"/>
+            <mutation text="'$under $step';"/>
+        </regex>
+        <regex pattern="if \(whole == 0 &amp;&amp; fraction\.text\.isEmpty &amp;&amp; magnitude\.numerator != 0\) \{" dotAll="true" id="quantity_formatter.under.inch_zero">
+            <mutation text="if (whole == 0 &amp;&amp; fraction.text.isEmpty) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="if \(feet == 0 &amp;&amp;\s*wholeInches == 0 &amp;&amp;\s*fraction\.text\.isEmpty &amp;&amp;\s*magnitude\.numerator != 0\) \{" dotAll="true" id="quantity_formatter.under.compound_zero">
+            <mutation text="if (feet == 0 &amp;&amp; wholeInches == 0 &amp;&amp; fraction.text.isEmpty) {"/>
+            <mutation text="if (wholeInches == 0 &amp;&amp; fraction.text.isEmpty &amp;&amp; magnitude.numerator != 0) {"/>
+            <mutation text="if (false) {"/>
+        </regex>
+        <regex pattern="'1/\$\{preferences\.fractionResolution\.denominator\}\$\{Unit\.inch\.suffix\}'," dotAll="true" id="quantity_formatter.under.ignore_resolution">
+            <mutation text="'1/16${Unit.inch.suffix}',"/>
+        </regex>
+        <regex pattern="_jsRoundedNumber\(inUnit, acreDecimals, group\),\s*inUnit,\s*acreDecimals," dotAll="true" id="quantity_formatter.under.acre_step">
+            <mutation text="_jsRoundedNumber(inUnit, acreDecimals, group), inUnit, resultDecimals,"/>
+        </regex>
+
+        <!-- RULE CA-1236b: Too large at the wrong edge, read off the value
+             instead of the number written, for one sign only, or with no
+             guard for a value past 2⁶³ whose text is not the value -->
+        <regex pattern="return _leadingNumber\(format\(value\)\) &gt; Quantity\.largestShown;" dotAll="true" id="quantity_formatter.too_large.edge">
+            <mutation text="return _leadingNumber(format(value)) &gt;= Quantity.largestShown;"/>
+            <mutation text="return _amountShown(value).abs() &gt; Quantity.largestShown;"/>
+            <mutation text="return false;"/>
+        </regex>
+        <regex pattern="RegExp\(r'\^\[−-\]\?\(" dotAll="true" id="quantity_formatter.too_large.one_sign">
+            <mutation text="RegExp(r'^("/>
+        </regex>
+        <regex pattern="if \(!\(_amountShown\(value\)\.abs\(\) &lt; _firstWholeNumberPastTheLimit\)\) \{" dotAll="true" id="quantity_formatter.too_large.no_guard">
+            <mutation text="if (false) {"/>
+            <mutation text="if (!(_amountShown(value) &lt; _firstWholeNumberPastTheLimit)) {"/>
+        </regex>
+        <regex pattern="Area\(\) =&gt; _areaInUnit\(value\),\s*Volume\(\) =&gt; _volumeInUnit\(value\),\s*Weight\(\) =&gt; _weightInUnit\(value\),\s*Angle\(\)" dotAll="true" id="quantity_formatter.too_large.area_unguarded">
+            <mutation text="Area() =&gt; 0, Volume() =&gt; _volumeInUnit(value), Weight() =&gt; _weightInUnit(value), Angle()"/>
+            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; 0, Weight() =&gt; _weightInUnit(value), Angle()"/>
+            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; _volumeInUnit(value), Weight() =&gt; 0, Angle()"/>
+        </regex>
+        <regex pattern="Length\(unit: Unit\.footInch\) =&gt; value\.amountIn\(Unit\.foot\)," dotAll="true" id="quantity_formatter.too_large.compound_in_inches">
+            <mutation text="Length(unit: Unit.footInch) =&gt; value.amountIn(Unit.inch),"/>
+        </regex>
+        <regex pattern="Length\(\) =&gt; value\.amountIn\(value\.unit\)," dotAll="true" id="quantity_formatter.too_large.length_in_feet">
+            <mutation text="Length() =&gt; value.amountIn(Unit.foot),"/>
+        </regex>
+        <regex pattern="static const double largestShown = 19999999\.99;" dotAll="true" id="quantity_formatter.too_large.limit">
+            <mutation text="static const double largestShown = 99999999.99;"/>
         </regex>
     </rules>
 

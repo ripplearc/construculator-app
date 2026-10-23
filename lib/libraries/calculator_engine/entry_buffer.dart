@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/dimension.dart';
+import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
@@ -74,6 +75,12 @@ enum EntryRefusal {
 
   /// Backspace with nothing typed; the tape decides what to unwind.
   nothingToDelete,
+
+  /// A digit that would push the number being typed above
+  /// [Quantity.largestShown], the bottom number of a fraction included
+  /// ("Too large": "A number cannot be above 19,999,999.99. Press ⌫ to
+  /// change a number, or C to start again.").
+  tooLarge,
 }
 
 /// What a key did to the buffer.
@@ -283,9 +290,9 @@ class EntryBuffer extends Equatable {
       if (denominator.isEmpty && digit == '0') {
         return const EntryRefused(EntryRefusal.zeroDenominator);
       }
-      return _replaceLast(
-        last.copyWith(denominator: () => '$denominator$digit'),
-      );
+      final digits = '$denominator$digit';
+      if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
+      return _replaceLast(last.copyWith(denominator: () => digits));
     }
     if (last.isDegreesMinutesSeconds) {
       if (digit == '.') return closeDegreesMinutesSeconds();
@@ -297,9 +304,9 @@ class EntryBuffer extends Equatable {
       }
       return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
     }
-    return _replaceLast(
-      last.copyWith(digits: '${last.digits}$digit', typedAs: () => null),
-    );
+    final digits = '${last.digits}$digit';
+    if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
+    return _replaceLast(last.copyWith(digits: digits, typedAs: () => null));
   }
 
   /// The D:M:S key (Section 3.5): closes the segment being typed and opens
@@ -379,6 +386,9 @@ class EntryBuffer extends Equatable {
       typedAs: () => null,
     );
   }
+
+  static bool _isTooLarge(String digits) =>
+      double.parse(digits) > Quantity.largestShown;
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.
   EntryOutcome typeFraction() {

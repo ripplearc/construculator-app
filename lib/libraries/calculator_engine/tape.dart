@@ -334,10 +334,13 @@ class Tape extends Equatable {
   /// Converts and raises finished values.
   UnitLadder get ladder => UnitLadder(poundsPerTon: poundsPerTon);
 
-  /// Folds the chips into the running total.
+  /// Folds the chips into the running total, refusing an answer that shows
+  /// a number above the limit under the tape's own ton: 19,000,000 long
+  /// tons is 21,280,000 short tons, and only the short ton is too large.
   ChainEvaluator get evaluator => ChainEvaluator(
     parser: parser,
     arithmetic: ChainArithmetic(system: preferences.system),
+    formatter: QuantityFormatter(preferences: preferences),
   );
 
   /// Whether nothing has been typed.
