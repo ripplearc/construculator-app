@@ -4,8 +4,7 @@
     <!-- Targets: TrigFunction (the ratio of an angle, the angle of a ratio,
          where the tangent has none and where a ratio is out of range), the
          trig keys on the tape (postfix answer, prefix chip, the answers a
-         key takes, the ratio ATAN reaches across a ÷, refusals) and the
-         trig reading of a value chip. Critical path: a wrong function or a
+         key takes, refusals) and the trig reading of a value chip. Critical path: a wrong function or a
          missing guard prints a confident wrong number, as the prototype once
          printed 16,331,239,353,195,370 for TAN 90 and 0° for 1800 [COS]
          [ACOS]. -->
@@ -149,11 +148,11 @@
         <regex pattern="if \(operand\.abs\(\) &lt;= 1\) return operand;" dotAll="true" id="trig.inverse.range">
             <mutation text="return operand;"/>
         </regex>
-        <regex pattern="if \(operand\.abs\(\) - 1 &lt; _ratioTolerance\) return operand\.sign;" dotAll="true" id="trig.inverse.noise_refused">
+        <regex pattern="if \(operand\.abs\(\) - 1 &lt; _floatNoiseBeyondOne\) return operand\.sign;" dotAll="true" id="trig.inverse.noise_refused">
             <mutation text="if (false) return operand.sign;"/>
         </regex>
-        <regex pattern="static const double _ratioTolerance = 1e-9;" dotAll="true" id="trig.inverse.noise_tolerance">
-            <mutation text="static const double _ratioTolerance = 1e-6;"/>
+        <regex pattern="static const double _floatNoiseBeyondOne = 1e-9;" dotAll="true" id="trig.inverse.noise_tolerance">
+            <mutation text="static const double _floatNoiseBeyondOne = 1e-6;"/>
         </regex>
 
         <!-- RULE 14 (F1b): a function is filed under the wrong family -->

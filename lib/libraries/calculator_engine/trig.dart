@@ -38,9 +38,7 @@ enum TrigFunction {
   static const int _quarterTurn = 90;
   static const double _quarterTurnTolerance = 1e-9;
 
-  // 0.1 + 0.2 ÷ 0.3 is 1.0000000000000002 in floating point and reads 1;
-  // refusing it would say "1 isn't one" (Section 5.4 wants a true reason).
-  static const double _ratioTolerance = 1e-9;
+  static const double _floatNoiseBeyondOne = 1e-9;
 
   /// The chip key a trig chip is named by, and the label of its answer.
   final String key;
@@ -69,9 +67,11 @@ enum TrigFunction {
   /// would otherwise answer with 16,331,239,353,195,370; and the arcsine or
   /// arccosine of a ratio beyond ±1, one side over a hypotenuse no side is
   /// longer than (Section 5.4, "Ratio out of range"); a ratio within 1e-9
-  /// of ±1 is ±1. ATAN takes any ratio. A number too long to be an angle or
-  /// a ratio, which reads as infinity (309 digits and more), has no answer
-  /// either, so no key lands a value that is not a number.
+  /// beyond ±1 is ±1, since 0.1 + 0.2 ÷ 0.3 is 1.0000000000000002 in floating
+  /// point and reads 1, and refusing it would say "1 isn't one" where Section
+  /// 5.4 wants a true reason. ATAN takes any ratio. A number too long to be an
+  /// angle or a ratio, which reads as infinity (309 digits and more), has no
+  /// answer either, so no key lands a value that is not a number.
   Quantity? of(double operand) {
     if (!operand.isFinite) return null;
     final radians = operand * math.pi / _halfTurn;
@@ -110,9 +110,10 @@ enum TrigFunction {
   /// 43°38'58" rebuilds to 49°25'40", not 49.43°. `null` when [answer] is
   /// not a trig answer or [operand] has no answer, and the chip is removed
   /// (Section 5.5, "A result that can no longer be computed").
-  /// The tape's `rebuiltTrigAnswer` finds [operand]: a trig operand
-  /// chip is worth its answer, so its operand is its
-  /// [ValueChip.trigOperand], not its value.
+  ///
+  /// The tape's `rebuiltTrigAnswer` finds [operand]: a trig operand chip is
+  /// worth its answer, so its operand is its [ValueChip.trigOperand], not
+  /// its value.
   static ResultChip? rebuilt(ResultChip answer, Quantity operand) {
     final value = named(answer.key)?.answerTo(operand);
     if (value == null) return null;
@@ -128,7 +129,7 @@ enum TrigFunction {
 
   static double? _ratio(double operand) {
     if (operand.abs() <= 1) return operand;
-    if (operand.abs() - 1 < _ratioTolerance) return operand.sign;
+    if (operand.abs() - 1 < _floatNoiseBeyondOne) return operand.sign;
     return null;
   }
 
