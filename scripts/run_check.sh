@@ -115,6 +115,11 @@ pre_check() {
   bash scripts/ci/ios_build_needed_test.sh
   bash scripts/ci/post_commit_status_test.sh
 
+  # CA-1240: self-test the #RunCheck plan, the build cancel and the PR comment
+  bash scripts/ci/plan_runcheck_test.sh
+  bash scripts/ci/cancel_codemagic_builds_test.sh
+  bash scripts/ci/post_pr_comment_test.sh
+
   # Self-test the perf-lab phone attach script against fake usbipd/adb
   bash scripts/perf/ensure_lab_device_attached_test.sh
 

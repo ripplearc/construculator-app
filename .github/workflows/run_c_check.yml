@@ -17,16 +17,20 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
   checks: read
   statuses: write
 
 jobs:
   trigger:
     runs-on: ubuntu-latest
+    concurrency:
+      group: runcheck-${{ github.event.issue.number || inputs.pr_number }}
+      cancel-in-progress: false
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.pull_request &&
+       github.event.comment.user.type != 'Bot' &&
        contains(github.event.comment.body, '#RunCheck'))
     steps:
       - uses: actions/checkout@v4
@@ -84,13 +88,64 @@ jobs:
           bash scripts/ci/post_commit_status.sh "$HEAD_SHA" "Ios Debug Build" success \
             "Skipped: no iOS-related files changed" "$RUN_URL"
 
+      - name: Plan which builds to skip and cancel
+        id: plan
+        continue-on-error: true
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pr_number }}
+          HEAD_SHA: ${{ steps.extract-branch.outputs.head_sha }}
+          COMMENT_BODY: ${{ github.event.comment.body || inputs.comment }}
+          SKIP_PRECHECK: ${{ vars.RUNCHECK_SKIP_PRECHECK }}
+          IOS_REPORT_OUTCOME: ${{ steps.report.outcome }}
+          DEDUPE_ENABLED: ${{ vars.RUNCHECK_DEDUPE == 'true' }}
+        run: |
+          WORKFLOWS="comprehensive-check"
+          [ "$SKIP_PRECHECK" = "true" ] || WORKFLOWS="pre-check $WORKFLOWS"
+          [ "$IOS_REPORT_OUTCOME" = "success" ] || WORKFLOWS="$WORKFLOWS ios-debug-build"
+          # shellcheck disable=SC2086 # WORKFLOWS is a list of ids
+          PLAN=$(bash scripts/ci/plan_runcheck.sh $WORKFLOWS)
+          echo "$PLAN"
+          {
+            echo "skip=$(jq -r '.skip | join(" ")' <<< "$PLAN")"
+            echo "cancel=$(jq -r '.cancel | join(" ")' <<< "$PLAN")"
+          } >> "$GITHUB_OUTPUT"
+          jq -r '.comment' <<< "$PLAN" > "$RUNNER_TEMP/runcheck_comment.md"
+          if [ "$DEDUPE_ENABLED" = "true" ]; then
+            echo "- Plan: $(jq -c '{skip, cancel}' <<< "$PLAN")" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Plan (observation only, RUNCHECK_DEDUPE is not true): $(jq -c '{skip, cancel}' <<< "$PLAN")" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Cancel builds on older commits of the pull request
+        if: vars.RUNCHECK_DEDUPE == 'true' && steps.plan.outputs.cancel != ''
+        continue-on-error: true
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          BUILD_IDS: ${{ steps.plan.outputs.cancel }}
+        run: |
+          # shellcheck disable=SC2086 # BUILD_IDS is a list of ids, checked by the script
+          bash scripts/ci/cancel_codemagic_builds.sh $BUILD_IDS
+
+      - name: Explain which builds were not started
+        if: vars.RUNCHECK_DEDUPE == 'true' && steps.plan.outputs.skip != ''
+        continue-on-error: true
+        env:
+          GH_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number || inputs.pr_number }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: bash scripts/ci/post_pr_comment.sh "$PR_NUMBER" "$RUNNER_TEMP/runcheck_comment.md"
+
       - name: Start Codemagic builds on Source Branch
         env:
           BRANCH_NAME: ${{ steps.extract-branch.outputs.branch_name }}
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-          SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check ' || '' }}${{ steps.report.outcome == 'success' && 'ios-debug-build' || '' }}
+          SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check ' || '' }}${{ steps.report.outcome == 'success' && 'ios-debug-build ' || '' }}${{ vars.RUNCHECK_DEDUPE == 'true' && steps.plan.outputs.skip || '' }}
         run: |
           bash scripts/ci/trigger_codemagic_builds.sh "$BRANCH_NAME" \
             pre-check comprehensive-check ios-debug-build
