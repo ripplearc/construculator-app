@@ -40,6 +40,14 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   Completer<void>? getAllGate;
 
   final List<Map<String, Object?>> _companyRows = [];
+  final Map<String, Map<String, Object?>> _refusalRows = {};
+
+  /// Puts [row] in the refused-defaults table as the upload step would have.
+  void seedRefusal(Map<String, Object?> row) =>
+      _refusalRows[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+
+  /// The refused-defaults row with [id], or null if there is none.
+  Map<String, Object?>? refusalRow(String id) => _refusalRows[id];
 
   /// Keeps [companyId] on the phone for [userId], as a sign-in with signal
   /// would have.
@@ -62,6 +70,12 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
   ]) async {
     await super.getAll(sql, parameters);
+    if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
+      final row = _refusalRows[parameters.single];
+      return [
+        if (row != null) {...row},
+      ];
+    }
     if (sql.contains(DatabaseConstants.currentCompanyTable)) {
       return [
         for (final row in _companyRows)
@@ -101,6 +115,15 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
   ]) async {
     await super.execute(sql, parameters);
+    if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
+      if (sql.startsWith('DELETE')) {
+        _refusalRows.remove(parameters.single);
+      } else {
+        _refusalRows[parameters.last]?[DatabaseConstants.shownAtColumn] =
+            parameters.first;
+      }
+      return;
+    }
     if (sql.contains(DatabaseConstants.currentCompanyTable)) {
       if (sql.startsWith('DELETE')) {
         _companyRows.clear();
@@ -171,6 +194,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     super.reset();
     _rows.clear();
     _companyRows.clear();
+    _refusalRows.clear();
     getAllGate = null;
     insertedRows.clear();
     updatedRowIds.clear();

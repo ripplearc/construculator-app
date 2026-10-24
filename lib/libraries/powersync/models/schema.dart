@@ -114,6 +114,17 @@ const Schema schema = Schema([
     Column.text('company_id'),
   ]),
 
+  // Never uploaded or synced. One row per refused Your rates item, with the
+  // YourRateRefusalKey of the item as its id. `accepted_amount` is null when
+  // the server never accepted a price; `shown_at` is null until shown.
+  Table.localOnly('your_rate_refusals', [
+    Column.text('item_name'),
+    Column.text('equipment_method'),
+    Column.real('refused_amount'),
+    Column.real('accepted_amount'),
+    Column.text('shown_at'),
+  ]),
+
   // On-demand stream: call `db.syncStream('user_rates')` before reading. The
   // backend's `item_name_key` column is generated server-side and not synced.
   Table(
