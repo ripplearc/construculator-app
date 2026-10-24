@@ -13,4 +13,16 @@ abstract class CostItemRepository {
 
   /// Creates a new cost item and returns the persisted entity.
   Future<Either<Failure, CostItem>> createCostItem(CostItem item);
+
+  /// The name of the estimate holding the newest equipment line called
+  /// [itemName] that is priced by [pricingMethod] at exactly [rateAmount]
+  /// (the daily rate under day pricing, the job amount under job pricing).
+  ///
+  /// Returns `Right(null)` when no line keeps that price. Needs a signal,
+  /// since cost lines are not kept on the phone.
+  Future<Either<Failure, String?>> getEstimateNameKeepingEquipmentRate({
+    required String itemName,
+    required EquipmentPricingMethod pricingMethod,
+    required double rateAmount,
+  });
 }

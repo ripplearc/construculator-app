@@ -2,7 +2,7 @@
 <mutations version="1.0">
     <!-- REMOTE COST ITEM DATA SOURCE MUTATION TESTING -->
     <!-- Targets: Remote data source implementation for cost items -->
-    <!-- Methods tested: fetchCostItemsByEstimateId, createCostItem -->
+    <!-- Methods tested: fetchCostItemsByEstimateId, createCostItem, fetchNewestEstimateNameByEquipmentRate -->
 
     <files>
         <file>lib/features/estimation/data/data_source/remote_cost_item_data_source.dart</file>
@@ -90,6 +90,50 @@
         <!-- RULE 15: In `fetchCostItemsByEstimateId`, map with wrong DTO -->
         <regex pattern="(response\.map\(\(item\) =&gt; CostItemDto\.fromJson\(item\)\)\.toList\(\))" id="cost_item.fetch.wrong_dto_mapping">
             <mutation text="response.map((item) =&gt; CostItemDto.fromJson({})).toList()"/>
+        </regex>
+
+        <regex pattern="pricingMethod == EquipmentPricingMethod\.job\.toJson\(\)" id="cost_item.estimate_name.job_uses_daily_rate">
+            <mutation text="pricingMethod != EquipmentPricingMethod.job.toJson()"/>
+        </regex>
+
+        <regex pattern="\? DatabaseConstants\.jobAmountColumn" id="cost_item.estimate_name.wrong_job_column">
+            <mutation text="? DatabaseConstants.dailyRateColumn"/>
+        </regex>
+
+        <regex pattern=": DatabaseConstants\.dailyRateColumn;" id="cost_item.estimate_name.wrong_day_column">
+            <mutation text=": DatabaseConstants.jobAmountColumn;"/>
+        </regex>
+
+        <regex pattern="ascending: false,\s*\);\s*final wantedName" id="cost_item.estimate_name.oldest_first">
+            <mutation text="ascending: true, ); final wantedName"/>
+        </regex>
+
+        <regex pattern="CostItemType\.equipment\.toJson\(\)" id="cost_item.estimate_name.wrong_item_type">
+            <mutation text="CostItemType.material.toJson()"/>
+        </regex>
+
+        <regex pattern="DatabaseConstants\.pricingMethodColumn: pricingMethod," id="cost_item.estimate_name.wrong_method_filter">
+            <mutation text="DatabaseConstants.pricingMethodColumn: 'day',"/>
+        </regex>
+
+        <regex pattern="rateColumn: rateAmount," id="cost_item.estimate_name.wrong_rate_filter">
+            <mutation text="rateColumn: 0.0,"/>
+        </regex>
+
+        <regex pattern="\) ==\s*wantedName" id="cost_item.estimate_name.skip_name_match">
+            <mutation text="!= wantedName"/>
+        </regex>
+
+        <regex pattern="YourRateRefusalKey\.normalizeName\(itemName\)" id="cost_item.estimate_name.skip_normalizing_wanted">
+            <mutation text="itemName"/>
+        </regex>
+
+        <regex pattern="\.firstOrNull;\s*final estimate" id="cost_item.estimate_name.oldest_line">
+            <mutation text=".lastOrNull; final estimate"/>
+        </regex>
+
+        <regex pattern="return estimate\?\[DatabaseConstants\.estimateNameColumn\] as String\?;" id="cost_item.estimate_name.return_null">
+            <mutation text="return null;"/>
         </regex>
     </rules>
 

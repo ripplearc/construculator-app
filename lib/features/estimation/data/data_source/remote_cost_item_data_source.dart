@@ -1,6 +1,8 @@
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
@@ -81,5 +83,47 @@ class RemoteCostItemDataSource implements CostItemDataSource {
     );
 
     return CostItemDto.fromJson(response);
+  }
+
+  @override
+  Future<String?> fetchNewestEstimateNameByEquipmentRate({
+    required String itemName,
+    required String pricingMethod,
+    required double rateAmount,
+  }) async {
+    _logger.debug('Fetching the newest estimate with an equipment rate');
+    final rateColumn = pricingMethod == EquipmentPricingMethod.job.toJson()
+        ? DatabaseConstants.jobAmountColumn
+        : DatabaseConstants.dailyRateColumn;
+
+    final response = await _supabaseWrapper.selectMatch(
+      table: DatabaseConstants.costItemsTable,
+      columns:
+          '${DatabaseConstants.itemNameColumn}, '
+          '${DatabaseConstants.costEstimatesTable}'
+          '(${DatabaseConstants.estimateNameColumn})',
+      filters: {
+        DatabaseConstants.itemTypeColumn: CostItemType.equipment.toJson(),
+        DatabaseConstants.pricingMethodColumn: pricingMethod,
+        rateColumn: rateAmount,
+      },
+      orderBy: DatabaseConstants.createdAtColumn,
+      ascending: false,
+    );
+
+    final wantedName = YourRateRefusalKey.normalizeName(itemName);
+    final newestLine = response
+        .where(
+          (line) =>
+              YourRateRefusalKey.normalizeName(
+                line[DatabaseConstants.itemNameColumn] as String,
+              ) ==
+              wantedName,
+        )
+        .firstOrNull;
+    final estimate =
+        newestLine?[DatabaseConstants.costEstimatesTable]
+            as Map<String, dynamic>?;
+    return estimate?[DatabaseConstants.estimateNameColumn] as String?;
   }
 }

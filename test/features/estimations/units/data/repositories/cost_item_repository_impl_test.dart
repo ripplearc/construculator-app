@@ -12,9 +12,9 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
-
   group('CostItemRepositoryImpl', () {
     late CostItemRepositoryImpl repository;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -44,8 +44,7 @@ void main() {
       );
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      repository =
-          Modular.get<CostItemRepository>() as CostItemRepositoryImpl;
+      repository = Modular.get<CostItemRepository>() as CostItemRepositoryImpl;
     });
 
     tearDownAll(() {
@@ -64,87 +63,72 @@ void main() {
         expect(result.getRightOrNull(), isA<MaterialCostItem>());
       });
 
-      test(
-        'maps TimeoutException to timeoutError failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.timeout;
+      test('maps TimeoutException to timeoutError failure', () async {
+        fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.timeout;
 
-          final result = await repository.createCostItem(testItem);
+        final result = await repository.createCostItem(testItem);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.timeoutError,
-            ),
-          );
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
+        );
+      });
 
-      test(
-        'maps SocketException to connectionError failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.socket;
+      test('maps SocketException to connectionError failure', () async {
+        fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.socket;
 
-          final result = await repository.createCostItem(testItem);
+        final result = await repository.createCostItem(testItem);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.connectionError,
-            ),
-          );
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
+          ),
+        );
+      });
 
-      test(
-        'maps TypeError to parsingError failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.type;
+      test('maps TypeError to parsingError failure', () async {
+        fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.type;
 
-          final result = await repository.createCostItem(testItem);
+        final result = await repository.createCostItem(testItem);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.parsingError,
-            ),
-          );
-        },
-      );
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.parsingError,
+          ),
+        );
+      });
 
-      test(
-        'maps unexpected exception to unexpectedError failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+      test('maps unexpected exception to unexpectedError failure', () async {
+        fakeSupabaseWrapper.shouldThrowOnInsert = true;
 
-          final result = await repository.createCostItem(testItem);
+        final result = await repository.createCostItem(testItem);
 
-          expect(result.isLeft(), true);
-          expect(
-            result.getLeftOrNull(),
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.unexpectedError,
-            ),
-          );
-        },
-      );
-
+        expect(result.isLeft(), true);
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.unexpectedError,
+          ),
+        );
+      });
     });
 
     group('getEstimateItemsTotal', () {
@@ -238,6 +222,67 @@ void main() {
             (f) => f.errorType,
             'errorType',
             EstimationErrorType.parsingError,
+          ),
+        );
+      });
+    });
+
+    group('getEstimateNameKeepingEquipmentRate', () {
+      void seedLine({String estimateName = 'Bedroom 2'}) {
+        fakeSupabaseWrapper.addTableData('cost_items', [
+          {
+            ...CostItemTestDataMapFactory.createEquipmentItemData(
+              itemName: 'Mini excavator',
+              pricingMethod: 'job',
+              jobAmount: 450.0,
+            ),
+            'cost_estimates': {'estimate_name': estimateName},
+          },
+        ]);
+      }
+
+      test('returns the name of the estimate keeping the price', () async {
+        seedLine();
+
+        final result = await repository.getEstimateNameKeepingEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: EquipmentPricingMethod.job,
+          rateAmount: 450.0,
+        );
+
+        expect(result.getRightOrNull(), 'Bedroom 2');
+      });
+
+      test('returns Right with null when no line keeps the price', () async {
+        seedLine();
+
+        final result = await repository.getEstimateNameKeepingEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: EquipmentPricingMethod.job,
+          rateAmount: 400.0,
+        );
+
+        expect(result.isRight(), true);
+        expect(result.getRightOrNull(), isNull);
+      });
+
+      test('maps a lost connection to a connection failure', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.socket;
+
+        final result = await repository.getEstimateNameKeepingEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: EquipmentPricingMethod.job,
+          rateAmount: 450.0,
+        );
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
           ),
         );
       });
