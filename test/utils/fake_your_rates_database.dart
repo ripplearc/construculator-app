@@ -118,6 +118,17 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       if (sql.startsWith('DELETE')) {
         _refusalRows.remove(parameters.single);
+      } else if (sql.startsWith('INSERT')) {
+        final columns = _insertColumns
+            .firstMatch(sql)!
+            .group(1)!
+            .split(',')
+            .map((column) => column.trim())
+            .toList();
+        seedRefusal({
+          for (var i = 0; i < columns.length; i++)
+            columns[i]: i < parameters.length ? parameters[i] : null,
+        });
       } else {
         _refusalRows[parameters.last]?[DatabaseConstants.shownAtColumn] =
             parameters.first;
