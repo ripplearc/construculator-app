@@ -16,6 +16,9 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable} '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
+  static const _selectAllSql =
+      'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable}';
+
   static const _markShownSql =
       'UPDATE ${DatabaseConstants.yourRateRefusalsTable} SET '
       '${DatabaseConstants.shownAtColumn} = ? '
@@ -29,6 +32,17 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
     required this._database,
     required this._clock,
   });
+
+  @override
+  Future<List<YourRateRefusalDto>> loadAllRefusals() async {
+    try {
+      final rows = await _database.getAll(_selectAllSql);
+      return rows.map(YourRateRefusalDto.fromJson).toList();
+    } catch (e, stack) {
+      _logger.error('Failed to read refused defaults from the phone', e, stack);
+      rethrow;
+    }
+  }
 
   @override
   Future<YourRateRefusalDto?> loadRefusalByItem(
