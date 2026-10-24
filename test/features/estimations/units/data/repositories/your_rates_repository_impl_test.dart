@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -1062,12 +1063,195 @@ void main() {
         expect(entries.single.rate.amount, 400.0);
       });
 
+      test(
+        'saving a first default for an item the server never accepted forgets '
+        'the refusal',
+        () async {
+          refuse(accepted: null);
+
+          await repository.save(buildEntry(amount: 500.0));
+
+          expect(database.refusalRow(excavatorKey), isNull);
+        },
+      );
+
+      test(
+        'saving a new labelled default for the item forgets the refusal',
+        () async {
+          seed([row(id: 'r1', rateAmount: 300.0, entryLabel: 'Supplier A')]);
+          refuse(refused: 999.0);
+
+          await repository.save(
+            buildEntry(amount: 500.0, entryLabel: 'Supplier B'),
+          );
+
+          expect(database.refusalRow(excavatorKey), isNull);
+        },
+      );
+
       test('saving a default for another item keeps the refusal', () async {
         refuse();
 
         await repository.save(buildEntry(itemName: 'Dozer', amount: 900.0));
 
         expect(database.refusalRow(excavatorKey), isNotNull);
+      });
+      group('watchUnshownRefusal', () {
+        Stream<RefusedYourRate?> refusalOfExcavator() => repository
+            .watchUnshownRefusal('Excavator', EquipmentPricingMethod.day)
+            .map((result) => result.getRightOrNull());
+
+        test('emits nothing to show while the server refused nothing', () {
+          expect(refusalOfExcavator(), emits(isNull));
+        });
+
+        test('emits the refused and the accepted amounts', () {
+          refuse();
+
+          expect(
+            refusalOfExcavator(),
+            emits(
+              const RefusedYourRate(
+                itemName: 'Excavator',
+                equipmentMethod: EquipmentPricingMethod.day,
+                refusedAmount: 450.0,
+                acceptedAmount: 400.0,
+              ),
+            ),
+          );
+        });
+
+        test('emits no accepted amount when the server never kept one', () {
+          refuse(accepted: null);
+
+          expect(
+            refusalOfExcavator(),
+            emits(
+              isA<RefusedYourRate>().having(
+                (refusal) => refusal.acceptedAmount,
+                'acceptedAmount',
+                isNull,
+              ),
+            ),
+          );
+        });
+
+        test('emits the refusal as soon as the upload step records it', () {
+          final emissions = expectLater(
+            refusalOfExcavator(),
+            emitsInOrder([isNull, isA<RefusedYourRate>()]),
+          );
+
+          refuse();
+
+          return emissions;
+        });
+
+        test('stops emitting the refusal once it was marked shown', () async {
+          refuse();
+
+          final emissions = expectLater(
+            refusalOfExcavator(),
+            emitsInOrder([isA<RefusedYourRate>(), isNull]),
+          );
+
+          await repository.markRefusalShown(
+            'Excavator',
+            EquipmentPricingMethod.day,
+          );
+
+          await emissions;
+        });
+
+        test('does not emit a refusal that was shown before a restart', () {
+          database.seedRefusal({
+            'id': excavatorKey,
+            'item_name': 'Excavator',
+            'equipment_method': 'day',
+            'refused_amount': 450.0,
+            'accepted_amount': 400.0,
+            'shown_at': '2026-10-07T09:00:00.000Z',
+          });
+
+          expect(refusalOfExcavator(), emits(isNull));
+        });
+
+        test('keeps the other pricing method of the item unaffected', () {
+          refuse();
+
+          expect(
+            repository
+                .watchUnshownRefusal('Excavator', EquipmentPricingMethod.job)
+                .map((result) => result.getRightOrNull()),
+            emits(isNull),
+          );
+        });
+
+        test('reports a failed read of the phone and keeps watching', () async {
+          final emissions = expectLater(
+            repository
+                .watchUnshownRefusal('Excavator', EquipmentPricingMethod.day)
+                .map((result) => result.getLeftOrNull()),
+            emitsInOrder([
+              isNull,
+              isA<EstimationFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                EstimationErrorType.unexpectedDatabaseError,
+              ),
+              isNull,
+            ]),
+          );
+
+          database.failRefusalWatches(StateError('disk full'));
+          refuse();
+
+          await emissions;
+        });
+
+        test(
+          'stops emitting once a first default is saved for the item',
+          () async {
+            refuse(accepted: null);
+
+            final emissions = expectLater(
+              refusalOfExcavator(),
+              emitsInOrder([isA<RefusedYourRate>(), isNull]),
+            );
+
+            await repository.save(buildEntry(amount: 500.0));
+
+            await emissions;
+          },
+        );
+      });
+
+      test('marking an item without a refusal shown succeeds', () async {
+        final result = await repository.markRefusalShown(
+          'Dozer',
+          EquipmentPricingMethod.day,
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('marking shown fails when the phone cannot write', () async {
+        database.executeError = StateError('disk full');
+
+        final result = await repository.markRefusalShown(
+          'Excavator',
+          EquipmentPricingMethod.day,
+        );
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
       });
     });
   });

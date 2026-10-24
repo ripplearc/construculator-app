@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_refusal_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -62,6 +64,35 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       );
       rethrow;
     }
+  }
+
+  @override
+  Stream<YourRateRefusalDto?> watchRefusalByItem(
+    String itemName,
+    String? equipmentMethod,
+  ) {
+    return _database
+        .watch(
+          _selectByIdSql,
+          parameters: [YourRateRefusalKey.of(itemName, equipmentMethod)],
+        )
+        .map(
+          (rows) =>
+              rows.isEmpty ? null : YourRateRefusalDto.fromJson(rows.first),
+        )
+        .distinct()
+        .transform(
+          StreamTransformer.fromHandlers(
+            handleError: (error, stack, sink) {
+              _logger.error(
+                'Failed to watch a refused default on the phone',
+                error,
+                stack,
+              );
+              sink.addError(error, stack);
+            },
+          ),
+        );
   }
 
   @override
