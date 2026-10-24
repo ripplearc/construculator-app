@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_he
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -19,6 +20,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -30,6 +32,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(EstimationModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(FakeYourRatesDatabase());
   });
 
   tearDownAll(() {
