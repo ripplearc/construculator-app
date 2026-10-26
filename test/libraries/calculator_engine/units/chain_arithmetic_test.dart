@@ -512,6 +512,27 @@ void main() {
         expect(
           value(
             arithmetic.combine(
+              const Scalar(9999999),
+              Operator.subtract,
+              const Scalar(9999998.9999999),
+            ),
+          ),
+          isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-7, 1e-9)),
+          reason: 'one part in 2 × 10¹⁵, the fourteenth digit, is kept too',
+        );
+        expect(
+          value(
+            arithmetic.combine(
+              const Scalar(1.00000000000001),
+              Operator.subtract,
+              const Scalar(1),
+            ),
+          ),
+          isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-14, 1e-16)),
+        );
+        expect(
+          value(
+            arithmetic.combine(
               const Area(1e6 + 1e-7),
               Operator.subtract,
               const Area(1e6),
