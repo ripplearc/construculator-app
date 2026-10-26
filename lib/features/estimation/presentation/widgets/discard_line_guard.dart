@@ -19,12 +19,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// "Discard this line?". Tapping outside the dialog, or the back gesture on it,
 /// means keep editing.
 ///
-/// [B] is the form's bloc and [S] its state. [hasUnsavedChanges] says whether a
-/// state has something typed in it, and [itemNameOf] gives the name the dialog
-/// shows, empty when nothing was named yet.
+/// [B] is the form's bloc and [S] its state.
 class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
+  /// Whether [state] has something typed in it that closing would lose.
   final bool Function(S state) hasUnsavedChanges;
+
+  /// The name the dialog shows for [state], empty when nothing was named yet.
   final String Function(S state) itemNameOf;
+
   final Widget child;
 
   const DiscardLineGuard({
