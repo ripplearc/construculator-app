@@ -592,6 +592,28 @@ void main() {
       );
     });
 
+    test('rule 4.16: the fraction key is refused on a recalled whole-number '
+        'angle under Pitch and under Sine, and the angle keeps its value', () {
+      const answer = Angle(45);
+      final remembered = newest(
+        const AngleMemory().filedAnswer(answer, formatter: formatter),
+        PlainNumberKeys.pitch,
+      )!;
+      final pitch = changed(press(const Tape(), '[Pitch]').recall(remembered));
+      expect(
+        pitch.typeFraction(),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+      expect(activeOf(pitch).value(parser), answer);
+      expect(texts(pitch), ['Pitch45']);
+      final sine = changed(press(const Tape(), 'SIN').recall(remembered));
+      expect(
+        sine.typeFraction(),
+        const TapeEntryRefused(EntryRefusal.alreadyAnAngle),
+      );
+      expect(texts(sine), ['Sine45']);
+    });
+
     test('rule 4.16: ⌫ removes a recalled value whole, so the chip is empty '
         'under its key again, a digit after it is a typed start, and the '
         'drawer can be recalled once more', () {
