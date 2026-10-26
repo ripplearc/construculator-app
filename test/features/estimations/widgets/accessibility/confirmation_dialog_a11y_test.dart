@@ -55,14 +55,27 @@ void main() {
       );
     });
 
-    // The guideline check above skips a button with no tap action in the
-    // semantics tree, so these measure the tap area itself: 48 by 48 dp on
-    // Android and 44 by 44 dp on iOS.
     for (final entry in {
       'the primary button': ConfirmationDialog.primaryButtonKey,
       'the secondary button': ConfirmationDialog.secondaryButtonKey,
     }.entries) {
       final key = entry.value;
+      testWidgets('a11y: ${entry.key} offers a tap action to assistive '
+          'technology', (tester) async {
+        await setupA11yTest(tester);
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(makeWidget(CoreTheme.light()));
+
+        final label = key == ConfirmationDialog.primaryButtonKey
+            ? 'Keep editing'
+            : 'Discard';
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(label)),
+          matchesSemantics(label: label, isButton: true, hasTapAction: true),
+        );
+        handle.dispose();
+      });
+
       testWidgets('a11y: ${entry.key} has a tap area of '
           'at least 48 by 48 dp', (tester) async {
         await setupA11yTest(tester);

@@ -177,6 +177,7 @@ class _AnswerButtonState extends State<_AnswerButton> {
     return Semantics(
       button: true,
       label: widget.label,
+      onTap: widget.onTap,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
