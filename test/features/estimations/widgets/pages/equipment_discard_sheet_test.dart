@@ -124,7 +124,7 @@ void main() {
       await tapBack(tester);
 
       expect(dialogTitle(), findsNothing);
-      expect(find.text('New equipment cost'), findsNothing);
+      expect(find.text(l10n.addEquipmentCostsScreenTitle), findsNothing);
     });
 
     testWidgets('a typed name asks "Discard this line?" naming the item', (
@@ -155,7 +155,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dialogTitle(), findsNothing);
-      expect(find.text('New equipment cost'), findsOneWidget);
+      expect(find.text(l10n.addEquipmentCostsScreenTitle), findsOneWidget);
       expect(find.text('Mini excavator'), findsOneWidget);
     });
 
@@ -168,7 +168,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dialogTitle(), findsNothing);
-      expect(find.text('New equipment cost'), findsNothing);
+      expect(find.text(l10n.addEquipmentCostsScreenTitle), findsNothing);
       expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
     });
 
@@ -206,7 +206,7 @@ void main() {
       await tapBack(tester);
 
       expect(dialogTitle(), findsNothing);
-      expect(find.text('New equipment cost'), findsNothing);
+      expect(find.text(l10n.addEquipmentCostsScreenTitle), findsNothing);
     });
   });
 
