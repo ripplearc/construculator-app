@@ -1162,13 +1162,18 @@ class Tape extends Equatable {
     AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
 
-  /// [/] goes into the active chip.
+  /// [/] goes into the active chip. A recalled angle is a finished value
+  /// (rule 4.16), so the key is refused on it as the unit keys are: 45
+  /// recalled under Pitch never becomes the typed start of 45/2in.
   TapeOutcome typeFraction() {
     if (openBracket case final bracket?) {
       return _inside(bracket, (inner) => inner.typeFraction());
     }
     final chip = active;
     if (chip == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    if (_holdsARecalledAngle(chip)) {
+      return const TapeEntryRefused(EntryRefusal.alreadyAnAngle);
+    }
     return _entry(chip, chip.entry.typeFraction());
   }
 

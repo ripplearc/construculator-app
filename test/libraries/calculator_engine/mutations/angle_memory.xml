@@ -152,9 +152,8 @@
             <mutation text=""/>
             <mutation text="if (_isBelowAMinute(minutes)) { return &quot;${token.digits}°${_twoDigits(minutes)}'$seconds\&quot;&quot;; }"/>
         </regex>
-        <regex pattern="\(int\.tryParse\(segment\) \?\? Token\.minutesPerDegree\) &lt; Token\.minutesPerDegree;" dotAll="true" id="entry_buffer.text.sixty_written_as_typed">
+        <regex pattern="\(int\.tryParse\(segment\) \?\? Token\.minutesPerDegree\) &lt;\s*Token\.minutesPerDegree;" dotAll="true" id="entry_buffer.text.sixty_written_as_typed">
             <mutation text="(int.tryParse(segment) ?? Token.minutesPerDegree) &lt;= Token.minutesPerDegree;"/>
-            <mutation text="(int.tryParse(segment) ?? 0) &lt; Token.minutesPerDegree;"/>
         </regex>
 
         <!-- RULE 11 (R2): a unit key joins a recalled angle, or ⌫ edits a
@@ -164,6 +163,12 @@
         </regex>
         <regex pattern="if \(chip != null &amp;&amp; _holdsARecalledAngle\(chip\)\) \{\s*return _replaceLast\(\s*chip\.copyWith\(entry: const EntryBuffer\(\), exact: \(\) =&gt; null\),\s*\);\s*\}" dotAll="true" id="tape.backspace.edits_recalled">
             <mutation text=""/>
+        </regex>
+
+        <!-- RULE 12 (R3): the fraction key joins a recalled angle, so a
+             recalled 45 under Pitch becomes the typed start of 45/2in -->
+        <regex pattern="if \(_holdsARecalledAngle\(chip\)\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}\s*return _entry\(chip, chip\.entry\.typeFraction\(\)\);" dotAll="true" id="tape.type_fraction.joins_recalled">
+            <mutation text="return _entry(chip, chip.entry.typeFraction());"/>
         </regex>
     </rules>
 
