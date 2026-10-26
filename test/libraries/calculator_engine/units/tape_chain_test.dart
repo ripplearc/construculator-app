@@ -686,7 +686,7 @@ void main() {
 
     test('rule 4.15: a typed difference is never rounded away: 9999999 − '
         '9999998.99999 is 0.00001, the same areas read Under, and a '
-        'difference in the thirteenth decimal is kept', () {
+        'difference in the thirteenth or the fourteenth digit is kept', () {
       expect(
         landed(
           press(const Tape(), '9 9 9 9 9 9 9 − 9 9 9 9 9 9 8 . 9 9 9 9 9 ='),
@@ -709,6 +709,31 @@ void main() {
       expect(
         (thirteenth.chips.last as ResultChip).value,
         isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-13, 1e-15)),
+      );
+      final fourteenth = press(
+        const Tape(),
+        '9 9 9 9 9 9 9 − 9 9 9 9 9 9 8 . 9 9 9 9 9 9 9 =',
+      );
+      expect(
+        (fourteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-7, 1e-9)),
+      );
+      expect(
+        landed(
+          press(
+            const Tape(),
+            '9 9 9 9 9 9 9 m m − 9 9 9 9 9 9 8 . 9 9 9 9 9 9 9 m m =',
+          ),
+        ),
+        'Under 0.01m²',
+      );
+      final fifteenth = press(
+        const Tape(),
+        '1 . 0 0 0 0 0 0 0 0 0 0 0 0 0 1 − 1 =',
+      );
+      expect(
+        (fifteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-14, 1e-16)),
       );
     });
 
