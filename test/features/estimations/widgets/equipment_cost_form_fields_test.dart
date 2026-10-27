@@ -2792,6 +2792,38 @@ void main() {
       );
     });
 
+    testWidgets(
+      'tapping the recalled Job amount and leaving it without typing offers '
+      'no save and keeps the rate saved',
+      (tester) async {
+        await seedRate(
+          itemName: 'Dumpster',
+          amount: 400,
+          method: EquipmentPricingMethod.job,
+        );
+        await recallRate(tester, 'Dumpster');
+
+        await tester.tap(find.byKey(const Key('amount_field')));
+        await tester.pump();
+        await unfocusAll(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+        expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
+        expect(
+          find.byKey(const Key('save_recalled_amount_button')),
+          findsNothing,
+        );
+        final bloc = BlocProvider.of<EquipmentCostFormBloc>(
+          tester.element(find.byType(EquipmentCostFormFields)),
+        );
+        expect(
+          (bloc.state as EquipmentCostFormEditing).data.rateStatus,
+          RateStatus.ownRateConfirmed,
+        );
+      },
+    );
+
     group('re-saving an edited Job amount as the new default', () {
       Future<void> recallDumpster(WidgetTester tester) async {
         await seedRate(
