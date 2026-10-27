@@ -51,8 +51,10 @@ import 'package:equatable/equatable.dart';
 /// decision of 4 October 2026): 5ft 1/64in − 5ft reads "Under 1/16in" at the
 /// 1/16 resolution, 5ft − 5ft 1/64in "Below zero", and 1/8in ×
 /// 1/8in "Under 0.01ft²". The step is the smallest one the value's unit and
-/// setting show, so lengths, areas and volumes in every unit read alike; a
-/// true zero still reads 0ft 0in, and the exact value stays stored.
+/// setting show, so lengths, areas, volumes and weights (owner decision of
+/// 27 October 2026: 5lbs − 4.999lbs reads "Under 0.01lbs", in tons "Under
+/// 0.01 ton") in every unit read alike; a true zero still reads 0ft 0in or
+/// 0lbs, and the exact value stays stored.
 ///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
@@ -326,11 +328,16 @@ class QuantityFormatter extends Equatable {
       value.unit.hundredthsOfPoundPer(poundsPerTon: preferences.poundsPerTon);
 
   String _weight(Weight value, bool group) {
-    final number = _localeNumber(_weightInUnit(value), resultDecimals, group);
-    return switch (value.unit) {
-      Unit.ton => '$number ${Unit.ton.suffix}',
-      _ => '$number${value.unit.suffix}',
-    };
+    final inUnit = _weightInUnit(value);
+    return _numberOrUnder(
+      _localeNumber(inUnit, resultDecimals, group),
+      inUnit,
+      resultDecimals,
+      switch (value.unit) {
+        Unit.ton => ' ${Unit.ton.suffix}',
+        _ => value.unit.suffix,
+      },
+    );
   }
 
   String _angle(Angle value, bool group) => switch (value.spelling) {

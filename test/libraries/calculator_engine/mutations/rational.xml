@@ -53,8 +53,18 @@
         </regex>
 
         <!-- RULE 8: subtraction adds -->
-        <regex pattern="_product\(numerator, other\.denominator\) -\s*_product\(other\.numerator, denominator\)," dotAll="true" id="rational.subtract.adds">
-            <mutation text="_product(numerator, other.denominator) + _product(other.numerator, denominator),"/>
+        <regex pattern="_product\(numerator, scale\) \+ sign \* _product\(other\.numerator, otherScale\)," dotAll="true" id="rational.subtract.adds">
+            <mutation text="_product(numerator, scale) + _product(other.numerator, otherScale),"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R5): a sum is formed over the product of the
+             denominators and not the shared one, so two decimals of fourteen
+             places overflow, or each side is scaled by its own denominator -->
+        <regex pattern="final shared = _gcd\(denominator, other\.denominator\);" dotAll="true" id="rational.sum.no_shared_denominator">
+            <mutation text="final shared = 1;"/>
+        </regex>
+        <regex pattern="final scale = other\.denominator ~/ shared;\s*final otherScale = denominator ~/ shared;" dotAll="true" id="rational.sum.scales_swapped">
+            <mutation text="final scale = denominator ~/ shared; final otherScale = other.denominator ~/ shared;"/>
         </regex>
 
         <!-- RULE 9: a decimal with too many digits is kept anyway, or one

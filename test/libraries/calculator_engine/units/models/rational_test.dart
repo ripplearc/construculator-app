@@ -107,7 +107,7 @@ void main() {
       expect(() => twoToThe32 * twoToThe32, throwsA(isA<RationalOverflow>()));
       expect(() => twoToThe32 + tiny, throwsA(isA<RationalOverflow>()));
       expect(
-        () => tiny - const Rational(1, 1 << 33),
+        () => tiny - const Rational(1, (1 << 33) + 1),
         throwsA(isA<RationalOverflow>()),
       );
       expect(() => tiny / twoToThe32, throwsA(isA<RationalOverflow>()));
@@ -117,18 +117,42 @@ void main() {
       );
     });
 
-    test('a product of 2⁶¹ on the way to a sum is kept', () {
-      const twoToThe53Over256 = Rational(1 << 53, 1 << 8);
-      const minusOneOver256 = Rational(-1, 1 << 8);
-      expect(
-        twoToThe53Over256 + minusOneOver256,
-        const Rational((1 << 53) - 1, 1 << 8),
-      );
+    test('a product just under 2⁶¹ on the way to a sum is kept', () {
+      const twoToThe45 = Rational(1 << 53, 1 << 8);
+      const justUnder = Rational((1 << 45) * 255 - 1, 255);
+      expect(twoToThe45 - justUnder, const Rational(1, 255));
     });
 
-    test('two products of 2⁶², which would wrap when added, are refused', () {
+    test('a product of 2⁶², which would wrap when added, is refused', () {
+      const overOneLess = Rational(1 << 31, (1 << 31) - 1);
       const one = Rational(1 << 31, 1 << 31);
-      expect(() => one + one, throwsA(isA<RationalOverflow>()));
+      expect(() => overOneLess + one, throwsA(isA<RationalOverflow>()));
+    });
+
+    test('a sum is formed over the shared denominator, so two decimals of '
+        'fourteen places add on 10¹⁴ and not on 10²⁸', () {
+      const tenToThe14 = 100000000000000;
+      expect(
+        const Rational(999999999999999, tenToThe14) -
+            const Rational(999999999999998, tenToThe14),
+        const Rational(1, tenToThe14),
+      );
+      expect(
+        const Rational(999999999999999, tenToThe14) +
+            const Rational(1, tenToThe14),
+        const Rational(10),
+      );
+      expect(
+        const Rational(1 << 31, 1 << 31) + const Rational(1 << 31, 1 << 31),
+        const Rational(2),
+      );
+      expect(
+        const Rational(1, 6) + const Rational(1, 4),
+        const Rational(5, 12),
+        reason:
+            'denominators that share a factor meet on their least '
+            'common multiple',
+      );
     });
 
     test('dividing by zero is an ArgumentError', () {

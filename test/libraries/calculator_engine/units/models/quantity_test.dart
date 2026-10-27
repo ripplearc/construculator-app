@@ -264,6 +264,13 @@ void main() {
         expect(scalar.dimension, Dimension.scalar);
         expect(scalar, const Scalar(78));
       });
+
+      test('carries its typed decimal exactly and compares by its double', () {
+        const typed = Scalar(0.1, exact: Rational(1, 10));
+        expect(typed.exact, const Rational(1, 10));
+        expect(typed, const Scalar(0.1));
+        expect(const Scalar(0.1).exact, isNull);
+      });
     });
 
     test('a switch over the sealed class can name every dimension', () {

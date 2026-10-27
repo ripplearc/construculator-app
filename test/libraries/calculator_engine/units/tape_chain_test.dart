@@ -18,6 +18,7 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'lbs' => current.pressUnit(Unit.pound),
+        'kg' => current.pressUnit(Unit.kilogram),
         'm' => current.pressUnit(Unit.metre),
         'cm' => current.pressUnit(Unit.centimetre),
         'mm' => current.pressUnit(Unit.millimetre),
@@ -734,6 +735,61 @@ void main() {
       expect(
         (fifteenth.chips.last as ResultChip).value,
         isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-14, 1e-16)),
+      );
+    });
+
+    test('B4: a plain number is kept exactly, so a difference in the '
+        'fifteenth or the sixteenth digit is never rounded away', () {
+      Scalar result(String keys) =>
+          (press(const Tape(), keys).chips.last as ResultChip).value as Scalar;
+      String typed(String number) => number.split('').join(' ');
+      expect(result('${typed('3.00000000000001')} − 3 =').value, 1e-14);
+      expect(result('${typed('5.00000000000001')} − 5 =').value, 1e-14);
+      expect(
+        result(
+          '${typed('9.99999999999999')} − ${typed('9.99999999999998')} =',
+        ).value,
+        1e-14,
+      );
+      expect(
+        result(
+          '${typed('9999999.99999999')} − ${typed('9999999.99999998')} =',
+        ).value,
+        1e-8,
+      );
+      expect(
+        result(
+          '${typed('19999999')} + ${typed('0.00000001')} − ${typed('19999999')} =',
+        ).value,
+        1e-8,
+        reason: 'a difference in the sixteenth digit survives the chain',
+      );
+      expect(landed(press(const Tape(), '0 . 1 + 0 . 2 − 0 . 3 =')), '0');
+      expect(
+        landed(press(const Tape(), '0 . 1 × 3 − 0 . 3 =')),
+        '0',
+        reason: 'a product of exact numbers is exact too',
+      );
+    });
+
+    test('B5: a weight under the rounding reads in words, a true zero does '
+        'not, and the band leaves the real difference alone', () {
+      expect(
+        landed(press(const Tape(), '5 lbs − 4 . 9 9 9 lbs =')),
+        'Under 0.01lbs',
+      );
+      expect(
+        landed(press(const Tape(), '4 . 9 9 9 lbs − 5 lbs =')),
+        'Below zero',
+      );
+      expect(landed(press(const Tape(), '5 lbs − 5 lbs =')), '0lbs');
+      expect(
+        landed(press(const Tape(), '5 ton − 4 . 9 9 9 ton =')),
+        'Under 0.01 ton',
+      );
+      expect(
+        landed(press(const Tape(), '5 kg − 4 . 9 9 9 kg =')),
+        'Under 0.01kg',
       );
     });
 
