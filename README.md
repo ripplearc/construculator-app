@@ -544,11 +544,12 @@ The project uses **CodeMagic** for continuous integration and deployment.
 
 #### 3. ios-debug-build
 
-**Trigger:** Manual via `#RunCheck` comment. Left out when the pull request changes no iOS-related file and the repository variable `RUNCHECK_SKIP_IOS` is `true`; `#RunCheck ios` forces it (`docs/Testing/CI-Scripts.md`)
+**Trigger:** Manual via `#RunCheck` comment. The first step stops the build early, still reported as passed, when the commit changes no iOS-related file compared with `main`; `#RunCheck ios` forces the full build (`docs/Testing/CI-Scripts.md`)
 **Instance:** mac_mini_m2
 **Purpose:** iOS build validation
 
 **Checks:**
+- Decision step (`scripts/ci/ios_build_needed.sh`)
 - iOS pod installation
 - iOS debug build (no codesign)
 
