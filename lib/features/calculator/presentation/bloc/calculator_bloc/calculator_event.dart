@@ -1,7 +1,9 @@
 // coverage:ignore-file
 part of 'calculator_bloc.dart';
 
-/// Base class for events handled by [CalculatorBloc].
+/// What the keyboard and the display area ask of the tape (UX Design Doc
+/// Section 1.3). Every event names a key; the bloc presses it on the tape
+/// and the tape decides what it means.
 sealed class CalculatorEvent extends Equatable {
   const CalculatorEvent();
 
@@ -9,10 +11,10 @@ sealed class CalculatorEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// A calculator key (e.g. a labeled input) was selected.
+/// A function key was tapped, on the strip or in the "View all" sheet.
 class CalculatorKeySelected extends CalculatorEvent {
-  /// The stable, locale-independent id of the selected key — never its
-  /// displayed label, which changes with locale.
+  /// The stable, locale-independent id of the key — never its displayed
+  /// label, which changes with locale.
   final String id;
 
   const CalculatorKeySelected(this.id);
@@ -21,9 +23,9 @@ class CalculatorKeySelected extends CalculatorEvent {
   List<Object?> get props => [id];
 }
 
-/// A digit key was pressed on the calculator keypad.
+/// A digit or the decimal point was pressed.
 class CalculatorDigitPressed extends CalculatorEvent {
-  /// The digit that was pressed.
+  /// The digit, or `.`.
   final String digit;
 
   const CalculatorDigitPressed(this.digit);
@@ -32,10 +34,15 @@ class CalculatorDigitPressed extends CalculatorEvent {
   List<Object?> get props => [digit];
 }
 
-/// A unit was selected for the current input.
+/// The fraction key `/` was pressed: 1 [Feet] 1 [/] 16 [Inch] is 1ft 1/16in.
+class CalculatorFractionPressed extends CalculatorEvent {
+  const CalculatorFractionPressed();
+}
+
+/// A unit key of the keyboard's unit column was pressed.
 class CalculatorUnitSelected extends CalculatorEvent {
-  /// The selected unit.
-  final String unit;
+  /// The unit the key stands for.
+  final Unit unit;
 
   const CalculatorUnitSelected(this.unit);
 
@@ -45,8 +52,8 @@ class CalculatorUnitSelected extends CalculatorEvent {
 
 /// An arithmetic operator key was pressed.
 class CalculatorOperatorPressed extends CalculatorEvent {
-  /// The operator that was pressed.
-  final String operator;
+  /// The operator the key stands for.
+  final Operator operator;
 
   const CalculatorOperatorPressed(this.operator);
 
@@ -54,9 +61,14 @@ class CalculatorOperatorPressed extends CalculatorEvent {
   List<Object?> get props => [operator];
 }
 
-/// A control action (e.g. clear, delete) was triggered.
+/// The equals key was pressed.
+class CalculatorEqualsPressed extends CalculatorEvent {
+  const CalculatorEqualsPressed();
+}
+
+/// A control key was pressed: ⌫, C or the bracket key.
 class CalculatorControlActioned extends CalculatorEvent {
-  /// The control action that was triggered.
+  /// The control that was pressed.
   final ControlAction action;
 
   const CalculatorControlActioned(this.action);
@@ -65,7 +77,7 @@ class CalculatorControlActioned extends CalculatorEvent {
   List<Object?> get props => [action];
 }
 
-/// A different group of calculator keys was selected.
+/// A different group of function keys was selected.
 class CalculatorGroupSelected extends CalculatorEvent {
   /// Index of the newly selected group.
   final int groupIndex;
@@ -76,9 +88,9 @@ class CalculatorGroupSelected extends CalculatorEvent {
   List<Object?> get props => [groupIndex];
 }
 
-/// The active unit system (imperial or metric) was changed.
+/// The System of units toggle was switched.
 class CalculatorUnitSystemChanged extends CalculatorEvent {
-  /// The newly selected unit system.
+  /// The newly selected system.
   final UnitSystem unitSystem;
 
   const CalculatorUnitSystemChanged(this.unitSystem);
@@ -87,7 +99,7 @@ class CalculatorUnitSystemChanged extends CalculatorEvent {
   List<Object?> get props => [unitSystem];
 }
 
-/// The calculator state should be reset to its initial defaults.
+/// The calculator should start again with an empty tape.
 class CalculatorResetRequested extends CalculatorEvent {
   const CalculatorResetRequested();
 }
