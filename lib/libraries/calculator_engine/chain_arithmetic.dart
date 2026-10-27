@@ -40,10 +40,11 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// A length stays exact through a sum, a difference and a scaling by a
 /// typed number (UX Design Doc Section 6, "Precision and storage"): 0.1 ft
 /// added a thousand times is exactly 100 ft, and 1 mm × 1000 is exactly
-/// 1 m. The scaling number is read back from the shortest decimal spelling
-/// of its double, which is the decimal that was typed; a number with no
-/// finite spelling scales the ticks, the prototype's way. Two lengths
-/// multiply as doubles, the way the design note on CA-1190 said: an area
+/// 1 m. The scaling number is the exact decimal the bare number carries
+/// ([Scalar.exact]), or, for a number that came through double math, is
+/// read back from the shortest decimal spelling of its double; a number
+/// with no finite spelling scales the ticks, the prototype's way. Two
+/// lengths multiply as doubles, the way the design note on CA-1190 said: an area
 /// is a double, and the exact product of two fractions would outgrow a
 /// 64-bit `int` at sides of 2³² in where the double does not. A length made
 /// from an area or a volume is kept to whole ticks, the prototype's
@@ -79,18 +80,29 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// numbers: 12lbs ÷ 0ft is refused for its dimensions, and ÷ 0 is its own
 /// error only for a pair the table can divide.
 ///
+/// Two bare numbers that are both exact — typed, or computed from typed
+/// numbers without outgrowing a [Rational] — add, subtract, multiply and
+/// divide exactly, as lengths do (Section 6, "Precision and storage"; owner
+/// decision of 27 October 2026), so a typed difference is never rounded
+/// away whatever digit it sits in: 3.00000000000001 − 3 is
+/// 0.00000000000001, 19999999 + 0.00000001 − 19999999 is 0.00000001, and
+/// 0.1 + 0.2 − 0.3 is 0 (rule 4.15). A typed number is exact while its
+/// digits fit a [Rational], which is every number of up to fifteen
+/// significant digits and the sixteen-digit ones below 2⁵³; past that the
+/// double it parses to already holds no more digits, and it stays a double.
+/// A step whose exact result outgrows a [Rational] is taken in double math
+/// instead.
+///
 /// A sum or difference of two values kept as doubles (areas, volumes,
-/// weights, angles and bare numbers) that is zero within the floating-point
-/// error of its operands is zero: 2.5m × 2.5m leaves a residue of a few
-/// ulps against a typed 6.25m², which would otherwise read "Under 0.01m²"
-/// for a true zero (Section 6, "A true zero still reads 0"). The band is two
-/// parts in 10¹⁵ of the operands' size: about seven times the residue a
-/// product and a difference leave (under 3 × 10⁻¹⁶ across metric and
-/// imperial areas and volumes), and under the smallest difference two typed
-/// numbers of fourteen significant digits hold (9999999 − 9999998.9999999 is
-/// 5 × 10⁻¹⁵ of their size), so a typed difference is kept down to the
-/// fifteenth significant digit, where a double itself stops telling two
-/// numbers apart (rule 4.15). Lengths are exact and need no such rounding.
+/// weights, angles, and a bare number that came through double math: a
+/// trig ratio, a quotient of two lengths, a product that outgrew a
+/// [Rational]) that is zero within the floating-point error of its operands
+/// is zero: 2.5m × 2.5m leaves a residue of a few ulps against a typed
+/// 6.25m², which would otherwise read "Under 0.01m²" for a true zero
+/// (Section 6, "A true zero still reads 0"). The band is two parts in 10¹⁵
+/// of the operands' size, about seven times the residue a product and a
+/// difference leave (under 3 × 10⁻¹⁶ across metric and imperial areas and
+/// volumes). Lengths are exact and need no such rounding.
 class ChainArithmetic extends Equatable {
   /// The largest tick count a length answer may reach: 2⁵³, the last whole
   /// number a double still holds exactly, so every kept length was rounded
@@ -142,15 +154,12 @@ class ChainArithmetic extends Equatable {
     ),
     (final Area area, final Length length) => _volumeOf(area, length),
     (final Length length, final Area area) => _volumeOf(area, length),
-    (final Scalar factor, _) => _scaled(
-      right,
+    (final Scalar factor, final other) ||
+    (final other, final Scalar factor) => _scaled(
+      other,
+      (number) => _timesNumber(factor, number),
       (value) => value * factor.value,
-      (length) => _scaledLength(length, factor.value),
-    ),
-    (_, final Scalar factor) => _scaled(
-      left,
-      (value) => value * factor.value,
-      (length) => _scaledLength(length, factor.value),
+      (length) => _scaledLength(length, factor),
     ),
     _ => null,
   };
@@ -160,8 +169,9 @@ class ChainArithmetic extends Equatable {
     return switch ((left, right)) {
       (_, final Scalar divisor) => _scaled(
         left,
+        (number) => _overNumber(number, divisor),
         (value) => value / divisor.value,
-        (length) => _dividedLength(length, divisor.value),
+        (length) => _dividedLength(length, divisor),
       ),
       (final Area area, final Length length) => _keptLength(
         area.squareTicks / _magnitude(length),
@@ -212,7 +222,13 @@ class ChainArithmetic extends Equatable {
       Volume() => Volume(magnitude, unit: left.unit),
       Weight() => Weight(magnitude, unit: left.unit),
       Angle() => Angle(magnitude, spelling: _sumSpelling(left, right as Angle)),
-      Scalar() => Scalar(magnitude),
+      Scalar() =>
+        _exactScalar(
+              left,
+              right as Scalar,
+              (x, y) => sign > 0 ? x + y : x - y,
+            ) ??
+            Scalar(magnitude),
     };
   }
 
@@ -227,6 +243,22 @@ class ChainArithmetic extends Equatable {
 
   static const double _floatNoise = 2e-15;
 
+  Scalar? _exactScalar(
+    Scalar left,
+    Scalar right,
+    Rational Function(Rational, Rational) compute,
+  ) {
+    if ((left.exact, right.exact) case (final a?, final b?)) {
+      try {
+        final exact = compute(a, b);
+        return Scalar(exact.toDouble(), exact: exact);
+      } on RationalOverflow {
+        return null;
+      }
+    }
+    return null;
+  }
+
   bool _canDivide(Quantity left, Quantity right) => switch ((left, right)) {
     (_, Scalar()) ||
     (Area(), Length()) ||
@@ -237,6 +269,7 @@ class ChainArithmetic extends Equatable {
 
   Quantity _scaled(
     Quantity quantity,
+    Scalar Function(Scalar) scaleNumber,
     double Function(double) scale,
     Length Function(Length) scaleLength,
   ) => switch (quantity) {
@@ -245,24 +278,33 @@ class ChainArithmetic extends Equatable {
     Volume() => Volume(scale(quantity.cubicFeet), unit: quantity.unit),
     Weight() => Weight(scale(quantity.hundredthsOfPound), unit: quantity.unit),
     Angle() => Angle(scale(quantity.degrees)),
-    Scalar() => Scalar(scale(quantity.value)),
+    final Scalar number => scaleNumber(number),
   };
 
-  Length _scaledLength(Length length, double factor) {
-    final exact = Rational.tryParse(factor.toString());
+  Scalar _timesNumber(Scalar a, Scalar b) =>
+      _exactScalar(a, b, (x, y) => x * y) ?? Scalar(a.value * b.value);
+
+  Scalar _overNumber(Scalar a, Scalar b) =>
+      _exactScalar(a, b, (x, y) => x / y) ?? Scalar(a.value / b.value);
+
+  Length _scaledLength(Length length, Scalar factor) {
+    final exact = _exactNumber(factor);
     if (exact == null) {
-      return _roundedLength(length.ticks * factor, length.unit);
+      return _roundedLength(length.ticks * factor.value, length.unit);
     }
     return _exactLength(length.inches * exact, _lengthUnit([length.unit]));
   }
 
-  Length _dividedLength(Length length, double divisor) {
-    final exact = Rational.tryParse(divisor.toString());
+  Length _dividedLength(Length length, Scalar divisor) {
+    final exact = _exactNumber(divisor);
     if (exact == null) {
-      return _roundedLength(length.ticks / divisor, length.unit);
+      return _roundedLength(length.ticks / divisor.value, length.unit);
     }
     return _exactLength(length.inches / exact, _lengthUnit([length.unit]));
   }
+
+  Rational? _exactNumber(Scalar number) =>
+      number.exact ?? Rational.tryParse(number.value.toString());
 
   Length _roundedLength(double ticks, Unit unit) =>
       Length(_wholeTicks(ticks), unit: _lengthUnit([unit]));
