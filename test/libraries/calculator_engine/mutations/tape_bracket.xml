@@ -47,8 +47,15 @@
         </regex>
 
         <!-- RULE 7: a digit after a closed bracket is appended to its value -->
-        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
+        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*final chip = active \?\? const ValueChip\(\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst); } final chip = active ?? const ValueChip();"/>
+        </regex>
+
+        <!-- RULE 7b (CA-1340): a trig key after a closed bracket opens a
+             fresh chip and the group drops out of the chain -->
+        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*final chip = active;\s*if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(_asTrigChip" dotAll="true" id="tape.trig_key.after_closed_bracket">
+            <mutation text="final chip = active; if (chip != null &amp;&amp; chip.entry.isEmpty) { return _replaceLast(_asTrigChip"/>
+            <mutation text="if (_endsWithClosedBracket) { return const TapeRefused(TapeRefusal.typeANumberFirst); } final chip = active; if (chip != null &amp;&amp; chip.entry.isEmpty) { return _replaceLast(_asTrigChip"/>
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->

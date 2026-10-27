@@ -220,6 +220,41 @@ void main() {
         },
       );
 
+      test('CA-1340: a trig key straight after a closed bracket needs an '
+          'operator first, so the group is never dropped', () {
+        expect(
+          press(
+            const Tape(),
+            '( 5 + 3 (',
+          ).pressTrigKey(TrigFunction.arctangent),
+          const TapeRefused(TapeRefusal.addAnOperatorFirst),
+        );
+        expect(
+          press(const Tape(), '2 + ( 3 × 4 (').pressTrigKey(TrigFunction.sine),
+          const TapeRefused(TapeRefusal.addAnOperatorFirst),
+        );
+      });
+
+      test('CA-1340: with an operator the trig key continues the chain: '
+          '(5 + 3) + [ATAN] 16 ÷ 12 = is 61.13°', () {
+        const formatter = QuantityFormatter();
+        final opened = changed(
+          press(
+            const Tape(),
+            '( 5 + 3 ( +',
+          ).pressTrigKey(TrigFunction.arctangent),
+        );
+        final tape = press(opened, '1 6 ÷ 1 2 =');
+        expect(
+          tape.chips.last,
+          isA<ResultChip>().having(
+            (chip) => formatter.format(chip.value),
+            'text',
+            '61.13°',
+          ),
+        );
+      });
+
       test('a unit straight after a closed bracket is refused', () {
         expect(
           press(const Tape(), '2 + ( 3 × 4 (').pressUnit(Unit.foot),
