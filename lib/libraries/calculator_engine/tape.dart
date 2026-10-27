@@ -111,7 +111,9 @@ enum TapeRefusal {
   /// the caller when to.
   nothingToCompute,
 
-  /// A digit straight after a closed bracket ("Add an operator first").
+  /// A digit or a trig key straight after a closed bracket ("Add an
+  /// operator first"): a trig chip opened there would start a new chain and
+  /// leave the group out of the answer without a word (rule 4.12).
   addAnOperatorFirst,
 
   /// A unit key straight after a closed bracket ("A group cannot take a
@@ -563,10 +565,17 @@ class Tape extends Equatable {
   /// answer, nor the ratio a forward key answered: 38 [SIN] [COS] and 1800
   /// [COS] [ACOS] open a fresh chip instead (scenarios S96, S106), which
   /// the caller banks the tape for, as for any fresh chip after a result.
-  /// When the key takes the answer the tape goes on.
+  /// When the key takes the answer the tape goes on. Straight after a
+  /// closed bracket the key is refused as a digit is
+  /// ([TapeRefusal.addAnOperatorFirst]): (5 + 3) [ATAN] 16 ÷ 12 would
+  /// answer 53.13° and drop the 8, where (5 + 3) + [ATAN] 16 ÷ 12 is
+  /// 61.13°.
   TapeOutcome pressTrigKey(TrigFunction function) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    if (_endsWithClosedBracket) {
+      return const TapeRefused(TapeRefusal.addAnOperatorFirst);
     }
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
