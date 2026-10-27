@@ -56,6 +56,15 @@ import 'package:equatable/equatable.dart';
 /// 0.01 ton") in every unit read alike; a true zero still reads 0ft 0in or
 /// 0lbs, and the exact value stays stored.
 ///
+/// A number the formatter cannot write is refused, never written off: NaN,
+/// an infinity, or a value whose digits, once scaled to the decimals it
+/// keeps, reach [largestExactInteger], past which a double no longer tells
+/// two whole numbers apart (99,999,999,999 × 99,999,999,999 used to read
+/// 92,233,720,368,547,760, the int a clamped floor lands on). Every writing
+/// path throws a [RangeError] carrying [tooLargeToDisplay] for one. The
+/// chain never reaches it, because [isTooLarge] refuses such an answer
+/// first, so the error marks a caller that skipped the gate.
+///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
 /// quantity alike.
@@ -93,6 +102,16 @@ class QuantityFormatter extends Equatable {
   /// place of a number (Section 6: never 0ft 0in and never -0ft 0in).
   static const String belowZero = 'Below zero';
 
+  /// The first whole number a double no longer holds exactly, 2⁵³. A number
+  /// whose written digits would reach it is refused rather than written off
+  /// by one; [Length.maxTicks] is the same bound on a length's ticks.
+  static const double largestExactInteger = 9007199254740992;
+
+  /// The message of the [RangeError] a value the formatter cannot write
+  /// carries: NaN, an infinity, or a number at or above [largestExactInteger]
+  /// once scaled to its decimals.
+  static const String tooLargeToDisplay = 'too large to display';
+
   /// The settings this formatter renders by.
   final CalculatorPreferences preferences;
 
@@ -127,13 +146,20 @@ class QuantityFormatter extends Equatable {
   /// 20,000,000mm and is too large, 19,999,999ft 11.95in writes
   /// 19999999ft 11-15/16in and is not, and 19,999,999.98 + 0.01, a hair
   /// above the limit in binary, writes 19,999,999.99. A value of
-  /// 20,000,000 or more in its unit is too large before it is written,
-  /// because past 2⁶³ the written number is no longer the value.
+  /// 20,000,000 or more in its unit is too large before it is written. A
+  /// value whose written number is past [largestExactInteger] though the
+  /// value itself is not, a pitch a hair under 90° whose rise in 12in or
+  /// grade is, is too large by the same token: the refusal the writing
+  /// path raises answers true here.
   bool isTooLarge(Quantity value) {
     if (!(_amountShown(value).abs() < _firstWholeNumberPastTheLimit)) {
       return true;
     }
-    return _leadingNumber(format(value)) > Quantity.largestShown;
+    try {
+      return _leadingNumber(format(value)) > Quantity.largestShown;
+    } on RangeError {
+      return true;
+    }
   }
 
   static const double _firstWholeNumberPastTheLimit = 20000000;
@@ -370,10 +396,9 @@ class QuantityFormatter extends Equatable {
   }
 
   String _degreesMinutesSeconds(double degrees, bool group) {
-    // The seconds stay a double: an int would clamp at 2^63 and show a
-    // different angle from the degrees spelling (CA-1201 owns 2^53).
-    final totalSeconds = (degrees.abs() * secondsPerDegree + 0.5)
-        .floorToDouble();
+    final totalSeconds = _writable(
+      (degrees.abs() * secondsPerDegree + 0.5).floorToDouble(),
+    );
     final rest = (totalSeconds % secondsPerDegree).toInt();
     final wholeDegrees = (totalSeconds - rest) / secondsPerDegree;
     final minutes = rest ~/ secondsPerMinute;
@@ -387,7 +412,7 @@ class QuantityFormatter extends Equatable {
 
   String _scalar(double value, bool group) {
     if (value == 0) return '0';
-    if (value.abs() >= 0.1) {
+    if (_writable(value).abs() >= 0.1) {
       return _jsRoundedNumber(value, resultDecimals, group);
     }
     return double.parse(value.toStringAsPrecision(2)).toString();
@@ -400,7 +425,7 @@ class QuantityFormatter extends Equatable {
 
   String _localeNumber(double value, int decimals, bool group) {
     final negative = value < 0;
-    var text = _roundDecimalText(value.abs(), decimals);
+    var text = _roundDecimalText(_writable(value).abs(), decimals);
     if (group) text = _grouped(text);
     return negative && text != '0' ? '-$text' : text;
   }
@@ -455,10 +480,24 @@ class QuantityFormatter extends Equatable {
     return '$buffer$rest';
   }
 
-  // TODO: [CA-1201] Refuse a value at or above 2^53, NaN or an infinity
-  // instead of clamping it at 2^63 or throwing; reachable since × landed
-  // in #642. https://ripplearc.youtrack.cloud/issue/CA-1201
-  int _jsMathRound(double value) => (value + 0.5).floor();
+  int _jsMathRound(double value) {
+    final exact = _writable(value);
+    // From 2⁵² up every double is already whole, and + 0.5 would round it to
+    // its even neighbour where Math.round leaves it as it is.
+    if (exact.abs() >= _firstWholeOnlyDouble) return exact.toInt();
+    return (exact + 0.5).floor();
+  }
+
+  static const double _firstWholeOnlyDouble = 4503599627370496;
+
+  double _writable(double value) {
+    // Spelt as a negation so that NaN, which fails every comparison, is
+    // refused with the infinities.
+    if (!(value.abs() < largestExactInteger)) {
+      throw RangeError.value(value, 'value', tooLargeToDisplay);
+    }
+    return value;
+  }
 
   @override
   List<Object?> get props => [preferences];

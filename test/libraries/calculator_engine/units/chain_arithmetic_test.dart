@@ -945,17 +945,27 @@ void main() {
 
     test('two lengths multiply as doubles, so a huge area does not wrap', () {
       const formatter = QuantityFormatter();
-      String area(Length side) => formatter.format(
-        (arithmetic.combine(side, Operator.multiply, side) as ArithmeticValue)
-            .value,
-      );
+      Area area(Length side) =>
+          (arithmetic.combine(side, Operator.multiply, side) as ArithmeticValue)
+                  .value
+              as Area;
       const twoToThe32Inches = Length.exact(Rational(1 << 32), unit: Unit.inch);
-      expect(area(twoToThe32Inches), '128,102,389,400,760,770ft²');
+      const squareFeetOfTwoToThe64SquareInches = 128102389400760770.0;
+      expect(
+        area(twoToThe32Inches).squareFeet,
+        closeTo(squareFeetOfTwoToThe64SquareInches, 64),
+      );
+      expect(formatter.isTooLarge(area(twoToThe32Inches)), isTrue);
       const squareRootOfMaxInt = Length.exact(
         Rational(3037000500),
         unit: Unit.inch,
       );
-      expect(area(squareRootOfMaxInt), '64,051,194,701,390,620ft²');
+      const squareFeetOfMaxIntSquareInches = 64051194701390620.0;
+      expect(
+        area(squareRootOfMaxInt).squareFeet,
+        closeTo(squareFeetOfMaxIntSquareInches, 64),
+      );
+      expect(formatter.isTooLarge(area(squareRootOfMaxInt)), isTrue);
     });
 
     test('CA-1190: typed lengths stay exact through the arithmetic', () {
