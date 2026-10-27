@@ -106,6 +106,7 @@ class BlocScenarioDriver implements ScenarioDriver {
       'paren' => const CalculatorControlActioned(ControlAction.paren),
       'backspace' => const CalculatorControlActioned(ControlAction.delete),
       'clear' => const CalculatorControlActioned(ControlAction.clearAll),
+      'clear-input' => const CalculatorActiveValueCleared(),
       _ => null,
     };
   }
@@ -229,7 +230,7 @@ void main() {
     test('the driver refuses steps the bloc has no event for', () async {
       expect(await driver.perform(const AcceptStep('Area')), isFalse);
       expect(await driver.perform(const KeyStep('view-all')), isFalse);
-      expect(await driver.perform(const KeyStep('clear-input')), isFalse);
+      expect(await driver.perform(const KeyStep('toggle-system')), isFalse);
     });
 
     test('the driver reads the bloc state back as a snapshot', () async {
