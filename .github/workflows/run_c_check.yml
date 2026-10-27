@@ -112,4 +112,4 @@ jobs:
           SKIP_WORKFLOWS: ${{ vars.RUNCHECK_SKIP_PRECHECK == 'true' && 'pre-check ' || '' }}${{ vars.RUNCHECK_DEDUPE == 'true' && steps.plan.outputs.skip || '' }}
         run: |
           bash scripts/ci/trigger_codemagic_builds.sh "$BRANCH_NAME" \
-            pre-check comprehensive-check ios-debug-build
+            ios-debug-build

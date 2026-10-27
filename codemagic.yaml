@@ -459,7 +459,7 @@ workflows:
     scripts:
       - name: Decide whether the iOS build is needed
         script: |
-          DECISION=$(bash scripts/ci/ios_build_needed.sh)
+          DECISION=$(BASE_BRANCH=CA-1346-test/base bash scripts/ci/ios_build_needed.sh)
           echo "iOS build: $DECISION"
           echo "IOS_BUILD_DECISION=${DECISION%%:*}" >> "$CM_ENV"
       - name: Check for FORCE_FAIL
