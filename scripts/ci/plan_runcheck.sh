@@ -17,7 +17,8 @@ set -euo pipefail
 # A workflow is skipped when Codemagic has, on the head commit, a check run with
 # its name that is queued, running, successful or failed. A canceled or timed-out
 # run is not a result. `#RunCheck force` in the comment starts a workflow again
-# after a finished run, but never while one is still running.
+# after a finished run, but never while one is still running. `#RunCheck ios`
+# does the same for ios-debug-build only.
 #
 # Environment:
 #   GH_REPO, GITHUB_TOKEN, PR_NUMBER, HEAD_SHA   required
@@ -57,6 +58,10 @@ FORCE=false
 if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+force([[:space:]]|$)'; then
   FORCE=true
 fi
+FORCE_IOS=false
+if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+ios([[:space:]]|$)'; then
+  FORCE_IOS=true
+fi
 
 SKIP=""
 COMMENT_LINES=""
@@ -65,7 +70,11 @@ if HEAD_RUNS=$(api_get "commits/$HEAD_SHA/check-runs?per_page=100") &&
   jq -e '.check_runs | type == "array"' <<< "$HEAD_RUNS" > /dev/null 2>&1; then
   for WORKFLOW_ID in "$@"; do
     CHECK_NAME=$(check_name_of "$WORKFLOW_ID") || continue
-    VERDICT=$(jq -r --arg app "$CODEMAGIC_APP_SLUG" --arg name "$CHECK_NAME" --arg force "$FORCE" '
+    WORKFLOW_FORCE=$FORCE
+    if [ "$WORKFLOW_ID" = "ios-debug-build" ] && [ "$FORCE_IOS" = "true" ]; then
+      WORKFLOW_FORCE=true
+    fi
+    VERDICT=$(jq -r --arg app "$CODEMAGIC_APP_SLUG" --arg name "$CHECK_NAME" --arg force "$WORKFLOW_FORCE" '
       [.check_runs[] | select(.app.slug == $app and .name == $name)] as $runs
       | ($runs | map(select(.status == "queued" or .status == "in_progress")) | first) as $running
       | ($runs | map(select(.status == "completed"
