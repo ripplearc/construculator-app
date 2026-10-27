@@ -206,6 +206,19 @@ void main() {
       await expectFieldsGolden(tester, 'delivery_limit_hint', suffix);
     });
 
+    testWidgets(
+      'renders the Rate field refusing a third decimal with its hint',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(tester: tester, theme: theme);
+        await tester.enterText(find.byKey(const Key('rate_field')), '85.55');
+        await tester.enterText(find.byKey(const Key('rate_field')), '85.555');
+        await tester.pumpAndSettle();
+        await expectFieldsGolden(tester, 'rate_decimals_limit_hint', suffix);
+      },
+    );
+
     testWidgets('renders the Delivery panel with the Note field filled', (
       tester,
     ) async {
@@ -556,30 +569,31 @@ void main() {
       );
     });
 
-    testWidgets('keeps the compact saved-rate screen after the amount is edited', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(
-        tester: tester,
-        theme: theme,
-        initialRateEntry: savedRate(
-          'Dumpster — 30 yd',
-          400,
-          EquipmentPricingMethod.job,
-        ),
-      );
-      await tester.enterText(find.byKey(const Key('amount_field')), '450');
-      FocusManager.instance.primaryFocus!.unfocus();
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(EquipmentCostFormFields),
-        matchesGoldenFile(
-          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
-        ),
-      );
-    });
+    testWidgets(
+      'keeps the compact saved-rate screen after the amount is edited',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(
+          tester: tester,
+          theme: theme,
+          initialRateEntry: savedRate(
+            'Dumpster — 30 yd',
+            400,
+            EquipmentPricingMethod.job,
+          ),
+        );
+        await tester.enterText(find.byKey(const Key('amount_field')), '450');
+        FocusManager.instance.primaryFocus!.unfocus();
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_edited$suffix.png',
+          ),
+        );
+      },
+    );
 
     testWidgets('renders the saved job price default (X1b)', (tester) async {
       tester.view.physicalSize = size;

@@ -3652,6 +3652,29 @@ void main() {
       await tester.pump();
     }
 
+    testWidgets('the rate hint is announced when it appears', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openField(tester, rateField);
+
+      await paste(tester, rateField, '85.555');
+
+      final node = tester.getSemantics(limitHint(rateField));
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+      expect(node.label, contains(l10n.equipmentRateDecimalsLimitHint));
+      semantics.dispose();
+    });
+
+    testWidgets('the rate takes an amount above the delivery ceiling', (
+      tester,
+    ) async {
+      await openField(tester, rateField);
+
+      await paste(tester, rateField, '1000000');
+
+      expect(fieldText(tester, rateField), '1000000');
+      expect(limitHint(rateField), findsNothing);
+    });
+
     for (final fieldKey in moneyFields.keys) {
       group(fieldKey, () {
         testWidgets(r'pasting $1,250.00 fills 1250.00', (tester) async {
@@ -3702,6 +3725,19 @@ void main() {
           expect(limitHint(fieldKey), findsOneWidget);
 
           await paste(tester, fieldKey, '85.5');
+
+          expect(limitHint(fieldKey), findsNothing);
+        });
+
+        testWidgets('the hint goes when the field loses focus', (tester) async {
+          await openField(tester, fieldKey);
+          await tester.tap(find.byKey(Key(fieldKey)));
+          await tester.pump();
+          await paste(tester, fieldKey, '85.555');
+          expect(limitHint(fieldKey), findsOneWidget);
+
+          await tester.tap(find.byKey(const Key('equipment_name_field')));
+          await tester.pumpAndSettle();
 
           expect(limitHint(fieldKey), findsNothing);
         });
