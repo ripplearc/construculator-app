@@ -547,6 +547,93 @@ void main() {
         );
       });
 
+      test('B4: two exact bare numbers add and subtract exactly, so a typed '
+          'difference is kept whatever digit it sits in', () {
+        Scalar typed(String digits) =>
+            Scalar(double.parse(digits), exact: Rational.tryParse(digits));
+        Scalar difference(String left, String right) =>
+            value(
+                  arithmetic.combine(
+                    typed(left),
+                    Operator.subtract,
+                    typed(right),
+                  ),
+                )
+                as Scalar;
+        const tenToThe14 = 100000000000000;
+        expect(
+          difference('3.00000000000001', '3'),
+          isA<Scalar>()
+              .having((s) => s.value, 'value', 1e-14)
+              .having((s) => s.exact, 'exact', const Rational(1, tenToThe14)),
+        );
+        expect(difference('5.00000000000001', '5').value, 1e-14);
+        expect(
+          difference('9.99999999999999', '9.99999999999998').exact,
+          const Rational(1, tenToThe14),
+        );
+        expect(
+          difference('9999999.99999999', '9999999.99999998').exact,
+          const Rational(1, 100000000),
+        );
+        final sum = value(
+          arithmetic.combine(
+            typed('19999999'),
+            Operator.add,
+            typed('0.00000001'),
+          ),
+        );
+        expect(
+          value(arithmetic.combine(sum, Operator.subtract, typed('19999999'))),
+          isA<Scalar>()
+              .having((s) => s.value, 'value', 1e-8)
+              .having((s) => s.exact, 'exact', const Rational(1, 100000000)),
+          reason: 'a difference in the sixteenth digit survives the chain',
+        );
+        final pointThree = value(
+          arithmetic.combine(typed('0.1'), Operator.add, typed('0.2')),
+        );
+        expect(
+          value(
+            arithmetic.combine(pointThree, Operator.subtract, typed('0.3')),
+          ),
+          isA<Scalar>()
+              .having((s) => s.value, 'value', 0)
+              .having((s) => s.exact, 'exact', Rational.zero),
+          reason: 'a true zero is exactly zero, with no band to help',
+        );
+      });
+
+      test('B4: a bare number that came through double math falls back to '
+          'the band, and so does an exact sum that outgrows a Rational', () {
+        expect(
+          value(
+            arithmetic.combine(
+              const Scalar(3.00000000000001),
+              Operator.subtract,
+              const Scalar(3, exact: Rational(3)),
+            ),
+          ),
+          isA<Scalar>()
+              .having((s) => s.value, 'value', 0)
+              .having((s) => s.exact, 'exact', isNull),
+        );
+        const limit = Rational.maxMagnitude;
+        expect(
+          value(
+            arithmetic.combine(
+              const Scalar(1e-14, exact: Rational(1, 100000000000000)),
+              Operator.add,
+              const Scalar(1 / limit, exact: Rational(1, limit)),
+            ),
+          ),
+          isA<Scalar>()
+              .having((s) => s.value, 'value', 1e-14 + 1 / limit)
+              .having((s) => s.exact, 'exact', isNull),
+          reason: 'the exact sum would need a denominator past 2⁵³',
+        );
+      });
+
       test('a bare number joined to an angle can only be degrees', () {
         expect(
           arithmetic.combine(const Angle(30), Operator.add, const Scalar(6)),
@@ -654,6 +741,82 @@ void main() {
           const ArithmeticValue(Length(-1260, unit: Unit.centimetre)),
         );
       });
+    });
+
+    test('B4: two exact bare numbers multiply and divide exactly, and one '
+        'that outgrows a Rational is taken in doubles', () {
+      const tenth = Scalar(0.1, exact: Rational(1, 10));
+      const three = Scalar(3, exact: Rational(3));
+      final product = value(
+        arithmetic.combine(tenth, Operator.multiply, three),
+      );
+      expect(
+        product,
+        isA<Scalar>()
+            .having((s) => s.value, 'value', 0.3)
+            .having((s) => s.exact, 'exact', const Rational(3, 10)),
+      );
+      expect(
+        value(
+          arithmetic.combine(
+            product,
+            Operator.subtract,
+            const Scalar(0.3, exact: Rational(3, 10)),
+          ),
+        ),
+        isA<Scalar>().having((s) => s.exact, 'exact', Rational.zero),
+      );
+      final third = value(
+        arithmetic.combine(
+          const Scalar(1, exact: Rational(1)),
+          Operator.divide,
+          three,
+        ),
+      );
+      expect(
+        third,
+        isA<Scalar>().having((s) => s.exact, 'exact', const Rational(1, 3)),
+      );
+      expect(
+        value(arithmetic.combine(third, Operator.multiply, three)),
+        isA<Scalar>()
+            .having((s) => s.value, 'value', 1)
+            .having((s) => s.exact, 'exact', const Rational(1)),
+      );
+      const nearTheLimit = Scalar(9999999.99, exact: Rational(999999999, 100));
+      expect(
+        value(
+          arithmetic.combine(nearTheLimit, Operator.multiply, nearTheLimit),
+        ),
+        isA<Scalar>()
+            .having((s) => s.value, 'value', 9999999.99 * 9999999.99)
+            .having((s) => s.exact, 'exact', isNull),
+      );
+      expect(
+        arithmetic.combine(three, Operator.divide, const Scalar(0)),
+        const ArithmeticFailed(CalculationError.divisionByZero),
+      );
+    });
+
+    test('a length scaled by an exact quotient stays exact: 1 ÷ 3 × 1in is '
+        'a third of an inch, not a whole tick', () {
+      final third = value(
+        arithmetic.combine(
+          const Scalar(1, exact: Rational(1)),
+          Operator.divide,
+          const Scalar(3, exact: Rational(3)),
+        ),
+      );
+      expect(
+        arithmetic.combine(third, Operator.multiply, inches(1)),
+        const ArithmeticValue(
+          Length.exact(Rational(1, 3), unit: Unit.footInch),
+        ),
+      );
+      expect(
+        arithmetic.combine(inches(1), Operator.divide, third),
+        const ArithmeticValue(Length.exact(Rational(3), unit: Unit.footInch)),
+      );
     });
 
     test('a length scaled by a typed number stays exact', () {

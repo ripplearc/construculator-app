@@ -323,6 +323,30 @@ void main() {
         );
         expect(formatter.format(const Volume(0)), '0ft³');
       });
+
+      test('B5: a weight reads the same way, in every unit', () {
+        const thousandthOfAPound = Weight(0.1, unit: Unit.pound);
+        expect(formatter.format(thousandthOfAPound), 'Under 0.01lbs');
+        expect(
+          formatter.format(const Weight(-0.1, unit: Unit.pound)),
+          'Below zero',
+        );
+        expect(formatter.format(const Weight(0, unit: Unit.pound)), '0lbs');
+        expect(
+          formatter.format(const Weight(200, unit: Unit.ton)),
+          'Under 0.01 ton',
+          reason: 'two pounds is a thousandth of a ton; the space stays',
+        );
+        expect(formatter.format(const Weight(0, unit: Unit.ton)), '0 ton');
+        expect(
+          formatter.format(thousandthOfAPound.spelledIn(Unit.kilogram)),
+          'Under 0.01kg',
+        );
+        expect(
+          formatter.format(const Weight(-200, unit: Unit.metricTon)),
+          'Below zero',
+        );
+      });
     });
 
     group('CA-1236: the largest number a value shows', () {
@@ -830,8 +854,11 @@ void main() {
         expect(formatter.format(const Scalar(100)), '100');
       });
 
-      test('writes a number too small for a plain spelling as 0', () {
-        expect(formatter.format(const Weight(1e-5, unit: Unit.pound)), '0lbs');
+      test('writes a number too small for a plain spelling in words', () {
+        expect(
+          formatter.format(const Weight(1e-5, unit: Unit.pound)),
+          'Under 0.01lbs',
+        );
         expect(
           formatter.format(const Length(1, unit: Unit.metre)),
           'Under 0.01m',

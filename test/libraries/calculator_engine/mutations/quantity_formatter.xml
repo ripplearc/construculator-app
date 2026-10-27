@@ -226,6 +226,15 @@
             <mutation text="_jsRoundedNumber(inUnit, acreDecimals, group), inUnit, resultDecimals,"/>
         </regex>
 
+        <!-- RULE CA-1236c (R5, B5): a tiny weight reads 0 after all, or a
+             ton loses the space before its word -->
+        <regex pattern="final inUnit = _weightInUnit\(value\);\s*return _numberOrUnder\(\s*_localeNumber\(inUnit, resultDecimals, group\),\s*inUnit," dotAll="true" id="quantity_formatter.weight.never_under">
+            <mutation text="final inUnit = _weightInUnit(value); return _numberOrUnder( _localeNumber(inUnit, resultDecimals, group), 0,"/>
+        </regex>
+        <regex pattern="Unit\.ton =&gt; ' \$\{Unit\.ton\.suffix\}'," dotAll="true" id="quantity_formatter.weight.ton_no_space">
+            <mutation text="Unit.ton =&gt; Unit.ton.suffix,"/>
+        </regex>
+
         <!-- RULE CA-1236b: Too large at the wrong edge, read off the value
              instead of the number written, for one sign only, or with no
              guard for a value past 2⁶³ whose text is not the value -->

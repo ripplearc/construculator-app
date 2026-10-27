@@ -355,15 +355,29 @@ final class Angle extends Quantity {
 }
 
 /// A bare number with no unit: a count, a ratio or a factor.
+///
+/// A typed number is kept exactly as typed, the way a length is (UX Design
+/// Doc Section 6, "Precision and storage"; owner decision of 27 October
+/// 2026): [exact] is its decimal as a [Rational], and the arithmetic adds,
+/// subtracts, multiplies and divides two exact numbers exactly, so
+/// 3.00000000000001 − 3 is 0.00000000000001 and 0.1 + 0.2 − 0.3 is 0.
+/// [value] is the nearest double, which is what every rule and the display
+/// read. A number that came through double math — a trig ratio, a quotient
+/// of two lengths, a product that outgrew a [Rational] — has no [exact].
 final class Scalar extends Quantity {
-  /// The number itself.
+  /// The number itself: the nearest double to [exact] when there is one.
   final double value;
 
   /// The decimals it keeps at display when it is not a plain result: six
   /// for a trig ratio (Sine 0.615661). `null` renders it as any result.
   final int? decimals;
 
-  const Scalar(this.value, {this.decimals});
+  /// The number exactly, as it was typed or as exact arithmetic on typed
+  /// numbers left it; `null` for a number that came through double math.
+  /// Two scalars compare by [value], so an exact 0.1 equals a double 0.1.
+  final Rational? exact;
+
+  const Scalar(this.value, {this.decimals, this.exact});
 
   @override
   Dimension get dimension => Dimension.scalar;

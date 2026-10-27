@@ -142,14 +142,16 @@
             <mutation text="(final Area area, final Length length) when false =&gt; _volumeOf(area, length),"/>
         </regex>
 
-        <!-- RULE 15: a bare number on the left no longer scales -->
-        <regex pattern="\(final Scalar factor, _\) =&gt; _scaled\(" dotAll="true" id="chain_arithmetic.multiply.scalar_left">
-            <mutation text="(final Scalar factor, _) when false =&gt; _scaled("/>
+        <!-- RULE 15: a bare number on the left, or on the right, no longer
+             scales -->
+        <regex pattern="\(final Scalar factor, final other\) \|\|\s*\(final other, final Scalar factor\) =&gt; _scaled\(" dotAll="true" id="chain_arithmetic.multiply.scalar_left">
+            <mutation text="(final other, final Scalar factor) =&gt; _scaled("/>
+            <mutation text="(final Scalar factor, final other) =&gt; _scaled("/>
         </regex>
 
         <!-- RULE: a length divided by a number is multiplied instead -->
-        <regex pattern="\(length\) =&gt; _dividedLength\(length, divisor\.value\)," dotAll="true" id="chain_arithmetic.divide.length_by_scalar_multiplies">
-            <mutation text="(length) =&gt; _scaledLength(length, divisor.value),"/>
+        <regex pattern="\(length\) =&gt; _dividedLength\(length, divisor\)," dotAll="true" id="chain_arithmetic.divide.length_by_scalar_multiplies">
+            <mutation text="(length) =&gt; _scaledLength(length, divisor),"/>
         </regex>
 
         <!-- RULE 16: volume ÷ length is no longer an area -->
@@ -187,6 +189,43 @@
             <mutation text="value.abs() &lt;= of * 1e-6 ? 0 : value;"/>
             <mutation text="value.abs() &lt;= of * 1e-14 ? 0 : value;"/>
             <mutation text="value.abs() &lt;= of * 2e-16 ? 0 : value;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R5, B4): two exact bare numbers are summed in
+             doubles after all, a difference adds, or the fallback for a
+             number that came through double math is gone -->
+        <regex pattern="Scalar\(\) =&gt;\s*_exactScalar\(\s*left,\s*right as Scalar,\s*\(x, y\) =&gt; sign &gt; 0 \? x \+ y : x - y,\s*\) \?\?\s*Scalar\(magnitude\)," dotAll="true" id="chain_arithmetic.add.exact_scalars">
+            <mutation text="Scalar() =&gt; Scalar(magnitude),"/>
+            <mutation text="Scalar() =&gt; _exactScalar(left, right as Scalar, (x, y) =&gt; x + y) ?? Scalar(magnitude),"/>
+            <mutation text="Scalar() =&gt; _exactScalar(left, right as Scalar, (x, y) =&gt; sign &gt; 0 ? x + y : x - y)!,"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R5, B4): an exact product or quotient is taken in
+             doubles, divides where it should multiply, or the number arm of
+             the scaling skips the exact path -->
+        <regex pattern="Scalar _timesNumber\(Scalar a, Scalar b\) =&gt;\s*_exactScalar\(a, b, \(x, y\) =&gt; x \* y\) \?\? Scalar\(a\.value \* b\.value\);" dotAll="true" id="chain_arithmetic.multiply.exact_scalars">
+            <mutation text="Scalar _timesNumber(Scalar a, Scalar b) =&gt; Scalar(a.value * b.value);"/>
+            <mutation text="Scalar _timesNumber(Scalar a, Scalar b) =&gt; _exactScalar(a, b, (x, y) =&gt; x / y) ?? Scalar(a.value * b.value);"/>
+        </regex>
+        <regex pattern="Scalar _overNumber\(Scalar a, Scalar b\) =&gt;\s*_exactScalar\(a, b, \(x, y\) =&gt; x / y\) \?\? Scalar\(a\.value / b\.value\);" dotAll="true" id="chain_arithmetic.divide.exact_scalars">
+            <mutation text="Scalar _overNumber(Scalar a, Scalar b) =&gt; Scalar(a.value / b.value);"/>
+            <mutation text="Scalar _overNumber(Scalar a, Scalar b) =&gt; _exactScalar(a, b, (x, y) =&gt; x * y) ?? Scalar(a.value / b.value);"/>
+        </regex>
+        <regex pattern="final Scalar number =&gt; scaleNumber\(number\)," dotAll="true" id="chain_arithmetic.scaled.number_in_doubles">
+            <mutation text="final Scalar number =&gt; Scalar(scale(number.value)),"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R5, B4): an exact result that outgrows a Rational
+             is refused instead of taken in doubles -->
+        <regex pattern="\} on RationalOverflow \{\s*return null;\s*\}\s*\}\s*return null;" dotAll="true" id="chain_arithmetic.exact_scalar.overflow_refused">
+            <mutation text="} on RationalOverflow { rethrow; } } return null;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R5, B4): a length is scaled by the double's
+             spelling and not by the exact number, or only by an exact one -->
+        <regex pattern="number\.exact \?\? Rational\.tryParse\(number\.value\.toString\(\)\);" dotAll="true" id="chain_arithmetic.exact_number.ignored">
+            <mutation text="Rational.tryParse(number.value.toString());"/>
+            <mutation text="number.exact;"/>
         </regex>
     </rules>
 

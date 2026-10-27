@@ -128,7 +128,8 @@ final class ValueChip extends TapeChip {
   /// The value the chip stands for: the exact quantity a conversion kept,
   /// else what the entry parses to; `null` while the entry is open. A bare
   /// number — one open token of digits and no unit, 78 or 0.65; a fraction
-  /// without a unit is not a number yet — is a scalar, unless it sits under
+  /// without a unit is not a number yet — is a scalar that carries its
+  /// typed decimal exactly ([Scalar.exact]), unless it sits under
   /// a function key that wants its unit (Section 5.1: Length 18 cannot be
   /// left); under Pitch, Slope or Sides it is the plain number those keys
   /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]). A
@@ -156,7 +157,8 @@ final class ValueChip extends TapeChip {
     }
     if (!_isPlainNumber) return null;
     if (entry.isDegreesMinutesSeconds || readsDegrees) return _typedAngle;
-    return Scalar(entry.tokens.first.value);
+    final number = entry.tokens.first;
+    return Scalar(number.value, exact: parser.exactValueOf(number));
   }
 
   Angle get _typedAngle => Angle(
