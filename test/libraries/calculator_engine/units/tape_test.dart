@@ -491,6 +491,69 @@ void main() {
         expect(converted.value(parser), const Length(14336, unit: Unit.yard));
       });
 
+      test('CA-1087: ✕ clears the chip being typed and leaves the tape '
+          'before it, inside an open bracket too', () {
+        final sealedTwentyTwoFeet = isA<Tape>()
+            .having((tape) => tape.active, 'active', isNull)
+            .having(
+              (tape) => (tape.chips.single as ValueChip).entry.text,
+              'the one chip left',
+              '22ft',
+            );
+        expect(
+          changed(press(const Tape(), '2 2 ft + 1 8').clearActive()),
+          sealedTwentyTwoFeet,
+          reason: 'the operator belongs to the chip it leads into',
+        );
+        expect(
+          changed(press(const Tape(), '[Length] 7').clearActive()),
+          const Tape(),
+        );
+        expect(
+          changed(press(const Tape(), '2 2 ft +').clearActive()),
+          sealedTwentyTwoFeet,
+          reason: 'the empty chip an operator opens is the active chip',
+        );
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final inside = changed(press(opened, '3 × 4').clearActive());
+        final inner = (inside.chips.last as BracketChip).inner;
+        expect(inside.active, isNull);
+        expect(
+          inner.single,
+          isA<ValueChip>()
+              .having((chip) => chip.entry.text, 'text', '3')
+              .having((chip) => chip.isActive, 'active', isFalse),
+        );
+      });
+
+      test('✕ with nothing being typed is refused, and a sealed tape is '
+          'kept', () {
+        expect(
+          const Tape().clearActive(),
+          const TapeRefused(TapeRefusal.nothingBeingTyped),
+        );
+        expect(
+          press(const Tape(), '2 ft × 3 =').clearActive(),
+          const TapeRefused(TapeRefusal.nothingBeingTyped),
+        );
+      });
+
+      test('✕ in a bracket with nothing typed in it yet is refused with its '
+          'own reason, before anything is typed and once the chip inside '
+          'is cleared', () {
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        expect(
+          opened.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+        );
+        final emptied = changed(press(opened, '3').clearActive());
+        expect((emptied.chips.last as BracketChip).inner, isEmpty);
+        expect(
+          emptied.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+        );
+      });
+
       test('[/] with nothing being typed is refused', () {
         expect(
           const Tape().typeFraction(),
