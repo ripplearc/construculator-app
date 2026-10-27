@@ -183,6 +183,26 @@ The `pre-check` workflow stays in `codemagic.yaml` for manual runs.
 
 The pipelines start independently through `scripts/ci/trigger_codemagic_builds.sh`. A failure in one does not stop the others from starting. If Codemagic rejects a request, or answers without a `buildId`, the workflow run turns red instead of reporting success.
 
+### Skipping the iOS build when no iOS-related file changed
+
+A `#RunCheck` comment can leave out the iOS build when the pull request changes nothing that the iOS build depends on. `scripts/ci/ios_build_needed.sh` decides. It reads the files the pull request changes (including the old name of a renamed file) and compares them with `scripts/ci/ios_build_paths.conf`. The list covers `ios/`, `pubspec.yaml`, `pubspec.lock`, `pubspec_overrides.yaml`, `.fvmrc`, `codemagic.yaml`, `.github/workflows/run_c_check.yml`, `assets/`, `config/`, `scripts/ci/`, `l10n.yaml`, `build.yaml` and `flutter_launcher_icons-*.yaml`.
+
+- **Force it:** `#RunCheck ios` always runs the iOS build.
+- **When it is skipped**, the workflow posts the commit status `Ios Debug Build` = success with the text "Skipped: no iOS-related files changed" on the pull request head commit, so the required check is not left empty.
+- **It runs the iOS build when unsure:** a changed file that the list does not mention, a GitHub error, a pull request with 3000 or more files (GitHub lists no more), or an iOS result from Codemagic already on the head commit.
+- **Safety net:** the nightly iOS build on `main` (see below). The Android build in the Comprehensive Check is not skipped. It still compiles the Dart code on every comment, which is why leaving out the iOS build is safe.
+- **New top-level paths:** `ios_build_needed_test.sh` fails until every top-level path in the repository is classified in `ios_build_paths.conf`, so a new directory cannot be forgotten.
+
+**Do not switch this on yet.** The skip posts its result as a commit status from GitHub Actions, and the ruleset "Ios Debug Build" accepts that check from Codemagic only. For the ruleset to accept the GitHub Actions status, the owner would have to let a second source post the iOS check. Then a workflow pushed to a side branch (no pull request, so no review) could ask for `statuses: write` and post a passing `Ios Debug Build` on another pull request, with no iOS build. Code owner approval does not stop that, because it only checks merges into `main`.
+
+So the ruleset source of the iOS check stays "Codemagic only", and the repository variable `RUNCHECK_SKIP_IOS` stays off until CA-1346 lands. CA-1346 moves the decision into the Codemagic iOS workflow itself, which stops early when no iOS-related file changed. Then only Codemagic posts the result and no repository setting has to change.
+
+1. Until then, while `RUNCHECK_SKIP_IOS` is not `true`, every `#RunCheck` still starts the iOS build, and the job summary shows what the decision would have been ("observation only"). Compare it with the real iOS results for a while.
+2. **Owner actions: none for the iOS check.** Do not change the source of the required check "Ios Debug Build", and do not set the variable.
+3. A change to a workflow file, to `.github/CODEOWNERS`, or to another protected file needs a code owner's approval in a pull request to `main` (ruleset "Protect Config Files"). `.github/CODEOWNERS` covers all of `.github/workflows/` and the scripts that decide or post the result.
+
+If posting the skipped status fails, the iOS build is started instead, so a pull request is never left without an `Ios Debug Build` result.
+
 ### Testing a trigger change without spending Codemagic minutes
 
 GitHub runs an `issue_comment` workflow from the version on `main`, so a `#RunCheck` comment on a branch never uses that branch's `run_c_check.yml`. To try a branch's version, run it by hand:
