@@ -1551,6 +1551,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentDeliveryRowLabel => 'Delivery';
 
   @override
+  String get equipmentRateDecimalsLimitHint =>
+      'An amount takes at most two decimals.';
+
+  @override
   String equipmentDeliveryFeeLimitHint(String amount) {
     return 'The largest delivery fee is $amount.';
   }
