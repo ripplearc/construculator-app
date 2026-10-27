@@ -2,6 +2,7 @@ import 'package:construculator/features/calculator/presentation/bloc/calculator_
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,8 +46,8 @@ void main() {
           for (final key in group.keys) key.id,
       ];
 
-      // calculator_math.dart keys finalizedValues on these exact strings.
-      // Renaming an id here silently breaks pitch and fence computation.
+      // The engine's rules read named values by these exact ids
+      // (DeterministicRules); renaming one here silently breaks its rule.
       expect(ids, containsAll(<String>['Rise', 'Run', 'Length', 'Fence']));
     },
   );
@@ -300,22 +301,25 @@ void main() {
     final context = tester.element(find.byType(CoreDisplayArea));
     final l10n = AppLocalizations.of(context)!;
     BlocProvider.of<CalculatorBloc>(context)
-      ..add(const CalculatorKeySelected('Length'))
       ..add(const CalculatorDigitPressed('2'))
-      ..add(const CalculatorDigitPressed('4'))
-      ..add(const CalculatorKeySelected('Fence'));
+      ..add(const CalculatorUnitSelected(Unit.foot))
+      ..add(const CalculatorOperatorPressed(Operator.multiply))
+      ..add(const CalculatorDigitPressed('3'))
+      ..add(const CalculatorEqualsPressed());
     await tester.pump();
 
-    // Fence resolves to the 'Posts' result label, which reaches the display as
-    // a result rather than a key and so has no entry on the keyboard.
+    // The running total lands as a Calc chip, which reaches the display as a
+    // result rather than a key and so has no entry on the keyboard.
     final displayArea = tester.widget<CoreDisplayArea>(
       find.byType(CoreDisplayArea),
     );
 
-    expect(displayArea.label, equals(l10n.calculatorResultPosts));
+    expect(displayArea.label, equals(l10n.calculatorResultCalc));
+    expect(displayArea.value, equals('6ft 0in'));
+    expect(displayArea.dependentKeys, isEmpty);
   });
 
-  testWidgets('the on-centre dependent key reaches the display as one pill', (
+  testWidgets('an error chip is titled from the localization layer', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -329,31 +333,22 @@ void main() {
 
     final context = tester.element(find.byType(CoreDisplayArea));
     final l10n = AppLocalizations.of(context)!;
-    expect(
-      tester
-          .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
-          .dependentKeys,
-      isEmpty,
-    );
-
     BlocProvider.of<CalculatorBloc>(context)
-      ..add(const CalculatorKeySelected('Length'))
+      ..add(const CalculatorDigitPressed('7'))
+      ..add(const CalculatorDigitPressed('8'))
+      ..add(const CalculatorKeySelected('lbs'))
+      ..add(const CalculatorOperatorPressed(Operator.divide))
+      ..add(const CalculatorDigitPressed('1'))
       ..add(const CalculatorDigitPressed('2'))
-      ..add(const CalculatorDigitPressed('4'))
-      ..add(const CalculatorKeySelected('Fence'));
+      ..add(const CalculatorUnitSelected(Unit.foot))
+      ..add(const CalculatorEqualsPressed());
     await tester.pump();
 
-    final pills = tester
-        .widget<CoreDisplayArea>(find.byType(CoreDisplayArea))
-        .dependentKeys;
-    expect(pills, hasLength(1));
-    expect(pills.single.label, equals(l10n.calculatorPillOnCentre));
-    expect(pills.single.value, equals('6ft'));
-    expect(pills.single.kind, equals(CoreDependentKeyKind.editable));
-    expect(
-      find.textContaining(l10n.calculatorPillOnCentre, findRichText: true),
-      findsOneWidget,
+    final displayArea = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
     );
+    expect(displayArea.label, equals(l10n.calculatorErrorDimension));
+    expect(displayArea.chipsList.last.label, l10n.calculatorErrorDimension);
   });
 
   test('a pill is drawn as the kind its id names', () {

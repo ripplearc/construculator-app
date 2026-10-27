@@ -1,144 +1,128 @@
 part of 'calculator_bloc.dart';
 
-/// Represents the current state of the calculator display area.
+/// The calculator as the display area reads it: the engine's tape, which
+/// group of function keys is up, and what the last key press said.
+///
+/// The tape is the engine's own [Tape] value (UX Design Doc Sections 1.1 and
+/// 4; CA-1087): every typed value, every answer and every bracket, with the
+/// active chip at its end while one is being typed. The bloc never derives
+/// a second copy of it. A key the tape refuses leaves the tape as it was and
+/// is carried as [refusal] for the toast; a key the tape takes with a word
+/// about it carries that word as [notice]. Both are those of the last key
+/// only: the next key clears them. The same refusal twice in a row is one
+/// state, so a listener that must speak twice listens to the key, not the
+/// state (S1b).
+///
+/// The getters at the end are what the page renders today, read straight
+/// off the tape with its formatter; T1a (CA-1092) owns the display's final
+/// shape.
 class CalculatorState extends Equatable {
-  /// The label of the input currently being entered, or `null` if idle.
-  final String? activeInputLabel;
+  /// The tape of chips, with the preferences it is rendered by.
+  final Tape tape;
 
-  /// The raw string value being typed by the user.
-  final String currentInputValue;
-
-  /// The numeric portion of the current input, stored separately to avoid
-  /// round-trip parsing.
-  final String currentNumericValue;
-
-  /// Whether the user is currently in the middle of an input sequence.
-  final bool isTyping;
-
-  /// The list of inputs that have been finalized and converted into chips.
-  final List<CoreCalculatorChip> completedChips;
-
-  /// Map of finalized labels to their numeric values, avoiding regex parsing.
-  final Map<String, double> finalizedValues;
-
-  /// The label for the computed result (e.g. "Pitch"), or `null` if none.
-  final String? resultLabel;
-
-  /// The value for the computed result, or `null` if none.
-  final String? resultValue;
-
-  /// A standalone chip representing the final computed result.
-  final CoreCalculatorChip? resultChip;
-
-  /// Which dependent key is shown in the display area value section.
-  /// `null` means no dependent key is displayed.
-  final DependentKeyId? dependentKeyId;
-
-  /// Value for the dependent key shown in the display area value section.
-  /// `null` means no dependent key is displayed.
-  final String? dependentKeyValue;
-
-  /// Index of the currently selected group of calculator keys.
+  /// Index of the group of function keys shown above the number pad.
   final int currentGroupIndex;
 
-  /// The unit system (imperial or metric) currently in use.
-  final UnitSystem currentUnitSystem;
+  /// What the tape said when it took the last key, or `null`.
+  final TapeNotice? notice;
+
+  /// The last key's refusal, or `null` when the tape took it. Never a
+  /// [TapeChanged].
+  final TapeOutcome? refusal;
 
   /// Creates a [CalculatorState].
   const CalculatorState({
-    this.activeInputLabel,
-    this.currentInputValue = '',
-    this.currentNumericValue = '',
-    this.isTyping = false,
-    this.completedChips = const [],
-    this.finalizedValues = const {},
-    this.resultLabel,
-    this.resultValue,
-    this.resultChip,
-    this.dependentKeyId,
-    this.dependentKeyValue,
+    this.tape = const Tape(),
     this.currentGroupIndex = 0,
-    this.currentUnitSystem = UnitSystem.imperial,
+    this.notice,
+    this.refusal,
   });
 
-  /// Returns the initial [CalculatorState] with all fields at their defaults.
+  /// An empty tape, the first group up, nothing said.
   factory CalculatorState.initial() => const CalculatorState();
 
-  /// Returns a copy of this state with the specified fields replaced.
-  ///
-  /// Nullable fields ([activeInputLabel], [resultLabel], [resultValue],
-  /// [resultChip], [dependentKeyId], [dependentKeyValue]) use a
-  /// `Function()?` wrapper to distinguish `null` (clear the field) from
-  /// absent (keep the current value).
+  /// A copy with the given fields replaced. [notice] and [refusal] take a
+  /// `Function()?` so that `null` (clear it) and absent (keep it) are told
+  /// apart.
   CalculatorState copyWith({
-    String? Function()? activeInputLabel,
-    String? currentInputValue,
-    String? currentNumericValue,
-    bool? isTyping,
-    List<CoreCalculatorChip>? completedChips,
-    Map<String, double>? finalizedValues,
-    String? Function()? resultLabel,
-    String? Function()? resultValue,
-    CoreCalculatorChip? Function()? resultChip,
-    DependentKeyId? Function()? dependentKeyId,
-    String? Function()? dependentKeyValue,
+    Tape? tape,
     int? currentGroupIndex,
-    UnitSystem? currentUnitSystem,
-  }) {
-    return CalculatorState(
-      activeInputLabel:
-          activeInputLabel != null ? activeInputLabel() : this.activeInputLabel,
-      currentInputValue: currentInputValue ?? this.currentInputValue,
-      currentNumericValue: currentNumericValue ?? this.currentNumericValue,
-      isTyping: isTyping ?? this.isTyping,
-      completedChips: completedChips ?? this.completedChips,
-      finalizedValues: finalizedValues ?? this.finalizedValues,
-      resultLabel: resultLabel != null ? resultLabel() : this.resultLabel,
-      resultValue: resultValue != null ? resultValue() : this.resultValue,
-      resultChip: resultChip != null ? resultChip() : this.resultChip,
-      dependentKeyId: dependentKeyId != null
-          ? dependentKeyId()
-          : this.dependentKeyId,
-      dependentKeyValue: dependentKeyValue != null
-          ? dependentKeyValue()
-          : this.dependentKeyValue,
-      currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
-      currentUnitSystem: currentUnitSystem ?? this.currentUnitSystem,
-    );
-  }
+    TapeNotice? Function()? notice,
+    TapeOutcome? Function()? refusal,
+  }) => CalculatorState(
+    tape: tape ?? this.tape,
+    currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
+    notice: notice != null ? notice() : this.notice,
+    refusal: refusal != null ? refusal() : this.refusal,
+  );
 
-  /// The chips to render in the display area, in order: [completedChips],
-  /// then an in-progress active chip while typing, then [resultChip].
-  /// The active chip is built here (not stored) from [activeInputLabel] and
-  /// [currentInputValue] so it always reflects the latest keystroke.
-  /// [dependentKeyId] and [dependentKeyValue] are excluded because they
-  /// render in a separate value section, not as chips.
+  /// The System of units the tape renders by, as the keyboard names it.
+  UnitSystem get currentUnitSystem => switch (tape.preferences.system) {
+    MeasurementSystem.imperial => UnitSystem.imperial,
+    MeasurementSystem.metric => UnitSystem.metric,
+  };
+
+  /// Whether a value is being typed, inside an open bracket too.
+  bool get isTyping => tape.beingTyped != null;
+
+  /// The id the label row names: the function key of the value being typed
+  /// (`null` for a bare number, as every value inside a bracket is), else
+  /// the key of the last answer or the error the last chip carries, else
+  /// nothing.
+  String? get labelKeyId => switch (_chipRead) {
+    ValueChip(:final key) => key,
+    ResultChip(:final key) => key,
+    ErrorChip(:final error) => error.name,
+    BracketChip() || null => null,
+  };
+
+  /// The text of the value row: the value being typed, inside an open
+  /// bracket too, else the last chip; an error chip has no value to show.
+  String get valueText => switch (_chipRead) {
+    null || ErrorChip() => '',
+    final chip => _valueTextOf(chip),
+  };
+
+  TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
+
+  /// The tape as chips the display area draws: a value chip is its key over
+  /// its text, an answer its key over the formatted value, a bracket its
+  /// inside between parentheses, each led by the operator that joins it to
+  /// the chain, as the prototype's tape reads (2 | +(3×4) | ×5 | Calc70); an
+  /// error chip carries its error as the label the page titles it by.
   List<CoreCalculatorChip> get chipsList => [
-        ...completedChips,
-        if (isTyping)
-          if (activeInputLabel case final label?)
-            CoreCalculatorChip(
-              label: label,
-              value: currentInputValue,
-              type: CoreCalculatorChipType.active,
-            ),
-        ?resultChip,
-      ];
+    for (final chip in tape.chips)
+      CoreCalculatorChip(
+        label: switch (chip) {
+          ValueChip(:final key) => key,
+          ResultChip(:final key) => key,
+          ErrorChip(:final error) => error.name,
+          BracketChip() => null,
+        },
+        value: switch (chip) {
+          ErrorChip() => null,
+          _ => _valueTextOf(chip),
+        },
+        type: switch (chip) {
+          ValueChip(isActive: true) => CoreCalculatorChipType.active,
+          ValueChip() || BracketChip() => CoreCalculatorChipType.editable,
+          ResultChip() || ErrorChip() => CoreCalculatorChipType.disabled,
+        },
+      ),
+  ];
+
+  String _valueTextOf(TapeChip chip) => switch (chip) {
+    ValueChip(:final operator, :final entry) =>
+      '${_lead(operator)}${entry.text}',
+    ResultChip(:final operator, :final value) =>
+      '${_lead(operator)}${tape.formatter.format(value)}',
+    BracketChip(:final operator, :final inner, :final isOpen) =>
+      '${_lead(operator)}(${inner.map(_valueTextOf).join()}${isOpen ? '' : ')'}',
+    ErrorChip() => '',
+  };
+
+  static String _lead(Operator? operator) => operator?.symbol ?? '';
 
   @override
-  List<Object?> get props => [
-        activeInputLabel,
-        currentInputValue,
-        currentNumericValue,
-        isTyping,
-        completedChips,
-        finalizedValues,
-        resultLabel,
-        resultValue,
-        resultChip,
-        dependentKeyId,
-        dependentKeyValue,
-        currentGroupIndex,
-        currentUnitSystem,
-      ];
+  List<Object?> get props => [tape, currentGroupIndex, notice, refusal];
 }

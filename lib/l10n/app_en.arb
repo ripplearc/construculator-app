@@ -2950,9 +2950,21 @@
   "@calculatorKeyTan": {
     "description": "Calculator key label for the tangent trigonometric function"
   },
-  "calculatorResultPosts": "Posts",
-  "@calculatorResultPosts": {
-    "description": "Result label for the number of fence posts computed by the fence function"
+  "calculatorResultCalc": "Calc",
+  "@calculatorResultCalc": {
+    "description": "Label of the running-total chip on the calculator tape, the answer of a chain so far"
+  },
+  "calculatorErrorDimension": "Dimension Error",
+  "@calculatorErrorDimension": {
+    "description": "Title of the calculator error chip landed when two values of incompatible kinds are combined, such as pounds divided by feet"
+  },
+  "calculatorErrorDivisionByZero": "Division by zero",
+  "@calculatorErrorDivisionByZero": {
+    "description": "Title of the calculator error chip landed when a chain divides by zero"
+  },
+  "calculatorErrorTooLarge": "Too large",
+  "@calculatorErrorTooLarge": {
+    "description": "Title of the calculator error chip landed when an answer is above 19,999,999.99 in its unit"
   },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
