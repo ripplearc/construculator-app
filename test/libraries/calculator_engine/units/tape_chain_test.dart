@@ -262,6 +262,46 @@ void main() {
       });
     });
 
+    group('CA-1339: an exact fraction that outgrows the store', () {
+      test('a chain of small fractions still answers: 65085/555951ft + '
+          '81712/3171mm ÷ 48011 = reads Under 1/16in', () {
+        final tape = press(
+          const Tape(),
+          '6 5 0 8 5 / 5 5 5 9 5 1 ft + 8 1 7 1 2 / 3 1 7 1 mm ÷ 4 8 0 1 1 =',
+        );
+        expect(
+          tape.chips.last,
+          isA<ResultChip>().having(
+            (chip) => formatter.format(chip.value),
+            'text',
+            'Under 1/16in',
+          ),
+        );
+      });
+
+      test('a real length too small to keep lands Too small, not Too large: '
+          '1in ÷ 9999999 three times', () {
+        final tape = press(
+          const Tape(),
+          '1 in ÷ 9 9 9 9 9 9 9 ÷ 9 9 9 9 9 9 9 ÷ 9 9 9 9 9 9 9 =',
+        );
+        expect(tape.chips.last, const ErrorChip(CalculationError.tooSmall));
+      });
+
+      test('a length typed with 18 decimals computes, as the trade compound '
+          'a scaled length is written in', () {
+        expect(
+          calc(
+            press(
+              const Tape(),
+              '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 ft × 1',
+            ),
+          ),
+          '1ft 1-1/2in',
+        );
+      });
+    });
+
     group('errors', () {
       test('78lbs ÷ 12ft = lands a Dimension Error chip (S18)', () {
         final tape = press(const Tape(), '7 8 lbs ÷ 1 2 ft');
