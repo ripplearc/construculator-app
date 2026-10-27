@@ -4,7 +4,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
-import 'package:construculator/features/estimation/presentation/widgets/delivery_fee_input_formatter.dart';
+import 'package:construculator/features/estimation/presentation/widgets/money_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
@@ -127,8 +127,17 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   bool _deliveryExpanded = false;
   bool _showDeliveryLimitHint = false;
   String _lastDeliveryText = '';
-  late final _deliveryFeeFormatter = DeliveryFeeInputFormatter(
+  late final _deliveryFeeFormatter = MoneyInputFormatter(
+    largestAmount: largestMoneyAmount,
     onLimitReached: _showDeliveryLimit,
+    deviceLocale: _deviceLocale,
+  );
+
+  bool _showRateLimitHint = false;
+  String _lastRateEditText = '';
+  late final _rateFormatter = MoneyInputFormatter(
+    onLimitReached: _showRateLimit,
+    deviceLocale: _deviceLocale,
   );
 
   String _lastDailyRateText = '';
@@ -147,7 +156,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _durationController.addListener(_onDurationChanged);
     _dailyRateController.addListener(_onDailyRateChanged);
     _jobAmountController.addListener(_onJobAmountChanged);
-    _jobAmountFocusNode.addListener(_onJobAmountFocusChanged);
+    _jobAmountFocusNode.addListener(_onRateFocusChanged);
+    _dailyRateFocusNode.addListener(_onRateFocusChanged);
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
@@ -207,8 +217,24 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  Locale? _deviceLocale() =>
+      mounted ? View.of(context).platformDispatcher.locale : null;
+
+  void _showRateLimit() {
+    if (!mounted) return;
+    setState(() => _showRateLimitHint = true);
+  }
+
+  void _hideRateLimitHintOnDelete(String text) {
+    if (_showRateLimitHint && text.length < _lastRateEditText.length) {
+      setState(() => _showRateLimitHint = false);
+    }
+    _lastRateEditText = text;
+  }
+
   void _onDailyRateChanged() {
     final rate = _dailyRateController.text;
+    _hideRateLimitHintOnDelete(rate);
     if (rate == _lastDailyRateText) return;
     _lastDailyRateText = rate;
     _clearRateSaveStatus();
@@ -217,6 +243,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   void _onJobAmountChanged() {
     final amount = _jobAmountController.text;
+    _hideRateLimitHintOnDelete(amount);
     if (amount == _lastJobAmountText) return;
     _lastJobAmountText = amount;
     _clearRateSaveStatus();
@@ -242,9 +269,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _notifyTotal();
   }
 
-  void _onJobAmountFocusChanged() {
+  void _onRateFocusChanged() {
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      if (!_dailyRateFocusNode.hasFocus && !_jobAmountFocusNode.hasFocus) {
+        _showRateLimitHint = false;
+      }
+    });
   }
 
   void _onDeliveryFocusChanged() {
@@ -577,6 +608,28 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  Widget _rateLimitHint(BuildContext context) {
+    if (!_showRateLimitHint) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: CoreSpacing.space2),
+      child: Semantics(
+        liveRegion: true,
+        child: _hintRow(
+          context,
+          key: const Key('rate_decimals_limit_hint'),
+          icon: CoreIcons.info,
+          iconColor: context.colorTheme.iconGrayMid,
+          text: Text(
+            context.l10n.equipmentRateDecimalsLimitHint,
+            style: context.textTheme.bodySmallRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _hintRow(
     BuildContext context, {
     required Key key,
@@ -824,6 +877,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       focusNode: _jobAmountFocusNode,
       hideSuffixWhenEmpty: true,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [_rateFormatter],
       suffix: Text(
         _rateUnitSuffix(context, data.method),
         style:
@@ -1025,6 +1079,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   isDay
                       ? _durationField(context, data, recalled: true)
                       : _amountField(context, data, recalled: true),
+                  if (!isDay) _rateLimitHint(context),
                   if (!isDay) _recalledAmountFooter(context, data),
                   SizedBox(height: _gapAfterRecalledFooter(data)),
                   _buildDeliveryFeeSection(context, data),
@@ -1079,6 +1134,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
+                    inputFormatters: [_rateFormatter],
                     suffix: Text(
                       _rateUnitSuffix(context, data.method),
                       style: textTheme.bodySmallRegular.copyWith(
@@ -1093,9 +1149,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     touched: _touchedFieldKeys.contains('rate_field'),
                     onTouched: () => _touchedFieldKeys.add('rate_field'),
                   ),
+                  _rateLimitHint(context),
                   _rateSaveFooter(context, data),
                 ] else ...[
                   _amountField(context, data),
+                  _rateLimitHint(context),
                   _rateSaveFooter(context, data),
                 ],
                 const SizedBox(height: CoreSpacing.space5),
