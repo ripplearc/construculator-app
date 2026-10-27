@@ -39,26 +39,31 @@ void main() {
     final bloc = blocOf(tester);
 
     await press(tester, 'calc_key_Length');
-    expect(bloc.state.activeInputLabel, 'Length');
+    expect(bloc.state.labelKeyId, 'Length');
     expect(bloc.state.isTyping, isTrue);
 
     await press(tester, 'calc_key_two');
     await press(tester, 'calc_key_four');
-    expect(bloc.state.currentInputValue, '24');
+    expect(bloc.state.valueText, '24');
 
     await press(tester, 'calc_key_delete');
-    expect(bloc.state.currentInputValue, '2');
+    expect(bloc.state.valueText, '2');
 
     await press(tester, 'calc_key_feet');
-    expect(bloc.state.currentInputValue, '2 ft');
+    expect(bloc.state.valueText, '2ft');
 
-    await press(tester, 'calc_key_add');
-    expect(bloc.state.completedChips, isEmpty);
+    await press(tester, 'calc_key_multiply');
+    expect(bloc.state.tape.chips, hasLength(2));
 
+    await press(tester, 'calc_key_three');
     await tester.tap(find.byKey(CoreResultButton.testKey));
     await tester.pump();
-    expect(bloc.state.completedChips, hasLength(1));
+    expect(bloc.state.tape.chips, hasLength(3));
+    expect(bloc.state.valueText, '6ft 0in');
     expect(bloc.state.isTyping, isFalse);
+
+    await press(tester, 'calc_key_divideSymbol');
+    expect(bloc.state.refusal, isNotNull);
 
     await press(tester, 'calc_key_clearAll');
     expect(bloc.state, equals(CalculatorState.initial()));
@@ -139,8 +144,7 @@ void main() {
     for (var i = 0; i < 6; i++) {
       await press(tester, 'calc_key_Length');
       await press(tester, 'calc_key_one');
-      await tester.tap(find.byKey(CoreResultButton.testKey));
-      await tester.pump();
+      await press(tester, 'calc_key_feet');
     }
     expect(bloc.state.chipsList, hasLength(6));
     Align keyboardAlign() => tester.widget<Align>(
@@ -177,7 +181,7 @@ void main() {
 
     await press(tester, 'calc_key_Length');
     await press(tester, 'calc_key_seven');
-    expect(bloc.state.currentInputValue, '7');
+    expect(bloc.state.valueText, '7');
 
     await tester.tap(find.bySemanticsLabel(l10n.closeButton));
     await tester.pump();

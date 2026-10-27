@@ -1,14 +1,15 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Test module that provides [CalculatorBloc] as a factory (`i.add`) so
 /// each test resolves a fresh instance via `Modular.get`. The production
-/// [CalculatorModule] no longer binds [CalculatorBloc] — the page owns its
-/// lifecycle directly via `BlocProvider` — so this test-only binding keeps
-/// the unit tests on dependency injection instead of direct instantiation.
+/// [CalculatorModule] does not bind [CalculatorBloc] — the page owns its
+/// lifecycle through `BlocProvider` — so this test-only binding keeps the
+/// unit tests on dependency injection instead of direct instantiation.
 class _CalculatorBlocTestModule extends Module {
   @override
   void binds(Injector i) {
@@ -29,425 +30,388 @@ void main() {
     Modular.destroy();
   });
 
+  /// The tape after [keys] pressed on the engine directly, the expectation
+  /// every bloc test is held to: the bloc adds nothing of its own.
+  Tape pressed(String keys, {Tape tape = const Tape()}) {
+    var current = tape;
+    for (final key in keys.split(' ')) {
+      if (key.isEmpty) continue;
+      final outcome = switch (key) {
+        'ft' => current.pressUnit(Unit.foot),
+        'in' => current.pressUnit(Unit.inch),
+        'm' => current.pressUnit(Unit.metre),
+        'lbs' => current.pressUnit(Unit.pound),
+        '/' => current.typeFraction(),
+        '×' => current.pressOperator(Operator.multiply),
+        '÷' => current.pressOperator(Operator.divide),
+        '+' => current.pressOperator(Operator.add),
+        '=' => current.pressEquals(),
+        '⌫' => current.backspace(),
+        '(' => current.pressBracket(),
+        _ when key.startsWith('[') => current.pressFunctionKey(
+          key.substring(1, key.length - 1),
+        ),
+        _ => current.typeDigit(key),
+      };
+      if (outcome case TapeChanged(:final tape)) current = tape;
+    }
+    return current;
+  }
+
+  CalculatorState tapeState(Tape tape, {TapeNotice? notice}) =>
+      CalculatorState(tape: tape, notice: notice);
+
   group('CalculatorBloc', () {
-    group('CalculatorDigitPressed', () {
+    group('walkthrough 11.1: Length 22ft then Width 18ft 8in', () {
       blocTest<CalculatorBloc, CalculatorState>(
-        'appends digit to currentInputValue when isTyping',
+        'produces the engine\'s tape step by step, every key a state',
         build: () => bloc,
-        seed: () => const CalculatorState(isTyping: true),
-        act: (bloc) {
-          bloc.add(const CalculatorDigitPressed('1'));
-          bloc.add(const CalculatorDigitPressed('2'));
-        },
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Length'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorUnitSelected(Unit.inch)),
         expect: () => [
-          const CalculatorState(
-            isTyping: true,
-            currentInputValue: '1',
-            currentNumericValue: '1',
-          ),
-          const CalculatorState(
-            isTyping: true,
-            currentInputValue: '12',
-            currentNumericValue: '12',
-          ),
+          tapeState(pressed('[Length]')),
+          tapeState(pressed('[Length] 2')),
+          tapeState(pressed('[Length] 2 2')),
+          tapeState(pressed('[Length] 2 2 ft')),
+          tapeState(pressed('[Length] 2 2 ft [Width]')),
+          tapeState(pressed('[Length] 2 2 ft [Width] 1')),
+          tapeState(pressed('[Length] 2 2 ft [Width] 1 8')),
+          tapeState(pressed('[Length] 2 2 ft [Width] 1 8 ft')),
+          tapeState(pressed('[Length] 2 2 ft [Width] 1 8 ft 8')),
+          tapeState(pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in')),
         ],
       );
 
-      blocTest<CalculatorBloc, CalculatorState>(
-        'does nothing when not isTyping',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const CalculatorDigitPressed('5')),
-        expect: () => [],
-      );
+      test('and the state reads the tape back for the display', () {
+        final state = tapeState(pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in'));
+        expect(state.isTyping, isTrue);
+        expect(state.labelKeyId, 'Width');
+        expect(state.valueText, '18ft 8in');
+        expect(
+          [for (final chip in state.chipsList) '${chip.label}${chip.value}'],
+          ['Length22ft', 'Width18ft 8in'],
+        );
+        expect(state.chipsList.first.type, CoreCalculatorChipType.editable);
+        expect(state.chipsList.last.type, CoreCalculatorChipType.active);
+      });
     });
 
-    group('CalculatorKeySelected', () {
+    group('each key reaches its tape method', () {
       blocTest<CalculatorBloc, CalculatorState>(
-        'finalizes prior input as a chip and sets new active label',
+        'a decimal point, a fraction and an operator',
         build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Rise',
-          currentInputValue: '6',
-          currentNumericValue: '6',
-        ),
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Run')),
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('.'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorFractionPressed())
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.inch)),
+        skip: 8,
+        expect: () => [tapeState(pressed('1 . 5 ft + 1 / 2 in'))],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'equals lands the running total: 2ft × 3 = is Calc 6ft 0in',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorEqualsPressed()),
+        skip: 4,
+        expect: () => [tapeState(pressed('2 ft × 3 ='))],
         verify: (bloc) {
-          expect(bloc.state.activeInputLabel, 'Run');
+          expect(bloc.state.labelKeyId, Tape.calcKey);
+          expect(bloc.state.valueText, '6ft 0in');
+          expect(bloc.state.isTyping, isFalse);
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['2ft', '×3', '6ft 0in'],
+          );
+          expect(
+            bloc.state.chipsList.last.type,
+            CoreCalculatorChipType.disabled,
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '⌫ removes the last token and C clears the tape',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.delete))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll)),
+        skip: 2,
+        expect: () => [tapeState(pressed('2 4 ⌫')), CalculatorState.initial()],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the bracket key opens a bracket and closes it, as one chip',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.paren)),
+        skip: 6,
+        expect: () => [tapeState(pressed('2 + ( 3 × 4 ('))],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['2', '+(3×4)'],
+          );
+          expect(bloc.state.labelKeyId, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an open bracket reads as one with no closing parenthesis',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3')),
+        skip: 1,
+        expect: () => [tapeState(pressed('( 3'))],
+        verify: (bloc) {
+          expect(bloc.state.chipsList.single.value, '(3');
+          expect(bloc.state.chipsList.single.label, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'typing inside a bracket reads as typing: the label and the value '
+        'row read the chip inside, the tape the whole bracket',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('4')),
+        skip: 5,
+        expect: () => [tapeState(pressed('2 + ( 3 × 4'))],
+        verify: (bloc) {
           expect(bloc.state.isTyping, isTrue);
-          expect(bloc.state.currentInputValue, '');
-          expect(bloc.state.completedChips.length, 1);
-          expect(bloc.state.completedChips[0].label, 'Rise');
-          expect(bloc.state.completedChips[0].value, '6');
-          expect(bloc.state.completedChips[0].type, CoreCalculatorChipType.editable);
-          expect(bloc.state.finalizedValues, {'Rise': 6.0});
+          expect(bloc.state.labelKeyId, isNull);
+          expect(bloc.state.valueText, '×4');
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['2', '+(3×4'],
+          );
         },
       );
+    });
 
+    group('what the tape says comes with the state', () {
       blocTest<CalculatorBloc, CalculatorState>(
-        'does not compute pitch when Run is zero',
+        'a refused key keeps the tape and carries the refusal; the next '
+        'taken key clears it',
         build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Run',
-          currentInputValue: '0',
-          currentNumericValue: '0',
-          finalizedValues: {'Rise': 6.0},
-        ),
-        act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
-        verify: (bloc) {
-          expect(bloc.state.resultLabel, isNull);
-        },
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'auto-computes pitch when both Rise and Run are finalized via =',
-        build: () => bloc,
-        seed: () => CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Run',
-          currentInputValue: '12',
-          currentNumericValue: '12',
-          completedChips: [
-            CoreCalculatorChip(
-              label: 'Rise',
-              value: '6',
-              type: CoreCalculatorChipType.editable,
-            ),
-          ],
-          finalizedValues: const {'Rise': 6.0},
-        ),
-        act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
-        verify: (bloc) {
-          expect(bloc.state.resultLabel, 'Pitch');
-          expect(bloc.state.resultValue, '0.5');
-          expect(bloc.state.resultChip, isNotNull);
-          expect(bloc.state.finalizedValues['Run'], 12.0);
-        },
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'does nothing for a non-= operator',
-        build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Run',
-          currentInputValue: '12',
-          currentNumericValue: '12',
-        ),
-        act: (bloc) => bloc.add(const CalculatorOperatorPressed('+')),
-        expect: () => [],
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'activates the pressed key without finalizing anything on the very first key press',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Width')),
+        act: (bloc) => bloc
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorDigitPressed('5')),
         expect: () => [
           const CalculatorState(
-            activeInputLabel: 'Width',
-            isTyping: true,
+            refusal: TapeRefused(TapeRefusal.nothingToCompute),
           ),
+          tapeState(pressed('5')),
         ],
-        verify: (bloc) {
-          expect(bloc.state.completedChips, isEmpty);
-          expect(bloc.state.finalizedValues, isEmpty);
-        },
-      );
-    });
-
-    group('CalculatorKeySelected — Fence', () {
-      blocTest<CalculatorBloc, CalculatorState>(
-        'finalizes an in-progress Length entry before computing fence posts',
-        build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Length',
-          currentInputValue: '24',
-          currentNumericValue: '24',
-        ),
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
-        verify: (bloc) {
-          expect(bloc.state.finalizedValues['Length'], 24.0);
-          expect(bloc.state.resultLabel, 'Posts');
-          expect(bloc.state.resultValue, '5');
-          expect(bloc.state.dependentKeyId, DependentKeyId.onCentre);
-          expect(bloc.state.dependentKeyValue, '6ft');
-        },
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'computes fence posts when Length is already finalized',
+        'the same refusal twice in a row is one state',
         build: () => bloc,
-        seed: () => const CalculatorState(
-          finalizedValues: {'Length': 24.0},
-        ),
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
-        verify: (bloc) {
-          expect(bloc.state.resultLabel, 'Posts');
-          expect(bloc.state.resultValue, '5');
-          expect(bloc.state.dependentKeyId, DependentKeyId.onCentre);
-          expect(bloc.state.dependentKeyValue, '6ft');
-        },
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'rounds up to the next whole post on a non-exact O.C. multiple',
-        build: () => bloc,
-        seed: () => const CalculatorState(finalizedValues: {'Length': 25.0}),
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
-        verify: (bloc) {
-          expect(bloc.state.resultLabel, 'Posts');
-          expect(bloc.state.resultValue, '6');
-        },
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'does nothing when Length is not finalized',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
-        verify: (bloc) {
-          expect(bloc.state.resultLabel, isNull);
-        },
-      );
-    });
-
-    group('CalculatorControlActioned', () {
-      blocTest<CalculatorBloc, CalculatorState>(
-        'delete removes last character from currentInputValue',
-        build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          currentInputValue: '123',
-          currentNumericValue: '123',
-        ),
-        act: (bloc) => bloc.add(
-          const CalculatorControlActioned(ControlAction.delete),
-        ),
+        act: (bloc) => bloc
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorEqualsPressed()),
         expect: () => [
           const CalculatorState(
-            isTyping: true,
-            currentInputValue: '12',
-            currentNumericValue: '12',
+            refusal: TapeRefused(TapeRefusal.nothingToCompute),
           ),
         ],
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'delete does nothing when currentInputValue is empty',
+        'a refused unit, an unfinished fraction and a zero under the fraction '
+        'line each carry their own reason',
         build: () => bloc,
-        act: (bloc) => bloc.add(
-          const CalculatorControlActioned(ControlAction.delete),
-        ),
-        expect: () => [],
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'clearAll resets to CalculatorState.initial()',
-        build: () => bloc,
-        seed: () => CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Rise',
-          currentInputValue: '99',
-          currentNumericValue: '99',
-          completedChips: [
-            CoreCalculatorChip(
-              label: 'Width',
-              value: '10',
-              type: CoreCalculatorChipType.editable,
-            ),
-          ],
-          finalizedValues: const {'Width': 10.0},
-        ),
-        act: (bloc) => bloc.add(
-          const CalculatorControlActioned(ControlAction.clearAll),
-        ),
-        expect: () => [CalculatorState.initial()],
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'the bracket key does nothing until the engine is wired in',
-        build: () => bloc,
-        act: (bloc) => bloc.add(
-          const CalculatorControlActioned(ControlAction.paren),
-        ),
-        expect: () => [],
-      );
-    });
-
-    group('CalculatorUnitSystemChanged', () {
-      blocTest<CalculatorBloc, CalculatorState>(
-        'updates currentUnitSystem to metric',
-        build: () => bloc,
-        act: (bloc) => bloc.add(
-          const CalculatorUnitSystemChanged(UnitSystem.metric),
-        ),
+        act: (bloc) => bloc
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorFractionPressed())
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('0')),
         expect: () => [
-          const CalculatorState(currentUnitSystem: UnitSystem.metric),
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.typeANumberFirst),
+          ),
+          tapeState(pressed('1')),
+          tapeState(pressed('1 /')),
+          tapeState(pressed('1 /')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+          ),
+          tapeState(pressed('1 /')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.zeroDenominator),
+          ),
         ],
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'updates currentUnitSystem back to imperial',
+        'a notice rides with the change that caused it and goes with the next',
         build: () => bloc,
-        seed: () => const CalculatorState(currentUnitSystem: UnitSystem.metric),
-        act: (bloc) => bloc.add(
-          const CalculatorUnitSystemChanged(UnitSystem.imperial),
-        ),
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3')),
+        skip: 3,
         expect: () => [
-          const CalculatorState(currentUnitSystem: UnitSystem.imperial),
+          tapeState(pressed('2 +'), notice: TapeNotice.emptyBracketsRemoved),
+          tapeState(pressed('2 + 3')),
         ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an error chip is read as its error for the label and no value',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('7'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorOperatorPressed(Operator.divide))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorEqualsPressed()),
+        skip: 7,
+        expect: () => [tapeState(pressed('7 8 lbs ÷ 1 2 ft ='))],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, CalculationError.dimensionError.name);
+          expect(bloc.state.valueText, '');
+          final chip = bloc.state.chipsList.last;
+          expect(chip.label, CalculationError.dimensionError.name);
+          expect(chip.value, isNull);
+          expect(chip.type, CoreCalculatorChipType.disabled);
+        },
       );
     });
 
-    group('CalculatorGroupSelected', () {
+    group('the keyboard around the tape', () {
       blocTest<CalculatorBloc, CalculatorState>(
-        'updates currentGroupIndex',
+        'selecting a group changes only the group',
         build: () => bloc,
         act: (bloc) => bloc.add(const CalculatorGroupSelected(2)),
         expect: () => [const CalculatorState(currentGroupIndex: 2)],
       );
-    });
 
-    group('CalculatorResetRequested', () {
       blocTest<CalculatorBloc, CalculatorState>(
-        'resets all state to initial',
+        'the System of units toggle sets the tape\'s own preferences, so a '
+        'mixed sum follows it',
         build: () => bloc,
-        seed: () => CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Height',
-          currentInputValue: '42',
-          currentGroupIndex: 1,
-          currentUnitSystem: UnitSystem.metric,
-          completedChips: [
-            CoreCalculatorChip(
-              label: 'Width',
-              value: '5',
-              type: CoreCalculatorChipType.editable,
+        act: (bloc) => bloc
+          ..add(const CalculatorUnitSystemChanged(UnitSystem.metric))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorUnitSelected(Unit.metre))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorEqualsPressed()),
+        skip: 6,
+        expect: () => [
+          tapeState(
+            pressed(
+              '1 m + 1 ft =',
+              tape: const Tape(
+                preferences: CalculatorPreferences(
+                  system: MeasurementSystem.metric,
+                ),
+              ),
             ),
-          ],
-          finalizedValues: const {'Width': 5.0},
-        ),
-        act: (bloc) => bloc.add(const CalculatorResetRequested()),
-        expect: () => [CalculatorState.initial()],
-      );
-    });
-
-    group('CalculatorUnitSelected', () {
-      blocTest<CalculatorBloc, CalculatorState>(
-        'appends unit abbreviation to currentInputValue when isTyping',
-        build: () => bloc,
-        seed: () => const CalculatorState(
-          isTyping: true,
-          currentInputValue: '10',
-        ),
-        act: (bloc) => bloc.add(const CalculatorUnitSelected('ft')),
-        expect: () => [
-          const CalculatorState(
-            isTyping: true,
-            currentInputValue: '10 ft',
           ),
         ],
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'normalises "feet" to "ft"',
-        build: () => bloc,
-        seed: () => const CalculatorState(isTyping: true),
-        act: (bloc) => bloc.add(const CalculatorUnitSelected('feet')),
-        expect: () => [
-          const CalculatorState(
-            isTyping: true,
-            currentInputValue: 'ft',
-          ),
-        ],
-      );
-    });
-
-    group('CalculatorState.chipsList', () {
-      test('is empty in initial state', () {
-        expect(CalculatorState.initial().chipsList, isEmpty);
-      });
-
-      test('contains active chip while typing with a label', () {
-        const state = CalculatorState(
-          isTyping: true,
-          activeInputLabel: 'Rise',
-          currentInputValue: '6',
-        );
-        expect(state.chipsList.length, 1);
-        expect(state.chipsList.single.label, 'Rise');
-        expect(state.chipsList.single.value, '6');
-        expect(state.chipsList.single.type, CoreCalculatorChipType.active);
-      });
-
-      test('omits active chip when not typing', () {
-        const state = CalculatorState(isTyping: false, activeInputLabel: 'Rise');
-        expect(state.chipsList, isEmpty);
-      });
-
-      test('appends result chip after completed chips', () {
-        final resultChip = CoreCalculatorChip(
-          label: 'Pitch',
-          value: '0.5',
-          type: CoreCalculatorChipType.disabled,
-        );
-        final completedChip = CoreCalculatorChip(
-          label: 'Rise',
-          value: '6',
-          type: CoreCalculatorChipType.editable,
-        );
-        final state = CalculatorState(
-          completedChips: [completedChip],
-          resultChip: resultChip,
-        );
-        expect(state.chipsList.length, 2);
-        expect(state.chipsList.first, completedChip);
-        expect(state.chipsList.last, resultChip);
-      });
-
-      test('omits active chip when typing with no active input label', () {
-        final completedChip = CoreCalculatorChip(
-          label: 'Rise',
-          value: '6',
-          type: CoreCalculatorChipType.editable,
-        );
-        final state = CalculatorState(
-          isTyping: true,
-          completedChips: [completedChip],
-        );
-        expect(state.chipsList, [completedChip]);
-      });
-
-      test(
-        'orders completed chips, active chip, then result chip',
-        () {
-          final completedChip = CoreCalculatorChip(
-            label: 'Rise',
-            value: '6',
-            type: CoreCalculatorChipType.editable,
-          );
-          final resultChip = CoreCalculatorChip(
-            label: 'Pitch',
-            value: '0.5',
-            type: CoreCalculatorChipType.disabled,
-          );
-          final state = CalculatorState(
-            completedChips: [completedChip],
-            isTyping: true,
-            activeInputLabel: 'Run',
-            currentInputValue: '12',
-            resultChip: resultChip,
-          );
-
-          expect(state.chipsList.length, 3);
-          expect(state.chipsList[0], completedChip);
-          expect(state.chipsList[1].label, 'Run');
-          expect(state.chipsList[1].value, '12');
-          expect(state.chipsList[1].type, CoreCalculatorChipType.active);
-          expect(state.chipsList[2], resultChip);
+        verify: (bloc) {
+          expect(bloc.state.currentUnitSystem, UnitSystem.metric);
+          expect(bloc.state.valueText, '1.3m');
         },
       );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C and a reset keep the System of units and the group',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorUnitSystemChanged(UnitSystem.metric))
+          ..add(const CalculatorGroupSelected(3))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorResetRequested()),
+        skip: 3,
+        expect: () => [
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+              ),
+            ),
+            currentGroupIndex: 3,
+          ),
+          tapeState(
+            pressed(
+              '4',
+              tape: const Tape(
+                preferences: CalculatorPreferences(
+                  system: MeasurementSystem.metric,
+                ),
+              ),
+            ),
+          ).copyWith(currentGroupIndex: 3),
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+              ),
+            ),
+            currentGroupIndex: 3,
+          ),
+        ],
+      );
     });
+
+    test(
+      'the initial state is an empty imperial tape with the first group',
+      () {
+        final state = CalculatorState.initial();
+        expect(state.tape, const Tape());
+        expect(state.currentGroupIndex, 0);
+        expect(state.currentUnitSystem, UnitSystem.imperial);
+        expect(state.isTyping, isFalse);
+        expect(state.labelKeyId, isNull);
+        expect(state.valueText, '');
+        expect(state.chipsList, isEmpty);
+        expect(state.notice, isNull);
+        expect(state.refusal, isNull);
+      },
+    );
   });
 }

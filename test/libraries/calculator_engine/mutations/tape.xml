@@ -13,6 +13,11 @@
     </files>
 
     <rules>
+        <!-- RULE CA-1087: the chip being typed inside a bracket is not seen -->
+        <regex pattern="if \(openBracket case final bracket\?\) return _with\(bracket\.inner\)\.active;" dotAll="true" id="tape.being_typed.outside_bracket">
+            <mutation text=""/>
+        </regex>
+
         <!-- RULE 1: a function key opens a second chip instead of renaming
              the empty one -->
         <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(\s*chip\.copyWith\(\s*key: \(\) =&gt; key," dotAll="true" id="tape.function_key.no_rename">

@@ -1,5 +1,6 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -176,7 +177,13 @@ class _CalculatorPageState extends State<CalculatorPage> {
     'ACOS' => l10n.calculatorKeyAcos,
     'ATAN' => l10n.calculatorKeyAtan,
     'DMS' => l10n.calculatorKeyDms,
-    'Posts' => l10n.calculatorResultPosts,
+    Tape.calcKey => l10n.calculatorResultCalc,
+    _ when id == CalculationError.dimensionError.name =>
+      l10n.calculatorErrorDimension,
+    _ when id == CalculationError.divisionByZero.name =>
+      l10n.calculatorErrorDivisionByZero,
+    _ when id == CalculationError.outOfRange.name =>
+      l10n.calculatorErrorTooLarge,
     _ => _untranslated(id),
   };
 
@@ -240,14 +247,27 @@ class _CalculatorPageState extends State<CalculatorPage> {
     semanticLabel: _fullNameFor(l10n, id),
   );
 
-  List<CoreDependentKeyData> _dependentKeys(
-    AppLocalizations l10n,
-    CalculatorState state,
-  ) {
-    final id = state.dependentKeyId;
-    if (id == null) return const [];
-    return [CalculatorPage.pillFor(l10n, id, state.dependentKeyValue ?? '')];
-  }
+  CalculatorEvent _unitEventFor(UnitType unit) => switch (unit) {
+    UnitType.yards => const CalculatorUnitSelected(Unit.yard),
+    UnitType.feet => const CalculatorUnitSelected(Unit.foot),
+    UnitType.inch => const CalculatorUnitSelected(Unit.inch),
+    UnitType.meter => const CalculatorUnitSelected(Unit.metre),
+    UnitType.centimeter => const CalculatorUnitSelected(Unit.centimetre),
+    UnitType.millimeter => const CalculatorUnitSelected(Unit.millimetre),
+    UnitType.divideSymbol => const CalculatorFractionPressed(),
+  };
+
+  // TODO: [CA-1088] Press the % key on the tape once the engine takes a
+  // grade under Slope from it. https://ripplearc.youtrack.cloud/issue/CA-1088
+  CalculatorEvent? _operatorEventFor(
+    OperatorType operator,
+  ) => switch (operator) {
+    OperatorType.add => const CalculatorOperatorPressed(Operator.add),
+    OperatorType.subtract => const CalculatorOperatorPressed(Operator.subtract),
+    OperatorType.multiply => const CalculatorOperatorPressed(Operator.multiply),
+    OperatorType.divide => const CalculatorOperatorPressed(Operator.divide),
+    OperatorType.percent => null,
+  };
 
   List<FunctionGroup> _buildGroups(AppLocalizations l10n) => [
     for (final group in _groupTable)
@@ -289,12 +309,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           ? const NeverScrollableScrollPhysics()
                           : const AlwaysScrollableScrollPhysics(),
                       child: CoreDisplayArea(
-                        label: switch (state.resultLabel ??
-                            state.activeInputLabel) {
+                        label: switch (state.labelKeyId) {
                           final id? => _displayLabelFor(l10n, id),
                           null => null,
                         },
-                        value: state.resultValue ?? state.currentInputValue,
+                        value: state.valueText,
                         isTyping: state.isTyping,
                         closeSemanticLabel: l10n.closeButton,
                         historyPlaceholder: l10n.calculatorHistoryPlaceholder,
@@ -302,7 +321,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         // TODO(CA-965): previousSessions is unwired pending
                         // research into archiving trigger, data model, and
                         // persistence approach for calculation history.
-                        dependentKeys: _dependentKeys(l10n, state),
+                        // TODO: [CA-1088] The pills under the value come
+                        // with the engine's answers.
+                        // https://ripplearc.youtrack.cloud/issue/CA-1088
+                        dependentKeys: const [],
                         onClose: () =>
                             bloc.add(const CalculatorResetRequested()),
                         onStageChanged: (stage) {
@@ -345,14 +367,16 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       result: const ResultType(label: '='),
                       onDigitPressed: (digit) =>
                           bloc.add(CalculatorDigitPressed(digit.label)),
-                      onUnitSelected: (unit) =>
-                          bloc.add(CalculatorUnitSelected(unit.label)),
-                      onOperatorPressed: (op) =>
-                          bloc.add(CalculatorOperatorPressed(op.symbol)),
+                      onUnitSelected: (unit) => bloc.add(_unitEventFor(unit)),
+                      onOperatorPressed: (op) {
+                        if (_operatorEventFor(op) case final event?) {
+                          bloc.add(event);
+                        }
+                      },
                       onControlAction: (action) =>
                           bloc.add(CalculatorControlActioned(action)),
                       onResultTapped: () =>
-                          bloc.add(const CalculatorOperatorPressed('=')),
+                          bloc.add(const CalculatorEqualsPressed()),
                       onGroupSelected: (groupName) {
                         final index = groups.indexWhere(
                           (g) => g.name == groupName,
