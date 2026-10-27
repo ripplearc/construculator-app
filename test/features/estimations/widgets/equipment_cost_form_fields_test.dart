@@ -2254,6 +2254,111 @@ void main() {
       },
     );
 
+    Future<void> pickRate(WidgetTester tester, String itemName) async {
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(itemName));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    RateStatus rateStatusOf(WidgetTester tester) {
+      final bloc = BlocProvider.of<EquipmentCostFormBloc>(
+        tester.element(find.byType(EquipmentCostFormFields)),
+      );
+      return (bloc.state as EquipmentCostFormEditing).data.rateStatus;
+    }
+
+    testWidgets(
+      'tapping the picked Day rate and leaving it without typing keeps the '
+      'rate saved, with no link',
+      (tester) async {
+        await seedRate(
+          itemName: 'Mini excavator',
+          amount: 145,
+          method: EquipmentPricingMethod.day,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await pickRate(tester, 'Mini excavator');
+
+        await tester.tap(find.byKey(const Key('rate_field')));
+        await tester.pump();
+        await unfocusAll(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+        expect(rateStatusOf(tester), RateStatus.ownRateConfirmed);
+      },
+    );
+
+    testWidgets(
+      'tapping the picked Job amount and leaving it without typing keeps the '
+      'rate saved, with no link',
+      (tester) async {
+        await seedRate(
+          itemName: 'Site cabin',
+          amount: 900,
+          method: EquipmentPricingMethod.job,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pumpAndSettle();
+        await pickRate(tester, 'Site cabin');
+
+        await tester.tap(find.byKey(const Key('amount_field')));
+        await tester.pump();
+        await unfocusAll(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsNothing);
+        expect(rateStatusOf(tester), RateStatus.ownRateConfirmed);
+      },
+    );
+
+    testWidgets('changing the text of a picked Day rate brings the link back', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Mini excavator',
+        amount: 145,
+        method: EquipmentPricingMethod.day,
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickRate(tester, 'Mini excavator');
+
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+
+      expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
+      expect(rateStatusOf(tester), RateStatus.ownRateUnconfirmed);
+    });
+
+    testWidgets(
+      'changing the text of a picked Job amount brings the link back',
+      (tester) async {
+        await seedRate(
+          itemName: 'Site cabin',
+          amount: 900,
+          method: EquipmentPricingMethod.job,
+        );
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pumpAndSettle();
+        await pickRate(tester, 'Site cabin');
+
+        await tester.enterText(find.byKey(const Key('amount_field')), '950');
+        await tester.pump();
+
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
+        expect(rateStatusOf(tester), RateStatus.ownRateUnconfirmed);
+      },
+    );
+
     testWidgets('a Job-priced entry never appears while Day is active', (
       tester,
     ) async {
