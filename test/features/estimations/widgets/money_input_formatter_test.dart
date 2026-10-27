@@ -79,6 +79,31 @@ void main() {
       expect(after('', r'$ '), '');
     });
 
+    test('keeps the caret where the user put it when nothing is cleaned', () {
+      final result = formatter.formatEditUpdate(
+        const TextEditingValue(text: '15'),
+        const TextEditingValue(
+          text: '185',
+          selection: TextSelection.collapsed(offset: 2),
+        ),
+      );
+
+      expect(result.selection, const TextSelection.collapsed(offset: 2));
+    });
+
+    test('puts the caret at the end of a cleaned paste', () {
+      final result = formatter.formatEditUpdate(
+        const TextEditingValue(),
+        const TextEditingValue(
+          text: r'$1,250.00',
+          selection: TextSelection.collapsed(offset: 3),
+        ),
+      );
+
+      expect(result.text, '1250.00');
+      expect(result.selection, const TextSelection.collapsed(offset: 7));
+    });
+
     test('reads the comma as the decimal point on a decimal-comma phone', () {
       locale = const Locale('de', 'DE');
       expect(after('8', '8,'), '8.');
@@ -87,6 +112,16 @@ void main() {
       expect(after('', r'$1.250,00'), '1250.00');
       expect(after('8.5', '8.55'), '8.55');
     });
+
+    test(
+      'a comma typed after a decimal point is refused, not read as a paste',
+      () {
+        locale = const Locale('de', 'DE');
+        expect(after('8.5', '8.5,'), '8.5');
+        expect(after('8', '8,'), '8.');
+        expect(limitCalls, 0);
+      },
+    );
 
     test('refuses a third decimal after the comma is read', () {
       locale = const Locale('de', 'DE');

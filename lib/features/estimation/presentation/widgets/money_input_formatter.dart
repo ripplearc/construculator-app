@@ -8,8 +8,9 @@ import 'package:intl/intl.dart';
 ///
 /// `$`, spaces and thousands separators are removed, so `$1,250.00` becomes
 /// `1250.00`. On a phone whose region writes a decimal comma, the comma is the
-/// decimal point and a point is a thousands separator, so `8,50` becomes
-/// `8.50`. The text the field holds is always a plain number such as `1250.5`.
+/// decimal point, so `8,50` becomes `8.50`, and in a pasted value a point is a
+/// thousands separator, so `1.250,00` becomes `1250.00`. The text the field
+/// holds is always a plain number such as `1250.5`.
 ///
 /// A keystroke or paste that would add a third decimal, or go above
 /// [largestAmount], is dropped and the field keeps its text. Both cases call
@@ -46,7 +47,7 @@ class MoneyInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     if (newValue.text.isEmpty) return newValue;
-    final text = _plainNumber(newValue.text);
+    final text = _plainNumber(oldValue.text, newValue.text);
     if (text.isEmpty) return oldValue;
     if (!_twoDecimalsAtMost.hasMatch(text)) {
       if (_digitsAndOnePoint.hasMatch(text)) onLimitReached?.call();
@@ -65,10 +66,12 @@ class MoneyInputFormatter extends TextInputFormatter {
     );
   }
 
-  String _plainNumber(String raw) {
+  String _plainNumber(String before, String raw) {
     final withoutSymbols = raw.replaceAll(_dollarSignOrSpace, '');
-    if (!_usesDecimalComma || !withoutSymbols.contains(',')) {
-      return withoutSymbols.replaceAll(',', '');
+    if (!_usesDecimalComma) return withoutSymbols.replaceAll(',', '');
+    final isOneTypedKey = raw.length == before.length + 1;
+    if (isOneTypedKey || !withoutSymbols.contains(',')) {
+      return withoutSymbols.replaceAll(',', '.');
     }
     return withoutSymbols.replaceAll('.', '').replaceAll(',', '.');
   }

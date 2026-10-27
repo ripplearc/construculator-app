@@ -107,14 +107,14 @@ void main() {
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
-            id: '',
-            companyId: 'company-1',
-            itemName: 'Backhoe',
-            category: CostItemType.equipment,
-            rate: const Money(amount: 145),
-            savedAt: DateTime(2026, 1, 1),
-            equipmentMethod: EquipmentPricingMethod.day,
-          );
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 145),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
@@ -165,14 +165,14 @@ void main() {
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
-            id: '',
-            companyId: 'company-1',
-            itemName: 'Backhoe',
-            category: CostItemType.equipment,
-            rate: const Money(amount: 145),
-            savedAt: DateTime(2026, 1, 1),
-            equipmentMethod: EquipmentPricingMethod.day,
-          );
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 145),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
@@ -294,6 +294,36 @@ void main() {
           tester,
           makeWidget,
           find.byKey(const Key('lookup_rate_button')),
+        );
+      },
+    );
+
+    testWidgets(
+      'a11y: rate field with its decimals hint meets tap target, label and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('rate_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (tester) async {
+            await tester.enterText(
+              find.byKey(const Key('rate_field')),
+              '85.55',
+            );
+            await tester.enterText(
+              find.byKey(const Key('rate_field')),
+              '85.555',
+            );
+            await tester.pump();
+            expect(
+              find.byKey(const Key('rate_decimals_limit_hint')),
+              findsOneWidget,
+            );
+          },
         );
       },
     );
