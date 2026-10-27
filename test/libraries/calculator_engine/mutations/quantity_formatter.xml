@@ -264,6 +264,19 @@
         <regex pattern="static const double largestShown = 19999999\.99;" dotAll="true" id="quantity_formatter.too_large.limit">
             <mutation text="static const double largestShown = 99999999.99;"/>
         </regex>
+
+        <!-- RULE CA-1339: the feet, the whole inches and the fraction step
+             are split with whole-number and double math; each step wrong -->
+        <regex pattern="var feet = magnitude\.floor\(\) ~/ _inchesPerFoot;" dotAll="true" id="quantity_formatter.feet.wrong_divisor">
+            <mutation text="var feet = magnitude.floor() ~/ (_inchesPerFoot + 1);"/>
+        </regex>
+        <regex pattern="final remainder = magnitude - Rational\(feet \* _inchesPerFoot\);" dotAll="true" id="quantity_formatter.feet.remainder_not_subtracted">
+            <mutation text="final remainder = magnitude - Rational(feet);"/>
+        </regex>
+        <regex pattern="remainderInches\.numerator \* steps / remainderInches\.denominator," dotAll="true" id="quantity_formatter.fraction.truncated_steps">
+            <mutation text="remainderInches.numerator * steps ~/ remainderInches.denominator,"/>
+            <mutation text="remainderInches.numerator * steps / 1,"/>
+        </regex>
     </rules>
 
     <commands>

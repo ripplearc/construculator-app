@@ -33,7 +33,11 @@ import 'package:equatable/equatable.dart';
 /// resolution and reduced (8/16 reads 1/2); a remainder that rounds up to a
 /// whole inch carries instead of reading 16/16, and the sign is written once,
 /// in front (-8-3/4in). The feet of a compound are never grouped, as the
-/// prototype writes them raw ("4368ft 0in"). A volume speaks the unit the
+/// prototype writes them raw ("4368ft 0in"). The feet, the whole inches and
+/// the fraction step are split off the exact inches with whole-number and
+/// double arithmetic, never a [Rational] product or quotient, so a fraction
+/// whose denominator is near 2⁵³ (65085/555951ft + 81712/3171mm ÷ 48011)
+/// renders instead of throwing [RationalOverflow]. A volume speaks the unit the
 /// question was asked in (500bf ÷ 4 reads 125bf, not 10.42ft³), and tons take
 /// a space before the word ("0.04 ton") where lbs and kg do not.
 ///
@@ -226,8 +230,8 @@ class QuantityFormatter extends Equatable {
   String _feetAndInches(Rational inches) {
     final negative = inches.numerator < 0;
     final magnitude = negative ? -inches : inches;
-    var feet = (magnitude / Unit.foot.inchesPer).floor();
-    final remainder = magnitude - Rational(feet) * Unit.foot.inchesPer;
+    var feet = magnitude.floor() ~/ _inchesPerFoot;
+    final remainder = magnitude - Rational(feet * _inchesPerFoot);
     var wholeInches = remainder.floor();
     final fraction = _fractionOfInch(remainder - Rational(wholeInches));
     wholeInches += fraction.carry;
@@ -264,10 +268,15 @@ class QuantityFormatter extends Equatable {
     return _under('$step$suffix', negative: amount < 0);
   }
 
+  static const int _inchesPerFoot = Length.ticksPerFoot ~/ Length.ticksPerInch;
+
   ({String text, int carry}) _fractionOfInch(Rational remainderInches) {
     final steps = preferences.fractionResolution.denominator;
+    // Whole-number and double steps only: a Rational product or quotient
+    // reduces and checks its size, and a denominator near 2⁵³ would
+    // overflow it where the number itself is small.
     var numerator = _jsMathRound(
-      (remainderInches * Rational(steps)).toDouble(),
+      remainderInches.numerator * steps / remainderInches.denominator,
     );
     if (numerator == 0) return (text: '', carry: 0);
     if (numerator == steps) return (text: '', carry: 1);

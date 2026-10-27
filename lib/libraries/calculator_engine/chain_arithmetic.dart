@@ -49,9 +49,16 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// 64-bit `int` at sides of 2³² in where the double does not. A length made
 /// from an area or a volume is kept to whole ticks, the prototype's
 /// rounding point, with JavaScript's `Math.round`, so a half tick rounds
-/// toward +∞. A length answer beyond [maxTicks] in either
-/// direction, an exact fraction that outgrows what a [Rational] holds, or
-/// any answer that overflowed to infinity, is refused as
+/// toward +∞. A length whose exact fraction outgrows what a [Rational]
+/// holds (65085/555951ft + 81712/3171mm ÷ 48011) is kept in double math to
+/// 1/512 of a tick instead, as a rule's answer is, and a real length below
+/// that, too small to keep (1in ÷ 9999999 three times), is refused as
+/// [CalculationError.tooSmall]. A length scaled by a number with no finite
+/// decimal spelling is rounded to a whole tick and refused the same way
+/// when a real length rounds to none (1in × 1e-7): on neither path is a
+/// zero written that says two lengths match when they do not (Section 6).
+/// A length answer beyond [maxTicks] in either
+/// direction, or any answer that overflowed to infinity, is refused as
 /// [CalculationError.outOfRange] rather than clamped to a wrong number.
 ///
 /// Which unit an answer wears follows the operands. An area, a volume or a
@@ -132,6 +139,8 @@ class ChainArithmetic extends Equatable {
       };
     } on _TicksOutOfRange {
       return const ArithmeticFailed(CalculationError.outOfRange);
+    } on _TooSmall {
+      return const ArithmeticFailed(CalculationError.tooSmall);
     } on RationalOverflow {
       return const ArithmeticFailed(CalculationError.outOfRange);
     }
@@ -224,12 +233,7 @@ class ChainArithmetic extends Equatable {
       of: _magnitude(left).abs() + _magnitude(right).abs(),
     );
     return switch (left) {
-      Length() => _exactLength(
-        sign > 0
-            ? left.inches + (right as Length).inches
-            : left.inches - (right as Length).inches,
-        _lengthSumUnit(left.unit, right.unit),
-      ),
+      Length() => _lengthSum(left, right as Length, sign, magnitude),
       Area() => Area(
         magnitude,
         unit: _areaSumUnit(left.unit, (right as Area).unit),
@@ -252,6 +256,14 @@ class ChainArithmetic extends Equatable {
           right.spelling == AngleSpelling.degreesMinutesSeconds
       ? AngleSpelling.degreesMinutesSeconds
       : AngleSpelling.degrees;
+
+  Length _lengthSum(Length left, Length right, int sign, double ticks) =>
+      _exactOrKeptLength(
+        () =>
+            sign > 0 ? left.inches + right.inches : left.inches - right.inches,
+        () => ticks,
+        _lengthSumUnit(left.unit, right.unit),
+      );
 
   static double _zeroWithinFloatNoise(double value, {required double of}) =>
       value.abs() <= of * _floatNoise ? 0 : value;
@@ -307,7 +319,11 @@ class ChainArithmetic extends Equatable {
     if (exact == null) {
       return _roundedLength(length.ticks * factor.value, length.unit);
     }
-    return _exactLength(length.inches * exact, _lengthUnit([length.unit]));
+    return _exactOrKeptLength(
+      () => length.inches * exact,
+      () => length.preciseTicks * factor.value,
+      _lengthUnit([length.unit]),
+    );
   }
 
   Length _dividedLength(Length length, Scalar divisor) {
@@ -315,18 +331,40 @@ class ChainArithmetic extends Equatable {
     if (exact == null) {
       return _roundedLength(length.ticks / divisor.value, length.unit);
     }
-    return _exactLength(length.inches / exact, _lengthUnit([length.unit]));
+    return _exactOrKeptLength(
+      () => length.inches / exact,
+      () => length.preciseTicks / divisor.value,
+      _lengthUnit([length.unit]),
+    );
   }
 
   Rational? _exactNumber(Scalar number) =>
       number.exact ?? Rational.tryParse(number.value.toString());
 
-  Length _roundedLength(double ticks, Unit unit) =>
-      Length(_wholeTicks(ticks), unit: _lengthUnit([unit]));
+  Length _roundedLength(double ticks, Unit unit) {
+    final whole = _wholeTicks(ticks);
+    if (ticks != 0 && whole == 0) throw const _TooSmall();
+    return Length(whole, unit: _lengthUnit([unit]));
+  }
 
   Length _keptLength(double ticks, Unit unit) {
     _wholeTicks(ticks);
+    if (ticks != 0 && (ticks * Length.partsPerTick).round() == 0) {
+      throw const _TooSmall();
+    }
     return Length.computed(ticks, unit: unit);
+  }
+
+  Length _exactOrKeptLength(
+    Rational Function() exact,
+    double Function() approximateTicks,
+    Unit unit,
+  ) {
+    try {
+      return _exactLength(exact(), unit);
+    } on RationalOverflow {
+      return _keptLength(approximateTicks(), unit);
+    }
   }
 
   Length _exactLength(Rational inches, Unit unit) {
@@ -400,4 +438,8 @@ class ChainArithmetic extends Equatable {
 
 class _TicksOutOfRange implements Exception {
   const _TicksOutOfRange();
+}
+
+class _TooSmall implements Exception {
+  const _TooSmall();
 }
