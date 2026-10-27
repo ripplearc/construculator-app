@@ -16,24 +16,35 @@
 
     <rules>
         <!-- RULE 1: a token's inches forget its unit, so 22ft reads 22in -->
-        <regex pattern="return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.inches_of.ignore_unit">
-            <mutation text="return exact;"/>
+        <regex pattern="Dimension\.length\) \{\s*return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.inches_of.ignore_unit">
+            <mutation text="Dimension.length) { return exact;"/>
         </regex>
 
         <!-- RULE 1b: a compound keeps only its last token -->
-        <regex pattern="inches \+= inchesOf\(token\);" dotAll="true" id="quantity_parser.parse.last_token_only">
-            <mutation text="inches = inchesOf(token);"/>
+        <regex pattern="inches \+= tokenInches;" dotAll="true" id="quantity_parser.parse.last_token_only">
+            <mutation text="inches = tokenInches;"/>
         </regex>
 
-        <!-- RULE 1c: a length too long to keep exactly is parsed anyway -->
-        <regex pattern="if \(exactValueOf\(token\) == null\) return null;\s*inches \+= inchesOf\(token\);" dotAll="true" id="quantity_parser.parse.no_exact_guard">
-            <mutation text="inches += inchesOf(token);"/>
+        <!-- RULE 1c (CA-1339): a length with more digits than a Rational
+             keeps is read as exact anyway, or every length is kept to a
+             fraction of a tick -->
+        <regex pattern="if \(exact != null\) return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.parse.no_exact_guard">
+            <mutation text="return inchesOf(token);"/>
+            <mutation text=""/>
+            <mutation text="if (exact != null) return exact;"/>
+        </regex>
+
+        <!-- RULE 1e (CA-1339): a kept length past the tick limit, or one
+             below the fraction of a tick it holds, is parsed anyway -->
+        <regex pattern="if \(ticks\.abs\(\) &gt; Length\.maxTicks \|\| \(ticks != 0 &amp;&amp; partsOfATick == 0\)\) \{\s*return null;\s*\}" dotAll="true" id="quantity_parser.parse.kept_limits">
+            <mutation text="if (ticks != 0 &amp;&amp; partsOfATick == 0) return null;"/>
+            <mutation text="if (ticks.abs() &gt; Length.maxTicks) return null;"/>
         </regex>
 
         <!-- RULE 1d: the exact-value guard runs for a weight too, so a
              17-digit weight reads as no value -->
-        <regex pattern="if \(unit\.dimension == Dimension\.length\) \{\s*if \(exactValueOf\(token\) == null\) return null;" dotAll="true" id="quantity_parser.parse.exact_guard_on_weights">
-            <mutation text="if (exactValueOf(token) == null) return null; if (unit.dimension == Dimension.length) {"/>
+        <regex pattern="if \(unit\.dimension == Dimension\.length\) \{\s*final tokenInches = _keptInchesOf\(token, tokenUnit\);\s*if \(tokenInches == null\) return null;" dotAll="true" id="quantity_parser.parse.exact_guard_on_weights">
+            <mutation text="if (exactValueOf(token) == null) return null; if (unit.dimension == Dimension.length) { final tokenInches = _keptInchesOf(token, tokenUnit); if (tokenInches == null) return null;"/>
         </regex>
 
         <!-- RULE 2: an open token is read as if it were complete; the exact
