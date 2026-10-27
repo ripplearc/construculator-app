@@ -30,6 +30,9 @@ void main() {
     Modular.destroy();
   });
 
+  TrigFunction? trigOf(String key) =>
+      TrigFunction.named(key.substring(1, key.length - 1));
+
   /// The tape after [keys] pressed on the engine directly, the expectation
   /// every bloc test is held to: the bloc adds nothing of its own.
   Tape pressed(String keys, {Tape tape = const Tape()}) {
@@ -48,8 +51,16 @@ void main() {
         '=' => current.pressEquals(),
         '⌫' => current.backspace(),
         '(' => current.pressBracket(),
+        '[DMS]' => current.pressDmsKey(),
+        '✕' => current.clearActive(),
+        _ when key.startsWith('[') && trigOf(key) != null =>
+          current.pressTrigKey(trigOf(key) as TrigFunction),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
+          keyWantsUnit: !PlainNumberKeys.all.contains(
+            key.substring(1, key.length - 1),
+          ),
+          readsDegrees: key == '[${PlainNumberKeys.pitch}]',
         ),
         _ => current.typeDigit(key),
       };
@@ -311,6 +322,168 @@ void main() {
           expect(chip.value, isNull);
           expect(chip.type, CoreCalculatorChipType.error);
         },
+      );
+    });
+
+    group('S1a 2/2: the keys the bloc tells apart', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a trig key presses its function, after its number (38 [SIN]) or '
+        'before it ([ATAN] 16)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('SIN'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorKeySelected('ATAN'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('6')),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('3 8 [SIN]')),
+          CalculatorState.initial(),
+          tapeState(pressed('[ATAN]')),
+          tapeState(pressed('[ATAN] 1')),
+          tapeState(pressed('[ATAN] 1 6')),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, 'ATAN');
+          expect(bloc.state.valueText, '16');
+          expect(bloc.state.isTyping, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the D:M:S key types a segment: 38 [DMS] 30 [DMS] 45',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('DMS'))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorKeySelected('DMS'))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorDigitPressed('5')),
+        skip: 7,
+        expect: () => [tapeState(pressed('3 8 [DMS] 3 0 [DMS] 4 5'))],
+        verify: (bloc) => expect(bloc.state.valueText, '38°30\'45"'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Pitch, Slope and Sides take a plain number, so an operator leaves '
+        'the bare number as complete',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorKeySelected('Sides'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorOperatorPressed(Operator.add)),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('[Pitch] 3 0 +')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides]')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides] 6')),
+          tapeState(pressed('[Pitch] 3 0 + [Sides] 6 +')),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['30', '+6', '+'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a weight unit under a length-only key and a length unit under '
+        'Slope are refused with the tape\'s own reasons',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorKeySelected('Slope'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('[Width] 5')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.needsLength),
+          ),
+          CalculatorState.initial(),
+          tapeState(pressed('[Slope]')),
+          tapeState(pressed('[Slope] 6')),
+          tapeState(pressed('[Slope] 6')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.slopeTakesAGrade),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit inside a bracket is judged by the chip being typed there, '
+        'not by the key the chip before the bracket is named by',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorKeySelected('lbs')),
+        skip: 6,
+        expect: () => [tapeState(pressed('[Width] 5 ft + ( 3 lbs'))],
+        verify: (bloc) => expect(bloc.state.valueText, '3lbs'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '✕ in a bracket with nothing typed in it yet is refused with its own '
+        'reason, and inside it clears the chip being typed there',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorActiveValueCleared())
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorActiveValueCleared()),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('2 + (')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingTypedInGroup),
+          ),
+          tapeState(pressed('2 + ( 3')),
+          tapeState(pressed('2 + ( 3 ✕')),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '✕ clears the value being typed and leaves the tape before it; with '
+        'nothing being typed it is refused',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorActiveValueCleared())
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorActiveValueCleared()),
+        skip: 5,
+        expect: () => [
+          tapeState(pressed('2 ft + 1 8 ✕')),
+          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingToCompute),
+          ),
+          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
+          ),
+        ],
       );
     });
 

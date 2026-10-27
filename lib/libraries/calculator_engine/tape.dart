@@ -54,7 +54,7 @@ enum TapeRefusal {
   /// value first"). A single bare number seals as a scalar instead.
   finishThisValueFirst,
 
-  /// [/] with no chip being typed.
+  /// [/] or ✕ with no chip being typed.
   nothingBeingTyped,
 
   /// ⌫ on an empty tape.
@@ -132,6 +132,11 @@ enum TapeRefusal {
 
   /// [( )] to close with nothing open.
   noBracketToClose,
+
+  /// ✕ in an open bracket with nothing typed in it ("Nothing typed in this
+  /// group yet"; Section 12.9, key path 2 [+] [( )] ✕). With a chip typed
+  /// inside, ✕ clears it as it would outside.
+  nothingTypedInGroup,
 
   /// The D:M:S key on a pitch answer, in any of its three spellings
   /// (Pitch-rise per 12in run 6in/12in, Pitch-degrees 26.57°, Pitch-grade
@@ -1232,6 +1237,24 @@ class Tape extends Equatable {
     AngleSpelling.risePerFoot ||
     AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
+
+  /// ✕ on the display clears the value being typed, the active chip, and
+  /// leaves the tape before it as it was (Section 1.1, "✕ button"); inside
+  /// an open bracket it clears the chip being typed there, and on a bracket
+  /// with nothing typed in it yet it is refused
+  /// ([TapeRefusal.nothingTypedInGroup]). With nothing being typed it is
+  /// refused ([TapeRefusal.nothingBeingTyped]), and the caller closes the
+  /// calculator instead.
+  TapeOutcome clearActive() {
+    if (openBracket case final bracket?) {
+      if (bracket.inner.isEmpty) {
+        return const TapeRefused(TapeRefusal.nothingTypedInGroup);
+      }
+      return _inside(bracket, (inner) => inner.clearActive());
+    }
+    if (active == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    return TapeChanged(_with(chips.sublist(0, chips.length - 1)));
+  }
 
   /// [/] goes into the active chip. A recalled angle is a finished value
   /// (rule 4.16), so the key is refused on it as the unit keys are: 45

@@ -333,8 +333,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         // with the engine's answers.
                         // https://ripplearc.youtrack.cloud/issue/CA-1088
                         dependentKeys: const [],
+                        // TODO: [CA-1092] Close the calculator when ✕ is
+                        // refused with nothing being typed (Section 1.1).
+                        // https://ripplearc.youtrack.cloud/issue/CA-1092
                         onClose: () =>
-                            bloc.add(const CalculatorResetRequested()),
+                            bloc.add(const CalculatorActiveValueCleared()),
                         onStageChanged: (stage) {
                           if (_currentStage != stage) {
                             setState(() => _currentStage = stage);
