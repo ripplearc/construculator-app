@@ -240,10 +240,15 @@ void main() {
           'Width': side,
           'Height': side,
         });
-        expect(
-          texts(answers).singleWhere((text) => text.startsWith('Wall area')),
-          'Wall area: 1,599,999,840,000,004ft²',
-        );
+        final wallArea =
+            answers
+                    .singleWhere(
+                      (answer) => answer.key == DeterministicRules.wallAreaKey,
+                    )
+                    .value
+                as Area;
+        expect(wallArea.squareFeet, closeTo(1599999840000004, 1));
+        expect(formatter.isTooLarge(wallArea), isTrue);
       });
 
       test('a metric box answers in cubic metres and square metres', () {
