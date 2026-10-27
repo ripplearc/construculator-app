@@ -225,6 +225,57 @@ void main() {
       });
     });
 
+    group('CA-1339: a length with more digits than a Rational keeps', () {
+      test('is kept to 1/512 of a tick, alone and inside a compound', () {
+        final length =
+            parser.parse(const [
+                  Token(digits: '1.123456789012345678', unit: Unit.foot),
+                ])
+                as Length;
+        expect(length.unit, Unit.foot);
+        expect(
+          length.preciseTicks,
+          closeTo(
+            1.123456789012345678 * Length.ticksPerFoot,
+            1 / Length.partsPerTick,
+          ),
+        );
+        expect(
+          length.inches.denominator,
+          lessThanOrEqualTo(Length.ticksPerInch * Length.partsPerTick),
+        );
+        final compound =
+            parser.parse(const [
+                  Token(digits: '1', unit: Unit.foot),
+                  Token(digits: '0.1234567890123456789', unit: Unit.inch),
+                ])
+                as Length;
+        expect(compound.unit, Unit.footInch);
+        expect(
+          compound.preciseTicks,
+          closeTo(
+            Length.ticksPerFoot + 0.1234567890123456789 * Length.ticksPerInch,
+            1 / Length.partsPerTick,
+          ),
+        );
+      });
+
+      test('below 1/512 of a tick, or past the tick limit, it is no value', () {
+        expect(
+          parser.parse(const [
+            Token(digits: '0.000000000000000001', unit: Unit.foot),
+          ]),
+          isNull,
+        );
+        expect(
+          parser.parse(const [
+            Token(digits: '12345678901234567890', unit: Unit.foot),
+          ]),
+          isNull,
+        );
+      });
+    });
+
     group('inchesOf', () {
       test('is the exact inches of a length token', () {
         expect(

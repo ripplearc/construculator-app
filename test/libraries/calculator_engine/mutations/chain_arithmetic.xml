@@ -37,7 +37,7 @@
         </regex>
 
         <!-- RULE: a quotient length is rounded to a whole tick -->
-        <regex pattern="_wholeTicks\(ticks\);\s*return Length\.computed\(ticks, unit: unit\);" dotAll="true" id="chain_arithmetic.kept_length.whole_tick">
+        <regex pattern="_wholeTicks\(ticks\);\s*if \(ticks != 0 &amp;&amp; \(ticks \* Length\.partsPerTick\)\.round\(\) == 0\) \{\s*throw const _TooSmall\(\);\s*\}\s*return Length\.computed\(ticks, unit: unit\);" dotAll="true" id="chain_arithmetic.kept_length.whole_tick">
             <mutation text="return Length(_wholeTicks(ticks), unit: unit);"/>
         </regex>
 
@@ -233,6 +233,39 @@
         <regex pattern="final exact = dividend\.inches / divisor\.inches;\s*return Scalar\(exact\.toDouble\(\), exact: exact\);" dotAll="true" id="chain_arithmetic.ratio_of_lengths.in_doubles">
             <mutation text="return Scalar(_magnitude(dividend) / _magnitude(divisor));"/>
             <mutation text="final exact = divisor.inches / dividend.inches; return Scalar(exact.toDouble(), exact: exact);"/>
+        </regex>
+
+        <!-- RULE CA-1339a: an exact overflow is refused instead of kept in
+             double math -->
+        <regex pattern="\} on RationalOverflow \{\s*return _keptLength\(approximateTicks\(\), unit\);" dotAll="true" id="chain_arithmetic.overflow.not_kept">
+            <mutation text="} on RationalOverflow { rethrow;"/>
+        </regex>
+
+        <!-- RULE CA-1339b: a length too small to keep is kept as zero, or a
+             true zero is refused as too small -->
+        <regex pattern="if \(ticks != 0 &amp;&amp; \(ticks \* Length\.partsPerTick\)\.round\(\) == 0\) \{" dotAll="true" id="chain_arithmetic.too_small.threshold">
+            <mutation text="if (false) {"/>
+            <mutation text="if ((ticks * Length.partsPerTick).round() == 0) {"/>
+            <mutation text="if (ticks != 0 &amp;&amp; (ticks * Length.partsPerTick).round() == 1) {"/>
+        </regex>
+
+        <!-- RULE CA-1339d: a length scaled by a number with no finite
+             spelling is kept as a zero that lies, or a true zero is refused -->
+        <regex pattern="if \(ticks != 0 &amp;&amp; whole == 0\) throw const _TooSmall\(\);" dotAll="true" id="chain_arithmetic.rounded_length.zero_that_lies">
+            <mutation text=""/>
+            <mutation text="if (whole == 0) throw const _TooSmall();"/>
+        </regex>
+
+        <!-- RULE CA-1339c: the double fallback of a sum, a scaling and a
+             division computes the wrong thing -->
+        <regex pattern="\(\) =&gt; ticks,\s*_lengthSumUnit" dotAll="true" id="chain_arithmetic.overflow.sum_fallback">
+            <mutation text="() =&gt; 0, _lengthSumUnit"/>
+        </regex>
+        <regex pattern="\(\) =&gt; length\.preciseTicks \* factor\.value," dotAll="true" id="chain_arithmetic.overflow.scale_fallback">
+            <mutation text="() =&gt; length.preciseTicks / factor.value,"/>
+        </regex>
+        <regex pattern="\(\) =&gt; length\.preciseTicks / divisor\.value," dotAll="true" id="chain_arithmetic.overflow.divide_fallback">
+            <mutation text="() =&gt; length.preciseTicks * divisor.value,"/>
         </regex>
     </rules>
 

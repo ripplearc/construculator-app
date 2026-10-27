@@ -240,6 +240,40 @@ void main() {
       });
     });
 
+    group('CA-1339: a fraction near the limit renders without overflowing', () {
+      const lastExact = Rational.maxMagnitude - 1;
+
+      test('the feet are split off without a Rational quotient', () {
+        expect(
+          formatter.format(
+            const Length.exact(
+              Rational(lastExact, lastExact - 2),
+              unit: Unit.footInch,
+            ),
+          ),
+          '0ft 1in',
+        );
+        expect(
+          formatter.format(
+            const Length.exact(Rational(1, lastExact), unit: Unit.footInch),
+          ),
+          'Under 1/16in',
+        );
+      });
+
+      test('the fraction step is read without a Rational product', () {
+        expect(
+          formatter.format(
+            const Length.exact(
+              Rational(lastExact - 4, lastExact - 2),
+              unit: Unit.inch,
+            ),
+          ),
+          '1in',
+        );
+      });
+    });
+
     group('CA-1236: a real value under the rounding reads in words', () {
       const tick = Length(1, unit: Unit.footInch);
       const minusTick = Length(-1, unit: Unit.footInch);
