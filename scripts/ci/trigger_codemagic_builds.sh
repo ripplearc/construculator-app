@@ -9,6 +9,9 @@ set -euo pipefail
 #   CODEMAGIC_API_URL                      defaults to https://api.codemagic.io
 #   DRY_RUN=true                           print each request body and send nothing
 #   SKIP_WORKFLOWS                         space-separated workflow ids to leave out
+#   COMMENT_BODY                           text of the #RunCheck comment; "#RunCheck ios"
+#                                          sends FORCE_IOS_BUILD=true so the iOS build
+#                                          cannot skip itself
 #
 # Every workflow is attempted even if an earlier one fails. The script exits
 # non-zero if any request fails or the response has no buildId.
@@ -34,6 +37,11 @@ write_summary() {
   fi
 }
 
+FORCE_IOS_BUILD=false
+if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+ios([[:space:]]|$)'; then
+  FORCE_IOS_BUILD=true
+fi
+
 FAILURES=0
 
 is_skipped() {
@@ -55,8 +63,9 @@ for WORKFLOW_ID in "$@"; do
     --arg appId "${CODEMAGIC_APP_ID:-}" \
     --arg workflowId "$WORKFLOW_ID" \
     --arg branch "$BRANCH" \
+    --arg forceIos "$FORCE_IOS_BUILD" \
     '{appId: $appId, workflowId: $workflowId, branch: $branch,
-      environment: {variables: {FORCE_FAIL: "false"}}}')
+      environment: {variables: {FORCE_FAIL: "false", FORCE_IOS_BUILD: $forceIos}}}')
 
   if [ "$DRY_RUN" = "true" ]; then
     echo "DRY RUN: would start $WORKFLOW_ID on $BRANCH: $BODY"

@@ -1,22 +1,22 @@
 #!/bin/bash
 set -euo pipefail
 
-# Decide whether #RunCheck must run the iOS debug build for a pull request.
+# Decide whether the Codemagic iOS debug build must run for the checked-out commit.
 # Usage: ./scripts/ci/ios_build_needed.sh
 #        ./scripts/ci/ios_build_needed.sh --classify <path>
 #
 # Prints one line on stdout: "run: <reason>" or "skip: <reason>".
-# "skip" is printed only when every changed file is listed as not iOS-related in
-# ios_build_paths.conf, the comment does not ask for iOS, and Codemagic has not
-# already reported an iOS result on the head commit. A file the list does not
-# mention, and anything else the script cannot establish, answers "run".
+# "skip" is printed only when the commit changes at least one file compared with
+# the base branch and every changed file is listed as not iOS-related in
+# ios_build_paths.conf. A file the list does not mention, an empty diff (for
+# example the nightly build on main) and anything else the script cannot
+# establish answers "run".
 #
 # --classify prints "ios", "other" or "unknown" for one path.
 #
 # Environment:
-#   GH_REPO, GITHUB_TOKEN, PR_NUMBER, HEAD_SHA   required
-#   COMMENT_BODY                                 text of the #RunCheck comment
-#   GITHUB_API_URL                               defaults to https://api.github.com
+#   FORCE_IOS_BUILD   "true" always answers "run" (set by #RunCheck ios)
+#   BASE_BRANCH       branch to compare with, defaults to main
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PATHS_FILE="${IOS_BUILD_PATHS_FILE:-$SCRIPT_DIR/ios_build_paths.conf}"
@@ -47,65 +47,42 @@ if [ "${1:-}" = "--classify" ]; then
   exit 0
 fi
 
-: "${GH_REPO:?GH_REPO is not set}"
-: "${GITHUB_TOKEN:?GITHUB_TOKEN is not set}"
-: "${PR_NUMBER:?PR_NUMBER is not set}"
-: "${HEAD_SHA:?HEAD_SHA is not set}"
-
-API_URL="${GITHUB_API_URL:-https://api.github.com}"
-FILES_PER_PAGE=100
-GITHUB_FILE_LIST_LIMIT=3000
-
-api_get() {
-  curl -sS --fail-with-body \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H "Accept: application/vnd.github+json" \
-    "$API_URL/repos/$GH_REPO/$1"
-}
+BASE_BRANCH="${BASE_BRANCH:-main}"
 
 run_because() {
   echo "run: $1"
   exit 0
 }
 
-if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+ios([[:space:]]|$)'; then
-  run_because "the comment asks for it with #RunCheck ios"
+if [ "${FORCE_IOS_BUILD:-false}" = "true" ]; then
+  run_because "FORCE_IOS_BUILD is true (#RunCheck ios)"
 fi
 
-CHECK_RUNS=$(api_get "commits/$HEAD_SHA/check-runs?per_page=100&check_name=Ios%20Debug%20Build") ||
-  run_because "could not read the check runs on $HEAD_SHA"
-EXISTING=$(jq -er '[.check_runs[]
-    | select(.name == "Ios Debug Build" and .app.slug == "codemagic-ci-cd")
-    | select(.conclusion != "cancelled" and .conclusion != "timed_out")] | length' <<< "$CHECK_RUNS") ||
-  run_because "the check runs on $HEAD_SHA could not be read"
-if [ "$EXISTING" -gt 0 ]; then
-  run_because "Codemagic already reported an iOS result on this commit"
+# #RunCheck builds have no pull request destination, so the base is fetched by
+# name, as scripts/run_check.sh does.
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+  git fetch --quiet --unshallow origin ||
+    run_because "could not fetch the full history"
+fi
+git fetch --quiet origin "$BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH" ||
+  run_because "could not fetch $BASE_BRANCH"
+MERGE_BASE=$(git merge-base HEAD "origin/$BASE_BRANCH") ||
+  run_because "found no common commit with $BASE_BRANCH"
+CHANGED_FILES=$(git diff --name-only --no-renames "$MERGE_BASE" HEAD) ||
+  run_because "could not list the changed files"
+
+if [ -z "$CHANGED_FILES" ]; then
+  run_because "no file differs from $BASE_BRANCH, so there is nothing to classify"
 fi
 
-PAGE=1
 TOTAL=0
-while :; do
-  FILES_JSON=$(api_get "pulls/$PR_NUMBER/files?per_page=$FILES_PER_PAGE&page=$PAGE") ||
-    run_because "could not list the files of pull request $PR_NUMBER"
-  COUNT=$(jq -er 'length' <<< "$FILES_JSON") ||
-    run_because "the file list of pull request $PR_NUMBER could not be read"
-  TOTAL=$((TOTAL + COUNT))
-
-  while IFS= read -r file; do
-    [ -z "$file" ] && continue
-    MATCH=$(classify "$file")
-    case "$MATCH" in
-      "ios "*) run_because "$file matches ${MATCH#ios }" ;;
-      unknown) run_because "$file is not listed in ios_build_paths.conf" ;;
-    esac
-  done < <(jq -r '.[] | .filename, (.previous_filename // empty)' <<< "$FILES_JSON")
-
-  [ "$COUNT" -lt "$FILES_PER_PAGE" ] && break
-  PAGE=$((PAGE + 1))
-done
-
-if [ "$TOTAL" -ge "$GITHUB_FILE_LIST_LIMIT" ]; then
-  run_because "GitHub lists at most $GITHUB_FILE_LIST_LIMIT files, so the full list cannot be checked"
-fi
+while IFS= read -r file; do
+  TOTAL=$((TOTAL + 1))
+  MATCH=$(classify "$file")
+  case "$MATCH" in
+    "ios "*) run_because "$file matches ${MATCH#ios }" ;;
+    unknown) run_because "$file is not listed in ios_build_paths.conf" ;;
+  esac
+done <<< "$CHANGED_FILES"
 
 echo "skip: no iOS-related files changed ($TOTAL files checked)"
