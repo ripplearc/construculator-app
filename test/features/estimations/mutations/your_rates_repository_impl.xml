@@ -36,6 +36,55 @@
         </regex>
         <regex pattern="words\.any\(name\.contains\)" dotAll="false" id="your_rates_repo.search.any_to_every">
             <mutation text="words.every(name.contains)"/>
+
+        </regex>
+
+        <regex pattern="refusal == null \|\| refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.keep_when_amounts_match">
+            <mutation text="refusal == null &amp;&amp; refusal.refusedAmount != dto.rateAmount"/>
+        </regex>
+
+        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.compare_equal">
+            <mutation text="refusal.refusedAmount == dto.rateAmount"/>
+        </regex>
+
+        <regex pattern="if \(acceptedAmount != null\)" id="your_rates.mask.drop_null_accepted">
+            <mutation text="if (acceptedAmount == null)"/>
+        </regex>
+
+        <regex pattern="lastAccepted\.add\(dto\.withRateAmount\(acceptedAmount\)\)" id="your_rates.mask.keep_refused_price">
+            <mutation text="lastAccepted.add(dto)"/>
+        </regex>
+
+        <regex pattern="YourRateRefusalKey\.of\(dto\.itemName, dto\.equipmentMethod\)" id="your_rates.mask.wrong_key_method">
+            <mutation text="YourRateRefusalKey.of(dto.itemName, null)"/>
+        </regex>
+
+        <regex pattern="for \(final refusal in await refusalDataSource\.loadAllRefusals\(\)\)\s*refusal\.id: refusal," id="your_rates.mask.no_refusals">
+            <mutation text="for (final refusal in &lt;YourRateRefusalDto&gt;[]) refusal.id: refusal,"/>
+        </regex>
+
+        <regex pattern="await _forgetRefusalOf\(normalizedEntry\);" id="your_rates.save.keep_refusal">
+            <mutation text="// kept"/>
+        </regex>
+
+        <regex pattern="refusal\?\.shownAt == null \? refusal : null" id="your_rates.watch.report_shown">
+            <mutation text="refusal?.shownAt != null ? refusal : null"/>
+        </regex>
+
+        <regex pattern="Right\(unshown\?\.toEntity\(\)\)" id="your_rates.watch.drop_refusal">
+            <mutation text="Right(null)"/>
+        </regex>
+
+        <regex pattern="sink\.add\(Left\(_handleError\(error\)\)\)" id="your_rates.watch.swallow_error">
+            <mutation text="sink.add(const Right(null))"/>
+        </regex>
+
+        <regex pattern="await refusalDataSource\.markRefusalShownByItem\(\s*itemName,\s*equipmentMethod\?\.toJson\(\),\s*\);" id="your_rates.shown.skip_write">
+            <mutation text="// skipped"/>
+        </regex>
+
+        <regex pattern="equipmentMethod\?\.toJson\(\),\s*\);\s*return const Right\(null\);" id="your_rates.shown.wrong_method">
+            <mutation text="null,); return const Right(null);"/>
         </regex>
     </rules>
 

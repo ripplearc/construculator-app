@@ -19,6 +19,16 @@ abstract class YourRateRefusalDataSource {
     String? equipmentMethod,
   );
 
+  /// The refusal kept for the item, now and after every change to it: null
+  /// while the server has not refused the item, and again once the refusal
+  /// is forgotten.
+  ///
+  /// Emits an error if a read fails.
+  Stream<YourRateRefusalDto?> watchRefusalByItem(
+    String itemName,
+    String? equipmentMethod,
+  );
+
   /// Records that the "Not kept" message for the item was shown. Does
   /// nothing if the item has no refusal.
   ///

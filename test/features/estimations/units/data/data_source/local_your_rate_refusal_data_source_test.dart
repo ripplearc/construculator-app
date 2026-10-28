@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rate_refusal_data_source.dart';
+import 'package:construculator/features/estimation/data/models/your_rate_refusal_dto.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -165,6 +166,70 @@ void main() {
           await dataSource.loadRefusalByItem('Excavator', 'day'),
           isNotNull,
         );
+      });
+    });
+
+    group('watchRefusalByItem', () {
+      test('emits null while the server has refused nothing', () async {
+        await expectLater(
+          dataSource.watchRefusalByItem('Dumpster — 30 yd', 'job'),
+          emits(isNull),
+        );
+      });
+
+      test('emits the refusal when the upload step records one', () async {
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem('Dumpster — 30 yd', 'job'),
+          emitsInOrder([
+            isNull,
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.refusedAmount,
+              'refusedAmount',
+              450.0,
+            ),
+          ]),
+        );
+
+        database.seedRefusal(refusal());
+
+        await emissions;
+      });
+
+      test('emits the shown time once the message was shown', () async {
+        database.seedRefusal(refusal());
+
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem('Dumpster — 30 yd', 'job'),
+          emitsInOrder([
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.shownAt,
+              'shownAt',
+              isNull,
+            ),
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.shownAt,
+              'shownAt',
+              isNotNull,
+            ),
+          ]),
+        );
+
+        await dataSource.markRefusalShownByItem('Dumpster — 30 yd', 'job');
+
+        await emissions;
+      });
+
+      test('emits null again once the refusal is forgotten', () async {
+        database.seedRefusal(refusal());
+
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem('Dumpster — 30 yd', 'job'),
+          emitsInOrder([isNotNull, isNull]),
+        );
+
+        await dataSource.deleteRefusalByItem('Dumpster — 30 yd', 'job');
+
+        await emissions;
       });
     });
 
