@@ -7,8 +7,9 @@ set -euo pipefail
 # Prints a JSON array on stdout, one object per build on the first page Codemagic
 # returns (further pages are not read):
 #   {"id": "...", "workflow": "...", "status": "...", "commit": "...", "createdAt": "..."}
-# A field Codemagic does not send is null. The notes on stderr name the fields
-# Codemagic sent and the statuses it reported, so a run shows what to rely on.
+# "workflow" is the id of the workflow in codemagic.yaml (fileWorkflowId; the
+# workflowId field is null for those). A field Codemagic does not send is null.
+# The notes on stderr name the fields Codemagic sent and the statuses it reported.
 # The notes on stderr also give the number of builds read, so a cut-off list shows.
 #
 # Environment:
@@ -44,9 +45,9 @@ echo "Fields on a build: $(jq -r '[.[0] // {} | keys[]] | join(", ")' <<< "$BUIL
 echo "Statuses seen: $(jq -r '[.[].status] | unique | join(", ")' <<< "$BUILDS")" >&2
 
 jq -c '[.[] | {
-  id: (._id // .id),
-  workflow: (.workflowId // .workflow.id? // .workflowName // null),
-  status: (.status // null),
-  commit: (.commit.hash? // .commitHash? // null),
-  createdAt: (.createdAt // .created_at // null)
+  id: ._id,
+  workflow: .fileWorkflowId,
+  status: .status,
+  commit: .commit.hash?,
+  createdAt: .createdAt
 }]' <<< "$BUILDS"

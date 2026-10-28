@@ -71,22 +71,22 @@ sent() { grep -Fq -- "$1" "${WORK_DIR}/fake/requests"; }
 exit_code_is() { [ "$EXIT_CODE" -eq "$1" ]; }
 
 set_body '{"builds":[
-  {"_id":"b1","workflowId":"ios-debug-build","status":"queued","commit":{"hash":"aaa111"},"createdAt":"2026-10-27T19:00:00Z"},
-  {"_id":"b2","workflowId":"comprehensive-check","status":"building","commit":{"hash":"bbb222"},"createdAt":"2026-10-27T19:01:00Z"}]}'
+  {"_id":"b1","workflowId":null,"fileWorkflowId":"ios-debug-build","status":"queued","commit":{"hash":"aaa111"},"createdAt":"2026-10-27T19:00:00Z"},
+  {"_id":"b2","workflowId":null,"fileWorkflowId":"comprehensive-check","status":"building","commit":{"hash":"bbb222"},"createdAt":"2026-10-27T19:01:00Z"}]}'
 run_target feature/x
 assert_true "exits 0" exit_code_is 0
 assert_true "lists the id, workflow, status and commit of every build" output_is . \
   '[{"id":"b1","workflow":"ios-debug-build","status":"queued","commit":"aaa111","createdAt":"2026-10-27T19:00:00Z"},{"id":"b2","workflow":"comprehensive-check","status":"building","commit":"bbb222","createdAt":"2026-10-27T19:01:00Z"}]'
 assert_true "names the statuses it saw" stderr_contains "Statuses seen: building, queued"
 assert_true "gives the number of builds read" stderr_contains "Builds read: 2"
-assert_true "names the fields Codemagic sent" stderr_contains "Fields on a build: _id, commit, createdAt, status, workflowId"
+assert_true "names the fields Codemagic sent" stderr_contains "Fields on a build: _id, commit, createdAt, fileWorkflowId, status, workflowId"
 assert_true "asks for the app and the branch" sent "builds?appId=app123&branch=feature%2Fx"
 assert_true "sends the token in the x-auth-token header" sent "x-auth-token: secret-token"
 assert_true "never prints the token" output_hides_token
 
-set_body '[{"id":"b3","workflow":{"id":"pre-check"},"status":"finished","commitHash":"ccc333","created_at":"2026-10-27T18:00:00Z"}]'
+set_body '[{"_id":"b3","fileWorkflowId":"pre-check","status":"finished","commit":{"hash":"ccc333"},"createdAt":"2026-10-27T18:00:00Z"}]'
 run_target main
-assert_true "reads a plain list and the other field spellings" output_is . \
+assert_true "reads a plain list as well as an object with builds" output_is . \
   '[{"id":"b3","workflow":"pre-check","status":"finished","commit":"ccc333","createdAt":"2026-10-27T18:00:00Z"}]'
 
 set_body '{"builds":[{"_id":"b4"}]}'
