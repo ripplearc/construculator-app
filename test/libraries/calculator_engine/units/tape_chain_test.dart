@@ -288,15 +288,15 @@ void main() {
         expect(tape.chips.last, const ErrorChip(CalculationError.tooSmall));
       });
 
-      test('a length typed with 18 decimals computes, as the trade compound '
-          'a scaled length is written in', () {
+      test('a length typed with fifteen digits computes exactly, as the trade '
+          'compound a scaled length is written in, and a sixteenth digit is '
+          'refused as it is typed', () {
         expect(
-          calc(
-            press(
-              const Tape(),
-              '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 ft × 1',
-            ),
-          ),
+          press(const Tape(), '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4').typeDigit('5'),
+          const TapeEntryRefused(EntryRefusal.tooManyDigits),
+        );
+        expect(
+          calc(press(const Tape(), '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4 ft × 1')),
           '1ft 1-1/2in',
         );
       });
