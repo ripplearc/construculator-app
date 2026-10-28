@@ -56,6 +56,25 @@ class CostItemRepositoryImpl implements CostItemRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String?>> getEstimateNameKeepingEquipmentRate({
+    required String itemName,
+    required EquipmentPricingMethod pricingMethod,
+    required double rateAmount,
+  }) async {
+    try {
+      return Right(
+        await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: itemName,
+          pricingMethod: pricingMethod.toJson(),
+          rateAmount: rateAmount,
+        ),
+      );
+    } catch (e) {
+      return _handleError(e, 'looking up the estimate keeping a rate');
+    }
+  }
+
   Left<Failure, T> _handleError<T>(Object error, String operation) {
     if (error is TimeoutException) {
       _logger.error(
@@ -65,16 +84,12 @@ class CostItemRepositoryImpl implements CostItemRepository {
         EstimationFailure(errorType: EstimationErrorType.timeoutError),
       );
     } else if (error is SocketException) {
-      _logger.warning(
-        'Connection error $operation: message=${error.message}',
-      );
+      _logger.warning('Connection error $operation: message=${error.message}');
       return const Left(
         EstimationFailure(errorType: EstimationErrorType.connectionError),
       );
     } else if (error is FormatException) {
-      _logger.error(
-        'Parsing error $operation: message=${error.message}',
-      );
+      _logger.error('Parsing error $operation: message=${error.message}');
       return const Left(
         EstimationFailure(errorType: EstimationErrorType.parsingError),
       );

@@ -45,4 +45,20 @@ abstract class CostItemDataSource {
   ///
   /// Throws an exception if the create operation fails.
   Future<CostItemDto> createCostItem(CostItemDto item);
+
+  /// Fetches the name of the estimate holding the newest equipment line whose
+  /// item name is [itemName], priced by [pricingMethod] ('day' or 'job') at
+  /// exactly [rateAmount].
+  ///
+  /// Under day pricing [rateAmount] is compared with the line's daily rate,
+  /// under job pricing with its job amount.
+  ///
+  /// Returns null if no line matches.
+  ///
+  /// Throws an exception if the fetch operation fails due to network or database errors.
+  Future<String?> fetchNewestEstimateNameByEquipmentRate({
+    required String itemName,
+    required String pricingMethod,
+    required double rateAmount,
+  });
 }

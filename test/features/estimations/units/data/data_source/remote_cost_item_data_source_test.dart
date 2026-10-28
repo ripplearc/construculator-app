@@ -109,35 +109,36 @@ void main() {
         expect(result[1].itemName, 'Steel');
       });
 
-      test('uses correct table and filter parameters without itemType', () async {
-        seedItemTable([
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-1',
+      test(
+        'uses correct table and filter parameters without itemType',
+        () async {
+          seedItemTable([
+            CostItemTestDataMapFactory.createMaterialItemData(
+              id: 'item-1',
+              estimateId: testEstimateId,
+            ),
+          ]);
+
+          await dataSource.fetchCostItemsByEstimateId(
             estimateId: testEstimateId,
-          ),
-        ]);
+          );
 
-        await dataSource.fetchCostItemsByEstimateId(
-          estimateId: testEstimateId,
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.length, 1);
-        final call = calls.first;
-        expect(call, {
-          'method': 'selectMatch',
-          'table': DatabaseConstants.costItemsTable,
-          'columns': '*',
-          'filters': {
-            DatabaseConstants.estimateIdColumn: testEstimateId,
-          },
-          'orderBy': DatabaseConstants.createdAtColumn,
-          'ascending': true,
-          // Recorded by FakeSupabaseWrapper since selectMatch gained the
-          // retry parameter; true is the default this call leaves untouched.
-          'retry': true,
-        });
-      });
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+          expect(calls.length, 1);
+          final call = calls.first;
+          expect(call, {
+            'method': 'selectMatch',
+            'table': DatabaseConstants.costItemsTable,
+            'columns': '*',
+            'filters': {DatabaseConstants.estimateIdColumn: testEstimateId},
+            'orderBy': DatabaseConstants.createdAtColumn,
+            'ascending': true,
+            // Recorded by FakeSupabaseWrapper since selectMatch gained the
+            // retry parameter; true is the default this call leaves untouched.
+            'retry': true,
+          });
+        },
+      );
 
       test('uses correct table and filter parameters with itemType', () async {
         seedItemTable([
@@ -220,9 +221,7 @@ void main() {
         fakeSupabaseWrapper.selectMatchErrorMessage = 'Network error';
 
         await expectLater(
-          dataSource.fetchCostItemsByEstimateId(
-            estimateId: testEstimateId,
-          ),
+          dataSource.fetchCostItemsByEstimateId(estimateId: testEstimateId),
           throwsException,
         );
       });
@@ -254,10 +253,11 @@ void main() {
           estimateId: testEstimateId,
         );
 
-        expect(
-          result.map((item) => item.id).toList(),
-          ['item-oldest', 'item-middle', 'item-newest'],
-        );
+        expect(result.map((item) => item.id).toList(), [
+          'item-oldest',
+          'item-middle',
+          'item-newest',
+        ]);
 
         final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
         expect(calls.first['orderBy'], DatabaseConstants.createdAtColumn);
@@ -371,10 +371,7 @@ void main() {
         );
         final itemDto = CostItemDto.fromJson(testItem);
 
-        await expectLater(
-          dataSource.createCostItem(itemDto),
-          throwsException,
-        );
+        await expectLater(dataSource.createCostItem(itemDto), throwsException);
       });
     });
 
@@ -421,6 +418,146 @@ void main() {
 
         await expectLater(
           () => dataSource.fetchItemTotalCostsByEstimateId(testEstimateId),
+          throwsException,
+        );
+      });
+    });
+
+    group('fetchNewestEstimateNameByEquipmentRate', () {
+      Map<String, dynamic> equipmentLine({
+        required String id,
+        required String estimateName,
+        String itemName = 'Mini excavator',
+        String pricingMethod = 'job',
+        double? dailyRate,
+        double? jobAmount = 450.0,
+        String createdAt = '2026-10-01T00:00:00.000Z',
+      }) => {
+        ...CostItemTestDataMapFactory.createEquipmentItemData(
+          id: id,
+          itemName: itemName,
+          pricingMethod: pricingMethod,
+          dailyRate: dailyRate,
+          jobAmount: jobAmount,
+          createdAt: createdAt,
+        ),
+        'cost_estimates': {'estimate_name': estimateName},
+      };
+
+      test('returns the name of the estimate keeping the job price', () async {
+        seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Bedroom 2')]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'job',
+          rateAmount: 450.0,
+        );
+
+        expect(name, 'Bedroom 2');
+      });
+
+      test('compares the daily rate under day pricing', () async {
+        seedItemTable([
+          equipmentLine(
+            id: 'line-1',
+            estimateName: 'Garage',
+            pricingMethod: 'day',
+            dailyRate: 450.0,
+            jobAmount: null,
+          ),
+        ]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'day',
+          rateAmount: 450.0,
+        );
+
+        expect(name, 'Garage');
+      });
+
+      test('returns the newest estimate when several keep the price', () async {
+        seedItemTable([
+          equipmentLine(id: 'line-1', estimateName: 'Garage'),
+          equipmentLine(
+            id: 'line-2',
+            estimateName: 'Bedroom 2',
+            createdAt: '2026-10-05T00:00:00.000Z',
+          ),
+        ]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'job',
+          rateAmount: 450.0,
+        );
+
+        expect(name, 'Bedroom 2');
+      });
+
+      test('matches the item name without capitals or extra spaces', () async {
+        seedItemTable([
+          equipmentLine(
+            id: 'line-1',
+            estimateName: 'Garage',
+            itemName: '  MINI   excavator ',
+          ),
+        ]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'job',
+          rateAmount: 450.0,
+        );
+
+        expect(name, 'Garage');
+      });
+
+      test('returns null when no line keeps the price', () async {
+        seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Garage')]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'job',
+          rateAmount: 400.0,
+        );
+
+        expect(name, isNull);
+      });
+
+      test('returns null for a line of another item', () async {
+        seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Garage')]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Dumpster',
+          pricingMethod: 'job',
+          rateAmount: 450.0,
+        );
+
+        expect(name, isNull);
+      });
+
+      test('returns null for a line of the other pricing method', () async {
+        seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Garage')]);
+
+        final name = await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          itemName: 'Mini excavator',
+          pricingMethod: 'day',
+          rateAmount: 450.0,
+        );
+
+        expect(name, isNull);
+      });
+
+      test('propagates exceptions from supabase wrapper', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+
+        await expectLater(
+          dataSource.fetchNewestEstimateNameByEquipmentRate(
+            itemName: 'Mini excavator',
+            pricingMethod: 'job',
+            rateAmount: 450.0,
+          ),
           throwsException,
         );
       });
