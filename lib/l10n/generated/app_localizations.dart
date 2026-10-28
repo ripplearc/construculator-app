@@ -3454,6 +3454,24 @@ abstract class AppLocalizations {
   /// **'Pitch'**
   String get calculatorKeyPitch;
 
+  /// Name of the calculator answer for a pitch written as inches of rise per 12 inches of run, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-rise per 12in run'**
+  String get calculatorAnswerPitchRise;
+
+  /// Name of the calculator answer for a pitch written in degrees, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-degrees'**
+  String get calculatorAnswerPitchDegrees;
+
+  /// Name of the calculator answer for a pitch written as a percent grade, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-grade'**
+  String get calculatorAnswerPitchGrade;
+
   /// Calculator key label for the vertical rise of a slope
   ///
   /// In en, this message translates to:
