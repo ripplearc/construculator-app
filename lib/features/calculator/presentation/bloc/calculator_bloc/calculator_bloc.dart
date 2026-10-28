@@ -16,7 +16,9 @@ part 'calculator_state.dart';
 /// is which key is which: the Unit group's keys press their unit, a trig
 /// key and the D:M:S key press theirs, Pitch, Slope and Sides take a plain
 /// number ([PlainNumberKeys]), and a unit under a length-only key (Section
-/// 3, "Takes: A length") or under Slope goes to the tape with that said,
+/// 3, "Takes: A length"), under Pitch (which takes a bare number, a length
+/// or a D:M:S entry and never an area or a weight: Section 5, "keeps", "at
+/// any time under Pitch") or under Slope goes to the tape with that said,
 /// read off the chip being typed wherever it is. Nothing here reads a
 /// store, the recents or the preferences repository; the System of units
 /// toggle sets the tape's own preferences, so the tape and the keyboard
@@ -48,17 +50,13 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     'mton': Unit.metricTon,
   };
 
-  static const Set<String> _lengthOnlyKeys = {
-    'Width',
-    'Length',
-    'Height',
-    'Run',
-    'Rise',
-    'Diag',
-    'Diameter',
-    'Radius',
-    'Chord',
-    'Qty@OC',
+  static const Map<String, TrigFunction> _trigKeys = {
+    'SIN': TrigFunction.sine,
+    'COS': TrigFunction.cosine,
+    'TAN': TrigFunction.tangent,
+    'ASIN': TrigFunction.arcsine,
+    'ACOS': TrigFunction.arccosine,
+    'ATAN': TrigFunction.arctangent,
   };
 
   static const String _dmsKey = 'DMS';
@@ -69,9 +67,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) => _press(emit, (tape) {
     final id = event.id;
     if (_unitKeys[id] case final unit?) return _pressUnit(tape, unit);
-    if (TrigFunction.named(id) case final function?) {
-      return tape.pressTrigKey(function);
-    }
+    if (_trigKeys[id] case final function?) return tape.pressTrigKey(function);
     if (id == _dmsKey) return tape.pressDmsKey();
     return tape.pressFunctionKey(
       id,
@@ -99,7 +95,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     final key = tape.beingTyped?.key;
     return tape.pressUnit(
       unit,
-      holdsLengthOnly: _lengthOnlyKeys.contains(key),
+      holdsLengthOnly:
+          LengthOnlyKeys.all.contains(key) || key == PlainNumberKeys.pitch,
       takesAGrade: key == PlainNumberKeys.slope,
     );
   }

@@ -30,6 +30,12 @@
             <mutation text=""/>
             <mutation text="if (state.tape.isEmpty) return;"/>
         </regex>
+
+        <!-- RULE 4 (S1a 2/2): Pitch holds any unit, so Pitch 6 [Inch] [Inch]
+             raises to 6in² -->
+        <regex pattern="\|\| key == PlainNumberKeys\.pitch" dotAll="true" id="calculator_bloc.press_unit.pitch_holds_any_unit">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

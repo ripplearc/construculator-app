@@ -1313,23 +1313,42 @@ class Tape extends Equatable {
     AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
 
-  /// ✕ on the display clears the value being typed, the active chip, and
-  /// leaves the tape before it as it was (Section 1.1, "✕ button"); inside
-  /// an open bracket it clears the chip being typed there, and on a bracket
-  /// with nothing typed in it yet it is refused
-  /// ([TapeRefusal.nothingTypedInGroup]). With nothing being typed it is
-  /// refused ([TapeRefusal.nothingBeingTyped]), and the caller closes the
-  /// calculator instead.
+  /// ✕ on the display empties the value being typed and keeps its chip
+  /// open under its key and the operator that leads into it (Section 1.1,
+  /// "✕ button"; Section 5, "The value is empty — type a new value, or
+  /// backspace to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
+  /// 7 leaves "Length…"), so 22ft + 18 ✕ 20 [Feet] = is 42ft, Width 5 [Lbs]
+  /// (refused) ✕ 5 [Feet] is Width 5ft, and 2 + (3 × 4 ✕ 5) = is 17; inside
+  /// an open bracket it empties the chip being typed there, and on a bracket
+  /// with nothing typed in it yet, or nothing left after ✕ emptied its
+  /// chip, it is refused ([TapeRefusal.nothingTypedInGroup]). With nothing being typed — the
+  /// empty chip an operator just opened, the divisor ÷ 0 reopened, or a
+  /// finished tape — it is refused ([TapeRefusal.nothingBeingTyped]): ✕
+  /// "clears the value in progress when something is typed" (Section 5,
+  /// "Closes the calculator"), so 2 + (3 + ✕ 4) = is 9 and 5 ÷ 0 = ✕ 2 = is
+  /// 2.5, and on a finished tape the caller closes the calculator instead.
   TapeOutcome clearActive() {
     if (openBracket case final bracket?) {
-      if (bracket.inner.isEmpty) {
+      if (bracket.inner.every(_holdsNothingTyped)) {
         return const TapeRefused(TapeRefusal.nothingTypedInGroup);
       }
       return _inside(bracket, (inner) => inner.clearActive());
     }
-    if (active == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
-    return TapeChanged(_with(chips.sublist(0, chips.length - 1)));
+    final chip = active;
+    if (chip == null || chip.entry.isEmpty) {
+      return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    }
+    return _replaceLast(
+      chip.copyWith(
+        entry: const EntryBuffer(),
+        exact: () => null,
+        poundsPerTon: () => null,
+      ),
+    );
   }
+
+  static bool _holdsNothingTyped(TapeChip chip) =>
+      chip is ValueChip && chip.entry.isEmpty && chip.operator == null;
 
   /// [/] goes into the active chip. A recalled angle is a finished value
   /// (rule 4.16), so the key is refused on it as the unit keys are: 45
@@ -1592,11 +1611,13 @@ class Tape extends Equatable {
   ///
   /// Straight after ) it reopens the bracket in place, with the keypad
   /// typing into its last value again (Section 7, "Editing a bracket").
-  /// Inside a bracket a chip has no name, so a bare one emptied by ⌫ has
-  /// nothing left to show and is dropped, which makes the next ⌫ remove
-  /// the bracket itself ("on an empty bracket it removes the bracket"),
-  /// one that ⌫ reopened included; an emptied operator chip stays, since
-  /// it still holds the operator.
+  /// Inside a bracket a chip has no name, so once ⌫ or ✕ has emptied every
+  /// chip in it there is nothing left to show and the next ⌫ removes the
+  /// bracket itself ("on an empty bracket it removes the bracket"), one
+  /// that ⌫ reopened included: 2 + ( 3 ⌫ ⌫ and 2 + ( 3 ✕ ⌫ both remove
+  /// the bracket and the + waits again, as the first ⌫ on 2 + ( does. An
+  /// emptied operator chip beside a value stays, since it still holds the
+  /// operator.
   ///
   /// A value recalled from the drawer is removed whole, exact value and
   /// all, so the chip is empty under its key again and the drawer can be
@@ -1604,8 +1625,10 @@ class Tape extends Equatable {
   /// typed start that ⌫ edits into one digit at a time (rule 4.16).
   TapeOutcome backspace() {
     if (openBracket case final bracket?) {
-      if (bracket.inner.isEmpty) return TapeChanged(_removeBracket(bracket));
-      return _inside(bracket, (inner) => inner._backspaceInsideBracket());
+      if (bracket.inner.every(_holdsNothingTyped)) {
+        return TapeChanged(_removeBracket(bracket));
+      }
+      return _inside(bracket, (inner) => inner.backspace());
     }
     if (chips.isNotEmpty) {
       if (chips.last case final BracketChip closed) {
@@ -1631,17 +1654,6 @@ class Tape extends Equatable {
       final BracketChip closed => _with([...before, _reopened(closed)]),
       ResultChip() || ErrorChip() => _with(remaining),
     });
-  }
-
-  TapeOutcome _backspaceInsideBracket() {
-    final outcome = backspace();
-    if (outcome case TapeChanged(:final tape)) {
-      if (tape.active case final chip?
-          when chip.entry.isEmpty && chip.operator == null) {
-        return TapeChanged(_with(tape.chips.sublist(0, tape.chips.length - 1)));
-      }
-    }
-    return outcome;
   }
 
   /// [( )]: one key opens a bracket and, pressed again, closes it, so the
