@@ -163,12 +163,18 @@
         </regex>
 
         <!-- RULE 10 (CA-1070 2/2): the seal loses the exact value behind a
-             recalled angle whose field it closed, keeps it behind the old
-             spelling, or brings it back on an edited chip -->
+             recalled angle whose field it closed, or keeps it behind the old
+             spelling; the chip ⌫ brings back loses it with the padding (R1).
+             The exact?.value mutant is equivalent since R1: the exact is
+             re-pointed only when the spelling changed, which only an angle's
+             seal or reopen does, and an angle chip never carries a stale
+             exact -->
         <regex pattern="exact: switch \(chip\.exactValue\) \{\s*final value\? =&gt; \(\) =&gt; \(value: value, spelled: entry\),\s*null =&gt; null,\s*\}," dotAll="true" id="tape.sealed.exact_value">
             <mutation text=""/>
             <mutation text="exact: switch (chip.exactValue) { final value? =&gt; () =&gt; (value: value, spelled: chip.entry), null =&gt; null, },"/>
-            <mutation text="exact: switch (chip.exact?.value) { final value? =&gt; () =&gt; (value: value, spelled: entry), null =&gt; null, },"/>
+        </regex>
+        <regex pattern="ValueChip _reactivated\(ValueChip chip\) =&gt;\s*_withEntry\(chip, chip\.entry\.reopened\)\.copyWith\(isActive: true\);" dotAll="true" id="tape.reactivated.exact_dropped">
+            <mutation text="ValueChip _reactivated(ValueChip chip) =&gt; chip.copyWith(entry: chip.entry.reopened, isActive: true);"/>
         </regex>
     </rules>
 

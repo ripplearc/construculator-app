@@ -437,7 +437,7 @@ void main() {
           final outcome = press(const Tape(), '7 in 1 / 2').pressEquals();
           expect(outcome, isA<TapeChanged>());
           final closed = outcome as TapeChanged;
-          expect(closed.notice, TapeNotice.fractionClosedNothingToCompute);
+          expect(closed.notice, TapeNotice.entryClosedNothingToCompute);
           expect(texts(closed.tape), ['7-1/2in']);
           expect(
             press(const Tape(), '7 in').pressEquals(),

@@ -104,8 +104,8 @@
         <!-- RULE 9b (CA-1070 2/2): the seal — a plain buffer is sealed as
              an angle, the carry is miscounted, the minus is dropped, or the
              limit past 2⁵³ is lost or leaves the seconds unpadded -->
-        <regex pattern="if \(!isDegreesMinutesSeconds\) return this;\s*final angle = tokens\.single;" dotAll="true" id="entry_buffer.seal.plain_buffer">
-            <mutation text="final angle = tokens.single;"/>
+        <regex pattern="if \(!isDegreesMinutesSeconds\) return this;\s*final angle = tokens\.single;\s*final closed = _withFieldsClosed\(" dotAll="true" id="entry_buffer.seal.plain_buffer">
+            <mutation text="final angle = tokens.single; final closed = _withFieldsClosed("/>
         </regex>
         <regex pattern="degrees: '\$sign\$\{total ~/ Token\.secondsPerDegree\}'," dotAll="true" id="entry_buffer.seal.degrees_carry">
             <mutation text="degrees: '$sign${total ~/ Token.minutesPerDegree}',"/>
@@ -124,9 +124,31 @@
         </regex>
 
         <!-- RULE 9c (CA-1070 2/2): the tape seals the chip without closing
-             its open field -->
+             its open field, = leaves the field open when it then has nothing
+             to compute, or reports a close that changed nothing -->
         <regex pattern="final entry = chip\.entry\.sealed;" dotAll="true" id="tape.sealed.field_left_open">
             <mutation text="final entry = chip.entry;"/>
+        </regex>
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\._withFieldClosed\(\);" dotAll="true" id="tape.press_equals.field_left_open">
+            <mutation text="final tape = _withFractionClosedAsInches();"/>
+        </regex>
+        <regex pattern="if \(identical\(entry, chip\.entry\)\) return this;\s*return _replaceActive\(_withEntry\(chip, entry\)\);" dotAll="true" id="tape.with_field_closed.always_changed">
+            <mutation text="return _replaceActive(_withEntry(chip, entry));"/>
+        </regex>
+
+        <!-- RULE 9d (CA-1070 2/2 R1): the chip ⌫ makes active again keeps the
+             seal's padding, or only one of its zeros, on the seconds; a plain
+             buffer is reopened as an angle; the tape reactivates the chip as
+             it was sealed -->
+        <regex pattern="final typed = angle\.seconds\?\.replaceFirst\(RegExp\('\^0\+'\), ''\);" dotAll="true" id="entry_buffer.reopened.padding_kept">
+            <mutation text="final typed = angle.seconds;"/>
+            <mutation text="final typed = angle.seconds?.replaceFirst(RegExp('^0'), '');"/>
+        </regex>
+        <regex pattern="if \(!isDegreesMinutesSeconds\) return this;\s*final angle = tokens\.single;\s*final typed" dotAll="true" id="entry_buffer.reopened.plain_buffer">
+            <mutation text="final angle = tokens.single; final typed"/>
+        </regex>
+        <regex pattern="_withEntry\(chip, chip\.entry\.reopened\)\.copyWith\(isActive: true\);" dotAll="true" id="tape.reactivated.padding_kept">
+            <mutation text="chip.copyWith(isActive: true);"/>
         </regex>
 
         <!-- RULE 10: a unit closes an angle, or a fraction opens under one -->

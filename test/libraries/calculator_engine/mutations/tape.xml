@@ -72,8 +72,8 @@
 
         <!-- RULE 7: backspace drops the last chip without reopening the value
              before it -->
-        <regex pattern="previous\.copyWith\(isActive: true\),\s*\]\),\s*final BracketChip closed =&gt; _with\(\[\.\.\.before, _reopened\(closed\)\]\)," dotAll="true" id="tape.backspace.no_reopen">
-            <mutation text="previous, ]), final BracketChip closed =&gt; _with([...before, _reopened(closed)]),"/>
+        <regex pattern="final ValueChip previous =&gt; _with\(\[\.\.\.before, _reactivated\(previous\)\]\)," dotAll="true" id="tape.backspace.no_reopen">
+            <mutation text="final ValueChip previous =&gt; _with([...before, previous]),"/>
         </regex>
 
         <!-- RULE 8: backspace unwinds the tape even while the active chip has

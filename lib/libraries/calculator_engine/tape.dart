@@ -195,12 +195,14 @@ enum TapeNotice {
   /// the toast is the one for [TapeRefusal.nothingToCompute].
   bracketClosedNothingToCompute,
 
-  /// = closed a fraction typed right after whole inches as inches, as every
-  /// leaving key does (Section 6), but then found nothing to compute: the
-  /// tape holds 7-1/2in and the toast is the one for
+  /// = closed what the active chip had left open, as every leaving key
+  /// does — a fraction typed right after whole inches, read as inches
+  /// (Section 6), or an angle's open field, sealed with its carry (rule
+  /// 4.10) — but then found nothing to compute: the tape holds 7-1/2in, or
+  /// 39°15'00" for 38 [D:M:S] 75, and the toast is the one for
   /// [TapeRefusal.nothingToCompute], in the prototype's order (close, then
   /// refuse).
-  fractionClosedNothingToCompute,
+  entryClosedNothingToCompute,
 }
 
 /// What a key did to the tape.
@@ -1369,7 +1371,11 @@ class Tape extends Equatable {
   /// needs; a number with no unit cannot be left. With a bracket open it
   /// closes the bracket first (Section 7) and then lands the Calc: a
   /// reopened bracket the edit emptied is brought back as it was and the
-  /// Calc lands on the restored group, with the notice kept.
+  /// Calc lands on the restored group, with the notice kept. What the
+  /// active chip left open is closed before anything is refused, as every
+  /// leaving key closes it: 38 [D:M:S] 75 = reads 39°15'00" and then says
+  /// there is nothing to compute ([TapeNotice.entryClosedNothingToCompute];
+  /// rule 4.10).
   ///
   /// ÷ 0 as the last step lands its error chip and reopens the divisor
   /// empty after it, keeping its operator (Section 5, "Division by zero";
@@ -1395,7 +1401,7 @@ class Tape extends Equatable {
         final TapeOutcome refused => refused,
       };
     }
-    final tape = _withFractionClosedAsInches();
+    final tape = _withFractionClosedAsInches()._withFieldClosed();
     if (tape.active case final chip? when !chip.entry.isEmpty) {
       if (tape._unfinished case final refusal?) return refusal;
     }
@@ -1419,7 +1425,7 @@ class Tape extends Equatable {
       ChainFailed(:final error) => TapeChanged(tape.append(ErrorChip(error))),
       ChainValue() || ChainEmpty() when !identical(tape, this) => TapeChanged(
         tape,
-        notice: TapeNotice.fractionClosedNothingToCompute,
+        notice: TapeNotice.entryClosedNothingToCompute,
       ),
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
@@ -1473,7 +1479,10 @@ class Tape extends Equatable {
   /// place (rule 4.12, walkthrough 21.2); a closed bracket before the
   /// dropped chip is reopened instead. On the divisor ÷ 0 reopened it drops
   /// the error chip and keeps the divisor open (5 ÷ 0 = ⌫ is 5 | ÷ _, as
-  /// the prototype has it), and a second ⌫ reopens the dividend.
+  /// the prototype has it), and a second ⌫ reopens the dividend. The chip
+  /// made active again shows its last field as it was typed, without the
+  /// seal's padding ([EntryBuffer.reopened]), so a digit continues what was
+  /// typed: 38 [D:M:S] 75 + ⌫ 5 reads 39°15'5".
   ///
   /// Straight after ) it reopens the bracket in place, with the keypad
   /// typing into its last value again (Section 7, "Editing a bracket").
@@ -1512,10 +1521,7 @@ class Tape extends Equatable {
     if (remaining.isEmpty) return TapeChanged(_with(remaining));
     final before = remaining.sublist(0, remaining.length - 1);
     return TapeChanged(switch (remaining.last) {
-      final ValueChip previous => _with([
-        ...before,
-        previous.copyWith(isActive: true),
-      ]),
+      final ValueChip previous => _with([...before, _reactivated(previous)]),
       final BracketChip closed => _with([...before, _reopened(closed)]),
       ResultChip() || ErrorChip() => _with(remaining),
     });
@@ -1638,10 +1644,7 @@ class Tape extends Equatable {
     if (inner.isNotEmpty) {
       if (inner.last case final ValueChip last) {
         return reopened.copyWith(
-          inner: [
-            ...inner.sublist(0, inner.length - 1),
-            last.copyWith(isActive: true),
-          ],
+          inner: [...inner.sublist(0, inner.length - 1), _reactivated(last)],
         );
       }
     }
@@ -1657,7 +1660,7 @@ class Tape extends Equatable {
       final previous = before.last as ValueChip;
       return _with([
         ...before.sublist(0, before.length - 1),
-        previous.copyWith(isActive: true),
+        _reactivated(previous),
       ]);
     }
     return _with(before);
@@ -1736,20 +1739,30 @@ class Tape extends Equatable {
   }
 
   Tape _sealed() {
+    final closed = _withFieldClosed();
+    final chip = closed.active;
+    if (chip == null) return this;
+    return closed._replaceActive(chip.copyWith(isActive: false));
+  }
+
+  Tape _withFieldClosed() {
     final chip = active;
     if (chip == null) return this;
     final entry = chip.entry.sealed;
-    return _replaceActive(
-      chip.copyWith(
-        isActive: false,
-        entry: entry,
-        exact: switch (chip.exactValue) {
-          final value? => () => (value: value, spelled: entry),
-          null => null,
-        },
-      ),
-    );
+    if (identical(entry, chip.entry)) return this;
+    return _replaceActive(_withEntry(chip, entry));
   }
+
+  ValueChip _reactivated(ValueChip chip) =>
+      _withEntry(chip, chip.entry.reopened).copyWith(isActive: true);
+
+  ValueChip _withEntry(ValueChip chip, EntryBuffer entry) => chip.copyWith(
+    entry: entry,
+    exact: switch (chip.exactValue) {
+      final value? => () => (value: value, spelled: entry),
+      null => null,
+    },
+  );
 
   TapeOutcome _replaceLast(ValueChip chip) => TapeChanged(_replaceActive(chip));
 
