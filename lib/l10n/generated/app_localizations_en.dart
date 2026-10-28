@@ -1891,6 +1891,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String yourRatesCreateEquipmentAction(String name) {
+    return 'Create “$name” as a new equipment cost';
+  }
+
+  @override
   String get yourRatesNewEquipmentCostAction => 'New equipment cost';
 
   @override

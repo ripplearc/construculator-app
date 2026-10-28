@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/bloc/your_rates_
 import 'package:construculator/features/estimation/presentation/helpers/other_method_suggestion.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_search_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -169,7 +170,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _SearchField(
+                        SheetSearchField(
                           controller: _searchController,
                           onChanged: _search,
                         ),
@@ -262,45 +263,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
           onTap: () => _onRowTap(entry),
         );
       },
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  const _SearchField({required this.controller, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final theme = Theme.of(context);
-    return Container(
-      key: const Key('your_rates_search_field'),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        border: Border.all(color: colorTheme.lineMid),
-        borderRadius: BorderRadius.circular(CoreSpacing.space3),
-      ),
-      // TODO: [CA-1251](https://ripplearc.youtrack.cloud/issue/CA-1251) Drop this theme override once CoreUI has a white sheet surface.
-      child: Theme(
-        data: theme.copyWith(
-          extensions: [
-            for (final extension in theme.extensions.values)
-              if (extension is AppColorsExtension)
-                extension.copyWith(pageBackground: sheetSurface(context))
-              else
-                extension,
-          ],
-        ),
-        child: CoreSearchBox(
-          hintText: context.l10n.yourRatesSearchHint,
-          controller: controller,
-          onChanged: onChanged,
-          clearSemanticLabel: context.l10n.yourRatesClearSearchSemanticLabel,
-        ),
-      ),
     );
   }
 }
