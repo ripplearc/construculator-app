@@ -69,6 +69,25 @@ void main() {
     expect(bloc.state, equals(CalculatorState.initial()));
   });
 
+  testWidgets('÷ reaches the tape as a division, and % presses nothing until '
+      'CA-1088', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+
+    await press(tester, 'calc_key_eight');
+    await press(tester, 'calc_key_divide');
+    expect(bloc.state.tape.chips, hasLength(2));
+
+    await press(tester, 'calc_key_two');
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    expect(bloc.state.valueText, '4');
+
+    final settled = bloc.state;
+    await press(tester, 'calc_key_percent');
+    expect(bloc.state, equals(settled));
+  });
+
   testWidgets('a swipe on the function-key strip selects the next group', (
     tester,
   ) async {

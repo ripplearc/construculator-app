@@ -1977,6 +1977,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyPitch => 'Pitch';
 
   @override
+  String get calculatorAnswerPitchRise => 'Pitch-rise per 12in run';
+
+  @override
+  String get calculatorAnswerPitchDegrees => 'Pitch-degrees';
+
+  @override
+  String get calculatorAnswerPitchGrade => 'Pitch-grade';
+
+  @override
   String get calculatorKeyRise => 'Rise';
 
   @override
