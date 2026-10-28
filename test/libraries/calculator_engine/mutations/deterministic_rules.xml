@@ -166,11 +166,12 @@
             <mutation text="_feetOf(length) * _feetOf(width),"/>
         </regex>
 
-        <!-- RULE 12: the wall area counts two walls, not four; or its product
-             is taken in int math, which wraps past 2^63 square ticks -->
+        <!-- RULE 12: the wall area counts two walls, not four. (The int-math
+             product that wraps past 2^63 square ticks is no longer a
+             mutant: every wall area big enough to wrap is above the
+             19,999,999.99 limit and left out since CA-1201, wrapped or not.) -->
         <regex pattern="2 \* \(length\.ticks \+ width\.ticks\) \* height\.ticks\.toDouble\(\)," dotAll="true" id="deterministic_rules.wall_area.two_walls">
             <mutation text="(length.ticks + width.ticks) * height.ticks.toDouble(),"/>
-            <mutation text="(2 * (length.ticks + width.ticks) * height.ticks).toDouble(),"/>
         </regex>
 
         <!-- RULE 13: two sides are enough for a box -->
@@ -299,6 +300,13 @@
         <regex pattern="if \(chord\.ticks &lt;= 0 \|\| height\.ticks &lt;= 0\) return const \[\];" dotAll="true" id="deterministic_rules.arc.no_height_guard">
             <mutation text="if (chord.ticks &lt;= 0) return const [];"/>
             <mutation text="if (height.ticks &lt;= 0) return const [];"/>
+        </regex>
+
+        <!-- RULE CA-1201 (R1): an answer the formatter cannot write is
+             offered anyway -->
+        <regex pattern="if \(!formatter\.isTooLarge\(answer\.value\)\) answer," id="deterministic_rules.answers_for.too_large_offered">
+            <mutation text="answer,"/>
+            <mutation text="if (formatter.isTooLarge(answer.value)) answer,"/>
         </regex>
     </rules>
 

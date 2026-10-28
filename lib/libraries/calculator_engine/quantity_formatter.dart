@@ -61,9 +61,11 @@ import 'package:equatable/equatable.dart';
 /// keeps, reach [largestExactInteger], past which a double no longer tells
 /// two whole numbers apart (99,999,999,999 × 99,999,999,999 used to read
 /// 92,233,720,368,547,760, the int a clamped floor lands on). Every writing
-/// path throws a [RangeError] carrying [tooLargeToDisplay] for one. The
-/// chain never reaches it, because [isTooLarge] refuses such an answer
-/// first, so the error marks a caller that skipped the gate.
+/// path throws a [RangeError] carrying [tooLargeToDisplay] for one. Every
+/// place that makes an answer asks [isTooLarge] first and shows "Too large"
+/// instead — the chain ([ChainEvaluator]), a trig key ([Tape.pressTrigKey])
+/// and the rules' answers ([DeterministicRules.answersFor]) — so the error
+/// marks a caller that skipped the gate.
 ///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
@@ -382,7 +384,7 @@ class QuantityFormatter extends Equatable {
   double _rise(Angle value) => math.tan(value.degrees * math.pi / 180);
 
   String _riseInInches(double inches, bool group) {
-    final ticks = inches.abs() * Length.ticksPerInch;
+    final ticks = _writable(inches.abs()) * Length.ticksPerInch;
     var whole = ticks ~/ Length.ticksPerInch;
     final fraction = _fractionOfInch(
       Length.computed(ticks % Length.ticksPerInch, unit: Unit.inch).inches,
@@ -482,22 +484,24 @@ class QuantityFormatter extends Equatable {
 
   int _jsMathRound(double value) {
     final exact = _writable(value);
-    // From 2⁵² up every double is already whole, and + 0.5 would round it to
-    // its even neighbour where Math.round leaves it as it is.
-    if (exact.abs() >= _firstWholeOnlyDouble) return exact.toInt();
+    if (_isAlreadyWhole(exact)) return exact.toInt();
     return (exact + 0.5).floor();
   }
+
+  static bool _isAlreadyWhole(double value) =>
+      value.abs() >= _firstWholeOnlyDouble;
 
   static const double _firstWholeOnlyDouble = 4503599627370496;
 
   double _writable(double value) {
-    // Spelt as a negation so that NaN, which fails every comparison, is
-    // refused with the infinities.
-    if (!(value.abs() < largestExactInteger)) {
+    if (_isNaNOrPastTheLastExactInteger(value)) {
       throw RangeError.value(value, 'value', tooLargeToDisplay);
     }
     return value;
   }
+
+  static bool _isNaNOrPastTheLastExactInteger(double value) =>
+      !(value.abs() < largestExactInteger);
 
   @override
   List<Object?> get props => [preferences];

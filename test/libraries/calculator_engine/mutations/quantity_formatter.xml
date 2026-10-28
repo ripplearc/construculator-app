@@ -54,9 +54,9 @@
 
         <!-- RULE 7b: a whole-only double takes the + 0.5 path and lands on
              its even neighbour, so the last exact number is refused -->
-        <regex pattern="if \(exact\.abs\(\) &gt;= _firstWholeOnlyDouble\) return exact\.toInt\(\);" dotAll="true" id="quantity_formatter.js_round.whole_only_rounded">
-            <mutation text=""/>
-            <mutation text="if (exact.abs() &gt;= largestExactInteger) return exact.toInt();"/>
+        <regex pattern="static bool _isAlreadyWhole\(double value\) =&gt;\s*value\.abs\(\) &gt;= _firstWholeOnlyDouble;" dotAll="true" id="quantity_formatter.js_round.whole_only_rounded">
+            <mutation text="static bool _isAlreadyWhole(double value) =&gt; false;"/>
+            <mutation text="static bool _isAlreadyWhole(double value) =&gt; value.abs() &gt;= largestExactInteger;"/>
         </regex>
 
         <!-- RULE 8: half no longer rounds up -->
@@ -261,14 +261,14 @@
         </regex>
 
         <!-- RULE CA-1201a: the guard lets NaN through, or refuses nothing -->
-        <regex pattern="if \(!\(value\.abs\(\) &lt; largestExactInteger\)\) \{" dotAll="true" id="quantity_formatter.writable.nan_passes">
-            <mutation text="if (value.abs() &gt;= largestExactInteger) {"/>
-            <mutation text="if (false) {"/>
+        <regex pattern="static bool _isNaNOrPastTheLastExactInteger\(double value\) =&gt;\s*!\(value\.abs\(\) &lt; largestExactInteger\);" dotAll="true" id="quantity_formatter.writable.nan_passes">
+            <mutation text="static bool _isNaNOrPastTheLastExactInteger(double value) =&gt; value.abs() &gt;= largestExactInteger;"/>
+            <mutation text="static bool _isNaNOrPastTheLastExactInteger(double value) =&gt; false;"/>
         </regex>
 
         <!-- RULE CA-1201b: 2⁵³ itself is written -->
-        <regex pattern="if \(!\(value\.abs\(\) &lt; largestExactInteger\)\) \{" dotAll="true" id="quantity_formatter.writable.boundary">
-            <mutation text="if (!(value.abs() &lt;= largestExactInteger)) {"/>
+        <regex pattern="=&gt;\s*!\(value\.abs\(\) &lt; largestExactInteger\);" dotAll="true" id="quantity_formatter.writable.boundary">
+            <mutation text="=&gt; !(value.abs() &lt;= largestExactInteger);"/>
         </regex>
 
         <!-- RULE CA-1201c: the limit is 2⁶³, where the floor clamps -->
@@ -296,6 +296,12 @@
              large for the chain -->
         <regex pattern="\} on RangeError \{\s*return true;\s*\}" dotAll="true" id="quantity_formatter.too_large.refusal_not_too_large">
             <mutation text="} on RangeError { return false; }"/>
+        </regex>
+
+        <!-- RULE CA-1201h (R1): the rise in 12in skips the guard, so NaN or
+             a rise past the last exact integer reaches a toInt -->
+        <regex pattern="final ticks = _writable\(inches\.abs\(\)\) \* Length\.ticksPerInch;" id="quantity_formatter.writable.rise_unguarded">
+            <mutation text="final ticks = inches.abs() * Length.ticksPerInch;"/>
         </regex>
     </rules>
 
