@@ -19,6 +19,35 @@ void main() {
 
   group('EntryBuffer', () {
     group('typing digits', () {
+      test('CA-1236: a digit past 19,999,999.99 is refused as Too large', () {
+        const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+        final edge = type('19999999');
+        expect(edge.typeDigit('9'), tooLarge);
+        expect(type('.99', edge).text, '19999999.99');
+        expect(type('.99', edge).typeDigit('1'), tooLarge);
+        expect(type('2000000').typeDigit('0'), tooLarge);
+        final bottom = type('1/9999999');
+        expect(bottom.typeDigit('9'), tooLarge);
+        expect(type('1/19999999').typeDigit('9'), tooLarge);
+        expect(type('1/19999999').text, '1/19999999');
+        expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
+      });
+
+      test('B6: the sixteenth digit of one number is refused, zeros after '
+          'the point counted and the zeros that lead the number not', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        final fifteen = type('9999999.99999999');
+        expect(fifteen.text, '9999999.99999999');
+        expect(fifteen.typeDigit('9'), tooMany);
+        expect(type('1.00000000000000').typeDigit('0'), tooMany);
+        expect(type('1.00000000000000').typeDigit('1'), tooMany);
+        expect(type('.000000000000001').text, '0.000000000000001');
+        expect(type('.000000000000001').typeDigit('1'), tooMany);
+        expect(type('007.00000000000001').text, '007.00000000000001');
+        expect(type('007.00000000000001').typeDigit('1'), tooMany);
+        expect(type('1.0000000000000').typeDigit('1'), isA<EntryChanged>());
+      });
+
       test('fills the open number and echoes it', () {
         final buffer = type('22');
         expect(buffer, const EntryBuffer([Token(digits: '22')]));
@@ -640,8 +669,8 @@ void main() {
 
         test('past 2⁵³ seconds the fields are padded and left as typed', () {
           expect(
-            typeAngle('150119987579015:4:7').sealed.text,
-            '150119987579015°04\'07"',
+            typeAngle('19999999:9007198054741054:7').sealed.text,
+            '19999999°9007198054741054\'07"',
           );
         });
 
@@ -664,14 +693,16 @@ void main() {
       });
 
       test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
+        // The degrees stop at the typed limit (19,999,999), so the minutes
+        // segment, which has no limit, carries the total to 2⁵³.
         expect(
-          typeAngle('150119987579015:92:').text,
+          typeAngle('19999999:9007198054741052:').text,
           '150119987579016°32\'00"',
           reason: '9,007,199,254,740,992 minutes, the last exact carry',
         );
         expect(
-          typeAngle('150119987579015:94:').text,
-          '150119987579015°94\'00"',
+          typeAngle('19999999:9007198054741054:').text,
+          '19999999°9007198054741054\'00"',
           reason: 'two past it: the segments are left as typed',
         );
       });
@@ -725,9 +756,9 @@ void main() {
       });
 
       test('segments past 2⁵³ minutes are left as typed', () {
-        final huge = typeAngle('99999999999999999:5:');
-        expect(huge.text, '99999999999999999°05\'00"');
-        expect(typeAngle('9', huge).text, '99999999999999999°05\'9"');
+        final huge = typeAngle('19999999:99999999999999999:');
+        expect(huge.text, '19999999°99999999999999999\'00"');
+        expect(typeAngle('9', huge).text, '19999999°99999999999999999\'9"');
       });
 
       test(

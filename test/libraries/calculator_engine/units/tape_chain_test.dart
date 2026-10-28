@@ -18,8 +18,11 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'lbs' => current.pressUnit(Unit.pound),
-        'cm' => current.pressUnit(Unit.centimetre),
+        'kg' => current.pressUnit(Unit.kilogram),
         'm' => current.pressUnit(Unit.metre),
+        'cm' => current.pressUnit(Unit.centimetre),
+        'mm' => current.pressUnit(Unit.millimetre),
+        'ton' => current.pressUnit(Unit.ton),
         'bf' => current.pressUnit(Unit.boardFoot),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -35,6 +38,12 @@ void main() {
       });
     }
     return current;
+  }
+
+  ValueChip activeOf(Tape tape) {
+    final chip = tape.active;
+    if (chip == null) throw StateError('no active chip on ${tape.chips}');
+    return chip;
   }
 
   String calc(Tape tape) {
@@ -184,7 +193,7 @@ void main() {
       test('change a pending operator instead of stacking two', () {
         final tape = press(const Tape(), '2 + ×');
         expect(tape.chips.length, 2);
-        expect(tape.active!.operator, Operator.multiply);
+        expect(activeOf(tape).operator, Operator.multiply);
       });
 
       test('with nothing before them say type a value first', () {
@@ -366,22 +375,44 @@ void main() {
         );
       });
 
-      test('a length past the tick limit lands an out-of-range error chip, '
-          'in a sum and in a product', () {
+      test('a number past 19,999,999.99 cannot be typed, and a length sum past '
+          '19,999,999.99 lands an out-of-range error chip', () {
         String typed(String digits) => digits.split('').join(' ');
-        final summed = press(
-          const Tape(),
-          '${typed('99999999999999')} ft + 1 ft =',
-        );
-        expect(summed.chips.last, const ErrorChip(CalculationError.outOfRange));
-        final multiplied = press(
-          const Tape(),
-          '${typed('1844674407370955')} in × 1 =',
+        expect(
+          press(const Tape(), typed('9999999')).typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
         );
         expect(
-          multiplied.chips.last,
+          press(const Tape(), '${typed('19999999')} ft + 1 ft =').chips.last,
           const ErrorChip(CalculationError.outOfRange),
         );
+      });
+
+      test('B6: the sixteenth typed digit is refused on the tape, under a key '
+          'too, and a fifteen-digit difference still computes exactly', () {
+        String typed(String digits) => digits.split('').join(' ');
+        const tooMany = TapeEntryRefused(EntryRefusal.tooManyDigits);
+        expect(
+          press(const Tape(), typed('9999999.99999999')).typeDigit('9'),
+          tooMany,
+        );
+        expect(
+          press(const Tape(), typed('1.00000000000000')).typeDigit('1'),
+          tooMany,
+        );
+        expect(
+          press(
+            const Tape(),
+            '[Length] ${typed('1.00000000000000')}',
+          ).typeDigit('1'),
+          tooMany,
+        );
+        final difference = press(
+          const Tape(),
+          '${typed('9999999.99999999')} − ${typed('9999999.9999999')} =',
+        );
+        final tiny = (difference.chips.last as ResultChip).value as Scalar;
+        expect(tiny.value, 9e-8);
       });
 
       test('÷ 0 lands its own error and reopens the divisor empty', () {
@@ -537,10 +568,288 @@ void main() {
 
       test('backspace performs surgery on the error and = answers (S72)', () {
         final repaired = press(const Tape(), '7 8 lbs ÷ 1 2 ft = ⌫ ⌫');
-        expect(repaired.active!.entry.text, '12');
+        expect(activeOf(repaired).entry.text, '12');
         expect(calc(repaired), '6.5lbs');
         expect(lastResult(press(repaired, '=')), 'Calc 6.5lbs');
       });
+    });
+  });
+
+  group('Tape very large and very small answers (CA-1236)', () {
+    String landed(Tape tape) {
+      if (tape.chips.last case ResultChip(:final value)) {
+        return formatter.format(value);
+      }
+      throw StateError('the tape does not end on a result: ${tape.chips}');
+    }
+
+    test('9999999 × 9999999 = lands Too large, and ⌫ reopens the number', () {
+      final typed = press(const Tape(), '9 9 9 9 9 9 9 × 9 9 9 9 9 9 9');
+      expect(
+        typed.runningTotal,
+        const ChainFailed(
+          CalculationError.outOfRange,
+          left: Scalar(9999999),
+          operator: Operator.multiply,
+          right: Scalar(9999999),
+        ),
+      );
+      final landed = press(typed, '=');
+      expect(landed.chips.last, const ErrorChip(CalculationError.outOfRange));
+      final repaired = press(landed, '⌫');
+      expect(repaired.chips, typed.chips);
+      expect(activeOf(repaired).entry.text, '9999999');
+    });
+
+    test('19,999,999.99 is shown, a cent more is Too large', () {
+      final edge = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 8 + 0 . 0 1');
+      expect(calc(edge), '19,999,999.99');
+      expect(
+        press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 + 0 . 0 1 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+    });
+
+    test('the limit is the number the answer shows', () {
+      String typed(String number) => number.split('').join(' ');
+      expect(
+        press(const Tape(), '${typed('19999999')} mm + 0 . 6 mm =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        landed(
+          press(const Tape(), '0 − ${typed('19999999.99')} − 0 . 0 0 5 ='),
+        ),
+        '-19,999,999.99',
+      );
+    });
+
+    test("a ton is read at the tape's ton for the limit", () {
+      const keys = '1 9 0 0 0 0 0 0 ton + 0 ton =';
+      expect(
+        press(const Tape(), '1 9 9 9 9 9 9 9 ton + 1 ton =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        press(
+          const Tape(
+            preferences: CalculatorPreferences(
+              tonDefinition: TonDefinition.longTon,
+            ),
+          ),
+          keys,
+        ).chips.last,
+        isA<ResultChip>(),
+      );
+    });
+
+    test('the limit is in the unit shown, which never changes by itself', () {
+      expect(
+        press(const Tape(), '1 0 0 0 0 0 0 0 ft × 2 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+      expect(
+        landed(press(const Tape(), '9 9 9 9 9 9 9 ft × 2 =')),
+        '19999998ft 0in',
+      );
+      expect(
+        press(const Tape(), '5 0 0 0 0 0 0 yd × 4 =').chips.last,
+        const ErrorChip(CalculationError.outOfRange),
+      );
+    });
+
+    test(
+      'a length under the rounding reads in words, a true zero does not',
+      () {
+        expect(
+          landed(press(const Tape(), '5 ft 1 / 6 4 in − 5 ft =')),
+          'Under 1/16in',
+        );
+        expect(
+          landed(press(const Tape(), '5 ft − 5 ft 1 / 6 4 in =')),
+          'Below zero',
+        );
+        expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      },
+    );
+
+    test(
+      'Section 6: a true zero reads 0, not "Under": an area or a volume made '
+      'from lengths less the same area typed is zero within float noise',
+      () {
+        expect(
+          landed(press(const Tape(), '2 . 5 m × 2 . 5 m − 6 . 2 5 m m =')),
+          '0m²',
+        );
+        expect(
+          landed(press(const Tape(), '4 . 2 m × 3 . 1 m − 1 3 . 0 2 m m =')),
+          '0m²',
+        );
+        expect(
+          landed(
+            press(const Tape(), '1 0 0 0 m × 1 0 0 0 m − 1 0 0 0 0 0 0 m m ='),
+          ),
+          '0m²',
+        );
+        expect(
+          landed(press(const Tape(), '1 m × 1 m × 1 m − 1 m m m =')),
+          '0m³',
+        );
+        expect(
+          landed(
+            press(const Tape(), '2 . 5 m × 2 . 5 m − 6 . 2 4 9 9 9 9 m m ='),
+          ),
+          'Under 0.01m²',
+          reason: 'a real tiny difference still reads in words',
+        );
+      },
+    );
+
+    test('an area under the rounding reads in words', () {
+      expect(
+        landed(press(const Tape(), '1 / 8 in × 1 / 8 in =')),
+        'Under 0.01ft²',
+      );
+    });
+
+    test('rule 4.15: a typed difference is never rounded away: 9999999 − '
+        '9999998.99999 is 0.00001, the same areas read Under, and a '
+        'difference in the thirteenth or the fourteenth digit is kept', () {
+      expect(
+        landed(
+          press(const Tape(), '9 9 9 9 9 9 9 − 9 9 9 9 9 9 8 . 9 9 9 9 9 ='),
+        ),
+        '0.00001',
+      );
+      expect(
+        landed(
+          press(
+            const Tape(),
+            '9 9 9 9 9 9 9 m m − 9 9 9 9 9 9 8 . 9 9 9 9 9 m m =',
+          ),
+        ),
+        'Under 0.01m²',
+      );
+      final thirteenth = press(
+        const Tape(),
+        '1 . 0 0 0 0 0 0 0 0 0 0 0 0 1 − 1 =',
+      );
+      expect(
+        (thirteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-13, 1e-15)),
+      );
+      final fourteenth = press(
+        const Tape(),
+        '9 9 9 9 9 9 9 − 9 9 9 9 9 9 8 . 9 9 9 9 9 9 9 =',
+      );
+      expect(
+        (fourteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-7, 1e-9)),
+      );
+      expect(
+        landed(
+          press(
+            const Tape(),
+            '9 9 9 9 9 9 9 m m − 9 9 9 9 9 9 8 . 9 9 9 9 9 9 9 m m =',
+          ),
+        ),
+        'Under 0.01m²',
+      );
+      final fifteenth = press(
+        const Tape(),
+        '1 . 0 0 0 0 0 0 0 0 0 0 0 0 0 1 − 1 =',
+      );
+      expect(
+        (fifteenth.chips.last as ResultChip).value,
+        isA<Scalar>().having((s) => s.value, 'value', closeTo(1e-14, 1e-16)),
+      );
+    });
+
+    test('B4: a plain number is kept exactly, so a difference in the '
+        'fifteenth or the sixteenth digit is never rounded away', () {
+      Scalar result(String keys) =>
+          (press(const Tape(), keys).chips.last as ResultChip).value as Scalar;
+      String typed(String number) => number.split('').join(' ');
+      expect(result('${typed('3.00000000000001')} − 3 =').value, 1e-14);
+      expect(result('${typed('5.00000000000001')} − 5 =').value, 1e-14);
+      expect(
+        result(
+          '${typed('9.99999999999999')} − ${typed('9.99999999999998')} =',
+        ).value,
+        1e-14,
+      );
+      expect(
+        result(
+          '${typed('9999999.99999999')} − ${typed('9999999.99999998')} =',
+        ).value,
+        1e-8,
+      );
+      expect(
+        result(
+          '${typed('19999999')} + ${typed('0.00000001')} − ${typed('19999999')} =',
+        ).value,
+        1e-8,
+        reason: 'a difference in the sixteenth digit survives the chain',
+      );
+      expect(landed(press(const Tape(), '0 . 1 + 0 . 2 − 0 . 3 =')), '0');
+      expect(
+        landed(press(const Tape(), '0 . 1 × 3 − 0 . 3 =')),
+        '0',
+        reason: 'a product of exact numbers is exact too',
+      );
+    });
+
+    test('B9: a ratio of two lengths is exact, so a typed difference after '
+        'it is never rounded away, it scales a length back exactly, and it '
+        'stays exact through +, −, × and ÷', () {
+      String typed(String number) => number.split('').join(' ');
+      Scalar last(Tape tape) => (tape.chips.last as ResultChip).value as Scalar;
+      Matcher exactly(double number) => isA<Scalar>()
+          .having((s) => s.value, 'value', number)
+          .having((s) => s.exact, 'exact', isA<Rational>())
+          .having((s) => s.exact.toString(), 'exact', isNot('null'));
+      final ratio = press(const Tape(), '3 6 ft ÷ 1 2 ft =');
+      expect(last(ratio), exactly(3));
+      expect(
+        last(press(ratio, '− ${typed('3.00000000000001')} =')).value,
+        -1e-14,
+      );
+      expect(
+        last(press(ratio, '+ ${typed('0.00000000000001')} =')).value,
+        3.00000000000001,
+      );
+      expect(last(press(ratio, '× 1 =')), exactly(3));
+      expect(last(press(ratio, '÷ 1 =')), exactly(3));
+      expect(
+        lastResult(press(const Tape(), '1 0 ft ÷ 3 ft × 3 ft =')),
+        'Calc 10ft 0in',
+      );
+      expect(last(press(const Tape(), '1 0 ft ÷ 3 ft =')), exactly(10 / 3));
+    });
+
+    test('B5: a weight under the rounding reads in words, a true zero does '
+        'not, and the band leaves the real difference alone', () {
+      expect(
+        landed(press(const Tape(), '5 lbs − 4 . 9 9 9 lbs =')),
+        'Under 0.01lbs',
+      );
+      expect(
+        landed(press(const Tape(), '4 . 9 9 9 lbs − 5 lbs =')),
+        'Below zero',
+      );
+      expect(landed(press(const Tape(), '5 lbs − 5 lbs =')), '0lbs');
+      expect(
+        landed(press(const Tape(), '5 ton − 4 . 9 9 9 ton =')),
+        'Under 0.01 ton',
+      );
+      expect(
+        landed(press(const Tape(), '5 kg − 4 . 9 9 9 kg =')),
+        'Under 0.01kg',
+      );
+    });
+
+    test('1 mm + 1 mm = is still 2mm', () {
+      expect(landed(press(const Tape(), '1 mm + 1 mm =')), '2mm');
     });
   });
 

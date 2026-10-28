@@ -57,11 +57,14 @@ void main() {
           '18ft 4-5/8in',
         );
         expect(formatter.format(diagonal.spelledIn(Unit.metre)), '5.6m');
-        expect(formatter.format(Length.computed(1.9, unit: Unit.inch)), '0in');
+        expect(
+          formatter.format(Length.computed(1.9, unit: Unit.inch)),
+          'Under 1/16in',
+        );
         expect(formatter.format(const Length(2, unit: Unit.inch)), '0-1/16in');
         expect(
           formatter.format(Length.computed(1.9, unit: Unit.footInch)),
-          '0ft 0in',
+          'Under 1/16in',
         );
         expect(
           formatter.format(const Length(2, unit: Unit.footInch)),
@@ -210,20 +213,20 @@ void main() {
         );
       });
 
-      test('a negative length smaller than the first step reads zero with '
-          'no sign', () {
+      test('a negative length smaller than the first step is written in '
+          'words, never as -0', () {
         const tiny = Rational(-1, 128);
         expect(
           formatter.format(const Length.exact(tiny, unit: Unit.inch)),
-          '0in',
+          'Below zero',
         );
         expect(
           formatter.format(const Length.exact(tiny, unit: Unit.footInch)),
-          '0ft 0in',
+          'Below zero',
         );
         expect(
           formatter.format(Length.computed(-0.9, unit: Unit.footInch)),
-          '0ft 0in',
+          'Below zero',
         );
         const firstStep = Rational(-1, 16);
         expect(
@@ -234,6 +237,260 @@ void main() {
           formatter.format(const Length.exact(firstStep, unit: Unit.footInch)),
           '-0ft 0-1/16in',
         );
+      });
+    });
+
+    group('CA-1236: a real value under the rounding reads in words', () {
+      const tick = Length(1, unit: Unit.footInch);
+      const minusTick = Length(-1, unit: Unit.footInch);
+
+      test('Example 2: a compound is Under 1/16in, or Below zero', () {
+        expect(formatter.format(tick), 'Under 1/16in');
+        expect(formatter.format(minusTick), 'Below zero');
+        expect(
+          formatter.format(const Length(0, unit: Unit.footInch)),
+          '0ft 0in',
+        );
+        expect(
+          formatter.format(const Length(-2, unit: Unit.footInch)),
+          '-0ft 0-1/16in',
+        );
+      });
+
+      test('inches alike, and the step follows the fraction setting', () {
+        expect(
+          formatter.format(const Length(1, unit: Unit.inch)),
+          'Under 1/16in',
+        );
+        expect(
+          formatter.format(const Length(-1, unit: Unit.inch)),
+          'Below zero',
+        );
+        expect(formatter.format(const Length(0, unit: Unit.inch)), '0in');
+        const sixtyFourths = QuantityFormatter(
+          preferences: CalculatorPreferences(
+            fractionResolution: FractionResolution.sixtyFourth,
+          ),
+        );
+        const quarterTick = Length.exact(Rational(1, 256), unit: Unit.footInch);
+        expect(sixtyFourths.format(quarterTick), 'Under 1/64in');
+        expect(sixtyFourths.format(tick), '0ft 0-1/64in');
+      });
+
+      test('a decimal length names the smallest step its unit shows', () {
+        expect(
+          formatter.format(const Length(1, unit: Unit.foot)),
+          'Under 0.01ft',
+        );
+        expect(
+          formatter.format(const Length(-1, unit: Unit.yard)),
+          'Below zero',
+        );
+        expect(
+          formatter.format(const Length(1, unit: Unit.millimetre)),
+          'Under 1mm',
+        );
+        const threeDecimals = QuantityFormatter(
+          preferences: CalculatorPreferences(
+            metreDisplay: MetreDisplay.threeDecimals,
+          ),
+        );
+        const fiftyTicks = Length.exact(Rational(1, 128), unit: Unit.metre);
+        expect(threeDecimals.format(fiftyTicks), 'Under 0.001m');
+        expect(formatter.format(const Length(0, unit: Unit.foot)), '0ft');
+      });
+
+      test('Example 3: an area and a volume, in every unit', () {
+        const eighthSquared = Area(64, unit: Unit.foot);
+        expect(formatter.format(eighthSquared), 'Under 0.01ft²');
+        expect(
+          formatter.format(const Area(-64, unit: Unit.metre)),
+          'Below zero',
+        );
+        expect(
+          formatter.format(eighthSquared.spelledIn(Unit.acre)),
+          'Under 0.0001acre',
+        );
+        expect(formatter.format(const Area(0, unit: Unit.foot)), '0ft²');
+        expect(formatter.format(const Volume(1e-4)), 'Under 0.01ft³');
+        expect(
+          formatter.format(const Volume(-1e-4, unit: Unit.yard)),
+          'Below zero',
+        );
+        expect(
+          formatter.format(const Volume(1e-4, unit: Unit.boardFoot)),
+          'Under 0.01bf',
+        );
+        expect(formatter.format(const Volume(0)), '0ft³');
+      });
+
+      test('B5: a weight reads the same way, in every unit', () {
+        const thousandthOfAPound = Weight(0.1, unit: Unit.pound);
+        expect(formatter.format(thousandthOfAPound), 'Under 0.01lbs');
+        expect(
+          formatter.format(const Weight(-0.1, unit: Unit.pound)),
+          'Below zero',
+        );
+        expect(formatter.format(const Weight(0, unit: Unit.pound)), '0lbs');
+        expect(
+          formatter.format(const Weight(200, unit: Unit.ton)),
+          'Under 0.01 ton',
+          reason: 'two pounds is a thousandth of a ton; the space stays',
+        );
+        expect(formatter.format(const Weight(0, unit: Unit.ton)), '0 ton');
+        expect(
+          formatter.format(thousandthOfAPound.spelledIn(Unit.kilogram)),
+          'Under 0.01kg',
+        );
+        expect(
+          formatter.format(const Weight(-200, unit: Unit.metricTon)),
+          'Below zero',
+        );
+      });
+    });
+
+    group('CA-1236: the largest number a value shows', () {
+      test('19,999,999.99 is shown, 20,000,000 is Too large', () {
+        expect(formatter.isTooLarge(const Scalar(19999999.99)), isFalse);
+        expect(formatter.isTooLarge(const Scalar(20000000)), isTrue);
+        expect(formatter.isTooLarge(const Scalar(-20000000)), isTrue);
+        expect(formatter.isTooLarge(const Scalar(19999999.98 + 0.01)), isFalse);
+        expect(formatter.isTooLarge(const Scalar(double.infinity)), isTrue);
+      });
+
+      test('a very large negative value is too large before it is written, '
+          'whatever its kind', () {
+        expect(formatter.isTooLarge(const Scalar(-1e40)), isTrue);
+        expect(
+          formatter.isTooLarge(const Length(-(1 << 53), unit: Unit.foot)),
+          isTrue,
+        );
+        expect(formatter.isTooLarge(const Area(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Volume(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Weight(-1e40)), isTrue);
+        expect(formatter.isTooLarge(const Angle(-1e40)), isTrue);
+        expect(
+          formatter.isTooLarge(const Volume(-1e40, unit: Unit.yard)),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(const Weight(-1e40, unit: Unit.ton)),
+          isTrue,
+        );
+        for (final infinite in [
+          const Area(double.infinity),
+          const Volume(double.infinity),
+          const Weight(double.infinity),
+          const Angle(double.negativeInfinity),
+        ]) {
+          expect(formatter.isTooLarge(infinite), isTrue, reason: '$infinite');
+        }
+      });
+
+      test('in the unit the value is written in', () {
+        const feet = 20000000 * Length.ticksPerFoot;
+        expect(
+          formatter.isTooLarge(const Length(feet, unit: Unit.foot)),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(const Length(feet, unit: Unit.footInch)),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Length(feet - Length.ticksPerFoot, unit: Unit.footInch),
+          ),
+          isFalse,
+        );
+        expect(
+          formatter.isTooLarge(const Length(feet, unit: Unit.yard)),
+          isFalse,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Area(2e7 * squareTicksPerSquareFoot, unit: Unit.foot),
+          ),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Area(2e7 * squareTicksPerSquareFoot, unit: Unit.yard),
+          ),
+          isFalse,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Area(2e7 * squareTicksPerSquareFoot, unit: Unit.acre),
+          ),
+          isFalse,
+        );
+        expect(formatter.isTooLarge(const Volume(2e7)), isTrue);
+        expect(
+          formatter.isTooLarge(const Volume(2e7, unit: Unit.yard)),
+          isFalse,
+        );
+        expect(
+          formatter.isTooLarge(const Volume(2e6, unit: Unit.boardFoot)),
+          isTrue,
+        );
+        expect(formatter.isTooLarge(const Weight(2e9)), isTrue);
+        expect(
+          formatter.isTooLarge(const Weight(2e9, unit: Unit.ton)),
+          isFalse,
+        );
+        expect(formatter.isTooLarge(const Angle(2e7)), isTrue);
+        expect(formatter.isTooLarge(const Angle(19999999)), isFalse);
+      });
+
+      test('on the number the formatter writes, at its own rounding', () {
+        Length typed(String number, Unit unit) {
+          final value = Rational.tryParse(number);
+          if (value == null) throw StateError('$number is not a number');
+          return Length.exact(value * unit.inchesPer, unit: unit);
+        }
+
+        final millimetres = typed('19999999.6', Unit.millimetre);
+        expect(formatter.format(millimetres), '20,000,000mm');
+        expect(formatter.isTooLarge(millimetres), isTrue);
+        const inches = Length(19999999 * 64 + 63, unit: Unit.inch);
+        expect(formatter.format(inches), '20,000,000in');
+        expect(formatter.isTooLarge(inches), isTrue);
+        const halfInch = QuantityFormatter(
+          preferences: CalculatorPreferences(
+            fractionResolution: FractionResolution.half,
+          ),
+        );
+        const feetInches = Length(
+          19999999 * Length.ticksPerFoot + 11 * 64 + 48,
+          unit: Unit.footInch,
+        );
+        expect(halfInch.format(feetInches), '20000000ft 0in');
+        expect(halfInch.isTooLarge(feetInches), isTrue);
+        expect(formatter.isTooLarge(feetInches), isFalse);
+        const oneDecimal = QuantityFormatter(
+          preferences: CalculatorPreferences(
+            metreDisplay: MetreDisplay.oneDecimal,
+          ),
+        );
+        final metres = typed('19999999.96', Unit.metre);
+        expect(oneDecimal.isTooLarge(metres), isTrue);
+        expect(formatter.isTooLarge(metres), isFalse);
+        final justUnder = typed(
+          '239999999.95',
+          Unit.inch,
+        ).spelledIn(Unit.footInch);
+        expect(formatter.format(justUnder), '19999999ft 11-15/16in');
+        expect(formatter.isTooLarge(justUnder), isFalse);
+        expect(formatter.format(const Scalar(-19999999.995)), '-19,999,999.99');
+        expect(formatter.isTooLarge(const Scalar(-19999999.995)), isFalse);
+        expect(formatter.isTooLarge(const Scalar(-19999999.996)), isTrue);
+      });
+
+      test('a value past 2⁶³ is too large though its text is not', () {
+        expect(formatter.isTooLarge(const Area(1e40)), isTrue);
+        expect(formatter.isTooLarge(const Scalar(1e22)), isTrue);
+        expect(formatter.isTooLarge(const Scalar(double.nan)), isTrue);
       });
     });
 
@@ -292,13 +549,16 @@ void main() {
         expect(formatter.format(lot.spelledIn(Unit.acre)), '0.3673acre');
       });
 
-      test('a tiny area reads 0 in a big unit', () {
+      test('a tiny area reads in words in a big unit', () {
         const twoSquareInches = Area(
           2.0 * Area.squareTicksPerSquareInch,
           unit: Unit.inch,
         );
         expect(formatter.format(twoSquareInches), '2in²');
-        expect(formatter.format(twoSquareInches.spelledIn(Unit.yard)), '0yd²');
+        expect(
+          formatter.format(twoSquareInches.spelledIn(Unit.yard)),
+          'Under 0.01yd²',
+        );
       });
     });
 
@@ -594,9 +854,15 @@ void main() {
         expect(formatter.format(const Scalar(100)), '100');
       });
 
-      test('writes a number too small for a plain spelling as 0', () {
-        expect(formatter.format(const Weight(1e-5, unit: Unit.pound)), '0lbs');
-        expect(formatter.format(const Length(1, unit: Unit.metre)), '0m');
+      test('writes a number too small for a plain spelling in words', () {
+        expect(
+          formatter.format(const Weight(1e-5, unit: Unit.pound)),
+          'Under 0.01lbs',
+        );
+        expect(
+          formatter.format(const Length(1, unit: Unit.metre)),
+          'Under 0.01m',
+        );
       });
     });
 

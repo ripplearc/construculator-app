@@ -178,6 +178,33 @@
         <regex pattern="return const EntryRefused\(EntryRefusal\.secondDecimalPoint\);" dotAll="true" id="entry_buffer.digit.wrong_point_reason">
             <mutation text="return const EntryRefused(EntryRefusal.decimalInDenominator);"/>
         </regex>
+
+        <!-- RULE CA-1236: a typed number passes 19,999,999.99, or stops at
+             it -->
+        <regex pattern="static bool _isTooLarge\(String digits\) =&gt;\s*double\.parse\(digits\) &gt; Quantity\.largestShown;" dotAll="true" id="entry_buffer.type_digit.too_large">
+            <mutation text="static bool _isTooLarge(String digits) =&gt; double.parse(digits) &gt;= Quantity.largestShown;"/>
+            <mutation text="static bool _isTooLarge(String digits) =&gt; false;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R1): the bottom number of a fraction skips the
+             limit -->
+        <regex pattern="if \(_isTooLarge\(digits\)\) return const EntryRefused\(EntryRefusal\.tooLarge\);\s*return _replaceLast\(last\.copyWith\(denominator: \(\) =&gt; digits\)\);" dotAll="true" id="entry_buffer.type_digit.denominator_unlimited">
+            <mutation text="return _replaceLast(last.copyWith(denominator: () =&gt; digits));"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B6): the sixteenth digit is accepted, or the
+             fifteenth refused -->
+        <regex pattern="static bool _hasTooManyDigits\(String digits\) =&gt;\s*_countedDigits\(digits\) &gt; maxDigits;" dotAll="true" id="entry_buffer.type_digit.too_many_digits">
+            <mutation text="static bool _hasTooManyDigits(String digits) =&gt; false;"/>
+            <mutation text="static bool _hasTooManyDigits(String digits) =&gt; _countedDigits(digits) &gt;= maxDigits;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B6): the zeros that lead a number count, or
+             the digits after the point do not -->
+        <regex pattern="return whole\.replaceFirst\(_leadingZeros, ''\)\.length \+\s*fraction\.join\(\)\.length;" dotAll="true" id="entry_buffer.counted_digits.leading_zeros">
+            <mutation text="return whole.length + fraction.join().length;"/>
+            <mutation text="return whole.replaceFirst(_leadingZeros, '').length;"/>
+        </regex>
     </rules>
 
     <commands>

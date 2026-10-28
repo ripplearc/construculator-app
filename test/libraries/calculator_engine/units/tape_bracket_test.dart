@@ -321,6 +321,43 @@ void main() {
           CalculationError.divisionByZero,
         );
       });
+
+      test('B8: a step above the limit inside a bracket lands the Too large '
+          'chip inside it, the strip goes silent, = and ) say there is '
+          'nothing to compute, and ⌫ reopens the number, as outside', () {
+        const tooLarge = ErrorChip(CalculationError.outOfRange);
+        final typed = press(const Tape(), '( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9');
+        final landed = press(typed, '(');
+        final bracket = landed.chips.single as BracketChip;
+        expect(bracket.isOpen, isTrue);
+        expect(bracket.inner.last, tooLarge);
+        expect(landed.runningTotal, const ChainEmpty());
+        expect(
+          landed.pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+        expect(
+          landed.pressBracket(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+        );
+        final repaired = press(landed, '⌫');
+        expect(repaired.chips, typed.chips);
+        expect(
+          lastResult(press(repaired, '⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ 2 ( =')),
+          'Calc 19,999,998',
+        );
+        expect(typed.pressEquals(), TapeChanged(landed));
+        final inChain = press(
+          const Tape(),
+          '1 + ( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9 (',
+        );
+        expect((inChain.chips.last as BracketChip).inner.last, tooLarge);
+        expect(inChain.runningTotal, const ChainEmpty());
+        expect(
+          lastResult(press(inChain, '⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ 1 ( =')),
+          'Calc 10,000,000',
+        );
+      });
     });
 
     group('⌫ and brackets', () {

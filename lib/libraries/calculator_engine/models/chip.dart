@@ -34,8 +34,12 @@ enum CalculationError {
   /// ÷ 0.
   divisionByZero,
 
-  /// The answer is too large to keep: a length beyond
-  /// [ChainArithmetic.maxTicks], or a number that overflowed to infinity.
+  /// The answer cannot be kept or shown: above [Quantity.largestShown] in
+  /// the unit it is written in, which the chip reads as "Too large" (Section
+  /// 5), a length beyond [ChainArithmetic.maxTicks], a number that
+  /// overflowed to infinity, or an exact fraction that overflowed on the way
+  /// to a tiny answer (1in ÷ 9999999 four times), which is too small to keep
+  /// rather than too large and lands the same chip.
   outOfRange,
 }
 
@@ -124,7 +128,8 @@ final class ValueChip extends TapeChip {
   /// The value the chip stands for: the exact quantity a conversion kept,
   /// else what the entry parses to; `null` while the entry is open. A bare
   /// number — one open token of digits and no unit, 78 or 0.65; a fraction
-  /// without a unit is not a number yet — is a scalar, unless it sits under
+  /// without a unit is not a number yet — is a scalar that carries its
+  /// typed decimal exactly ([Scalar.exact]), unless it sits under
   /// a function key that wants its unit (Section 5.1: Length 18 cannot be
   /// left); under Pitch, Slope or Sides it is the plain number those keys
   /// take ([keyWantsUnit]), in degrees under Pitch ([readsDegrees]). A
@@ -152,7 +157,8 @@ final class ValueChip extends TapeChip {
     }
     if (!_isPlainNumber) return null;
     if (entry.isDegreesMinutesSeconds || readsDegrees) return _typedAngle;
-    return Scalar(entry.tokens.first.value);
+    final number = entry.tokens.first;
+    return Scalar(number.value, exact: parser.exactValueOf(number));
   }
 
   Angle get _typedAngle => Angle(

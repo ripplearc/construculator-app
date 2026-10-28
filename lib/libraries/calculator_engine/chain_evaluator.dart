@@ -233,9 +233,16 @@ class ChainEvaluator extends Equatable {
   /// Combines two values under an operator.
   final ChainArithmetic arithmetic;
 
+  /// Says when an answer shows a number too large to show (Section 5, "Too
+  /// large"): that step fails with [CalculationError.outOfRange], so the
+  /// strip goes silent and = lands the error chip, which ⌫ removes to
+  /// reopen the number before it.
+  final QuantityFormatter formatter;
+
   const ChainEvaluator({
     this.parser = const QuantityParser(),
     this.arithmetic = const ChainArithmetic(),
+    this.formatter = const QuantityFormatter(),
   });
 
   /// The running total of [chips], as far as it can be computed.
@@ -300,7 +307,12 @@ class ChainEvaluator extends Equatable {
       return (total: value, steps: stepsInside, failure: null);
     }
     if (running.failure != null) return running;
-    return switch (arithmetic.combine(total, operator, value)) {
+    final step = switch (arithmetic.combine(total, operator, value)) {
+      ArithmeticValue(value: final next) when formatter.isTooLarge(next) =>
+        const ArithmeticFailed(CalculationError.outOfRange),
+      final ArithmeticOutcome outcome => outcome,
+    };
+    return switch (step) {
       ArithmeticValue(value: final next) => (
         total: next,
         steps: running.steps + 1 + stepsInside,
@@ -332,7 +344,7 @@ class ChainEvaluator extends Equatable {
   };
 
   @override
-  List<Object?> get props => [parser, arithmetic];
+  List<Object?> get props => [parser, arithmetic, formatter];
 }
 
 /// The chain being folded: its total so far, the operators applied to reach
