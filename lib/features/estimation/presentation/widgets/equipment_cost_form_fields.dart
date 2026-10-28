@@ -5,7 +5,6 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delivery_fee_input_formatter.dart';
-import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
@@ -400,10 +399,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
     final l10n = context.l10n;
     return switch (status) {
-      RateStatus.sampleRateUnverified => RateStatusBadge(
+      RateStatus.sampleRateUnverified => CoreStatusBadge(
         key: const Key('rate_status_badge'),
         label: l10n.equipmentRateStatusSampleRateBadge,
-        variant: RateStatusBadgeVariant.orange,
       ),
       RateStatus.ownRateConfirmed ||
       RateStatus.ownRateUnconfirmed ||

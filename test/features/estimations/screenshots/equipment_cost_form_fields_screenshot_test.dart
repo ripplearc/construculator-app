@@ -4,7 +4,6 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
-import 'package:construculator/features/estimation/presentation/widgets/rate_status_badge.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
@@ -386,43 +385,6 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/equipment_cost_form_fields/390.0x800.0/outsized_fee_dialog$suffix.png',
-        ),
-      );
-    });
-
-    testWidgets('renders both rate status badge colours', (tester) async {
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      tester.view.physicalSize = const Size(390, 120);
-      tester.view.devicePixelRatio = 1.0;
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: theme,
-          home: Scaffold(
-            body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  RateStatusBadge(
-                    label: l10n.equipmentRateStatusSampleRateBadge,
-                    variant: RateStatusBadgeVariant.orange,
-                  ),
-                  const SizedBox(width: 12),
-                  RateStatusBadge(
-                    label: l10n.equipmentRateStatusYourRateBadge,
-                    variant: RateStatusBadgeVariant.green,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(Row).first,
-        matchesGoldenFile(
-          'goldens/rate_status_badge/rate_status_badges$suffix.png',
         ),
       );
     });
