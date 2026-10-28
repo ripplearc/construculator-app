@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/widgets/equipmen
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -14,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -107,14 +109,14 @@ void main() {
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
-            id: '',
-            companyId: 'company-1',
-            itemName: 'Backhoe',
-            category: CostItemType.equipment,
-            rate: const Money(amount: 145),
-            savedAt: DateTime(2026, 1, 1),
-            equipmentMethod: EquipmentPricingMethod.day,
-          );
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 145),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
@@ -165,14 +167,14 @@ void main() {
       (tester) async {
         await setupA11yTest(tester);
         final backhoe = YourRateEntry(
-            id: '',
-            companyId: 'company-1',
-            itemName: 'Backhoe',
-            category: CostItemType.equipment,
-            rate: const Money(amount: 145),
-            savedAt: DateTime(2026, 1, 1),
-            equipmentMethod: EquipmentPricingMethod.day,
-          );
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Backhoe',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 145),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.day,
+        );
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
@@ -183,6 +185,49 @@ void main() {
         );
       },
     );
+
+    testWidgets('a11y: Not kept message is announced as soon as it appears', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      final semantics = tester.ensureSemantics();
+      database.seedRefusal({
+        'id': YourRateRefusalKey.of('Dumpster', 'job'),
+        'item_name': 'Dumpster',
+        'equipment_method': 'job',
+        'refused_amount': 450.0,
+        'accepted_amount': 400.0,
+        'shown_at': null,
+      });
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('job_method_chip')));
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Dumpster',
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(
+          find.ancestor(
+            of: find.byKey(const Key('refused_default_notice')),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics && widget.properties.liveRegion == true,
+            ),
+          ),
+        ),
+        matchesSemantics(
+          isLiveRegion: true,
+          label:
+              'Your new default, \$450.00, was not saved. '
+              'Your default is still \$400.00.',
+        ),
+      );
+      semantics.dispose();
+    });
 
     testWidgets(
       'a11y: the recalled-rate Amount field meets text contrast guidelines '

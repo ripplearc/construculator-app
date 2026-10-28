@@ -530,8 +530,71 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         : l10n.yourRatesJobSuffix;
   }
 
+  Widget _refusedDefaultNotice(
+    BuildContext context,
+    RefusedDefaultNotice notice,
+  ) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final acceptedAmount = notice.acceptedAmount;
+    final estimateName = notice.estimateName;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        key: const Key('refused_default_notice'),
+        padding: const EdgeInsets.symmetric(
+          horizontal: CoreSpacing.space3,
+          vertical: CoreSpacing.space2,
+        ),
+        decoration: BoxDecoration(
+          color: colorTheme.alertRed,
+          borderRadius: BorderRadius.circular(CoreSpacing.space3),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CoreIconWidget(
+              icon: CoreIcons.error,
+              color: colorTheme.iconRed,
+              size: CoreIconSize.size16,
+            ),
+            const SizedBox(width: CoreSpacing.space2),
+            Expanded(
+              child: Text(
+                l10n.equipmentRefusedDefaultNotice(
+                  DisplayFormatter.currency.format(notice.refusedAmount),
+                  '${acceptedAmount != null}',
+                  DisplayFormatter.currency.format(acceptedAmount ?? 0),
+                  '${estimateName != null}',
+                  estimateName ?? '',
+                ),
+                style: context.textTheme.bodySmallRegular.copyWith(
+                  color: colorTheme.textError,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _refusedDefaultNoticeAboveRate(
+    BuildContext context,
+    EquipmentCostFormData data,
+  ) {
+    final notice = data.refusedDefault;
+    if (notice == null) return const [];
+    return [
+      _refusedDefaultNotice(context, notice),
+      const SizedBox(height: CoreSpacing.space5),
+    ];
+  }
+
   Widget _rateSaveFooter(BuildContext context, EquipmentCostFormData data) {
-    if (!_isSavableRate(data)) return const SizedBox.shrink();
+    if (data.refusedDefault != null || !_isSavableRate(data)) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(top: CoreSpacing.space2),
       child: switch (_rateSaveStatus) {
@@ -1070,6 +1133,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 if (isDay) ...[
                   _durationField(context, data),
                   const SizedBox(height: CoreSpacing.space3),
+                  ..._refusedDefaultNoticeAboveRate(context, data),
                   UnderlineTextField(
                     key: const Key('rate_field'),
                     label: l10n.equipmentRateLabel,
@@ -1096,6 +1160,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   ),
                   _rateSaveFooter(context, data),
                 ] else ...[
+                  ..._refusedDefaultNoticeAboveRate(context, data),
                   _amountField(context, data),
                   _rateSaveFooter(context, data),
                 ],
