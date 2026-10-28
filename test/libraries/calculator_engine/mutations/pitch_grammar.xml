@@ -51,9 +51,11 @@
         </regex>
 
         <!-- RULE 4: the rise is written to one decimal again, the fraction
-             is dropped, a whole rise reads 0-, or the carry is lost -->
-        <regex pattern="'\$\{_riseInInches\(_rise\(value\) \* inchesPerFootOfRun, group\)\}in/12in'," dotAll="true" id="pitch.rise.one_decimal">
-            <mutation text="'${_jsRoundedNumber(_rise(value) * inchesPerFootOfRun, pitchDecimals, group)}in/12in',"/>
+             is dropped, a whole rise reads 0-, the carry is lost, or the
+             remainder is floored instead of snapped to a part of a tick, so
+             4.874999… misses the tie at 4.875 -->
+        <regex pattern="'\$\{_riseInInches\(_rise\(value\) \* Angle\.inchesPerFootOfRun, group\)\}in/12in'," dotAll="true" id="pitch.rise.one_decimal">
+            <mutation text="'${_jsRoundedNumber(_rise(value) * Angle.inchesPerFootOfRun, pitchDecimals, group)}in/12in',"/>
         </regex>
         <regex pattern="if \(whole == 0 &amp;&amp; fraction\.text\.isNotEmpty\) \{\s*return '\$sign\$\{fraction\.text\.substring\(1\)\}';\s*\}" dotAll="true" id="pitch.rise.leading_zero">
             <mutation text=""/>
@@ -64,8 +66,8 @@
         <regex pattern="final fraction = _fractionOfInch\(\s*Length\.computed\(ticks % Length\.ticksPerInch, unit: Unit\.inch\)\.inches,\s*\);\s*whole \+= fraction\.carry;" dotAll="true" id="pitch.rise.no_fraction">
             <mutation text="final fraction = (text: '', carry: 0);"/>
         </regex>
-        <regex pattern="final ticks = _withoutFloatNoise\(inches\.abs\(\) \* Length\.ticksPerInch\);" dotAll="true" id="pitch.rise.float_noise_breaks_the_tie">
-            <mutation text="final ticks = inches.abs() * Length.ticksPerInch;"/>
+        <regex pattern="\(ticks \* partsPerTick\)\.round\(\)," dotAll="true" id="pitch.rise.float_noise_breaks_the_tie">
+            <mutation text="(ticks * partsPerTick).floor(),"/>
         </regex>
 
         <!-- RULE 5: the refusal never fires, or misses the slope's edge
@@ -94,12 +96,16 @@
         <regex pattern="_isPlainNumber \|\|\s*_isRiseOverTwelve;" dotAll="true" id="pitch.rise_over_twelve.unreadable">
             <mutation text="_isPlainNumber;"/>
         </regex>
-        <regex pattern="math\.atan\(inches / inchesPerFootOfRun\) \* _degreesPerRadian," dotAll="true" id="angle.of_rise.per_inch_of_run">
-            <mutation text="math.atan(inches) * _degreesPerRadian,"/>
-            <mutation text="math.atan(inches / inchesPerFootOfRun),"/>
+        <regex pattern="factory Angle\.ofRisePerFoot\(double inches\) =&gt; Angle\.ofRiseOverRun\(\s*inches / inchesPerFootOfRun,\s*\)\.spelledAs\(AngleSpelling\.risePerFoot\);" dotAll="true" id="angle.of_rise.per_inch_of_run">
+            <mutation text="factory Angle.ofRisePerFoot(double inches) =&gt; Angle.ofRiseOverRun(inches).spelledAs(AngleSpelling.risePerFoot);"/>
+            <mutation text="factory Angle.ofRisePerFoot(double inches) =&gt; Angle(inches / inchesPerFootOfRun).spelledAs(AngleSpelling.risePerFoot);"/>
         </regex>
-        <regex pattern="factory Angle\.ofRisePerFoot\(double inches\) =&gt; Angle\(\s*math\.atan\(inches / inchesPerFootOfRun\) \* _degreesPerRadian,\s*spelling: AngleSpelling\.risePerFoot," dotAll="true" id="angle.of_rise.spelled_degrees">
-            <mutation text="factory Angle.ofRisePerFoot(double inches) =&gt; Angle(math.atan(inches / inchesPerFootOfRun) * _degreesPerRadian, spelling: AngleSpelling.degrees,"/>
+        <regex pattern="factory Angle\.ofRisePerFoot\(double inches\) =&gt; Angle\.ofRiseOverRun\(\s*inches / inchesPerFootOfRun,\s*\)\.spelledAs\(AngleSpelling\.risePerFoot\);" dotAll="true" id="angle.of_rise.spelled_degrees">
+            <mutation text="factory Angle.ofRisePerFoot(double inches) =&gt; Angle.ofRiseOverRun(inches / inchesPerFootOfRun).spelledAs(AngleSpelling.degrees);"/>
+        </regex>
+        <regex pattern="Angle\(math\.atan\(riseOverRun\) \* 180 / math\.pi\);" dotAll="true" id="angle.of_ratio.radians">
+            <mutation text="Angle(math.atan(riseOverRun));"/>
+            <mutation text="Angle(math.tan(riseOverRun) * 180 / math.pi);"/>
         </regex>
     </rules>
 

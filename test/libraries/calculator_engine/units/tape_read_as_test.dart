@@ -180,7 +180,7 @@ void main() {
         );
         expect(
           ReadAsOffer.largestRisePerFoot,
-          QuantityFormatter.inchesPerFootOfRun * ReadAsOffer.largestSlopeRatio,
+          Angle.inchesPerFootOfRun * ReadAsOffer.largestSlopeRatio,
           reason: 'both keys draw the line at the same roof',
         );
       });

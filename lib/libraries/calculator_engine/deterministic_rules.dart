@@ -563,7 +563,7 @@ class DeterministicRules extends Equatable {
     if (pitch != null) return _inRange(pitch, DimensionKey.pitch);
     if (namedValues[DimensionKey.slope.id] case Scalar(:final value)) {
       return _inRange(
-        _angleOfRatio(
+        Angle.ofRiseOverRun(
           value / QuantityFormatter.percent,
         ).spelledAs(AngleSpelling.grade),
         DimensionKey.slope,
@@ -573,10 +573,8 @@ class DeterministicRules extends Equatable {
   }
 
   Angle? _pitchAngleOf(Quantity value) => switch (value) {
-    final Length rise => _angleOfRatio(
-      rise.preciseTicks /
-          Length.ticksPerInch /
-          QuantityFormatter.inchesPerFootOfRun,
+    final Length rise => Angle.ofRiseOverRun(
+      rise.preciseTicks / Length.ticksPerInch / Angle.inchesPerFootOfRun,
     ).spelledAs(AngleSpelling.risePerFoot),
     final Angle angle => angle,
     Scalar(:final value) => Angle(value),
@@ -614,7 +612,7 @@ class DeterministicRules extends Equatable {
     final sources = [DimensionKey.rise.id, DimensionKey.run.id];
     return [
       ..._pitchFamily(
-        _angleOfRatio(rise.preciseTicks / run.preciseTicks),
+        Angle.ofRiseOverRun(rise.preciseTicks / run.preciseTicks),
         sources,
       ),
       ?_leg(
@@ -688,7 +686,7 @@ class DeterministicRules extends Equatable {
         unit,
         sources,
       ),
-      ..._pitchFamily(_angleOfRatio(riseTicks / runTicks), sources),
+      ..._pitchFamily(Angle.ofRiseOverRun(riseTicks / runTicks), sources),
     ];
   }
 
@@ -737,8 +735,6 @@ class DeterministicRules extends Equatable {
       sources: sources,
     );
   }
-
-  Angle _angleOfRatio(double ratio) => Angle(math.atan(ratio) * 180 / math.pi);
 
   Unit _entrySystemUnit(Iterable<Length> lengths) =>
       lengths.isNotEmpty && lengths.every((length) => length.unit.isMetric)
