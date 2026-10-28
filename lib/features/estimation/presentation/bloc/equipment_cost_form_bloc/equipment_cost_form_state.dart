@@ -71,6 +71,30 @@ class EquipmentCostFormInitial extends EquipmentCostFormState {
   const EquipmentCostFormInitial();
 }
 
+/// What the "Not kept" message says: the server refused the default the user
+/// saved for the item.
+class RefusedDefaultNotice extends Equatable {
+  const RefusedDefaultNotice({
+    required this.refusedAmount,
+    required this.acceptedAmount,
+    required this.estimateName,
+  });
+
+  /// The amount the server refused.
+  final double refusedAmount;
+
+  /// The default that is still in force, or null if the server never accepted
+  /// one.
+  final double? acceptedAmount;
+
+  /// The estimate whose line keeps the refused amount, or null if no line
+  /// does or the lookup failed.
+  final String? estimateName;
+
+  @override
+  List<Object?> get props => [refusedAmount, acceptedAmount, estimateName];
+}
+
 /// Full set of equipment form field values, carried by every state once the
 /// user has started filling in the form.
 class EquipmentCostFormData extends Equatable {
@@ -88,6 +112,7 @@ class EquipmentCostFormData extends Equatable {
     this.recalledRateId,
     this.recalledRateMethod,
     this.description,
+    this.refusedDefault,
     this.isValid = false,
     this.fieldErrors = const {},
   });
@@ -134,6 +159,12 @@ class EquipmentCostFormData extends Equatable {
 
   /// Freeform description/note for this item.
   final String? description;
+
+  /// The "Not kept" message to show above the amount, or null when the server
+  /// has not refused a default for the current item. Stays set while the form
+  /// is open once the message was shown, so the message does not vanish the
+  /// moment it is recorded as shown.
+  final RefusedDefaultNotice? refusedDefault;
 
   /// Whether the required fields for the current [method] are all filled and
   /// within bounds.
@@ -218,6 +249,7 @@ class EquipmentCostFormData extends Equatable {
     Object? recalledRateId = _unset,
     Object? recalledRateMethod = _unset,
     Object? description = _unset,
+    Object? refusedDefault = _unset,
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
   }) {
@@ -246,6 +278,9 @@ class EquipmentCostFormData extends Equatable {
       description: description == _unset
           ? this.description
           : description as String?,
+      refusedDefault: refusedDefault == _unset
+          ? this.refusedDefault
+          : refusedDefault as RefusedDefaultNotice?,
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
     );
@@ -266,6 +301,7 @@ class EquipmentCostFormData extends Equatable {
     recalledRateId,
     recalledRateMethod,
     description,
+    refusedDefault,
     isValid,
     fieldErrors,
   ];
