@@ -142,10 +142,7 @@ void main() {
             [for (final chip in bloc.state.chipsList) chip.value],
             ['2ft', '×3', '6ft 0in'],
           );
-          expect(
-            bloc.state.chipsList.last.type,
-            CoreCalculatorChipType.disabled,
-          );
+          expect(bloc.state.chipsList.last.type, CoreCalculatorChipType.result);
         },
       );
 
@@ -312,7 +309,7 @@ void main() {
           final chip = bloc.state.chipsList.last;
           expect(chip.label, CalculationError.dimensionError.name);
           expect(chip.value, isNull);
-          expect(chip.type, CoreCalculatorChipType.disabled);
+          expect(chip.type, CoreCalculatorChipType.error);
         },
       );
     });

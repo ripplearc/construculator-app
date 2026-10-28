@@ -90,6 +90,8 @@ class CalculatorState extends Equatable {
   /// inside between parentheses, each led by the operator that joins it to
   /// the chain, as the prototype's tape reads (2 | +(3×4) | ×5 | Calc70); an
   /// error chip carries its error as the label the page titles it by.
+  // TODO: [CA-1092] draw a bracket with the bracketOpen and bracketClosed
+  // types and its operator as the factor.
   List<CoreCalculatorChip> get chipsList => [
     for (final chip in tape.chips)
       CoreCalculatorChip(
@@ -106,7 +108,8 @@ class CalculatorState extends Equatable {
         type: switch (chip) {
           ValueChip(isActive: true) => CoreCalculatorChipType.active,
           ValueChip() || BracketChip() => CoreCalculatorChipType.editable,
-          ResultChip() || ErrorChip() => CoreCalculatorChipType.disabled,
+          ResultChip() => CoreCalculatorChipType.result,
+          ErrorChip() => CoreCalculatorChipType.error,
         },
       ),
   ];

@@ -140,7 +140,21 @@ class _CalculatorPageState extends State<CalculatorPage> {
         _ => colors.keyboardFunctions,
       };
 
-  String _displayLabelFor(AppLocalizations l10n, String id) => switch (id) {
+  String _displayLabelFor(AppLocalizations l10n, String id) {
+    if (CalculationError.values.asNameMap()[id] case final error?) {
+      return _errorTitleFor(l10n, error);
+    }
+    return _keyLabelFor(l10n, id);
+  }
+
+  String _errorTitleFor(AppLocalizations l10n, CalculationError error) =>
+      switch (error) {
+        CalculationError.dimensionError => l10n.calculatorErrorDimension,
+        CalculationError.divisionByZero => l10n.calculatorErrorDivisionByZero,
+        CalculationError.outOfRange => l10n.calculatorErrorTooLarge,
+      };
+
+  String _keyLabelFor(AppLocalizations l10n, String id) => switch (id) {
     'Width' => l10n.calculatorKeyWidth,
     'Length' => l10n.calculatorKeyLength,
     'Height' => l10n.calculatorKeyHeight,
@@ -178,12 +192,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
     'ATAN' => l10n.calculatorKeyAtan,
     'DMS' => l10n.calculatorKeyDms,
     Tape.calcKey => l10n.calculatorResultCalc,
-    _ when id == CalculationError.dimensionError.name =>
-      l10n.calculatorErrorDimension,
-    _ when id == CalculationError.divisionByZero.name =>
-      l10n.calculatorErrorDivisionByZero,
-    _ when id == CalculationError.outOfRange.name =>
-      l10n.calculatorErrorTooLarge,
     _ => _untranslated(id),
   };
 

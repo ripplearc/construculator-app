@@ -351,6 +351,69 @@ void main() {
     expect(displayArea.chipsList.last.label, l10n.calculatorErrorDimension);
   });
 
+  testWidgets('a division by zero is titled from the localization layer', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final context = tester.element(find.byType(CoreDisplayArea));
+    final l10n = AppLocalizations.of(context)!;
+    BlocProvider.of<CalculatorBloc>(context)
+      ..add(const CalculatorDigitPressed('5'))
+      ..add(const CalculatorOperatorPressed(Operator.divide))
+      ..add(const CalculatorDigitPressed('0'))
+      ..add(const CalculatorEqualsPressed());
+    await tester.pump();
+
+    final displayArea = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    final labels = displayArea.chipsList.map((chip) => chip.label);
+    expect(labels, contains(l10n.calculatorErrorDivisionByZero));
+    expect(labels, isNot(contains(CalculationError.divisionByZero.name)));
+  });
+
+  testWidgets('a result past the limit is titled Too large from the '
+      'localization layer', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final context = tester.element(find.byType(CoreDisplayArea));
+    final l10n = AppLocalizations.of(context)!;
+    final bloc = BlocProvider.of<CalculatorBloc>(context);
+    for (final digit in '9999999'.split('')) {
+      bloc.add(CalculatorDigitPressed(digit));
+    }
+    bloc.add(const CalculatorUnitSelected(Unit.foot));
+    for (final factor in const ['9999999', '9999999']) {
+      bloc.add(const CalculatorOperatorPressed(Operator.multiply));
+      for (final digit in factor.split('')) {
+        bloc.add(CalculatorDigitPressed(digit));
+      }
+    }
+    bloc.add(const CalculatorEqualsPressed());
+    await tester.pump();
+
+    final displayArea = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(displayArea.label, equals(l10n.calculatorErrorTooLarge));
+    expect(displayArea.chipsList.last.label, l10n.calculatorErrorTooLarge);
+  });
+
   test('a pill is drawn as the kind its id names', () {
     final l10n = AppLocalizationsEn();
 

@@ -86,8 +86,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         emit(_cleared());
       case ControlAction.paren:
         _press(emit, (tape) => tape.pressBracket());
-      // A value coreui deprecated and never sends; CA-1195 deletes it.
-      case _:
+      // TODO: [CA-1195] Delete this arm when coreui removes moreOptions.
+      // ignore: deprecated_member_use
+      case ControlAction.moreOptions:
         break;
     }
   }

@@ -58,7 +58,8 @@ class BlocScenarioDriver implements ScenarioDriver {
         for (final chip in state.chipsList)
           switch (chip.type) {
             CoreCalculatorChipType.active => 't-active',
-            CoreCalculatorChipType.disabled => 't-result',
+            CoreCalculatorChipType.result => 't-result',
+            CoreCalculatorChipType.error => 't-error',
             _ => 't-input',
           },
       ],
