@@ -84,8 +84,8 @@
 
         <!-- RULE 14: a fraction that rounds up to a whole inch is taken off
              instead of carried -->
-        <regex pattern="whole \+= fraction\.carry;\s*return '\$\{ticks &lt; 0 \? '-' : ''\}" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
-            <mutation text="whole -= fraction.carry; return '${ticks &lt; 0 ? '-' : ''}"/>
+        <regex pattern="whole \+= fraction\.carry;\s*final text =" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
+            <mutation text="whole -= fraction.carry; final text ="/>
         </regex>
 
         <!-- RULE 15: a stored size under Metric divides by the millimetres

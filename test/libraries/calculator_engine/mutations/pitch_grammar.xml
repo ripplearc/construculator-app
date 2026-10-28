@@ -59,7 +59,7 @@
         <regex pattern="whole \+= fraction\.carry;\s*final sign = inches &lt; 0" dotAll="true" id="pitch.rise.no_carry">
             <mutation text="final sign = inches &lt; 0"/>
         </regex>
-        <regex pattern="final fraction = _fractionOfInch\(ticks % Length\.ticksPerInch\);\s*whole \+= fraction\.carry;" dotAll="true" id="pitch.rise.no_fraction">
+        <regex pattern="final fraction = _fractionOfInch\(\s*Length\.computed\(ticks % Length\.ticksPerInch, unit: Unit\.inch\)\.inches,\s*\);\s*whole \+= fraction\.carry;" dotAll="true" id="pitch.rise.no_fraction">
             <mutation text="final fraction = (text: '', carry: 0);"/>
         </regex>
 
@@ -71,6 +71,7 @@
         <regex pattern="if \(namedValues\[DimensionKey\.slope\.id\] case Scalar\(\s*:final value,\s*\) when value &lt;= 0\) \{\s*return RuleRefusal\.slopeOutOfRange;\s*\}" dotAll="true" id="pitch.refusal.slope">
             <mutation text=""/>
             <mutation text="if (namedValues[DimensionKey.slope.id] case Scalar(:final value) when value &lt; 0) { return RuleRefusal.slopeOutOfRange; }"/>
+            <mutation text="if (namedValues[DimensionKey.slope.id] case Scalar(:final value) when value &lt;= 1) { return RuleRefusal.slopeOutOfRange; }"/>
         </regex>
     </rules>
 
