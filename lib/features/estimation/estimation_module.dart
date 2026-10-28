@@ -1,7 +1,9 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/local_your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
@@ -106,6 +108,10 @@ class EstimationModule extends Module {
     i.addLazySingleton<LocalYourRatesDataSource>(
       () => LocalYourRatesDataSource(database: i.get(), clock: i.get()),
       config: BindConfig(onDispose: (dataSource) => dataSource.dispose()),
+    );
+
+    i.addLazySingleton<YourRateRefusalDataSource>(
+      () => LocalYourRateRefusalDataSource(database: i.get(), clock: i.get()),
     );
 
     i.addLazySingleton<YourRatesDataSource>(

@@ -53,6 +53,9 @@ class DatabaseConstants {
   /// launches. Never synced: `company_users` has no sync access.
   static const String currentCompanyTable = 'current_company';
 
+  /// Device-only table of Your rates defaults the server refused.
+  static const String yourRateRefusalsTable = 'your_rate_refusals';
+
   /// Table storing per-user project search history. Fully isolated from
   /// [searchHistoryTable] (which serves Global Search) — neither feature reads
   /// from nor writes to the other's table.
@@ -177,6 +180,9 @@ class DatabaseConstants {
   static const String equipmentMethodColumn = 'equipment_method';
   static const String entryLabelColumn = 'entry_label';
   static const String lastUsedAtColumn = 'last_used_at';
+  static const String refusedAmountColumn = 'refused_amount';
+  static const String acceptedAmountColumn = 'accepted_amount';
+  static const String shownAtColumn = 'shown_at';
 
   // Consent columns (id and user_id use the shared columns above; these
   // tables timestamp with published_at and recorded_at, not created_at)
