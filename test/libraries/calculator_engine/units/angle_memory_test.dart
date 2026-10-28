@@ -204,6 +204,29 @@ void main() {
       expect(reclosed.entry.text, '38°05\'00"');
       expect(reclosed.exactValue, open.value);
 
+      final thirty = newest(
+        const AngleMemory().filedAnswer(
+          const Angle(30, spelling: AngleSpelling.degreesMinutesSeconds),
+          formatter: formatter,
+        ),
+        'Sine',
+      )!;
+      final reopened = press(
+        changed(press(const Tape(), 'SIN').recall(thirty)),
+        '+ ⌫',
+      );
+      expect(activeOf(reopened).entry.text, '30°00\'00"');
+      expect(
+        activeOf(reopened).exactValue,
+        thirty.value,
+        reason: 'the padding the seal gave the seconds goes, not the value',
+      );
+      expect(
+        activeOf(changed(reopened.backspace())).entry.isEmpty,
+        isTrue,
+        reason: 'still a recalled value, so ⌫ removes it whole',
+      );
+
       final cleared = changed(
         changed(press(const Tape(), 'SIN').recall(remembered)).backspace(),
       );

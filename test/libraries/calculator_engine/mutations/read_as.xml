@@ -173,6 +173,9 @@
         <regex pattern="minutes: \(\) =&gt; minutes\.substring\(0, minutes\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_backspace">
             <mutation text="minutes: () =&gt; minutes.substring(0, minutes.length - 1),"/>
         </regex>
+        <regex pattern="if \(seconds\.isEmpty\) \{\s*return _replaceLast\(last\.copyWith\(seconds: \(\) =&gt; null\)\);\s*\}" dotAll="true" id="read_as.typed_as.seconds_close_forgets">
+            <mutation text="if (seconds.isEmpty) { return _replaceLast(last.copyWith(seconds: () =&gt; null, typedAs: () =&gt; null)); }"/>
+        </regex>
 
         <regex pattern="minutes: \(\) =&gt; '\$\{angle\.minutes\}\$digit',\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_digit">
             <mutation text="minutes: () =&gt; '${angle.minutes}$digit',"/>

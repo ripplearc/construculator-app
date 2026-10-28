@@ -263,8 +263,8 @@ class EntryBuffer extends Equatable {
   /// and an angle whose fields have all closed, is returned as it is, so
   /// sealing twice changes nothing and a chip keeps the exact value behind
   /// a spelling it already had.
-  /// A chip ⌫ makes active again keeps the sealed spelling: the field was
-  /// closed, and what it holds is what ⌫ now steps through.
+  /// A chip ⌫ makes active again loses the padding the seal gave its last
+  /// field ([reopened]).
   EntryBuffer get sealed {
     if (!isDegreesMinutesSeconds) return this;
     final angle = tokens.single;
@@ -279,6 +279,24 @@ class EntryBuffer extends Equatable {
       seconds: () => closed.seconds,
     );
     return token == angle ? this : EntryBuffer(List.unmodifiable([token]));
+  }
+
+  /// The buffer as ⌫ makes its chip active again: the padding the seal gave
+  /// the seconds goes, so the field shows what was typed into it and the
+  /// next digit follows that, not the padding (38 [D:M:S] 75 + ⌫ 5 reads
+  /// 39°15'5", not 39°15'005"; 38°30'05" comes back as 38°30'5"; Section 6,
+  /// a field still open shows exactly what was typed). A zero typed ahead
+  /// of a digit cannot be told from the padding and goes with it, worth the
+  /// same. Any other buffer, and a field the seal left as typed, come back
+  /// as they are.
+  EntryBuffer get reopened {
+    if (!isDegreesMinutesSeconds) return this;
+    final angle = tokens.single;
+    final typed = angle.seconds?.replaceFirst(RegExp('^0+'), '');
+    if (typed == null || typed == angle.seconds) return this;
+    return EntryBuffer(
+      List.unmodifiable([angle.copyWith(seconds: () => typed)]),
+    );
   }
 
   static ({String degrees, String minutes, String seconds}) _withFieldsClosed(
@@ -573,7 +591,9 @@ class EntryBuffer extends Equatable {
   /// then the minutes, which leaves the whole degrees as a plain number.
   /// A minutes digit removed clears the way back ([Token.typedAs]), as a
   /// digit typed does; reopening a segment keeps the digits, so it keeps
-  /// the way back. (A seconds digit was typed, which already cleared it.)
+  /// the way back. (A seconds digit was typed, which already cleared it;
+  /// the padding the seal wrote is gone by the time ⌫ steps into the
+  /// field, [reopened].)
   EntryOutcome backspace() {
     final last = tokens.isEmpty ? null : tokens.last;
     if (last == null) return const EntryRefused(EntryRefusal.nothingToDelete);

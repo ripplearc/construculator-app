@@ -384,6 +384,20 @@ void main() {
       expect(chipText(press(reopened, 'pill'), 0), '8.45');
     });
 
+    test('rule 4.10: the way back goes with the first ⌫ that takes a digit '
+        'off the number; the ⌫ that closes the seal\'s empty seconds field '
+        'changes no digit and keeps it', () {
+      var tape = press(const Tape(), '[Pitch] 8 . 7 5 pill pill + ⌫');
+      expect(chipText(tape, 0), '9°15\'00"');
+      expect(pill(tape), 'Input 9°15\'00" as 8.75°');
+      tape = press(tape, '⌫');
+      expect(chipText(tape, 0), '9°15\'00"');
+      expect(pill(tape), 'Input 9°15\'00" as 8.75°');
+      tape = press(tape, '⌫');
+      expect(chipText(tape, 0), '9°1\'00"');
+      expect(tape.readAsOffer, isNull);
+    });
+
     group('a number read as degrees (walkthrough 16.4)', () {
       test('S91: an open keypad is not context; [SIN] brings the question '
           'with the answer, and the tap rebuilds it', () {

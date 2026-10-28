@@ -313,14 +313,63 @@ void main() {
         expect(lastResult(carried), 'Calc 39.52°');
       });
 
-      test('⌫ brings the chip back as it was sealed, and steps through the '
-          'closed field; sealing it again changes nothing', () {
+      test('= with nothing to compute still closes the field, and says so', () {
+        final outcome = press(const Tape(), '3 8 DMS 7 5').pressEquals();
+        expect(outcome, isA<TapeChanged>());
+        final closed = outcome as TapeChanged;
+        expect(closed.notice, TapeNotice.entryClosedNothingToCompute);
+        expect(activeText(closed.tape), '39°15\'00"');
+        expect(
+          press(const Tape(), '3 8 DMS 3 0 DMS 4 5').pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+          reason: 'nothing was open, so nothing changed',
+        );
+      });
+
+      test('⌫ brings the chip back without the seal\'s padding, so a digit '
+          'continues what was typed; sealing it again changes nothing', () {
         final sealed = press(const Tape(), '3 8 DMS 7 5 +');
-        var tape = press(sealed, '⌫');
-        expect(activeText(tape), '39°15\'00"');
-        expect(press(tape, '+'), sealed);
-        tape = press(tape, '⌫');
-        expect(activeText(tape), '39°15\'0"');
+        final reopened = press(sealed, '⌫');
+        expect(activeText(reopened), '39°15\'00"');
+        expect(press(reopened, '+'), sealed);
+        expect(activeText(press(reopened, '5')), '39°15\'5"');
+        expect(
+          activeText(press(reopened, '⌫')),
+          '39°15\'00"',
+          reason: 'the empty seconds close and the minutes reopen',
+        );
+        expect(activeText(press(reopened, '⌫ ⌫')), '39°1\'00"');
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 3 0 DMS + ⌫ 7')),
+          '38°30\'7"',
+        );
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 3 0 DMS 5 + ⌫ 7')),
+          '38°30\'57"',
+        );
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 3 0 DMS 4 5 + ⌫')),
+          '38°30\'45"',
+        );
+      });
+
+      test('the padding goes whichever chip ⌫ removes to get back: a result, '
+          'an empty bracket or one it reopens', () {
+        expect(
+          activeText(press(const Tape(), '3 8 DMS 7 5 SIN ⌫ 5')),
+          '39°15\'5"',
+        );
+        expect(
+          activeText(press(const Tape(), '3 8 . 7 5 . ( ⌫ 5')),
+          '39°15\'5"',
+        );
+        final reopened = press(const Tape(), '( 3 8 . 7 5 . ( ⌫ 5');
+        expect((reopened.chips.last as BracketChip).expression, '(39°15\'5"');
+        expect(
+          activeText(press(const Tape(), '1 8 ft 8 in + ⌫')),
+          '18ft 8in',
+          reason: 'only an angle has padding to lose',
+        );
       });
     });
 
