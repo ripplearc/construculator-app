@@ -115,13 +115,8 @@ class QuantityParser extends Equatable {
 
   Rational? _keptInchesOf(Token token, Unit unit) {
     final exact = exactValueOf(token);
-    if (exact != null) return exact * unit.inchesPer;
-    final ticks = token.value * unit.ticksPerUnit;
-    final partsOfATick = (ticks * Length.partsPerTick).round();
-    if (ticks.abs() > Length.maxTicks || (ticks != 0 && partsOfATick == 0)) {
-      return null;
-    }
-    return Length.computed(ticks, unit: unit).inches;
+    if (exact == null) return null;
+    return exact * unit.inchesPer;
   }
 
   /// The number [token] spells, exactly: its digits over the fraction's
