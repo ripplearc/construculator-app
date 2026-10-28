@@ -494,6 +494,141 @@ void main() {
       });
     });
 
+    group('CA-1201: a number the formatter cannot write is refused', () {
+      const limit = QuantityFormatter.largestExactInteger;
+      final refused = throwsA(
+        isA<RangeError>().having(
+          (error) => error.message,
+          'message',
+          QuantityFormatter.tooLargeToDisplay,
+        ),
+      );
+      String dms(double degrees) => formatter.format(
+        Angle(degrees, spelling: AngleSpelling.degreesMinutesSeconds),
+      );
+
+      test('the last exact whole number is written, 2⁵³ is refused', () {
+        expect(
+          formatter.format(const Scalar(limit - 1, decimals: 0)),
+          '9,007,199,254,740,991',
+        );
+        expect(
+          () => formatter.format(const Scalar(limit, decimals: 0)),
+          refused,
+        );
+        expect(
+          formatter.formatDensity(limit - 1),
+          '9,007,199,254,740,991lbs/yd³',
+        );
+        expect(() => formatter.formatDensity(limit), refused);
+      });
+
+      test('the limit is read on the scaled digits: two decimals of a result '
+          'take two places', () {
+        expect(
+          formatter.format(const Scalar(90071992547409.91)),
+          '90,071,992,547,409.9',
+          reason: 'the hundredth is below the step of a double this size',
+        );
+        expect(
+          () => formatter.format(const Scalar(90071992547409.92)),
+          refused,
+        );
+        expect(
+          formatter.format(const Angle(90071992547409.91)),
+          '90,071,992,547,409.9°',
+        );
+        expect(() => formatter.format(const Angle(90071992547409.92)), refused);
+      });
+
+      test('D:M:S is refused when its seconds reach 2⁵³', () {
+        expect(dms(2501999792983.6), '2,501,999,792,983°36\'00"');
+        expect(() => dms(2501999792983.61), refused);
+      });
+
+      test('a number that used to clamp at 2⁶³ or read in exponent form is '
+          'refused instead', () {
+        expect(
+          () => formatter.format(const Scalar(99999999999 * 99999999999)),
+          refused,
+        );
+        expect(() => formatter.format(const Scalar(1e25)), refused);
+        expect(() => formatter.format(const Scalar(9.2e18)), refused);
+        expect(() => formatter.format(const Angle(1e16)), refused);
+        expect(() => dms(1e16), refused);
+      });
+
+      test('NaN and both infinities are refused on every path', () {
+        for (final number in [
+          double.nan,
+          double.infinity,
+          double.negativeInfinity,
+        ]) {
+          expect(() => formatter.format(Scalar(number)), refused);
+          expect(() => formatter.format(Scalar(number, decimals: 6)), refused);
+          expect(() => formatter.format(Area(number)), refused);
+          expect(() => formatter.format(Volume(number)), refused);
+          expect(() => formatter.format(Weight(number)), refused);
+          expect(() => formatter.format(Angle(number)), refused);
+          expect(() => dms(number), refused);
+          expect(
+            () => formatter.format(
+              Angle(number, spelling: AngleSpelling.risePerFoot),
+            ),
+            refused,
+          );
+          expect(
+            () =>
+                formatter.format(Angle(number, spelling: AngleSpelling.grade)),
+            refused,
+          );
+          expect(() => formatter.formatDensity(number), refused);
+        }
+      });
+
+      test('the chain refuses such an answer before it is written', () {
+        expect(formatter.isTooLarge(const Scalar(limit)), isTrue);
+        expect(
+          formatter.isTooLarge(const Scalar(double.negativeInfinity)),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Angle(
+              double.nan,
+              spelling: AngleSpelling.degreesMinutesSeconds,
+            ),
+          ),
+          isTrue,
+        );
+      });
+
+      test('a pitch a hair under 90° is too large in the rise and grade '
+          'spellings, where the written number is past 2⁵³ though the '
+          'degrees are not', () {
+        const nearlyUpright = 89.99999999999999;
+        expect(formatter.isTooLarge(const Angle(nearlyUpright)), isFalse);
+        expect(
+          formatter.isTooLarge(
+            const Angle(nearlyUpright, spelling: AngleSpelling.risePerFoot),
+          ),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Angle(nearlyUpright, spelling: AngleSpelling.grade),
+          ),
+          isTrue,
+        );
+        expect(
+          formatter.isTooLarge(
+            const Angle(45, spelling: AngleSpelling.risePerFoot),
+          ),
+          isFalse,
+        );
+      });
+    });
+
     group('fractional resolution, one row per setting', () {
       const tenInchesOverThree = Length(213, unit: Unit.footInch);
 
@@ -731,11 +866,8 @@ void main() {
 
         test('a very large angle reads the same whole degrees in both '
             'spellings', () {
-          expect(
-            formatter.format(const Angle(1e16)),
-            '10,000,000,000,000,000°',
-          );
-          expect(dms(1e16), '10,000,000,000,000,000°00\'00"');
+          expect(formatter.format(const Angle(1e12)), '1,000,000,000,000°');
+          expect(dms(1e12), '1,000,000,000,000°00\'00"');
           expect(dms(1e12 + 0.5), '1,000,000,000,000°30\'00"');
         });
       });

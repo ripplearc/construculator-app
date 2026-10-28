@@ -38,7 +38,7 @@
 
         <!-- RULE 5: a ratio below 0.1 is shown to two decimals, so 1 ÷ 78
              reads 0.01 -->
-        <regex pattern="if \(value\.abs\(\) &gt;= 0\.1\) \{" dotAll="true" id="quantity_formatter.scalar.two_decimals_below_point_one">
+        <regex pattern="if \(_writable\(value\)\.abs\(\) &gt;= 0\.1\) \{" dotAll="true" id="quantity_formatter.scalar.two_decimals_below_point_one">
             <mutation text="if (true) {"/>
         </regex>
 
@@ -48,8 +48,15 @@
         </regex>
 
         <!-- RULE 7: Math.round becomes truncation -->
-        <regex pattern="int _jsMathRound\(double value\) =&gt; \(value \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity_formatter.js_round.truncate">
-            <mutation text="int _jsMathRound(double value) =&gt; value.floor();"/>
+        <regex pattern="return \(exact \+ 0\.5\)\.floor\(\);" dotAll="true" id="quantity_formatter.js_round.truncate">
+            <mutation text="return exact.floor();"/>
+        </regex>
+
+        <!-- RULE 7b: a whole-only double takes the + 0.5 path and lands on
+             its even neighbour, so the last exact number is refused -->
+        <regex pattern="static bool _isAlreadyWhole\(double value\) =&gt;\s*value\.abs\(\) &gt;= _firstWholeOnlyDouble;" dotAll="true" id="quantity_formatter.js_round.whole_only_rounded">
+            <mutation text="static bool _isAlreadyWhole(double value) =&gt; false;"/>
+            <mutation text="static bool _isAlreadyWhole(double value) =&gt; value.abs() &gt;= largestExactInteger;"/>
         </regex>
 
         <!-- RULE 8: half no longer rounds up -->
@@ -101,14 +108,8 @@
 
         <!-- RULE 17: the angle is truncated to whole seconds instead of
              rounded, so 29.99999° reads 29°59'59" -->
-        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
-            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree).floorToDouble();"/>
-        </regex>
-
-        <!-- RULE 17b: the seconds become an int, which clamps at 2^63, so a
-             very large angle reads a different number in D:M:S -->
-        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.int_seconds_clamp">
-            <mutation text="final totalSeconds = _jsMathRound(degrees.abs() * secondsPerDegree).toDouble();"/>
+        <regex pattern="final totalSeconds = _writable\(\s*\(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\.floorToDouble\(\),\s*\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
+            <mutation text="final totalSeconds = _writable((degrees.abs() * secondsPerDegree).floorToDouble());"/>
         </regex>
 
         <!-- RULE 17c: the whole degrees keep the seconds' remainder, so
@@ -236,8 +237,11 @@
         </regex>
 
         <!-- RULE CA-1236b: Too large at the wrong edge, read off the value
-             instead of the number written, for one sign only, or with no
-             guard for a value past 2⁶³ whose text is not the value -->
+             instead of the number written, or for one sign only. The guard
+             before the number is written is a fast path since CA-1201: a
+             value it let through is written past the limit or refused and
+             caught, so a mutant that drops it, or reads an area, a volume or
+             a weight as nothing, is equivalent and has no rule -->
         <regex pattern="return _leadingNumber\(format\(value\)\) &gt; Quantity\.largestShown;" dotAll="true" id="quantity_formatter.too_large.edge">
             <mutation text="return _leadingNumber(format(value)) &gt;= Quantity.largestShown;"/>
             <mutation text="return _amountShown(value).abs() &gt; Quantity.largestShown;"/>
@@ -246,16 +250,7 @@
         <regex pattern="RegExp\(r'\^\[−-\]\?\(" dotAll="true" id="quantity_formatter.too_large.one_sign">
             <mutation text="RegExp(r'^("/>
         </regex>
-        <regex pattern="if \(!\(_amountShown\(value\)\.abs\(\) &lt; _firstWholeNumberPastTheLimit\)\) \{" dotAll="true" id="quantity_formatter.too_large.no_guard">
-            <mutation text="if (false) {"/>
-            <mutation text="if (!(_amountShown(value) &lt; _firstWholeNumberPastTheLimit)) {"/>
-        </regex>
-        <regex pattern="Area\(\) =&gt; _areaInUnit\(value\),\s*Volume\(\) =&gt; _volumeInUnit\(value\),\s*Weight\(\) =&gt; _weightInUnit\(value\),\s*Angle\(\)" dotAll="true" id="quantity_formatter.too_large.area_unguarded">
-            <mutation text="Area() =&gt; 0, Volume() =&gt; _volumeInUnit(value), Weight() =&gt; _weightInUnit(value), Angle()"/>
-            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; 0, Weight() =&gt; _weightInUnit(value), Angle()"/>
-            <mutation text="Area() =&gt; _areaInUnit(value), Volume() =&gt; _volumeInUnit(value), Weight() =&gt; 0, Angle()"/>
-        </regex>
-        <regex pattern="Length\(unit: Unit\.footInch\) =&gt; value\.amountIn\(Unit\.foot\)," dotAll="true" id="quantity_formatter.too_large.compound_in_inches">
+                <regex pattern="Length\(unit: Unit\.footInch\) =&gt; value\.amountIn\(Unit\.foot\)," dotAll="true" id="quantity_formatter.too_large.compound_in_inches">
             <mutation text="Length(unit: Unit.footInch) =&gt; value.amountIn(Unit.inch),"/>
         </regex>
         <regex pattern="Length\(\) =&gt; value\.amountIn\(value\.unit\)," dotAll="true" id="quantity_formatter.too_large.length_in_feet">
@@ -263,6 +258,50 @@
         </regex>
         <regex pattern="static const double largestShown = 19999999\.99;" dotAll="true" id="quantity_formatter.too_large.limit">
             <mutation text="static const double largestShown = 99999999.99;"/>
+        </regex>
+
+        <!-- RULE CA-1201a: the guard lets NaN through, or refuses nothing -->
+        <regex pattern="static bool _isNaNOrPastTheLastExactInteger\(double value\) =&gt;\s*!\(value\.abs\(\) &lt; largestExactInteger\);" dotAll="true" id="quantity_formatter.writable.nan_passes">
+            <mutation text="static bool _isNaNOrPastTheLastExactInteger(double value) =&gt; value.abs() &gt;= largestExactInteger;"/>
+            <mutation text="static bool _isNaNOrPastTheLastExactInteger(double value) =&gt; false;"/>
+        </regex>
+
+        <!-- RULE CA-1201b: 2⁵³ itself is written -->
+        <regex pattern="=&gt;\s*!\(value\.abs\(\) &lt; largestExactInteger\);" dotAll="true" id="quantity_formatter.writable.boundary">
+            <mutation text="=&gt; !(value.abs() &lt;= largestExactInteger);"/>
+        </regex>
+
+        <!-- RULE CA-1201c: the limit is 2⁶³, where the floor clamps -->
+        <regex pattern="static const double largestExactInteger = 9007199254740992;" dotAll="true" id="quantity_formatter.writable.limit">
+            <mutation text="static const double largestExactInteger = 9223372036854775808;"/>
+        </regex>
+
+        <!-- RULE CA-1201d: the D:M:S seconds skip the guard -->
+        <regex pattern="final totalSeconds = _writable\(\s*\(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\.floorToDouble\(\),\s*\);" dotAll="true" id="quantity_formatter.writable.dms_unguarded">
+            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree + 0.5).floorToDouble();"/>
+        </regex>
+
+        <!-- RULE CA-1201e: a scalar skips the guard on its way to the
+             two-significant-digit spelling -->
+        <regex pattern="if \(_writable\(value\)\.abs\(\) &gt;= 0\.1\) \{" dotAll="true" id="quantity_formatter.writable.scalar_unguarded">
+            <mutation text="if (value.abs() &gt;= 0.1) {"/>
+        </regex>
+
+        <!-- RULE CA-1201f: a plain number skips the guard -->
+        <regex pattern="_roundDecimalText\(_writable\(value\)\.abs\(\), decimals\)" dotAll="true" id="quantity_formatter.writable.number_unguarded">
+            <mutation text="_roundDecimalText(value.abs(), decimals)"/>
+        </regex>
+
+        <!-- RULE CA-1201g: a number the writing path refuses is not too
+             large for the chain -->
+        <regex pattern="\} on RangeError \{\s*return true;\s*\}" dotAll="true" id="quantity_formatter.too_large.refusal_not_too_large">
+            <mutation text="} on RangeError { return false; }"/>
+        </regex>
+
+        <!-- RULE CA-1201h (R1): the rise in 12in skips the guard, so NaN or
+             a rise past the last exact integer reaches a toInt -->
+        <regex pattern="final ticks = _writable\(inches\.abs\(\)\) \* Length\.ticksPerInch;" id="quantity_formatter.writable.rise_unguarded">
+            <mutation text="final ticks = inches.abs() * Length.ticksPerInch;"/>
         </regex>
     </rules>
 

@@ -119,10 +119,15 @@ void main() {
           'Length': tenMillionFeet,
           'Width': tenMillionFeet,
         });
-        expect(texts(answers)[1], 'Diagonal: 14,142,135.62ft');
+        expect(
+          texts(answers),
+          ['Diagonal: 14,142,135.62ft'],
+          reason: 'the area and the perimeter are above the limit (CA-1201)',
+        );
       });
 
-      test('a diagonal past 2⁵³ ticks is left out, the other answers stay', () {
+      test('a diagonal past 2⁵³ ticks is left out, and so are the area and '
+          'the perimeter above the limit (CA-1201)', () {
         const twelveTrillionFeet = Length(
           12000000000000 * Length.ticksPerFoot,
           unit: Unit.foot,
@@ -131,7 +136,7 @@ void main() {
           'Length': twelveTrillionFeet,
           'Width': twelveTrillionFeet,
         });
-        expect(answers.map((answer) => answer.key), ['Area', 'Perimeter']);
+        expect(answers, isEmpty);
       });
 
       test('one named side is not a rectangle', () {
@@ -233,7 +238,8 @@ void main() {
         );
       });
 
-      test('a wall area of three 19,999,999ft sides does not wrap', () {
+      test('a wall area of three 19,999,999ft sides is too large to write, '
+          'so the rules leave it out, as every answer above the limit', () {
         const side = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
         final answers = rules.answersFor({
           'Length': side,
@@ -241,9 +247,26 @@ void main() {
           'Height': side,
         });
         expect(
-          texts(answers).singleWhere((text) => text.startsWith('Wall area')),
-          'Wall area: 1,599,999,840,000,004ft²',
+          answers.map((answer) => answer.key),
+          isNot(contains(DeterministicRules.wallAreaKey)),
         );
+        expect(answers.map((answer) => answer.key), isNot(contains('Area')));
+        expect(() => texts(answers), returnsNormally);
+      });
+
+      test('CA-1201: a pitch a hair under 90° earns its degrees but no rise '
+          'in 12in and no grade, the two readings the formatter could not '
+          'write', () {
+        const rise = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
+        const run = Length(1, unit: Unit.inch);
+        final answers = texts(rules.answersFor({'Rise': rise, 'Run': run}));
+        expect(answers, anyElement(startsWith('Pitch-degrees: ')));
+        expect(answers, everyElement(isNot(contains('%'))));
+        expect(answers, everyElement(isNot(contains('in/12in'))));
+        final offered = texts(
+          rules.answersFor({'Rise': feet12, 'Run': feet15}),
+        );
+        expect(offered, contains('Pitch-grade: 80%'));
       });
 
       test('a metric box answers in cubic metres and square metres', () {
@@ -459,11 +482,18 @@ void main() {
         ]);
       });
 
-      test('a Radius at the 19,999,999ft limit doubles without wrapping', () {
+      test('a Radius of 9,999,999ft doubles to a Diameter under the limit, '
+          'and its Circumference above it is left out; at the limit itself '
+          'nothing is offered (CA-1201)', () {
+        const nearLimit = Length(
+          9999999 * Length.ticksPerFoot,
+          unit: Unit.foot,
+        );
+        final answers = texts(rules.answersFor({'Radius': nearLimit}));
+        expect(answers, contains('Diameter: 19,999,998ft'));
+        expect(answers, everyElement(isNot(contains('Circumference'))));
         const limit = Length(19999999 * Length.ticksPerFoot, unit: Unit.foot);
-        final answers = texts(rules.answersFor({'Radius': limit}));
-        expect(answers.first, 'Diameter: 39,999,998ft');
-        expect(answers.last, 'Circumference: 125,663,699.86ft');
+        expect(rules.answersFor({'Radius': limit}), isEmpty);
       });
 
       test('a metric radius answers in metres', () {
