@@ -134,16 +134,29 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         ),
                         ListView.separated(
                           key: const Key('your_rates_recents_list'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CoreSpacing.space5,
+                          ),
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: entries.length,
                           separatorBuilder: (_, _) => const SizedBox.shrink(),
                           itemBuilder: (context, index) {
                             final entry = entries[index];
-                            return _RecentRateRow(
+                            final recency = entry.recencyLabel(l10n, now: now);
+                            final value = DisplayFormatter.currency.format(
+                              entry.rate.amount,
+                            );
+                            final unit = _unitSuffixFor(
+                              context,
+                              entry.equipmentMethod,
+                            );
+                            return CoreListRow(
                               key: Key('your_rate_row_${entry.id}'),
-                              entry: entry,
-                              now: now,
+                              title: entry.itemName,
+                              subtitle: recency,
+                              value: value,
+                              unit: unit,
                               onTap: () => _onRowTap(entry),
                             );
                           },
@@ -151,7 +164,17 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                         const SizedBox(height: CoreSpacing.space2),
                       ],
                       const CoreDivider(),
-                      _NewEquipmentCostRow(onTap: _onNewEquipmentCost),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CoreSpacing.space3,
+                        ),
+                        child: CoreListRow.action(
+                          key: const Key('new_equipment_cost_row'),
+                          icon: CoreIcons.add,
+                          title: l10n.yourRatesNewEquipmentCostAction,
+                          onTap: _onNewEquipmentCost,
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -239,138 +262,6 @@ String _unitSuffixFor(BuildContext context, EquipmentPricingMethod? method) =>
     method == EquipmentPricingMethod.job
     ? context.l10n.yourRatesJobSuffix
     : context.l10n.yourRatesDaySuffix;
-
-// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists; it also removes the 11 px and 1 px values below, which have no CoreSpacing token.
-class _RecentRateRow extends StatelessWidget {
-  static const double _rowVerticalPadding = 11;
-  static const double _nameToRecencyGap = 1;
-
-  final YourRateEntry entry;
-  final DateTime now;
-  final VoidCallback onTap;
-
-  const _RecentRateRow({
-    super.key,
-    required this.entry,
-    required this.now,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    final recency = entry.recencyLabel(context.l10n, now: now);
-    final unitSuffix = _unitSuffixFor(context, entry.equipmentMethod);
-    final priceLabel =
-        '${DisplayFormatter.currency.format(entry.rate.amount)} $unitSuffix';
-    return Semantics(
-      button: true,
-      label: '${entry.itemName}. $recency. $priceLabel',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space7,
-            vertical: _rowVerticalPadding,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.itemName,
-                      style: textTheme.bodyLargeSemiBold.copyWith(
-                        color: colorTheme.textHeadline,
-                      ),
-                    ),
-                    const SizedBox(height: _nameToRecencyGap),
-                    Text(
-                      recency,
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: CoreSpacing.space3),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: DisplayFormatter.currency.format(entry.rate.amount),
-                      style: textTheme.bodyLargeSemiBold.copyWith(
-                        color: colorTheme.textHeadline,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' $unitSuffix',
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// TODO: [CA-1204] replace with CoreUI's list-row component once it exists. https://ripplearc.youtrack.cloud/issue/CA-1204
-class _NewEquipmentCostRow extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _NewEquipmentCostRow({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final label = context.l10n.yourRatesNewEquipmentCostAction;
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: InkWell(
-        key: const Key('new_equipment_cost_row'),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
-          padding: const EdgeInsets.symmetric(
-            vertical: CoreSpacing.space3,
-            horizontal: CoreSpacing.space5,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CoreIconWidget(
-                icon: CoreIcons.add,
-                color: colorTheme.textLink,
-                size: CoreSpacing.space5,
-              ),
-              const SizedBox(width: CoreSpacing.space3),
-              Text(
-                label,
-                style: context.textTheme.bodyMediumSemiBold.copyWith(
-                  color: colorTheme.textLink,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// What the user chose on [YourRatesRecentsSheet].
 sealed class YourRatesRecentsResult {
