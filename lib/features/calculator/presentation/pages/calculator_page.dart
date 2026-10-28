@@ -144,8 +144,30 @@ class _CalculatorPageState extends State<CalculatorPage> {
     if (CalculationError.values.asNameMap()[id] case final error?) {
       return _errorTitleFor(l10n, error);
     }
+    if (_trigFunctionOf(id) case final function?) {
+      return _trigLabelFor(l10n, function) + id.substring(function.key.length);
+    }
     return _keyLabelFor(l10n, id);
   }
+
+  TrigFunction? _trigFunctionOf(String id) {
+    for (final function in TrigFunction.values) {
+      if (id == function.key || id.startsWith('${function.key}(')) {
+        return function;
+      }
+    }
+    return null;
+  }
+
+  String _trigLabelFor(AppLocalizations l10n, TrigFunction function) =>
+      switch (function) {
+        TrigFunction.sine => l10n.calculatorKeySinFullName,
+        TrigFunction.cosine => l10n.calculatorKeyCosFullName,
+        TrigFunction.tangent => l10n.calculatorKeyTanFullName,
+        TrigFunction.arcsine => l10n.calculatorKeyAsinFullName,
+        TrigFunction.arccosine => l10n.calculatorKeyAcosFullName,
+        TrigFunction.arctangent => l10n.calculatorKeyAtanFullName,
+      };
 
   String _errorTitleFor(AppLocalizations l10n, CalculationError error) =>
       switch (error) {
@@ -333,8 +355,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         // with the engine's answers.
                         // https://ripplearc.youtrack.cloud/issue/CA-1088
                         dependentKeys: const [],
+                        // TODO: [CA-1092] Close the calculator when ✕ is
+                        // refused with nothing being typed (Section 1.1).
+                        // https://ripplearc.youtrack.cloud/issue/CA-1092
                         onClose: () =>
-                            bloc.add(const CalculatorResetRequested()),
+                            bloc.add(const CalculatorActiveValueCleared()),
                         onStageChanged: (stage) {
                           if (_currentStage != stage) {
                             setState(() => _currentStage = stage);

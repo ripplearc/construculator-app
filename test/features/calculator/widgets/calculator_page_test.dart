@@ -414,6 +414,82 @@ void main() {
     expect(displayArea.chipsList.last.label, l10n.calculatorErrorTooLarge);
   });
 
+  testWidgets('a trig chip is titled by the full name of its function', (
+    tester,
+  ) async {
+    final fullNameByKey = <String, String Function(AppLocalizations)>{
+      'SIN': (l10n) => l10n.calculatorKeySinFullName,
+      'COS': (l10n) => l10n.calculatorKeyCosFullName,
+      'TAN': (l10n) => l10n.calculatorKeyTanFullName,
+      'ASIN': (l10n) => l10n.calculatorKeyAsinFullName,
+      'ACOS': (l10n) => l10n.calculatorKeyAcosFullName,
+      'ATAN': (l10n) => l10n.calculatorKeyAtanFullName,
+    };
+    for (final entry in fullNameByKey.entries) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const CalculatorPage(),
+        ),
+      );
+
+      final context = tester.element(find.byType(CoreDisplayArea));
+      final l10n = AppLocalizations.of(context)!;
+      BlocProvider.of<CalculatorBloc>(context)
+        ..add(const CalculatorDigitPressed('1'))
+        ..add(CalculatorKeySelected(entry.key));
+      await tester.pump();
+
+      final displayArea = tester.widget<CoreDisplayArea>(
+        find.byType(CoreDisplayArea),
+      );
+      expect(
+        displayArea.chipsList.last.label,
+        equals(entry.value(l10n)),
+        reason: 'the ${entry.key} chip',
+      );
+    }
+  });
+
+  testWidgets('an arctangent of a ratio keeps the ratio after the full name', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const CalculatorPage(),
+      ),
+    );
+
+    final context = tester.element(find.byType(CoreDisplayArea));
+    final l10n = AppLocalizations.of(context)!;
+    BlocProvider.of<CalculatorBloc>(context)
+      ..add(const CalculatorKeySelected('ATAN'))
+      ..add(const CalculatorDigitPressed('1'))
+      ..add(const CalculatorDigitPressed('6'))
+      ..add(const CalculatorOperatorPressed(Operator.divide))
+      ..add(const CalculatorDigitPressed('1'))
+      ..add(const CalculatorDigitPressed('2'))
+      ..add(const CalculatorEqualsPressed());
+    await tester.pump();
+
+    final displayArea = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(
+      displayArea.chipsList.last.label,
+      equals('${l10n.calculatorKeyAtanFullName}(16 ÷ 12)'),
+    );
+    expect(
+      displayArea.label,
+      equals('${l10n.calculatorKeyAtanFullName}(16 ÷ 12)'),
+    );
+  });
+
   test('a pill is drawn as the kind its id names', () {
     final l10n = AppLocalizationsEn();
 
