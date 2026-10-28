@@ -217,7 +217,8 @@ void main() {
         expect(rules.refusalFor(wall.namedValues), RuleRefusal.pitchOutOfRange);
       });
 
-      test('0° and a 0% grade are the same silence at the other end', () {
+      test('0° and a 0% grade are the same silence at the other end; a 0.5% '
+          'grade is a real slope', () {
         expect(
           rules.refusalFor(press(const Tape(), '[Pitch] 0').namedValues),
           RuleRefusal.pitchOutOfRange,
@@ -228,6 +229,10 @@ void main() {
         );
         expect(
           rules.refusalFor(press(const Tape(), '[Slope] 7').namedValues),
+          isNull,
+        );
+        expect(
+          rules.refusalFor(press(const Tape(), '[Slope] 0 . 5').namedValues),
           isNull,
         );
         expect(rules.refusalFor(const {}), isNull);

@@ -248,8 +248,6 @@ class QuantityFormatter extends Equatable {
 
   double _rise(Angle value) => math.tan(value.degrees * math.pi / 180);
 
-  // A fraction at the fraction setting, as both reference manuals write a
-  // pitch (Section 8; owner decision Q31, 4 October 2026): 7% is 13/16in/12in.
   String _riseInInches(double inches, bool group) {
     final ticks = inches.abs() * Length.ticksPerInch;
     var whole = ticks ~/ Length.ticksPerInch;
