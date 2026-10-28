@@ -505,6 +505,23 @@ void main() {
         expect(converted.value(parser), const Length(14336, unit: Unit.yard));
       });
 
+      test('LengthOnlyKeys names every key that takes a length and nothing '
+          'else, none of which takes a plain number', () {
+        expect(LengthOnlyKeys.all, {
+          'Width',
+          'Length',
+          'Height',
+          'Run',
+          'Rise',
+          'Diag',
+          'Diameter',
+          'Radius',
+          'Chord',
+          'Qty@OC',
+        });
+        expect(LengthOnlyKeys.all.intersection(PlainNumberKeys.all), isEmpty);
+      });
+
       test('[/] with nothing being typed is refused', () {
         expect(
           const Tape().typeFraction(),

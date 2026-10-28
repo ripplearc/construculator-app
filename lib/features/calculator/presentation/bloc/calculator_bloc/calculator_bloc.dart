@@ -12,11 +12,15 @@ part 'calculator_state.dart';
 ///
 /// The bloc holds no arithmetic and no rule of its own: each event is one
 /// call on [Tape], whose outcome is folded into the state — a changed tape
-/// with its notice, or the same tape with the refusal. Nothing here reads a
-/// store, the recents or the preferences repository; the System of units
-/// toggle sets the tape's own preferences, so the tape and the keyboard
-/// agree on one value. The engine's answers (the strip, the pills, the
-/// equals-key label) are mapped in S1b (CA-1088).
+/// with its notice, or the same tape with the refusal. What it does know
+/// is which key is which: the Unit group's keys press their unit, and a
+/// unit under a length-only key (Section 3, "Takes: A length") goes to the
+/// tape with that said, read off the chip being typed wherever it is, so
+/// Width 5 [Lbs] is refused and the 5 stays typed (Section 5.2). Nothing
+/// here reads a store, the recents or the preferences repository; the
+/// System of units toggle sets the tape's own preferences, so the tape and
+/// the keyboard agree on one value. The engine's answers (the strip, the
+/// pills, the equals-key label) are mapped in S1b (CA-1088).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
@@ -46,7 +50,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) {
-    if (_unitKeys[event.id] case final unit?) return tape.pressUnit(unit);
+    if (_unitKeys[event.id] case final unit?) return _pressUnit(tape, unit);
     return tape.pressFunctionKey(event.id);
   });
 
@@ -63,7 +67,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onUnitSelected(
     CalculatorUnitSelected event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => tape.pressUnit(event.unit));
+  ) => _press(emit, (tape) => _pressUnit(tape, event.unit));
+
+  TapeOutcome _pressUnit(Tape tape, Unit unit) => tape.pressUnit(
+    unit,
+    holdsLengthOnly: LengthOnlyKeys.all.contains(tape.beingTyped?.key),
+  );
 
   void _onOperatorPressed(
     CalculatorOperatorPressed event,
@@ -86,8 +95,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         emit(_cleared());
       case ControlAction.paren:
         _press(emit, (tape) => tape.pressBracket());
-      // A value coreui deprecated and never sends; CA-1195 deletes it.
-      case _:
+      // TODO: [CA-1195] Delete this arm when coreui removes moreOptions.
+      // ignore: deprecated_member_use
+      case ControlAction.moreOptions:
         break;
     }
   }

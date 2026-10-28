@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR BLOC: THE UNIT KEY UNDER A LENGTH-ONLY KEY (S1a, CA-1087) -->
+    <!-- Targets: the one flag the bloc reads off the chip being typed before
+         a unit key reaches the tape, so Width 5 [Lbs] and Height 5 [Kg] are
+         refused and Width 5ft [Feet] never raises to an area (Section 3,
+         "Takes: A length"; Section 5.2). -->
+
+    <files>
+        <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: no key holds a length only -->
+        <regex pattern="LengthOnlyKeys\.all\.contains\((tape\.beingTyped\?\.key|key)\)" dotAll="true" id="calculator_bloc.press_unit.never_length_only">
+            <mutation text="false"/>
+        </regex>
+
+        <!-- RULE 2: every key holds a length only, a bare number too -->
+        <regex pattern="LengthOnlyKeys\.all\.contains\((tape\.beingTyped\?\.key|key)\)" dotAll="true" id="calculator_bloc.press_unit.always_length_only">
+            <mutation text="true"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="calculator_bloc" expected-return="0">flutter test test/features/calculator/units/blocs/calculator_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

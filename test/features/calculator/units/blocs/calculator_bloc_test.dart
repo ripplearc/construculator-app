@@ -142,10 +142,7 @@ void main() {
             [for (final chip in bloc.state.chipsList) chip.value],
             ['2ft', '×3', '6ft 0in'],
           );
-          expect(
-            bloc.state.chipsList.last.type,
-            CoreCalculatorChipType.disabled,
-          );
+          expect(bloc.state.chipsList.last.type, CoreCalculatorChipType.result);
         },
       );
 
@@ -312,8 +309,95 @@ void main() {
           final chip = bloc.state.chipsList.last;
           expect(chip.label, CalculationError.dimensionError.name);
           expect(chip.value, isNull);
-          expect(chip.type, CoreCalculatorChipType.disabled);
+          expect(chip.type, CoreCalculatorChipType.error);
         },
+      );
+    });
+
+    group('a unit under a length-only key (Section 3, "Takes: A length")', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a weight unit from the Unit group or the unit column is refused '
+        'under Width and Height, and the number stays typed for a length '
+        'unit to finish',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Height'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSelected(Unit.kilogram)),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('[Width] 5')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.needsLength),
+          ),
+          tapeState(pressed('[Width] 5 ft')),
+          tapeState(pressed('[Width] 5 ft [Height]')),
+          tapeState(pressed('[Width] 5 ft [Height] 5')),
+          tapeState(pressed('[Width] 5 ft [Height] 5')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.needsLength),
+          ),
+        ],
+        verify: (bloc) => expect(bloc.state.valueText, '5'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a weight unit after a finished length under Width is refused and '
+        'the tail stays typed (Width 18 [Feet] 8 [Lbs]), and a unit pressed '
+        'again under Width keeps the length instead of raising it to an area',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorUnitSelected(Unit.inch))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 5,
+        expect: () => [
+          tapeState(pressed('[Width] 1 8 ft 8')).copyWith(
+            refusal: () => const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+          ),
+          tapeState(pressed('[Width] 1 8 ft 8 in')),
+          CalculatorState.initial(),
+          tapeState(pressed('[Width]')),
+          tapeState(pressed('[Width] 5')),
+          tapeState(pressed('[Width] 5 ft')),
+          tapeState(pressed('[Width] 5 ft')).copyWith(
+            refusal: () => const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+          ),
+        ],
+        verify: (bloc) => expect(bloc.state.valueText, '5ft'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a bare number and a chip inside a bracket hold any unit: the flag '
+        'is read off the chip being typed, not the key before the bracket',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorKeySelected('lbs')),
+        skip: 9,
+        expect: () => [tapeState(pressed('5 lbs + [Width] 5 ft + ( 3 lbs'))],
+        verify: (bloc) => expect(bloc.state.valueText, '3lbs'),
       );
     });
 

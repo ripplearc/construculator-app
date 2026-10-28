@@ -78,6 +78,8 @@ class CalculatorState extends Equatable {
 
   /// The text of the value row: the value being typed, inside an open
   /// bracket too, else the last chip; an error chip has no value to show.
+  // TODO: [CA-1088] the value row reads "Error" under an error chip
+  // (Section 5); S1b 5/6 (#846) draws it.
   String get valueText => switch (_chipRead) {
     null || ErrorChip() => '',
     final chip => _valueTextOf(chip),
@@ -90,6 +92,8 @@ class CalculatorState extends Equatable {
   /// inside between parentheses, each led by the operator that joins it to
   /// the chain, as the prototype's tape reads (2 | +(3×4) | ×5 | Calc70); an
   /// error chip carries its error as the label the page titles it by.
+  // TODO: [CA-1092] draw a bracket with the bracketOpen and bracketClosed
+  // types and its operator as the factor.
   List<CoreCalculatorChip> get chipsList => [
     for (final chip in tape.chips)
       CoreCalculatorChip(
@@ -106,7 +110,8 @@ class CalculatorState extends Equatable {
         type: switch (chip) {
           ValueChip(isActive: true) => CoreCalculatorChipType.active,
           ValueChip() || BracketChip() => CoreCalculatorChipType.editable,
-          ResultChip() || ErrorChip() => CoreCalculatorChipType.disabled,
+          ResultChip() => CoreCalculatorChipType.result,
+          ErrorChip() => CoreCalculatorChipType.error,
         },
       ),
   ];

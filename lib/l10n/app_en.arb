@@ -2918,6 +2918,18 @@
   "@calculatorKeyPitch": {
     "description": "Calculator key label for roof pitch"
   },
+  "calculatorAnswerPitchRise": "Pitch-rise per 12in run",
+  "@calculatorAnswerPitchRise": {
+    "description": "Name of the calculator answer for a pitch written as inches of rise per 12 inches of run, on the suggestion strip, the equals key and the result chip"
+  },
+  "calculatorAnswerPitchDegrees": "Pitch-degrees",
+  "@calculatorAnswerPitchDegrees": {
+    "description": "Name of the calculator answer for a pitch written in degrees, on the suggestion strip, the equals key and the result chip"
+  },
+  "calculatorAnswerPitchGrade": "Pitch-grade",
+  "@calculatorAnswerPitchGrade": {
+    "description": "Name of the calculator answer for a pitch written as a percent grade, on the suggestion strip, the equals key and the result chip"
+  },
   "calculatorKeyRise": "Rise",
   "@calculatorKeyRise": {
     "description": "Calculator key label for the vertical rise of a slope"

@@ -35,6 +35,27 @@ abstract final class PlainNumberKeys {
   static const Set<String> all = {pitch, slope, sides};
 }
 
+/// The function keys that take a length and nothing else (Section 3,
+/// "Takes: A length"): a weight or an angle under them is refused, and a
+/// unit pressed twice under them never raises to an area ([Tape.pressUnit],
+/// `holdsLengthOnly`). Pitch, Slope and Sides take a plain number instead
+/// ([PlainNumberKeys]), and the materials keys take an area or a volume.
+abstract final class LengthOnlyKeys {
+  /// Every key that takes a length only.
+  static const Set<String> all = {
+    'Width',
+    'Length',
+    'Height',
+    'Run',
+    'Rise',
+    'Diag',
+    'Diameter',
+    'Radius',
+    'Chord',
+    'Qty@OC',
+  };
+}
+
 /// Why a key could not apply to the tape as a whole (Section 5.1). Refusals
 /// of the number being typed are [EntryRefusal]s and of a finished value
 /// [UnitKeyRefusal]s; these are the ones only the tape can see.
