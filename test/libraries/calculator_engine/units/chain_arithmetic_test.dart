@@ -12,6 +12,7 @@ void main() {
   Area squareFeet(double squareFeet, {Unit unit = Unit.foot}) =>
       Area(squareFeet * squareTicksPerSquareFoot, unit: unit);
 
+  double toDouble(Rational exact) => exact.toDouble();
   Quantity value(ArithmeticOutcome outcome) {
     if (outcome case ArithmeticValue(:final value)) return value;
     throw StateError('expected a value, got $outcome');
@@ -228,6 +229,32 @@ void main() {
           ),
           const ArithmeticValue(Scalar(62.5)),
         );
+      });
+
+      test('B9: a ratio of two lengths is exact, 36ft ÷ 12ft carries 3 and '
+          '10ft ÷ 3ft carries 10/3 that scales 3ft back to exactly 10ft, and '
+          'a ratio that outgrows a Rational falls back to a double', () {
+        final three =
+            value(arithmetic.combine(feet(36), Operator.divide, feet(12)))
+                as Scalar;
+        expect(three.exact, isA<Rational>().having(toDouble, 'value', 3));
+        final tenThirds =
+            value(arithmetic.combine(feet(10), Operator.divide, feet(3)))
+                as Scalar;
+        expect(
+          tenThirds.exact,
+          isA<Rational>().having(toDouble, 'value', 10 / 3),
+        );
+        final scaled =
+            value(arithmetic.combine(feet(3), Operator.multiply, tenThirds))
+                as Length;
+        expect(scaled.inches.toDouble(), 120);
+        final huge = Length.exact(const Rational(1 << 52), unit: Unit.inch);
+        final third = Length.exact(const Rational(1, 3), unit: Unit.inch);
+        final fallback =
+            value(arithmetic.combine(huge, Operator.divide, third)) as Scalar;
+        expect(fallback.exact, isNull);
+        expect(fallback.value, greaterThan(0));
       });
 
       test('area ÷ length is a length: 12ft² ÷ 3ft = 4ft', () {

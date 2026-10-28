@@ -33,6 +33,21 @@ void main() {
         expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
       });
 
+      test('B6: the sixteenth digit of one number is refused, zeros after '
+          'the point counted and the zeros that lead the number not', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        final fifteen = type('9999999.99999999');
+        expect(fifteen.text, '9999999.99999999');
+        expect(fifteen.typeDigit('9'), tooMany);
+        expect(type('1.00000000000000').typeDigit('0'), tooMany);
+        expect(type('1.00000000000000').typeDigit('1'), tooMany);
+        expect(type('.000000000000001').text, '0.000000000000001');
+        expect(type('.000000000000001').typeDigit('1'), tooMany);
+        expect(type('007.00000000000001').text, '007.00000000000001');
+        expect(type('007.00000000000001').typeDigit('1'), tooMany);
+        expect(type('1.0000000000000').typeDigit('1'), isA<EntryChanged>());
+      });
+
       test('fills the open number and echoes it', () {
         final buffer = type('22');
         expect(buffer, const EntryBuffer([Token(digits: '22')]));
@@ -654,8 +669,8 @@ void main() {
 
         test('past 2⁵³ seconds the fields are padded and left as typed', () {
           expect(
-            typeAngle('150119987579015:4:7').sealed.text,
-            '150119987579015°04\'07"',
+            typeAngle('19999999:9007198054741054:7').sealed.text,
+            '19999999°9007198054741054\'07"',
           );
         });
 
