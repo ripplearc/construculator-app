@@ -491,67 +491,115 @@ void main() {
         expect(converted.value(parser), const Length(14336, unit: Unit.yard));
       });
 
-      test('CA-1087: ✕ clears the chip being typed and leaves the tape '
-          'before it, inside an open bracket too', () {
-        final sealedTwentyTwoFeet = isA<Tape>()
-            .having((tape) => tape.active, 'active', isNull)
-            .having(
-              (tape) => (tape.chips.single as ValueChip).entry.text,
-              'the one chip left',
-              '22ft',
-            );
-        expect(
-          changed(press(const Tape(), '2 2 ft + 1 8').clearActive()),
-          sealedTwentyTwoFeet,
-          reason: 'the operator belongs to the chip it leads into',
+      test('CA-1087: ✕ empties the chip being typed and keeps it open under '
+          'its key and the operator that leads into it, inside an open '
+          'bracket too', () {
+        const formatter = QuantityFormatter();
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        final emptied = changed(
+          press(const Tape(), '2 2 ft + 1 8').clearActive(),
         );
+        expect(texts(emptied), ['22ft', '']);
         expect(
-          changed(press(const Tape(), '[Length] 7').clearActive()),
-          const Tape(),
+          emptied.active,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue),
         );
+        expect(landed(press(emptied, '2 0 ft =')), '42ft 0in');
+        final length = changed(press(const Tape(), '[Length] 7').clearActive());
+        expect(texts(length), ['Length']);
         expect(
-          changed(press(const Tape(), '2 2 ft +').clearActive()),
-          sealedTwentyTwoFeet,
-          reason: 'the empty chip an operator opens is the active chip',
+          length.active,
+          isA<ValueChip>().having(
+            (chip) => chip.entry.isEmpty,
+            'empty',
+            isTrue,
+          ),
         );
+        final width = press(const Tape(), '[Width] 5');
+        expect(
+          width.pressUnit(Unit.pound, holdsLengthOnly: true),
+          const TapeEntryRefused(EntryRefusal.needsLength),
+        );
+        expect(texts(press(changed(width.clearActive()), '5 ft')), [
+          'Width5ft',
+        ]);
         final opened = changed(press(const Tape(), '2 +').pressBracket());
         final inside = changed(press(opened, '3 × 4').clearActive());
-        final inner = (inside.chips.last as BracketChip).inner;
-        expect(inside.active, isNull);
         expect(
-          inner.single,
+          (inside.chips.last as BracketChip).inner.last,
           isA<ValueChip>()
-              .having((chip) => chip.entry.text, 'text', '3')
-              .having((chip) => chip.isActive, 'active', isFalse),
+              .having((chip) => chip.operator, 'operator', Operator.multiply)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
+              .having((chip) => chip.isActive, 'active', isTrue),
         );
+        final closed = changed(press(inside, '5').pressBracket());
+        expect(landed(press(closed, '=')), '17');
       });
 
-      test('✕ with nothing being typed is refused, and a sealed tape is '
-          'kept', () {
+      test('✕ with nothing being typed is refused and changes nothing: an '
+          'empty tape, a finished tape, the empty chip an operator opened, '
+          'the divisor ÷ 0 reopened', () {
+        const formatter = QuantityFormatter();
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        const refused = TapeRefused(TapeRefusal.nothingBeingTyped);
+        expect(const Tape().clearActive(), refused);
+        expect(press(const Tape(), '2 ft × 3 =').clearActive(), refused);
+        expect(press(const Tape(), '2 2 ft +').clearActive(), refused);
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        final plus = press(opened, '3 +');
+        expect(plus.clearActive(), refused);
         expect(
-          const Tape().clearActive(),
-          const TapeRefused(TapeRefusal.nothingBeingTyped),
+          landed(press(changed(press(plus, '4').pressBracket()), '=')),
+          '9',
         );
-        expect(
-          press(const Tape(), '2 ft × 3 =').clearActive(),
-          const TapeRefused(TapeRefusal.nothingBeingTyped),
+        final divided = changed(
+          press(const Tape(), '5').pressOperator(Operator.divide),
         );
+        final reopened = press(divided, '0 =');
+        expect(reopened.clearActive(), refused);
+        expect(landed(press(reopened, '2 =')), '2.5');
       });
 
       test('✕ in a bracket with nothing typed in it yet is refused with its '
-          'own reason, before anything is typed and once the chip inside '
-          'is cleared', () {
+          'own reason, and once the chip inside is emptied nothing is being '
+          'typed', () {
         final opened = changed(press(const Tape(), '2 +').pressBracket());
         expect(
           opened.clearActive(),
           const TapeRefused(TapeRefusal.nothingTypedInGroup),
         );
         final emptied = changed(press(opened, '3').clearActive());
-        expect((emptied.chips.last as BracketChip).inner, isEmpty);
+        expect(
+          (emptied.chips.last as BracketChip).inner.single,
+          isA<ValueChip>()
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
+              .having((chip) => chip.isActive, 'active', isTrue),
+        );
         expect(
           emptied.clearActive(),
-          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+          const TapeRefused(TapeRefusal.nothingBeingTyped),
         );
+      });
+
+      test('LengthOnlyKeys names every key that takes a length and nothing '
+          'else, none of which takes a plain number', () {
+        expect(LengthOnlyKeys.all, {
+          'Width',
+          'Length',
+          'Height',
+          'Run',
+          'Rise',
+          'Diag',
+          'Diameter',
+          'Radius',
+          'Chord',
+          'Qty@OC',
+        });
+        expect(LengthOnlyKeys.all.intersection(PlainNumberKeys.all), isEmpty);
       });
 
       test('[/] with nothing being typed is refused', () {

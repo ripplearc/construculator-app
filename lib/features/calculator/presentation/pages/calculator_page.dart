@@ -144,8 +144,30 @@ class _CalculatorPageState extends State<CalculatorPage> {
     if (CalculationError.values.asNameMap()[id] case final error?) {
       return _errorTitleFor(l10n, error);
     }
+    if (_trigFunctionOf(id) case final function?) {
+      return _trigLabelFor(l10n, function) + id.substring(function.key.length);
+    }
     return _keyLabelFor(l10n, id);
   }
+
+  TrigFunction? _trigFunctionOf(String id) {
+    for (final function in TrigFunction.values) {
+      if (id == function.key || id.startsWith('${function.key}(')) {
+        return function;
+      }
+    }
+    return null;
+  }
+
+  String _trigLabelFor(AppLocalizations l10n, TrigFunction function) =>
+      switch (function) {
+        TrigFunction.sine => l10n.calculatorKeySinFullName,
+        TrigFunction.cosine => l10n.calculatorKeyCosFullName,
+        TrigFunction.tangent => l10n.calculatorKeyTanFullName,
+        TrigFunction.arcsine => l10n.calculatorKeyAsinFullName,
+        TrigFunction.arccosine => l10n.calculatorKeyAcosFullName,
+        TrigFunction.arctangent => l10n.calculatorKeyAtanFullName,
+      };
 
   String _errorTitleFor(AppLocalizations l10n, CalculationError error) =>
       switch (error) {

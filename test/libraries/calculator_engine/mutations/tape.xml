@@ -222,12 +222,13 @@
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
         </regex>
 
-        <!-- RULE CA-1087: ✕ keeps the active chip, clears one chip too many,
-             or clears with nothing being typed -->
-        <regex pattern="if \(active == null\) return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*return TapeChanged\(_with\(chips\.sublist\(0, chips\.length - 1\)\)\);" dotAll="true" id="tape.clear_active.wrong_chip">
-            <mutation text="if (active == null) return const TapeRefused(TapeRefusal.nothingBeingTyped); return TapeChanged(this);"/>
-            <mutation text="if (active == null) return const TapeRefused(TapeRefusal.nothingBeingTyped); return TapeChanged(_with(chips.sublist(0, chips.length - 2)));"/>
-            <mutation text="if (chips.isEmpty) return const TapeRefused(TapeRefusal.nothingBeingTyped); return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
+        <!-- RULE CA-1087: ✕ keeps the value, clears an empty chip as if it
+             held a value, or removes the whole chip with its key and
+             operator (R1) -->
+        <regex pattern="final chip = active;\s*if \(chip == null \|\| chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return _replaceLast\(\s*chip\.copyWith\(\s*entry: const EntryBuffer\(\),\s*exact: \(\) =&gt; null,\s*poundsPerTon: \(\) =&gt; null,\s*\),\s*\);" dotAll="true" id="tape.clear_active.wrong_chip">
+            <mutation text="final chip = active; if (chip == null || chip.entry.isEmpty) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(this);"/>
+            <mutation text="final chip = active; if (chip == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return _replaceLast(chip.copyWith(entry: const EntryBuffer(), exact: () =&gt; null, poundsPerTon: () =&gt; null));"/>
+            <mutation text="final chip = active; if (chip == null || chip.entry.isEmpty) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
         </regex>
         <regex pattern="if \(openBracket case final bracket\?\) \{\s*if \(bracket\.inner\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.nothingTypedInGroup\);\s*\}\s*return _inside\(bracket, \(inner\) =&gt; inner\.clearActive\(\)\);\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
             <mutation text=""/>

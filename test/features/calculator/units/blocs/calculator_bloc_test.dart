@@ -30,9 +30,6 @@ void main() {
     Modular.destroy();
   });
 
-  TrigFunction? trigOf(String key) =>
-      TrigFunction.named(key.substring(1, key.length - 1));
-
   /// The tape after [keys] pressed on the engine directly, the expectation
   /// every bloc test is held to: the bloc adds nothing of its own.
   Tape pressed(String keys, {Tape tape = const Tape()}) {
@@ -53,8 +50,12 @@ void main() {
         '(' => current.pressBracket(),
         '[DMS]' => current.pressDmsKey(),
         '✕' => current.clearActive(),
-        _ when key.startsWith('[') && trigOf(key) != null =>
-          current.pressTrigKey(trigOf(key) as TrigFunction),
+        '[SIN]' => current.pressTrigKey(TrigFunction.sine),
+        '[COS]' => current.pressTrigKey(TrigFunction.cosine),
+        '[TAN]' => current.pressTrigKey(TrigFunction.tangent),
+        '[ASIN]' => current.pressTrigKey(TrigFunction.arcsine),
+        '[ACOS]' => current.pressTrigKey(TrigFunction.arccosine),
+        '[ATAN]' => current.pressTrigKey(TrigFunction.arctangent),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
           keyWantsUnit: !PlainNumberKeys.all.contains(
@@ -347,9 +348,52 @@ void main() {
           tapeState(pressed('[ATAN] 1 6')),
         ],
         verify: (bloc) {
-          expect(bloc.state.labelKeyId, 'ATAN');
+          expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
           expect(bloc.state.valueText, '16');
           expect(bloc.state.isTyping, isTrue);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        "the keyboard's SIN id reaches the engine's sine: 38 [SIN] answers "
+        'Sine 0.615661 on the tape',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('SIN')),
+        skip: 2,
+        expect: () => [tapeState(pressed('3 8 [SIN]'))],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, TrigFunction.sine.key);
+          expect(bloc.state.valueText, '0.615661');
+          expect(bloc.state.isTyping, isFalse);
+          expect(bloc.state.chipsList.last.label, TrigFunction.sine.key);
+          expect(bloc.state.chipsList.last.value, '0.615661');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        "the keyboard's ATAN id reaches the engine's arctangent: [ATAN] 1 6 "
+        'offers Arctangent 86.42°',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('ATAN'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('6')),
+        skip: 2,
+        expect: () => [tapeState(pressed('[ATAN] 1 6'))],
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
+          expect(bloc.state.valueText, '16');
+          expect(
+            bloc.state.tape.trigAnswer,
+            isA<Answer>().having(
+              (answer) => const QuantityFormatter().format(answer.value),
+              'text',
+              '86.42°',
+            ),
+          );
         },
       );
 

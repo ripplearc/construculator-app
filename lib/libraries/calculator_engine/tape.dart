@@ -35,6 +35,27 @@ abstract final class PlainNumberKeys {
   static const Set<String> all = {pitch, slope, sides};
 }
 
+/// The function keys that take a length and nothing else (Section 3,
+/// "Takes: A length"): a weight or an angle under them is refused, and a
+/// unit pressed twice under them never raises to an area ([Tape.pressUnit],
+/// `holdsLengthOnly`). Pitch, Slope and Sides take a plain number instead
+/// ([PlainNumberKeys]), and the materials keys take an area or a volume.
+abstract final class LengthOnlyKeys {
+  /// Every key that takes a length only.
+  static const Set<String> all = {
+    'Width',
+    'Length',
+    'Height',
+    'Run',
+    'Rise',
+    'Diag',
+    'Diameter',
+    'Radius',
+    'Chord',
+    'Qty@OC',
+  };
+}
+
 /// Why a key could not apply to the tape as a whole (Section 5.1). Refusals
 /// of the number being typed are [EntryRefusal]s and of a finished value
 /// [UnitKeyRefusal]s; these are the ones only the tape can see.
@@ -1238,13 +1259,20 @@ class Tape extends Equatable {
     AngleSpelling.grade => angle.spelledAs(AngleSpelling.degreesMinutesSeconds),
   };
 
-  /// ✕ on the display clears the value being typed, the active chip, and
-  /// leaves the tape before it as it was (Section 1.1, "✕ button"); inside
-  /// an open bracket it clears the chip being typed there, and on a bracket
+  /// ✕ on the display empties the value being typed and keeps its chip
+  /// open under its key and the operator that leads into it (Section 1.1,
+  /// "✕ button"; Section 5, "The value is empty — type a new value, or
+  /// backspace to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
+  /// 7 leaves "Length…"), so 22ft + 18 ✕ 20 [Feet] = is 42ft, Width 5 [Lbs]
+  /// (refused) ✕ 5 [Feet] is Width 5ft, and 2 + (3 × 4 ✕ 5) = is 17; inside
+  /// an open bracket it empties the chip being typed there, and on a bracket
   /// with nothing typed in it yet it is refused
-  /// ([TapeRefusal.nothingTypedInGroup]). With nothing being typed it is
-  /// refused ([TapeRefusal.nothingBeingTyped]), and the caller closes the
-  /// calculator instead.
+  /// ([TapeRefusal.nothingTypedInGroup]). With nothing being typed — the
+  /// empty chip an operator just opened, the divisor ÷ 0 reopened, or a
+  /// finished tape — it is refused ([TapeRefusal.nothingBeingTyped]): ✕
+  /// "clears the value in progress when something is typed" (Section 5,
+  /// "Closes the calculator"), so 2 + (3 + ✕ 4) = is 9 and 5 ÷ 0 = ✕ 2 = is
+  /// 2.5, and on a finished tape the caller closes the calculator instead.
   TapeOutcome clearActive() {
     if (openBracket case final bracket?) {
       if (bracket.inner.isEmpty) {
@@ -1252,8 +1280,17 @@ class Tape extends Equatable {
       }
       return _inside(bracket, (inner) => inner.clearActive());
     }
-    if (active == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
-    return TapeChanged(_with(chips.sublist(0, chips.length - 1)));
+    final chip = active;
+    if (chip == null || chip.entry.isEmpty) {
+      return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    }
+    return _replaceLast(
+      chip.copyWith(
+        entry: const EntryBuffer(),
+        exact: () => null,
+        poundsPerTon: () => null,
+      ),
+    );
   }
 
   /// [/] goes into the active chip. A recalled angle is a finished value
