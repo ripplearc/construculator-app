@@ -2590,29 +2590,11 @@ abstract class AppLocalizations {
   /// **'Select cost file'**
   String get costFilePlaceholder;
 
-  /// Hint label for the material type field on the material cost form
-  ///
-  /// In en, this message translates to:
-  /// **'Material type*'**
-  String get materialTypeLabel;
-
   /// Hint label for the quantity field on material and equipment cost forms
   ///
   /// In en, this message translates to:
   /// **'Quantity*'**
   String get quantityLabel;
-
-  /// Hint label for the per-unit cost field on the material cost form (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Per unit cost*'**
-  String get perUnitCostLabel;
-
-  /// Hint text shown inside the unit of measurement selector when no unit is selected
-  ///
-  /// In en, this message translates to:
-  /// **'UOM'**
-  String get unitOfMeasurementHint;
 
   /// Title of the bottom sheet modal for selecting a unit of measurement
   ///
@@ -2697,24 +2679,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sheets'**
   String get unitSheets;
-
-  /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
-  ///
-  /// In en, this message translates to:
-  /// **'Other material details'**
-  String get otherMaterialDetailsButton;
-
-  /// Hint label for the brand dropdown in the other material details section
-  ///
-  /// In en, this message translates to:
-  /// **'Brand'**
-  String get brandLabel;
-
-  /// Hint label for the product link text field in the other material details section
-  ///
-  /// In en, this message translates to:
-  /// **'Product link'**
-  String get productLinkLabel;
 
   /// Hint label for the labour type field on the labour cost form
   ///
@@ -2859,12 +2823,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate/Hour:'**
   String get rateHourLabel;
-
-  /// Validation error shown below the material type field when it is submitted empty
-  ///
-  /// In en, this message translates to:
-  /// **'Material type is required'**
-  String get materialTypeRequiredError;
 
   /// Validation error shown below the labour type field when it is submitted empty
   ///
@@ -4003,6 +3961,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit: {unit}. Tap to change'**
   String unitPillSemanticLabel(String unit);
+
+  /// Label above the material name on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get materialNameLabel;
+
+  /// Placeholder in the material name field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Name the material'**
+  String get materialNamePlaceholder;
+
+  /// Label above the quantity and unit on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get materialQuantityLabel;
+
+  /// Placeholder in the quantity field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'0'**
+  String get materialQuantityPlaceholder;
+
+  /// Label above the rate on the New material cost sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get materialRateLabel;
+
+  /// Placeholder in the rate field while it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Set your rate'**
+  String get materialRatePlaceholder;
+
+  /// Shown after a typed material rate to say which unit it is the price of, for example '/Liters', with no space after the slash as in the Verify frame and in yourRatesDaySuffix
+  ///
+  /// In en, this message translates to:
+  /// **'/{unit}'**
+  String materialRatePerUnitSuffix(String unit);
+
+  /// Title of the bottom sheet for adding a material cost to an estimate
+  ///
+  /// In en, this message translates to:
+  /// **'New material cost'**
+  String get newMaterialCostSheetTitle;
 }
 
 class _AppLocalizationsDelegate
