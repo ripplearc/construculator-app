@@ -266,6 +266,10 @@ void main() {
         );
       });
 
+      test('and in metric: 2m × 3m² = lands Calc 6m³', () {
+        expect(lastResult(press(const Tape(), '2 m × 3 m m =')), 'Calc 6m³');
+      });
+
       test('and a weight over a length is still a Dimension Error', () {
         expect(
           press(const Tape(), '1 2 lbs ÷ 4 ft =').chips.last,
