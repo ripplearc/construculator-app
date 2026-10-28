@@ -213,6 +213,7 @@ It stays off until the repository variable `RUNCHECK_DEDUPE` is `true`. Until th
 
 Known gaps:
 - A build that failed while Codemagic was fetching the sources counts as a result, so `#RunCheck force` is needed to run it again. The ticket asks for a rerun without the force word. How such a build shows up in the check run has not been seen yet.
+- A build that is still waiting for a machine has no check run yet, so the plan cannot see it: a queued build on an older commit is not cancelled, and a queued build on the head commit does not stop a second `#RunCheck` from starting another one. `scripts/ci/list_codemagic_builds.sh` lists the builds of the branch from Codemagic. Whether that list includes queued builds has not been confirmed on a real run. Every `#RunCheck` writes the number of builds and their statuses to the job summary ("Codemagic builds on the branch (observation only)"), or a line saying the list could not be read. The plan does not use it yet. The script reads one page only.
 - Builds on commits that were removed by a force push, or older than the 10 most recent older commits, are not cancelled. The commit list is read once with 100 entries, so a pull request with more than 100 commits is not covered.
 - Editing a comment that contains `#RunCheck` runs the workflow again. With the skip on, an unchanged commit starts nothing.
 
