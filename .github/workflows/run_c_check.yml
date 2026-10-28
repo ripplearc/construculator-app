@@ -53,6 +53,20 @@ jobs:
           echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
+      - name: List the Codemagic builds on the branch
+        continue-on-error: true
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          BRANCH_NAME: ${{ steps.extract-branch.outputs.branch_name }}
+        run: |
+          if ! BUILDS=$(bash scripts/ci/list_codemagic_builds.sh "$BRANCH_NAME"); then
+            echo "- Codemagic builds on the branch (observation only): could not be listed, see the step log" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          jq -c '.[]' <<< "$BUILDS"
+          echo "- Codemagic builds on the branch (observation only): $(jq -r 'length as $n | "\($n) read" + (if $n > 0 then " (" + (group_by(.status) | map("\(.[0].status): \(length)") | join(", ")) + ")" else "" end)' <<< "$BUILDS")" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Plan which builds to skip and cancel
         id: plan
         continue-on-error: true

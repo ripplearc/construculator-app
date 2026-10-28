@@ -114,9 +114,10 @@ pre_check() {
   # CA-1240, CA-1346: self-test the iOS skip rules against real git repos
   bash scripts/ci/ios_build_needed_test.sh
 
-  # CA-1240: self-test the #RunCheck plan, the build cancel and the PR comment
+  # CA-1240, CA-1346: self-test the #RunCheck plan, the build cancel, the build list and the PR comment
   bash scripts/ci/plan_runcheck_test.sh
   bash scripts/ci/cancel_codemagic_builds_test.sh
+  bash scripts/ci/list_codemagic_builds_test.sh
   bash scripts/ci/post_pr_comment_test.sh
 
   # Self-test the perf-lab phone attach script against fake usbipd/adb
