@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
-import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
-import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -22,7 +21,6 @@ import '../../../../scripts/golden/snapshot.dart';
 /// refused, and the runner reports the scenario as unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
   CalculatorBloc _bloc = CalculatorBloc();
-  final _l10n = AppLocalizationsEn();
 
   /// The bloc under test, for the test to close.
   CalculatorBloc get bloc => _bloc;
@@ -46,23 +44,25 @@ class BlocScenarioDriver implements ScenarioDriver {
   @override
   Snapshot snapshot() {
     final state = _bloc.state;
-    final label = state.activeInputLabel;
-    var value = state.currentInputValue;
-    if (state.resultValue case final result?) value = result;
+    final label = state.labelKeyId;
     return Snapshot(
-      label: label == null ? '' : '$label…',
-      value: value,
-      tape: [for (final chip in state.chipsList) '${chip.label}${chip.value}'],
+      label: switch (label) {
+        null => '',
+        final id => state.isTyping ? '$id…' : id,
+      },
+      value: state.valueText,
+      tape: [
+        for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',
+      ],
       tapeKinds: [
         for (final chip in state.chipsList)
-          chip.type == CoreCalculatorChipType.disabled ? 't-result' : 't-input',
+          switch (chip.type) {
+            CoreCalculatorChipType.active => 't-active',
+            CoreCalculatorChipType.result => 't-result',
+            CoreCalculatorChipType.error => 't-error',
+            _ => 't-input',
+          },
       ],
-      depKey: switch (state.dependentKeyId) {
-        null => null,
-        final id =>
-          '${CalculatorPage.pillLabelFor(_l10n, id)}: '
-              '${state.dependentKeyValue}',
-      },
       unitToggleLabel: state.currentUnitSystem == UnitSystem.metric
           ? 'Metric'
           : 'Imperial',
@@ -73,23 +73,37 @@ class BlocScenarioDriver implements ScenarioDriver {
   }
 
   static const _operators = {
-    'op:×': '×',
-    'op:÷': '÷',
-    'op:+': '+',
-    'op:−': '−',
+    'op:×': Operator.multiply,
+    'op:÷': Operator.divide,
+    'op:+': Operator.add,
+    'op:−': Operator.subtract,
+  };
+
+  /// The unit column's keys by the suffix the scenarios name them with;
+  /// the Unit group's keys (bf, lbs, kg, ton, mton) are function keys.
+  static const _units = {
+    'yd': Unit.yard,
+    'ft': Unit.foot,
+    'in': Unit.inch,
+    'm': Unit.metre,
+    'cm': Unit.centimetre,
+    'mm': Unit.millimetre,
   };
 
   CalculatorEvent? _eventFor(String key) {
     if (key.startsWith('d:')) return CalculatorDigitPressed(key.substring(2));
     if (key.startsWith('unit:')) {
-      return CalculatorUnitSelected(key.substring(5));
+      final unit = _units[key.substring(5)];
+      return unit == null ? null : CalculatorUnitSelected(unit);
     }
     if (key.startsWith('fk:')) return CalculatorKeySelected(key.substring(3));
     if (key.startsWith('mfk:')) return CalculatorKeySelected(key.substring(4));
     final operator = _operators[key];
     if (operator != null) return CalculatorOperatorPressed(operator);
     return switch (key) {
-      'equals' => const CalculatorOperatorPressed('='),
+      'equals' => const CalculatorEqualsPressed(),
+      'frac' => const CalculatorFractionPressed(),
+      'paren' => const CalculatorControlActioned(ControlAction.paren),
       'backspace' => const CalculatorControlActioned(ControlAction.delete),
       'clear' => const CalculatorControlActioned(ControlAction.clearAll),
       _ => null,
@@ -207,7 +221,7 @@ void main() {
         );
         expect(diff, contains("expected: strip[0] == 'Area: 410.67ft²'"));
         expect(diff, contains('actual:   '));
-        expect(diff, contains('tape=[Length22 ft, Width18 ft8 in]'));
+        expect(diff, contains('tape=[Length22ft, Width18ft 8in]'));
         expect(diff, contains("source:   r=>r.strip[0]==='Area: 410.67ft²'"));
       },
     );
@@ -236,25 +250,25 @@ void main() {
       final empty = driver.snapshot();
       expect(empty.tape, isEmpty);
       expect(empty.label, '');
-      await driver.perform(const KeyStep('fk:Rise'));
-      await driver.perform(const KeyStep('d:6'));
-      await driver.perform(const KeyStep('fk:Run'));
-      await driver.perform(const KeyStep('d:1'));
-      await driver.perform(const KeyStep('d:2'));
-      await driver.perform(const KeyStep('equals'));
-      final pitch = driver.snapshot();
-      expect(pitch.tape, ['Rise6', 'Run12', 'Pitch0.5']);
-      expect(pitch.tapeKinds, ['t-input', 't-input', 't-result']);
-      expect(pitch.value, '0.5');
-      await driver.perform(const KeyStep('fk:Length'));
-      await driver.perform(const KeyStep('d:6'));
-      await driver.perform(const KeyStep('fk:Fence'));
-      final fence = driver.snapshot();
-      expect(fence.depKey, 'O.C.: 6ft');
-      expect(fence.system, 'imperial');
-      expect(fence.unitToggleLabel, 'Imperial');
-      await driver.reset();
-      expect(driver.snapshot().tape, isEmpty);
+      for (final key in const ['fk:Rise', 'd:6', 'unit:ft', 'fk:Run', 'd:1']) {
+        await driver.perform(KeyStep(key));
+      }
+      final typing = driver.snapshot();
+      expect(typing.tape, ['Rise6ft', 'Run1']);
+      expect(typing.tapeKinds, ['t-input', 't-active']);
+      expect(typing.label, 'Run…');
+      expect(typing.value, '1');
+      for (final key in const ['d:2', 'unit:ft', 'op:×', 'd:2', 'equals']) {
+        await driver.perform(KeyStep(key));
+      }
+      final chained = driver.snapshot();
+      expect(chained.tape, ['Rise6ft', 'Run12ft', '×2', 'Calc24ft 0in']);
+      expect(chained.tapeKinds, ['t-input', 't-input', 't-input', 't-result']);
+      expect(chained.label, 'Calc');
+      expect(chained.value, '24ft 0in');
+      await driver.perform(const KeyStep('paren'));
+      expect(driver.snapshot().tape.last, '(');
+      expect(driver.snapshot().unitToggleLabel, 'Imperial');
     });
   });
 }

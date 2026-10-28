@@ -1971,7 +1971,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyTan => 'TAN';
 
   @override
-  String get calculatorResultPosts => 'Posts';
+  String get calculatorResultCalc => 'Calc';
+
+  @override
+  String get calculatorErrorDimension => 'Dimension Error';
+
+  @override
+  String get calculatorErrorDivisionByZero => 'Division by zero';
+
+  @override
+  String get calculatorErrorTooLarge => 'Too large';
 
   @override
   String get calculatorGroupShapes => 'Shapes';

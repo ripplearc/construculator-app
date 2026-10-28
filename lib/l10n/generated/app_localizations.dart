@@ -3478,11 +3478,29 @@ abstract class AppLocalizations {
   /// **'TAN'**
   String get calculatorKeyTan;
 
-  /// Result label for the number of fence posts computed by the fence function
+  /// Label of the running-total chip on the calculator tape, the answer of a chain so far
   ///
   /// In en, this message translates to:
-  /// **'Posts'**
-  String get calculatorResultPosts;
+  /// **'Calc'**
+  String get calculatorResultCalc;
+
+  /// Title of the calculator error chip landed when two values of incompatible kinds are combined, such as pounds divided by feet
+  ///
+  /// In en, this message translates to:
+  /// **'Dimension Error'**
+  String get calculatorErrorDimension;
+
+  /// Title of the calculator error chip landed when a chain divides by zero
+  ///
+  /// In en, this message translates to:
+  /// **'Division by zero'**
+  String get calculatorErrorDivisionByZero;
+
+  /// Title of the calculator error chip landed when an answer is above 19,999,999.99 in its unit
+  ///
+  /// In en, this message translates to:
+  /// **'Too large'**
+  String get calculatorErrorTooLarge;
 
   /// Label for the Shapes function group tab in the calculator
   ///
