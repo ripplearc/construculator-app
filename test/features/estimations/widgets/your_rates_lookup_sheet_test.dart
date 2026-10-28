@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -335,6 +337,43 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(results.single!.id, 'rate-1');
+    });
+
+    testWidgets('announces only the tapped row as selected', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openSheet(tester, []);
+
+      await tester.tap(find.byKey(const Key('your_rate_row_rate-1')));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('your_rate_row_rate-1')))
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+      );
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('your_rate_row_rate-0')))
+            .flagsCollection
+            .isSelected,
+        Tristate.isFalse,
+      );
+      semantics.dispose();
+    });
+
+    testWidgets('reads a row as its name, recency and price', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openSheet(tester, []);
+
+      final label = tester
+          .getSemantics(find.byKey(const Key('your_rate_row_rate-0')))
+          .label;
+
+      expect(label, startsWith('Excavator 0. '));
+      expect(label, endsWith('\$100.00 ${l10n.yourRatesDaySuffix}'));
+      semantics.dispose();
     });
 
     testWidgets('a Job pick returns a Job entry with its amount', (
