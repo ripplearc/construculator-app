@@ -48,17 +48,13 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     'mton': Unit.metricTon,
   };
 
-  static const Set<String> _lengthOnlyKeys = {
-    'Width',
-    'Length',
-    'Height',
-    'Run',
-    'Rise',
-    'Diag',
-    'Diameter',
-    'Radius',
-    'Chord',
-    'Qty@OC',
+  static const Map<String, TrigFunction> _trigKeys = {
+    'SIN': TrigFunction.sine,
+    'COS': TrigFunction.cosine,
+    'TAN': TrigFunction.tangent,
+    'ASIN': TrigFunction.arcsine,
+    'ACOS': TrigFunction.arccosine,
+    'ATAN': TrigFunction.arctangent,
   };
 
   static const String _dmsKey = 'DMS';
@@ -69,9 +65,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) => _press(emit, (tape) {
     final id = event.id;
     if (_unitKeys[id] case final unit?) return _pressUnit(tape, unit);
-    if (TrigFunction.named(id) case final function?) {
-      return tape.pressTrigKey(function);
-    }
+    if (_trigKeys[id] case final function?) return tape.pressTrigKey(function);
     if (id == _dmsKey) return tape.pressDmsKey();
     return tape.pressFunctionKey(
       id,
@@ -99,7 +93,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     final key = tape.beingTyped?.key;
     return tape.pressUnit(
       unit,
-      holdsLengthOnly: _lengthOnlyKeys.contains(key),
+      holdsLengthOnly: LengthOnlyKeys.all.contains(key),
       takesAGrade: key == PlainNumberKeys.slope,
     );
   }
