@@ -71,6 +71,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   ]) async {
     await super.getAll(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
+      if (parameters.isEmpty) {
+        return [for (final row in _refusalRows.values) {...row}];
+      }
       final row = _refusalRows[parameters.single];
       return [
         if (row != null) {...row},

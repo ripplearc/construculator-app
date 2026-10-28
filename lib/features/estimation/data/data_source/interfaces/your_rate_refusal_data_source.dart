@@ -5,6 +5,11 @@ import 'package:construculator/features/estimation/data/models/your_rate_refusal
 /// The upload step writes the records; this only reads them and tracks
 /// whether the "Not kept" message was shown.
 abstract class YourRateRefusalDataSource {
+  /// Every refusal kept on the phone.
+  ///
+  /// Throws an exception if the read fails.
+  Future<List<YourRateRefusalDto>> loadAllRefusals();
+
   /// The refusal kept for the item called [itemName] priced by
   /// [equipmentMethod], or null if the server has not refused it.
   ///

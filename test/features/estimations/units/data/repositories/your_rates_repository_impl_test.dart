@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -945,6 +946,129 @@ void main() {
           );
         },
       );
+    });
+
+    group('after the server refused a default', () {
+      final excavatorKey = YourRateRefusalKey.of('Excavator', 'day');
+
+      void refuse({double refused = 450.0, double? accepted = 400.0}) {
+        database.seedRefusal({
+          'id': excavatorKey,
+          'item_name': 'Excavator',
+          'equipment_method': 'day',
+          'refused_amount': refused,
+          'accepted_amount': accepted,
+          'shown_at': null,
+        });
+      }
+
+      Future<List<YourRateEntry>> lookUp({int? limit}) async =>
+          (await repository.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+            limit: limit,
+          )).getRightOrNull()!;
+
+      test('the lookup shows the last accepted price', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
+
+        final entries = await lookUp();
+
+        expect(entries.single.rate.amount, 400.0);
+      });
+
+      test('a saved item lookup shows the last accepted price', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
+
+        final result = await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+
+        expect(result.getRightOrNull()!.rate.amount, 400.0);
+      });
+
+      test('the lookup leaves out an item the server never accepted', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse(accepted: null);
+
+        expect(await lookUp(), isEmpty);
+      });
+
+      test(
+        'the lookup shows the phone price once sync has put the server price back',
+        () async {
+          seed([row(id: 'r1', rateAmount: 400.0)]);
+          refuse();
+
+          final entries = await lookUp();
+
+          expect(entries.single.rate.amount, 400.0);
+        },
+      );
+
+      test(
+        'the lookup shows a price changed on another phone after the refusal',
+        () async {
+          seed([row(id: 'r1', rateAmount: 520.0)]);
+          refuse();
+
+          final entries = await lookUp();
+
+          expect(entries.single.rate.amount, 520.0);
+        },
+      );
+
+      test('another item keeps its own price', () async {
+        seed([
+          row(id: 'r1', rateAmount: 450.0),
+          row(id: 'r2', itemName: 'Dozer', rateAmount: 900.0),
+        ]);
+        refuse();
+
+        final entries = await lookUp();
+
+        expect(
+          {for (final entry in entries) entry.itemName: entry.rate.amount},
+          {'Excavator': 400.0, 'Dozer': 900.0},
+        );
+      });
+
+      test('a limit counts only the items still shown', () async {
+        seed([
+          row(id: 'r1', rateAmount: 450.0, savedAt: '2026-01-03T00:00:00.000Z'),
+          row(id: 'r2', itemName: 'Dozer', savedAt: '2026-01-02T00:00:00.000Z'),
+        ]);
+        refuse(accepted: null);
+
+        final entries = await lookUp(limit: 1);
+
+        expect(entries.map((entry) => entry.itemName), ['Dozer']);
+      });
+
+      test('a save the repository rejects keeps the refusal', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
+
+        final result = await repository.save(buildEntry(amount: 500.0));
+
+        expect(result.isLeft(), isTrue);
+        expect(database.refusalRow(excavatorKey), isNotNull);
+        final entries = await lookUp();
+        expect(entries.single.rate.amount, 400.0);
+      });
+
+      test('saving a default for another item keeps the refusal', () async {
+        refuse();
+
+        await repository.save(buildEntry(itemName: 'Dozer', amount: 900.0));
+
+        expect(database.refusalRow(excavatorKey), isNotNull);
+      });
     });
   });
 }
