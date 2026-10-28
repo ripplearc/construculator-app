@@ -362,8 +362,10 @@ final class Angle extends Quantity {
 /// subtracts, multiplies and divides two exact numbers exactly, so
 /// 3.00000000000001 − 3 is 0.00000000000001 and 0.1 + 0.2 − 0.3 is 0.
 /// [value] is the nearest double, which is what every rule and the display
-/// read. A number that came through double math — a trig ratio, a quotient
-/// of two lengths, a product that outgrew a [Rational] — has no [exact].
+/// read. A ratio of two lengths is exact too, 36ft ÷ 12ft is exactly 3
+/// (owner decision of 28 October 2026). A number that came through double
+/// math — a trig ratio, a product that outgrew a [Rational] — has no
+/// [exact].
 final class Scalar extends Quantity {
   /// The number itself: the nearest double to [exact] when there is one.
   final double value;

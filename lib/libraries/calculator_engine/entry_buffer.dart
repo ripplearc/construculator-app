@@ -81,6 +81,13 @@ enum EntryRefusal {
   /// ("Too large": "A number cannot be above 19,999,999.99. Press ⌫ to
   /// change a number, or C to start again.").
   tooLarge,
+
+  /// A sixteenth digit typed into one number ([EntryBuffer.maxDigits];
+  /// Section 5.1, "A number can have up to 15 digits."; owner decision of 28
+  /// October 2026). The digit is refused and the number stays as typed, and
+  /// the message is the grey strip's, not an error box. The bottom number of
+  /// a fraction never gets this far: it is [tooLarge] at eight digits.
+  tooManyDigits,
 }
 
 /// What a key did to the buffer.
@@ -170,6 +177,14 @@ class EntryBuffer extends Equatable {
   final List<Token> tokens;
 
   const EntryBuffer([this.tokens = const []]);
+
+  /// The most digits one typed number can have (Section 5.1; owner decision
+  /// of 28 October 2026): every typed digit counts, zeros after the point
+  /// included, so that the number always fits a [Rational] and a difference
+  /// typed in its last digit is never rounded away (Section 6). The zeros
+  /// that lead a whole part (0.5, 007) add nothing to the number and are not
+  /// counted.
+  static const int maxDigits = 15;
 
   /// Whether nothing has been typed.
   bool get isEmpty => tokens.isEmpty;
@@ -386,6 +401,9 @@ class EntryBuffer extends Equatable {
       return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
     }
     final digits = '${last.digits}$digit';
+    if (_hasTooManyDigits(digits)) {
+      return const EntryRefused(EntryRefusal.tooManyDigits);
+    }
     if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
     return _replaceLast(last.copyWith(digits: digits, typedAs: () => null));
   }
@@ -470,6 +488,17 @@ class EntryBuffer extends Equatable {
 
   static bool _isTooLarge(String digits) =>
       double.parse(digits) > Quantity.largestShown;
+
+  static bool _hasTooManyDigits(String digits) =>
+      _countedDigits(digits) > maxDigits;
+
+  static int _countedDigits(String digits) {
+    final [whole, ...fraction] = digits.split('.');
+    return whole.replaceFirst(_leadingZeros, '').length +
+        fraction.join().length;
+  }
+
+  static final RegExp _leadingZeros = RegExp('^0+');
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.
   EntryOutcome typeFraction() {

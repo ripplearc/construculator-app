@@ -110,8 +110,9 @@ class QuantityParser extends Equatable {
 
   /// The number [token] spells, exactly: its digits over the fraction's
   /// bottom number when [/] was pressed, so "0.1" is 1/10 and "7/8" is 7/8.
-  /// `null` when it cannot be kept exactly: more digits than a [Rational]
-  /// holds, a fraction over zero, or a fraction still open. This is what a
+  /// `null` when it cannot be kept exactly: a fraction over zero, a fraction
+  /// still open, or more digits than a [Rational] holds, which a typed
+  /// number never has ([EntryBuffer.maxDigits]). This is what a
   /// bare number carries as [Scalar.exact], and what a length token is made
   /// of.
   Rational? exactValueOf(Token token) {

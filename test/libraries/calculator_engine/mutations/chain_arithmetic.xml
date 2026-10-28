@@ -227,6 +227,13 @@
             <mutation text="Rational.tryParse(number.value.toString());"/>
             <mutation text="number.exact;"/>
         </regex>
+
+        <!-- RULE CA-1236 (R6, B9): a ratio of two lengths is taken in
+             doubles, or upside down -->
+        <regex pattern="final exact = dividend\.inches / divisor\.inches;\s*return Scalar\(exact\.toDouble\(\), exact: exact\);" dotAll="true" id="chain_arithmetic.ratio_of_lengths.in_doubles">
+            <mutation text="return Scalar(_magnitude(dividend) / _magnitude(divisor));"/>
+            <mutation text="final exact = divisor.inches / dividend.inches; return Scalar(exact.toDouble(), exact: exact);"/>
+        </regex>
     </rules>
 
     <commands>

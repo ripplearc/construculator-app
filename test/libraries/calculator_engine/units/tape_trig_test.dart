@@ -161,6 +161,39 @@ void main() {
         );
       });
 
+      test('B7: an answer above 19,999,999.99 is Too large: after its number '
+          'the key lands the error chip, before it nothing is offered and = '
+          'lands the chip, and ⌫ reopens the number', () {
+        const tooLarge = ErrorChip(CalculationError.outOfRange);
+        final landed = press(const Tape(), '8 9 . 9 9 9 9 9 9 9 9 5 TAN');
+        expect(landed.chips.last, tooLarge);
+        expect(landed.chips, hasLength(2));
+        expect(landed.trigAnswer, isNull);
+        final reopened = changed(landed.backspace());
+        expect(reopened.chips, hasLength(1));
+        expect(
+          reopened.active,
+          isA<ValueChip>().having((c) => c.entry.text, 'text', '89.999999995'),
+        );
+        expect(
+          press(const Tape(), '2 6 9 . 9 9 9 9 9 9 9 9 5 TAN').chips.last,
+          tooLarge,
+        );
+        final prefix = press(const Tape(), 'TAN 9 0 . 0 0 0 0 0 0 0 0 2');
+        expect(prefix.trigAnswer, isNull);
+        expect(press(prefix, '=').chips.last, tooLarge);
+        expect(press(prefix, '× 1 =').chips.last, tooLarge);
+        final offered = press(const Tape(), 'TAN 8 9 . 9 9 9 9 9');
+        expect(
+          offered.trigAnswer,
+          isA<Answer>().having(
+            (a) => formatter.format(a.value),
+            'text',
+            '5,729,577.941222',
+          ),
+        );
+      });
+
       test('a fraction with no unit still wants its unit key', () {
         expect(
           press(const Tape(), '7 / 1 6').pressTrigKey(TrigFunction.sine),

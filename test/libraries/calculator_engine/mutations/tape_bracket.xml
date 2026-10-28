@@ -133,6 +133,25 @@
         <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(tape, notice: notice\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
             <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
         </regex>
+
+        <!-- RULE CA-1236 (R6, B8): a step above the limit inside a bracket
+             refuses the key instead of landing the Too large chip -->
+        <regex pattern="if \(total case ChainFailed\(error: CalculationError\.outOfRange\)\) \{" id="tape.close_bracket.too_large_refused">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B8): closing again over the Too large chip
+             recomputes the inside instead of saying there is nothing to
+             compute -->
+        <regex pattern="if \(inner\.chips\.last is ErrorChip\) \{\s*return const TapeRefused\(TapeRefusal\.nothingToCompute\);" dotAll="true" id="tape.close_bracket.error_inside_recomputed">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.nothingToCompute);"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B8): = that lands the Too large chip inside a
+             bracket also says there is nothing to compute -->
+        <regex pattern="TapeChanged\(:final tape, notice: null\)\s*when tape\._endsOnAnErrorInsideTheBracket =&gt;" dotAll="true" id="tape.press_equals.too_large_inside_gets_notice">
+            <mutation text="TapeChanged(:final tape, notice: null) when false =&gt;"/>
+        </regex>
     </rules>
 
     <commands>
