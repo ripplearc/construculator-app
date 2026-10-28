@@ -388,6 +388,33 @@ void main() {
         );
       });
 
+      test('B6: the sixteenth typed digit is refused on the tape, under a key '
+          'too, and a fifteen-digit difference still computes exactly', () {
+        String typed(String digits) => digits.split('').join(' ');
+        const tooMany = TapeEntryRefused(EntryRefusal.tooManyDigits);
+        expect(
+          press(const Tape(), typed('9999999.99999999')).typeDigit('9'),
+          tooMany,
+        );
+        expect(
+          press(const Tape(), typed('1.00000000000000')).typeDigit('1'),
+          tooMany,
+        );
+        expect(
+          press(
+            const Tape(),
+            '[Length] ${typed('1.00000000000000')}',
+          ).typeDigit('1'),
+          tooMany,
+        );
+        final difference = press(
+          const Tape(),
+          '${typed('9999999.99999999')} − ${typed('9999999.9999999')} =',
+        );
+        final tiny = (difference.chips.last as ResultChip).value as Scalar;
+        expect(tiny.value, 9e-8);
+      });
+
       test('÷ 0 lands its own error and reopens the divisor empty', () {
         final landed = press(const Tape(), '5 ÷ 0 =');
         expect(landed.chips, const [
@@ -770,6 +797,34 @@ void main() {
         '0',
         reason: 'a product of exact numbers is exact too',
       );
+    });
+
+    test('B9: a ratio of two lengths is exact, so a typed difference after '
+        'it is never rounded away, it scales a length back exactly, and it '
+        'stays exact through +, −, × and ÷', () {
+      String typed(String number) => number.split('').join(' ');
+      Scalar last(Tape tape) => (tape.chips.last as ResultChip).value as Scalar;
+      Matcher exactly(double number) => isA<Scalar>()
+          .having((s) => s.value, 'value', number)
+          .having((s) => s.exact, 'exact', isA<Rational>())
+          .having((s) => s.exact.toString(), 'exact', isNot('null'));
+      final ratio = press(const Tape(), '3 6 ft ÷ 1 2 ft =');
+      expect(last(ratio), exactly(3));
+      expect(
+        last(press(ratio, '− ${typed('3.00000000000001')} =')).value,
+        -1e-14,
+      );
+      expect(
+        last(press(ratio, '+ ${typed('0.00000000000001')} =')).value,
+        3.00000000000001,
+      );
+      expect(last(press(ratio, '× 1 =')), exactly(3));
+      expect(last(press(ratio, '÷ 1 =')), exactly(3));
+      expect(
+        lastResult(press(const Tape(), '1 0 ft ÷ 3 ft × 3 ft =')),
+        'Calc 10ft 0in',
+      );
+      expect(last(press(const Tape(), '1 0 ft ÷ 3 ft =')), exactly(10 / 3));
     });
 
     test('B5: a weight under the rounding reads in words, a true zero does '

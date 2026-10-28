@@ -303,6 +303,24 @@
             <mutation text=") when false) {"/>
             <mutation text=") when key != function.key) {"/>
         </regex>
+
+        <!-- RULE CA-1236 (R6, B7): a trig answer above the limit lands as a
+             result instead of the Too large chip -->
+        <regex pattern="formatter\.isTooLarge\(answer\)\s*\? const ErrorChip\(CalculationError\.outOfRange\)\s*: ResultChip\(key: key, value: answer\);" dotAll="true" id="tape.landed_answer.never_too_large">
+            <mutation text="ResultChip(key: key, value: answer);"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B7): the strip offers a trig answer above the
+             limit -->
+        <regex pattern="if \(answer == null \|\| formatter\.isTooLarge\(answer\)\) return null;" id="tape.trig_answer.offers_too_large">
+            <mutation text="if (answer == null) return null;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B7): = on a prefix trig chip whose answer is
+             above the limit lands nothing -->
+        <regex pattern="if \(tape\._offersATooLargeTrigAnswer\) \{" id="tape.press_equals.too_large_trig_not_landed">
+            <mutation text="if (false) {"/>
+        </regex>
     </rules>
 
     <commands>

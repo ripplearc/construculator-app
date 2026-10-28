@@ -86,17 +86,19 @@ final class ArithmeticFailed extends ArithmeticOutcome {
 /// decision of 27 October 2026), so a typed difference is never rounded
 /// away whatever digit it sits in: 3.00000000000001 − 3 is
 /// 0.00000000000001, 19999999 + 0.00000001 − 19999999 is 0.00000001, and
-/// 0.1 + 0.2 − 0.3 is 0 (rule 4.15). A typed number is exact while its
-/// digits fit a [Rational], which is every number of up to fifteen
-/// significant digits and the sixteen-digit ones below 2⁵³; past that the
-/// double it parses to already holds no more digits, and it stays a double.
-/// A step whose exact result outgrows a [Rational] is taken in double math
-/// instead.
+/// 0.1 + 0.2 − 0.3 is 0 (rule 4.15). A typed number has at most fifteen
+/// digits ([EntryBuffer.maxDigits]; Section 5.1), so it always fits a
+/// [Rational]; only a step whose exact result outgrows one is taken in
+/// double math instead. A ratio of two lengths is exact too (Section 6;
+/// owner decision of 28 October 2026): 36ft ÷ 12ft is exactly 3, so 36ft ÷
+/// 12ft = − 3.00000000000001 = is −0.00000000000001 and 10ft ÷ 3ft × 3ft =
+/// is exactly 10ft, with the same fallback to doubles when the fraction
+/// outgrows a [Rational].
 ///
 /// A sum or difference of two values kept as doubles (areas, volumes,
 /// weights, angles, and a bare number that came through double math: a
-/// trig ratio, a quotient of two lengths, a product that outgrew a
-/// [Rational]) that is zero within the floating-point error of its operands
+/// trig ratio, a product that outgrew a [Rational]) that is zero within the
+/// floating-point error of its operands
 /// is zero: 2.5m × 2.5m leaves a residue of a few ulps against a typed
 /// 6.25m², which would otherwise read "Under 0.01m²" for a true zero
 /// (Section 6, "A true zero still reads 0"). The band is two parts in 10¹⁵
@@ -185,11 +187,24 @@ class ChainArithmetic extends Equatable {
         _cubicTicks(volume) / _magnitude(length),
         unit: _systemUnit([volume.unit, length.unit]),
       ),
+      (final Length dividend, final Length divisor) => _ratioOfLengths(
+        dividend,
+        divisor,
+      ),
       _ when left.dimension == right.dimension => Scalar(
         _magnitude(left) / _magnitude(right),
       ),
       _ => null,
     };
+  }
+
+  Scalar _ratioOfLengths(Length dividend, Length divisor) {
+    try {
+      final exact = dividend.inches / divisor.inches;
+      return Scalar(exact.toDouble(), exact: exact);
+    } on RationalOverflow {
+      return Scalar(_magnitude(dividend) / _magnitude(divisor));
+    }
   }
 
   Quantity? _addOrSubtract(Quantity left, Quantity right, {required int sign}) {
