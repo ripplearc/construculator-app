@@ -106,6 +106,21 @@
         <regex pattern="MaterialCostFormFailure\(:final failure\) =&gt;\s*MaterialCostFormFailure\(\s*next,\s*failure,?\s*\)," dotAll="true" id="bloc.emit.failure_cleared_by_edit">
             <mutation text="MaterialCostFormFailure() =&gt; MaterialCostFormEditing(next),"/>
         </regex>
+        <regex pattern="data\.itemName != _opened\.itemName" dotAll="false" id="bloc.dirty.name">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="data\.quantity != _opened\.quantity" dotAll="false" id="bloc.dirty.quantity">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="data\.unit != _opened\.unit" dotAll="false" id="bloc.dirty.unit">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="data\.rate != _opened\.rate" dotAll="false" id="bloc.dirty.rate">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="_opened = MaterialCostFormData\(unit: rememberedUnit\);" dotAll="false" id="bloc.dirty.baseline_unit">
+            <mutation text="_opened = const MaterialCostFormData();"/>
+        </regex>
     </rules>
 
     <commands>
