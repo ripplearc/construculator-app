@@ -25,20 +25,12 @@
             <mutation text="inches = tokenInches;"/>
         </regex>
 
-        <!-- RULE 1c (CA-1339): a length with more digits than a Rational
-             keeps is read as exact anyway, or every length is kept to a
-             fraction of a tick -->
-        <regex pattern="if \(exact != null\) return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.parse.no_exact_guard">
-            <mutation text="return inchesOf(token);"/>
-            <mutation text=""/>
-            <mutation text="if (exact != null) return exact;"/>
-        </regex>
-
-        <!-- RULE 1e (CA-1339): a kept length past the tick limit, or one
-             below the fraction of a tick it holds, is parsed anyway -->
-        <regex pattern="if \(ticks\.abs\(\) &gt; Length\.maxTicks \|\| \(ticks != 0 &amp;&amp; partsOfATick == 0\)\) \{\s*return null;\s*\}" dotAll="true" id="quantity_parser.parse.kept_limits">
-            <mutation text="if (ticks != 0 &amp;&amp; partsOfATick == 0) return null;"/>
-            <mutation text="if (ticks.abs() &gt; Length.maxTicks) return null;"/>
+        <!-- RULE 1c (CA-1339, R1): a length token with more digits than a
+             Rational holds is read from its double anyway, or the exact
+             value is returned without its unit -->
+        <regex pattern="final exact = exactValueOf\(token\);\s*if \(exact == null\) return null;\s*return exact \* unit\.inchesPer;" dotAll="true" id="quantity_parser.parse.no_exact_guard">
+            <mutation text="final exact = exactValueOf(token); if (exact == null) return Length.computed(token.value * unit.ticksPerUnit, unit: unit).inches; return exact * unit.inchesPer;"/>
+            <mutation text="final exact = exactValueOf(token); if (exact == null) return null; return exact;"/>
         </regex>
 
         <!-- RULE 1d: the exact-value guard runs for a weight too, so a
