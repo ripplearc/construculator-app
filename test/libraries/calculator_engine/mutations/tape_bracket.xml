@@ -47,15 +47,23 @@
         </regex>
 
         <!-- RULE 7: a digit after a closed bracket is appended to its value -->
-        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*final chip = active \?\? const ValueChip\(\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst); } final chip = active ?? const ValueChip();"/>
+        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{" dotAll="true" id="tape.type_digit.after_closed_bracket">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst); } if (active case ValueChip(exactValue: Angle())) {"/>
         </regex>
 
         <!-- RULE 7b (CA-1340): a trig key after a closed bracket opens a
-             fresh chip and the group drops out of the chain -->
-        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*final chip = active;\s*if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return _replaceLast\(_asTrigChip" dotAll="true" id="tape.trig_key.after_closed_bracket">
-            <mutation text="final chip = active; if (chip != null &amp;&amp; chip.entry.isEmpty) { return _replaceLast(_asTrigChip"/>
-            <mutation text="if (_endsWithClosedBracket) { return const TapeRefused(TapeRefusal.typeANumberFirst); } final chip = active; if (chip != null &amp;&amp; chip.entry.isEmpty) { return _replaceLast(_asTrigChip"/>
+             fresh chip and the group drops out of the chain, or is refused
+             as a digit is -->
+        <regex pattern="if \(_endsWithClosedBracket\) return _answeredOnClosedBracket\(function\);" id="tape.trig_key.after_closed_bracket">
+            <mutation text="if (false) return _answeredOnClosedBracket(function);"/>
+            <mutation text="if (_endsWithClosedBracket) return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
+        </regex>
+
+        <!-- RULE 7c (CA-1340): the answer on a group lands without the Calc
+             it was taken on, or on a single value as if it were a chain -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) =&gt; _answeredOn\(\s*append\(ResultChip\(key: calcKey, value: value\)\),\s*function,\s*value,\s*\),\s*ChainValue\(:final value\) =&gt; _answeredOn\(this, function, value\)," dotAll="true" id="tape.trig_key.closed_bracket_without_calc">
+            <mutation text="ChainValue(:final value) =&gt; _answeredOn(this, function, value),"/>
+            <mutation text="ChainValue(:final value) =&gt; _answeredOn(append(ResultChip(key: calcKey, value: value)), function, value),"/>
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->
