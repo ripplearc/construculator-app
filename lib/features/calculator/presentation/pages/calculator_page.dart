@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/calculator_setting_formatter.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -11,11 +12,17 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The calculator screen: the display area, the suggestion strip and the
 /// keyboard over one [CalculatorBloc], which the page creates from
 /// [calculatorBlocFactory] for its lifetime and closes with it.
+///
+/// The settings (W1, CA-1103) show here as the System of units pill on the
+/// empty tape row; the setting sheets follow (4/4).
 class CalculatorPage extends StatefulWidget {
   /// Builds the bloc the page owns, resolved by the module.
   final CalculatorBloc Function() calculatorBlocFactory;
 
   const CalculatorPage({super.key, required this.calculatorBlocFactory});
+
+  /// The key of the System of units pill, for tests.
+  static const Key unitsPillKey = ValueKey('calc_units_pill');
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
@@ -69,6 +76,29 @@ class _CalculatorPageState extends State<CalculatorPage> {
   void dispose() {
     unawaited(_bloc.close());
     super.dispose();
+  }
+
+  // The System of units pill (1.1) sits at the right end of the empty tape
+  // row, over the display, until CoreDisplayArea offers a slot for it.
+  // TODO: [CA-1375] Move the pill into CoreDisplayArea's empty tape row
+  // once the display area takes a trailing widget there.
+  // https://ripplearc.youtrack.cloud/issue/CA-1375
+  Widget _unitsPill(
+    CalculatorSettingFormatter settings,
+    CalculatorState state,
+  ) {
+    final system = state.tape.preferences.system;
+    // The large size is the one CoreButton size that meets the 48dp tap
+    // target on its own.
+    return CoreButton(
+      key: CalculatorPage.unitsPillKey,
+      label: settings.unitsLabel(system),
+      size: CoreButtonSize.large,
+      variant: CoreButtonVariant.secondary,
+      fullWidth: false,
+      semanticsHint: settings.unitsHint(system),
+      onPressed: () => _bloc.add(const CalculatorUnitSystemToggled()),
+    );
   }
 
   Locale? _groupsLocale;
@@ -309,8 +339,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
     UnitType.divideSymbol => const CalculatorFractionPressed(),
   };
 
-  // TODO: [CA-1088] Press the % key on the tape once the engine takes a
-  // grade under Slope from it. https://ripplearc.youtrack.cloud/issue/CA-1088
+  // TODO: [CA-1376] Press the % key on the tape once the engine has the
+  // four-function percent of Section 7.
+  // https://ripplearc.youtrack.cloud/issue/CA-1376
   CalculatorEvent? _operatorEventFor(
     OperatorType operator,
   ) => switch (operator) {
@@ -344,6 +375,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
       for (final group in groups) group.name: _accentFor(colors, group.name.id),
     };
 
+    final settings = CalculatorSettingFormatter(l10n);
+
     return BlocProvider<CalculatorBloc>.value(
       value: _bloc,
       child: Scaffold(
@@ -360,33 +393,44 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       physics: _currentStage != DisplayAreaStage.collapsed
                           ? const NeverScrollableScrollPhysics()
                           : const AlwaysScrollableScrollPhysics(),
-                      child: CoreDisplayArea(
-                        label: switch (state.labelKeyId) {
-                          final id? => _displayLabelFor(l10n, id),
-                          null => null,
-                        },
-                        value: state.valueText,
-                        isTyping: state.isTyping,
-                        closeSemanticLabel: l10n.closeButton,
-                        historyPlaceholder: l10n.calculatorHistoryPlaceholder,
-                        chipsList: _localizeChips(l10n, state.chipsList),
-                        // TODO(CA-965): previousSessions is unwired pending
-                        // research into archiving trigger, data model, and
-                        // persistence approach for calculation history.
-                        // TODO: [CA-1088] The pills under the value come
-                        // with the engine's answers.
-                        // https://ripplearc.youtrack.cloud/issue/CA-1088
-                        dependentKeys: const [],
-                        // TODO: [CA-1092] Close the calculator when ✕ is
-                        // refused with nothing being typed (Section 1.1).
-                        // https://ripplearc.youtrack.cloud/issue/CA-1092
-                        onClose: () =>
-                            bloc.add(const CalculatorActiveValueCleared()),
-                        onStageChanged: (stage) {
-                          if (_currentStage != stage) {
-                            setState(() => _currentStage = stage);
-                          }
-                        },
+                      child: Stack(
+                        children: [
+                          CoreDisplayArea(
+                            label: switch (state.labelKeyId) {
+                              final id? => _displayLabelFor(l10n, id),
+                              null => null,
+                            },
+                            value: state.valueText,
+                            isTyping: state.isTyping,
+                            closeSemanticLabel: l10n.closeButton,
+                            historyPlaceholder:
+                                l10n.calculatorHistoryPlaceholder,
+                            chipsList: _localizeChips(l10n, state.chipsList),
+                            // TODO(CA-965): previousSessions is unwired pending
+                            // research into archiving trigger, data model, and
+                            // persistence approach for calculation history.
+                            // TODO: [CA-1088] The pills under the value come
+                            // with the engine's answers.
+                            // https://ripplearc.youtrack.cloud/issue/CA-1088
+                            dependentKeys: const [],
+                            // TODO: [CA-1092] Close the calculator when ✕ is
+                            // refused with nothing being typed (Section 1.1).
+                            // https://ripplearc.youtrack.cloud/issue/CA-1092
+                            onClose: () =>
+                                bloc.add(const CalculatorActiveValueCleared()),
+                            onStageChanged: (stage) {
+                              if (_currentStage != stage) {
+                                setState(() => _currentStage = stage);
+                              }
+                            },
+                          ),
+                          if (state.showsUnitsPill)
+                            Positioned(
+                              top: CoreSpacing.space2,
+                              right: CoreSpacing.space4,
+                              child: _unitsPill(settings, state),
+                            ),
+                        ],
                       ),
                     ),
                   ),

@@ -2004,6 +2004,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorErrorTooLarge => 'Too large';
 
   @override
+  String get calculatorUnitsImperial => 'Imperial';
+
+  @override
+  String get calculatorUnitsMetric => 'Metric';
+
+  @override
+  String get calculatorUnitsSwitchToMetric => 'Switches to metric units';
+
+  @override
+  String get calculatorUnitsSwitchToImperial => 'Switches to imperial units';
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override
