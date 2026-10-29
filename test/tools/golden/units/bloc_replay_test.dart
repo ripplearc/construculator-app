@@ -75,12 +75,11 @@ class BlocScenarioDriver implements ScenarioDriver {
   @override
   Snapshot snapshot() {
     final state = _bloc.state;
-    final label = state.labelKeyId;
+    final label = state.displayLabel;
     return Snapshot(
-      label: switch (label) {
-        null => '',
-        final id => state.isTyping ? '$id…' : id,
-      },
+      label: label.isEmpty
+          ? ''
+          : '${_labels.labelText(label)}${label.isTyping ? '…' : ''}',
       value: state.valueText,
       tape: [
         for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',
@@ -351,6 +350,32 @@ void main() {
       expect(driver.snapshot().bracketOpen, isTrue);
       expect(driver.snapshot().strip, isEmpty);
       expect(driver.snapshot().unitToggleLabel, 'Imperial');
+    });
+
+    test('the driver reads the label with its reading and a closed bracket '
+        'by its inside', () async {
+      for (final key in const ['fk:Pitch', 'd:8', 'd:.', 'd:4', 'd:5']) {
+        await driver.perform(KeyStep(key));
+      }
+      final pitch = driver.snapshot();
+      expect(pitch.label, 'Pitch · degrees…');
+      expect(pitch.value, '8.45°');
+
+      await driver.perform(const KeyStep('clear'));
+      for (final key in const [
+        'd:2',
+        'op:+',
+        'paren',
+        'd:3',
+        'op:×',
+        'd:4',
+        'paren',
+      ]) {
+        await driver.perform(KeyStep(key));
+      }
+      final bracket = driver.snapshot();
+      expect(bracket.label, 'Addition · (3×4)');
+      expect(bracket.value, '12');
     });
   });
 }

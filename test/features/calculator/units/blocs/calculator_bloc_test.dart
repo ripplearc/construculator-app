@@ -106,7 +106,7 @@ void main() {
 
       test('and the state reads the tape back for the display', () {
         final state = tapeState(pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in'));
-        expect(state.isTyping, isTrue);
+        expect(state.tape.beingTyped, isNotNull);
         expect(state.labelKeyId, 'Width');
         expect(state.valueText, '18ft 8in');
         expect(
@@ -150,7 +150,7 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.labelKeyId, Tape.calcKey);
           expect(bloc.state.valueText, '6ft 0in');
-          expect(bloc.state.isTyping, isFalse);
+          expect(bloc.state.tape.beingTyped, isNull);
           expect(
             [for (final chip in bloc.state.chipsList) chip.value],
             ['2ft', '×3', '6ft 0in'],
@@ -221,9 +221,9 @@ void main() {
         skip: 5,
         expect: () => [tapeState(pressed('2 + ( 3 × 4'))],
         verify: (bloc) {
-          expect(bloc.state.isTyping, isTrue);
+          expect(bloc.state.tape.beingTyped, isNotNull);
           expect(bloc.state.labelKeyId, isNull);
-          expect(bloc.state.valueText, '×4');
+          expect(bloc.state.valueText, '4');
           expect(
             [for (final chip in bloc.state.chipsList) chip.value],
             ['2', '+(3×4'],
@@ -351,7 +351,7 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.labelKeyId, TrigFunction.arctangent.key);
           expect(bloc.state.valueText, '16');
-          expect(bloc.state.isTyping, isTrue);
+          expect(bloc.state.tape.beingTyped, isNotNull);
         },
       );
 
@@ -368,7 +368,7 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.labelKeyId, TrigFunction.sine.key);
           expect(bloc.state.valueText, '0.615661');
-          expect(bloc.state.isTyping, isFalse);
+          expect(bloc.state.tape.beingTyped, isNull);
           expect(bloc.state.chipsList.last.label, TrigFunction.sine.key);
           expect(bloc.state.chipsList.last.value, '0.615661');
         },
@@ -437,7 +437,7 @@ void main() {
         verify: (bloc) {
           expect(
             [for (final chip in bloc.state.chipsList) chip.value],
-            ['30', '+6', '+'],
+            ['30°', '+6', '+'],
           );
         },
       );
@@ -1178,6 +1178,176 @@ void main() {
       );
     });
 
+    group('S1b 4/6: the label and the value', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      test(
+        'the label names the key, the operator of a chip with no key, or '
+        'a bare value, with the reading of a bare number (S134, S42, S95)',
+        () {
+          expect(stateOf('').displayLabel, const CalculatorDisplayLabel());
+          expect(stateOf('').displayLabel.isEmpty, isTrue);
+          expect(
+            stateOf('[Length] 2 2').displayLabel,
+            const CalculatorDisplayLabel(keyId: 'Length', isTyping: true),
+          );
+          expect(
+            stateOf('[Length] 2 2 ft').displayLabel,
+            const CalculatorDisplayLabel(keyId: 'Length'),
+          );
+          expect(
+            stateOf('5').displayLabel,
+            const CalculatorDisplayLabel(isTyping: true),
+          );
+          expect(
+            stateOf('2 + 1 2').displayLabel,
+            const CalculatorDisplayLabel(operator: Operator.add),
+          );
+          expect(
+            stateOf('[Slope] 7').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Slope',
+              reading: NumberReading.grade,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[Pitch] 8 in').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Pitch',
+              reading: NumberReading.risePerFoot,
+            ),
+          );
+          expect(
+            stateOf('[Pitch] 3 0').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Pitch',
+              reading: NumberReading.degrees,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[Pitch] 6 / 1 2').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Pitch',
+              reading: NumberReading.risePerFoot,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[SIN]').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Sine',
+              reading: NumberReading.degrees,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[ACOS] 0 . 5').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Arccosine',
+              reading: NumberReading.ratio,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('3 8 [DMS] 3 0').displayLabel,
+            const CalculatorDisplayLabel(
+              reading: NumberReading.degreesMinutesSeconds,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[Pitch] 3 8 [DMS] 3 0').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Pitch',
+              reading: NumberReading.degreesMinutesSeconds,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('[Width]').displayLabel,
+            const CalculatorDisplayLabel(keyId: 'Width', isTyping: true),
+          );
+          expect(
+            stateOf('2 ft × 3 =').displayLabel,
+            const CalculatorDisplayLabel(keyId: Tape.calcKey),
+          );
+          expect(
+            stateOf('7 8 lbs ÷ 1 2 ft =').displayLabel,
+            CalculatorDisplayLabel(keyId: CalculationError.dimensionError.name),
+          );
+        },
+      );
+
+      test('a closed bracket is named by its operator and its inside, and '
+          'the value row shows what it is worth (Section 7)', () {
+        final closed = stateOf('2 + ( 3 × 4 (');
+        expect(
+          closed.displayLabel,
+          const CalculatorDisplayLabel(
+            operator: Operator.add,
+            bracketExpression: '3×4',
+          ),
+        );
+        expect(closed.valueText, '12');
+        expect(
+          [for (final chip in closed.chipsList) chip.value],
+          ['2', '+(3×4)'],
+        );
+
+        final first = stateOf('( 3 × 4 (');
+        expect(
+          first.displayLabel,
+          const CalculatorDisplayLabel(bracketExpression: '3×4'),
+        );
+        expect(first.valueText, '12');
+
+        final open = stateOf('2 + ( 3 × 4');
+        expect(
+          open.displayLabel,
+          const CalculatorDisplayLabel(operator: Operator.multiply),
+        );
+        expect(open.valueText, '4');
+
+        final empty = stateOf('2 + (');
+        expect(
+          empty.displayLabel,
+          const CalculatorDisplayLabel(operator: Operator.add, isTyping: true),
+        );
+        expect(empty.valueText, '');
+        expect([for (final chip in empty.chipsList) chip.value], ['2', '+(']);
+      });
+
+      test('the value row and the tape write a bare number\'s reading after '
+          'it: degrees, a grade, a rise per 12in; a point still open, a '
+          'D:M:S spelling and a ratio are left as typed', () {
+        expect(stateOf('[Pitch] 3 0').valueText, '30°');
+        expect(stateOf('[Pitch] 8 .').valueText, '8.');
+        expect(stateOf('[Pitch] 8 . 4 5').valueText, '8.45°');
+        expect(stateOf('[Pitch] 8 in').valueText, '8in/12in');
+        expect(stateOf('[Pitch] 6 / 1 2').valueText, '6/12');
+        expect(stateOf('[Slope] 7').valueText, '7%');
+        expect(stateOf('[SIN] 3 8 . 3 0').valueText, '38.30°');
+        expect(stateOf('[ACOS] 0 . 5').valueText, '0.5');
+        expect(stateOf('3 8 [DMS] 3 0').valueText, '38°30\'00"');
+        expect(stateOf('[Width] 1 8 ft 8').valueText, '18ft 8');
+        expect(stateOf('[Pitch]').valueText, '');
+        expect(
+          [for (final chip in stateOf('[Pitch] 8 in').chipsList) chip.value],
+          ['8in/12in'],
+        );
+        expect(
+          [
+            for (final chip in stateOf('3 8 [SIN]').chipsList)
+              '${chip.label}${chip.value}',
+          ],
+          ['Sine38°', 'Sine0.615661'],
+        );
+      });
+    });
+
     test(
       'the initial state is an empty imperial tape with the first group',
       () {
@@ -1185,7 +1355,7 @@ void main() {
         expect(state.tape, const Tape());
         expect(state.currentGroupIndex, 0);
         expect(state.currentUnitSystem, UnitSystem.imperial);
-        expect(state.isTyping, isFalse);
+        expect(state.tape.beingTyped, isNull);
         expect(state.labelKeyId, isNull);
         expect(state.valueText, '');
         expect(state.chipsList, isEmpty);
