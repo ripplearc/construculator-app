@@ -2866,6 +2866,12 @@ abstract class AppLocalizations {
   /// **'Delivery'**
   String get equipmentDeliveryRowLabel;
 
+  /// Grey hint under the equipment Rate or Job amount field, shown when a typed digit or a pasted value is refused because it would add a third decimal
+  ///
+  /// In en, this message translates to:
+  /// **'An amount takes at most two decimals.'**
+  String get equipmentRateDecimalsLimitHint;
+
   /// Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount or would add a third decimal
   ///
   /// In en, this message translates to:
