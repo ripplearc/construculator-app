@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(412, 236);
+  const size = Size(412, 242);
   const footerBoundaryKey = Key('footer_boundary');
   TestWidgetsFlutterBinding.ensureInitialized();
 

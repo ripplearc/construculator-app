@@ -11,6 +11,7 @@ void main() {
   Future<SemanticsNode> pumpAndReadPanel(
     WidgetTester tester, {
     AddToEstimateBlock? block,
+    double? deliveryFee,
   }) async {
     await setupA11yTest(tester);
     await tester.pumpWidget(
@@ -23,7 +24,7 @@ void main() {
           body: AddToEstimatePanel(
             key: const Key('panel'),
             lineTotal: 520,
-            deliveryFee: null,
+            deliveryFee: deliveryFee,
             estimateName: 'Bedroom 2',
             estimateTotal: 2993.62,
             block: block,
@@ -48,6 +49,14 @@ void main() {
         contains(r'Bedroom 2 total before $2,993.62, after $3,513.62'),
       );
       expect(semantics.label, isNot(contains('→')));
+    });
+
+    testWidgets('a11y: the delivery charge is read with the totals', (
+      tester,
+    ) async {
+      final semantics = await pumpAndReadPanel(tester, deliveryFee: 85);
+
+      expect(semantics.label, contains(r'incl. delivery +$85.00'));
     });
 
     testWidgets('a11y: typing a valid amount is not announced', (tester) async {

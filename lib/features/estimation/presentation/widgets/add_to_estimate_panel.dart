@@ -47,148 +47,44 @@ class AddToEstimatePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
     final money = DisplayFormatter.currency;
     final block = this.block;
     final fee = deliveryFee;
-    final smallBody = textTheme.bodySmallRegular.copyWith(
-      color: colorTheme.textBody,
-    );
-    // TODO: [CA-1257] the grey text on the blue card is below 4.5:1 contrast in both themes; use a CoreUI summary card colour. https://ripplearc.youtrack.cloud/issue/CA-1257
-    final beforeStyle = smallBody.copyWith(color: colorTheme.textDisable);
-    return MergeSemantics(
-      child: Semantics(
-        liveRegion: block != null,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorTheme.backgroundBlueLight,
-            // TODO: [CA-1255] use a CoreUI estimate summary card instead of these hardcoded numbers. https://ripplearc.youtrack.cloud/issue/CA-1255
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(15, 13, 15, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(l10n.addsToEstimateLabel, style: smallBody),
-                const SizedBox(height: 1),
-                SizedBox(
-                  height: 40,
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: block == null
-                        ? FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              money.format(lineTotal),
-                              style: textTheme.headlineLargeSemiBold.copyWith(
-                                color: colorTheme.textHeadline,
-                                letterSpacing: -0.32,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            l10n.addsToEstimateNoTotalText,
-                            // TODO: [CA-1257] same low contrast as the grey total above.
-                            style: textTheme.titleLargeSemiBold.copyWith(
-                              color: colorTheme.textDisable,
-                            ),
-                          ),
-                  ),
-                ),
-                if (block == null && fee != null && fee > 0) ...[
-                  const SizedBox(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          l10n.addsToEstimateIncludesDelivery,
-                          style: smallBody,
-                        ),
-                        Text('+${money.format(fee)}', style: smallBody),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 1),
-                Padding(
-                  padding: const EdgeInsets.only(top: 9, bottom: 7),
-                  // TODO: [CA-1255] use the storyboard's #C7ECFA line once the CoreUI summary card exists. https://ripplearc.youtrack.cloud/issue/CA-1255
-                  child: CoreDivider(color: colorTheme.alertBlue),
-                ),
-                const SizedBox(height: 1),
-                if (block != null)
-                  Text(block.note, style: smallBody)
-                else
-                  Semantics(
-                    label: l10n.addsToEstimateTotalSemantics(
-                      estimateName,
-                      money.format(estimateTotal),
-                      money.format(estimateTotal + lineTotal),
-                    ),
-                    excludeSemantics: true,
-                    child: SizedBox(
-                      height: 24,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) => Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      estimateName,
-                                      style: beforeStyle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * 0.7,
-                                    ),
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        l10n.addsToEstimateTotalBeforeSuffix(
-                                          money.format(estimateTotal),
-                                        ),
-                                        style: beforeStyle,
-                                        maxLines: 1,
-                                        softWrap: false,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: CoreSpacing.space2),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                money.format(estimateTotal + lineTotal),
-                                style: textTheme.bodyLargeSemiBold.copyWith(
-                                  color: colorTheme.textHeadline,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+    if (block != null) {
+      return CoreEstimateSummaryCard.empty(
+        title: l10n.addsToEstimateLabel,
+        note: block.note,
+      );
+    }
+    final hasDeliveryFee = fee != null && fee > 0;
+    final newTotal = money.format(estimateTotal + lineTotal);
+    return Semantics(
+      excludeSemantics: true,
+      label: [
+        l10n.addsToEstimateLabel,
+        money.format(lineTotal),
+        if (hasDeliveryFee)
+          '${l10n.addsToEstimateIncludesDelivery} +${money.format(fee)}',
+        l10n.addsToEstimateTotalSemantics(
+          estimateName,
+          money.format(estimateTotal),
+          newTotal,
         ),
+      ].join('\n'),
+      child: CoreEstimateSummaryCard(
+        title: l10n.addsToEstimateLabel,
+        lineTotal: money.format(lineTotal),
+        extraCharge: hasDeliveryFee
+            ? CoreEstimateSummaryCharge(
+                label: l10n.addsToEstimateIncludesDelivery,
+                amount: '+${money.format(fee)}',
+              )
+            : null,
+        estimateName: estimateName,
+        totalBeforeSuffix: l10n.addsToEstimateTotalBeforeSuffix(
+          money.format(estimateTotal),
+        ),
+        totalAfter: newTotal,
       ),
     );
   }
