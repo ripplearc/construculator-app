@@ -7,7 +7,6 @@ import 'package:construculator/features/estimation/presentation/widgets/choice_c
 import 'package:construculator/features/estimation/presentation/widgets/delivery_fee_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
-import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_lookup_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
@@ -108,6 +107,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _equipmentNameController = TextEditingController();
   final _quantityController = TextEditingController();
   final _durationController = TextEditingController();
+  final _durationFocusNode = FocusNode();
   final _dailyRateFocusNode = FocusNode();
   final _jobAmountFocusNode = FocusNode();
   late final _dailyRateController = CurrencyDisplayController(
@@ -151,6 +151,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
+    _markTouchedOnBlur(_durationFocusNode, 'duration_field');
+    _markTouchedOnBlur(_dailyRateFocusNode, 'rate_field');
+    _markTouchedOnBlur(_jobAmountFocusNode, 'amount_field');
     final initialEntry = widget.initialRateEntry;
     if (initialEntry != null) {
       _applySavedRate(initialEntry, fromRecents: true);
@@ -180,6 +183,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _equipmentNameController.dispose();
     _quantityController.dispose();
     _durationController.dispose();
+    _durationFocusNode.dispose();
     _dailyRateController.dispose();
     _jobAmountController.dispose();
     _dailyRateFocusNode.dispose();
@@ -352,7 +356,25 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     widget.onTotalChanged?.call(hasFieldError ? 0 : data.lineTotal);
   }
 
-  List<String>? _errorList(String? text) => text == null ? null : [text];
+  void _markTouchedOnBlur(FocusNode node, String fieldKey) {
+    var hadFocus = false;
+    node.addListener(() {
+      if (node.hasFocus) {
+        hadFocus = true;
+      } else if (hadFocus && _touchedFieldKeys.add(fieldKey) && mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  String? _errorOnceTouched(String fieldKey, String? error) =>
+      _touchedFieldKeys.contains(fieldKey) ? error : null;
+
+  String? _hintWhileEmpty(TextEditingController controller, String hint) =>
+      controller.text.isEmpty ? hint : null;
+
+  String? _unitOnceFilled(TextEditingController controller, String unit) =>
+      controller.text.isEmpty ? null : unit;
 
   String? _durationErrorText(BuildContext context, EquipmentCostFormData data) {
     final l10n = context.l10n;
@@ -756,27 +778,32 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     bool recalled = false,
   }) {
     final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return UnderlineTextField(
-      key: const Key('duration_field'),
-      label: recalled
-          ? l10n.equipmentRecalledDaysLabel
-          : l10n.equipmentDurationLabel,
-      valueStyle: recalled ? textTheme.headlineMediumRegular : null,
-      hintText: l10n.equipmentDurationPlaceholder,
-      controller: _durationController,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      hideSuffixWhenEmpty: true,
-      suffix: Text(
-        l10n.equipmentDurationSuffix,
-        style:
-            (recalled ? textTheme.bodyLargeRegular : textTheme.bodySmallRegular)
-                .copyWith(color: colorTheme.textBody),
+    return ListenableBuilder(
+      listenable: _durationController,
+      builder: (context, _) => CoreUnderlineTextField(
+        key: const Key('duration_field'),
+        size: recalled
+            ? CoreUnderlineTextFieldSize.large
+            : CoreUnderlineTextFieldSize.regular,
+        label: recalled
+            ? l10n.equipmentRecalledDaysLabel
+            : l10n.equipmentDurationLabel,
+        hintText: _hintWhileEmpty(
+          _durationController,
+          l10n.equipmentDurationPlaceholder,
+        ),
+        controller: _durationController,
+        focusNode: _durationFocusNode,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        unitText: _unitOnceFilled(
+          _durationController,
+          l10n.equipmentDurationSuffix,
+        ),
+        errorText: _errorOnceTouched(
+          'duration_field',
+          _durationErrorText(context, data),
+        ),
       ),
-      errorTextList: _errorList(_durationErrorText(context, data)),
-      touched: _touchedFieldKeys.contains('duration_field'),
-      onTouched: () => _touchedFieldKeys.add('duration_field'),
     );
   }
 
@@ -786,33 +813,37 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     bool recalled = false,
   }) {
     final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return UnderlineTextField(
-      key: const Key('amount_field'),
-      label: l10n.equipmentAmountLabel,
-      valueStyle: recalled ? textTheme.headlineMediumRegular : null,
-      hintText: l10n.equipmentAmountPlaceholder,
-      controller: _jobAmountController,
-      focusNode: _jobAmountFocusNode,
-      hideSuffixWhenEmpty: true,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      suffix: Text(
-        _rateUnitSuffix(context, data.method),
-        style:
-            (recalled ? textTheme.bodyLargeRegular : textTheme.bodySmallRegular)
-                .copyWith(color: colorTheme.textBody),
+    return ListenableBuilder(
+      listenable: _jobAmountController,
+      builder: (context, _) => CoreUnderlineTextField(
+        key: const Key('amount_field'),
+        size: recalled
+            ? CoreUnderlineTextFieldSize.large
+            : CoreUnderlineTextFieldSize.regular,
+        label: l10n.equipmentAmountLabel,
+        hintText: _hintWhileEmpty(
+          _jobAmountController,
+          l10n.equipmentAmountPlaceholder,
+        ),
+        controller: _jobAmountController,
+        focusNode: _jobAmountFocusNode,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        unitText: _unitOnceFilled(
+          _jobAmountController,
+          _rateUnitSuffix(context, data.method),
+        ),
+        labelTrailing: recalled
+            ? null
+            : _rateStatusBadge(context, data.rateStatus),
+        trailing: recalled
+            ? null
+            : _saveAsMyRateLink(context, data) ??
+                  _lookupRateButtonWhenEmpty(context, data),
+        errorText: _errorOnceTouched(
+          'amount_field',
+          _amountErrorText(context, data),
+        ),
       ),
-      labelTrailing: recalled
-          ? null
-          : _rateStatusBadge(context, data.rateStatus),
-      trailingAction: recalled
-          ? null
-          : (_saveAsMyRateLink(context, data) ??
-                _lookupRateButtonWhenEmpty(context, data)),
-      errorTextList: _errorList(_amountErrorText(context, data)),
-      touched: _touchedFieldKeys.contains('amount_field'),
-      onTouched: () => _touchedFieldKeys.add('amount_field'),
     );
   }
 
@@ -1007,7 +1038,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                UnderlineTextField(
+                CoreUnderlineTextField(
                   key: const Key('equipment_name_field'),
                   label: l10n.equipmentNameLabel,
                   hintText: l10n.equipmentNamePlaceholder,
@@ -1042,29 +1073,33 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 if (isDay) ...[
                   _durationField(context, data),
                   const SizedBox(height: CoreSpacing.space3),
-                  UnderlineTextField(
-                    key: const Key('rate_field'),
-                    label: l10n.equipmentRateLabel,
-                    hintText: l10n.equipmentRatePlaceholder,
-                    controller: _dailyRateController,
-                    focusNode: _dailyRateFocusNode,
-                    hideSuffixWhenEmpty: true,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    suffix: Text(
-                      _rateUnitSuffix(context, data.method),
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
+                  ListenableBuilder(
+                    listenable: _dailyRateController,
+                    builder: (context, _) => CoreUnderlineTextField(
+                      key: const Key('rate_field'),
+                      label: l10n.equipmentRateLabel,
+                      hintText: _hintWhileEmpty(
+                        _dailyRateController,
+                        l10n.equipmentRatePlaceholder,
+                      ),
+                      controller: _dailyRateController,
+                      focusNode: _dailyRateFocusNode,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      unitText: _unitOnceFilled(
+                        _dailyRateController,
+                        _rateUnitSuffix(context, data.method),
+                      ),
+                      labelTrailing: _rateStatusBadge(context, data.rateStatus),
+                      trailing:
+                          _saveAsMyRateLink(context, data) ??
+                          _lookupRateButtonWhenEmpty(context, data),
+                      errorText: _errorOnceTouched(
+                        'rate_field',
+                        _rateErrorText(context, data),
                       ),
                     ),
-                    labelTrailing: _rateStatusBadge(context, data.rateStatus),
-                    trailingAction:
-                        _saveAsMyRateLink(context, data) ??
-                        _lookupRateButtonWhenEmpty(context, data),
-                    errorTextList: _errorList(_rateErrorText(context, data)),
-                    touched: _touchedFieldKeys.contains('rate_field'),
-                    onTouched: () => _touchedFieldKeys.add('rate_field'),
                   ),
                   _rateSaveFooter(context, data),
                 ] else ...[
@@ -1100,19 +1135,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          UnderlineTextField(
+          CoreUnderlineTextField(
             key: const Key('delivery_fee_field'),
+            size: CoreUnderlineTextFieldSize.compact,
             label: l10n.equipmentDeliveryRowLabel,
             controller: _deliveryFeeController,
             focusNode: _deliveryFocusNode,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [_deliveryFeeFormatter],
-            prefix: Text(
-              '\$',
-              style: textTheme.bodyLargeRegular.copyWith(
-                color: colorTheme.textBody,
-              ),
-            ),
+            prefixText: '\$',
           ),
           if (_showDeliveryLimitHint)
             Padding(
@@ -1136,8 +1167,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               ),
             ),
           const SizedBox(height: CoreSpacing.space3),
-          UnderlineTextField(
+          CoreUnderlineTextField(
             key: const Key('delivery_note_field'),
+            size: CoreUnderlineTextFieldSize.compact,
             label: l10n.equipmentNoteLabel,
             controller: _noteController,
             focusNode: _noteFocusNode,
