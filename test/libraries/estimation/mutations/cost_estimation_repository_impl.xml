@@ -126,6 +126,9 @@
         <regex pattern="if \(!paginationState\.hasMore\) \{" dotAll="true" id="repo.paging.load_more_when_nomore">
             <mutation text="if (paginationState.hasMore) {"/>
         </regex>
+        <regex pattern="publish\(Right\(_applyPendingEdits\(projectId, localEstimates\)\)\);" dotAll="true" id="repo.local.skip_pending_edits">
+            <mutation text="publish(Right(localEstimates));"/>
+        </regex>
         <regex pattern="_localSubscriptions\.remove\(streamKey\)\?\.cancel\(\);\s*_localSubscriptions\[streamKey\]" dotAll="true" id="repo.local.keep_old_subscription">
             <mutation text="_localSubscriptions[streamKey]"/>
         </regex>
@@ -134,6 +137,44 @@
         </regex>
 
         <!-- Pending edits stay until the phone copy shows the change -->
+        <regex pattern="edit\.projectId == projectId &amp;&amp; edit\.isReflected\(localEstimates\)" dotAll="true" id="repo.edits.clear_other_projects">
+            <mutation text="edit.projectId == projectId || edit.isReflected(localEstimates)"/>
+            <mutation text="edit.isReflected(localEstimates)"/>
+            <mutation text="edit.projectId == projectId"/>
+        </regex>
+        <regex pattern="\.where\(\(edit\) =&gt; edit\.projectId == projectId\)" dotAll="true" id="repo.edits.apply_other_projects">
+            <mutation text=".where((edit) =&gt; true)"/>
+        </regex>
+        <regex pattern="if \(!_isWatched\(projectId\)\) \{" dotAll="true" id="repo.edits.forget_while_watched">
+            <mutation text="if (_isWatched(projectId)) {"/>
+        </regex>
+        <regex pattern="_pendingEdits\.remove\(renameEdit\);" dotAll="true" id="repo.edits.keep_failed_rename">
+            <mutation text="// _pendingEdits.remove(renameEdit);"/>
+        </regex>
+        <regex pattern="_pendingEdits\.remove\(lockEdit\);" dotAll="true" id="repo.edits.keep_failed_lock">
+            <mutation text="// _pendingEdits.remove(lockEdit);"/>
+        </regex>
+        <regex pattern="_pendingEdits\.remove\('delete:\$estimationId'\);" dotAll="true" id="repo.edits.keep_failed_delete">
+            <mutation text="// _pendingEdits.remove('delete:$estimationId');"/>
+        </regex>
+        <regex pattern="e\.id == estimationId &amp;&amp; e\.estimateName == newName" dotAll="true" id="repo.edits.rename_reflected_negated">
+            <mutation text="e.id == estimationId &amp;&amp; e.estimateName != newName"/>
+        </regex>
+        <regex pattern="e\.id == estimationId &amp;&amp; e\.lockStatus\.isLocked == isLocked" dotAll="true" id="repo.edits.lock_reflected_negated">
+            <mutation text="e.id == estimationId &amp;&amp; e.lockStatus.isLocked != isLocked"/>
+        </regex>
+        <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)" dotAll="true" id="repo.edits.delete_reflected_any">
+            <mutation text="estimates.any((e) =&gt; e.id != estimationId)"/>
+        </regex>
+        <regex pattern="estimates\.where\(\(e\) =&gt; e\.id != estimationId\)\.toList\(\)" dotAll="true" id="repo.edits.delete_keeps_estimate">
+            <mutation text="estimates"/>
+        </regex>
+        <regex pattern="\[createdEstimation, \.\.\.estimates\]" dotAll="true" id="repo.edits.create_wrong_position">
+            <mutation text="[...estimates, createdEstimation]"/>
+        </regex>
+        <regex pattern="e\.id == estimationId \? replace\(e\) : e" dotAll="true" id="repo.edits.replace_all">
+            <mutation text="replace(e)"/>
+        </regex>
 
         <!-- Newer review rules -->
         <regex pattern="\? cachedEstimations\s*: \[newEstimation, \.\.\.cachedEstimations\];" dotAll="true" id="repo.create.duplicate_when_synced_first">
@@ -144,6 +185,15 @@
         </regex>
         <regex pattern="waiting\.complete\(Right\(_cachedEstimations\[streamKey\] \?\? \[\]\)\);" dotAll="true" id="repo.local.leave_caller_waiting">
             <mutation text="// waiting.complete(Right(_cachedEstimations[streamKey] ?? []));"/>
+        </regex>
+        <regex pattern="if \(!_isWatched\(projectId\)\) return;" dotAll="true" id="repo.edits.remember_for_unwatched">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(lockStatus: updatedEstimation\.lockStatus\)," dotAll="true" id="repo.edits.lock_patch_replaces_all">
+            <mutation text="patch: (e) =&gt; updatedEstimation,"/>
+        </regex>
+        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(\s*estimateName: updatedEstimation\.estimateName," dotAll="true" id="repo.edits.rename_patch_replaces_all">
+            <mutation text="patch: (e) =&gt; updatedEstimation, // "/>
         </regex>
         <regex pattern="lists\.forEach\(\(key, estimates\) =&gt; _emitToStream\(key, Right\(estimates\)\)\);" dotAll="true" id="repo.delete.skip_restore_lists">
             <mutation text="lists.forEach((key, estimates) =&gt; null);"/>
