@@ -162,6 +162,18 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> collapseDeliveryField(
+    WidgetTester tester,
+    String rowText,
+  ) async {
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('delivery_fee_row')),
+        matching: find.text(rowText),
+      ),
+    );
+  }
+
   Future<void> foldDeliveryField(WidgetTester tester) async {
     // Unfocus by tapping something else that doesn't itself steal semantics
     // we care about; the equipment name field is always present.
@@ -1215,28 +1227,6 @@ void main() {
         findsNothing,
       );
     });
-
-    testWidgets(
-      'panel is stroked with lineLight (#eaecf0), matching Figma node 66337:162350',
-      (tester) async {
-        await tester.pumpWidget(makeWidget());
-        await tester.pumpAndSettle();
-
-        final panel = tester.widget<Container>(
-          find.ancestor(
-            of: find.byKey(const Key('delivery_fee_row')),
-            matching: find.byType(Container),
-          ),
-        );
-        final decoration = panel.decoration as BoxDecoration;
-        final border = decoration.border as Border;
-        expect(border.top.width, 1);
-        expect(
-          border.top.color,
-          CoreTheme.light().extension<AppColorsExtension>()!.lineLight,
-        );
-      },
-    );
   });
 
   group('EquipmentCostFormFields — delivery fee never colors the field', () {
@@ -1666,7 +1656,10 @@ void main() {
         '8500',
       );
       await tester.pump();
-      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await collapseDeliveryField(
+        tester,
+        '${l10n.equipmentDeliveryRowLabel} \$8500',
+      );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
       await triggerOutsizedFeeCheck(tester);
@@ -2030,7 +2023,7 @@ void main() {
       await expandDeliveryField(tester);
       expect(find.byKey(const Key('delivery_fee_field')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await collapseDeliveryField(tester, deliveryRowText());
       await tester.pump();
 
       expect(find.byKey(const Key('delivery_fee_field')), findsNothing);
@@ -2047,7 +2040,12 @@ void main() {
 
       expect(find.byKey(const Key('delivery_note_field')), findsNothing);
 
-      await tester.tap(find.byKey(const Key('delivery_fee_add_note_link')));
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('delivery_fee_row')),
+          matching: find.text(l10n.equipmentDeliveryAddNoteLink),
+        ),
+      );
       await tester.pump();
 
       expect(find.byKey(const Key('delivery_note_field')), findsOneWidget);

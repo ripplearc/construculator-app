@@ -1081,7 +1081,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     ];
   }
 
-  // TODO: [CA-1252] replace with CoreUI's details row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1252
   Widget _buildDeliveryFeeSection(
     BuildContext context,
     EquipmentCostFormData data,
@@ -1089,201 +1088,61 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        CoreSpacing.space4,
-        0,
-        CoreSpacing.space4,
-        _deliveryExpanded ? CoreSpacing.space3 : 0,
-      ),
-      decoration: BoxDecoration(
-        color: colorTheme.backgroundGrayLight,
-        borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        // Figma node 66337:162350's "Details Row" instance strokes the
-        // whole panel with `#eaecf0` at 1px — colorTheme.lineLight resolves
-        // to exactly that (gray200, 0xFFEAECF0 in ripplearc_coreui's own
-        // token file), confirmed directly rather than guessed.
-        border: Border.all(color: colorTheme.lineLight, width: 1),
-      ),
+    return CoreDetailsRow(
+      key: const Key('delivery_fee_row'),
+      label: l10n.equipmentDeliveryRowLabel,
+      value: _deliveryRowValue(context, data.deliveryFee),
+      expanded: _deliveryExpanded,
+      onToggle: _toggleDeliveryExpanded,
+      actionLabel: l10n.equipmentDeliveryAddNoteLink,
+      onAction: _openNoteField,
+      semanticLabel: _deliveryRowText(context, data.deliveryFee),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              // Figma node 66337:162350's "Details Row" packs the value,
-              // dot, and "Add note" tightly together on the left, with only
-              // the chevron pushed to the far right — so the dot and "Add
-              // note" must sit in the same Row, not in separate Expanded
-              // siblings (which would leave a gap between them).
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Semantics(
-                        button: true,
-                        label: _deliveryRowText(context, data.deliveryFee),
-                        excludeSemantics: true,
-                        child: GestureDetector(
-                          key: const Key('delivery_fee_row'),
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _toggleDeliveryExpanded,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: 48),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: 1,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text.rich(
-                                      TextSpan(
-                                        children: [
-                                          TextSpan(
-                                            text:
-                                                '${l10n.equipmentDeliveryRowLabel} ',
-                                            style: textTheme.bodyMediumRegular
-                                                .copyWith(
-                                                  color: colorTheme.textBody,
-                                                ),
-                                          ),
-                                          TextSpan(
-                                            text: _deliveryRowValue(
-                                              context,
-                                              data.deliveryFee,
-                                            ),
-                                            style: textTheme.bodyMediumSemiBold
-                                                .copyWith(
-                                                  color:
-                                                      colorTheme.textHeadline,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: CoreSpacing.space1,
-                                    ),
-                                    child: Text(
-                                      '·',
-                                      style: textTheme.bodySmallRegular
-                                          .copyWith(
-                                            color: colorTheme.textDisable,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Semantics(
-                      button: true,
-                      label: l10n.equipmentDeliveryAddNoteLink,
-                      excludeSemantics: true,
-                      child: GestureDetector(
-                        key: const Key('delivery_fee_add_note_link'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _openNoteField,
-                        child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 48,
-                            minHeight: 48,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            l10n.equipmentDeliveryAddNoteLink,
-                            style: textTheme.bodyMediumSemiBold.copyWith(
-                              color: colorTheme.textLink,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          UnderlineTextField(
+            key: const Key('delivery_fee_field'),
+            label: l10n.equipmentDeliveryRowLabel,
+            controller: _deliveryFeeController,
+            focusNode: _deliveryFocusNode,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [_deliveryFeeFormatter],
+            prefix: Text(
+              '\$',
+              style: textTheme.bodyLargeRegular.copyWith(
+                color: colorTheme.textBody,
               ),
-              // Purely decorative: the labeled header zone to its left
-              // already exposes the same expand/collapse action to a11y
-              // tools, so this icon is excluded rather than adding a second,
-              // unlabeled tappable node to the semantics tree.
-              ExcludeSemantics(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _toggleDeliveryExpanded,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: 48,
-                      minHeight: 48,
-                    ),
-                    alignment: Alignment.center,
-                    child: AnimatedRotation(
-                      turns: _deliveryExpanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 150),
-                      child: CoreIconWidget(
-                        icon: CoreIcons.arrowDown,
-                        color: colorTheme.iconGrayMid,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          if (_deliveryExpanded) ...[
-            const SizedBox(height: CoreSpacing.space3),
-            UnderlineTextField(
-              key: const Key('delivery_fee_field'),
-              label: l10n.equipmentDeliveryRowLabel,
-              controller: _deliveryFeeController,
-              focusNode: _deliveryFocusNode,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [_deliveryFeeFormatter],
-              prefix: Text(
-                '\$',
-                style: textTheme.bodyLargeRegular.copyWith(
-                  color: colorTheme.textBody,
-                ),
-              ),
-            ),
-            if (_showDeliveryLimitHint)
-              Padding(
-                padding: const EdgeInsets.only(top: CoreSpacing.space2),
-                child: Semantics(
-                  liveRegion: true,
-                  child: _hintRow(
-                    context,
-                    key: const Key('delivery_fee_limit_hint'),
-                    icon: CoreIcons.info,
-                    iconColor: colorTheme.iconGrayMid,
-                    text: Text(
-                      l10n.equipmentDeliveryFeeLimitHint(
-                        DisplayFormatter.currency.format(largestMoneyAmount),
-                      ),
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
+          if (_showDeliveryLimitHint)
+            Padding(
+              padding: const EdgeInsets.only(top: CoreSpacing.space2),
+              child: Semantics(
+                liveRegion: true,
+                child: _hintRow(
+                  context,
+                  key: const Key('delivery_fee_limit_hint'),
+                  icon: CoreIcons.info,
+                  iconColor: colorTheme.iconGrayMid,
+                  text: Text(
+                    l10n.equipmentDeliveryFeeLimitHint(
+                      DisplayFormatter.currency.format(largestMoneyAmount),
+                    ),
+                    style: textTheme.bodySmallRegular.copyWith(
+                      color: colorTheme.textBody,
                     ),
                   ),
                 ),
               ),
-            const SizedBox(height: CoreSpacing.space3),
-            UnderlineTextField(
-              key: const Key('delivery_note_field'),
-              label: l10n.equipmentNoteLabel,
-              controller: _noteController,
-              focusNode: _noteFocusNode,
-              hintText: l10n.equipmentNotePlaceholder,
             ),
-          ],
+          const SizedBox(height: CoreSpacing.space3),
+          UnderlineTextField(
+            key: const Key('delivery_note_field'),
+            label: l10n.equipmentNoteLabel,
+            controller: _noteController,
+            focusNode: _noteFocusNode,
+            hintText: l10n.equipmentNotePlaceholder,
+          ),
         ],
       ),
     );
