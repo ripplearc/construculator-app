@@ -500,4 +500,36 @@ void main() {
     expect(display.isTyping, isFalse);
     expect(display.value, '12');
   });
+
+  testWidgets('a strip note takes the place of the suggestions and of the '
+      'placeholder, from l10n', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_nine',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+
+    final strip = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(strip.aiSuggestions, isEmpty);
+    expect(
+      strip.suggestionAreaPlaceholder,
+      l10n.calculatorNotePitchUnderRightAngle,
+    );
+    expect(find.text(l10n.calculatorNotePitchUnderRightAngle), findsOneWidget);
+
+    await press(tester, 'calc_key_clearAll');
+
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .suggestionAreaPlaceholder,
+      l10n.calculatorStripPlaceholder,
+    );
+  });
 }

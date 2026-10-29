@@ -270,6 +270,19 @@ class CalculatorLabelFormatter {
     ),
   };
 
+  /// The strip note (Section 1.8), or the strip's placeholder when the
+  /// strip has nothing to say.
+  String stripText(CalculatorStripNote? note) => switch (note) {
+    null => l10n.calculatorStripPlaceholder,
+    CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true) =>
+      l10n.calculatorNotePitchUnderRightAngle,
+    CalculatorPitchOutOfRangeNote() => l10n.calculatorNotePitchAboveZero,
+    CalculatorSlopeOutOfRangeNote() => l10n.calculatorNoteSlopeAboveZero,
+    CalculatorPitchHasNoDmsNote() => l10n.calculatorNotePitchHasNoDms,
+    CalculatorTrigCannotAnswerNote(:final function) =>
+      l10n.calculatorNoteTrigCannotAnswer(trigLabel(function)),
+  };
+
   /// The visible name of a dependent-key pill.
   String pillLabel(DependentKeyId id) => switch (id) {
     DependentKeyId.onCentre => l10n.calculatorPillOnCentre,

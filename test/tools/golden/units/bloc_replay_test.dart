@@ -92,11 +92,31 @@ class BlocScenarioDriver implements ScenarioDriver {
           ? ''
           : '${_labels.labelText(label)}${label.isTyping ? '…' : ''}',
       value: state.valueText,
+      hint: switch (state.stripNote) {
+        final note? => _labels.stripText(note),
+        null =>
+          state.suggestions.isEmpty && state.conversions.isEmpty
+              ? _labels.stripText(null)
+              : null,
+      },
       depKey: state.dependentKeys.isEmpty
           ? null
           : [for (final key in state.dependentKeys) _pillText(key)].join(' | '),
       tape: [
-        for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',
+        for (final chip in state.chipsList)
+          '${chip.label ?? ''}${chip.value}'
+              '${chip.type == CoreCalculatorChipType.active && label.isTyping ? '…' : ''}',
+      ],
+      tapeBracket: [
+        for (final chip in state.tape.chips)
+          chip is BracketChip && !chip.isOpen,
+      ],
+      tapeBracketOpen: [
+        for (final chip in state.tape.chips) chip is BracketChip && chip.isOpen,
+      ],
+      tapeFrozen: [
+        for (final chip in state.tape.chips)
+          state.tape.openBracket != null && chip != state.tape.chips.last,
       ],
       tapeKinds: [
         for (final chip in state.chipsList)
@@ -345,7 +365,7 @@ void main() {
         await driver.perform(KeyStep(key));
       }
       final typing = driver.snapshot();
-      expect(typing.tape, ['Rise6ft', 'Run1']);
+      expect(typing.tape, ['Rise6ft', 'Run1…']);
       expect(typing.tapeKinds, ['t-input', 't-active']);
       expect(typing.label, 'Run…');
       expect(typing.value, '1');
@@ -407,6 +427,41 @@ void main() {
       final bracket = driver.snapshot();
       expect(bracket.label, 'Addition · (3×4)');
       expect(bracket.value, '12');
+      expect(bracket.tapeBracket, [false, true]);
+      expect(bracket.tapeBracketOpen, [false, false]);
+      expect(bracket.hint, isNull);
+    });
+
+    test('the driver reads the strip note as the hint, the placeholder when '
+        'nothing applies, and the typing ellipsis on an active chip', () async {
+      expect(
+        driver.snapshot().hint,
+        BlocScenarioDriver._labels.stripText(null),
+      );
+      for (final key in const ['fk:Pitch', 'd:8', 'd:9', 'd:9']) {
+        await driver.perform(KeyStep(key));
+      }
+      final out = driver.snapshot();
+      expect(out.strip, isEmpty);
+      expect(
+        out.hint,
+        BlocScenarioDriver._labels.stripText(
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        ),
+      );
+
+      await driver.perform(const KeyStep('clear'));
+      for (final key in const ['d:2', 'op:+', 'paren', 'd:3']) {
+        await driver.perform(KeyStep(key));
+      }
+      final open = driver.snapshot();
+      expect(open.tape, ['2', '+(3']);
+      expect(open.tapeFrozen, [true, false]);
+      expect(open.tapeBracketOpen, [false, true]);
+
+      await driver.perform(const KeyStep('clear'));
+      await driver.perform(const KeyStep('fk:Width'));
+      expect(driver.snapshot().tape, ['Width…']);
     });
   });
 }

@@ -8,6 +8,7 @@ part 'calculator_display_label.dart';
 part 'calculator_event.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
+part 'calculator_strip_note.dart';
 part 'calculator_suggestion.dart';
 
 /// Presses the keyboard's keys on the engine's tape and keeps the tape as

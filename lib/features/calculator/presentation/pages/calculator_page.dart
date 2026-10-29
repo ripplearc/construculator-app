@@ -116,8 +116,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
     UnitType.divideSymbol => const CalculatorFractionPressed(),
   };
 
-  // TODO: [CA-1088] Press the % key on the tape once the engine takes a
-  // grade under Slope from it. https://ripplearc.youtrack.cloud/issue/CA-1088
+  // TODO: [CA-1376] Press the % key on the tape once the engine has the
+  // four-function percent of Section 7.
+  // https://ripplearc.youtrack.cloud/issue/CA-1376
   CalculatorEvent? _operatorEventFor(
     OperatorType operator,
   ) => switch (operator) {
@@ -227,7 +228,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
                   ),
                   CoreSuggestionArea(
                     layout: CoreSuggestionLayout.twoRows,
-                    suggestionAreaPlaceholder: l10n.calculatorStripPlaceholder,
+                    // TODO: [CA-1094] Draw a strip note in the warning
+                    // colour, as Section 1.8 asks, once the strip has a
+                    // place for it. https://ripplearc.youtrack.cloud/issue/CA-1094
+                    suggestionAreaPlaceholder: labels.stripText(
+                      state.stripNote,
+                    ),
                     aiSuggestions: _stripRow(labels, bloc, state.suggestions),
                     conversionSuggestions: _stripRow(
                       labels,

@@ -557,6 +557,39 @@ void main() {
     );
   });
 
+  test('every strip note comes from the localization layer', () {
+    final l10n = AppLocalizationsEn();
+    final labels = CalculatorLabelFormatter(l10n);
+
+    expect(labels.stripText(null), l10n.calculatorStripPlaceholder);
+    expect(
+      labels.stripText(
+        const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+      ),
+      l10n.calculatorNotePitchUnderRightAngle,
+    );
+    expect(
+      labels.stripText(
+        const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
+      ),
+      l10n.calculatorNotePitchAboveZero,
+    );
+    expect(
+      labels.stripText(const CalculatorSlopeOutOfRangeNote()),
+      l10n.calculatorNoteSlopeAboveZero,
+    );
+    expect(
+      labels.stripText(const CalculatorPitchHasNoDmsNote()),
+      l10n.calculatorNotePitchHasNoDms,
+    );
+    expect(
+      labels.stripText(
+        const CalculatorTrigCannotAnswerNote(TrigFunction.arccosine),
+      ),
+      l10n.calculatorNoteTrigCannotAnswer(l10n.calculatorKeyAcosFullName),
+    );
+  });
+
   test('a pill is drawn as the kind its id names', () {
     final l10n = AppLocalizationsEn();
 
