@@ -1,7 +1,10 @@
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 import '../utils/calculator_test_harness.dart';
@@ -45,6 +48,32 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/calculator_page/${size.width}x${size.height}/calculator_page_initial$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders a setting sheet over the page', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      BlocProvider.of<CalculatorBloc>(
+        tester.element(find.byType(CoreKeyboard)),
+      ).add(
+        const CalculatorSettingSheetOpened(
+          CalculatorSetting.fractionResolution,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(CalculatorPage.settingUpdateKey), findsOneWidget);
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_setting_sheet$suffix.png',
         ),
       );
     });
