@@ -3700,6 +3700,66 @@ abstract class AppLocalizations {
   /// **'Convert to other units'**
   String get calculatorStripConversionsSemantics;
 
+  /// Head of the calculator label row for a value typed under no function key
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get calculatorLabelValue;
+
+  /// Head of the calculator label row for a number typed after +
+  ///
+  /// In en, this message translates to:
+  /// **'Addition'**
+  String get calculatorOperatorAddition;
+
+  /// Head of the calculator label row for a number typed after −
+  ///
+  /// In en, this message translates to:
+  /// **'Subtraction'**
+  String get calculatorOperatorSubtraction;
+
+  /// Head of the calculator label row for a number typed after ×
+  ///
+  /// In en, this message translates to:
+  /// **'Multiplication'**
+  String get calculatorOperatorMultiplication;
+
+  /// Head of the calculator label row for a number typed after ÷
+  ///
+  /// In en, this message translates to:
+  /// **'Division'**
+  String get calculatorOperatorDivision;
+
+  /// Reading of a bare number named after the key on the calculator label row, and the spelling of a pitch answer on the Shown as pill: decimal degrees
+  ///
+  /// In en, this message translates to:
+  /// **'degrees'**
+  String get calculatorReadingDegrees;
+
+  /// Reading of a number typed as degrees, minutes and seconds, named after the key on the calculator label row
+  ///
+  /// In en, this message translates to:
+  /// **'D:M:S'**
+  String get calculatorReadingDms;
+
+  /// Reading of the number an inverse trigonometric key takes, named after the key on the calculator label row
+  ///
+  /// In en, this message translates to:
+  /// **'a ratio'**
+  String get calculatorReadingRatio;
+
+  /// Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row and the Shown as pill
+  ///
+  /// In en, this message translates to:
+  /// **'in/12in'**
+  String get calculatorReadingRisePerFoot;
+
+  /// Reading of a bare number under Slope as a percent grade, on the calculator label row and the Shown as pill
+  ///
+  /// In en, this message translates to:
+  /// **'grade'**
+  String get calculatorReadingGrade;
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:

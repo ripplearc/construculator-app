@@ -48,7 +48,7 @@ void main() {
 
     await press(tester, 'calc_key_Length');
     expect(bloc.state.labelKeyId, 'Length');
-    expect(bloc.state.isTyping, isTrue);
+    expect(bloc.state.tape.beingTyped, isNotNull);
 
     await press(tester, 'calc_key_two');
     await press(tester, 'calc_key_four');
@@ -68,7 +68,7 @@ void main() {
     await tester.pump();
     expect(bloc.state.tape.chips, hasLength(3));
     expect(bloc.state.valueText, '6ft 0in');
-    expect(bloc.state.isTyping, isFalse);
+    expect(bloc.state.tape.beingTyped, isNull);
 
     await press(tester, 'calc_key_divideSymbol');
     expect(bloc.state.refusal, isNotNull);
@@ -359,5 +359,56 @@ void main() {
     await press(tester, 'calc_key_two');
 
     expect(equalsFace(tester), l10n.calculatorEqualsAns);
+  });
+
+  testWidgets('the label row names the reading of a bare number, and the '
+      'value row writes it after the number', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_eight',
+      'calc_key_decimal',
+      'calc_key_four',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+
+    final display = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(
+      display.label,
+      '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingDegrees}',
+    );
+    expect(display.isTyping, isTrue);
+    expect(display.value, '8.45°');
+  });
+
+  testWidgets('a chip with no key is named by its operator, and a closed '
+      'bracket by its inside over its value', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_paren',
+      'calc_key_three',
+      'calc_key_multiply',
+      'calc_key_four',
+    ]) {
+      await press(tester, key);
+    }
+    var display = tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea));
+    expect(display.label, l10n.calculatorOperatorMultiplication);
+    expect(display.value, '4');
+
+    await press(tester, 'calc_key_paren');
+
+    display = tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea));
+    expect(display.label, '${l10n.calculatorOperatorAddition} · (3×4)');
+    expect(display.isTyping, isFalse);
+    expect(display.value, '12');
   });
 }

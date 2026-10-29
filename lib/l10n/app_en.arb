@@ -3080,6 +3080,46 @@
   "@calculatorStripConversionsSemantics": {
     "description": "Screen reader label of the conversions row of the calculator suggestion strip"
   },
+  "calculatorLabelValue": "Value",
+  "@calculatorLabelValue": {
+    "description": "Head of the calculator label row for a value typed under no function key"
+  },
+  "calculatorOperatorAddition": "Addition",
+  "@calculatorOperatorAddition": {
+    "description": "Head of the calculator label row for a number typed after +"
+  },
+  "calculatorOperatorSubtraction": "Subtraction",
+  "@calculatorOperatorSubtraction": {
+    "description": "Head of the calculator label row for a number typed after −"
+  },
+  "calculatorOperatorMultiplication": "Multiplication",
+  "@calculatorOperatorMultiplication": {
+    "description": "Head of the calculator label row for a number typed after ×"
+  },
+  "calculatorOperatorDivision": "Division",
+  "@calculatorOperatorDivision": {
+    "description": "Head of the calculator label row for a number typed after ÷"
+  },
+  "calculatorReadingDegrees": "degrees",
+  "@calculatorReadingDegrees": {
+    "description": "Reading of a bare number named after the key on the calculator label row, and the spelling of a pitch answer on the Shown as pill: decimal degrees"
+  },
+  "calculatorReadingDms": "D:M:S",
+  "@calculatorReadingDms": {
+    "description": "Reading of a number typed as degrees, minutes and seconds, named after the key on the calculator label row"
+  },
+  "calculatorReadingRatio": "a ratio",
+  "@calculatorReadingRatio": {
+    "description": "Reading of the number an inverse trigonometric key takes, named after the key on the calculator label row"
+  },
+  "calculatorReadingRisePerFoot": "in/12in",
+  "@calculatorReadingRisePerFoot": {
+    "description": "Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row and the Shown as pill"
+  },
+  "calculatorReadingGrade": "grade",
+  "@calculatorReadingGrade": {
+    "description": "Reading of a bare number under Slope as a percent grade, on the calculator label row and the Shown as pill"
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"
