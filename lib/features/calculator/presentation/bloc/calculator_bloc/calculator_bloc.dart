@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -18,12 +22,45 @@ part 'calculator_state.dart';
 /// number ([PlainNumberKeys]), and a unit under a length-only key (Section
 /// 3, "Takes: A length") or under Slope goes to the tape with that said,
 /// read off the chip being typed wherever it is. Nothing here reads a
-/// store, the recents or the preferences repository; the System of units
-/// toggle sets the tape's own preferences, so the tape and the keyboard
-/// agree on one value. The engine's answers (the strip, the pills, the
+/// store or the recents. The engine's answers (the strip, the pills, the
 /// equals-key label) are mapped in S1b (CA-1088).
+///
+/// The settings (W1, CA-1103) are the signed-in user's, watched from the
+/// [CalculatorPreferencesRepository]: the tape renders under whatever
+/// arrives (rule 4.14, "a setting re-renders a value; it never changes
+/// what was typed"), the System of units pill re-renders at once and then
+/// saves, so the tape and the keyboard agree on one value, and a save that
+/// fails says so without taking the choice back. The four setting sheets
+/// save the same way (2/4).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
-  CalculatorBloc() : super(CalculatorState.initial()) {
+  final CalculatorPreferencesRepository _preferencesRepository;
+
+  late final StreamSubscription<CalculatorPreferences> _preferencesSubscription;
+
+  // The settings saved from here whose echo has not arrived yet. The
+  // repository re-emits every save a moment after it lands, and the echo
+  // of an older save arriving after a newer choice was applied would take
+  // that choice back; the screen already shows every save, so each echo is
+  // consumed once and not applied. A save equal to the stream's last
+  // emission — what last arrived, or the last echo still expected — is
+  // never echoed (the stream is distinct), so none is expected for it. A
+  // change from another device that happens to equal a pending echo is
+  // taken for it, and arrives with the next profile read. Two saves in
+  // flight at once race to the profile, the last to land winning, which a
+  // user tapping twice within one round trip sees as the second tap.
+  final List<CalculatorPreferences> _echoesExpected = [];
+
+  CalculatorPreferences _lastArrived = CalculatorPreferences.defaults;
+
+  CalculatorPreferences get _lastEmitted =>
+      _echoesExpected.isNotEmpty ? _echoesExpected.last : _lastArrived;
+
+  CalculatorBloc({
+    required CalculatorPreferencesRepository preferencesRepository,
+  }) : _preferencesRepository = preferencesRepository,
+       super(CalculatorState.initial()) {
+    on<CalculatorPreferencesArrived>(_onPreferencesArrived);
+    on<CalculatorUnitSystemToggled>(_onUnitSystemToggled);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -35,6 +72,49 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
+    _preferencesSubscription = preferencesRepository.watchPreferences().listen(
+      (preferences) => add(CalculatorPreferencesArrived(preferences)),
+    );
+  }
+
+  @override
+  Future<void> close() async {
+    await _preferencesSubscription.cancel();
+    return super.close();
+  }
+
+  void _onPreferencesArrived(
+    CalculatorPreferencesArrived event,
+    Emitter<CalculatorState> emit,
+  ) {
+    _lastArrived = event.preferences;
+    if (_echoesExpected.remove(event.preferences)) return;
+    // Settings arriving are not a key: what the last key said stays.
+    emit(state.copyWith(tape: state.tape.withPreferences(event.preferences)));
+  }
+
+  Future<void> _onUnitSystemToggled(
+    CalculatorUnitSystemToggled event,
+    Emitter<CalculatorState> emit,
+  ) => _applySystem(emit, switch (state.tape.preferences.system) {
+    MeasurementSystem.imperial => MeasurementSystem.metric,
+    MeasurementSystem.metric => MeasurementSystem.imperial,
+  });
+
+  Future<void> _saved(
+    Emitter<CalculatorState> emit,
+    CalculatorPreferences preferences,
+  ) async {
+    final result = await _preferencesRepository.savePreferences(preferences);
+    emit(
+      result.fold(
+        (failure) => state.copyWith(settingSaveFailure: () => failure),
+        (saved) {
+          if (saved != _lastEmitted) _echoesExpected.add(saved);
+          return state;
+        },
+      ),
+    );
   }
 
   static const Map<String, Unit> _unitKeys = {
@@ -134,23 +214,25 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onGroupSelected(
     CalculatorGroupSelected event,
     Emitter<CalculatorState> emit,
-  ) => emit(state.copyWith(currentGroupIndex: event.groupIndex));
+  ) => emit(state.silenced.copyWith(currentGroupIndex: event.groupIndex));
 
-  void _onUnitSystemChanged(
+  Future<void> _onUnitSystemChanged(
     CalculatorUnitSystemChanged event,
     Emitter<CalculatorState> emit,
-  ) {
-    final system = switch (event.unitSystem) {
-      UnitSystem.imperial => MeasurementSystem.imperial,
-      UnitSystem.metric => MeasurementSystem.metric,
-    };
+  ) => _applySystem(emit, switch (event.unitSystem) {
+    UnitSystem.imperial => MeasurementSystem.imperial,
+    UnitSystem.metric => MeasurementSystem.metric,
+  });
+
+  Future<void> _applySystem(
+    Emitter<CalculatorState> emit,
+    MeasurementSystem system,
+  ) async {
+    final preferences = state.tape.preferences.copyWith(system: system);
     emit(
-      state.copyWith(
-        tape: state.tape.withPreferences(
-          state.tape.preferences.copyWith(system: system),
-        ),
-      ),
+      state.silenced.copyWith(tape: state.tape.withPreferences(preferences)),
     );
+    await _saved(emit, preferences);
   }
 
   void _onResetRequested(
@@ -164,11 +246,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) {
     switch (press(state.tape)) {
       case TapeChanged(:final tape, :final notice):
-        emit(
-          state.copyWith(tape: tape, notice: () => notice, refusal: () => null),
-        );
+        emit(state.silenced.copyWith(tape: tape, notice: () => notice));
       case final TapeOutcome refusal:
-        emit(state.copyWith(notice: () => null, refusal: () => refusal));
+        emit(state.silenced.copyWith(refusal: () => refusal));
     }
   }
 
