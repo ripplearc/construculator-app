@@ -42,6 +42,31 @@ void main() {
     );
 
     testWidgets(
+      'the System of units pill meets the label and contrast guidelines in '
+      'both themes, and says what a tap does',
+      (tester) async {
+        await setupA11yTest(tester);
+        // Tap target size is disabled as in the close-button test: the
+        // guideline reads the whole page, where CoreUI's close button and
+        // drag handle sit below 48dp by design (tracked in CoreUI).
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(CalculatorPage.unitsPillKey),
+          checkTapTargetSize: false,
+        );
+        // The pill's own target is measured here.
+        final pill = tester.getSize(find.byKey(CalculatorPage.unitsPillKey));
+        expect(pill.height, greaterThanOrEqualTo(48));
+        expect(pill.width, greaterThanOrEqualTo(48));
+        expect(
+          tester.getSemantics(find.byKey(CalculatorPage.unitsPillKey)).hint,
+          AppLocalizationsEn().calculatorUnitsSwitchToMetric,
+        );
+      },
+    );
+
+    testWidgets(
       'an abbreviated key is read by its face, then its full name as a hint',
       (tester) async {
         final l10n = AppLocalizationsEn();

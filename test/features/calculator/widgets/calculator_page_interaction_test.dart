@@ -29,6 +29,9 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   }
 
+  AppLocalizations l10nOf(WidgetTester tester) =>
+      AppLocalizations.of(tester.element(find.byType(CoreKeyboard)))!;
+
   Future<void> press(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(ValueKey(key)));
     await tester.pump();
@@ -217,5 +220,70 @@ void main() {
       bloc.state.refusal,
       const TapeRefused(TapeRefusal.nothingBeingTyped),
     );
+  });
+
+  group('W1: the settings', () {
+    late CalculatorTestHarness harness;
+
+    setUp(() => harness = CalculatorTestHarness());
+
+    tearDown(() => harness.dispose());
+
+    Future<void> pumpSignedIn(WidgetTester tester) async {
+      harness.signIn(harness.userWith({}));
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CalculatorPage(calculatorBlocFactory: harness.createBloc),
+        ),
+      );
+    }
+
+    String pillLabel(WidgetTester tester) => tester
+        .widget<CoreButton>(find.byKey(CalculatorPage.unitsPillKey))
+        .label!;
+
+    testWidgets('the System of units pill reads Imperial on the empty tape '
+        'row, hides while anything is typed, and one tap switches it with '
+        'the choice kept (S121)', (tester) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+
+      expect(pillLabel(tester), l10n.calculatorUnitsImperial);
+      expect(
+        tester.getSemantics(find.byKey(CalculatorPage.unitsPillKey)).hint,
+        l10n.calculatorUnitsSwitchToMetric,
+      );
+
+      await press(tester, 'calc_key_five');
+      expect(find.byKey(CalculatorPage.unitsPillKey), findsNothing);
+
+      await press(tester, 'calc_key_clearAll');
+      expect(pillLabel(tester), l10n.calculatorUnitsImperial);
+
+      await tester.tap(find.byKey(CalculatorPage.unitsPillKey));
+      await tester.pump();
+      expect(pillLabel(tester), l10n.calculatorUnitsMetric);
+      expect(bloc.state.currentUnitSystem, UnitSystem.metric);
+      expect(
+        tester
+            .widget<CoreKeyboard>(find.byType(CoreKeyboard))
+            .currentUnitSystem,
+        UnitSystem.metric,
+      );
+
+      await press(tester, 'calc_key_five');
+      await press(tester, 'calc_key_clearAll');
+      expect(pillLabel(tester), l10n.calculatorUnitsMetric);
+
+      await press(tester, 'calc_key_paren');
+      expect(find.byKey(CalculatorPage.unitsPillKey), findsNothing);
+    });
   });
 }
