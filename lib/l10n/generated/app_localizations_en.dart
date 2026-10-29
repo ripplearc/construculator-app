@@ -2149,6 +2149,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorPillReadAsHint => 'Rewrites the number the other way';
 
   @override
+  String get calculatorNotePitchUnderRightAngle =>
+      'A pitch must be under 90°. Edit the Pitch chip.';
+
+  @override
+  String get calculatorNotePitchAboveZero =>
+      'A pitch must be above 0°. Edit the Pitch chip.';
+
+  @override
+  String get calculatorNoteSlopeAboveZero =>
+      'A grade of 0% is flat — there is no slope to work from. Edit the Slope chip to a grade above 0.';
+
+  @override
+  String get calculatorNotePitchHasNoDms =>
+      'Pitch has no D:M:S. Press Pitch for other readings.';
+
+  @override
+  String calculatorNoteTrigCannotAnswer(String function) {
+    return '$function can\'t answer that';
+  }
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override
