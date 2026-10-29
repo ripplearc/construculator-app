@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
+part 'calculator_setting.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 
@@ -28,10 +29,11 @@ part 'calculator_state.dart';
 /// The settings (W1, CA-1103) are the signed-in user's, watched from the
 /// [CalculatorPreferencesRepository]: the tape renders under whatever
 /// arrives (rule 4.14, "a setting re-renders a value; it never changes
-/// what was typed"), the System of units pill re-renders at once and then
-/// saves, so the tape and the keyboard agree on one value, and a save that
-/// fails says so without taking the choice back. The four setting sheets
-/// save the same way (2/4).
+/// what was typed"), the System of units pill and a setting sheet's Update
+/// re-render at once and then save, so the tape, the keyboard and the
+/// sheet agree on one value, and a save that fails says so without taking
+/// the choice back. The toast after Update is raised from the save
+/// ([CalculatorState.settingSaved]), not from a toast queue (S2b).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final CalculatorPreferencesRepository _preferencesRepository;
 
@@ -61,6 +63,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
        super(CalculatorState.initial()) {
     on<CalculatorPreferencesArrived>(_onPreferencesArrived);
     on<CalculatorUnitSystemToggled>(_onUnitSystemToggled);
+    on<CalculatorSettingSheetOpened>(_onSettingSheetOpened);
+    on<CalculatorSettingSheetClosed>(_onSettingSheetClosed);
+    on<CalculatorSettingUpdated>(_onSettingUpdated);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -101,17 +106,48 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     MeasurementSystem.metric => MeasurementSystem.imperial,
   });
 
+  void _onSettingSheetOpened(
+    CalculatorSettingSheetOpened event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.silenced.copyWith(openSettingSheet: () => event.setting));
+
+  void _onSettingSheetClosed(
+    CalculatorSettingSheetClosed event,
+    Emitter<CalculatorState> emit,
+  ) {
+    if (state.openSettingSheet == null) return;
+    emit(state.silenced.copyWith(openSettingSheet: () => null));
+  }
+
+  Future<void> _onSettingUpdated(
+    CalculatorSettingUpdated event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    final preferences = event.setting.applied(
+      state.tape.preferences,
+      event.optionId,
+    );
+    emit(
+      state.silenced.copyWith(
+        tape: state.tape.withPreferences(preferences),
+        openSettingSheet: () => null,
+      ),
+    );
+    await _saved(emit, preferences, setting: event.setting);
+  }
+
   Future<void> _saved(
     Emitter<CalculatorState> emit,
-    CalculatorPreferences preferences,
-  ) async {
+    CalculatorPreferences preferences, {
+    CalculatorSetting? setting,
+  }) async {
     final result = await _preferencesRepository.savePreferences(preferences);
     emit(
       result.fold(
         (failure) => state.copyWith(settingSaveFailure: () => failure),
         (saved) {
           if (saved != _lastEmitted) _echoesExpected.add(saved);
-          return state;
+          return state.copyWith(settingSaved: () => setting);
         },
       ),
     );

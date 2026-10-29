@@ -117,6 +117,38 @@ class CalculatorPreferencesArrived extends CalculatorEvent {
   List<Object?> get props => [preferences];
 }
 
+/// A deep link asked for a setting sheet (term 2.20): the sheet for
+/// [setting] opens over the keyboard.
+class CalculatorSettingSheetOpened extends CalculatorEvent {
+  /// The setting the sheet holds.
+  final CalculatorSetting setting;
+
+  const CalculatorSettingSheetOpened(this.setting);
+
+  @override
+  List<Object?> get props => [setting];
+}
+
+/// The setting sheet was closed without Update: nothing changes.
+class CalculatorSettingSheetClosed extends CalculatorEvent {
+  const CalculatorSettingSheetClosed();
+}
+
+/// Update was pressed on a setting sheet: the chosen option is saved, every
+/// value on screen re-renders, and a toast says so (Section 1.5).
+class CalculatorSettingUpdated extends CalculatorEvent {
+  /// The setting the sheet held.
+  final CalculatorSetting setting;
+
+  /// The id of the chosen option, one of [CalculatorSetting.optionIds].
+  final String optionId;
+
+  const CalculatorSettingUpdated(this.setting, this.optionId);
+
+  @override
+  List<Object?> get props => [setting, optionId];
+}
+
 /// The System of units pill was tapped (1.1): the other system takes
 /// over, with no sheet and no toast.
 class CalculatorUnitSystemToggled extends CalculatorEvent {

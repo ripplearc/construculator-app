@@ -848,6 +848,308 @@ void main() {
       });
     });
 
+    group('W1 2/4: the setting sheets', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a setting sheet opens on request, closes without a change, and '
+        'Update re-renders the results, saves and signals the toast '
+        '(walkthrough 22.2)',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc
+            ..add(const CalculatorDigitPressed('1'))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorUnitSelected(Unit.inch))
+            ..add(const CalculatorOperatorPressed(Operator.divide))
+            ..add(const CalculatorDigitPressed('3'))
+            ..add(const CalculatorEqualsPressed())
+            ..add(
+              const CalculatorSettingSheetOpened(
+                CalculatorSetting.fractionResolution,
+              ),
+            )
+            ..add(const CalculatorSettingSheetClosed())
+            ..add(
+              const CalculatorSettingSheetOpened(
+                CalculatorSetting.fractionResolution,
+              ),
+            )
+            ..add(
+              const CalculatorSettingUpdated(
+                CalculatorSetting.fractionResolution,
+                'half',
+              ),
+            );
+          await bloc.stream.firstWhere(
+            (s) => s.settingSaved == CalculatorSetting.fractionResolution,
+          );
+        },
+        skip: 5,
+        expect: () => [
+          tapeState(pressed('1 0 in ÷ 3 =')),
+          tapeState(pressed('1 0 in ÷ 3 =')).copyWith(
+            openSettingSheet: () => CalculatorSetting.fractionResolution,
+          ),
+          tapeState(pressed('1 0 in ÷ 3 =')),
+          tapeState(pressed('1 0 in ÷ 3 =')).copyWith(
+            openSettingSheet: () => CalculatorSetting.fractionResolution,
+          ),
+          tapeState(
+            pressed('1 0 in ÷ 3 =').withPreferences(
+              const CalculatorPreferences(
+                fractionResolution: FractionResolution.half,
+              ),
+            ),
+          ),
+          tapeState(
+            pressed('1 0 in ÷ 3 =').withPreferences(
+              const CalculatorPreferences(
+                fractionResolution: FractionResolution.half,
+              ),
+            ),
+          ).copyWith(settingSaved: () => CalculatorSetting.fractionResolution),
+        ],
+        verify: (bloc) {
+          expect(tapeState(pressed('1 0 in ÷ 3 =')).valueText, '0ft 3-5/16in');
+          expect(bloc.state.valueText, '0ft 3-1/2in');
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['10in', '÷3', '0ft 3-1/2in'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the ton, metre and density sheets each apply their option, and the '
+        'next key clears the toast signal',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.tonDefinition,
+              'longTon',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaved != null);
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.metreDisplay,
+              'threeDecimals',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaved != null);
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.densityUnit,
+              'kilogramsPerCubicMetre',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaved != null);
+          bloc.add(const CalculatorDigitPressed('5'));
+        },
+        skip: 6,
+        expect: () => [
+          tapeState(
+            pressed(
+              '5',
+              tape: const Tape(
+                preferences: CalculatorPreferences(
+                  tonDefinition: TonDefinition.longTon,
+                  metreDisplay: MetreDisplay.threeDecimals,
+                  densityUnit: DensityUnit.kilogramsPerCubicMetre,
+                ),
+              ),
+            ),
+          ),
+        ],
+        verify: (bloc) async {
+          expect(bloc.state.settingSaved, isNull);
+          await harness.repository.watchPreferences().firstWhere(
+            (preferences) =>
+                preferences ==
+                const CalculatorPreferences(
+                  tonDefinition: TonDefinition.longTon,
+                  metreDisplay: MetreDisplay.threeDecimals,
+                  densityUnit: DensityUnit.kilogramsPerCubicMetre,
+                ),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an Update with no profile signed in keeps the choice on screen, says '
+        'why it was not saved and raises no toast',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.tonDefinition,
+              'longTon',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaveFailure != null);
+        },
+        expect: () => [
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                tonDefinition: TonDefinition.longTon,
+              ),
+            ),
+          ),
+          isA<CalculatorState>()
+              .having(
+                (s) => s.tape.preferences.tonDefinition,
+                'tonDefinition',
+                TonDefinition.longTon,
+              )
+              .having(
+                (s) => s.settingSaveFailure,
+                'settingSaveFailure',
+                isA<UserNotFoundFailure>(),
+              )
+              .having((s) => s.settingSaved, 'settingSaved', isNull),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a save equal to what last arrived expects no echo, so a later '
+        'change from another device to that same value is applied',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.tonDefinition,
+              'shortTon',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaved != null);
+          harness.announce(
+            harness.userWith({
+              'calculator': {'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
+          );
+          harness.announce(
+            harness.userWith({
+              'calculator': {'pounds_per_ton': 2000},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.shortTon,
+          );
+        },
+        skip: 1,
+        // Settings arriving are not a key, so the toast signal of the save
+        // stays until the next key.
+        expect: () => [
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                tonDefinition: TonDefinition.longTon,
+              ),
+            ),
+            settingSaved: CalculatorSetting.tonDefinition,
+          ),
+          const CalculatorState(settingSaved: CalculatorSetting.tonDefinition),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the pill\'s tap switches to the other system, and the sheet\'s '
+        'close after Update keeps the toast signal',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.imperial,
+          );
+          bloc.add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.metreDisplay,
+              'oneDecimal',
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s.settingSaved != null);
+          bloc.add(const CalculatorSettingSheetClosed());
+          await pumpEventQueue();
+        },
+        verify: (bloc) {
+          expect(bloc.state.currentUnitSystem, UnitSystem.imperial);
+          expect(bloc.state.settingSaved, CalculatorSetting.metreDisplay);
+          expect(
+            bloc.state.tape.preferences.metreDisplay,
+            MetreDisplay.oneDecimal,
+          );
+        },
+      );
+
+      test('a sheet names its options by the setting\'s values and applies '
+          'one by its id', () {
+        expect(CalculatorSetting.fractionResolution.optionIds, [
+          'half',
+          'quarter',
+          'eighth',
+          'sixteenth',
+          'thirtySecond',
+          'sixtyFourth',
+        ]);
+        expect(CalculatorSetting.tonDefinition.optionIds, [
+          'shortTon',
+          'longTon',
+        ]);
+        expect(CalculatorSetting.metreDisplay.optionIds, [
+          'oneDecimal',
+          'twoDecimals',
+          'threeDecimals',
+        ]);
+        expect(CalculatorSetting.densityUnit.optionIds, [
+          'poundsPerCubicYard',
+          'poundsPerCubicFoot',
+          'tonsPerCubicYard',
+          'kilogramsPerCubicMetre',
+        ]);
+        for (final setting in CalculatorSetting.values) {
+          expect(
+            setting.optionIds,
+            contains(setting.selectedOptionId(CalculatorPreferences.defaults)),
+          );
+          for (final id in setting.optionIds) {
+            expect(
+              setting.selectedOptionId(
+                setting.applied(CalculatorPreferences.defaults, id),
+              ),
+              id,
+            );
+          }
+        }
+        expect(
+          () => CalculatorSetting.tonDefinition.applied(
+            CalculatorPreferences.defaults,
+            'stone',
+          ),
+          throwsArgumentError,
+        );
+      });
+    });
+
     test(
       'the initial state is an empty imperial tape with the first group',
       () {
