@@ -95,6 +95,40 @@ void main() {
     );
 
     testWidgets(
+      'the label row with a reading meets the contrast guideline in both '
+      'themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          for (final key in const [
+            'calc_key_clearAll',
+            'calc_key_Pitch',
+            'calc_key_eight',
+            'calc_key_decimal',
+            'calc_key_four',
+            'calc_key_five',
+          ]) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.pump(CoreSuggestionArea.animationDuration);
+          await tester.pump();
+
+          // Tap target size is disabled as in the close-button test.
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.text(
+              '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingDegrees}',
+            ),
+            checkTapTargetSize: false,
+          );
+        }
+      },
+    );
+
+    testWidgets(
       'an abbreviated key is read by its face, then its full name as a hint',
       (tester) async {
         final l10n = AppLocalizationsEn();
