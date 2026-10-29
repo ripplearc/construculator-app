@@ -104,6 +104,25 @@ class CalculatorUnitSystemChanged extends CalculatorEvent {
   List<Object?> get props => [unitSystem];
 }
 
+/// The settings arrived from the repository: the signed-in user's, or a
+/// change synced from another device. Every value on screen re-renders
+/// under them (rule 4.14).
+class CalculatorPreferencesArrived extends CalculatorEvent {
+  /// The settings to render by.
+  final CalculatorPreferences preferences;
+
+  const CalculatorPreferencesArrived(this.preferences);
+
+  @override
+  List<Object?> get props => [preferences];
+}
+
+/// The System of units pill was tapped (1.1): the other system takes
+/// over, with no sheet and no toast.
+class CalculatorUnitSystemToggled extends CalculatorEvent {
+  const CalculatorUnitSystemToggled();
+}
+
 /// The calculator should start again with an empty tape.
 class CalculatorResetRequested extends CalculatorEvent {
   const CalculatorResetRequested();
