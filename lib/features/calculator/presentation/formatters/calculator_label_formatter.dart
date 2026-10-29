@@ -232,6 +232,44 @@ class CalculatorLabelFormatter {
     NumberReading.grade => l10n.calculatorReadingGrade,
   };
 
+  /// The word the "Shown as" pill names a pitch answer's spelling by.
+  String spellingLabel(AngleSpelling spelling) => switch (spelling) {
+    AngleSpelling.risePerFoot => l10n.calculatorReadingRisePerFoot,
+    AngleSpelling.degrees ||
+    AngleSpelling.degreesMinutesSeconds => l10n.calculatorReadingDegrees,
+    AngleSpelling.grade => l10n.calculatorReadingGrade,
+  };
+
+  /// A pill under the value, named from i18n: the Read-as offer as the
+  /// sentence "Input 8.45° as 8.45in/12in" (or "Re-input …" when the tap
+  /// rebuilds an answer), "Shown as" with the pitch spelling.
+  CoreDependentKeyData dependentKey(
+    CalculatorDependentKey key, {
+    required VoidCallback onPressed,
+  }) => switch (key) {
+    CalculatorReadAsPill(
+      :final sourceText,
+      :final targetText,
+      :final rebuildsAnAnswer,
+    ) =>
+      CoreDependentKeyData(
+        label: rebuildsAnAnswer
+            ? l10n.calculatorPillReInputAs(sourceText)
+            : l10n.calculatorPillInputAs(sourceText),
+        value: targetText,
+        kind: CoreDependentKeyKind.offer,
+        semanticsHint: l10n.calculatorPillReadAsHint,
+        onPressed: onPressed,
+      ),
+    CalculatorPitchSpellingPill(:final spelling) => CoreDependentKeyData(
+      label: pillLabel(DependentKeyId.shownAs),
+      value: spellingLabel(spelling),
+      kind: DependentKeyId.shownAs.kind,
+      semanticsHint: l10n.calculatorPillShownAsHint,
+      onPressed: onPressed,
+    ),
+  };
+
   /// The visible name of a dependent-key pill.
   String pillLabel(DependentKeyId id) => switch (id) {
     DependentKeyId.onCentre => l10n.calculatorPillOnCentre,

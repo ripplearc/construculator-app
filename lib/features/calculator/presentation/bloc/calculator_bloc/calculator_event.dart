@@ -89,6 +89,18 @@ class CalculatorSuggestionAccepted extends CalculatorEvent {
   List<Object?> get props => [suggestion];
 }
 
+/// The Read-as pill was tapped (term 2.14): the number is re-read the
+/// other way, and a trig answer after it is rebuilt.
+class CalculatorReadAsAccepted extends CalculatorEvent {
+  const CalculatorReadAsAccepted();
+}
+
+/// The "Shown as" pill under a pitch answer was tapped (Section 8): the
+/// answer is re-spelled in the next of its three spellings.
+class CalculatorPitchSpellingCycled extends CalculatorEvent {
+  const CalculatorPitchSpellingCycled();
+}
+
 /// The display's ✕ was tapped: it clears the value being typed.
 class CalculatorActiveValueCleared extends CalculatorEvent {
   const CalculatorActiveValueCleared();
