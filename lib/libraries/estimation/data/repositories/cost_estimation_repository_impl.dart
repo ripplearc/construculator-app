@@ -24,6 +24,12 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// by a composite key of `projectId + sortBy + limit`, so multiple
 /// query contexts for the same project do not share state. Paging raises the
 /// limit of the local watch instead of fetching offsets.
+///
+/// A write reaches the phone's copy only after the next sync, so a local
+/// re-emission in between would show the old value. Until saves go through the
+/// phone, each write to a watched project is remembered as a pending edit and
+/// re-applied to every list that arrives from the local watch, until a list
+/// shows the change or nobody watches the project any more.
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   final PowerSyncCostEstimationDataSource _localDataSource;
@@ -38,6 +44,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   _localSubscriptions = {};
   final Map<String, Completer<Either<Failure, List<CostEstimate>>>>
   _firstResults = {};
+
+  // TODO: [CA-1289] [Estimation] Remove pending edits once saves go through the phone.
+  // https://ripplearc.youtrack.cloud/issue/CA-1289
+  final Map<String, _PendingEdit> _pendingEdits = {};
 
   static const int defaultPageSize = 10;
 
@@ -232,7 +242,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               pageSize: _paginationStates[streamKey]?.pageSize ?? visibleLimit,
               hasMore: hasMore,
             );
-            publish(Right(localEstimates));
+            publish(Right(_applyPendingEdits(projectId, localEstimates)));
           },
           onError: (Object error) {
             publish(
@@ -254,6 +264,67 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     if (waiting != null && !waiting.isCompleted) {
       waiting.complete(Right(_cachedEstimations[streamKey] ?? []));
     }
+  }
+
+  List<CostEstimate> _applyPendingEdits(
+    String projectId,
+    List<CostEstimate> localEstimates,
+  ) {
+    _pendingEdits.removeWhere(
+      (_, edit) =>
+          edit.projectId == projectId && edit.isReflected(localEstimates),
+    );
+    return _pendingEdits.values
+        .where((edit) => edit.projectId == projectId)
+        .fold(localEstimates, (estimates, edit) => edit.apply(estimates));
+  }
+
+  bool _isWatched(String projectId) =>
+      _streamControllers.keys.any((key) => key.startsWith('$projectId:'));
+
+  void _forgetPendingEditsWhenUnwatched(String projectId) {
+    if (!_isWatched(projectId)) {
+      _pendingEdits.removeWhere((_, edit) => edit.projectId == projectId);
+    }
+  }
+
+  void _rememberPendingEdit(
+    String editKey,
+    String projectId, {
+    required List<CostEstimate> Function(List<CostEstimate>) apply,
+    required bool Function(List<CostEstimate>) isReflected,
+  }) {
+    if (!_isWatched(projectId)) return;
+    _pendingEdits[editKey] = (
+      projectId: projectId,
+      apply: apply,
+      isReflected: isReflected,
+    );
+  }
+
+  void _rememberServerVersion(
+    String editKey,
+    String projectId,
+    CostEstimate serverVersion, {
+    required CostEstimate Function(CostEstimate) patch,
+    required bool Function(CostEstimate) isReflected,
+  }) {
+    _rememberPendingEdit(
+      editKey,
+      projectId,
+      apply: (estimates) =>
+          _replaceEstimation(estimates, serverVersion.id, patch),
+      isReflected: (estimates) =>
+          estimates.any((e) => e.id == serverVersion.id && isReflected(e)),
+    );
+  }
+
+  List<CostEstimate> _replaceEstimation(
+    List<CostEstimate> estimates,
+    String estimationId,
+    CostEstimate Function(CostEstimate) replace,
+  ) {
+    return estimates.map((e) => e.id == estimationId ? replace(e) : e).toList();
   }
 
   @override
@@ -291,6 +362,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _visibleLimits.remove(streamKey);
               _localSubscriptions.remove(streamKey)?.cancel();
               _releaseWaitingCaller(streamKey);
+              _forgetPendingEditsWhenUnwatched(projectId);
             },
           );
       fetchInitialEstimations(
@@ -422,6 +494,15 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'Successfully created cost estimation: ${createdEstimation.id}',
       );
 
+      _rememberPendingEdit(
+        'create:${createdEstimation.id}',
+        estimation.projectId,
+        apply: (estimates) => estimates.any((e) => e.id == createdEstimation.id)
+            ? estimates
+            : [createdEstimation, ...estimates],
+        isReflected: (estimates) =>
+            estimates.any((e) => e.id == createdEstimation.id),
+      );
       _updateStreamWithNewEstimation(estimation.projectId, createdEstimation);
 
       return Right(createdEstimation);
@@ -499,6 +580,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _paginationStates.clear();
     _visibleLimits.clear();
     _localSubscriptions.clear();
+    _pendingEdits.clear();
   }
 
   @override
@@ -513,6 +595,14 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'Deleting cost estimation: Estimation id: $estimationId, Project id: $projectId',
       );
 
+      _rememberPendingEdit(
+        'delete:$estimationId',
+        projectId,
+        apply: (estimates) =>
+            estimates.where((e) => e.id != estimationId).toList(),
+        isReflected: (estimates) =>
+            estimates.every((e) => e.id != estimationId),
+      );
       _updateStreamWithDeletedEstimation(projectId, estimationId);
 
       await _dataSource.deleteEstimation(estimationId);
@@ -529,6 +619,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
+      _pendingEdits.remove('delete:$estimationId');
       _restoreCachedLists(originalLists);
 
       return Left(failure);
@@ -542,18 +633,32 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required String projectId,
   }) async {
     final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+    final lockEdit = 'lock:$estimationId';
 
     try {
       _logger.debug(
         'Changing lock status for estimation: $estimationId to $isLocked',
       );
 
+      final optimisticLockStatus = isLocked
+          ? LockStatus.locked()
+          : LockStatus.unlocked();
+      _rememberPendingEdit(
+        lockEdit,
+        projectId,
+        apply: (estimates) => _replaceEstimation(
+          estimates,
+          estimationId,
+          (e) => e.copyWith(lockStatus: optimisticLockStatus),
+        ),
+        isReflected: (estimates) => estimates.any(
+          (e) => e.id == estimationId && e.lockStatus.isLocked == isLocked,
+        ),
+      );
       _emitOptimisticUpdate(
         projectId: projectId,
         estimationId: estimationId,
-        updateFn: (e) => e.copyWith(
-          lockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
-        ),
+        updateFn: (e) => e.copyWith(lockStatus: optimisticLockStatus),
       );
 
       final updatedDto = await _dataSource.changeLockStatus(
@@ -563,10 +668,18 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       final updatedEstimation = updatedDto.toDomain();
 
+      _rememberServerVersion(
+        lockEdit,
+        projectId,
+        updatedEstimation,
+        patch: (e) => e.copyWith(lockStatus: updatedEstimation.lockStatus),
+        isReflected: (e) => e.lockStatus.isLocked == isLocked,
+      );
       _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
 
       return Right(updatedEstimation);
     } catch (e) {
+      _pendingEdits.remove(lockEdit);
       _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
       return Left(
         _handleError(
@@ -606,10 +719,23 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required String projectId,
   }) async {
     final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+    final renameEdit = 'rename:$estimationId';
 
     try {
       _logger.debug('Renaming estimation: $estimationId to $newName');
 
+      _rememberPendingEdit(
+        renameEdit,
+        projectId,
+        apply: (estimates) => _replaceEstimation(
+          estimates,
+          estimationId,
+          (e) => e.copyWith(estimateName: newName),
+        ),
+        isReflected: (estimates) => estimates.any(
+          (e) => e.id == estimationId && e.estimateName == newName,
+        ),
+      );
       _emitOptimisticUpdate(
         projectId: projectId,
         estimationId: estimationId,
@@ -628,10 +754,21 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
             updatedEstimationFromRemote.updatedAt,
       );
 
+      _rememberServerVersion(
+        renameEdit,
+        projectId,
+        updatedEstimation,
+        patch: (e) => e.copyWith(
+          estimateName: updatedEstimation.estimateName,
+          updatedAt: updatedEstimation.updatedAt,
+        ),
+        isReflected: (e) => e.estimateName == newName,
+      );
       _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
 
       return Right(updatedEstimation);
     } catch (e) {
+      _pendingEdits.remove(renameEdit);
       _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
       return Left(
         _handleError(
@@ -644,3 +781,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 }
+
+typedef _PendingEdit = ({
+  String projectId,
+  List<CostEstimate> Function(List<CostEstimate>) apply,
+  bool Function(List<CostEstimate>) isReflected,
+});
