@@ -253,6 +253,31 @@ void main() {
       });
     });
 
+    group('CA-1237: a length times an area is a volume in either order', () {
+      test('4ft × 3ft² = and 3ft² × 4ft = both land Calc 12ft³ (owner '
+          'decision of 4 October 2026, Section 7)', () {
+        expect(
+          lastResult(press(const Tape(), '4 ft × 3 ft ft =')),
+          'Calc 12ft³',
+        );
+        expect(
+          lastResult(press(const Tape(), '3 ft ft × 4 ft =')),
+          'Calc 12ft³',
+        );
+      });
+
+      test('and in metric: 2m × 3m² = lands Calc 6m³', () {
+        expect(lastResult(press(const Tape(), '2 m × 3 m m =')), 'Calc 6m³');
+      });
+
+      test('and a weight over a length is still a Dimension Error', () {
+        expect(
+          press(const Tape(), '1 2 lbs ÷ 4 ft =').chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+        );
+      });
+    });
+
     group('errors', () {
       test('78lbs ÷ 12ft = lands a Dimension Error chip (S18)', () {
         final tape = press(const Tape(), '7 8 lbs ÷ 1 2 ft');
