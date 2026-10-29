@@ -195,6 +195,32 @@ void main() {
       );
     });
 
+    testWidgets('reads a row as its name, recency and price', (tester) async {
+      final semantics = tester.ensureSemantics();
+      clock.set(DateTime(2026, 1, 15, 9));
+      database.seedRows([
+        {
+          'id': 'compactor-rate',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Compactor',
+          'rate_amount': 90,
+          'rate_currency': 'USD',
+          'equipment_method': 'day',
+          'saved_at': DateTime(2026, 1, 15, 8).toIso8601String(),
+        },
+      ]);
+      await openSheet(tester);
+
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('your_rate_row_compactor-rate')))
+            .label,
+        'Compactor. Saved today. \$90.00 /day',
+      );
+      semantics.dispose();
+    });
+
     testWidgets('puts a rate used after a newer save above that save', (
       tester,
     ) async {
