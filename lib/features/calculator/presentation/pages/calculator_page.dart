@@ -14,7 +14,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// [calculatorBlocFactory] for its lifetime and closes with it.
 ///
 /// The settings (W1, CA-1103) show here as the System of units pill on the
-/// empty tape row; the setting sheets follow (4/4).
+/// empty tape row and as a setting sheet the bloc asks for
+/// ([CalculatorState.openSettingSheet]); where each sheet opens from is W2
+/// (CA-1104).
 class CalculatorPage extends StatefulWidget {
   /// Builds the bloc the page owns, resolved by the module.
   final CalculatorBloc Function() calculatorBlocFactory;
@@ -23,6 +25,13 @@ class CalculatorPage extends StatefulWidget {
 
   /// The key of the System of units pill, for tests.
   static const Key unitsPillKey = ValueKey('calc_units_pill');
+
+  /// The key of a setting sheet's option, for tests.
+  static Key settingOptionKey(String optionId) =>
+      ValueKey('calc_setting_option_$optionId');
+
+  /// The key of a setting sheet's Update button, for tests.
+  static const Key settingUpdateKey = ValueKey('calc_setting_update');
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
@@ -100,6 +109,70 @@ class _CalculatorPageState extends State<CalculatorPage> {
       onPressed: () => _bloc.add(const CalculatorUnitSystemToggled()),
     );
   }
+
+  Future<void> _showSettingSheet(CalculatorSetting setting) async {
+    final l10n = context.l10n;
+    final settings = CalculatorSettingFormatter(l10n);
+    await CoreQuickSheet.show<void>(
+      context: context,
+      // The tick follows a setting synced from another device while the
+      // sheet is open; the sheet keeps a choice already made on it.
+      child: BlocBuilder<CalculatorBloc, CalculatorState>(
+        bloc: _bloc,
+        buildWhen: (previous, current) =>
+            previous.tape.preferences != current.tape.preferences,
+        builder: (context, state) => CorePreferenceOptionSheet(
+          title: settings.title(setting),
+          options: [
+            for (final id in setting.optionIds)
+              CorePreferenceOption(
+                id: id,
+                label: settings.optionLabel(setting, id),
+              ),
+          ],
+          selectedOptionId: setting.selectedOptionId(state.tape.preferences),
+          updateLabel: l10n.calculatorSettingUpdate,
+          backSemanticsLabel: l10n.calculatorSettingBack,
+          onUpdate: (id) => _bloc.add(CalculatorSettingUpdated(setting, id)),
+          optionKeyOf: CalculatorPage.settingOptionKey,
+          updateButtonKey: CalculatorPage.settingUpdateKey,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    _bloc.add(const CalculatorSettingSheetClosed());
+  }
+
+  void _onSettingsChanged(BuildContext context, CalculatorState state) {
+    final l10n = context.l10n;
+    final settings = CalculatorSettingFormatter(l10n);
+    if (state.openSettingSheet case final setting?) {
+      unawaited(_showSettingSheet(setting));
+    }
+    if (state.settingSaved case final setting?) {
+      CoreToast.showSuccess(
+        context,
+        l10n.calculatorSettingUpdatedMessage,
+        l10n.closeButton,
+        title: settings.title(setting),
+      );
+    }
+    if (state.settingSaveFailure != null) {
+      CoreToast.showError(
+        context,
+        l10n.calculatorSettingSaveFailed,
+        l10n.closeButton,
+      );
+    }
+  }
+
+  bool _settingsChanged(CalculatorState previous, CalculatorState current) =>
+      (current.openSettingSheet != null &&
+          previous.openSettingSheet != current.openSettingSheet) ||
+      (current.settingSaved != null &&
+          previous.settingSaved != current.settingSaved) ||
+      (current.settingSaveFailure != null &&
+          previous.settingSaveFailure != current.settingSaveFailure);
 
   Locale? _groupsLocale;
   List<FunctionGroup>? _groups;
@@ -382,7 +455,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: SafeArea(
-          child: BlocBuilder<CalculatorBloc, CalculatorState>(
+          child: BlocConsumer<CalculatorBloc, CalculatorState>(
+            listenWhen: _settingsChanged,
+            listener: _onSettingsChanged,
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
 
