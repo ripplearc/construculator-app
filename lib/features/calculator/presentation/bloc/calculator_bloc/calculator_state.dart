@@ -30,12 +30,17 @@ class CalculatorState extends Equatable {
   /// [TapeChanged].
   final TapeOutcome? refusal;
 
+  /// Why the last save did not reach the repository, or `null`; the next
+  /// event clears it. The screen keeps the chosen setting meanwhile.
+  final Failure? settingSaveFailure;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
     this.currentGroupIndex = 0,
     this.notice,
     this.refusal,
+    this.settingSaveFailure,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -49,12 +54,29 @@ class CalculatorState extends Equatable {
     int? currentGroupIndex,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
+    Failure? Function()? settingSaveFailure,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
+    settingSaveFailure: settingSaveFailure != null
+        ? settingSaveFailure()
+        : this.settingSaveFailure,
   );
+
+  /// The same state with what the last event said cleared — the notice,
+  /// the refusal and the save failure — as every event starts from.
+  CalculatorState get silenced => copyWith(
+    notice: () => null,
+    refusal: () => null,
+    settingSaveFailure: () => null,
+  );
+
+  /// Whether the System of units pill shows: only while the tape is empty
+  /// (1.1: "hidden as soon as anything is typed and while a bracket is
+  /// open", and an open bracket is a chip on the tape).
+  bool get showsUnitsPill => tape.isEmpty;
 
   /// The System of units the tape renders by, as the keyboard names it.
   UnitSystem get currentUnitSystem => switch (tape.preferences.system) {
@@ -127,5 +149,11 @@ class CalculatorState extends Equatable {
   static String _lead(Operator? operator) => operator?.symbol ?? '';
 
   @override
-  List<Object?> get props => [tape, currentGroupIndex, notice, refusal];
+  List<Object?> get props => [
+    tape,
+    currentGroupIndex,
+    notice,
+    refusal,
+    settingSaveFailure,
+  ];
 }

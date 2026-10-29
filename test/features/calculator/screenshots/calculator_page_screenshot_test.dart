@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
+import '../utils/calculator_test_harness.dart';
 
 void main() {
   const size = Size(390, 844);
@@ -22,7 +23,7 @@ void main() {
         debugShowCheckedModeBanner: false,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
     await tester.pump();

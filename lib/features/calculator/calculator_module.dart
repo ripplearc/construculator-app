@@ -1,12 +1,14 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/calculator/data/repositories/calculator_preferences_repository_impl.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// The calculator feature: its page and the settings repository it reads,
-/// which follows the signed-in profile through the auth library.
+/// The calculator feature: its page, the bloc the page creates for its
+/// lifetime, and the settings repository the bloc watches, which follows
+/// the signed-in profile through the auth library.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
   /// [AuthLibraryModule] so the repository sees the same auth state as the
@@ -28,10 +30,16 @@ class CalculatorModule extends Module {
       ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
+    i.add<CalculatorBloc>(() => CalculatorBloc(preferencesRepository: i()));
   }
 
   @override
   void routes(RouteManager r) {
-    r.child('/', child: (_) => const CalculatorPage());
+    r.child(
+      '/',
+      child: (_) => CalculatorPage(
+        calculatorBlocFactory: () => Modular.get<CalculatorBloc>(),
+      ),
+    );
   }
 }
