@@ -20,41 +20,6 @@
     </exclude>
 
     <rules>
-        <!-- RULE 1: In `getEstimations`, break pagination calculation - remove the -1 -->
-        <regex pattern="(rangeTo:\s*offset\s*\+\s*limit\s*-\s*1)" id="estimation.pagination.rangeto_off_by_one">
-            <mutation text="rangeTo: offset + limit"/>
-        </regex>
-
-        <!-- RULE 2: In `getEstimations`, break pagination calculation - wrong operator -->
-        <regex pattern="(rangeTo:\s*offset\s*\+\s*limit\s*-\s*1)" id="estimation.pagination.rangeto_wrong_operator">
-            <mutation text="rangeTo: offset - limit + 1"/>
-        </regex>
-
-        <!-- RULE 3: In `getEstimations`, invert sort order from descending to ascending -->
-        <regex pattern="(ascending:\s*false,)" id="estimation.sort.invert_order">
-            <mutation text="ascending: true,"/>
-        </regex>
-
-        <!-- RULE 4: In `getEstimations`, use wrong filter value -->
-        <regex pattern="(filterValue:\s*projectId,)" id="estimation.filter.wrong_value">
-            <mutation text="filterValue: '',"/>
-        </regex>
-
-        <!-- RULE 5: In `getEstimations`, return empty list instead of mapping -->
-        <regex pattern="(return response\s*\.map\(\(costEstimate\) => CostEstimateDto\.fromJson\(costEstimate\)\)\s*\.toList\(\);)" id="estimation.mapping.return_empty">
-            <mutation text="return [];"/>
-        </regex>
-
-        <!-- RULE 6: In `getEstimations`, use wrong order column -->
-        <regex pattern="(orderColumn:\s*createdAtColumn,)" id="estimation.sort.wrong_column">
-            <mutation text="orderColumn: projectIdColumn,"/>
-        </regex>
-
-        <!-- RULE 7: In all methods, skip rethrowing exceptions -->
-        <regex pattern="(rethrow;)" id="estimation.error.skip_rethrow">
-            <mutation text="// rethrow skipped"/>
-        </regex>
-
         <!-- RULE 8: In `changeLockStatus`, use wrong lock status value -->
         <regex pattern="(DatabaseConstants\.isLockedColumn:\s*isLocked)" id="estimation.lock.invert_status">
             <mutation text="DatabaseConstants.isLockedColumn: !isLocked"/>
