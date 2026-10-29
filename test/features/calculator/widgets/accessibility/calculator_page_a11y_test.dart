@@ -129,6 +129,66 @@ void main() {
     );
 
     testWidgets(
+      'the Read-as and Shown as pills meet the label and contrast guidelines '
+      'in both themes, and say what a tap does',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        Future<void> type(List<String> keys) async {
+          for (final key in keys) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.pump(CoreSuggestionArea.animationDuration);
+          await tester.pump();
+        }
+
+        final pill = find.byKey(CoreDisplayArea.dependentKeyTestKey(0));
+        // Tap target size is disabled as in the close-button test.
+        for (final theme in kA11yTestThemes) {
+          // The page keeps its bloc across the theme pumps, so each round
+          // starts from an empty tape.
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await type(const [
+            'calc_key_clearAll',
+            'calc_key_Pitch',
+            'calc_key_eight',
+            'calc_key_decimal',
+            'calc_key_four',
+            'calc_key_five',
+          ]);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            pill,
+            checkTapTargetSize: false,
+          );
+          expect(tester.getSemantics(pill).hint, l10n.calculatorPillReadAsHint);
+
+          await type(const [
+            'calc_key_clearAll',
+            'calc_key_Rise',
+            'calc_key_six',
+            'calc_key_feet',
+            'calc_key_Run',
+            'calc_key_one',
+            'calc_key_two',
+            'calc_key_feet',
+            'calc_key_Pitch',
+          ]);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            pill,
+            checkTapTargetSize: false,
+          );
+          expect(
+            tester.getSemantics(pill).hint,
+            l10n.calculatorPillShownAsHint,
+          );
+        }
+      },
+    );
+
+    testWidgets(
       'an abbreviated key is read by its face, then its full name as a hint',
       (tester) async {
         final l10n = AppLocalizationsEn();

@@ -3760,6 +3760,30 @@ abstract class AppLocalizations {
   /// **'grade'**
   String get calculatorReadingGrade;
 
+  /// Label of the Read-as pill under the calculator value, followed by the other reading of the number being typed: Input 8.45° as 8.45in/12in
+  ///
+  /// In en, this message translates to:
+  /// **'Input {value} as'**
+  String calculatorPillInputAs(String value);
+
+  /// Label of the Read-as pill when a trigonometric answer already stands after the number and the tap rewrites it: Re-input 38.30° as 38°30'00"
+  ///
+  /// In en, this message translates to:
+  /// **'Re-input {value} as'**
+  String calculatorPillReInputAs(String value);
+
+  /// Screen reader hint of the Read-as pill under the calculator value
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrites the number the other way'**
+  String get calculatorPillReadAsHint;
+
+  /// Screen reader hint of the Shown as pill under a calculator pitch answer
+  ///
+  /// In en, this message translates to:
+  /// **'Changes how the pitch is shown'**
+  String get calculatorPillShownAsHint;
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:

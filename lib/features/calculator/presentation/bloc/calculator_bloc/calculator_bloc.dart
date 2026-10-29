@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+part 'calculator_dependent_key.dart';
 part 'calculator_display_label.dart';
 part 'calculator_event.dart';
 part 'dependent_key_id.dart';
@@ -43,6 +44,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorOperatorPressed>(_onOperatorPressed);
     on<CalculatorEqualsPressed>(_onEqualsPressed);
     on<CalculatorSuggestionAccepted>(_onSuggestionAccepted);
+    on<CalculatorReadAsAccepted>(_onReadAsAccepted);
+    on<CalculatorPitchSpellingCycled>(_onPitchSpellingCycled);
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorActiveValueCleared>(_onActiveValueCleared);
     on<CalculatorGroupSelected>(_onGroupSelected);
@@ -110,6 +113,16 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       takesAGrade: key == PlainNumberKeys.slope,
     );
   }
+
+  void _onReadAsAccepted(
+    CalculatorReadAsAccepted event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.reInput());
+
+  void _onPitchSpellingCycled(
+    CalculatorPitchSpellingCycled event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.cyclePitchSpelling());
 
   void _onActiveValueCleared(
     CalculatorActiveValueCleared event,

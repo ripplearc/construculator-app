@@ -2118,6 +2118,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorReadingGrade => 'grade';
 
   @override
+  String calculatorPillInputAs(String value) {
+    return 'Input $value as';
+  }
+
+  @override
+  String calculatorPillReInputAs(String value) {
+    return 'Re-input $value as';
+  }
+
+  @override
+  String get calculatorPillReadAsHint => 'Rewrites the number the other way';
+
+  @override
+  String get calculatorPillShownAsHint => 'Changes how the pitch is shown';
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override

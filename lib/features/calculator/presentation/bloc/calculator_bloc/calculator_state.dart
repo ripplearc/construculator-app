@@ -125,6 +125,25 @@ class CalculatorState extends Equatable {
     ),
   };
 
+  /// The pills under the value (Section 1.1): the Read-as offer the tape
+  /// makes for the number on the display (term 2.14), and "Shown as" under
+  /// a pitch answer (Section 8), which cycles its spelling.
+  List<CalculatorDependentKey> get dependentKeys => [
+    if (tape.readAsOffer case final offer?)
+      if (tape.chips[offer.chipIndex] case final ValueChip chip)
+        CalculatorReadAsPill(
+          offer: offer,
+          sourceText: _entryTextOf(chip),
+          targetText: _withReadingSuffix(offer.next.text, offer.to),
+        ),
+    if (tape.active == null)
+      if (tape.chips.lastOrNull case ResultChip(
+        :final key,
+        value: Angle(:final spelling),
+      ) when DeterministicRules.isPitchKey(key))
+        CalculatorPitchSpellingPill(spelling),
+  ];
+
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
 
   NumberReading? _readingOf(ValueChip chip) {
