@@ -9,9 +9,9 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -22,11 +22,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_estimates_database.dart';
 
 void main() {
   group('CostEstimationListBloc', () {
     late CostEstimationListBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late CostEstimationRepository repository;
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
@@ -40,6 +42,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
       );
       Modular.init(_TestModule(bootstrap));
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostEstimationRepository>();
@@ -54,10 +57,12 @@ void main() {
 
     tearDownAll(() {
       Modular.dispose();
+      fakePhoneDatabase.dispose();
     });
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       bloc = Modular.get<CostEstimationListBloc>();
     });
@@ -90,6 +95,7 @@ void main() {
         DatabaseConstants.costEstimatesTable,
         rows,
       );
+      fakePhoneDatabase.seedRows(rows);
     }
 
     group('Successful loading scenarios', () {
@@ -181,11 +187,9 @@ void main() {
 
     group('Error handling scenarios', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should emit loading then error state with connection error when repository returns connection failure',
+        'should emit loading then error state with unexpected failure when the phone database throws',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.socket;
+          fakePhoneDatabase.watchError = StateError('database is locked');
           return bloc;
         },
         act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
@@ -193,24 +197,19 @@ void main() {
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
-              .having(
-                (state) => state.failure,
-                'failure',
-                EstimationFailure(
-                  errorType: EstimationErrorType.connectionError,
-                ),
-              )
+              .having((state) => state.failure, 'failure', UnexpectedFailure())
               .having((state) => state.estimates, 'empty estimates', isEmpty)
               .having((state) => state.hasMore, 'hasMore', isTrue),
         ],
       );
 
       blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should emit loading then error state with parsing error when repository returns parsing failure',
+        'should emit loading then error state with parsing error when a phone row is malformed',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.type;
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(projectId: testProjectId)
+              ..['estimate_name'] = 42,
+          ]);
           return bloc;
         },
         act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
@@ -222,29 +221,6 @@ void main() {
                 (state) => state.failure,
                 'failure',
                 EstimationFailure(errorType: EstimationErrorType.parsingError),
-              )
-              .having((state) => state.estimates, 'empty estimates', isEmpty)
-              .having((state) => state.hasMore, 'hasMore', isTrue),
-        ],
-      );
-
-      blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should emit loading then error state with timeout error when repository returns timeout failure',
-        build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.timeout;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
-        wait: streamDebounceWaitDuration,
-        expect: () => [
-          isA<CostEstimationListLoading>(),
-          isA<CostEstimationListError>()
-              .having(
-                (state) => state.failure,
-                'failure',
-                EstimationFailure(errorType: EstimationErrorType.timeoutError),
               )
               .having((state) => state.estimates, 'empty estimates', isEmpty)
               .having((state) => state.hasMore, 'hasMore', isTrue),
@@ -285,9 +261,7 @@ void main() {
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.unknown;
+          fakePhoneDatabase.watchError = StateError('database is locked');
 
           await repository.fetchInitialEstimations(testProjectId);
         },
@@ -469,9 +443,7 @@ void main() {
           bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.timeout;
+          fakePhoneDatabase.watchError = StateError('database is locked');
 
           bloc.add(const CostEstimationListLoadMore());
         },
@@ -497,11 +469,7 @@ void main() {
                 CostEstimationRepositoryImpl.defaultPageSize,
               )
               .having((s) => s.hasMore, 'hasMore', isTrue)
-              .having(
-                (s) => s.failure,
-                'failure',
-                EstimationFailure(errorType: EstimationErrorType.timeoutError),
-              ),
+              .having((s) => s.failure, 'failure', UnexpectedFailure()),
         ],
       );
 
@@ -613,15 +581,7 @@ void main() {
           bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          fakeSupabaseWrapper.clearTableData(
-            DatabaseConstants.costEstimatesTable,
-          );
-          seedEstimationTable([
-            buildEstimationMap(
-              id: 'est-1',
-              projectId: testProjectId,
-              estimateName: 'Original Estimation',
-            ),
+          fakePhoneDatabase.seedRows([
             buildEstimationMap(
               id: 'est-2',
               projectId: testProjectId,
@@ -650,8 +610,7 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should not refresh when state is already loading',
         build: () {
-          fakeSupabaseWrapper.shouldDelayOperations = true;
-          fakeSupabaseWrapper.completer = Completer();
+          fakePhoneDatabase.syncStreamActivationGate = Completer();
           return bloc;
         },
         act: (bloc) {
@@ -660,11 +619,8 @@ void main() {
         },
         expect: () => [isA<CostEstimationListLoading>()],
         verify: (_) {
-          final calls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectPaginated',
-          );
-          expect(calls, hasLength(0));
-          fakeSupabaseWrapper.completer!.complete();
+          expect(fakePhoneDatabase.watchCalls, isEmpty);
+          fakePhoneDatabase.syncStreamActivationGate!.complete();
         },
       );
 
@@ -697,9 +653,7 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should compare duplicate failures correctly',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.socket;
+          fakePhoneDatabase.watchError = StateError('database is locked');
           return bloc;
         },
         act: (bloc) async {
@@ -710,7 +664,11 @@ void main() {
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
-          isA<CostEstimationListError>().having((s) => s.hasMore, 'hasMore', isTrue),
+          isA<CostEstimationListError>().having(
+            (s) => s.hasMore,
+            'hasMore',
+            isTrue,
+          ),
         ],
       );
 
@@ -769,10 +727,7 @@ void main() {
               ),
         ],
         verify: (_) {
-          final calls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectPaginated',
-          );
-          expect(calls, hasLength(1));
+          expect(fakePhoneDatabase.watchCalls, hasLength(1));
           expect(fakeCurrentProjectNotifier.projectIdChangedEvents, [
             secondProjectId,
           ]);
