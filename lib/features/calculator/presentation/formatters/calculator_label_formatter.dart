@@ -81,7 +81,33 @@ class CalculatorLabelFormatter {
     CalculationError.outOfRange => l10n.calculatorErrorTooLarge,
   };
 
-  /// The label on a function key, or of a result chip's key.
+  /// The most characters a suggestion's name may have to replace the =
+  /// sign on the equals key (term 2.15: "up to eight characters (Area, Rise,
+  /// Update…); a longer name such as Arctangent or Pitch-rise per 12in run
+  /// keeps the = sign").
+  static const int equalsKeyMaxLength = 8;
+
+  /// The face of the equals key: the name of the suggestion = will land
+  /// when it fits, else the = sign.
+  String equalsLabel(String? keyId) {
+    if (keyId == null) return equalsSign;
+    final label = displayLabel(keyId);
+    return label.length <= equalsKeyMaxLength ? label : equalsSign;
+  }
+
+  /// The = sign, the equals key's face when no suggestion names it.
+  static const String equalsSign = '=';
+
+  /// The name on a strip chip: the answer's name for row 1, nothing for a
+  /// conversion, which row 2 shows by its value alone.
+  String suggestionLabel(CalculatorSuggestion suggestion) =>
+      switch (suggestion.key) {
+        final key? => displayLabel(key),
+        null => '',
+      };
+
+  /// The label on a function key, of a result chip's key, or of an answer
+  /// the rules compute (Section 8).
   String keyLabel(String id) => switch (id) {
     'Width' => l10n.calculatorKeyWidth,
     'Length' => l10n.calculatorKeyLength,
@@ -120,6 +146,25 @@ class CalculatorLabelFormatter {
     'ATAN' => l10n.calculatorKeyAtan,
     'DMS' => l10n.calculatorKeyDms,
     Tape.calcKey => l10n.calculatorResultCalc,
+    CalculatorState.ansKey => l10n.calculatorEqualsAns,
+    DeterministicRules.areaKey => l10n.calculatorAnswerArea,
+    DeterministicRules.diagonalKey => l10n.calculatorAnswerDiagonal,
+    DeterministicRules.perimeterKey => l10n.calculatorAnswerPerimeter,
+    DeterministicRules.volumeKey => l10n.calculatorAnswerVolume,
+    DeterministicRules.wallAreaKey => l10n.calculatorAnswerWallArea,
+    DeterministicRules.circleAreaKey => l10n.calculatorAnswerCircleArea,
+    DeterministicRules.circumferenceKey => l10n.calculatorAnswerCircumference,
+    DeterministicRules.polygonAreaKey => l10n.calculatorAnswerPolygonArea,
+    DeterministicRules.sideLengthKey => l10n.calculatorAnswerSideLength,
+    DeterministicRules.cornerAngleKey => l10n.calculatorAnswerCornerAngle,
+    DeterministicRules.arcAngleKey => l10n.calculatorAnswerArcAngle,
+    DeterministicRules.arcRadiusKey => l10n.calculatorAnswerArcRadius,
+    DeterministicRules.arcLengthKey => l10n.calculatorAnswerArcLength,
+    DeterministicRules.pitchRiseKey => l10n.calculatorAnswerPitchRise,
+    DeterministicRules.pitchDegreesKey => l10n.calculatorAnswerPitchDegrees,
+    DeterministicRules.pitchGradeKey => l10n.calculatorAnswerPitchGrade,
+    DeterministicRules.columnKey => l10n.calculatorAnswerColumn,
+    DeterministicRules.coneKey => l10n.calculatorAnswerCone,
     _ => _untranslated(id),
   };
 

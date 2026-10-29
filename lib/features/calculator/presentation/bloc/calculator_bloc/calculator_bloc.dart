@@ -24,8 +24,15 @@ part 'calculator_suggestion.dart';
 /// agree on one value.
 ///
 /// The strip is the state's reading of the same tape (CA-1088, S1b):
-/// what it offers is computed when the state is read, so that accepting a
-/// chip, which lands next, recalculates nothing (Section 1.2).
+/// accepting a chip lands the answer the engine had already computed, so
+/// nothing is recalculated on tap (Section 1.2). An answer lands through
+/// [Tape.landAnswer], the running total through =, a conversion through the
+/// unit key of its spelling (rule 4.3), so the strip and the key land the
+/// same chip, and an angle's other spelling through the D:M:S key (Section
+/// 3.5). A chip the strip no longer offers — tapped again before the strip
+/// redrew — changes nothing. = lands the leading suggestion when the strip
+/// has one (term 2.15: "= still lands that suggestion"), else the tape's
+/// own equals.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
@@ -34,6 +41,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorUnitSelected>(_onUnitSelected);
     on<CalculatorOperatorPressed>(_onOperatorPressed);
     on<CalculatorEqualsPressed>(_onEqualsPressed);
+    on<CalculatorSuggestionAccepted>(_onSuggestionAccepted);
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorActiveValueCleared>(_onActiveValueCleared);
     on<CalculatorGroupSelected>(_onGroupSelected);
@@ -115,7 +123,44 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onEqualsPressed(
     CalculatorEqualsPressed event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => tape.pressEquals());
+  ) {
+    if (state.suggestions.firstOrNull case final leading?) {
+      return _accept(emit, leading);
+    }
+    _press(emit, (tape) => tape.pressEquals());
+  }
+
+  void _onSuggestionAccepted(
+    CalculatorSuggestionAccepted event,
+    Emitter<CalculatorState> emit,
+  ) => _accept(emit, event.suggestion);
+
+  void _accept(Emitter<CalculatorState> emit, CalculatorSuggestion suggestion) {
+    if (!state.suggestions.contains(suggestion) &&
+        !state.conversions.contains(suggestion)) {
+      return _press(emit, TapeChanged.new);
+    }
+    switch ((suggestion.kind, suggestion.key)) {
+      case (CalculatorSuggestionKind.answer, final key?):
+        _press(emit, (tape) => tape.landAnswer(key, suggestion.value));
+      case (CalculatorSuggestionKind.runningTotal, _):
+        _press(emit, (tape) => tape.pressEquals());
+      case (CalculatorSuggestionKind.conversion, _):
+        _press(emit, (tape) => _converted(tape, suggestion.value));
+      case (CalculatorSuggestionKind.answer, null):
+        _press(emit, TapeChanged.new);
+    }
+  }
+
+  TapeOutcome _converted(Tape tape, Quantity spelling) => switch (spelling) {
+    Angle() => tape.pressDmsKey(),
+    Length(unit: Unit.footInch) => _pressUnit(tape, Unit.foot),
+    Length(:final unit) ||
+    Area(:final unit) ||
+    Volume(:final unit) ||
+    Weight(:final unit) => _pressUnit(tape, unit),
+    Scalar() => TapeChanged(tape),
+  };
 
   void _onControlActioned(
     CalculatorControlActioned event,
