@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
@@ -493,12 +494,10 @@ void main() {
   test('a pill is drawn as the kind its id names', () {
     final l10n = AppLocalizationsEn();
 
-    final toggle = CalculatorPage.pillFor(
-      l10n,
-      DependentKeyId.shownAs,
-      'in/12in',
-    );
-    final editable = CalculatorPage.pillFor(l10n, DependentKeyId.rate, '4.5');
+    final labels = CalculatorLabelFormatter(l10n);
+
+    final toggle = labels.pill(DependentKeyId.shownAs, 'in/12in');
+    final editable = labels.pill(DependentKeyId.rate, '4.5');
 
     expect(toggle.kind, equals(CoreDependentKeyKind.toggle));
     expect(toggle.label, equals(l10n.calculatorPillShownAs));
@@ -540,7 +539,7 @@ void main() {
       );
       for (final entry in expectedLabelById.entries) {
         expect(
-          CalculatorPage.pillLabelFor(l10n, entry.key),
+          CalculatorLabelFormatter(l10n).pillLabel(entry.key),
           equals(entry.value),
           reason: 'pill ${entry.key.name} mapped to wrong label',
         );
