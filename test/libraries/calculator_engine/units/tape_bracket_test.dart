@@ -220,6 +220,84 @@ void main() {
         },
       );
 
+      test('CA-1340: a trig key straight after a closed bracket works on the '
+          'value the tape has come to: the Calc lands, then the answer, and '
+          'the group is never dropped', () {
+        final ratio = changed(
+          press(
+            const Tape(),
+            '( 1 2 ÷ 2 3 (',
+          ).pressTrigKey(TrigFunction.arctangent),
+        );
+        expect(lastResult(ratio), 'Arctangent 27.55°');
+        expect(
+          ratio.chips[ratio.chips.length - 2],
+          isA<ResultChip>()
+              .having((chip) => chip.key, 'key', Tape.calcKey)
+              .having((chip) => formatter.format(chip.value), 'text', '0.52'),
+        );
+        expect(bracketText(ratio), '(12÷23)');
+        final sum = changed(
+          press(const Tape(), '( 5 + 3 (').pressTrigKey(TrigFunction.sine),
+        );
+        expect(lastResult(sum), 'Sine 0.139173');
+        final chain = changed(
+          press(const Tape(), '2 + ( 3 × 4 (').pressTrigKey(TrigFunction.sine),
+        );
+        expect(lastResult(chain), 'Sine 0.241922');
+        expect(
+          (chain.chips[chain.chips.length - 2] as ResultChip).value,
+          const Scalar(14),
+        );
+        final nested = changed(
+          press(
+            const Tape(),
+            '1 + ( 1 2 ÷ 2 3 (',
+          ).pressTrigKey(TrigFunction.arctangent),
+        );
+        expect(lastResult(nested), 'Arctangent 56.69°');
+        expect(
+          press(
+            const Tape(),
+            '( 3 ft + 2 ft (',
+          ).pressTrigKey(TrigFunction.sine),
+          const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+        );
+        expect(
+          press(const Tape(), '1 ft + ( 2 (').pressTrigKey(TrigFunction.sine),
+          const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+        );
+        final single = changed(
+          press(const Tape(), '( 5 (').pressTrigKey(TrigFunction.sine),
+        );
+        expect(lastResult(single), 'Sine 0.087156');
+        expect(
+          single.chips,
+          hasLength(2),
+          reason: 'a group worth one value answers with no Calc before it',
+        );
+      });
+
+      test('CA-1340: with an operator the trig key continues the chain: '
+          '(5 + 3) + [ATAN] 16 ÷ 12 = is 61.13°', () {
+        const formatter = QuantityFormatter();
+        final opened = changed(
+          press(
+            const Tape(),
+            '( 5 + 3 ( +',
+          ).pressTrigKey(TrigFunction.arctangent),
+        );
+        final tape = press(opened, '1 6 ÷ 1 2 =');
+        expect(
+          tape.chips.last,
+          isA<ResultChip>().having(
+            (chip) => formatter.format(chip.value),
+            'text',
+            '61.13°',
+          ),
+        );
+      });
+
       test('a unit straight after a closed bracket is refused', () {
         expect(
           press(const Tape(), '2 + ( 3 × 4 (').pressUnit(Unit.foot),

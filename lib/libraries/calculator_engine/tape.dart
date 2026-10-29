@@ -111,7 +111,10 @@ enum TapeRefusal {
   /// the caller when to.
   nothingToCompute,
 
-  /// A digit straight after a closed bracket ("Add an operator first").
+  /// A digit straight after a closed bracket ("Add an operator first"): it
+  /// would join the group's value and the bracket would vanish (Section 5.1).
+  /// A trig key there is not refused: it works on the value the tape has
+  /// come to ([Tape.pressTrigKey]).
   addAnOperatorFirst,
 
   /// A unit key straight after a closed bracket ("A group cannot take a
@@ -564,10 +567,23 @@ class Tape extends Equatable {
   /// [COS] [ACOS] open a fresh chip instead (scenarios S96, S106), which
   /// the caller banks the tape for, as for any fresh chip after a result.
   /// When the key takes the answer the tape goes on.
+  ///
+  /// Straight after a closed bracket the key works on the value the tape has
+  /// come to, as it does on a finished value (Section 7, "After a closed
+  /// bracket"; owner decision of 28 October 2026): (12 ÷ 23) [ATAN] lands
+  /// Calc 0.52 and then Arctangent 27.55°, the same as 12 ÷ 23 [ATAN], and
+  /// 2 + (3 × 4) [SIN] lands Calc 14 and then Sine 0.241922, so the group
+  /// is never dropped from the chain the way a fresh prefix chip would drop
+  /// it ((5 + 3) [ATAN] 16 ÷ 12 answered 53.13° with no trace of the 8). A
+  /// group worth a value with a unit is refused as any such value is
+  /// ([TapeRefusal.trigNeedsAPlainAngle]), and a digit or a unit key in the
+  /// same place is still refused ([TapeRefusal.addAnOperatorFirst],
+  /// [TapeRefusal.groupCannotTakeUnit]).
   TapeOutcome pressTrigKey(TrigFunction function) {
     if (openBracket != null) {
       return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
     }
+    if (_endsWithClosedBracket) return _answeredOnClosedBracket(function);
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
       return _replaceLast(_asTrigChip(chip, function));
@@ -594,6 +610,18 @@ class Tape extends Equatable {
       tape._sealed().append(_asTrigChip(const ValueChip(), function)),
     );
   }
+
+  TapeOutcome _answeredOnClosedBracket(TrigFunction function) =>
+      switch (runningTotal) {
+        ChainValue(:final value, isCalculation: true) => _answeredOn(
+          append(ResultChip(key: calcKey, value: value)),
+          function,
+          value,
+        ),
+        ChainValue(:final value) => _answeredOn(this, function, value),
+        ChainFailed() ||
+        ChainEmpty() => const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+      };
 
   ValueChip _asTrigChip(ValueChip chip, TrigFunction function) => chip.copyWith(
     key: () => function.key,
