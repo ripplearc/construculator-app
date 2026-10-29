@@ -1348,6 +1348,127 @@ void main() {
       });
     });
 
+    group('S1b 5/6: the pills', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      test('the Read-as pill offers the other reading of the number on the '
+          'display, as a sentence from its reading to the next (S86, S92, '
+          'S115, S116)', () {
+        CalculatorReadAsPill pillOf(String keys) =>
+            stateOf(keys).dependentKeys.single as CalculatorReadAsPill;
+
+        expect(pillOf('[Pitch] 8 . 4 5').sourceText, '8.45°');
+        expect(pillOf('[Pitch] 8 . 4 5').targetText, '8.45in/12in');
+        expect(pillOf('[Pitch] 8 . 4 5').rebuildsAnAnswer, isFalse);
+        expect(pillOf('[Pitch] 8 in').sourceText, '8in/12in');
+        expect(pillOf('[Pitch] 8 in').targetText, '8°');
+        expect(pillOf('[Pitch] 8 .').sourceText, '8.');
+        expect(pillOf('[Pitch] 8 .').targetText, '8°00\'00"');
+        expect(pillOf('[Slope] 0 . 6 5').sourceText, '0.65%');
+        expect(pillOf('[Slope] 0 . 6 5').targetText, '65%');
+        expect(pillOf('[SIN] 3 8 . 3 0').sourceText, '38.30°');
+        expect(pillOf('[SIN] 3 8 . 3 0').targetText, '38°30\'00"');
+        expect(pillOf('3 8 . 3 0 [SIN]').sourceText, '38.30°');
+        expect(pillOf('3 8 . 3 0 [SIN]').rebuildsAnAnswer, isTrue);
+        expect(stateOf('[Pitch] 1 0 0').dependentKeys, isEmpty);
+        expect(stateOf('[Slope] 2 . 5').dependentKeys, isEmpty);
+        expect(stateOf('[Length] 2 2 ft').dependentKeys, isEmpty);
+        expect(stateOf('[ACOS] 0 . 5').dependentKeys, isEmpty);
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'taking the Read-as pill re-reads the number from its digits, and a '
+        'trig answer after it is rebuilt (S91)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorDigitPressed('.'))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorKeySelected('SIN'))
+          ..add(const CalculatorReadAsAccepted()),
+        skip: 6,
+        expect: () => [
+          tapeState(switch (pressed('3 8 . 3 0 [SIN]').reInput()) {
+            TapeChanged(:final tape) => tape,
+            final other => throw StateError('$other'),
+          }),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['38°30\'00"', '0.622515'],
+          );
+          expect(
+            (bloc.state.dependentKeys.single as CalculatorReadAsPill)
+                .targetText,
+            '38.30°',
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the Read-as pill tapped with nothing to re-read is refused',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const CalculatorReadAsAccepted()),
+        expect: () => [
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.nothingToReInput),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a pitch answer carries the Shown as pill, and a tap cycles its '
+        'spelling: in/12in, degrees, grade (S42)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Rise'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Run'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorPitchSpellingCycled())
+          ..add(const CalculatorPitchSpellingCycled()),
+        skip: 7,
+        expect: () => [
+          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch]')),
+          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch]')),
+          tapeState(
+            pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch] [Pitch]'),
+          ),
+        ],
+        verify: (bloc) {
+          final landed = stateOf('[Rise] 6 ft [Run] 1 2 ft [Pitch]');
+          expect(landed.valueText, '6in/12in');
+          expect(landed.dependentKeys, [
+            const CalculatorPitchSpellingPill(AngleSpelling.risePerFoot),
+          ]);
+          expect(bloc.state.valueText, '50%');
+          expect(bloc.state.dependentKeys, [
+            const CalculatorPitchSpellingPill(AngleSpelling.grade),
+          ]);
+          expect(bloc.state.conversions, isEmpty);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the Shown as pill tapped under no pitch answer is refused',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const CalculatorPitchSpellingCycled()),
+        expect: () => [
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.noPitchToCycle),
+          ),
+        ],
+      );
+    });
+
     test(
       'the initial state is an empty imperial tape with the first group',
       () {

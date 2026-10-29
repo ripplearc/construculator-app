@@ -3120,6 +3120,32 @@
   "@calculatorReadingGrade": {
     "description": "Reading of a bare number under Slope as a percent grade, on the calculator label row and the Shown as pill"
   },
+  "calculatorPillInputAs": "Input {value} as",
+  "@calculatorPillInputAs": {
+    "description": "Label of the Read-as pill under the calculator value, followed by the other reading of the number being typed: Input 8.45° as 8.45in/12in",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "calculatorPillReInputAs": "Re-input {value} as",
+  "@calculatorPillReInputAs": {
+    "description": "Label of the Read-as pill when a trigonometric answer already stands after the number and the tap rewrites it: Re-input 38.30° as 38°30'00\"",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "calculatorPillReadAsHint": "Rewrites the number the other way",
+  "@calculatorPillReadAsHint": {
+    "description": "Screen reader hint of the Read-as pill under the calculator value"
+  },
+  "calculatorPillShownAsHint": "Changes how the pitch is shown",
+  "@calculatorPillShownAsHint": {
+    "description": "Screen reader hint of the Shown as pill under a calculator pitch answer"
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"
