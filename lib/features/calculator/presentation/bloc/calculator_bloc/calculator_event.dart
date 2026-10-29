@@ -77,6 +77,18 @@ class CalculatorControlActioned extends CalculatorEvent {
   List<Object?> get props => [action];
 }
 
+/// A chip of the suggestion strip was tapped (Section 1.2): its answer
+/// lands on the tape, or its conversion re-spells the value in place.
+class CalculatorSuggestionAccepted extends CalculatorEvent {
+  /// The chip that was tapped, as the state offered it.
+  final CalculatorSuggestion suggestion;
+
+  const CalculatorSuggestionAccepted(this.suggestion);
+
+  @override
+  List<Object?> get props => [suggestion];
+}
+
 /// The display's ✕ was tapped: it clears the value being typed.
 class CalculatorActiveValueCleared extends CalculatorEvent {
   const CalculatorActiveValueCleared();

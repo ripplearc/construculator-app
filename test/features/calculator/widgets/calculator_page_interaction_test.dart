@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -8,7 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    Size size = const Size(390, 844),
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),
@@ -216,5 +223,141 @@ void main() {
       bloc.state.refusal,
       const TapeRefused(TapeRefusal.nothingBeingTyped),
     );
+  });
+
+  AppLocalizations l10nOf(WidgetTester tester) =>
+      AppLocalizations.of(tester.element(find.byType(CoreKeyboard)))!;
+
+  String equalsFace(WidgetTester tester) =>
+      tester.widget<CoreKeyboard>(find.byType(CoreKeyboard)).result.label;
+
+  Future<void> typeRectangle(WidgetTester tester) async {
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_two',
+      'calc_key_two',
+      'calc_key_feet',
+      'calc_key_Width',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_feet',
+      'calc_key_eight',
+      'calc_key_inch',
+    ]) {
+      await press(tester, key);
+    }
+  }
+
+  testWidgets('the strip names the answers from l10n over their values and '
+      'the conversions by their values alone', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+
+    expect(find.text(l10n.calculatorStripPlaceholder), findsOneWidget);
+    expect(equalsFace(tester), CalculatorLabelFormatter.equalsSign);
+
+    await typeRectangle(tester);
+
+    final strip = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(
+      [for (final chip in strip.aiSuggestions!) '${chip.label}: ${chip.value}'],
+      [
+        '${l10n.calculatorAnswerArea}: 410.67ft²',
+        '${l10n.calculatorAnswerDiagonal}: 28.85ft',
+        '${l10n.calculatorAnswerPerimeter}: 81.33ft',
+      ],
+    );
+    expect([
+      for (final chip in strip.aiSuggestions!) chip.kind,
+    ], everyElement(SuggestionKind.deterministic));
+    expect(
+      [for (final chip in strip.conversionSuggestions!) chip.value],
+      ['224in', '5.69m'],
+    );
+    expect([
+      for (final chip in strip.conversionSuggestions!) chip.label,
+    ], everyElement(isEmpty));
+    expect([
+      for (final chip in strip.conversionSuggestions!) chip.kind,
+    ], everyElement(SuggestionKind.conversion));
+    expect(find.text(l10n.calculatorAnswerArea), findsOneWidget);
+    expect(find.text(l10n.calculatorStripPlaceholder), findsNothing);
+    expect(equalsFace(tester), l10n.calculatorAnswerArea);
+  });
+
+  testWidgets('tapping a strip chip lands its answer on the tape, and the '
+      'equals key follows the next leading suggestion', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    await typeRectangle(tester);
+
+    await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+    await tester.pump();
+
+    expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
+    expect(bloc.state.valueText, '410.67ft²');
+    expect(find.text(l10n.calculatorAnswerArea), findsWidgets);
+    expect(equalsFace(tester), l10n.calculatorAnswerDiagonal);
+
+    await tester.tap(find.byKey(CoreSuggestionArea.conversionChipTestKey(0)));
+    await tester.pump();
+
+    expect(bloc.state.valueText, '45.63yd²');
+    // A tapped chip keeps its highlight for a second.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('a suggestion whose name does not fit keeps the = sign on the '
+      'key, and = still lands it', (tester) async {
+    // A tablet-wide view: CoreCalculatorChip and the label row do not yet
+    // ellipsize a key as long as "Pitch-rise per 12in run" at phone width,
+    // which T1a (CA-1092) takes up with the display area.
+    await pumpPage(tester, size: const Size(800, 844));
+    final bloc = blocOf(tester);
+    for (final key in const [
+      'calc_key_Rise',
+      'calc_key_six',
+      'calc_key_feet',
+      'calc_key_Run',
+      'calc_key_one',
+      'calc_key_two',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+
+    expect(bloc.state.equalsKeyId, DeterministicRules.pitchRiseKey);
+    expect(equalsFace(tester), CalculatorLabelFormatter.equalsSign);
+
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+
+    expect(bloc.state.labelKeyId, DeterministicRules.pitchRiseKey);
+    expect(bloc.state.valueText, '6in/12in');
+  });
+
+  testWidgets('the equals key reads Calc while a chain is pending and Ans '
+      'while it continues from a result', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_seven',
+      'calc_key_eight',
+      'calc_key_multiply',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+    expect(equalsFace(tester), l10n.calculatorResultCalc);
+
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await tester.pump();
+    await press(tester, 'calc_key_multiply');
+    await press(tester, 'calc_key_two');
+
+    expect(equalsFace(tester), l10n.calculatorEqualsAns);
   });
 }
