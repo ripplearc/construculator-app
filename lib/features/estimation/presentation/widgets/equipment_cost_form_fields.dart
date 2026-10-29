@@ -636,37 +636,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     EquipmentCostFormData data,
   ) {
     if (data.rateStatus != RateStatus.missing) return null;
-    final colorTheme = context.colorTheme;
-    return Semantics(
-      button: true,
-      label: context.l10n.yourRatesLookupButton,
-      excludeSemantics: true,
-      // TODO: [CA-1252] replace with CoreUI's outlined icon button once it exists. https://ripplearc.youtrack.cloud/issue/CA-1252
-      child: GestureDetector(
-        key: const Key('lookup_rate_button'),
-        behavior: HitTestBehavior.opaque,
-        onTap: () => unawaited(_openRateLookup(context, data.method)),
-        child: SizedBox(
-          width: CoreSpacing.space12,
-          height: CoreSpacing.space9,
-          child: Center(
-            child: Container(
-              width: CoreSpacing.space9,
-              height: CoreSpacing.space9,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border.all(color: colorTheme.lineMid),
-                borderRadius: BorderRadius.circular(CoreSpacing.space2),
-              ),
-              child: CoreIconWidget(
-                icon: CoreIcons.search,
-                color: colorTheme.iconGrayMid,
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return CoreOutlinedIconButton(
+      key: const Key('lookup_rate_button'),
+      icon: CoreIcons.search,
+      semanticLabel: context.l10n.yourRatesLookupButton,
+      onTap: () => unawaited(_openRateLookup(context, data.method)),
     );
   }
 
