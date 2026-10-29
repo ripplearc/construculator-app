@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/estimation_routes_module.dart
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -14,7 +15,6 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -28,6 +28,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_estimates_database.dart';
 
 class _CostEstimationLandingPageA11yTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -57,6 +58,7 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  final fakePhoneDatabase = FakeCostEstimatesDatabase();
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
@@ -76,6 +78,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageA11yTestModule(appBootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
 
@@ -92,6 +95,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    fakePhoneDatabase.reset();
     fakeAppRouter.reset();
     Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
     fakeProjectRepository.setProjectPermissions(testProjectId, [
@@ -160,6 +164,7 @@ void main() {
 
   void addCostEstimationData(Map<String, dynamic> estimationData) {
     fakeSupabase.addTableData('cost_estimates', [estimationData]);
+    fakePhoneDatabase.seedRows([estimationData]);
   }
 
   group('CostEstimationLandingPage – accessibility', () {
@@ -225,9 +230,7 @@ void main() {
           email: 'test@example.com',
         );
 
-        fakeSupabase.shouldThrowOnSelectPaginated = true;
-        fakeSupabase.selectPaginatedExceptionType =
-            SupabaseExceptionType.timeout;
+        fakePhoneDatabase.watchError = StateError('database is locked');
 
         await setupA11yTest(tester);
         await pumpAppAtRoute(tester, testEstimationRoute);

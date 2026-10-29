@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/either/either.dart';
@@ -9,6 +11,7 @@ import 'package:construculator/libraries/estimation/domain/enums/estimation_sort
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -18,6 +21,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/fake_cost_estimates_database.dart';
 import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
@@ -66,6 +70,7 @@ void main() {
   group('CostEstimationRepositoryImpl', () {
     late CostEstimationRepositoryImpl repository;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeClockImpl fakeClock;
 
     setUp(() {
@@ -77,6 +82,7 @@ void main() {
           ),
         ),
       );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository =
@@ -84,10 +90,15 @@ void main() {
               as CostEstimationRepositoryImpl;
       repository.dispose();
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
     });
 
     tearDown(() {
       Modular.destroy();
+    });
+
+    tearDownAll(() {
+      fakePhoneDatabase.dispose();
     });
 
     Map<String, dynamic> buildEstimationMap({
@@ -152,6 +163,7 @@ void main() {
         DatabaseConstants.costEstimatesTable,
         rows,
       );
+      fakePhoneDatabase.seedRows(rows);
     }
 
     void expectResult<L, R>(
@@ -268,46 +280,79 @@ void main() {
         },
       );
 
-      test('should call supabaseWrapper with correct parameters', () async {
-        seedEstimationTable([]);
+      test(
+        'should watch the phone copy with the project and page limit',
+        () async {
+          await repository.fetchInitialEstimations(testProjectId);
 
-        await repository.fetchInitialEstimations(testProjectId);
+          final watchCall = fakePhoneDatabase.watchCalls.single;
+          expect(
+            watchCall.sql,
+            'SELECT * FROM ${DatabaseConstants.costEstimatesTable} '
+            'WHERE ${DatabaseConstants.projectIdColumn} = ? '
+            'ORDER BY ${DatabaseConstants.createdAtColumn} DESC LIMIT ?',
+          );
+          expect(watchCall.parameters, [
+            testProjectId,
+            CostEstimationRepositoryImpl.defaultPageSize,
+          ]);
+        },
+      );
 
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-          'selectPaginated',
-        );
-        expect(methodCalls, hasLength(1));
+      test(
+        'should use the caller limit as the first page and as the page size',
+        () async {
+          const callerLimit = 3;
+          seedEstimations(defaultPageDatasetSize);
 
-        final call = methodCalls.first;
+          final initial = await repository.fetchInitialEstimations(
+            testProjectId,
+            limit: callerLimit,
+          );
+          final more = await repository.loadMoreEstimations(
+            testProjectId,
+            limit: callerLimit,
+          );
+
+          expectResult(
+            initial,
+            (estimates) => expect(estimates, hasLength(callerLimit)),
+          );
+          expectResult(
+            more,
+            (estimates) => expect(estimates, hasLength(callerLimit * 2)),
+          );
+          expect(
+            fakePhoneDatabase.watchCalls.map((call) => call.parameters.last),
+            [callerLimit, callerLimit * 2],
+          );
+        },
+      );
+
+      test('should not read estimations from the server', () async {
+        seedEstimationTable([buildEstimationMap(projectId: testProjectId)]);
+        fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+        fakeSupabaseWrapper.selectPaginatedExceptionType =
+            SupabaseExceptionType.socket;
+
+        final result = await repository.fetchInitialEstimations(testProjectId);
+
+        expectResult(result, (estimates) => expect(estimates, hasLength(1)));
         expect(
-          call,
-          equals({
-            'method': 'selectPaginated',
-            'table': DatabaseConstants.costEstimatesTable,
-            'columns': '*',
-            'filterColumn': DatabaseConstants.projectIdColumn,
-            'filterValue': testProjectId,
-            'orderColumn': DatabaseConstants.createdAtColumn,
-            'ascending': false,
-            'rangeFrom': 0,
-            'rangeTo': 9,
-          }),
+          fakeSupabaseWrapper.getMethodCallsFor('selectPaginated'),
+          isEmpty,
         );
       });
 
       test(
-        'should return unexpected failure when data source throws server exception',
+        'should return unexpected failure when the phone database throws',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.unknown;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgServer;
+          fakePhoneDatabase.watchError = StateError('database is locked');
 
           final result = await repository.fetchInitialEstimations(
             testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
           expectFailure(
             result,
             (failure) => expect(failure, UnexpectedFailure()),
@@ -316,120 +361,21 @@ void main() {
       );
 
       test(
-        'should return timeout error when data source throws timeout',
+        'should return parsing error when a phone row is malformed',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
+          final malformedRow = buildEstimationMap(projectId: testProjectId)
+            ..['estimate_name'] = 42;
+          fakePhoneDatabase.seedRows([malformedRow]);
 
           final result = await repository.fetchInitialEstimations(
             testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
           expectFailure(
             result,
             (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
-            ),
-          );
-        },
-      );
-
-      test(
-        'should return connection error when data source throws SocketException',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection failed';
-
-          final result = await repository.fetchInitialEstimations(
-            testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.connectionError),
-            ),
-          );
-        },
-      );
-
-      test(
-        'should return parsing error when data source throws FormatException',
-        () async {
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Format error';
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.type;
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-
-          final result = await repository.fetchInitialEstimations(
-            testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(result, (failure) {
-            expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.parsingError),
-            );
-          });
-        },
-      );
-
-      test(
-        'should return connection error when data source throws PostgrestException with connection failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.connectionFailure;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection lost';
-
-          final result = await repository.fetchInitialEstimations(
-            testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.connectionError),
-            ),
-          );
-        },
-      );
-
-      test(
-        'should return unexpected database error when data source throws PostgrestException with unique violation',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.uniqueViolation;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Unique violation';
-
-          final result = await repository.fetchInitialEstimations(
-            testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(
-                errorType: EstimationErrorType.unexpectedDatabaseError,
-              ),
             ),
           );
         },
@@ -548,21 +494,11 @@ void main() {
       test(
         'should emit error to stream when fetchInitialEstimations fails',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.timeout;
+          fakePhoneDatabase.watchError = StateError('database is locked');
 
           await expectLater(
             repository.watchEstimations(testProjectId),
-            emits(
-              leftFailure(
-                equals(
-                  EstimationFailure(
-                    errorType: EstimationErrorType.timeoutError,
-                  ),
-                ),
-              ),
-            ),
+            emits(leftFailure(equals(UnexpectedFailure()))),
           );
         },
       );
@@ -692,33 +628,18 @@ void main() {
             completion(rightEstimations(equals(initialEstimations))),
           );
 
-          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-          fakeSupabaseWrapper.selectPaginatedExceptionType =
-              SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
+          fakePhoneDatabase.watchError = StateError('database is locked');
 
           final result = await repository.loadMoreEstimations(testProjectId);
 
-          expect(result.isLeft(), isTrue);
           expectFailure(
             result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
-            ),
+            (failure) => expect(failure, UnexpectedFailure()),
           );
 
           await expectLater(
             queue.next,
-            completion(
-              leftFailure(
-                equals(
-                  EstimationFailure(
-                    errorType: EstimationErrorType.timeoutError,
-                  ),
-                ),
-              ),
-            ),
+            completion(leftFailure(equals(UnexpectedFailure()))),
           );
 
           await queue.cancel();
@@ -726,23 +647,38 @@ void main() {
       );
 
       test(
-        'should correctly update offset after loading more estimations',
+        'should raise the limit of the phone watch by a page when loading more',
         () async {
           seedEstimations(twoPagesDatasetSize + 5);
 
           await repository.fetchInitialEstimations(testProjectId);
           await repository.loadMoreEstimations(testProjectId);
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectPaginated',
+          final limits = fakePhoneDatabase.watchCalls
+              .map((call) => call.parameters.last)
+              .toList();
+          expect(limits, [defaultPageDatasetSize, twoPagesDatasetSize]);
+        },
+      );
+
+      test(
+        'should report no more estimations once a larger limit returns fewer rows than asked',
+        () async {
+          seedEstimations(defaultPageDatasetSize + smallDatasetSize);
+
+          await repository.fetchInitialEstimations(testProjectId);
+          expect(repository.hasMoreEstimations(testProjectId), isTrue);
+
+          final result = await repository.loadMoreEstimations(testProjectId);
+
+          expect(repository.hasMoreEstimations(testProjectId), isFalse);
+          expectResult(
+            result,
+            (estimates) => expect(
+              estimates,
+              hasLength(defaultPageDatasetSize + smallDatasetSize),
+            ),
           );
-          expect(methodCalls.length, equals(2));
-
-          expect(methodCalls[0]['rangeFrom'], equals(0));
-          expect(methodCalls[0]['rangeTo'], equals(9));
-
-          expect(methodCalls[1]['rangeFrom'], equals(10));
-          expect(methodCalls[1]['rangeTo'], equals(19));
         },
       );
     });
@@ -865,17 +801,17 @@ void main() {
             completion(rightEstimations(anything)),
           );
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectPaginated',
-          );
-          expect(methodCalls, hasLength(2));
+          final orderColumns = fakePhoneDatabase.watchCalls
+              .map((call) => call.sql)
+              .toList();
+          expect(orderColumns, hasLength(2));
           expect(
-            methodCalls[0]['orderColumn'],
-            DatabaseConstants.createdAtColumn,
+            orderColumns[0],
+            contains('ORDER BY ${DatabaseConstants.createdAtColumn} DESC'),
           );
           expect(
-            methodCalls[1]['orderColumn'],
-            DatabaseConstants.updatedAtColumn,
+            orderColumns[1],
+            contains('ORDER BY ${DatabaseConstants.updatedAtColumn} DESC'),
           );
 
           await createdAtQueue.cancel();
@@ -1107,8 +1043,6 @@ void main() {
           );
           final createdEstimation = createResult.getRightOrNull()!;
 
-          await repository.loadMoreEstimations(testProjectId);
-
           await expectLater(
             queue.next,
             completion(
@@ -1120,10 +1054,41 @@ void main() {
               ),
             ),
           );
+
+          final syncedRow = buildEstimationMap(
+            id: createdEstimation.id,
+            projectId: testProjectId,
+            estimateName: createdEstimation.estimateName,
+            createdAt: '2026-02-01T00:00:00.000Z',
+            updatedAt: '2026-02-01T00:00:00.000Z',
+          );
+          final syncedEstimation = CostEstimateDto.fromJson(
+            syncedRow,
+          ).toDomain();
+          fakePhoneDatabase.seedRows([syncedRow]);
           await expectLater(
             queue.next,
             completion(
-              rightEstimations(equals([createdEstimation, ...allEstimations])),
+              rightEstimations(
+                equals([
+                  syncedEstimation,
+                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2 - 1),
+                ]),
+              ),
+            ),
+          );
+
+          await repository.loadMoreEstimations(testProjectId);
+
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  syncedEstimation,
+                  ...allEstimations.sublist(0, defaultPageDatasetSize * 3 - 1),
+                ]),
+              ),
             ),
           );
 
@@ -1432,6 +1397,21 @@ void main() {
             ),
           );
 
+          fakePhoneDatabase.removeRow('estimate-29');
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(
+                  allEstimations
+                      .where((e) => e.id != 'estimate-29')
+                      .take(defaultPageDatasetSize * 2)
+                      .toList(),
+                ),
+              ),
+            ),
+          );
+
           await repository.loadMoreEstimations(testProjectId);
           await expectLater(
             queue.next,
@@ -1489,6 +1469,50 @@ void main() {
 
         await queue.cancel();
       });
+
+      test(
+        'should restore every watched list of the project when delete fails',
+        () async {
+          final maps = seedEstimations(smallDatasetSize);
+          final newestFirst = mapsToDomainEntities(maps.reversed.toList());
+          final oldestFirst = mapsToDomainEntities(maps);
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final newestQueue = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final oldestQueue = StreamQueue(
+            repository.watchEstimations(testProjectId, ascending: true),
+          );
+          await expectLater(
+            newestQueue.next,
+            completion(rightEstimations(equals(newestFirst))),
+          );
+          await expectLater(
+            oldestQueue.next,
+            completion(rightEstimations(equals(oldestFirst))),
+          );
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+
+          await repository.deleteEstimation('estimate-0', testProjectId);
+
+          await newestQueue.next;
+          await oldestQueue.next;
+          await expectLater(
+            newestQueue.next,
+            completion(rightEstimations(equals(newestFirst))),
+          );
+          await expectLater(
+            oldestQueue.next,
+            completion(rightEstimations(equals(oldestFirst))),
+          );
+          await newestQueue.cancel();
+          await oldestQueue.cancel();
+        },
+      );
     });
 
     group('changeLockStatus', () {
@@ -2267,6 +2291,161 @@ void main() {
             'filterValue': estimateIdDefault,
           }),
         );
+      });
+    });
+
+    group('writes with other estimates in the list', () {
+      const newEstimateName = 'Renamed Estimate';
+
+      Map<String, dynamic> projectEstimate({String? id, String? createdAt}) =>
+          buildEstimationMap(
+            id: id,
+            projectId: testProjectId,
+            createdAt: createdAt,
+          );
+
+      Map<String, dynamic> neighbourEstimate() => buildEstimationMap(
+        id: estimateId3,
+        projectId: testProjectId,
+        estimateName: estimateName3,
+        createdAt: '2023-06-01T00:00:00.000Z',
+      );
+
+      CostEstimate estimateIn(
+        Either<Failure, List<CostEstimate>> result,
+        String id,
+      ) => result.getRightOrNull()!.firstWhere((e) => e.id == id);
+
+      void expectNeighbourUntouched(
+        Either<Failure, List<CostEstimate>> emission,
+      ) {
+        final neighbour = estimateIn(emission, estimateId3);
+        expect(neighbour.estimateName, estimateName3);
+        expect(neighbour.lockStatus.isLocked, isFalse);
+      }
+
+      Future<StreamQueue<Either<Failure, List<CostEstimate>>>>
+      watchTwoEstimates() async {
+        seedEstimationTable([projectEstimate(), neighbourEstimate()]);
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final queue = StreamQueue(repository.watchEstimations(testProjectId));
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(hasLength(2))),
+        );
+        return queue;
+      }
+
+      test('a rename leaves the other estimates as they were', () async {
+        final queue = await watchTwoEstimates();
+
+        await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        final emissions = await queue.take(2);
+        for (final emission in emissions) {
+          expect(
+            estimateIn(emission, estimateIdDefault).estimateName,
+            newEstimateName,
+          );
+          expectNeighbourUntouched(emission);
+        }
+        await queue.cancel();
+      });
+
+      test('a lock leaves the other estimates as they were', () async {
+        final queue = await watchTwoEstimates();
+
+        await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        final emissions = await queue.take(2);
+        for (final emission in emissions) {
+          expect(
+            estimateIn(emission, estimateIdDefault).lockStatus.isLocked,
+            isTrue,
+          );
+          expectNeighbourUntouched(emission);
+        }
+        await queue.cancel();
+      });
+
+      test('a failed rename puts back only the renamed estimate', () async {
+        final queue = await watchTwoEstimates();
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+
+        await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        final emissions = await queue.take(2);
+        expect(
+          estimateIn(emissions.last, estimateIdDefault).estimateName,
+          estimateNameDefault,
+        );
+        for (final emission in emissions) {
+          expectNeighbourUntouched(emission);
+        }
+        await queue.cancel();
+      });
+
+      test(
+        'a created estimate is not shown twice when the phone copy has it before the server answers',
+        () async {
+          seedEstimationTable([projectEstimate()]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(hasLength(1))),
+          );
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer();
+          final created = buildEstimationDto(
+            id: estimateId2,
+            projectId: testProjectId,
+            estimateName: estimateName2,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          ).toDomain();
+
+          final creating = repository.createEstimation(created);
+          fakePhoneDatabase.seedRows([
+            projectEstimate(id: '1', createdAt: timestamp2),
+          ]);
+          await queue.next;
+          fakeSupabaseWrapper.completer!.complete();
+          final createdId = (await creating).getRightOrNull()!.id;
+          final emission = await queue.next;
+
+          expect(createdId, '1');
+          expect(
+            emission.getRightOrNull()!.where((e) => e.id == createdId),
+            hasLength(1),
+          );
+          await queue.cancel();
+        },
+      );
+
+      test('a second fetch does not leave the first caller waiting', () async {
+        final activationGate = Completer<void>();
+        fakePhoneDatabase.syncStreamActivationGate = activationGate;
+
+        final first = repository.fetchInitialEstimations(testProjectId);
+        final second = repository.fetchInitialEstimations(testProjectId);
+
+        await expectLater(first, completion(rightEstimations(isEmpty)));
+        activationGate.complete();
+        await second;
       });
     });
   });

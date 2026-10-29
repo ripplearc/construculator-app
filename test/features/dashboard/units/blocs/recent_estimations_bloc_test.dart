@@ -8,11 +8,10 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -20,6 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_estimates_database.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -49,6 +49,7 @@ class _TestModule extends Module {
 void main() {
   late RecentEstimationsBloc bloc;
   late FakeSupabaseWrapper fakeSupabaseWrapper;
+  final fakePhoneDatabase = FakeCostEstimatesDatabase();
   late CurrentProjectNotifier currentProjectNotifier;
 
   const testProjectId = 'test_project_id';
@@ -56,17 +57,18 @@ void main() {
   setUpAll(() {
     final bootstrap = FakeAppBootstrapFactory.create();
     Modular.init(_TestModule(bootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   });
 
   tearDownAll(() {
     Modular.dispose();
+    fakePhoneDatabase.dispose();
   });
 
   setUp(() {
     fakeSupabaseWrapper.reset();
-    fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
-    fakeSupabaseWrapper.selectPaginatedExceptionType = null;
+    fakePhoneDatabase.reset();
 
     currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
     currentProjectNotifier.setCurrentProjectId(testProjectId);
@@ -74,10 +76,7 @@ void main() {
   });
 
   void seedEstimationTable(List<Map<String, dynamic>> rows) {
-    fakeSupabaseWrapper.addTableData(
-      DatabaseConstants.costEstimatesTable,
-      rows,
-    );
+    fakePhoneDatabase.seedRows(rows);
   }
 
   final tDate = DateTime(2025, 1, 1, 8, 0);
@@ -114,17 +113,13 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsError] when data stream fails',
     build: () {
-      fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-      fakeSupabaseWrapper.selectPaginatedExceptionType =
-          SupabaseExceptionType.socket;
+      fakePhoneDatabase.watchError = StateError('database is locked');
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),
-      const RecentEstimationsError(
-        'EstimationFailure(EstimationErrorType.connectionError)',
-      ),
+      const RecentEstimationsError('UnexpectedFailure()'),
     ],
   );
 
@@ -151,9 +146,7 @@ void main() {
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
-    expect: () => [
-      const RecentEstimationsLoading(lastKnownEstimations: null),
-    ],
+    expect: () => [const RecentEstimationsLoading(lastKnownEstimations: null)],
   );
 
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
@@ -189,10 +182,8 @@ void main() {
     build: () {
       final fakeRepository = FakeCostEstimationRepository()
         ..streamFactory = (() => Stream.error(
-              const EstimationFailure(
-                errorType: EstimationErrorType.timeoutError,
-              ),
-            ));
+          const EstimationFailure(errorType: EstimationErrorType.timeoutError),
+        ));
       final notifier = FakeCurrentProjectNotifier(
         initialProjectId: testProjectId,
       );
@@ -223,9 +214,7 @@ void main() {
     act: (bloc) async {
       bloc.add(const RecentEstimationsWatchStarted());
       currentProjectNotifier.setCurrentProjectId(testProjectId);
-      await bloc.stream.firstWhere(
-        (state) => state is RecentEstimationsLoaded,
-      );
+      await bloc.stream.firstWhere((state) => state is RecentEstimationsLoaded);
     },
     expect: () => [
       // The re-dispatched watch start emits an equal Loading state, which

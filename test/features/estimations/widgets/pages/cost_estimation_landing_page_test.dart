@@ -12,6 +12,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -35,6 +36,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_estimates_database.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -64,6 +66,7 @@ class _CostEstimationLandingPageTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  final fakePhoneDatabase = FakeCostEstimatesDatabase();
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
@@ -82,6 +85,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
 
@@ -94,6 +98,7 @@ void main() {
 
   tearDownAll(() {
     Modular.destroy();
+    fakePhoneDatabase.dispose();
     CoreToast.enableTimers();
   });
 
@@ -106,6 +111,7 @@ void main() {
       PermissionConstants.lockCostEstimation,
     ]);
     fakeSupabase.reset();
+    fakePhoneDatabase.reset();
     fakeAppRouter.reset();
   });
 
@@ -167,10 +173,12 @@ void main() {
 
   void addCostEstimationData(Map<String, dynamic> estimationData) {
     fakeSupabase.addTableData('cost_estimates', [estimationData]);
+    fakePhoneDatabase.seedRows([estimationData]);
   }
 
   void addMultipleCostEstimations(List<Map<String, dynamic>> estimations) {
     fakeSupabase.addTableData('cost_estimates', estimations);
+    fakePhoneDatabase.seedRows(estimations);
   }
 
   Future<void> setupAndNavigateToEstimation(
@@ -433,42 +441,6 @@ void main() {
       );
     });
 
-    testWidgets('shows timeout error message when timeout error occurs', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      final locale = l10n();
-
-      expect(find.text(locale.timeoutError), findsOneWidget);
-      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-    });
-
-    testWidgets('shows connection error message when connection error occurs', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.socket;
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      expect(find.text(l10n().connectionError), findsOneWidget);
-      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-    });
-
     testWidgets('shows unexpected error message when unexpected error occurs', (
       tester,
     ) async {
@@ -477,8 +449,7 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectPaginated = true;
-      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.type;
+      fakePhoneDatabase.watchError = StateError('database is locked');
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -504,19 +475,13 @@ void main() {
 
       expect(find.text('Initial Estimation'), findsOneWidget);
 
-      fakeSupabase.clearTableData('cost_estimates');
-      addMultipleCostEstimations([
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Initial Estimation',
-        ),
+      addCostEstimationData(
         EstimationTestDataMapFactory.createFakeEstimationData(
           id: 'estimation-2',
           projectId: testProjectId,
           estimateName: 'Updated Estimation',
         ),
-      ]);
+      );
 
       await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
 
@@ -896,8 +861,7 @@ void main() {
 
       expect(find.byType(CostEstimationTile), findsWidgets);
 
-      fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer();
+      fakePhoneDatabase.syncStreamActivationGate = Completer();
 
       final listView = tester.widget<CustomScrollView>(
         find.byType(CustomScrollView),
@@ -911,7 +875,7 @@ void main() {
 
       expect(find.byType(CoreLoadingIndicator), findsOneWidget);
 
-      fakeSupabase.completer!.complete();
+      fakePhoneDatabase.syncStreamActivationGate!.complete();
       await tester.pumpAndSettle();
     });
 
