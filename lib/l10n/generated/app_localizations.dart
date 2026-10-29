@@ -3544,6 +3544,162 @@ abstract class AppLocalizations {
   /// **'Too large'**
   String get calculatorErrorTooLarge;
 
+  /// Name of the calculator answer for the area of a rectangle, Length × Width, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get calculatorAnswerArea;
+
+  /// Name of the calculator answer for the diagonal of a rectangle, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Diagonal'**
+  String get calculatorAnswerDiagonal;
+
+  /// Name of the calculator answer for the perimeter of a rectangle, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Perimeter'**
+  String get calculatorAnswerPerimeter;
+
+  /// Name of the calculator answer for the volume of a box, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get calculatorAnswerVolume;
+
+  /// Name of the calculator answer for the wall area of a box, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Wall area'**
+  String get calculatorAnswerWallArea;
+
+  /// Name of the calculator answer for the area of a circle, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Circle area'**
+  String get calculatorAnswerCircleArea;
+
+  /// Name of the calculator answer for the circumference of a circle, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Circumference'**
+  String get calculatorAnswerCircumference;
+
+  /// Name of the calculator answer for the area of a regular polygon, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Polygon area'**
+  String get calculatorAnswerPolygonArea;
+
+  /// Name of the calculator answer for the side of a regular polygon, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Side length'**
+  String get calculatorAnswerSideLength;
+
+  /// Name of the calculator answer for the corner angle of a regular polygon, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Corner angle'**
+  String get calculatorAnswerCornerAngle;
+
+  /// Name of the calculator answer for the angle an arc subtends, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Arc angle'**
+  String get calculatorAnswerArcAngle;
+
+  /// Name of the calculator answer for the radius of an arc, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Arc radius'**
+  String get calculatorAnswerArcRadius;
+
+  /// Name of the calculator answer for the length of an arc, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Arc length'**
+  String get calculatorAnswerArcLength;
+
+  /// Name of the calculator answer for a pitch written as inches of rise per 12 inches of run, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-rise per 12in run'**
+  String get calculatorAnswerPitchRise;
+
+  /// Name of the calculator answer for a pitch written in degrees, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-degrees'**
+  String get calculatorAnswerPitchDegrees;
+
+  /// Name of the calculator answer for a pitch written as a percent grade, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch-grade'**
+  String get calculatorAnswerPitchGrade;
+
+  /// Name of the calculator answer for the volume of a column, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Column'**
+  String get calculatorAnswerColumn;
+
+  /// Name of the calculator answer for the volume of a cone, on the suggestion strip, the equals key and the result chip
+  ///
+  /// In en, this message translates to:
+  /// **'Cone'**
+  String get calculatorAnswerCone;
+
+  /// Face of the calculator equals key while a chain continues from a previous result
+  ///
+  /// In en, this message translates to:
+  /// **'Ans'**
+  String get calculatorEqualsAns;
+
+  /// Text of the calculator suggestion strip when nothing applies yet
+  ///
+  /// In en, this message translates to:
+  /// **'Here you can see smart suggestions from us'**
+  String get calculatorStripPlaceholder;
+
+  /// Marker on the calculator suggestion strip for the suggestions that do not fit in the row
+  ///
+  /// In en, this message translates to:
+  /// **'+{count}'**
+  String calculatorStripHiddenChips(int count);
+
+  /// Screen reader label of the marker that opens the suggestions that do not fit in the strip
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count} more suggestions'**
+  String calculatorStripExpandSemantics(int count);
+
+  /// Screen reader label of the control that closes the opened suggestion strip
+  ///
+  /// In en, this message translates to:
+  /// **'Show fewer suggestions'**
+  String get calculatorStripCollapseSemantics;
+
+  /// Screen reader label of the suggestion strip's mode switch, which the two-row strip does not show
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between suggestions and conversions'**
+  String get calculatorStripToggleSemantics;
+
+  /// Tag leading the conversions row of the calculator suggestion strip, read as "as 264in, 7.33yd"
+  ///
+  /// In en, this message translates to:
+  /// **'as'**
+  String get calculatorStripConversionsTag;
+
+  /// Screen reader label of the conversions row of the calculator suggestion strip
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to other units'**
+  String get calculatorStripConversionsSemantics;
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:

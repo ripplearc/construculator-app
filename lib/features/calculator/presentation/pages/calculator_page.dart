@@ -128,6 +128,24 @@ class _CalculatorPageState extends State<CalculatorPage> {
     OperatorType.percent => null,
   };
 
+  List<SuggestionData> _stripRow(
+    CalculatorLabelFormatter labels,
+    CalculatorBloc bloc,
+    List<CalculatorSuggestion> suggestions,
+  ) => [
+    for (final suggestion in suggestions)
+      SuggestionData(
+        label: labels.suggestionLabel(suggestion),
+        value: suggestion.text,
+        kind: switch (suggestion.kind) {
+          CalculatorSuggestionKind.answer ||
+          CalculatorSuggestionKind.runningTotal => SuggestionKind.deterministic,
+          CalculatorSuggestionKind.conversion => SuggestionKind.conversion,
+        },
+        onTap: () => bloc.add(CalculatorSuggestionAccepted(suggestion)),
+      ),
+  ];
+
   List<FunctionGroup> _buildGroups(CalculatorLabelFormatter labels) => [
     for (final group in _groupTable)
       FunctionGroup(
@@ -198,6 +216,25 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       ),
                     ),
                   ),
+                  CoreSuggestionArea(
+                    layout: CoreSuggestionLayout.twoRows,
+                    suggestionAreaPlaceholder: l10n.calculatorStripPlaceholder,
+                    aiSuggestions: _stripRow(labels, bloc, state.suggestions),
+                    conversionSuggestions: _stripRow(
+                      labels,
+                      bloc,
+                      state.conversions,
+                    ),
+                    hiddenChipsTextBuilder: l10n.calculatorStripHiddenChips,
+                    expandToggleSemanticsLabelBuilder:
+                        l10n.calculatorStripExpandSemantics,
+                    collapseToggleSemanticsLabel:
+                        l10n.calculatorStripCollapseSemantics,
+                    toggleSemanticsLabel: l10n.calculatorStripToggleSemantics,
+                    conversionsRowTagLabel: l10n.calculatorStripConversionsTag,
+                    conversionsRowSemanticsLabel:
+                        l10n.calculatorStripConversionsSemantics,
+                  ),
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
                       begin: 1.0,
@@ -227,7 +264,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       allGroups: groups,
                       groupAccentColors: groupAccentColors,
                       currentUnitSystem: state.currentUnitSystem,
-                      result: const ResultType(label: '='),
+                      result: ResultType(
+                        label: labels.equalsLabel(state.equalsKeyId),
+                      ),
                       onDigitPressed: (digit) =>
                           bloc.add(CalculatorDigitPressed(digit.label)),
                       onUnitSelected: (unit) => bloc.add(_unitEventFor(unit)),

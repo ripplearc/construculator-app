@@ -1500,6 +1500,30 @@ class Tape extends Equatable {
     };
   }
 
+  /// Lands an answer the strip offered (Section 1.2) as a result chip
+  /// labelled [key]: the chip being typed is closed the way = closes it — a
+  /// fraction typed after whole inches read as inches, an angle's open
+  /// field sealed with its carry — and sealed before the answer; a chip
+  /// nothing was typed into is dropped, since the key that opened it asked
+  /// for the answer; and an unfinished chip keeps the answer out with the
+  /// reason = gives it (Section 5.1, "Finish this value first"; a bare
+  /// fraction; a trig chip its function cannot answer). Inside a bracket
+  /// nothing is offered, so the key is refused as a function key is.
+  TapeOutcome landAnswer(String key, Quantity value) {
+    if (openBracket != null) {
+      return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    final tape = _withFractionClosedAsInches()._withFieldClosed();
+    final answer = ResultChip(key: key, value: value);
+    if (tape.active case final chip? when chip.entry.isEmpty) {
+      return TapeChanged(
+        tape._with(tape.chips.sublist(0, tape.chips.length - 1)).append(answer),
+      );
+    }
+    if (tape._unfinished case final refusal?) return refusal;
+    return TapeChanged(tape.append(answer));
+  }
+
   bool get _endsOnTheFailedDivisor {
     if (chips.last case ValueChip(operator: Operator.divide)) {
       return evaluator.fold(chips.sublist(0, chips.length - 1)) is! ChainFailed;

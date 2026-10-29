@@ -3,6 +3,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
@@ -37,6 +38,59 @@ void main() {
           find.bySemanticsLabel(AppLocalizationsEn().closeButton),
           checkTapTargetSize: false,
         );
+      },
+    );
+
+    testWidgets(
+      'a suggestion chip and a conversion chip meet the label and contrast '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        Future<void> type(List<String> keys) async {
+          for (final key in keys) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.pump();
+          await tester.pump(CoreSuggestionArea.animationDuration);
+          await tester.pump();
+        }
+
+        // The themes are pumped by hand: the shared helper waits for the
+        // page to settle, and a strip chip animates while it is on screen.
+        // Tap target size is disabled as in the close-button test: the
+        // guideline reads the whole page, where CoreUI's close button and
+        // drag handle sit below 48dp by design (tracked in CoreUI).
+        for (final theme in kA11yTestThemes) {
+          // A Slope answer fills row 1 and leaves row 2 empty, so the
+          // contrast guideline, which also reads the whole page, judges the
+          // suggestion chips alone.
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await type(const ['calc_key_Slope', 'calc_key_seven']);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CoreSuggestionArea.chipTestKey(0)),
+            checkTapTargetSize: false,
+          );
+
+          // Text contrast is not checked on the conversions row: the
+          // guideline samples its mini chips' text at the page background
+          // (a 1.05 ratio) while the same chips pass CoreUI's own a11y
+          // tests. CA-1377 takes it up in CoreUI.
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          await type(const [
+            'calc_key_Length',
+            'calc_key_two',
+            'calc_key_two',
+            'calc_key_feet',
+          ]);
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CoreSuggestionArea.conversionChipTestKey(0)),
+            checkTapTargetSize: false,
+            checkTextContrast: false,
+          );
+        }
       },
     );
 

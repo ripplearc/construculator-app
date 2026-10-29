@@ -234,6 +234,23 @@
             <mutation text=""/>
             <mutation text="if (openBracket case final bracket?) { return _inside(bracket, (inner) =&gt; inner.clearActive()); }"/>
         </regex>
+
+        <!-- RULE CA-1088a: an answer landed on an empty named chip keeps the
+             empty chip on the tape -->
+        <regex pattern="tape\._with\(tape\.chips\.sublist\(0, tape\.chips\.length - 1\)\)\.append\(answer\)" dotAll="true" id="tape.land_answer.keeps_empty_chip">
+            <mutation text="tape.append(answer)"/>
+        </regex>
+
+        <!-- RULE CA-1088b: an unfinished chip no longer keeps the answer out -->
+        <regex pattern="if \(tape\._unfinished case final refusal\?\) return refusal;\s*return TapeChanged\(tape\.append\(answer\)\);" dotAll="true" id="tape.land_answer.lands_on_unfinished">
+            <mutation text="return TapeChanged(tape.append(answer));"/>
+        </regex>
+
+        <!-- RULE CA-1088c: the answer lands without closing what the chip left
+             open -->
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\._withFieldClosed\(\);\s*final answer = ResultChip\(key: key, value: value\);" dotAll="true" id="tape.land_answer.skips_close">
+            <mutation text="final tape = this; final answer = ResultChip(key: key, value: value);"/>
+        </regex>
     </rules>
 
     <commands>

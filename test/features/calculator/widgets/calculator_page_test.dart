@@ -491,6 +491,72 @@ void main() {
     );
   });
 
+  test('every answer name and the equals faces come from the localization '
+      'layer', () {
+    final l10n = AppLocalizationsEn();
+    final labels = CalculatorLabelFormatter(l10n);
+
+    final expectedLabelById = <String, String>{
+      DeterministicRules.areaKey: l10n.calculatorAnswerArea,
+      DeterministicRules.diagonalKey: l10n.calculatorAnswerDiagonal,
+      DeterministicRules.perimeterKey: l10n.calculatorAnswerPerimeter,
+      DeterministicRules.volumeKey: l10n.calculatorAnswerVolume,
+      DeterministicRules.wallAreaKey: l10n.calculatorAnswerWallArea,
+      DeterministicRules.diameterKey: l10n.calculatorKeyDiameter,
+      DeterministicRules.radiusKey: l10n.calculatorKeyRadius,
+      DeterministicRules.circleAreaKey: l10n.calculatorAnswerCircleArea,
+      DeterministicRules.circumferenceKey: l10n.calculatorAnswerCircumference,
+      DeterministicRules.polygonAreaKey: l10n.calculatorAnswerPolygonArea,
+      DeterministicRules.sideLengthKey: l10n.calculatorAnswerSideLength,
+      DeterministicRules.cornerAngleKey: l10n.calculatorAnswerCornerAngle,
+      DeterministicRules.arcAngleKey: l10n.calculatorAnswerArcAngle,
+      DeterministicRules.arcRadiusKey: l10n.calculatorAnswerArcRadius,
+      DeterministicRules.arcLengthKey: l10n.calculatorAnswerArcLength,
+      DeterministicRules.pitchRiseKey: l10n.calculatorAnswerPitchRise,
+      DeterministicRules.pitchDegreesKey: l10n.calculatorAnswerPitchDegrees,
+      DeterministicRules.pitchGradeKey: l10n.calculatorAnswerPitchGrade,
+      DeterministicRules.riseKey: l10n.calculatorKeyRise,
+      DeterministicRules.runKey: l10n.calculatorKeyRun,
+      DeterministicRules.columnKey: l10n.calculatorAnswerColumn,
+      DeterministicRules.coneKey: l10n.calculatorAnswerCone,
+      Tape.calcKey: l10n.calculatorResultCalc,
+      CalculatorState.ansKey: l10n.calculatorEqualsAns,
+    };
+
+    for (final entry in expectedLabelById.entries) {
+      expect(
+        labels.displayLabel(entry.key),
+        equals(entry.value),
+        reason: 'answer ${entry.key} mapped to wrong label',
+      );
+      expect(entry.value, isNotEmpty);
+    }
+    expect(
+      expectedLabelById.values.toSet(),
+      hasLength(expectedLabelById.length),
+    );
+  });
+
+  test('the equals key takes a name of up to eight characters, else the = '
+      'sign', () {
+    final labels = CalculatorLabelFormatter(AppLocalizationsEn());
+
+    expect(labels.equalsLabel(null), CalculatorLabelFormatter.equalsSign);
+    expect(labels.equalsLabel(DeterministicRules.areaKey), 'Area');
+    expect(labels.equalsLabel(Tape.calcKey), 'Calc');
+    expect(labels.equalsLabel(CalculatorState.ansKey), 'Ans');
+    expect(labels.equalsLabel(DeterministicRules.diagonalKey), 'Diagonal');
+    expect(labels.equalsLabel(TrigFunction.sine.key), 'Sine');
+    expect(
+      labels.equalsLabel(TrigFunction.arctangent.key),
+      CalculatorLabelFormatter.equalsSign,
+    );
+    expect(
+      labels.equalsLabel(DeterministicRules.pitchRiseKey),
+      CalculatorLabelFormatter.equalsSign,
+    );
+  });
+
   test('a pill is drawn as the kind its id names', () {
     final l10n = AppLocalizationsEn();
 
