@@ -9,6 +9,7 @@ import '../../../../scripts/golden/intended.dart';
 import '../../../../scripts/golden/replay.dart';
 import '../../../../scripts/golden/scenario.dart';
 import '../../../../scripts/golden/snapshot.dart';
+import '../../../features/calculator/utils/calculator_test_harness.dart';
 
 /// Drives [CalculatorBloc] with the prototype's keys and reads its state back
 /// as a [Snapshot].
@@ -20,7 +21,7 @@ import '../../../../scripts/golden/snapshot.dart';
 /// event for (accepting a strip chip, tapping a tape chip, the sheet) are
 /// refused, and the runner reports the scenario as unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
-  CalculatorBloc _bloc = CalculatorBloc();
+  CalculatorBloc _bloc = calculatorBlocForTests();
 
   /// The bloc under test, for the test to close.
   CalculatorBloc get bloc => _bloc;
@@ -28,7 +29,7 @@ class BlocScenarioDriver implements ScenarioDriver {
   @override
   Future<void> reset() async {
     await _bloc.close();
-    _bloc = CalculatorBloc();
+    _bloc = calculatorBlocForTests();
   }
 
   @override
