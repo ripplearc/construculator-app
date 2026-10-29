@@ -943,6 +943,86 @@ void main() {
     });
   });
 
+  group('Tape.landAnswer', () {
+    const area = Area(16896.0 * 9216.0, unit: Unit.foot);
+
+    Tape named(String key, String keys) => press(
+      changed(
+        const Tape().pressFunctionKey(
+          key,
+          keyWantsUnit: true,
+          readsDegrees: false,
+        ),
+      ),
+      keys,
+    );
+
+    test('lands the answer after a finished chip, sealed', () {
+      final tape = changed(named('Length', '2 2 ft').landAnswer('Area', area));
+      expect(tape.chips, hasLength(2));
+      expect(tape.active, isNull);
+      expect(tape.chips.last, const ResultChip(key: 'Area', value: area));
+    });
+
+    test('closes what the chip left open, as = does: a fraction after whole '
+        'inches is read as inches', () {
+      final tape = changed(
+        press(const Tape(), '7 in 1 / 2').landAnswer('Area', area),
+      );
+      expect((tape.chips.first as ValueChip).entry.text, '7-1/2in');
+      expect(tape.chips.last, const ResultChip(key: 'Area', value: area));
+    });
+
+    test('drops a chip nothing was typed into, since its key asked for the '
+        'answer', () {
+      final tape = changed(
+        changed(
+          named(
+            'Length',
+            '2 2 ft',
+          ).pressFunctionKey('Height', keyWantsUnit: true, readsDegrees: false),
+        ).landAnswer('Area', area),
+      );
+      expect(
+        [
+          for (final chip in tape.chips)
+            chip is ValueChip ? chip.key : 'result',
+        ],
+        ['Length', 'result'],
+      );
+    });
+
+    test(
+      'keeps the answer out of an unfinished chip with the reason = gives',
+      () {
+        expect(
+          named('Length', '1 8 ft 8').landAnswer('Area', area),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+        expect(
+          press(const Tape(), '7 / 1 6').landAnswer('Area', area),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
+        );
+        expect(
+          press(
+            changed(const Tape().pressTrigKey(TrigFunction.tangent)),
+            '9 0',
+          ).landAnswer('Area', area),
+          const TapeRefused(TapeRefusal.trigCannotAnswer),
+        );
+      },
+    );
+
+    test('is refused while a bracket is open', () {
+      expect(
+        changed(
+          press(const Tape(), '2 +').pressBracket(),
+        ).landAnswer('Area', area),
+        const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+      );
+    });
+  });
+
   group('Chip', () {
     test('an input chip copies with fields cleared or kept', () {
       const chip = ValueChip(

@@ -2004,6 +2004,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorErrorTooLarge => 'Too large';
 
   @override
+  String get calculatorAnswerArea => 'Area';
+
+  @override
+  String get calculatorAnswerDiagonal => 'Diagonal';
+
+  @override
+  String get calculatorAnswerPerimeter => 'Perimeter';
+
+  @override
+  String get calculatorAnswerVolume => 'Volume';
+
+  @override
+  String get calculatorAnswerWallArea => 'Wall area';
+
+  @override
+  String get calculatorAnswerCircleArea => 'Circle area';
+
+  @override
+  String get calculatorAnswerCircumference => 'Circumference';
+
+  @override
+  String get calculatorAnswerPolygonArea => 'Polygon area';
+
+  @override
+  String get calculatorAnswerSideLength => 'Side length';
+
+  @override
+  String get calculatorAnswerCornerAngle => 'Corner angle';
+
+  @override
+  String get calculatorAnswerArcAngle => 'Arc angle';
+
+  @override
+  String get calculatorAnswerArcRadius => 'Arc radius';
+
+  @override
+  String get calculatorAnswerArcLength => 'Arc length';
+
+  @override
+  String get calculatorAnswerPitchRise => 'Pitch-rise per 12in run';
+
+  @override
+  String get calculatorAnswerPitchDegrees => 'Pitch-degrees';
+
+  @override
+  String get calculatorAnswerPitchGrade => 'Pitch-grade';
+
+  @override
+  String get calculatorAnswerColumn => 'Column';
+
+  @override
+  String get calculatorAnswerCone => 'Cone';
+
+  @override
+  String get calculatorEqualsAns => 'Ans';
+
+  @override
+  String get calculatorStripPlaceholder =>
+      'Here you can see smart suggestions from us';
+
+  @override
+  String calculatorStripHiddenChips(int count) {
+    return '+$count';
+  }
+
+  @override
+  String calculatorStripExpandSemantics(int count) {
+    return 'Show $count more suggestions';
+  }
+
+  @override
+  String get calculatorStripCollapseSemantics => 'Show fewer suggestions';
+
+  @override
+  String get calculatorStripToggleSemantics =>
+      'Switch between suggestions and conversions';
+
+  @override
+  String get calculatorStripConversionsTag => 'as';
+
+  @override
+  String get calculatorStripConversionsSemantics => 'Convert to other units';
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override
