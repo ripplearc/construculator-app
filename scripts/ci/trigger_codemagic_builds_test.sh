@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Manual test harness for scripts/ci/trigger_codemagic_builds.sh (CA-1240).
+# Manual test harness for scripts/ci/trigger_codemagic_builds.sh (CA-1240, CA-1346).
 #
 # Follows the repo's bash test convention (see resolve_build_features_test.sh):
 # no shell-test framework, non-zero exit if any case fails. curl is replaced by
@@ -116,10 +116,21 @@ assert_true "sends one request per workflow" requests_sent 3
 assert_true "sends the workflow id" body_field_is 2 .workflowId comprehensive-check
 assert_true "sends the app id" body_field_is 1 .appId test-app
 assert_true "disables FORCE_FAIL" body_field_is 3 .environment.variables.FORCE_FAIL false
+assert_true "does not force the iOS build without the comment word" body_field_is 3 .environment.variables.FORCE_IOS_BUILD false
 assert_true "records each started build in the job summary" summary_contains "Started \`comprehensive-check\` on \`feature/x\`: build \`build-2\`"
 assert_true "sends the token header" args_contain 1 "x-auth-token: test-token"
 assert_true "posts to /builds" args_contain 1 "https://api.codemagic.io/builds"
 assert_true "fails on an HTTP error" args_contain 1 "--fail-with-body"
+
+for forcing in "#RunCheck ios" "please #RunCheck ios now" "#runcheck   IOS"; do
+  COMMENT_BODY="$forcing" run_target ok feature/x ios-debug-build
+  assert_true "forces the iOS build for the comment '$forcing'" body_field_is 1 .environment.variables.FORCE_IOS_BUILD true
+done
+
+for plain in "#RunCheck" "#RunCheck iosx" "see issue#RunCheck ios" "#RunCheck force" $'#RunCheck\nios'; do
+  COMMENT_BODY="$plain" run_target ok feature/x ios-debug-build
+  assert_true "does not force the iOS build for the comment '$plain'" body_field_is 1 .environment.variables.FORCE_IOS_BUILD false
+done
 
 # shellcheck disable=SC2016 # the shell metacharacters must stay literal
 HOSTILE_BRANCH='a";touch pwned;"$(touch pwned)'
