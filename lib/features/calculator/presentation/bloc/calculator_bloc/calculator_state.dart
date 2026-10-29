@@ -13,10 +13,19 @@ part of 'calculator_bloc.dart';
 /// state, so a listener that must speak twice listens to the key, not the
 /// state (S1b).
 ///
-/// The getters at the end are what the page renders today, read straight
-/// off the tape with its formatter; T1a (CA-1092) owns the display's final
-/// shape.
+/// The getters at the end are what the page renders, read straight off the
+/// tape with its formatter: the label and value rows, the chips, and the
+/// strip (CA-1088, S1b) in the fixed order of Section 1.2 — what the
+/// engine answers today, with no ranking, no trade follow-ons, no bind
+/// offers and no remembered values, which the ladder's rungs (G1 to G3)
+/// add as one more call in the same mapping. T1a (CA-1092) owns the
+/// display's final shape.
 class CalculatorState extends Equatable {
+  /// The label the equals key reads while a chain continues from a result
+  /// (rule 4.9: "only the equals key relabels to Ans while the chain is
+  /// open"); never a chip's key.
+  static const String ansKey = 'Ans';
+
   /// The tape of chips, with the preferences it is rendered by.
   final Tape tape;
 
@@ -84,6 +93,106 @@ class CalculatorState extends Equatable {
   };
 
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
+
+  /// Row 1 of the strip (Section 1.2), in a fixed order with no ranking: a
+  /// pending trig chip's answer leads (rule 4.4). While an operator has
+  /// values on both sides the running total follows it as Calc, in place of
+  /// the rule answers, so that the user always sees the running total
+  /// before the next operator and = lands it (term 2.15; walkthrough 12.3,
+  /// "Multiplication 2. Strip: Calc: 8ft 0in"). Otherwise the rule answers
+  /// the named values earn, minus the ones already landed as result chips
+  /// (Section 8: after Pitch-rise is accepted the other two spellings stay
+  /// on offer). Empty after an error chip ("after an error the area stays
+  /// empty on purpose") and while a bracket is open (Section 7: no preview
+  /// until the group closes).
+  List<CalculatorSuggestion> get suggestions {
+    if (_stripIsSilent) return const [];
+    return [
+      if (tape.trigAnswer case final answer?) _answer(answer.key, answer.value),
+      if (tape.runningTotal case ChainValue(:final value, isCalculation: true))
+        CalculatorSuggestion(
+          key: Tape.calcKey,
+          value: value,
+          kind: CalculatorSuggestionKind.runningTotal,
+          text: tape.formatter.format(value),
+        )
+      else
+        for (final answer in const DeterministicRules().answersFor(
+          tape.namedValues,
+        ))
+          if (!_hasLanded(answer.key)) _answer(answer.key, answer.value),
+    ];
+  }
+
+  /// Row 2 of the strip: the value on screen in its other units (term
+  /// 2.12; Section 6, "Where conversions show"), as plain values with no
+  /// label. The value being typed once it is complete, else the answer the
+  /// tape ends on; a typed angle is left to the Read-as pill (term 2.14),
+  /// and an angle answer offers its other spelling. Empty after an error
+  /// and while a bracket is open, as row 1 is.
+  List<CalculatorSuggestion> get conversions {
+    if (_stripIsSilent) return const [];
+    final value = switch (_chipRead) {
+      final ValueChip chip when chip.trigFunction == null => switch (chip.value(
+        tape.parser,
+      )) {
+        Angle() || Scalar() || null => null,
+        final value => value,
+      },
+      ResultChip(:final value) => value,
+      _ => null,
+    };
+    if (value == null) return const [];
+    return [
+      for (final spelling in const UnitConverter().offersFor(value))
+        CalculatorSuggestion(
+          key: null,
+          value: spelling,
+          kind: CalculatorSuggestionKind.conversion,
+          text: tape.formatter.format(spelling),
+        ),
+    ];
+  }
+
+  /// The id the equals key is named by: the first suggestion's key when
+  /// there is one (term 2.15: "the equals key takes the name of the first
+  /// suggestion"; whether the name fits on the key is the page's call),
+  /// [ansKey] when that suggestion is the Calc of a chain continuing from
+  /// a result (rule 4.9; a chip with no operator starts a chain and a result
+  /// chip restarts it, Section 7), `null` for the = sign.
+  String? get equalsKeyId => switch (suggestions.firstOrNull) {
+    null => null,
+    CalculatorSuggestion(kind: CalculatorSuggestionKind.runningTotal)
+        when _chainStartsOnAResult =>
+      ansKey,
+    CalculatorSuggestion(:final key) => key,
+  };
+
+  bool get _stripIsSilent => tape.endsWithError || tape.openBracket != null;
+
+  CalculatorSuggestion _answer(String key, Quantity value) =>
+      CalculatorSuggestion(
+        key: key,
+        value: value,
+        kind: CalculatorSuggestionKind.answer,
+        text: tape.formatter.format(value),
+      );
+
+  bool _hasLanded(String key) =>
+      tape.chips.any((chip) => chip is ResultChip && chip.key == key);
+
+  bool get _chainStartsOnAResult {
+    for (final chip in tape.chips.reversed) {
+      final operator = switch (chip) {
+        ValueChip(:final operator) => operator,
+        ResultChip(:final operator) => operator,
+        BracketChip(:final operator) => operator,
+        ErrorChip() => null,
+      };
+      if (operator == null) return chip is ResultChip;
+    }
+    return false;
+  }
 
   /// The tape as chips the display area draws: a value chip is its key over
   /// its text, an answer its key over the formatted value, a bracket its
