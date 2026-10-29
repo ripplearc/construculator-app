@@ -9,6 +9,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../utils/calculator_test_harness.dart';
 
 void main() {
+  // A save with no profile signed in raises an error toast, whose timer
+  // would outlive the test.
+  setUp(CoreToast.disableTimers);
+
+  tearDown(() {
+    CoreToast.cleanup();
+    CoreToast.enableTimers();
+  });
+
   Future<void> pumpPage(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -229,8 +238,11 @@ void main() {
 
     tearDown(() => harness.dispose());
 
-    Future<void> pumpSignedIn(WidgetTester tester) async {
-      harness.signIn(harness.userWith({}));
+    Future<void> pumpSignedIn(
+      WidgetTester tester, {
+      bool signedIn = true,
+    }) async {
+      if (signedIn) harness.signIn(harness.userWith({}));
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -277,6 +289,7 @@ void main() {
             .currentUnitSystem,
         UnitSystem.metric,
       );
+      expect(find.text(l10n.calculatorSettingUpdatedMessage), findsNothing);
 
       await press(tester, 'calc_key_five');
       await press(tester, 'calc_key_clearAll');
@@ -284,6 +297,158 @@ void main() {
 
       await press(tester, 'calc_key_paren');
       expect(find.byKey(CalculatorPage.unitsPillKey), findsNothing);
+    });
+
+    testWidgets('a setting sheet opens with the tick on the current choice, '
+        'Update writes the setting, re-renders the result and toasts '
+        '(walkthrough 22.2)', (tester) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+      for (final key in const [
+        'calc_key_one',
+        'calc_key_zero',
+        'calc_key_inch',
+        'calc_key_divide',
+        'calc_key_three',
+      ]) {
+        await press(tester, key);
+      }
+      await tester.tap(find.byKey(CoreResultButton.testKey));
+      await tester.pump();
+      expect(bloc.state.valueText, '0ft 3-5/16in');
+
+      bloc.add(
+        const CalculatorSettingSheetOpened(
+          CalculatorSetting.fractionResolution,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        find.text(l10n.calculatorSettingFractionResolution),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.calculatorOptionFraction(16)), findsOneWidget);
+      expect(
+        tester.getSemantics(
+          find.byKey(CalculatorPage.settingOptionKey('sixteenth')),
+        ),
+        isSemantics(isSelected: true, isButton: true, hasTapAction: true),
+      );
+
+      await tester.tap(find.byKey(CalculatorPage.settingOptionKey('half')));
+      await tester.pump();
+      await tester.tap(find.byKey(CalculatorPage.settingUpdateKey));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(bloc.state.openSettingSheet, isNull);
+      expect(bloc.state.valueText, '0ft 3-1/2in');
+      expect(
+        find.text(l10n.calculatorSettingFractionResolution),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.calculatorSettingUpdatedMessage), findsOneWidget);
+      expect(find.byKey(CalculatorPage.settingUpdateKey), findsNothing);
+    });
+
+    testWidgets('a sheet closed without Update changes nothing', (
+      tester,
+    ) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+
+      bloc.add(
+        const CalculatorSettingSheetOpened(CalculatorSetting.densityUnit),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.text(l10n.calculatorSettingDensityDisplayUnit),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.calculatorOptionDensityKilogramsPerCubicMetre),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.bySemanticsLabel(l10n.calculatorSettingBack));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(bloc.state.openSettingSheet, isNull);
+      expect(bloc.state.tape.preferences, CalculatorPreferences.defaults);
+      expect(find.text(l10n.calculatorSettingUpdatedMessage), findsNothing);
+    });
+
+    testWidgets('a choice that could not be saved stays on screen and says '
+        'so', (tester) async {
+      await pumpSignedIn(tester, signedIn: false);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+
+      bloc.add(
+        const CalculatorSettingSheetOpened(CalculatorSetting.tonDefinition),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(CalculatorPage.settingOptionKey('longTon')));
+      await tester.pump();
+      await tester.tap(find.byKey(CalculatorPage.settingUpdateKey));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(bloc.state.tape.preferences.tonDefinition, TonDefinition.longTon);
+      expect(find.text(l10n.calculatorSettingSaveFailed), findsOneWidget);
+      expect(find.text(l10n.calculatorSettingUpdatedMessage), findsNothing);
+    });
+
+    testWidgets('the tick follows a setting synced from another device while '
+        'the sheet is open', (tester) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+
+      bloc.add(
+        const CalculatorSettingSheetOpened(
+          CalculatorSetting.fractionResolution,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        tester.getSemantics(
+          find.byKey(CalculatorPage.settingOptionKey('sixteenth')),
+        ),
+        isSemantics(isSelected: true),
+      );
+
+      harness.announce(
+        harness.userWith({
+          'calculator': {'fractional_resolution': 2},
+        }),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        tester.getSemantics(
+          find.byKey(CalculatorPage.settingOptionKey('half')),
+        ),
+        isSemantics(isSelected: true),
+      );
+      expect(
+        tester.getSemantics(
+          find.byKey(CalculatorPage.settingOptionKey('sixteenth')),
+        ),
+        isSemantics(isSelected: false),
+      );
     });
   });
 }
