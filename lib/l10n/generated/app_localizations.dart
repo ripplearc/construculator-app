@@ -3568,6 +3568,114 @@ abstract class AppLocalizations {
   /// **'Switches to imperial units'**
   String get calculatorUnitsSwitchToImperial;
 
+  /// Name of the calculator setting for the step fractions of an inch round to; title of its sheet and of its toast
+  ///
+  /// In en, this message translates to:
+  /// **'Fractional resolution'**
+  String get calculatorSettingFractionResolution;
+
+  /// Name of the calculator setting for how many pounds make a ton; title of its sheet and of its toast
+  ///
+  /// In en, this message translates to:
+  /// **'Pounds per ton'**
+  String get calculatorSettingPoundsPerTon;
+
+  /// Name of the calculator setting for the decimals of a length shown in metres; title of its sheet and of its toast
+  ///
+  /// In en, this message translates to:
+  /// **'Meter length display'**
+  String get calculatorSettingMeterLengthDisplay;
+
+  /// Name of the calculator setting for the unit densities render in; title of its sheet and of its toast
+  ///
+  /// In en, this message translates to:
+  /// **'Density display unit'**
+  String get calculatorSettingDensityDisplayUnit;
+
+  /// Option of the Pounds per ton setting
+  ///
+  /// In en, this message translates to:
+  /// **'2,000 lb (US short ton)'**
+  String get calculatorOptionShortTon;
+
+  /// Option of the Pounds per ton setting
+  ///
+  /// In en, this message translates to:
+  /// **'2,240 lb (long ton)'**
+  String get calculatorOptionLongTon;
+
+  /// Option of the Meter length display setting: one decimal
+  ///
+  /// In en, this message translates to:
+  /// **'0.0'**
+  String get calculatorOptionMetreOneDecimal;
+
+  /// Option of the Meter length display setting: two decimals
+  ///
+  /// In en, this message translates to:
+  /// **'0.00'**
+  String get calculatorOptionMetreTwoDecimals;
+
+  /// Option of the Meter length display setting: three decimals
+  ///
+  /// In en, this message translates to:
+  /// **'0.000'**
+  String get calculatorOptionMetreThreeDecimals;
+
+  /// Option of the Density display unit setting
+  ///
+  /// In en, this message translates to:
+  /// **'lbs/yd³'**
+  String get calculatorOptionDensityPoundsPerCubicYard;
+
+  /// Option of the Density display unit setting
+  ///
+  /// In en, this message translates to:
+  /// **'lbs/ft³'**
+  String get calculatorOptionDensityPoundsPerCubicFoot;
+
+  /// Option of the Density display unit setting
+  ///
+  /// In en, this message translates to:
+  /// **'tons/yd³'**
+  String get calculatorOptionDensityTonsPerCubicYard;
+
+  /// Option of the Density display unit setting
+  ///
+  /// In en, this message translates to:
+  /// **'kg/m³'**
+  String get calculatorOptionDensityKilogramsPerCubicMetre;
+
+  /// Label of the button that saves the choice on a calculator setting sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get calculatorSettingUpdate;
+
+  /// Screen reader label of the back button on a calculator setting sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the calculator'**
+  String get calculatorSettingBack;
+
+  /// Body of the toast shown after a calculator setting is saved; the toast is titled with the setting's name
+  ///
+  /// In en, this message translates to:
+  /// **'Preference updated — results re-render; your entries keep their typed units.'**
+  String get calculatorSettingUpdatedMessage;
+
+  /// Body of the toast shown when a calculator setting could not be saved to the profile
+  ///
+  /// In en, this message translates to:
+  /// **'The setting could not be saved. It stays on this screen; try again later.'**
+  String get calculatorSettingSaveFailed;
+
+  /// Option of the Fractional resolution setting: the fraction of an inch results round to
+  ///
+  /// In en, this message translates to:
+  /// **'1/{denominator}'**
+  String calculatorOptionFraction(int denominator);
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:

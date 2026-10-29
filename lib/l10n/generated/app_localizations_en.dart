@@ -2016,6 +2016,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorUnitsSwitchToImperial => 'Switches to imperial units';
 
   @override
+  String get calculatorSettingFractionResolution => 'Fractional resolution';
+
+  @override
+  String get calculatorSettingPoundsPerTon => 'Pounds per ton';
+
+  @override
+  String get calculatorSettingMeterLengthDisplay => 'Meter length display';
+
+  @override
+  String get calculatorSettingDensityDisplayUnit => 'Density display unit';
+
+  @override
+  String get calculatorOptionShortTon => '2,000 lb (US short ton)';
+
+  @override
+  String get calculatorOptionLongTon => '2,240 lb (long ton)';
+
+  @override
+  String get calculatorOptionMetreOneDecimal => '0.0';
+
+  @override
+  String get calculatorOptionMetreTwoDecimals => '0.00';
+
+  @override
+  String get calculatorOptionMetreThreeDecimals => '0.000';
+
+  @override
+  String get calculatorOptionDensityPoundsPerCubicYard => 'lbs/yd³';
+
+  @override
+  String get calculatorOptionDensityPoundsPerCubicFoot => 'lbs/ft³';
+
+  @override
+  String get calculatorOptionDensityTonsPerCubicYard => 'tons/yd³';
+
+  @override
+  String get calculatorOptionDensityKilogramsPerCubicMetre => 'kg/m³';
+
+  @override
+  String get calculatorSettingUpdate => 'Update';
+
+  @override
+  String get calculatorSettingBack => 'Back to the calculator';
+
+  @override
+  String get calculatorSettingUpdatedMessage =>
+      'Preference updated — results re-render; your entries keep their typed units.';
+
+  @override
+  String get calculatorSettingSaveFailed =>
+      'The setting could not be saved. It stays on this screen; try again later.';
+
+  @override
+  String calculatorOptionFraction(int denominator) {
+    return '1/$denominator';
+  }
+
+  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override
