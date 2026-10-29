@@ -6,6 +6,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 part 'calculator_event.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
+part 'calculator_suggestion.dart';
 
 /// Presses the keyboard's keys on the engine's tape and keeps the tape as
 /// its state (UX Design Doc Sections 1.1, 1.3 and 4; CA-1087, S1a).
@@ -20,8 +21,11 @@ part 'calculator_state.dart';
 /// read off the chip being typed wherever it is. Nothing here reads a
 /// store, the recents or the preferences repository; the System of units
 /// toggle sets the tape's own preferences, so the tape and the keyboard
-/// agree on one value. The engine's answers (the strip, the pills, the
-/// equals-key label) are mapped in S1b (CA-1088).
+/// agree on one value.
+///
+/// The strip is the state's reading of the same tape (CA-1088, S1b):
+/// what it offers is computed when the state is read, so that accepting a
+/// chip, which lands next, recalculates nothing (Section 1.2).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
