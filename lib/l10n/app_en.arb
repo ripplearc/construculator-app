@@ -3146,6 +3146,31 @@
   "@calculatorPillShownAsHint": {
     "description": "Screen reader hint of the Shown as pill under a calculator pitch answer"
   },
+  "calculatorNotePitchUnderRightAngle": "A pitch must be under 90°. Edit the Pitch chip.",
+  "@calculatorNotePitchUnderRightAngle": {
+    "description": "Strip note shown in place of the calculator suggestions while Pitch holds 90° or more"
+  },
+  "calculatorNotePitchAboveZero": "A pitch must be above 0°. Edit the Pitch chip.",
+  "@calculatorNotePitchAboveZero": {
+    "description": "Strip note shown in place of the calculator suggestions while Pitch holds 0° or less"
+  },
+  "calculatorNoteSlopeAboveZero": "A grade of 0% is flat — there is no slope to work from. Edit the Slope chip to a grade above 0.",
+  "@calculatorNoteSlopeAboveZero": {
+    "description": "Strip note shown in place of the calculator suggestions while Slope holds a grade of 0% or less"
+  },
+  "calculatorNotePitchHasNoDms": "Pitch has no D:M:S. Press Pitch for other readings.",
+  "@calculatorNotePitchHasNoDms": {
+    "description": "Strip note shown after the D:M:S key is pressed on a calculator pitch answer, until the next key"
+  },
+  "calculatorNoteTrigCannotAnswer": "{function} can't answer that",
+  "@calculatorNoteTrigCannotAnswer": {
+    "description": "Strip note shown while a prefix trigonometric chip holds a number its function has no answer for, such as Tangent 90° or Arccosine 45",
+    "placeholders": {
+      "function": {
+        "type": "String"
+      }
+    }
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"

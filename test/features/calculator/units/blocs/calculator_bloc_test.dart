@@ -1469,6 +1469,115 @@ void main() {
       );
     });
 
+    group('S1b 6/6: the strip notes', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      test(
+        'a pitch of 90° or more, or 0° or less, and a slope of 0% say why '
+        'the strip is empty, and keep saying it under a second value (S89)',
+        () {
+          expect(
+            stateOf('[Pitch] 8 9 9').stripNote,
+            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+          );
+          expect(stateOf('[Pitch] 8 9 9').suggestions, isEmpty);
+          expect(
+            stateOf('[Pitch] 9 0').stripNote,
+            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+          );
+          expect(
+            stateOf('[Pitch] 0').stripNote,
+            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
+          );
+          expect(
+            stateOf('[Pitch] 9 5 [Diag] 2 2 ft').stripNote,
+            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+          );
+          expect(stateOf('[Pitch] 9 5 [Diag] 2 2 ft').suggestions, isEmpty);
+          expect(
+            stateOf('[Slope] 0').stripNote,
+            const CalculatorSlopeOutOfRangeNote(),
+          );
+          expect(
+            stateOf('[Pitch] 0 in').stripNote,
+            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
+          );
+          expect(stateOf('[Pitch] 8 in').stripNote, isNull);
+          expect(stateOf('[Pitch] 8 9').stripNote, isNull);
+          expect(stateOf('[Slope] 7').stripNote, isNull);
+          expect(stateOf('').stripNote, isNull);
+        },
+      );
+
+      test('a prefix trig chip its function cannot answer says so while the '
+          'operand stays (Section 5.4)', () {
+        expect(
+          stateOf('[ACOS] 4 5').stripNote,
+          const CalculatorTrigCannotAnswerNote(TrigFunction.arccosine),
+        );
+        expect(
+          stateOf('[TAN] 9 0').stripNote,
+          const CalculatorTrigCannotAnswerNote(TrigFunction.tangent),
+        );
+        expect(stateOf('[ACOS] 0 . 5').stripNote, isNull);
+        expect(stateOf('[ACOS] 4 5').suggestions, isEmpty);
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the D:M:S key on a pitch answer changes nothing and the note says '
+        'so until the next key, which brings the other spellings back',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Rise'))
+          ..add(const CalculatorDigitPressed('6'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Run'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Pitch'))
+          ..add(const CalculatorKeySelected('DMS'))
+          ..add(const CalculatorKeySelected('Pitch')),
+        skip: 8,
+        expect: () => [
+          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch]')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.pitchHasNoDms),
+          ),
+          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch]')),
+        ],
+        verify: (bloc) {
+          final refused = tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch]'))
+              .copyWith(
+                refusal: () => const TapeRefused(TapeRefusal.pitchHasNoDms),
+              );
+          expect(refused.stripNote, const CalculatorPitchHasNoDmsNote());
+          expect(refused.suggestions, isEmpty);
+          expect(bloc.state.stripNote, isNull);
+          expect(bloc.state.suggestions, isNotEmpty);
+        },
+      );
+
+      test('a note never shows after an error chip or inside a bracket, and '
+          'a warning outranks a key that changed nothing', () {
+        expect(
+          CalculatorState(
+            tape: pressed('7 8 lbs ÷ 1 2 ft ='),
+            refusal: const TapeRefused(TapeRefusal.pitchHasNoDms),
+          ).stripNote,
+          isNull,
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Pitch] 9 5'),
+            refusal: const TapeRefused(TapeRefusal.pitchHasNoDms),
+          ).stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        );
+        expect(stateOf('2 + ( 3').stripNote, isNull);
+      });
+    });
+
     test(
       'the initial state is an empty imperial tape with the first group',
       () {
