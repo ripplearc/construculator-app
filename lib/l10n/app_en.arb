@@ -2966,6 +2966,22 @@
   "@calculatorErrorTooLarge": {
     "description": "Title of the calculator error chip landed when an answer is above 19,999,999.99 in its unit"
   },
+  "calculatorUnitsImperial": "Imperial",
+  "@calculatorUnitsImperial": {
+    "description": "Face of the calculator's System of units pill while imperial units are in force"
+  },
+  "calculatorUnitsMetric": "Metric",
+  "@calculatorUnitsMetric": {
+    "description": "Face of the calculator's System of units pill while metric units are in force"
+  },
+  "calculatorUnitsSwitchToMetric": "Switches to metric units",
+  "@calculatorUnitsSwitchToMetric": {
+    "description": "Screen reader hint of the System of units pill while imperial units are in force"
+  },
+  "calculatorUnitsSwitchToImperial": "Switches to imperial units",
+  "@calculatorUnitsSwitchToImperial": {
+    "description": "Screen reader hint of the System of units pill while metric units are in force"
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"
