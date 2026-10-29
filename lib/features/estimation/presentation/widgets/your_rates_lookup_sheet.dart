@@ -253,11 +253,18 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
       separatorBuilder: (_, _) => const SizedBox(height: CoreSpacing.space3),
       itemBuilder: (context, index) {
         final entry = entries[index];
-        return _YourRateRow(
-          key: Key('your_rate_row_${entry.id}'),
-          entry: entry,
-          method: _method,
+        final recency = entry.recencyLabel(
+          context.l10n,
           now: widget.clock.now(),
+        );
+        final value = DisplayFormatter.currency.format(entry.rate.amount);
+        final unit = _unitSuffix(context, _method);
+        return CoreListRow.selectable(
+          key: Key('your_rate_row_${entry.id}'),
+          title: entry.itemName,
+          subtitle: recency,
+          value: value,
+          unit: unit,
           selected: entry.id == selected?.id,
           onTap: () => _onRowTap(entry),
         );
@@ -417,112 +424,6 @@ class _TextActionButton extends StatelessWidget {
           child: Text(
             label,
             style: textStyle.copyWith(color: context.colorTheme.textLink),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// TODO: [CA-1204](https://ripplearc.youtrack.cloud/issue/CA-1204) Replace with CoreUI's list-row component once it exists; it also removes the 13 px, 11 px and 2 px values below, which have no CoreSpacing token.
-class _YourRateRow extends StatelessWidget {
-  static const double _rowVerticalPadding = 13;
-  static const double _columnGap = 11;
-  static const double _nameToRecencyGap = 2;
-
-  final YourRateEntry entry;
-  final EquipmentPricingMethod method;
-  final DateTime now;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _YourRateRow({
-    super.key,
-    required this.entry,
-    required this.method,
-    required this.now,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    final nameColor = selected ? colorTheme.textLink : colorTheme.textHeadline;
-    final recency = entry.recencyLabel(context.l10n, now: now);
-    final priceLabel =
-        '${DisplayFormatter.currency.format(entry.rate.amount)} '
-        '${_unitSuffix(context, method)}';
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '${entry.itemName}. $recency. $priceLabel',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space2,
-            vertical: _rowVerticalPadding,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? colorTheme.backgroundBlueLight : null,
-            borderRadius: BorderRadius.circular(CoreSpacing.space3),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Opacity(
-                opacity: selected ? 1 : 0,
-                child: CoreIconWidget(
-                  icon: CoreIcons.checkMark,
-                  color: colorTheme.textLink,
-                  size: CoreSpacing.space5,
-                ),
-              ),
-              const SizedBox(width: _columnGap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.itemName,
-                      style: textTheme.bodyLargeSemiBold.copyWith(
-                        color: nameColor,
-                      ),
-                    ),
-                    const SizedBox(height: _nameToRecencyGap),
-                    Text(
-                      recency,
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: _columnGap),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: DisplayFormatter.currency.format(entry.rate.amount),
-                      style: textTheme.bodyLargeSemiBold.copyWith(
-                        color: colorTheme.textHeadline,
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' ${_unitSuffix(context, method)}',
-                      style: textTheme.bodySmallRegular.copyWith(
-                        color: colorTheme.textBody,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ),
         ),
       ),
