@@ -178,6 +178,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
           child: BlocBuilder<CalculatorBloc, CalculatorState>(
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
+              final dependentKeys = state.dependentKeys;
 
               return Column(
                 children: [
@@ -199,10 +200,18 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         // TODO(CA-965): previousSessions is unwired pending
                         // research into archiving trigger, data model, and
                         // persistence approach for calculation history.
-                        // TODO: [CA-1088] The pills under the value come
-                        // with the engine's answers.
-                        // https://ripplearc.youtrack.cloud/issue/CA-1088
-                        dependentKeys: const [],
+                        dependentKeys: [
+                          for (final key in dependentKeys)
+                            labels.dependentKey(
+                              key,
+                              onPressed: () => bloc.add(switch (key) {
+                                CalculatorReadAsPill() =>
+                                  const CalculatorReadAsAccepted(),
+                                CalculatorPitchSpellingPill() =>
+                                  const CalculatorPitchSpellingCycled(),
+                              }),
+                            ),
+                        ],
                         // TODO: [CA-1092] Close the calculator when ✕ is
                         // refused with nothing being typed (Section 1.1).
                         // https://ripplearc.youtrack.cloud/issue/CA-1092
@@ -234,6 +243,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                     conversionsRowTagLabel: l10n.calculatorStripConversionsTag,
                     conversionsRowSemanticsLabel:
                         l10n.calculatorStripConversionsSemantics,
+                    secondRowHidden: dependentKeys.isNotEmpty,
                   ),
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
