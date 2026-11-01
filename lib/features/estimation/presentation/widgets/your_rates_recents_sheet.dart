@@ -256,6 +256,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                               context,
                               entry.equipmentMethod,
                             );
+                            // TODO: [CA-1379] each row is 3 dp taller than the storyboard until CoreUI changes the CoreListRow padding
                             return CoreListRow(
                               key: Key('your_rate_row_${entry.id}'),
                               title: entry.itemName,
