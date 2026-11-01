@@ -6,6 +6,7 @@ import 'package:construculator/features/estimation/data/data_source/local_your_r
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -34,10 +35,8 @@ void main() {
       server = bootstrap.supabaseWrapper as FakeSupabaseWrapper;
       Modular.init(_FlowTestModule(bootstrap, phone));
       dataSource = Modular.get<YourRatesDataSource>();
-      repository = YourRatesRepositoryImpl(
-        dataSource: dataSource,
-        refusalDataSource: Modular.get<YourRateRefusalDataSource>(),
-      );
+      repository =
+          Modular.get<YourRatesRepository>() as YourRatesRepositoryImpl;
       connector = Modular.get<PowerSyncBackendConnector>();
     });
 
@@ -124,6 +123,12 @@ class _FlowTestModule extends Module {
         () => LocalYourRateRefusalDataSource(
           database: phone,
           clock: FakeClockImpl(),
+        ),
+      )
+      ..addSingleton<YourRatesRepository>(
+        () => YourRatesRepositoryImpl(
+          dataSource: i.get(),
+          refusalDataSource: i.get(),
         ),
       );
   }
