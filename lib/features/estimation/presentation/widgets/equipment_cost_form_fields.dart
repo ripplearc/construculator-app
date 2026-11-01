@@ -426,10 +426,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     };
   }
 
-  String _deliveryRowText(BuildContext context, double? fee) =>
-      '${context.l10n.equipmentDeliveryRowLabel} '
-      '${_deliveryRowValue(context, fee)}';
-
   Widget? _rateStatusBadge(BuildContext context, RateStatus status) {
     final l10n = context.l10n;
     return switch (status) {
@@ -1170,7 +1166,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       onToggle: _toggleDeliveryExpanded,
       actionLabel: l10n.equipmentDeliveryAddNoteLink,
       onAction: _openNoteField,
-      semanticLabel: _deliveryRowText(context, data.deliveryFee),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
