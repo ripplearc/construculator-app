@@ -157,6 +157,13 @@ void main() {
     await tester.pump();
   }
 
+  RateStatus rateStatusOf(WidgetTester tester) {
+    final bloc = BlocProvider.of<EquipmentCostFormBloc>(
+      tester.element(find.byType(EquipmentCostFormFields)),
+    );
+    return (bloc.state as EquipmentCostFormEditing).data.rateStatus;
+  }
+
   Future<void> expandDeliveryField(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('delivery_fee_row')));
     await tester.pump();
@@ -2263,13 +2270,6 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    RateStatus rateStatusOf(WidgetTester tester) {
-      final bloc = BlocProvider.of<EquipmentCostFormBloc>(
-        tester.element(find.byType(EquipmentCostFormFields)),
-      );
-      return (bloc.state as EquipmentCostFormEditing).data.rateStatus;
-    }
-
     testWidgets(
       'tapping the picked Day rate and leaving it without typing keeps the '
       'rate saved, with no link',
@@ -2814,13 +2814,7 @@ void main() {
           find.byKey(const Key('save_recalled_amount_button')),
           findsNothing,
         );
-        final bloc = BlocProvider.of<EquipmentCostFormBloc>(
-          tester.element(find.byType(EquipmentCostFormFields)),
-        );
-        expect(
-          (bloc.state as EquipmentCostFormEditing).data.rateStatus,
-          RateStatus.ownRateConfirmed,
-        );
+        expect(rateStatusOf(tester), RateStatus.ownRateConfirmed);
       },
     );
 
