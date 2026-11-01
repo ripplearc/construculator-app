@@ -6,15 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('MoneyInputFormatter', () {
     late int limitCalls;
+    late int refusedCalls;
     late MoneyInputFormatter formatter;
     Locale? locale;
 
     setUp(() {
       limitCalls = 0;
+      refusedCalls = 0;
       locale = null;
       formatter = MoneyInputFormatter(
         largestAmount: largestMoneyAmount,
         onLimitReached: () => limitCalls++,
+        onEditRefused: () => refusedCalls++,
         deviceLocale: () => locale,
       );
     });
@@ -63,20 +66,41 @@ void main() {
       expect(limitCalls, 3);
     });
 
-    test('refuses letters, signs and a second decimal point', () {
+    test('refuses letters, signs and a second decimal point and says so', () {
       expect(after('85', '85a'), '85');
       expect(after('85', '-85'), '85');
       expect(after('8.5', '8.5.'), '8.5');
       expect(after('8.5', '8.5.5'), '8.5');
+      expect(after('', 'USD 85'), '');
+      expect(after('', '€12,50'), '');
+      expect(limitCalls, 0);
+      expect(refusedCalls, 6);
+    });
+
+    test('removes the dollar sign, spaces and real thousands commas', () {
+      expect(after('', r'$1,250.00'), '1250.00');
+      expect(after('', '1,250.00'), '1250.00');
+      expect(after('', '123,456'), '123456');
+      expect(after('', '12,345'), '12345');
+      expect(after('', ' 85'), '85');
+      expect(after('', r'$ '), '');
+      expect(refusedCalls, 0);
+    });
+
+    test('refuses a comma that is not a thousands mark and says so', () {
+      expect(after('', '12,50'), '');
+      expect(after('', '8,5'), '');
+      expect(after('', '1 250,00'), '');
+      expect(after('', '1,25'), '');
+      expect(after('85', '85,'), '85');
+      expect(refusedCalls, 5);
       expect(limitCalls, 0);
     });
 
-    test('removes the dollar sign, spaces and thousands commas', () {
-      expect(after('', r'$1,250.00'), '1250.00');
-      expect(after('', '1,250.00'), '1250.00');
-      expect(after('', ' 85'), '85');
-      expect(after('85', '85,'), '85');
-      expect(after('', r'$ '), '');
+    test('drops a dollar sign or a space typed alone without a message', () {
+      expect(after('85', r'85$'), '85');
+      expect(after('85', '85 '), '85');
+      expect(refusedCalls, 0);
     });
 
     test('keeps the caret where the user put it when nothing is cleaned', () {
@@ -107,7 +131,7 @@ void main() {
     test('reads the comma as the decimal point on a decimal-comma phone', () {
       locale = const Locale('de', 'DE');
       expect(after('8', '8,'), '8.');
-      expect(after('8,', '8,5'), '8.5');
+      expect(after('8.', '8.5'), '8.5');
       expect(after('', '8,50'), '8.50');
       expect(after('', r'$1.250,00'), '1250.00');
       expect(after('8.5', '8.55'), '8.55');
@@ -123,15 +147,48 @@ void main() {
       },
     );
 
+    test('on a decimal-comma phone, only the pasted part is cleaned', () {
+      locale = const Locale('de', 'DE');
+      expect(after('8.5', '8.5,5'), '8.5');
+      expect(after('12', '123,5'), '123.5');
+      expect(after('8', '81.250'), '81250');
+      expect(refusedCalls, 1);
+    });
+
+    test('on a decimal-comma phone, a point-only thousands group is read', () {
+      locale = const Locale('de', 'DE');
+      expect(after('', '1.250'), '1250');
+      expect(after('', '123.456'), '123456');
+      expect(after('', '8.5'), '8.5');
+      expect(limitCalls, 0);
+    });
+
+    test('on a decimal-comma phone, a US-style amount is read as one', () {
+      locale = const Locale('de', 'DE');
+      expect(after('', '1,250.00'), '1250.00');
+      expect(limitCalls, 0);
+      expect(refusedCalls, 0);
+    });
+
+    test(
+      'on a decimal-point phone, a comma pasted after digits can join a group',
+      () {
+        expect(after('1', '1,250'), '1250');
+        expect(after('1', '1,25'), '1');
+        expect(refusedCalls, 1);
+      },
+    );
+
     test('refuses a third decimal after the comma is read', () {
       locale = const Locale('de', 'DE');
-      expect(after('8,55', '8,555'), '8,55');
+      expect(after('8.55', '8.555'), '8.55');
       expect(limitCalls, 1);
     });
 
     test('reads a locale with no number symbols as a decimal point', () {
       locale = const Locale('xx');
-      expect(after('', '8,50'), '850');
+      expect(after('', '8,50'), '');
+      expect(refusedCalls, 1);
     });
 
     test('has no ceiling of its own unless it is given one', () {

@@ -3795,6 +3795,29 @@ void main() {
       semantics.dispose();
     });
 
+    for (final fieldKey in [rateField, amountField]) {
+      testWidgets('$fieldKey refuses a pasted 12,50 and shows the hint', (
+        tester,
+      ) async {
+        await openField(tester, fieldKey);
+
+        await paste(tester, fieldKey, '12,50');
+
+        expect(fieldText(tester, fieldKey), '');
+        expect(limitHint(fieldKey), findsOneWidget);
+      });
+    }
+
+    testWidgets('the hint names the field it is under', (tester) async {
+      await openField(tester, rateField);
+      await paste(tester, rateField, '85.555');
+      expect(find.text(l10n.equipmentRateDecimalsLimitHint), findsOneWidget);
+
+      await openField(tester, amountField);
+      await paste(tester, amountField, '85.555');
+      expect(find.text(l10n.equipmentAmountDecimalsLimitHint), findsOneWidget);
+    });
+
     testWidgets('the rate takes an amount above the delivery ceiling', (
       tester,
     ) async {

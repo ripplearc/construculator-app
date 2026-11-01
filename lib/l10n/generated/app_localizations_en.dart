@@ -1531,6 +1531,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get equipmentRateDecimalsLimitHint =>
+      'A rate takes at most two decimals.';
+
+  @override
+  String get equipmentAmountDecimalsLimitHint =>
       'An amount takes at most two decimals.';
 
   @override

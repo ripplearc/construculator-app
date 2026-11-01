@@ -137,6 +137,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   String _lastRateEditText = '';
   late final _rateFormatter = MoneyInputFormatter(
     onLimitReached: _showRateLimit,
+    onEditRefused: _showRateLimit,
     deviceLocale: _deviceLocale,
   );
 
@@ -608,7 +609,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  Widget _rateLimitHint(BuildContext context) {
+  Widget _rateLimitHint(BuildContext context, {required bool forRate}) {
     if (!_showRateLimitHint) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: CoreSpacing.space2),
@@ -620,7 +621,9 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           icon: CoreIcons.info,
           iconColor: context.colorTheme.iconGrayMid,
           text: Text(
-            context.l10n.equipmentRateDecimalsLimitHint,
+            forRate
+                ? context.l10n.equipmentRateDecimalsLimitHint
+                : context.l10n.equipmentAmountDecimalsLimitHint,
             style: context.textTheme.bodySmallRegular.copyWith(
               color: context.colorTheme.textBody,
             ),
@@ -1079,7 +1082,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                   isDay
                       ? _durationField(context, data, recalled: true)
                       : _amountField(context, data, recalled: true),
-                  if (!isDay) _rateLimitHint(context),
+                  if (!isDay) _rateLimitHint(context, forRate: false),
                   if (!isDay) _recalledAmountFooter(context, data),
                   SizedBox(height: _gapAfterRecalledFooter(data)),
                   _buildDeliveryFeeSection(context, data),
@@ -1149,11 +1152,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     touched: _touchedFieldKeys.contains('rate_field'),
                     onTouched: () => _touchedFieldKeys.add('rate_field'),
                   ),
-                  _rateLimitHint(context),
+                  _rateLimitHint(context, forRate: true),
                   _rateSaveFooter(context, data),
                 ] else ...[
                   _amountField(context, data),
-                  _rateLimitHint(context),
+                  _rateLimitHint(context, forRate: false),
                   _rateSaveFooter(context, data),
                 ],
                 const SizedBox(height: CoreSpacing.space5),
