@@ -20,6 +20,7 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_items_bloc/cost_items_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
@@ -194,6 +195,7 @@ class EstimationModule extends Module {
         costItemRepository: i.get(),
       ),
     );
+    i.add<CostItemsBloc>(() => CostItemsBloc(repository: i.get()));
     i.add<MaterialCostFormBloc>(
       () => MaterialCostFormBloc(
         repository: i.get(),
