@@ -42,16 +42,18 @@ void main() {
       phone.reset();
     });
 
-    YourRateEntryDto newRate({double rateAmount = 250}) => YourRateEntryDto(
-      id: '',
-      companyId: 'company-1',
-      category: 'equipment',
-      itemName: 'Excavator',
-      rateAmount: rateAmount,
-      rateCurrency: 'USD',
-      equipmentMethod: 'day',
-      savedAt: '2026-10-01T08:00:00.000Z',
-    );
+    YourRateEntryDto newRate({double rateAmount = 250, String? entryLabel}) =>
+        YourRateEntryDto(
+          id: '',
+          companyId: 'company-1',
+          category: 'equipment',
+          itemName: 'Excavator',
+          rateAmount: rateAmount,
+          rateCurrency: 'USD',
+          equipmentMethod: 'day',
+          entryLabel: entryLabel,
+          savedAt: '2026-10-01T08:00:00.000Z',
+        );
 
     CrudEntry queuedPutFor(Map<String, Object?> storedRow) {
       final columns = Map.of(storedRow)..remove('id');
@@ -167,6 +169,27 @@ void main() {
           expect(transaction.isCompleted, isTrue);
         },
       );
+
+      test('keeps the label of the refused row', () async {
+        final saved = await dataSource.insertRate(
+          newRate(entryLabel: 'Weekend'),
+        );
+        server.shouldThrowOnUpdate = true;
+        server.updateExceptionType = SupabaseExceptionType.postgrest;
+        server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+        final database = FakePhoneBackedPowerSyncDatabase(phone)
+          ..setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(2, UpdateType.patch, 'your_rates', saved.id, null, {
+                'rate_amount': 450.0,
+              }),
+            ]),
+          );
+
+        await connector.uploadData(database);
+
+        expect(phone.refusalRow(excavatorKey)!['entry_label'], 'Weekend');
+      });
 
       test('treats no access to the account as a refusal', () async {
         await uploadRefusedAmountChange(

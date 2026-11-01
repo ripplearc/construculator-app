@@ -202,10 +202,11 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       '${DatabaseConstants.refusedRowIdColumn}, '
       '${DatabaseConstants.itemNameColumn}, '
       '${DatabaseConstants.equipmentMethodColumn}, '
+      '${DatabaseConstants.entryLabelColumn}, '
       '${DatabaseConstants.refusedAmountColumn}, '
       '${DatabaseConstants.acceptedAmountColumn}, '
       '${DatabaseConstants.shownAtColumn}) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
       [
         _refusalKeyOf(item),
         item[DatabaseConstants.companyIdColumn],
@@ -213,6 +214,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         operation.id,
         item[DatabaseConstants.itemNameColumn],
         item[DatabaseConstants.equipmentMethodColumn],
+        item[DatabaseConstants.entryLabelColumn],
         refusedAmount,
         await _lastAcceptedAmountOrNull(operation, item),
       ],
