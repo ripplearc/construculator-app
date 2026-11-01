@@ -128,3 +128,23 @@ class EquipmentRefusalWatchRequested extends EquipmentCostFormEvent {
   final String itemName;
   final EquipmentPricingMethod method;
 }
+
+/// Fired when a refusal is shown, to look up the estimate whose line keeps the
+/// refused price and add its name to the notice. The bloc fires it itself.
+class EquipmentRefusalNoticeLookedUp extends EquipmentCostFormEvent {
+  const EquipmentRefusalNoticeLookedUp({
+    required this.companyId,
+    required this.itemName,
+    required this.refusal,
+  });
+
+  final String companyId;
+  final String itemName;
+  final RefusedYourRate refusal;
+}
+
+/// Fired by the form once it has drawn the "Not kept" message, so the refusal
+/// is recorded as shown only when the user could see it.
+class EquipmentRefusalNoticeSeen extends EquipmentCostFormEvent {
+  const EquipmentRefusalNoticeSeen();
+}

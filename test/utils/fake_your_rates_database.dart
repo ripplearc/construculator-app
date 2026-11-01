@@ -47,6 +47,13 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// write without failing the saves around it.
   bool failRefusalDeletes = false;
 
+  var _refusalWatchOpened = Completer<void>();
+
+  /// Completes once the next watch on the refused-defaults table opens. Read
+  /// it before the action that opens the watch, then await it, so a test
+  /// waits for the watch itself instead of for a number of event loop turns.
+  Future<void> get nextRefusalWatchOpened => _refusalWatchOpened.future;
+
   /// How many watches on the refused-defaults table are open right now.
   int get openRefusalWatchCount => _openRefusalWatchCount;
   int _openRefusalWatchCount = 0;
@@ -145,6 +152,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     }
     return Stream.multi((listener) {
       _openRefusalWatchCount++;
+      final opened = _refusalWatchOpened;
+      _refusalWatchOpened = Completer<void>();
+      opened.complete();
       listener.add(current());
       final subscription = _refusalChanges.stream.listen(
         (_) => listener.add(current()),

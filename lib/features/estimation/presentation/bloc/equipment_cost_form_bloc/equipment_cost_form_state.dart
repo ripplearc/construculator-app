@@ -78,6 +78,7 @@ class RefusedDefaultNotice extends Equatable {
     required this.refusedAmount,
     required this.acceptedAmount,
     required this.estimateName,
+    this.estimateLookupFailed = false,
   });
 
   /// The amount the server refused.
@@ -88,11 +89,20 @@ class RefusedDefaultNotice extends Equatable {
   final double? acceptedAmount;
 
   /// The estimate whose line keeps the refused amount, or null if no line
-  /// does or the lookup failed.
+  /// does, or the lookup is not done or failed.
   final String? estimateName;
 
+  /// Whether the look-up of [estimateName] failed, so the message is not
+  /// complete and is not recorded as shown.
+  final bool estimateLookupFailed;
+
   @override
-  List<Object?> get props => [refusedAmount, acceptedAmount, estimateName];
+  List<Object?> get props => [
+    refusedAmount,
+    acceptedAmount,
+    estimateName,
+    estimateLookupFailed,
+  ];
 }
 
 /// Full set of equipment form field values, carried by every state once the
