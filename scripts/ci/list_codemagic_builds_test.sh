@@ -80,9 +80,14 @@ assert_true "lists the id, workflow, status and commit of every build" output_is
 assert_true "names the statuses it saw" stderr_contains "Statuses seen: building, queued"
 assert_true "gives the number of builds read" stderr_contains "Builds read: 2"
 assert_true "names the fields Codemagic sent" stderr_contains "Fields on a build: _id, commit, createdAt, fileWorkflowId, status, workflowId"
+assert_true "says there are no later pages when Codemagic sends no nextPageUrl" stderr_contains "More builds on later pages: no"
 assert_true "asks for the app and the branch" sent "builds?appId=app123&branch=feature%2Fx"
 assert_true "sends the token in the x-auth-token header" sent "x-auth-token: secret-token"
 assert_true "never prints the token" output_hides_token
+
+set_body '{"builds":[{"_id":"b5"}],"nextPageUrl":"https://api.codemagic.io/builds?page=2"}'
+run_target main
+assert_true "says there are more builds when Codemagic sends a nextPageUrl" stderr_contains "More builds on later pages: yes"
 
 set_body '[{"_id":"b3","fileWorkflowId":"pre-check","status":"finished","commit":{"hash":"ccc333"},"createdAt":"2026-10-27T18:00:00Z"}]'
 run_target main

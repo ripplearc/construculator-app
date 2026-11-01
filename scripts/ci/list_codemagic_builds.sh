@@ -5,12 +5,14 @@ set -euo pipefail
 # Usage: ./scripts/ci/list_codemagic_builds.sh <branch>
 #
 # Prints a JSON array on stdout, one object per build on the first page Codemagic
-# returns (further pages are not read):
+# returns (further pages are not read). A page holds 30 builds, newest first, so
+# a cut-off list drops the oldest builds:
 #   {"id": "...", "workflow": "...", "status": "...", "commit": "...", "createdAt": "..."}
 # "workflow" is the id of the workflow in codemagic.yaml (fileWorkflowId; the
 # workflowId field is null for those). A field Codemagic does not send is null.
 # The notes on stderr name the fields Codemagic sent and the statuses it reported.
-# The notes on stderr also give the number of builds read, so a cut-off list shows.
+# The notes on stderr also give the number of builds read, and whether Codemagic
+# sent a nextPageUrl ("More builds on later pages: yes"), so a cut-off list shows.
 #
 # Environment:
 #   CODEMAGIC_API_TOKEN, CODEMAGIC_APP_ID   required
@@ -41,6 +43,7 @@ if ! BUILDS=$(jq -ce 'if type == "array" then . else .builds end | select(type =
 fi
 
 echo "Builds read: $(jq 'length' <<< "$BUILDS")" >&2
+echo "More builds on later pages: $(jq -r 'if type == "object" and .nextPageUrl then "yes" else "no" end' <<< "$RESPONSE")" >&2
 echo "Fields on a build: $(jq -r '[.[0] // {} | keys[]] | join(", ")' <<< "$BUILDS")" >&2
 echo "Statuses seen: $(jq -r '[.[].status] | unique | join(", ")' <<< "$BUILDS")" >&2
 
