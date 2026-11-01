@@ -129,6 +129,22 @@ class EquipmentRefusalWatchRequested extends EquipmentCostFormEvent {
   final EquipmentPricingMethod method;
 }
 
+/// Fired for every report of the refusal watch, so the bloc handles the
+/// report like any other event. The bloc fires it itself.
+class EquipmentRefusalReported extends EquipmentCostFormEvent {
+  const EquipmentRefusalReported({
+    required this.companyId,
+    required this.itemName,
+    required this.method,
+    required this.result,
+  });
+
+  final String companyId;
+  final String itemName;
+  final EquipmentPricingMethod method;
+  final Either<Failure, RefusedYourRate?> result;
+}
+
 /// Fired when a refusal is shown, to look up the estimate whose line keeps the
 /// refused price and add its name to the notice. The bloc fires it itself.
 class EquipmentRefusalNoticeLookedUp extends EquipmentCostFormEvent {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
@@ -5,11 +7,11 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rxdart/rxdart.dart';
 
 part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
@@ -29,10 +31,12 @@ class EquipmentCostFormBloc
   final CostItemRepository _repository;
   final YourRatesRepository _yourRatesRepository;
   final CurrentCompanyResolver _companyResolver;
+  static final _logger = AppLogger().tag('EquipmentCostFormBloc');
   final Clock _clock;
   EquipmentCostFormData _formValuesAtOpening = const EquipmentCostFormData();
 
   String? _watchedRefusalKey;
+  StreamSubscription<Either<Failure, RefusedYourRate?>>? _refusalWatch;
   String? _companyId;
 
   // Notices this form already marked as shown, by item, so the notice stays
@@ -58,14 +62,9 @@ class EquipmentCostFormBloc
       );
       _watchRefusalOf(e.value, state.formData.method);
     });
-    on<EquipmentRefusalWatchRequested>(
-      _onRefusalWatchRequested,
-      transformer: (events, mapper) => events.switchMap(mapper),
-    );
-    on<EquipmentRefusalNoticeLookedUp>(
-      _onRefusalNoticeLookedUp,
-      transformer: (events, mapper) => events.switchMap(mapper),
-    );
+    on<EquipmentRefusalWatchRequested>(_onRefusalWatchRequested);
+    on<EquipmentRefusalReported>(_onRefusalReported);
+    on<EquipmentRefusalNoticeLookedUp>(_onRefusalNoticeLookedUp);
     on<EquipmentRefusalNoticeSeen>(_onRefusalNoticeSeen);
     on<EquipmentMethodSwitchedEvent>((e, emit) {
       _watchRefusalOf(state.formData.equipmentType, e.method);
@@ -163,43 +162,74 @@ class EquipmentCostFormBloc
     EquipmentRefusalWatchRequested event,
     Emitter<EquipmentCostFormState> emit,
   ) async {
+    await _refusalWatch?.cancel();
+    _refusalWatch = null;
     if (event.itemName.trim().isEmpty) {
       emit(_stateWithNotice(null));
       return;
     }
     final companyId = await _resolveCompanyId();
+    if (isClosed ||
+        _shownKeyOf(event.itemName, event.method) != _watchedRefusalKey) {
+      return;
+    }
     if (companyId == null) {
       emit(_stateWithNotice(null));
       return;
     }
-    final shownKey = _shownKeyOf(event.itemName, event.method);
-    await emit.forEach<Either<Failure, RefusedYourRate?>>(
-      _yourRatesRepository.watchRefusal(
-        companyId: companyId,
-        category: CostItemType.equipment,
-        itemName: event.itemName,
-        equipmentMethod: event.method,
-      ),
-      onData: (result) {
-        if (result.isLeft()) return state;
-        final refusal = result.getRightOrNull();
-        if (refusal == null) {
-          _shownNotices.remove(shownKey);
-          return _stateWithNotice(null);
-        }
-        if (refusal.wasShown) {
-          return _stateWithNotice(_shownNotices[shownKey]);
-        }
-        add(
-          EquipmentRefusalNoticeLookedUp(
+    try {
+      _refusalWatch = _yourRatesRepository
+          .watchRefusal(
             companyId: companyId,
+            category: CostItemType.equipment,
             itemName: event.itemName,
-            refusal: refusal,
-          ),
-        );
-        return _stateWithNotice(_noticeOf(refusal, estimateName: null));
-      },
+            equipmentMethod: event.method,
+          )
+          .listen(
+            (result) => add(
+              EquipmentRefusalReported(
+                companyId: companyId,
+                itemName: event.itemName,
+                method: event.method,
+                result: result,
+              ),
+            ),
+          );
+    } catch (error, stack) {
+      _logger.warning(
+        'Could not watch the refusal of the item; the form shows no notice',
+        error,
+        stack,
+      );
+    }
+  }
+
+  void _onRefusalReported(
+    EquipmentRefusalReported event,
+    Emitter<EquipmentCostFormState> emit,
+  ) {
+    final result = event.result;
+    if (result.isLeft()) return;
+    final shownKey = _shownKeyOf(event.itemName, event.method);
+    if (shownKey != _watchedRefusalKey) return;
+    final refusal = result.getRightOrNull();
+    if (refusal == null) {
+      _shownNotices.remove(shownKey);
+      emit(_stateWithNotice(null));
+      return;
+    }
+    if (refusal.wasShown) {
+      emit(_stateWithNotice(_shownNotices[shownKey]));
+      return;
+    }
+    add(
+      EquipmentRefusalNoticeLookedUp(
+        companyId: event.companyId,
+        itemName: event.itemName,
+        refusal: refusal,
+      ),
     );
+    emit(_stateWithNotice(_noticeOf(refusal, estimateName: null)));
   }
 
   Future<String?> _resolveCompanyId() async {
@@ -295,6 +325,12 @@ class EquipmentCostFormBloc
         failure,
       ),
     };
+  }
+
+  @override
+  Future<void> close() async {
+    await _refusalWatch?.cancel();
+    return super.close();
   }
 
   void _emit(
