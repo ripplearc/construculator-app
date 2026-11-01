@@ -16,6 +16,10 @@ set -euo pipefail
 # Every workflow is attempted even if an earlier one fails. The script exits
 # non-zero if any request fails or the response has no buildId.
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ci/runcheck_words.sh
+source "$SCRIPT_DIR/runcheck_words.sh"
+
 BRANCH="${1:-}"
 if [ -z "$BRANCH" ] || [ "$#" -lt 2 ]; then
   echo "Usage: $0 <branch> <workflow-id>..." >&2
@@ -38,7 +42,7 @@ write_summary() {
 }
 
 FORCE_IOS_BUILD=false
-if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+ios([[:space:]]|$)'; then
+if comment_has_runcheck_word ios; then
   FORCE_IOS_BUILD=true
 fi
 

@@ -16,6 +16,8 @@ set -euo pipefail
 #
 # Environment:
 #   FORCE_IOS_BUILD   "true" always answers "run" (set by #RunCheck ios)
+#   IOS_SKIP_ENABLED  "true" lets the script answer "skip"; anything else, or
+#                     unset, always answers "run" (the off switch)
 #   BASE_BRANCH       branch to compare with, defaults to main
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,6 +58,10 @@ run_because() {
 
 if [ "${FORCE_IOS_BUILD:-false}" = "true" ]; then
   run_because "FORCE_IOS_BUILD is true (#RunCheck ios)"
+fi
+
+if [ "${IOS_SKIP_ENABLED:-false}" != "true" ]; then
+  run_because "IOS_SKIP_ENABLED is not true, so skipping is switched off"
 fi
 
 # #RunCheck builds have no pull request destination, so the base is fetched by

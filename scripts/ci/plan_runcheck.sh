@@ -25,6 +25,10 @@ set -euo pipefail
 #   COMMENT_BODY                                 text of the #RunCheck comment
 #   GITHUB_API_URL                               defaults to https://api.github.com
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ci/runcheck_words.sh
+source "$SCRIPT_DIR/runcheck_words.sh"
+
 : "${GH_REPO:?GH_REPO is not set}"
 : "${GITHUB_TOKEN:?GITHUB_TOKEN is not set}"
 : "${PR_NUMBER:?PR_NUMBER is not set}"
@@ -55,11 +59,11 @@ check_name_of() {
 }
 
 FORCE=false
-if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+force([[:space:]]|$)'; then
+if comment_has_runcheck_word force; then
   FORCE=true
 fi
 FORCE_IOS=false
-if echo "${COMMENT_BODY:-}" | grep -Eiq '(^|[[:space:]])#runcheck[[:space:]]+ios([[:space:]]|$)'; then
+if comment_has_runcheck_word ios; then
   FORCE_IOS=true
 fi
 
