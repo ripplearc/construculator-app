@@ -12,6 +12,9 @@ class YourRateRefusalDto extends Equatable {
   final String itemName;
   final String? equipmentMethod;
 
+  /// The label of the refused row, or null if it had none.
+  final String? entryLabel;
+
   /// The amount the server refused.
   final double refusedAmount;
 
@@ -29,6 +32,7 @@ class YourRateRefusalDto extends Equatable {
     required this.refusedRowId,
     required this.itemName,
     required this.equipmentMethod,
+    required this.entryLabel,
     required this.refusedAmount,
     required this.acceptedAmount,
     required this.shownAt,
@@ -45,6 +49,7 @@ class YourRateRefusalDto extends Equatable {
       refusedRowId: json[DatabaseConstants.refusedRowIdColumn] as String,
       itemName: json[DatabaseConstants.itemNameColumn] as String,
       equipmentMethod: json[DatabaseConstants.equipmentMethodColumn] as String?,
+      entryLabel: json[DatabaseConstants.entryLabelColumn] as String?,
       refusedAmount: (json[DatabaseConstants.refusedAmountColumn] as num)
           .toDouble(),
       acceptedAmount: (json[DatabaseConstants.acceptedAmountColumn] as num?)
@@ -61,6 +66,7 @@ class YourRateRefusalDto extends Equatable {
     refusedRowId,
     itemName,
     equipmentMethod,
+    entryLabel,
     refusedAmount,
     acceptedAmount,
     shownAt,

@@ -125,6 +125,7 @@ const Schema schema = Schema([
     Column.text('refused_row_id'),
     Column.text('item_name'),
     Column.text('equipment_method'),
+    Column.text('entry_label'),
     Column.real('refused_amount'),
     Column.real('accepted_amount'),
     Column.text('shown_at'),
