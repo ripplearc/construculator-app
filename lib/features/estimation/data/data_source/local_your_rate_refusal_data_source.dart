@@ -30,14 +30,28 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
     required this._clock,
   });
 
-  @override
-  Future<YourRateRefusalDto?> loadRefusalByItem(
+  static String _keyOf(
+    String companyId,
+    String category,
     String itemName,
     String? equipmentMethod,
-  ) async {
+  ) => YourRateRefusalKey.of(
+    companyId: companyId,
+    category: category,
+    itemName: itemName,
+    equipmentMethod: equipmentMethod,
+  );
+
+  @override
+  Future<YourRateRefusalDto?> loadRefusalByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
+    String? equipmentMethod,
+  }) async {
     try {
       final rows = await _database.getAll(_selectByIdSql, [
-        YourRateRefusalKey.of(itemName, equipmentMethod),
+        _keyOf(companyId, category, itemName, equipmentMethod),
       ]);
       return rows.isEmpty ? null : YourRateRefusalDto.fromJson(rows.first);
     } catch (e, stack) {
@@ -51,14 +65,16 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   }
 
   @override
-  Future<void> markRefusalShownByItem(
-    String itemName,
+  Future<void> markRefusalShownByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
     String? equipmentMethod,
-  ) async {
+  }) async {
     try {
       await _database.execute(_markShownSql, [
         _clock.now().toUtc().toIso8601String(),
-        YourRateRefusalKey.of(itemName, equipmentMethod),
+        _keyOf(companyId, category, itemName, equipmentMethod),
       ]);
     } catch (e, stack) {
       _logger.error('Failed to mark a refusal as shown', e, stack);
@@ -67,13 +83,15 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   }
 
   @override
-  Future<void> deleteRefusalByItem(
-    String itemName,
+  Future<void> deleteRefusalByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
     String? equipmentMethod,
-  ) async {
+  }) async {
     try {
       await _database.execute(_deleteByIdSql, [
-        YourRateRefusalKey.of(itemName, equipmentMethod),
+        _keyOf(companyId, category, itemName, equipmentMethod),
       ]);
     } catch (e, stack) {
       _logger.error('Failed to forget a refused default', e, stack);

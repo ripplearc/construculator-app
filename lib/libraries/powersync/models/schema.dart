@@ -114,10 +114,15 @@ const Schema schema = Schema([
     Column.text('company_id'),
   ]),
 
-  // Never uploaded or synced. One row per refused Your rates item, with the
-  // YourRateRefusalKey of the item as its id. `accepted_amount` is null when
-  // the server never accepted a price; `shown_at` is null until shown.
+  // Never uploaded or synced. One row per refused Your rates item of one
+  // company, with the YourRateRefusalKey of the item as its id.
+  // `refused_row_id` is the id of the your_rates row the server refused.
+  // `accepted_amount` is null when the server never accepted a price;
+  // `shown_at` is null until shown.
   Table.localOnly('your_rate_refusals', [
+    Column.text('company_id'),
+    Column.text('category'),
+    Column.text('refused_row_id'),
     Column.text('item_name'),
     Column.text('equipment_method'),
     Column.real('refused_amount'),

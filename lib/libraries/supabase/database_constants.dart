@@ -180,6 +180,7 @@ class DatabaseConstants {
   static const String equipmentMethodColumn = 'equipment_method';
   static const String entryLabelColumn = 'entry_label';
   static const String lastUsedAtColumn = 'last_used_at';
+  static const String refusedRowIdColumn = 'refused_row_id';
   static const String refusedAmountColumn = 'refused_amount';
   static const String acceptedAmountColumn = 'accepted_amount';
   static const String shownAtColumn = 'shown_at';

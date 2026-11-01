@@ -3,25 +3,39 @@ import 'package:construculator/features/estimation/data/models/your_rate_refusal
 
 /// Reads and updates the record of Your rates defaults the server refused.
 /// The upload step writes the records; this only reads them and tracks
-/// whether the "Not kept" message was shown.
+/// whether the "Not kept" message was shown. Every call names the company and
+/// the category, so one company's refusal is never read as another's.
 abstract class YourRateRefusalDataSource {
-  /// The refusal kept for the item called [itemName] priced by
-  /// [equipmentMethod], or null if the server has not refused it.
+  /// The refusal kept for the item called [itemName] of [category] in
+  /// [companyId] priced by [equipmentMethod], or null if the server has not
+  /// refused it.
   ///
   /// Throws an exception if the read fails.
-  Future<YourRateRefusalDto?> loadRefusalByItem(
-    String itemName,
+  Future<YourRateRefusalDto?> loadRefusalByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
     String? equipmentMethod,
-  );
+  });
 
   /// Records that the "Not kept" message for the item was shown. Does
   /// nothing if the item has no refusal.
   ///
   /// Throws an exception if the write fails.
-  Future<void> markRefusalShownByItem(String itemName, String? equipmentMethod);
+  Future<void> markRefusalShownByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
+    String? equipmentMethod,
+  });
 
   /// Forgets the refusal of the item. Does nothing if it has none.
   ///
   /// Throws an exception if the write fails.
-  Future<void> deleteRefusalByItem(String itemName, String? equipmentMethod);
+  Future<void> deleteRefusalByItem({
+    required String companyId,
+    required String category,
+    required String itemName,
+    String? equipmentMethod,
+  });
 }

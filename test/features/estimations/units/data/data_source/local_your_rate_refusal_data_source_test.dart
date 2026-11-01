@@ -13,14 +13,27 @@ void main() {
     late FakeClockImpl clock;
     late YourRateRefusalDataSource dataSource;
 
+    const companyA = 'company-a';
+    const companyB = 'company-b';
+
     Map<String, Object?> refusal({
+      String companyId = companyA,
+      String category = 'equipment',
       String itemName = 'Dumpster — 30 yd',
       String? method = 'job',
       double refused = 450.0,
       double? accepted = 400.0,
       String? shownAt,
     }) => {
-      'id': YourRateRefusalKey.of(itemName, method),
+      'id': YourRateRefusalKey.of(
+        companyId: companyId,
+        category: category,
+        itemName: itemName,
+        equipmentMethod: method,
+      ),
+      'company_id': companyId,
+      'category': category,
+      'refused_row_id': 'row-1',
       'item_name': itemName,
       'equipment_method': method,
       'refused_amount': refused,
@@ -42,7 +55,12 @@ void main() {
         'returns null when the server refused nothing for the item',
         () async {
           expect(
-            await dataSource.loadRefusalByItem('Dumpster — 30 yd', 'job'),
+            await dataSource.loadRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
             isNull,
           );
         },
@@ -52,8 +70,10 @@ void main() {
         database.seedRefusal(refusal());
 
         final found = await dataSource.loadRefusalByItem(
-          'Dumpster — 30 yd',
-          'job',
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
         );
 
         expect(found?.refusedAmount, 450.0);
@@ -67,8 +87,10 @@ void main() {
           database.seedRefusal(refusal(accepted: null));
 
           final found = await dataSource.loadRefusalByItem(
-            'Dumpster — 30 yd',
-            'job',
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
           );
 
           expect(found?.acceptedAmount, isNull);
@@ -79,11 +101,40 @@ void main() {
         database.seedRefusal(refusal());
 
         final found = await dataSource.loadRefusalByItem(
-          '  dumpster —  30 YD ',
-          'job',
+          companyId: companyA,
+          category: 'equipment',
+          itemName: '  dumpster —  30 YD ',
+          equipmentMethod: 'job',
         );
 
         expect(found, isNotNull);
+      });
+
+      test('keeps another company\'s refusal out of the read', () async {
+        database.seedRefusal(refusal(companyId: companyA));
+
+        expect(
+          await dataSource.loadRefusalByItem(
+            companyId: companyB,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          isNull,
+        );
+      });
+
+      test('keeps another category\'s refusal out of the read', () async {
+        database.seedRefusal(refusal(category: 'material', method: null));
+
+        expect(
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'labor',
+            itemName: 'Dumpster — 30 yd',
+          ),
+          isNull,
+        );
       });
 
       test(
@@ -92,7 +143,12 @@ void main() {
           database.seedRefusal(refusal(method: 'job'));
 
           expect(
-            await dataSource.loadRefusalByItem('Dumpster — 30 yd', 'day'),
+            await dataSource.loadRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'day',
+            ),
             isNull,
           );
         },
@@ -103,11 +159,18 @@ void main() {
       test('stores when the message was shown', () async {
         database.seedRefusal(refusal());
 
-        await dataSource.markRefusalShownByItem('Dumpster — 30 yd', 'job');
+        await dataSource.markRefusalShownByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
 
         final found = await dataSource.loadRefusalByItem(
-          'Dumpster — 30 yd',
-          'job',
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
         );
         expect(found?.shownAt, '2026-10-07T09:00:00.000Z');
       });
@@ -116,19 +179,60 @@ void main() {
         database.seedRefusal(refusal());
         database.seedRefusal(refusal(itemName: 'Excavator', method: 'day'));
 
-        await dataSource.markRefusalShownByItem('Dumpster — 30 yd', 'job');
+        await dataSource.markRefusalShownByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
 
-        final other = await dataSource.loadRefusalByItem('Excavator', 'day');
+        final other = await dataSource.loadRefusalByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Excavator',
+          equipmentMethod: 'day',
+        );
         expect(other?.shownAt, isNull);
       });
 
       test('does nothing when the item has no refusal', () async {
-        await dataSource.markRefusalShownByItem('Dumpster — 30 yd', 'job');
+        await dataSource.markRefusalShownByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
 
         expect(
-          await dataSource.loadRefusalByItem('Dumpster — 30 yd', 'job'),
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
           isNull,
         );
+      });
+    });
+
+    group('markRefusalShownByItem for another company', () {
+      test('leaves the first company\'s message unshown', () async {
+        database.seedRefusal(refusal(companyId: companyA));
+
+        await dataSource.markRefusalShownByItem(
+          companyId: companyB,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+
+        final found = await dataSource.loadRefusalByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+        expect(found?.shownAt, isNull);
       });
     });
 
@@ -137,14 +241,50 @@ void main() {
         database.seedRefusal(refusal());
         database.seedRefusal(refusal(itemName: 'Excavator', method: 'day'));
 
-        await dataSource.deleteRefusalByItem('Dumpster — 30 yd', 'job');
+        await dataSource.deleteRefusalByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
 
         expect(
-          await dataSource.loadRefusalByItem('Dumpster — 30 yd', 'job'),
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
           isNull,
         );
         expect(
-          await dataSource.loadRefusalByItem('Excavator', 'day'),
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Excavator',
+            equipmentMethod: 'day',
+          ),
+          isNotNull,
+        );
+      });
+
+      test('does not forget another company\'s refusal', () async {
+        database.seedRefusal(refusal(companyId: companyA));
+
+        await dataSource.deleteRefusalByItem(
+          companyId: companyB,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+
+        expect(
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
           isNotNull,
         );
       });
@@ -155,7 +295,12 @@ void main() {
         database.getAllError = StateError('disk full');
 
         await expectLater(
-          dataSource.loadRefusalByItem('Dumpster — 30 yd', 'job'),
+          dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
           throwsA(isA<StateError>()),
         );
       });
