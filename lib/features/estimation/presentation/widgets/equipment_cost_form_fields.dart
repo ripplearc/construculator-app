@@ -690,16 +690,26 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  static const double _lookupButtonVisualHeight = 36;
+  static const double _lookupButtonTapSize = 48;
+
   Widget? _lookupRateButtonWhenEmpty(
     BuildContext context,
     EquipmentCostFormData data,
   ) {
     if (data.rateStatus != RateStatus.missing) return null;
-    return CoreOutlinedIconButton(
-      key: const Key('lookup_rate_button'),
-      icon: CoreIcons.search,
-      semanticLabel: context.l10n.yourRatesLookupButton,
-      onTap: () => unawaited(_openRateLookup(context, data.method)),
+    return SizedBox(
+      width: _lookupButtonTapSize,
+      height: _lookupButtonVisualHeight,
+      child: OverflowBox(
+        maxHeight: _lookupButtonTapSize,
+        child: CoreOutlinedIconButton(
+          key: const Key('lookup_rate_button'),
+          icon: CoreIcons.search,
+          semanticLabel: context.l10n.yourRatesLookupButton,
+          onTap: () => unawaited(_openRateLookup(context, data.method)),
+        ),
+      ),
     );
   }
 
