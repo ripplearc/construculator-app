@@ -2179,6 +2179,25 @@ void main() {
       );
 
       test(
+        'shows the notice when a saved rate of the item is recalled',
+        () async {
+          refuse();
+          bloc.add(const EquipmentCostItemTypeChanged(itemName));
+
+          bloc.add(
+            const EquipmentSavedRateRecalledEvent(
+              rateId: 'rate-1',
+              rate: 400.0,
+              method: EquipmentPricingMethod.job,
+            ),
+          );
+
+          final state = await bloc.stream.firstWhere(hasNotice);
+          expect(state, noticeIs());
+        },
+      );
+
+      test(
         'shows the notice when the name is typed after Job is chosen',
         () async {
           refuse();

@@ -101,6 +101,7 @@ class EquipmentCostFormBloc
       );
     });
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
+      _watchRefusalOf(state.formData.equipmentType, e.method);
       _emit(emit, (d) {
         final recalled = d.copyWith(
           method: e.method,
