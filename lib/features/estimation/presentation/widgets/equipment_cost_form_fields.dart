@@ -402,6 +402,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       RateStatus.sampleRateUnverified => CoreStatusBadge(
         key: const Key('rate_status_badge'),
         label: l10n.equipmentRateStatusSampleRateBadge,
+        size: CoreStatusBadgeSize.compact,
       ),
       RateStatus.ownRateConfirmed ||
       RateStatus.ownRateUnconfirmed ||
