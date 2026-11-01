@@ -166,7 +166,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   @override
-  Stream<Either<Failure, RefusedYourRate?>> watchUnshownRefusal({
+  Stream<Either<Failure, RefusedYourRate?>> watchRefusal({
     required String companyId,
     required CostItemType category,
     required String itemName,
@@ -179,10 +179,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
           itemName: itemName,
           equipmentMethod: equipmentMethod?.toJson(),
         )
-        .map<Either<Failure, RefusedYourRate?>>((refusal) {
-          final unshown = refusal?.shownAt == null ? refusal : null;
-          return Right(unshown?.toEntity());
-        })
+        .map<Either<Failure, RefusedYourRate?>>(
+          (refusal) => Right(refusal?.toEntity()),
+        )
         .transform(
           StreamTransformer.fromHandlers(
             handleError: (error, stack, sink) =>

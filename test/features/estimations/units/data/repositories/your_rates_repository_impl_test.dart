@@ -1201,11 +1201,11 @@ void main() {
 
         expect(database.refusalRow(excavatorKey), isNotNull);
       });
-      group('watchUnshownRefusal', () {
+      group('watchRefusal', () {
         Stream<Either<Failure, RefusedYourRate?>> watchExcavator([
           EquipmentPricingMethod method = EquipmentPricingMethod.day,
           String companyId = testCompanyId,
-        ]) => repository.watchUnshownRefusal(
+        ]) => repository.watchRefusal(
           companyId: companyId,
           category: CostItemType.equipment,
           itemName: 'Excavator',
@@ -1233,6 +1233,7 @@ void main() {
                 equipmentMethod: EquipmentPricingMethod.day,
                 refusedAmount: 450.0,
                 acceptedAmount: 400.0,
+                wasShown: false,
               ),
             ),
           );
@@ -1270,12 +1271,23 @@ void main() {
           },
         );
 
-        test('stops emitting the refusal once it was marked shown', () async {
+        test('reports the refusal as shown once it was marked shown', () async {
           refuse();
 
           final emissions = expectLater(
             refusalOfExcavator(),
-            emitsInOrder([isA<RefusedYourRate>(), isNull]),
+            emitsInOrder([
+              isA<RefusedYourRate>().having(
+                (r) => r.wasShown,
+                'wasShown',
+                false,
+              ),
+              isA<RefusedYourRate>().having(
+                (r) => r.wasShown,
+                'wasShown',
+                true,
+              ),
+            ]),
           );
 
           await repository.markRefusalShown(
@@ -1289,11 +1301,20 @@ void main() {
         });
 
         test(
-          'does not emit a refusal that was shown before a restart',
+          'reports a refusal that was shown before a restart as shown',
           () async {
             refuse(shownAt: '2026-10-07T09:00:00.000Z');
 
-            await expectLater(refusalOfExcavator(), emits(isNull));
+            await expectLater(
+              refusalOfExcavator(),
+              emits(
+                isA<RefusedYourRate>().having(
+                  (r) => r.wasShown,
+                  'wasShown',
+                  true,
+                ),
+              ),
+            );
           },
         );
 

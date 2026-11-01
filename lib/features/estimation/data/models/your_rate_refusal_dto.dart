@@ -86,6 +86,7 @@ class YourRateRefusalDto extends Equatable {
           : EquipmentPricingMethod.fromJson(method),
       refusedAmount: refusedAmount,
       acceptedAmount: acceptedAmount,
+      wasShown: shownAt != null,
     );
   }
 

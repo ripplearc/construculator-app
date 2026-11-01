@@ -9,6 +9,7 @@ class RefusedYourRate extends Equatable {
     required this.equipmentMethod,
     required this.refusedAmount,
     required this.acceptedAmount,
+    required this.wasShown,
   });
 
   /// The item's name as the user saved it.
@@ -23,11 +24,15 @@ class RefusedYourRate extends Equatable {
   /// The last amount the server accepted, or null if it never accepted one.
   final double? acceptedAmount;
 
+  /// Whether the "Not kept" message for this refusal was already shown.
+  final bool wasShown;
+
   @override
   List<Object?> get props => [
     itemName,
     equipmentMethod,
     refusedAmount,
     acceptedAmount,
+    wasShown,
   ];
 }

@@ -105,14 +105,14 @@ abstract class YourRatesRepository {
 
   /// The default the server refused for the item called [itemName] of
   /// [category] in [companyId] priced by [equipmentMethod], now and after every
-  /// change: null while the server has not refused it, after the "Not kept"
-  /// message was shown, after a new save for the item, and while the phone
-  /// holds a newer price for the item than the refused and the last accepted
-  /// one.
+  /// change: null while the server has not refused it, after a new save for
+  /// the item, and while the phone holds a newer price for the item than the
+  /// refused and the last accepted one. [RefusedYourRate.wasShown] tells
+  /// whether the "Not kept" message was already shown.
   ///
   /// Names match the way [save] matches them. A read that fails emits a
   /// failure and the stream stays open.
-  Stream<Either<Failure, RefusedYourRate?>> watchUnshownRefusal({
+  Stream<Either<Failure, RefusedYourRate?>> watchRefusal({
     required String companyId,
     required CostItemType category,
     required String itemName,
@@ -120,7 +120,8 @@ abstract class YourRatesRepository {
   });
 
   /// Records that the "Not kept" message for the item was shown, so
-  /// [watchUnshownRefusal] stops reporting it, including after a restart.
+  /// [watchRefusal] reports it with [RefusedYourRate.wasShown] set, including
+  /// after a restart.
   /// Does nothing if the item has no refusal.
   Future<Either<Failure, void>> markRefusalShown({
     required String companyId,
