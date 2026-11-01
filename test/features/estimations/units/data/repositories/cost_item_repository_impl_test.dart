@@ -12,6 +12,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
 
@@ -238,6 +239,128 @@ void main() {
             (f) => f.errorType,
             'errorType',
             EstimationErrorType.parsingError,
+          ),
+        );
+      });
+    });
+
+    group('getCostItemsForEstimate', () {
+      void seedItems(List<Map<String, dynamic>> rows) {
+        fakeSupabaseWrapper.addTableData('cost_items', rows);
+      }
+
+      List<Map<String, dynamic>> manyItems(int count) => [
+        for (var i = 0; i < count; i++)
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-$i',
+            estimateId: 'estimate-1',
+          ),
+      ];
+
+      test('returns 999 items, one fewer than the row limit', () async {
+        seedItems(manyItems(999));
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(result.getRightOrNull(), hasLength(999));
+      });
+
+      test('fails when the items fill the 1000 row limit', () async {
+        seedItems(manyItems(1000));
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+      });
+
+      test('returns the items of the estimate, oldest first', () async {
+        seedItems([
+          CostItemTestDataMapFactory.createEquipmentItemData(
+            id: 'newest',
+            estimateId: 'estimate-1',
+            createdAt: DateTime.utc(2024, 3).toIso8601String(),
+          ),
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'oldest',
+            estimateId: 'estimate-1',
+            createdAt: DateTime.utc(2024, 1).toIso8601String(),
+          ),
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'middle',
+            estimateId: 'estimate-1',
+            createdAt: DateTime.utc(2024, 2).toIso8601String(),
+          ),
+        ]);
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        final items = result.getRightOrNull()!;
+        expect(items.map((item) => item.id), ['oldest', 'middle', 'newest']);
+        expect(items[0], isA<MaterialCostItem>());
+        expect(items[1], isA<LaborCostItem>());
+        expect(items[2], isA<EquipmentCostItem>());
+      });
+
+      test('leaves out the items of other estimates', () async {
+        seedItems([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'mine',
+            estimateId: 'estimate-1',
+          ),
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'theirs',
+            estimateId: 'estimate-2',
+          ),
+        ]);
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(result.getRightOrNull()!.map((item) => item.id), ['mine']);
+      });
+
+      test('returns an empty list for an estimate with no items', () async {
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(result.getRightOrNull(), isEmpty);
+      });
+
+      test('maps a connection failure to connectionError', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.socket;
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
+          ),
+        );
+      });
+
+      test('maps an unexpected error to unexpectedError', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.unknown;
+
+        final result = await repository.getCostItemsForEstimate('estimate-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.unexpectedError,
           ),
         );
       });

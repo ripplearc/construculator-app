@@ -11,6 +11,14 @@ abstract class CostItemRepository {
   /// estimate's total. Each item total is already rounded to the cent.
   Future<Either<Failure, double>> getEstimateItemsTotal(String estimateId);
 
+  /// Every cost item of an estimate, oldest first.
+  ///
+  /// Returns an empty list for an estimate with no items. This reads from the
+  /// network, so it fails while the device is offline.
+  Future<Either<Failure, List<CostItem>>> getCostItemsForEstimate(
+    String estimateId,
+  );
+
   /// Creates a new cost item and returns the persisted entity.
   Future<Either<Failure, CostItem>> createCostItem(CostItem item);
 }

@@ -40,20 +40,41 @@ class CostItemRepositoryImpl implements CostItemRepository {
         estimateId,
       );
       if (totals.length >= _maxRowsPerRequest) {
-        _logger.error(
-          'Cost item totals for $estimateId fill the $_maxRowsPerRequest row limit, so the sum may be too small',
-        );
-        return const Left(
-          EstimationFailure(
-            errorType: EstimationErrorType.unexpectedDatabaseError,
-          ),
-        );
+        return _rowLimitFailure(estimateId);
       }
       final cents = totals.fold<int>(0, (sum, t) => sum + (t * 100).round());
       return Right(cents / 100);
     } catch (e) {
       return _handleError(e, 'summing cost items');
     }
+  }
+
+  @override
+  Future<Either<Failure, List<CostItem>>> getCostItemsForEstimate(
+    String estimateId,
+  ) async {
+    try {
+      final dtos = await dataSource.fetchCostItemsByEstimateId(
+        estimateId: estimateId,
+      );
+      if (dtos.length >= _maxRowsPerRequest) {
+        return _rowLimitFailure(estimateId);
+      }
+      return Right(dtos.map((dto) => dto.toEntity()).toList());
+    } catch (e) {
+      return _handleError(e, 'fetching cost items');
+    }
+  }
+
+  Left<Failure, T> _rowLimitFailure<T>(String estimateId) {
+    _logger.error(
+      'Cost items for $estimateId fill the $_maxRowsPerRequest row limit, so rows may be missing',
+    );
+    return const Left(
+      EstimationFailure(
+        errorType: EstimationErrorType.unexpectedDatabaseError,
+      ),
+    );
   }
 
   Left<Failure, T> _handleError<T>(Object error, String operation) {
