@@ -949,11 +949,29 @@ void main() {
     });
 
     group('after the server refused a default', () {
-      final excavatorKey = YourRateRefusalKey.of('Excavator', 'day');
+      final excavatorKey = YourRateRefusalKey.of(
+        companyId: testCompanyId,
+        category: 'equipment',
+        itemName: 'Excavator',
+        equipmentMethod: 'day',
+      );
 
-      void refuse({double refused = 450.0, double? accepted = 400.0}) {
+      void refuse({
+        double refused = 450.0,
+        double? accepted = 400.0,
+        String refusedRowId = 'r1',
+        String companyId = testCompanyId,
+      }) {
         database.seedRefusal({
-          'id': excavatorKey,
+          'id': YourRateRefusalKey.of(
+            companyId: companyId,
+            category: 'equipment',
+            itemName: 'Excavator',
+            equipmentMethod: 'day',
+          ),
+          'company_id': companyId,
+          'category': 'equipment',
+          'refused_row_id': refusedRowId,
           'item_name': 'Excavator',
           'equipment_method': 'day',
           'refused_amount': refused,
@@ -1060,6 +1078,100 @@ void main() {
         expect(database.refusalRow(excavatorKey), isNotNull);
         final entries = await lookUp();
         expect(entries.single.rate.amount, 400.0);
+      });
+
+      test(
+        'a row the server accepted is not hidden by a refusal of another row',
+        () async {
+          seed([
+            row(id: 'r1', rateAmount: 450.0),
+            row(id: 'r2', rateAmount: 450.0, entryLabel: 'Weekend'),
+          ]);
+          refuse(accepted: 400.0);
+
+          final entries = await lookUp();
+
+          expect(
+            {for (final entry in entries) entry.id: entry.rate.amount},
+            {'r1': 400.0, 'r2': 450.0},
+          );
+        },
+      );
+
+      test(
+        'a refusal after sync removed the refused row hides nothing',
+        () async {
+          seed([row(id: 'r9', rateAmount: 450.0)]);
+          refuse(refusedRowId: 'r1');
+
+          final entries = await lookUp();
+
+          expect(entries.single.rate.amount, 450.0);
+        },
+      );
+
+      test(
+        'another company\'s refusal does not change this company\'s rows',
+        () async {
+          seed([row(id: 'r1', rateAmount: 450.0)]);
+          refuse(
+            companyId: 'company-2',
+            refusedRowId: 'r-other',
+            accepted: null,
+          );
+
+          final entries = await lookUp();
+
+          expect(entries.single.rate.amount, 450.0);
+        },
+      );
+
+      test(
+        'a save with no label is a duplicate of a row the refusal hides',
+        () async {
+          seed([row(id: 'r1', rateAmount: 450.0)]);
+          refuse(accepted: null);
+
+          final result = await repository.save(buildEntry(amount: 500.0));
+
+          expect(
+            result.getLeftOrNull(),
+            const EstimationFailure(
+              errorType: EstimationErrorType.duplicateEntry,
+            ),
+          );
+        },
+      );
+
+      test('a successful first save of the item forgets its refusal', () async {
+        refuse();
+
+        final result = await repository.save(buildEntry(amount: 500.0));
+
+        expect(result.isRight(), isTrue);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a successful save with a new label forgets the refusal', () async {
+        seed([row(id: 'r2', rateAmount: 300.0, entryLabel: 'Weekend')]);
+        refuse(refusedRowId: 'r2');
+
+        final result = await repository.save(
+          buildEntry(amount: 500.0, entryLabel: 'With operator'),
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a save that worked is not reported as failed when the refusal '
+          'cannot be forgotten', () async {
+        refuse();
+        database.failRefusalDeletes = true;
+
+        final result = await repository.save(buildEntry(amount: 500.0));
+
+        expect(result.isRight(), isTrue);
       });
 
       test('saving a default for another item keeps the refusal', () async {

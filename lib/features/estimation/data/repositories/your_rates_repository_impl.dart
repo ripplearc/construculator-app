@@ -17,6 +17,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   });
 
   final YourRatesDataSource dataSource;
+
+  /// The record of defaults the server refused, so a refused price is not
+  /// shown as the saved one.
   final YourRateRefusalDataSource refusalDataSource;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
@@ -36,8 +39,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         category: category?.toJson(),
         companyId: companyId,
       );
-      final entries = dtos.map(_toEntry).toList()
-        ..sort(_mostRecentlyUsedFirst);
+      final entries = dtos.map(_toEntry).toList()..sort(_mostRecentlyUsedFirst);
 
       final words = query
           .toLowerCase()
@@ -101,6 +103,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
                 normalizedEntry.category,
                 normalizedEntry.itemName,
                 companyId: normalizedEntry.companyId,
+                asLastAccepted: false,
               ))
               .where(
                 (candidate) =>
@@ -153,8 +156,22 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
-  Future<void> _forgetRefusalOf(YourRateEntry entry) => refusalDataSource
-      .deleteRefusalByItem(entry.itemName, entry.equipmentMethod?.toJson());
+  Future<void> _forgetRefusalOf(YourRateEntry entry) async {
+    try {
+      await refusalDataSource.deleteRefusalByItem(
+        companyId: entry.companyId,
+        category: entry.category.toJson(),
+        itemName: entry.itemName,
+        equipmentMethod: entry.equipmentMethod?.toJson(),
+      );
+    } catch (e, stack) {
+      _logger.warning(
+        'Could not forget the refusal of a saved rate; the save itself worked',
+        e,
+        stack,
+      );
+    }
+  }
 
   Future<List<YourRateEntryDto>> _loadRatesAsLastAccepted({
     String? category,
@@ -166,12 +183,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     );
     final refusals = {
       for (final refusal in await refusalDataSource.loadAllRefusals())
-        refusal.id: refusal,
+        refusal.refusedRowId: refusal,
     };
     final lastAccepted = <YourRateEntryDto>[];
     for (final dto in dtos) {
-      final refusal =
-          refusals[YourRateRefusalKey.of(dto.itemName, dto.equipmentMethod)];
+      final refusal = refusals[dto.id];
       if (refusal == null || refusal.refusedAmount != dto.rateAmount) {
         lastAccepted.add(dto);
         continue;
@@ -188,12 +204,18 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     CostItemType category,
     String itemName, {
     required String companyId,
+    bool asLastAccepted = true,
   }) async {
     final nameKey = _matchKey(itemName);
-    final dtos = await _loadRatesAsLastAccepted(
-      category: category.toJson(),
-      companyId: companyId,
-    );
+    final dtos = asLastAccepted
+        ? await _loadRatesAsLastAccepted(
+            category: category.toJson(),
+            companyId: companyId,
+          )
+        : await dataSource.loadRates(
+            category: category.toJson(),
+            companyId: companyId,
+          );
     return dtos
         .map(_toEntry)
         .where((entry) => _matchKey(entry.itemName) == nameKey)
@@ -201,7 +223,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   static String _matchKey(String text) =>
-      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+      YourRateRefusalKey.normalizeName(text);
 
   static String? _normalizeLabel(String? label) {
     final trimmed = label?.trim();
