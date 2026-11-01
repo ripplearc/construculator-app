@@ -613,42 +613,47 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final colorTheme = context.colorTheme;
     final acceptedAmount = notice.acceptedAmount;
     final estimateName = notice.estimateName;
-    return Semantics(
-      liveRegion: true,
-      child: Container(
-        key: const Key('refused_default_notice'),
-        padding: const EdgeInsets.symmetric(
-          horizontal: CoreSpacing.space3,
-          vertical: CoreSpacing.space2,
-        ),
-        decoration: BoxDecoration(
-          color: colorTheme.alertRed,
-          borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CoreIconWidget(
-              icon: CoreIcons.error,
-              color: colorTheme.iconRed,
-              size: CoreIconSize.size16,
-            ),
-            const SizedBox(width: CoreSpacing.space2),
-            Expanded(
-              child: Text(
-                l10n.equipmentRefusedDefaultNotice(
-                  DisplayFormatter.currency.format(notice.refusedAmount),
-                  '${acceptedAmount != null}',
-                  DisplayFormatter.currency.format(acceptedAmount ?? 0),
-                  '${estimateName != null}',
-                  estimateName ?? '',
-                ),
-                style: context.textTheme.bodySmallRegular.copyWith(
-                  color: colorTheme.textError,
+    return _ReportsWhenDrawn(
+      onDrawn: () => context.read<EquipmentCostFormBloc>().add(
+        const EquipmentRefusalNoticeSeen(),
+      ),
+      child: Semantics(
+        liveRegion: true,
+        child: Container(
+          key: const Key('refused_default_notice'),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space3,
+            vertical: CoreSpacing.space2,
+          ),
+          decoration: BoxDecoration(
+            color: colorTheme.alertRed,
+            borderRadius: BorderRadius.circular(CoreSpacing.space2),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CoreIconWidget(
+                icon: CoreIcons.error,
+                color: colorTheme.iconRed,
+                size: CoreIconSize.size16,
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              Expanded(
+                child: Text(
+                  l10n.equipmentRefusedDefaultNotice(
+                    DisplayFormatter.currency.format(notice.refusedAmount),
+                    '${acceptedAmount != null}',
+                    DisplayFormatter.currency.format(acceptedAmount ?? 0),
+                    '${estimateName != null}',
+                    estimateName ?? '',
+                  ),
+                  style: context.textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textError,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1179,6 +1184,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     ..._recalledRateHeader(context, data),
                     const SizedBox(height: CoreSpacing.space5),
                   ],
+                  ..._refusedDefaultNoticeAboveRate(context, data),
                   isDay
                       ? _durationField(context, data, recalled: true)
                       : _amountField(context, data, recalled: true),
@@ -1613,4 +1619,27 @@ enum _DeliveryHint {
   const _DeliveryHint(this.key);
 
   final String key;
+}
+
+class _ReportsWhenDrawn extends StatefulWidget {
+  const _ReportsWhenDrawn({required this.onDrawn, required this.child});
+
+  final VoidCallback onDrawn;
+  final Widget child;
+
+  @override
+  State<_ReportsWhenDrawn> createState() => _ReportsWhenDrawnState();
+}
+
+class _ReportsWhenDrawnState extends State<_ReportsWhenDrawn> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onDrawn();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

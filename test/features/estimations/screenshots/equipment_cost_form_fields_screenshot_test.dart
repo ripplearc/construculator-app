@@ -155,6 +155,18 @@ void main() {
         'accepted_amount': 400.0,
         'shown_at': null,
       });
+      database.seedRows([
+        {
+          'id': 'rate-1',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Dumpster — 30 yd',
+          'rate_amount': 400,
+          'rate_currency': 'USD',
+          'equipment_method': 'job',
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+        },
+      ]);
       fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
         {
           ...CostItemTestDataMapFactory.createEquipmentItemData(
@@ -168,12 +180,14 @@ void main() {
           },
         },
       ]);
-      await pumpWidget(tester: tester, theme: theme);
-      await tester.tap(find.byKey(const Key('job_method_chip')));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('equipment_name_field')),
-        'Dumpster — 30 yd',
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400.0,
+          EquipmentPricingMethod.job,
+        ),
       );
       await tester.pumpAndSettle();
       await expectLater(

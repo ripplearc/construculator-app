@@ -4170,6 +4170,16 @@ void main() {
       expect(find.byKey(const Key('refused_default_notice')), findsNothing);
     });
 
+    testWidgets('is recorded as shown once it is drawn', (tester) async {
+      refuse();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await pickItemOnJob(tester);
+
+      expect(database.refusalRow(refusalId)?['shown_at'], isNotNull);
+    });
+
     testWidgets('goes when a new default is saved for the item', (
       tester,
     ) async {
