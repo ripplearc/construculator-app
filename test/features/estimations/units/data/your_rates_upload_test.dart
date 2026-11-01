@@ -103,7 +103,12 @@ void main() {
     });
 
     group('refused by the server', () {
-      final excavatorKey = YourRateRefusalKey.of('Excavator', 'day');
+      final excavatorKey = YourRateRefusalKey.of(
+        companyId: 'company-1',
+        category: 'equipment',
+        itemName: 'Excavator',
+        equipmentMethod: 'day',
+      );
 
       Future<FakeCrudTransaction> uploadRefusedAmountChange({
         required PostgresErrorCode code,
@@ -118,7 +123,14 @@ void main() {
         );
         if (acceptedOnServer != null) {
           server.addTableData('your_rates', [
-            {'id': saved.id, 'rate_amount': acceptedOnServer},
+            {
+              'id': saved.id,
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Excavator',
+              'equipment_method': 'day',
+              'rate_amount': acceptedOnServer,
+            },
           ]);
         }
         server.shouldThrowOnUpdate = true;
@@ -212,13 +224,27 @@ void main() {
       );
 
       test(
-        'keeps the accepted price of the refused row, not of another',
+        'keeps the accepted price of the same item, not of another item',
         () async {
           final saved = await dataSource.insertRate(newRate());
           await dataSource.updateRate(saved.id, newRate(rateAmount: 450));
           server.addTableData('your_rates', [
-            {'id': 'another-row', 'rate_amount': 111.0},
-            {'id': saved.id, 'rate_amount': 400.0},
+            {
+              'id': 'another-item',
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Dozer',
+              'equipment_method': 'day',
+              'rate_amount': 111.0,
+            },
+            {
+              'id': 'accepted-row',
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': ' EXCAVATOR ',
+              'equipment_method': 'day',
+              'rate_amount': 400.0,
+            },
           ]);
           server.shouldThrowOnUpdate = true;
           server.updateExceptionType = SupabaseExceptionType.postgrest;
@@ -238,9 +264,123 @@ void main() {
         },
       );
 
+      test(
+        'keeps the accepted price when a refused new row has an id the server never saw',
+        () async {
+          final saved = await dataSource.insertRate(newRate(rateAmount: 450));
+          server.addTableData('your_rates', [
+            {
+              'id': 'accepted-row',
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Excavator',
+              'equipment_method': 'day',
+              'rate_amount': 400.0,
+            },
+          ]);
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          final database = FakePhoneBackedPowerSyncDatabase(phone)
+            ..setNextTransaction(
+              FakeCrudTransaction([queuedPutFor(phone.insertedRows.single)]),
+            );
+
+          await connector.uploadData(database);
+
+          final refusal = phone.refusalRow(excavatorKey)!;
+          expect(refusal['refused_amount'], 450.0);
+          expect(refusal['accepted_amount'], 400.0);
+          expect(refusal['refused_row_id'], saved.id);
+        },
+      );
+
+      test(
+        'forgets the refusal when a newer save of the item is accepted',
+        () async {
+          final saved = await dataSource.insertRate(newRate());
+          await dataSource.updateRate(saved.id, newRate(rateAmount: 460));
+          server.shouldThrowOnUpdate = true;
+          server.updateExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(2, UpdateType.patch, 'your_rates', saved.id, null, {
+                  'rate_amount': 450.0,
+                }),
+              ]),
+            ),
+          );
+          expect(phone.refusalRow(excavatorKey), isNotNull);
+
+          server.shouldThrowOnUpdate = false;
+          server.addTableData('your_rates', [
+            {'id': saved.id, 'rate_amount': 400.0},
+          ]);
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(3, UpdateType.patch, 'your_rates', saved.id, null, {
+                  'rate_amount': 460.0,
+                }),
+              ]),
+            ),
+          );
+
+          expect(phone.refusalRow(excavatorKey), isNull);
+        },
+      );
+
+      test(
+        'keeps another item\'s refusal when an accepted save is uploaded',
+        () async {
+          phone.seedRefusal({
+            'id': YourRateRefusalKey.of(
+              companyId: 'company-1',
+              category: 'equipment',
+              itemName: 'Dozer',
+              equipmentMethod: 'day',
+            ),
+            'company_id': 'company-1',
+            'category': 'equipment',
+            'refused_row_id': 'dozer-row',
+            'item_name': 'Dozer',
+            'equipment_method': 'day',
+            'refused_amount': 300.0,
+            'accepted_amount': null,
+            'shown_at': null,
+          });
+          final saved = await dataSource.insertRate(newRate());
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([queuedPutFor(phone.insertedRows.single)]),
+            ),
+          );
+
+          expect(saved.id, isNotEmpty);
+          expect(phone.refusalRow(excavatorKey), isNull);
+          expect(
+            phone.refusalRow(
+              YourRateRefusalKey.of(
+                companyId: 'company-1',
+                category: 'equipment',
+                itemName: 'Dozer',
+                equipmentMethod: 'day',
+              ),
+            ),
+            isNotNull,
+          );
+        },
+      );
+
       test('forgets that the earlier refusal was shown', () async {
         phone.seedRefusal({
           'id': excavatorKey,
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'refused_row_id': 'older-row',
           'item_name': 'Excavator',
           'equipment_method': 'day',
           'refused_amount': 300.0,
