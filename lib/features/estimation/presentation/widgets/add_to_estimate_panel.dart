@@ -72,6 +72,7 @@ class AddToEstimatePanel extends StatelessWidget {
         ),
       ].join('\n'),
       // TODO: [CA-1379] the charge row is 6 dp taller than the storyboard until CoreUI drops its 24 dp minimum height
+      // https://ripplearc.youtrack.cloud/issue/CA-1379
       child: CoreEstimateSummaryCard(
         title: l10n.addsToEstimateLabel,
         lineTotal: money.format(lineTotal),
