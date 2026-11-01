@@ -257,6 +257,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
                               entry.equipmentMethod,
                             );
                             // TODO: [CA-1379] each row is 3 dp taller than the storyboard until CoreUI changes the CoreListRow padding
+                            // https://ripplearc.youtrack.cloud/issue/CA-1379
                             return CoreListRow(
                               key: Key('your_rate_row_${entry.id}'),
                               title: entry.itemName,
