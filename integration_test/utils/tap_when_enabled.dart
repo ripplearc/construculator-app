@@ -13,7 +13,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// description if the button never becomes enabled.
 Future<void> tapWhenEnabled(PatrolIntegrationTester $, Key key) async {
   final enabledButton = find.byWidgetPredicate(
-    (widget) => widget is CoreButton && widget.key == key && !widget.isDisabled,
+    (widget) =>
+        widget is CoreButton &&
+        widget.key == key &&
+        !widget.isDisabled &&
+        widget.onPressed != null,
     description: 'enabled CoreButton with key $key',
   );
   await $(enabledButton).tap();
