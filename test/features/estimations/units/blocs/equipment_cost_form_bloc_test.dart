@@ -1937,13 +1937,16 @@ void main() {
       }
 
       Stream<Object?> refusalOnPhone() => yourRates
-          .watchUnshownRefusal(
+          .watchRefusal(
             companyId: companyId,
             category: CostItemType.equipment,
             itemName: itemName,
             equipmentMethod: EquipmentPricingMethod.job,
           )
-          .map((result) => result.getRightOrNull());
+          .map((result) {
+            final refusal = result.getRightOrNull();
+            return refusal == null || refusal.wasShown ? null : refusal;
+          });
 
       setUp(() {
         Modular.get<CurrentCompanyResolver>().clearCache();
@@ -2147,6 +2150,27 @@ void main() {
         () async {
           refuse();
           await noticeAfterPicking();
+
+          await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+            companyId: companyId,
+            category: 'equipment',
+            itemName: itemName,
+            equipmentMethod: 'job',
+          );
+
+          final cleared = await bloc.stream.firstWhere(hasNoNotice);
+          expect(cleared, isA<EquipmentCostFormEditing>());
+        },
+      );
+
+      test(
+        'drops a notice that was seen once a new default is saved for the item',
+        () async {
+          refuse();
+          await noticeAfterPicking();
+          final recorded = expectLater(refusalOnPhone(), emitsThrough(isNull));
+          bloc.add(const EquipmentRefusalNoticeSeen());
+          await recorded;
 
           await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
             companyId: companyId,

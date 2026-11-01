@@ -174,7 +174,7 @@ class EquipmentCostFormBloc
     }
     final shownKey = _shownKeyOf(event.itemName, event.method);
     await emit.forEach<Either<Failure, RefusedYourRate?>>(
-      _yourRatesRepository.watchUnshownRefusal(
+      _yourRatesRepository.watchRefusal(
         companyId: companyId,
         category: CostItemType.equipment,
         itemName: event.itemName,
@@ -183,7 +183,13 @@ class EquipmentCostFormBloc
       onData: (result) {
         if (result.isLeft()) return state;
         final refusal = result.getRightOrNull();
-        if (refusal == null) return _stateWithNotice(_shownNotices[shownKey]);
+        if (refusal == null) {
+          _shownNotices.remove(shownKey);
+          return _stateWithNotice(null);
+        }
+        if (refusal.wasShown) {
+          return _stateWithNotice(_shownNotices[shownKey]);
+        }
         add(
           EquipmentRefusalNoticeLookedUp(
             companyId: companyId,
