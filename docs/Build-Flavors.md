@@ -73,16 +73,26 @@ Each flavor also has a `config/flavors/<flavor>.json` feature manifest (see
 CA-925). Resolve it before building, so `flutter build` gets the
 `--dart-define-from-file` it needs to set each `ENABLE_X` flag; skipping this
 step falls back to that flag's default, which can ship a feature (or leave
-one out) that the flavor's manifest says otherwise:
+one out) that the flavor's manifest says otherwise.
+
+The resolver reads the feature names from the `Feature` enum, so the enum is the
+only list. A manifest lists a feature in snake_case (`globalSearch` is
+`global_search`), and the key is `ENABLE_` plus the upper-case name
+(`ENABLE_GLOBAL_SEARCH`). It stops with a message when a manifest is missing, is
+not valid JSON, has no `features` list, lists a name twice or lists a name that is
+not in the enum; when an enum value has
+no `BuildFeatures` constant; or when the manifests do not nest: every feature in
+`prod` must be in `dogfood`, and every feature in `dogfood` must be in `fishfood`.
+The check runs on every resolve, whichever flavor is asked for.
 
 ```
-bash scripts/ci/resolve_build_features.sh fishfood
+fvm dart run scripts/ci/resolve_build_features.dart fishfood
 fvm flutter build apk --flavor fishfood --dart-define=ENVIRONMENT=dev  --dart-define-from-file=build/generated/flavors/fishfood.json
 
-bash scripts/ci/resolve_build_features.sh dogfood
+fvm dart run scripts/ci/resolve_build_features.dart dogfood
 fvm flutter build apk --flavor dogfood  --dart-define=ENVIRONMENT=qa   --dart-define-from-file=build/generated/flavors/dogfood.json
 
-bash scripts/ci/resolve_build_features.sh prod
+fvm dart run scripts/ci/resolve_build_features.dart prod
 fvm flutter build apk --flavor prod     --dart-define=ENVIRONMENT=prod --dart-define-from-file=build/generated/flavors/prod.json
 
 fvm flutter build ios --flavor fishfood --dart-define=ENVIRONMENT=dev

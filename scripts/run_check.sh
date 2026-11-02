@@ -96,7 +96,7 @@ pre_check() {
   bash scripts/ci/assert_flavor_environment_test.sh
 
   # Self-test the flavor feature manifest resolver
-  bash scripts/ci/resolve_build_features_test.sh
+  fvm flutter test test/tools/ci/units/resolve_build_features_test.dart
 
   # Self-test the Codemagic trigger script against a fake curl
   bash scripts/ci/trigger_codemagic_builds_test.sh
@@ -428,7 +428,7 @@ comprehensive_check() {
     # relies on lib/main.dart's default (devEnv), so we assert against that
     # default explicitly rather than leaving the pairing unenforced (CA-926).
     bash scripts/ci/assert_flavor_environment.sh fishfood dev
-    bash scripts/ci/resolve_build_features.sh fishfood
+    fvm dart run scripts/ci/resolve_build_features.dart fishfood
     fvm flutter build apk --debug --flavor fishfood --dart-define-from-file=build/generated/flavors/fishfood.json
 
     # Check for APK in flavor-specific location

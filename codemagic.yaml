@@ -243,7 +243,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/generate_env_file.sh
           bash scripts/ci/generate_env_file.sh
-          bash scripts/ci/resolve_build_features.sh fishfood
+          fvm dart run scripts/ci/resolve_build_features.dart fishfood
 
       - name: Build Android Debug
         script: |
@@ -411,7 +411,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/generate_env_file.sh
           bash scripts/ci/generate_env_file.sh
-          bash scripts/ci/resolve_build_features.sh fishfood
+          fvm dart run scripts/ci/resolve_build_features.dart fishfood
 
       - name: Build Android Debug
         script: |
@@ -542,7 +542,7 @@ workflows:
           sed -i 's/\r//' scripts/ci/generate_env_file.sh
           chmod +x scripts/ci/generate_env_file.sh
           bash -x scripts/ci/generate_env_file.sh
-          bash scripts/ci/resolve_build_features.sh dogfood
+          fvm dart run scripts/ci/resolve_build_features.dart dogfood
       - name: Build Android APK
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"

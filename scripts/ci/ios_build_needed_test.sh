@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/ios_build_needed.sh (CA-1240).
 #
-# Follows the repo's bash test convention (see resolve_build_features_test.sh):
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
 # no shell-test framework, non-zero exit if any case fails. curl is replaced by
 # a fake on PATH. The last cases run against the real repository: every
 # top-level path must be classified in ios_build_paths.conf, so a new top-level
