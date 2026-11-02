@@ -20,10 +20,7 @@ void main() {
     continueTaps = 0;
   });
 
-  Future<void> showSuccessSheet(
-    WidgetTester tester, {
-    AnimationStyle? slideIn,
-  }) async {
+  Future<void> pumpHost(WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: createTestTheme(),
@@ -35,6 +32,13 @@ void main() {
         ),
       ),
     );
+  }
+
+  Future<void> showSlidingSheet(
+    WidgetTester tester, {
+    required AnimationStyle slideIn,
+  }) async {
+    await pumpHost(tester);
     unawaited(
       showModalBottomSheet<void>(
         context: context,
@@ -52,10 +56,14 @@ void main() {
     );
   }
 
-  testWidgets('taps the button of a sheet that slides in normally', (
-    tester,
-  ) async {
-    await showSuccessSheet(tester);
+  testWidgets('taps the button of the real success modal', (tester) async {
+    await pumpHost(tester);
+    SuccessModal.show(
+      context,
+      message: 'Registered',
+      buttonLabel: 'Continue',
+      onPressed: () => continueTaps++,
+    );
 
     await tapSuccessSheetOrFailFast(tester);
 
@@ -66,7 +74,7 @@ void main() {
   testWidgets(
     'taps once a sheet that held off-screen before sliding in reaches the screen',
     (tester) async {
-      await showSuccessSheet(
+      await showSlidingSheet(
         tester,
         slideIn: AnimationStyle(
           duration: const Duration(seconds: 2),
@@ -139,4 +147,35 @@ void main() {
       ),
     );
   });
+
+  testWidgets(
+    'fails naming the button when it is in the tree but never hit-testable',
+    (tester) async {
+      await showSlidingSheet(
+        tester,
+        slideIn: const AnimationStyle(duration: Duration(minutes: 1)),
+      );
+
+      final failure = await failureOf(
+        tapSuccessSheetOrFailFast(
+          tester,
+          timeout: const Duration(milliseconds: 1),
+        ),
+      );
+
+      expect(
+        failure,
+        isA<TestFailure>().having(
+          (failure) => failure.message,
+          'message',
+          startsWith(
+            'Timed out after 0:00:00.001000: the success sheet button was in '
+            'the widget tree but never became hit-testable',
+          ),
+        ),
+      );
+      expect(continueTaps, 0);
+      await tester.pumpAndSettle();
+    },
+  );
 }
