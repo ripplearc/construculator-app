@@ -118,5 +118,33 @@ void main() {
         },
       );
     });
+
+    testWidgets('a11y: "Try again" on the failed-read message meets tap target '
+        'and label guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('your_rates_try_again_button')),
+      );
+    });
+
+    testWidgets('a11y: the failed-read message is a live region so a screen '
+        'reader reads it when it appears', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('Couldn’t open your saved prices.')),
+        isSemantics(isLiveRegion: true),
+      );
+      handle.dispose();
+    });
   });
 }
