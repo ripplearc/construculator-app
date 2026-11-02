@@ -13,18 +13,17 @@ void main() {
   const inch = Length.ticksPerInch;
   const sheet = StoredSize(
     store: SizeStore.sheet,
-    system: MeasurementSystem.imperial,
-    width: Length(48 * inch, unit: Unit.inch),
-    height: Length(96 * inch, unit: Unit.inch),
+    width: Length(50 * inch, unit: Unit.inch),
+    height: Length(100 * inch, unit: Unit.inch),
     position: 0,
   );
   const spacing = StoredSpacing(
-    spacing: Length(16 * inch, unit: Unit.inch),
-    position: 1,
+    spacing: Length(12 * inch, unit: Unit.inch),
+    position: 0,
   );
-  const concrete = StoredDensity(
-    name: 'concrete',
-    poundsPerCubicYard: 4050,
+  const slag = StoredDensity(
+    name: 'slag',
+    poundsPerCubicYard: 2900,
     position: 0,
   );
 
@@ -58,113 +57,202 @@ void main() {
   });
 
   group('FakeTradeStoresRepository', () {
-    test('seeds every store once and counts the calls', () async {
-      await repository.seedDefaults();
-      await repository.seedDefaults();
-      expect(repository.seedCalls, 2);
-      expect(
-        await repository
-            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
-            .first,
-        hasLength(3),
+    test(
+      'shows Appendix B from the start, as the real repository does',
+      () async {
+        expect(
+          await repository
+              .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+              .first,
+          TradeStoreSeeds.sizes(SizeStore.sheet, MeasurementSystem.imperial),
+        );
+        expect(
+          await repository
+              .watchSizes(SizeStore.sheet, MeasurementSystem.metric)
+              .first,
+          TradeStoreSeeds.sizes(SizeStore.sheet, MeasurementSystem.metric),
+        );
+        expect(
+          await repository
+              .watchSizes(SizeStore.masonry, MeasurementSystem.metric)
+              .first,
+          TradeStoreSeeds.sizes(SizeStore.masonry, MeasurementSystem.imperial),
+        );
+        expect(
+          await repository.watchSpacings().first,
+          TradeStoreSeeds.spacings,
+        );
+        expect(await repository.watchFence().first, TradeStoreSeeds.fence);
+        expect(await repository.watchWaste().first, TradeStoreSeeds.waste);
+        expect(
+          await repository.watchDensities().first,
+          TradeStoreSeeds.densities,
+        );
+      },
+    );
+
+    test('adds after the last, under both systems, with minted ids', () async {
+      final expectation = expectLater(
+        repository
+            .watchSizes(SizeStore.sheet, MeasurementSystem.metric)
+            .map((sizes) => sizes.length),
+        emitsInOrder([3, 4, 5]),
       );
-      expect(await repository.watchSpacings().first, hasLength(2));
-      expect(await repository.watchDensities().first, hasLength(3));
-      expect(await repository.watchFence().first, TradeStoreSeeds.fence);
-      expect(await repository.watchRates().first, hasLength(9));
+      final first = right(await repository.addSize(sheet));
+      final second = right(await repository.addSize(sheet));
+      expect(first.id, isNot(second.id));
+      expect([first.position, second.position], [3, 4]);
+      expect(
+        (await repository
+                .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+                .first)
+            .skip(3),
+        [first, second],
+      );
+      await expectation;
     });
 
     test(
-      'adds, updates and deletes with minted ids, watched in position order',
+      'a default is changed or deleted by its seed, a stored row by its id',
       () async {
-        final seen = <List<StoredSize>>[];
-        final subscription = repository
-            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
-            .listen(seen.add);
-        addTearDown(subscription.cancel);
-        final second = right(
-          await repository.addSize(sheet.copyWith(position: 1)),
+        final block = TradeStoreSeeds.sizes(
+          SizeStore.masonry,
+          MeasurementSystem.imperial,
+        ).first;
+        final changed = right(
+          await repository.updateSize(
+            block.copyWith(width: const Length(6 * inch, unit: Unit.inch)),
+          ),
         );
-        final first = right(await repository.addSize(sheet));
-        expect(first.id, isNot(second.id));
-        await pumpEventQueue();
-        expect(seen.last, [first, second]);
-        final wider = first.copyWith(
-          width: const Length(50 * inch, unit: Unit.inch),
+        expect(changed.id, isNotNull);
+        expect(changed.seed, block.seed);
+        expect(
+          (await repository
+                  .watchSizes(SizeStore.masonry, MeasurementSystem.imperial)
+                  .first)
+              .first,
+          changed,
         );
-        expect(await repository.updateSize(wider), isRight(wider));
+        expect(
+          await repository.updateSize(changed.copyWith(position: 5)),
+          isRight(changed.copyWith(position: 5)),
+        );
+        expect(await repository.deleteSize(changed), isRight(null));
+        expect(
+          await repository
+              .watchSizes(SizeStore.masonry, MeasurementSystem.imperial)
+              .first,
+          [
+            TradeStoreSeeds.sizes(
+              SizeStore.masonry,
+              MeasurementSystem.imperial,
+            ).last,
+          ],
+        );
         expect(await repository.updateSize(sheet), notFound);
-        expect(await repository.deleteSize(first.id!), isRight(null));
-        expect(await repository.deleteSize(first.id!), notFound);
+        expect(
+          await repository.deleteSize(sheet.copyWith(id: 'nope')),
+          notFound,
+        );
       },
     );
 
     test('spacings and densities round-trip', () async {
       final oc = right(await repository.addSpacing(spacing));
-      expect(await repository.watchSpacings().first, [oc]);
+      expect(oc.position, 2);
       expect(
         await repository.updateSpacing(oc.copyWith(position: 0)),
         isRight(oc.copyWith(position: 0)),
       );
-      expect(await repository.updateSpacing(spacing), notFound);
-      expect(await repository.deleteSpacing(oc.id!), isRight(null));
-      expect(await repository.deleteSpacing('x'), notFound);
-      final d = right(await repository.addDensity(concrete));
-      expect(await repository.watchDensities().first, [d]);
       expect(
-        await repository.updateDensity(d.copyWith(name: 'Concrete')),
-        isRight(d.copyWith(name: 'Concrete')),
+        await repository.deleteSpacing(TradeStoreSeeds.spacings.first),
+        isRight(null),
       );
-      expect(await repository.updateDensity(concrete), notFound);
-      expect(await repository.deleteDensity(d.id!), isRight(null));
-      expect(await repository.deleteDensity('x'), notFound);
+      expect((await repository.watchSpacings().first).map((s) => s.seed), [
+        null,
+        'spacing_24in',
+      ]);
+      expect(await repository.updateSpacing(spacing), notFound);
+      final d = right(await repository.addDensity(slag));
+      expect(d.position, 3);
+      final gravel = right(
+        await repository.updateDensity(
+          TradeStoreSeeds.densities[1].copyWith(poundsPerCubicYard: 3100),
+        ),
+      );
+      expect(gravel.id, isNotNull);
+      expect(await repository.deleteDensity(d), isRight(null));
+      expect(
+        (await repository.watchDensities().first).map(
+          (d) => d.poundsPerCubicYard,
+        ),
+        [4050, 3100, 2700],
+      );
+      expect(await repository.deleteDensity(slag), notFound);
     });
 
-    test('the fence and rates rewrite in place', () async {
+    test('the fence and a waste factor rewrite in place', () async {
       final fence = TradeStoreSeeds.fence.copyWith(railsPerSection: 2);
       expect(await repository.updateFence(fence), isRight(fence));
       expect(await repository.watchFence().first, fence);
-      const rate = StoredRate(unit: RateUnit.sheet, rate: 15);
-      expect(await repository.updateRate(rate), isRight(rate));
-      expect(
-        (await repository.watchRates().first).firstWhere(
-          (r) => r.unit == RateUnit.sheet,
-        ),
-        rate,
-      );
+      const waste = StoredWaste(unit: RateUnit.sheet, percent: 5);
+      expect(await repository.updateWaste(waste), isRight(waste));
+      final shown = await repository.watchWaste().first;
+      expect(shown.map((w) => w.unit), RateUnit.values);
+      expect(shown.where((w) => w.percent != 0), [waste]);
     });
 
-    test('a configured failure is answered and nothing changes', () async {
-      repository.writeFailure = const CalculatorFailure(
-        errorType: CalculatorErrorType.storageError,
-      );
-      expect(
-        await repository.addSize(sheet),
-        isLeft(CalculatorErrorType.storageError),
-      );
-      expect(repository.sizes, isEmpty);
-    });
+    test(
+      'a configured failure or a signed-out user is answered and nothing changes',
+      () async {
+        repository.writeFailure = const CalculatorFailure(
+          errorType: CalculatorErrorType.storageError,
+        );
+        expect(
+          await repository.addSize(sheet),
+          isLeft(CalculatorErrorType.storageError),
+        );
+        repository.writeFailure = null;
+        repository.signedIn = false;
+        expect(
+          await repository.addDensity(slag),
+          isLeft(CalculatorErrorType.notSignedIn),
+        );
+        expect(repository.sizes, hasLength(10));
+        expect(repository.densities, hasLength(3));
+      },
+    );
 
-    test('reset empties every store and clears the failure', () async {
-      await repository.seedDefaults();
-      repository.writeFailure = const CalculatorFailure(
-        errorType: CalculatorErrorType.storageError,
-      );
-      repository.reset();
-      expect(repository.sizes, isEmpty);
-      expect(repository.spacings, isEmpty);
-      expect(repository.densities, isEmpty);
-      expect(repository.writeFailure, isNull);
-      expect(repository.seedCalls, 0);
-      expect(repository.rates, hasLength(9));
-    });
+    test(
+      'reset puts every store back to Appendix B and clears the failure',
+      () async {
+        await repository.addSize(sheet);
+        await repository.updateFence(
+          TradeStoreSeeds.fence.copyWith(railsPerSection: 1),
+        );
+        await repository.updateWaste(
+          const StoredWaste(unit: RateUnit.sheet, percent: 5),
+        );
+        repository.writeFailure = const CalculatorFailure(
+          errorType: CalculatorErrorType.storageError,
+        );
+        repository.signedIn = false;
+        repository.reset();
+        expect(repository.sizes, hasLength(10));
+        expect(repository.fence, TradeStoreSeeds.fence);
+        expect(repository.waste, TradeStoreSeeds.waste);
+        expect(repository.writeFailure, isNull);
+        expect(repository.signedIn, isTrue);
+      },
+    );
 
     test('dispose ends its streams', () async {
-      var done = false;
-      repository.watchSpacings().listen((_) {}, onDone: () => done = true);
+      final ended = expectLater(
+        repository.watchSpacings(),
+        emitsInOrder([hasLength(2), emitsDone]),
+      );
       repository.dispose();
-      await pumpEventQueue();
-      expect(done, isTrue);
+      await ended;
     });
   });
 }

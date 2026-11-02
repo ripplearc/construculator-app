@@ -8,11 +8,13 @@ import 'package:construculator/features/calculator/domain/repositories/trade_sto
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:powersync/powersync.dart';
 
-/// The calculator feature: its page and the settings repository it reads,
-/// which follows the signed-in profile through the auth library.
+/// The calculator feature: its page, the settings repository it reads,
+/// which follows the signed-in profile through the auth library, and the
+/// trade stores repository over the synced `user_calculator_stores` rows.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
   /// [AuthLibraryModule] so the repository sees the same auth state as the
@@ -26,6 +28,7 @@ class CalculatorModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     PowerSyncModule(appBootstrap),
+    ClockModule(),
   ];
 
   @override
@@ -44,7 +47,11 @@ class CalculatorModule extends Module {
       config: BindConfig(onDispose: (source) => source.dispose()),
     );
     i.addLazySingleton<TradeStoresRepository>(
-      () => TradeStoresRepositoryImpl(dataSource: i()),
+      () => TradeStoresRepositoryImpl(
+        dataSource: i(),
+        supabaseWrapper: appBootstrap.supabaseWrapper,
+        clock: i(),
+      ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
   }
