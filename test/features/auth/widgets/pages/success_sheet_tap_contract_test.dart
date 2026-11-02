@@ -141,9 +141,8 @@ void main() {
       isA<TestFailure>().having(
         (failure) => failure.message,
         'message',
-        startsWith(
-          'Timed out after 0:00:00.001000 waiting for the success sheet.',
-        ),
+        'Timed out after 0:00:00.001000 waiting for the success sheet. No toast '
+            'appeared either, so the app genuinely never responded.',
       ),
     );
   });
@@ -168,10 +167,9 @@ void main() {
         isA<TestFailure>().having(
           (failure) => failure.message,
           'message',
-          startsWith(
-            'Timed out after 0:00:00.001000: the success sheet button was in '
-            'the widget tree but never became hit-testable',
-          ),
+          'Timed out after 0:00:00.001000: the success sheet button was in the '
+              'widget tree but never became hit-testable, so no tap could land '
+              'on it.',
         ),
       );
       expect(continueTaps, 0);
