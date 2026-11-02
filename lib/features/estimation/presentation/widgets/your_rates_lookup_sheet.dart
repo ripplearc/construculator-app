@@ -217,7 +217,13 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
       );
     }
     if (state is YourRatesError) {
-      return _LoadErrorRow(onTryAgain: () => _search(_searchController.text));
+      return CoreInlineErrorRow(
+        key: const Key('your_rates_load_error'),
+        message: l10n.yourRatesLoadError,
+        actionLabel: l10n.yourRatesTryAgain,
+        actionKey: const Key('your_rates_try_again_button'),
+        onAction: () => _search(_searchController.text),
+      );
     }
     if (entries.isEmpty) {
       final query = _searchController.text;
@@ -270,46 +276,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
           onTap: () => _onRowTap(entry),
         );
       },
-    );
-  }
-}
-
-// TODO: [CA-1316] replace with the CoreUI inline error row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1316
-class _LoadErrorRow extends StatelessWidget {
-  final VoidCallback onTryAgain;
-
-  const _LoadErrorRow({required this.onTryAgain});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return Row(
-      key: const Key('your_rates_load_error'),
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        CoreIconWidget(
-          icon: CoreIcons.error,
-          size: 16,
-          color: colorTheme.iconRed,
-        ),
-        const SizedBox(width: CoreSpacing.space1),
-        Expanded(
-          child: Text(
-            l10n.yourRatesLoadError,
-            style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textError,
-            ),
-          ),
-        ),
-        _TextActionButton(
-          key: const Key('your_rates_try_again_button'),
-          label: l10n.yourRatesTryAgain,
-          textStyle: textTheme.bodyMediumSemiBold,
-          onTap: onTryAgain,
-        ),
-      ],
     );
   }
 }
