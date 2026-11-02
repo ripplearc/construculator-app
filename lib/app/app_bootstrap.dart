@@ -56,32 +56,34 @@ import 'package:powersync/powersync.dart';
 /// final config = AppConfigImpl(envLoader: envLoader);
 /// await config.initialize(env);
 ///
-/// final supabaseWrapper = SupabaseWrapperImpl(
-///   envLoader: envLoader,
-///   secureStorage: SecureStorageWrapperImpl(),
-/// );
-/// await supabaseWrapper.initialize();
-///
 /// final sentryWrapper = SentryWrapperImpl(
 ///   envLoader: envLoader,
 ///   config: config,
 ///   sentrySdk: SentrySdkImpl(),
 /// );
 ///
-/// final bootstrap = AppBootstrap(
-///   config: config,
-///   envLoader: envLoader,
-///   supabaseWrapper: supabaseWrapper,
-///   sentryWrapper: sentryWrapper,
-/// );
+/// // Start Sentry first so a failure while the other services start is reported
+/// await sentryWrapper.initialize(() async {
+///   final supabaseWrapper = SupabaseWrapperImpl(
+///     envLoader: envLoader,
+///     secureStorage: SecureStorageWrapperImpl(),
+///   );
+///   await supabaseWrapper.initialize();
 ///
-/// // Initialize Sentry SDK and wrap app execution for error tracking
-/// await sentryWrapper.initialize(() => runApp(
-///   ModularApp(
-///     module: AppModule(bootstrap),
-///     child: const AppWidget(),
-///   ),
-/// ));
+///   final bootstrap = AppBootstrap(
+///     config: config,
+///     envLoader: envLoader,
+///     supabaseWrapper: supabaseWrapper,
+///     sentryWrapper: sentryWrapper,
+///   );
+///
+///   runApp(
+///     ModularApp(
+///       module: AppModule(bootstrap),
+///       child: const AppWidget(),
+///     ),
+///   );
+/// });
 /// ```
 ///
 /// ---

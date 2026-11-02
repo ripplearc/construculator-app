@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/sentry/interfaces/sentry_sdk.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -55,13 +57,13 @@ class FakeSentrySdk implements SentrySdk {
   @override
   Future<void> init(
     FlutterOptionsConfiguration optionsConfiguration, {
-    required void Function() appRunner,
+    required FutureOr<void> Function() appRunner,
   }) async {
     initCallCount++;
     final options = SentryFlutterOptions();
     await optionsConfiguration(options);
     lastConfiguredOptions = options;
-    appRunner();
+    await appRunner();
   }
 
   @override

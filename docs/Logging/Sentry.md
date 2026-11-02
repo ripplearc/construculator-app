@@ -92,37 +92,41 @@ This approach keeps sensitive variables organized by environment and generates e
 
 ### 3.2 Initialize Sentry in main.dart
 
-Wrap app initialization with `SentryFlutter.init()`:
+Start Sentry first and run the rest of app initialization inside `appRunner`, so a failure while Supabase or another service starts reaches Sentry through the SDK's global error handlers. The snippet below is trimmed from `lib/main.dart`; the Sentry options live in `SentryWrapperImpl.initialize`.
 
 ```dart
-import 'package:sentry_flutter/sentry_flutter.dart';
-
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  SentryWidgetsFlutterBinding.ensureInitialized();
 
-  final appBootstrap = await _initializeApp();
-
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = appBootstrap.envLoader.get('SENTRY_DSN') ?? '';
-      options.environment = appBootstrap.config.getEnvironmentName(
-        appBootstrap.config.environment,
-      );
-
-      // Performance monitoring - disabled for now
-      options.tracesSampleRate = 0.0;
-
-      // Other settings
-      options.attachScreenshot = false;  // Privacy
-      options.enableAutoSessionTracking = true;
-      options.captureFailedRequests = true;
-    },
-    appRunner: () => runApp(
-      ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
-    ),
+  const envName = String.fromEnvironment('ENVIRONMENT', defaultValue: devEnv);
+  final envLoader = EnvLoaderImpl();
+  final config = AppConfigImpl(envLoader: envLoader);
+  await config.initialize(_getEnvironmentFromString(envName));
+  final sentryWrapper = SentryWrapperImpl(
+    envLoader: envLoader,
+    config: config,
+    sentrySdk: SentrySdkImpl(),
   );
+
+  AppLogger.setSentryWrapper(sentryWrapper);
+  AppLogger.setConfig(config);
+
+  await sentryWrapper.initialize(() async {
+    final appBootstrap = await _initializeApp(
+      envLoader: envLoader,
+      config: config,
+      sentryWrapper: sentryWrapper,
+    );
+    runApp(
+      ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
+    );
+  });
 }
 ```
+
+Limits of this order:
+- `config.initialize` runs before Sentry, because the DSN comes from the config. A failure there is not reported.
+- Sentry only starts when `SENTRY_DSN` is set. With an empty DSN, `SentryWrapperImpl.initialize` just runs the app runner and nothing is reported.
 
 ---
 

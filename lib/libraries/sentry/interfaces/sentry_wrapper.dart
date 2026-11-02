@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Enum for Sentry event levels
 /// This provides type-safe log levels and prevents invalid states
 enum SentryEventLevel {
@@ -28,8 +30,10 @@ abstract class SentryWrapper {
   /// If SENTRY_DSN is not set or empty, the app will run without Sentry
   /// initialization to prevent silent no-op scenarios.
   ///
-  /// [appRunner] The function that runs the Flutter app
-  Future<void> initialize(void Function() appRunner);
+  /// [appRunner] The function that runs the Flutter app. It may be async and
+  /// is awaited, so anything it does before `runApp`, such as starting other
+  /// services, reports its failures to Sentry.
+  Future<void> initialize(FutureOr<void> Function() appRunner);
 
   /// Add a breadcrumb to track user actions leading up to an error
   ///
