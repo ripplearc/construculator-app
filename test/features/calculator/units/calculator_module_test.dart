@@ -12,6 +12,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../helpers/fake_trade_stores_database.dart';
 
 void main() {
   group('CalculatorModule', () {
@@ -26,6 +27,8 @@ void main() {
     });
 
     group('bindings', () {
+      late FakeTradeStoresDatabase database;
+
       setUp(() {
         final clock = FakeClockImpl();
         final authNotifier = FakeAuthNotifier();
@@ -35,12 +38,25 @@ void main() {
           wrapper: FakeSupabaseWrapper(clock: clock),
           clock: clock,
         );
-        Modular.init(CalculatorModule(FakeAppBootstrapFactory.create()));
+        database = FakeTradeStoresDatabase();
+        final supabaseWrapper = FakeSupabaseWrapper(clock: clock)
+          ..setInternalUserId('user-1');
+        Modular.init(
+          CalculatorModule(
+            FakeAppBootstrapFactory.create(
+              supabaseWrapper: supabaseWrapper,
+              powerSyncDatabase: database,
+            ),
+          ),
+        );
         Modular.replaceInstance<AuthNotifier>(authNotifier);
         Modular.replaceInstance<AuthManager>(authManager);
       });
 
-      tearDown(Modular.destroy);
+      tearDown(() async {
+        Modular.destroy();
+        await database.closeChanges();
+      });
 
       test('binds one preferences repository over the auth library', () {
         final repository = Modular.get<CalculatorPreferencesRepository>();
@@ -53,6 +69,19 @@ void main() {
       test('binds one trade stores repository over PowerSync', () {
         final repository = Modular.get<TradeStoresRepository>();
         expect(repository, same(Modular.get<TradeStoresRepository>()));
+      });
+
+      test('disposes the trade stores with the module', () async {
+        final spacings = Modular.get<TradeStoresRepository>().watchSpacings();
+        final ended = expectLater(
+          spacings,
+          emitsInOrder([hasLength(2), emitsDone]),
+        );
+        await expectLater(spacings, emits(hasLength(2)));
+
+        Modular.destroy();
+
+        await ended;
       });
 
       test('disposes the repository with the module', () async {
