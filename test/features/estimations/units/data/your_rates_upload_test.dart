@@ -356,6 +356,165 @@ void main() {
       );
 
       test(
+        'forgets the refusal of two saved puts when the second is accepted',
+        () async {
+          await dataSource.insertRate(newRate(rateAmount: 450));
+          await dataSource.insertRate(newRate(rateAmount: 460));
+          final rows = phone.insertedRows.toList();
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(
+              phone,
+            )..setNextTransaction(FakeCrudTransaction([queuedPutFor(rows[0])])),
+          );
+          expect(phone.refusalRow(excavatorKey), isNotNull);
+
+          server.shouldThrowOnUpsert = false;
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(
+              phone,
+            )..setNextTransaction(FakeCrudTransaction([queuedPutFor(rows[1])])),
+          );
+
+          expect(phone.refusalRow(excavatorKey), isNull);
+        },
+      );
+
+      void seedRefusalOfExcavator() => phone.seedRefusal({
+        'id': excavatorKey,
+        'company_id': 'company-1',
+        'category': 'equipment',
+        'refused_row_id': 'older-row',
+        'item_name': 'Excavator',
+        'equipment_method': 'day',
+        'refused_amount': 450.0,
+        'accepted_amount': 400.0,
+        'shown_at': null,
+      });
+
+      Map<String, Object?> serverRow({
+        String id = 'server-row',
+        String method = 'day',
+        String? label,
+        double amount = 400.0,
+      }) => {
+        'id': id,
+        'company_id': 'company-1',
+        'category': 'equipment',
+        'item_name': 'Excavator',
+        'equipment_method': method,
+        'entry_label': label,
+        'rate_amount': amount,
+      };
+
+      test(
+        'forgets the refusal when the upload overwrote the same item saved by another phone',
+        () async {
+          seedRefusalOfExcavator();
+          await dataSource.insertRate(newRate(rateAmount: 460));
+          server.addTableData('your_rates', [serverRow()]);
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([queuedPutFor(phone.insertedRows.single)]),
+            ),
+          );
+
+          expect(server.getMethodCallsFor('update'), hasLength(1));
+          expect(phone.refusalRow(excavatorKey), isNull);
+        },
+      );
+
+      test(
+        'keeps the refusal when the accepted change is on another table',
+        () async {
+          seedRefusalOfExcavator();
+          final saved = await dataSource.insertRate(newRate());
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(2, UpdateType.put, 'cost_items', saved.id, null, {
+                  'rate_amount': 500.0,
+                }),
+              ]),
+            ),
+          );
+
+          expect(phone.refusalRow(excavatorKey), isNotNull);
+        },
+      );
+
+      test(
+        'keeps the refusal when the accepted change carries no price',
+        () async {
+          seedRefusalOfExcavator();
+          final saved = await dataSource.insertRate(newRate());
+          server.addTableData('your_rates', [serverRow(id: saved.id)]);
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(2, UpdateType.patch, 'your_rates', saved.id, null, {
+                  'entry_label': '35 ton',
+                }),
+              ]),
+            ),
+          );
+
+          expect(phone.refusalRow(excavatorKey), isNotNull);
+        },
+      );
+
+      test(
+        'takes the accepted price only from a row of the same method',
+        () async {
+          final saved = await dataSource.insertRate(newRate(rateAmount: 450));
+          server.addTableData('your_rates', [
+            serverRow(method: 'job', amount: 111),
+          ]);
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([queuedPutFor(phone.insertedRows.single)]),
+            ),
+          );
+
+          expect(saved.id, isNotEmpty);
+          expect(phone.refusalRow(excavatorKey)!['accepted_amount'], isNull);
+        },
+      );
+
+      test(
+        'takes the accepted price only from a row of the same label',
+        () async {
+          await dataSource.insertRate(newRate(rateAmount: 450));
+          server.addTableData('your_rates', [
+            serverRow(label: 'Weekend', amount: 222),
+          ]);
+          server.shouldThrowOnUpsert = true;
+          server.upsertExceptionType = SupabaseExceptionType.postgrest;
+          server.postgrestErrorCode = PostgresErrorCode.checkViolation;
+
+          await connector.uploadData(
+            FakePhoneBackedPowerSyncDatabase(phone)..setNextTransaction(
+              FakeCrudTransaction([queuedPutFor(phone.insertedRows.single)]),
+            ),
+          );
+
+          expect(phone.refusalRow(excavatorKey)!['accepted_amount'], isNull);
+        },
+      );
+
+      test(
         'keeps another item\'s refusal when an accepted save is uploaded',
         () async {
           phone.seedRefusal({

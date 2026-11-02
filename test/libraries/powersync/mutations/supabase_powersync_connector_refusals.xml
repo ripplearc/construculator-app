@@ -20,44 +20,73 @@
             <mutation text="if (item != null) return;"/>
         </regex>
 
-        <regex pattern="\[operation\.id\]," id="connector.refusal.wrong_row_id">
-            <mutation text="[''],"/>
+        <regex pattern="operation\.id,\s*item\[DatabaseConstants\.itemNameColumn\]," id="connector.refusal.wrong_row_id">
+            <mutation text="'', item[DatabaseConstants.itemNameColumn],"/>
         </regex>
 
-        <regex pattern="YourRateRefusalKey\.of\(itemName, method\)," id="connector.refusal.wrong_key_method">
-            <mutation text="YourRateRefusalKey.of(itemName, null),"/>
+        <regex pattern="_refusalKeyOf\(item\)," id="connector.refusal.wrong_key">
+            <mutation text="'',"/>
         </regex>
 
-        <regex pattern="method,\s*refusedAmount," id="connector.refusal.wrong_refused_amount">
-            <mutation text="method, 0.0,"/>
+        <regex pattern="refusedAmount," id="connector.refusal.wrong_refused_amount">
+            <mutation text="0.0,"/>
         </regex>
 
-        <regex pattern="await _lastAcceptedAmountOrNull\(operation\)," id="connector.refusal.drop_accepted">
+        <regex pattern="await _lastAcceptedAmountOrNull\(operation, item\)," id="connector.refusal.drop_accepted">
             <mutation text="null,"/>
         </regex>
 
-        <regex pattern="\(rows\.firstOrNull\?\[DatabaseConstants\.rateAmountColumn\] as num\?\)\s*\?\.toDouble\(\);" id="connector.refusal.drop_accepted_value">
-            <mutation text="null;"/>
+        <regex pattern="return \(accepted\?\[DatabaseConstants\.rateAmountColumn\] as num\?\)\s*\?\.toDouble\(\);" id="connector.refusal.drop_accepted_value">
+            <mutation text="return null;"/>
         </regex>
 
-        <regex pattern="filters: \{DatabaseConstants\.idColumn: operation\.id\}," id="connector.refusal.wrong_accepted_filter">
-            <mutation text="filters: {},"/>
+        <regex pattern="\.where\(\(row\) =&gt; _hasSameRateKey\(row, item\)\)" id="connector.refusal.any_row_is_accepted">
+            <mutation text=".where((row) =&gt; true)"/>
         </regex>
 
-        <regex pattern="table: operation\.table,\s*filters: \{DatabaseConstants\.idColumn: operation\.id\},\s*\);\s*return" id="connector.refusal.wrong_accepted_table">
-            <mutation text="table: DatabaseConstants.costItemsTable, filters: {DatabaseConstants.idColumn: operation.id}, ); return"/>
+        <regex pattern="DatabaseConstants\.companyIdColumn:\s*item\[DatabaseConstants\.companyIdColumn\]," id="connector.refusal.wrong_accepted_company">
+            <mutation text="DatabaseConstants.companyIdColumn: '',"/>
         </regex>
 
-        <regex pattern="\|\|\s*code == PostgresErrorCode\.rlsViolation;" id="connector.refusal.rls_not_refusal">
-            <mutation text=";"/>
+        <regex pattern="DatabaseConstants\.categoryColumn:\s*item\[DatabaseConstants\.categoryColumn\]," id="connector.refusal.wrong_accepted_category">
+            <mutation text="DatabaseConstants.categoryColumn: '',"/>
+        </regex>
+
+        <regex pattern="code == PostgresErrorCode\.rlsViolation \|\|" id="connector.refusal.rls_not_refusal">
+            <mutation text="false ||"/>
         </regex>
 
         <regex pattern="await _recordRefusalWithoutBlocking\(database, operation\);" id="connector.refusal.never_record">
             <mutation text="// not recorded"/>
         </regex>
 
-        <regex pattern="operation\.opData\?\[DatabaseConstants\.rateAmountColumn\] as num\?\)\s*\?\.toDouble\(\)" id="connector.refusal.no_amount_read">
+        <regex pattern="await _forgetRefusalWithoutBlocking\(database, operation\);" id="connector.refusal.never_forget">
+            <mutation text="// not forgotten"/>
+        </regex>
+
+        <regex pattern="if \(operation\.table != DatabaseConstants\.yourRatesTable\) return;" id="connector.refusal.forget_on_other_table">
+            <mutation text=""/>
+        </regex>
+
+
+        <regex pattern="if \(_refusedRateAmount\(operation\) == null\) return;" id="connector.refusal.forget_without_price">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="operation\.opData\?\[DatabaseConstants\.rateAmountColumn\]" id="connector.refusal.no_amount_read">
             <mutation text="null"/>
+        </regex>
+
+        <regex pattern="saved\[DatabaseConstants\.equipmentMethodColumn\] ==\s*rate\[DatabaseConstants\.equipmentMethodColumn\] &amp;&amp;" id="connector.refusal.same_key_ignores_method">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <regex pattern="_rateKey\(saved\[DatabaseConstants\.entryLabelColumn\]\) ==\s*_rateKey\(rate\[DatabaseConstants\.entryLabelColumn\]\);" id="connector.refusal.same_key_ignores_label">
+            <mutation text="true;"/>
+        </regex>
+
+        <regex pattern="return _rateKey\(saved\[DatabaseConstants\.itemNameColumn\]\) ==\s*_rateKey\(rate\[DatabaseConstants\.itemNameColumn\]\) &amp;&amp;" id="connector.refusal.same_key_ignores_name">
+            <mutation text="return true &amp;&amp;"/>
         </regex>
     </rules>
 

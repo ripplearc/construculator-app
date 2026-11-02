@@ -156,7 +156,6 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     CrudEntry operation,
   ) async {
     if (operation.table != DatabaseConstants.yourRatesTable) return;
-    if (operation.op == UpdateType.delete) return;
     if (_refusedRateAmount(operation) == null) return;
     final item = await _phoneRateOf(database, operation);
     if (item == null) return;
