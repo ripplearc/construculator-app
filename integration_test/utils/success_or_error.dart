@@ -31,12 +31,11 @@ Future<void> tapSuccessSheetOrFailFast(
   Duration timeout = const Duration(seconds: 60),
 }) async {
   final deadline = DateTime.now().add(timeout);
-  final buttonFinder = find
-      .descendant(
-        of: find.byType(BottomSheet),
-        matching: find.byType(CoreButton),
-      )
-      .hitTestable();
+  final sheetButtonFinder = find.descendant(
+    of: find.byType(BottomSheet),
+    matching: find.byType(CoreButton),
+  );
+  final buttonFinder = sheetButtonFinder.hitTestable();
   final toastFinder = find.byType(Toast);
 
   while (DateTime.now().isBefore(deadline)) {
@@ -58,6 +57,12 @@ Future<void> tapSuccessSheetOrFailFast(
     }
   }
 
+  if (sheetButtonFinder.evaluate().isNotEmpty) {
+    fail(
+      'Timed out after $timeout: the success sheet button was in the widget '
+      'tree but never became hit-testable, so no tap could land on it.',
+    );
+  }
   fail(
     'Timed out after $timeout waiting for the success sheet. No toast '
     'appeared either, so the app genuinely never responded.',
