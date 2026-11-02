@@ -2163,9 +2163,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Needs a valid amount before it can total';
 
   @override
-  String get addsToEstimateNoTotalText => '—';
-
-  @override
   String addsToEstimateTotalSemantics(
     String estimateName,
     String before,
