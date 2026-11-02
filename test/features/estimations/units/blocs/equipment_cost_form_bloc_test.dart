@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
@@ -2338,13 +2340,94 @@ void main() {
         expect(database.openRefusalWatchCount, 0);
       });
 
+      // A report from the watch reaches the bloc as an event a moment after
+      // the change that caused it. Two events in a row, each answered by a
+      // state, are processed after every report that was on its way.
+      Future<EquipmentCostFormState> stateAfterQueuedEvents() async {
+        bloc.add(const EquipmentRateUpdatedEvent('777'));
+        await bloc.stream.firstWhere((s) => s.formData.jobAmount == 777);
+        bloc.add(const EquipmentRateUpdatedEvent('888'));
+        return bloc.stream.firstWhere((s) => s.formData.jobAmount == 888);
+      }
+
       test('keeps the notice when a read of the refusal fails', () async {
         refuse();
         await noticeAfterPicking();
 
         database.failRefusalWatches(StateError('disk full'));
+        final after = await stateAfterQueuedEvents();
 
-        expect(bloc.state, noticeIs());
+        expect(after.formData.refusedDefault, isNotNull);
+      });
+
+      test('ignores a report for an item that is no longer watched', () async {
+        bloc.add(const EquipmentCostItemTypeChanged('Dozer'));
+        bloc.add(const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job));
+        await bloc.stream.firstWhere(
+          (s) => s.formData.method == EquipmentPricingMethod.job,
+        );
+        bloc.add(
+          const EquipmentRefusalReported(
+            companyId: companyId,
+            itemName: itemName,
+            method: EquipmentPricingMethod.job,
+            result: Right(
+              RefusedYourRate(
+                itemName: itemName,
+                equipmentMethod: EquipmentPricingMethod.job,
+                refusedAmount: 450.0,
+                acceptedAmount: 400.0,
+                wasShown: false,
+              ),
+            ),
+          ),
+        );
+
+        final after = await stateAfterQueuedEvents();
+
+        expect(after.formData.refusedDefault, isNull);
+      });
+
+      test('shows nothing for a refusal that was shown elsewhere after the earlier one was forgotten', () async {
+        refuse();
+        await noticeAfterPicking();
+        final recorded = expectLater(refusalOnPhone(), emitsThrough(isNull));
+        bloc.add(const EquipmentRefusalNoticeSeen());
+        await recorded;
+        await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+          companyId: companyId,
+          category: 'equipment',
+          itemName: itemName,
+          equipmentMethod: 'job',
+        );
+        await bloc.stream.firstWhere(hasNoNotice);
+
+        refuse(shownAt: '2026-11-02T09:00:00.000Z');
+        final after = await stateAfterQueuedEvents();
+
+        expect(after.formData.refusedDefault, isNull);
+      });
+
+      test('does not bring a notice back when the lookup answers after the refusal was forgotten', () async {
+        refuse();
+        keepOnLine();
+        await Modular.get<CurrentCompanyResolver>().resolve();
+        fakeSupabaseWrapper
+          ..shouldDelayOperations = true
+          ..completer = Completer<void>();
+        await noticeAfterPicking();
+        await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+          companyId: companyId,
+          category: 'equipment',
+          itemName: itemName,
+          equipmentMethod: 'job',
+        );
+        await bloc.stream.firstWhere(hasNoNotice);
+
+        fakeSupabaseWrapper.completer!.complete();
+        final after = await stateAfterQueuedEvents();
+
+        expect(after.formData.refusedDefault, isNull);
       });
 
       test(
