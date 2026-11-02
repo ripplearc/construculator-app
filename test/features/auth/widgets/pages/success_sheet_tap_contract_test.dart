@@ -64,7 +64,7 @@ void main() {
   });
 
   testWidgets(
-    'does not tap while the sheet is still off-screen and holding still',
+    'taps once a sheet that held off-screen before sliding in reaches the screen',
     (tester) async {
       await showSuccessSheet(
         tester,
@@ -80,4 +80,63 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  Future<Object?> failureOf(Future<void> action) async {
+    try {
+      await action;
+    } on TestFailure catch (failure) {
+      return failure;
+    }
+    return null;
+  }
+
+  testWidgets('fails with the toast message when a toast appears instead', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: createTestTheme(),
+        home: Scaffold(
+          body: Toast.error(description: 'Invalid code', closeLabel: 'Close'),
+        ),
+      ),
+    );
+
+    final failure = await failureOf(tapSuccessSheetOrFailFast(tester));
+
+    expect(
+      failure,
+      isA<TestFailure>().having(
+        (failure) => failure.message,
+        'message',
+        'Expected the success sheet but got a toast: Invalid code / Close',
+      ),
+    );
+  });
+
+  testWidgets('fails as a timeout when neither a sheet nor a toast appears', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(theme: createTestTheme(), home: const SizedBox()),
+    );
+
+    final failure = await failureOf(
+      tapSuccessSheetOrFailFast(
+        tester,
+        timeout: const Duration(milliseconds: 1),
+      ),
+    );
+
+    expect(
+      failure,
+      isA<TestFailure>().having(
+        (failure) => failure.message,
+        'message',
+        startsWith(
+          'Timed out after 0:00:00.001000 waiting for the success sheet.',
+        ),
+      ),
+    );
+  });
 }
