@@ -114,6 +114,10 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       _popForTypedName(name, state.results);
       return;
     }
+    if (state is YourRatesError) {
+      _popForTypedName(name, const []);
+      return;
+    }
     _createPendingFor = name;
     bloc.add(
       YourRatesRecentsQueried(name, CostItemType.equipment, immediate: true),
@@ -128,14 +132,16 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
       _popForTypedName(pendingName, state.results);
     } else if (state is YourRatesError) {
       _createPendingFor = null;
+      _popForTypedName(pendingName, const []);
     }
   }
 
+  static String _nameKey(String text) =>
+      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+
   void _popForTypedName(String name, List<YourRateEntry> savedRows) {
     final saved = savedRows
-        .where(
-          (entry) => entry.itemName.trim().toLowerCase() == name.toLowerCase(),
-        )
+        .where((entry) => _nameKey(entry.itemName) == _nameKey(name))
         .firstOrNull;
     Navigator.of(context).pop(
       saved != null

@@ -354,6 +354,10 @@ void main() {
   group('YourRatesRecentsSheet – saved prices cannot be read', () {
     const errorKey = Key('your_rates_recents_load_error');
     const tryAgainKey = Key('your_rates_recents_try_again_button');
+    final searchField = find.descendant(
+      of: find.byKey(const Key('your_rates_search_field')),
+      matching: find.byType(EditableText),
+    );
 
     Future<void> openFailedSheet(WidgetTester tester) async {
       database.getAllError = StateError('database locked');
@@ -414,6 +418,53 @@ void main() {
 
       expect(find.byKey(errorKey), findsNothing);
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
+    });
+
+    testWidgets('Create with a typed name opens the form with that name and an '
+        'empty rate', (tester) async {
+      await openFailedSheet(tester);
+      await tester.enterText(searchField, 'stump grinder');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(
+        (result! as YourRatesRecentsNewEquipmentCost).name,
+        'stump grinder',
+      );
+    });
+
+    testWidgets('Create tapped while the search read is failing opens the form '
+        'with that name', (tester) async {
+      await openSheet(tester);
+      database.getAllError = StateError('database locked');
+
+      await tester.enterText(searchField, 'stump grinder');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(
+        (result! as YourRatesRecentsNewEquipmentCost).name,
+        'stump grinder',
+      );
+    });
+
+    testWidgets('Create with a typed name starts no new read when the saved '
+        'prices already failed', (tester) async {
+      await openFailedSheet(tester);
+      await tester.enterText(searchField, 'stump grinder');
+      await tester.pump();
+      final readsBefore = yourRatesReads();
+
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pump();
+
+      expect(yourRatesReads(), readsBefore);
+      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
     });
 
     testWidgets('while Try again runs, the label stays, there is no spinner '
@@ -603,6 +654,18 @@ void main() {
       await openSheet(tester);
 
       await typeQuery(tester, 'SCISSOR LIFT');
+      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.pumpAndSettle();
+
+      expect(result, isA<YourRatesRecentsPicked>());
+      expect((result! as YourRatesRecentsPicked).entry.id, 'day-rate');
+    });
+
+    testWidgets('Create on a name with extra spaces inside opens the saved '
+        'price, on the method used last', (tester) async {
+      await openSheet(tester);
+
+      await typeQuery(tester, 'Scissor  lift');
       await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
       await tester.pumpAndSettle();
 
