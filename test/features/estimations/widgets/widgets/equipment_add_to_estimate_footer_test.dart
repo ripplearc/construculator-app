@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
@@ -42,7 +40,7 @@ void main() {
     List<EquipmentCostFormEvent> events,
   ) async {
     final bloc = Modular.get<EquipmentCostFormBloc>();
-    addTearDown(() => unawaited(bloc.close()));
+    addTearDown(bloc.close);
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),

@@ -2009,6 +2009,72 @@ void main() {
         expect(failed, noticeIs(lookupFailed: true));
       });
 
+      test(
+        'is not recorded as shown when the form reports it seen before a lookup that then fails',
+        () async {
+          refuse();
+          keepOnLine();
+          await Modular.get<CurrentCompanyResolver>().resolve();
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..completer = Completer<void>();
+          final shown = await noticeAfterPicking();
+          expect(shown, noticeIs());
+
+          bloc.add(const EquipmentRefusalNoticeSeen());
+          bloc.add(const EquipmentRateUpdatedEvent('500'));
+          await bloc.stream.firstWhere((s) => s.formData.jobAmount == 500);
+          fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s.formData.refusedDefault?.estimateLookupFailed ?? false,
+          );
+          await bloc.close();
+
+          expect(
+            database.refusalRow(
+              YourRateRefusalKey.of(
+                companyId: companyId,
+                category: 'equipment',
+                itemName: itemName,
+                equipmentMethod: 'job',
+              ),
+            )?['shown_at'],
+            isNull,
+          );
+        },
+      );
+
+      test(
+        'keeps the estimate sentence when the form reports it seen before the lookup answers',
+        () async {
+          refuse();
+          keepOnLine();
+          await Modular.get<CurrentCompanyResolver>().resolve();
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..completer = Completer<void>();
+          await noticeAfterPicking();
+          final recorded = expectLater(refusalOnPhone(), emitsThrough(isNull));
+
+          bloc.add(const EquipmentRefusalNoticeSeen());
+          bloc.add(const EquipmentRateUpdatedEvent('500'));
+          await bloc.stream.firstWhere((s) => s.formData.jobAmount == 500);
+          fakeSupabaseWrapper.completer!.complete();
+          await recorded;
+          bloc.add(
+            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.day),
+          );
+          await bloc.stream.firstWhere(hasNoNotice);
+          bloc.add(
+            const EquipmentMethodSwitchedEvent(EquipmentPricingMethod.job),
+          );
+          final back = await bloc.stream.firstWhere(hasNotice);
+
+          expect(back, noticeIs(estimateName: 'Bedroom 2'));
+        },
+      );
+
       test('has no accepted amount when the server never kept one', () async {
         refuse(accepted: null);
 

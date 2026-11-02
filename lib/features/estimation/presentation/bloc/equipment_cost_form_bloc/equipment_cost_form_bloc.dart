@@ -37,6 +37,7 @@ class EquipmentCostFormBloc
 
   String? _watchedRefusalKey;
   StreamSubscription<Either<Failure, RefusedYourRate?>>? _refusalWatch;
+  Future<void>? _estimateLookup;
   String? _companyId;
 
   // Notices this form already marked as shown, by item, so the notice stays
@@ -245,33 +246,40 @@ class EquipmentCostFormBloc
   ) async {
     final method = event.refusal.equipmentMethod;
     if (method == null) return;
-    final lookup = await _repository.getEstimateNameKeepingEquipmentRate(
-      companyId: event.companyId,
-      itemName: event.refusal.itemName,
-      pricingMethod: method,
-      rateAmount: event.refusal.refusedAmount,
-    );
-    final current = state.formData.refusedDefault;
-    final base = _noticeOf(event.refusal, estimateName: null);
-    if (current != base) return;
-    emit(
-      _stateWithNotice(
-        lookup.fold(
-          (_) => _noticeOf(
-            event.refusal,
-            estimateName: null,
-            estimateLookupFailed: true,
+    final lookupDone = Completer<void>();
+    _estimateLookup = lookupDone.future;
+    try {
+      final lookup = await _repository.getEstimateNameKeepingEquipmentRate(
+        companyId: event.companyId,
+        itemName: event.refusal.itemName,
+        pricingMethod: method,
+        rateAmount: event.refusal.refusedAmount,
+      );
+      final current = state.formData.refusedDefault;
+      final base = _noticeOf(event.refusal, estimateName: null);
+      if (current != base) return;
+      emit(
+        _stateWithNotice(
+          lookup.fold(
+            (_) => _noticeOf(
+              event.refusal,
+              estimateName: null,
+              estimateLookupFailed: true,
+            ),
+            (name) => _noticeOf(event.refusal, estimateName: name),
           ),
-          (name) => _noticeOf(event.refusal, estimateName: name),
         ),
-      ),
-    );
+      );
+    } finally {
+      lookupDone.complete();
+    }
   }
 
   Future<void> _onRefusalNoticeSeen(
     EquipmentRefusalNoticeSeen event,
     Emitter<EquipmentCostFormState> emit,
   ) async {
+    await _estimateLookup;
     final notice = state.formData.refusedDefault;
     final companyId = _companyId;
     if (notice == null || companyId == null) return;
