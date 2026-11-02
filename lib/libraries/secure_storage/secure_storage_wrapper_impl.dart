@@ -14,10 +14,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///
 /// A failed call is logged once here and rethrown, so the caller decides
 /// whether the failure matters. A failure before Sentry has started reaches
-/// the console only.
+/// the console only; later failures reach Sentry.
 class SecureStorageWrapperImpl implements SecureStorageWrapper {
-  // TODO: [CA-1332] back to a static final once AppLogger reads the Sentry wrapper when it logs
-  AppLogger get _logger => AppLogger().tag('SecureStorageWrapperImpl');
+  static final _logger = AppLogger().tag('SecureStorageWrapperImpl');
 
   final FlutterSecureStorage _storage;
 

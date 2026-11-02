@@ -8,7 +8,7 @@ class AppLogger {
   final String _tag;
   final String _emojiPrefix;
   final Logger _internalLogger;
-  final SentryWrapper? _sentryWrapper;
+  final SentryWrapper? _sentryOverride;
   final Config? _config;
 
   /// Static default SentryWrapper instance used when none is provided
@@ -34,16 +34,22 @@ class AppLogger {
     this._tag,
     this._emojiPrefix,
     this._internalLogger,
-    this._sentryWrapper,
+    this._sentryOverride,
     this._config,
   );
 
+  SentryWrapper? get _sentryWrapper => _sentryOverride ?? _defaultSentryWrapper;
+
   /// Creates an [AppLogger] with optional [sentryWrapper] and [config] overrides.
-  /// Falls back to the static defaults set via [setSentryWrapper] and [setConfig].
+  ///
+  /// Without [sentryWrapper], each log call uses the wrapper set via
+  /// [setSentryWrapper] at that moment, so a logger built before the wrapper is
+  /// set still reaches Sentry afterwards. [config] falls back to the default
+  /// set via [setConfig] when the logger is built.
   AppLogger({SentryWrapper? sentryWrapper, Config? config})
     : _tag = 'Construculator',
       _emojiPrefix = '',
-      _sentryWrapper = sentryWrapper ?? _defaultSentryWrapper,
+      _sentryOverride = sentryWrapper,
       _config = config ?? _defaultConfig,
       _internalLogger = Logger(
         filter: AppLogFilter(config: config ?? _defaultConfig),
@@ -73,7 +79,7 @@ class AppLogger {
       'Construculator',
       '',
       _internalLogger,
-      _sentryWrapper,
+      _sentryOverride,
       _config,
     );
   }
@@ -85,7 +91,7 @@ class AppLogger {
       newTag,
       _emojiPrefix,
       _internalLogger,
-      _sentryWrapper,
+      _sentryOverride,
       _config,
     );
   }
@@ -97,7 +103,7 @@ class AppLogger {
       _tag,
       newEmojiPrefix,
       _internalLogger,
-      _sentryWrapper,
+      _sentryOverride,
       _config,
     );
   }

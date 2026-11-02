@@ -164,6 +164,71 @@ void main() {
       expect(defaultWrapper.breadcrumbs, isNotEmpty);
     });
 
+    test(
+      'sends error() to a default wrapper set after the logger was built',
+      () {
+        final earlyLogger = AppLogger().tag('Early');
+        final lateWrapper = FakeSentryWrapper();
+
+        AppLogger.setSentryWrapper(lateWrapper);
+        earlyLogger.error('Late failure', Exception('boom'));
+
+        expect(lateWrapper.exceptions, hasLength(1));
+        expect(lateWrapper.exceptions.single.tags, {'logger_tag': 'Early'});
+      },
+    );
+
+    test('sends omg() to a default wrapper set after the logger was built', () {
+      final earlyLogger = AppLogger().tag('Early');
+      final lateWrapper = FakeSentryWrapper();
+
+      AppLogger.setSentryWrapper(lateWrapper);
+      earlyLogger.omg('Late fatal', Exception('boom'));
+
+      expect(lateWrapper.exceptions, hasLength(1));
+      expect(lateWrapper.exceptions.single.tags, {
+        'logger_tag': 'Early',
+        'severity': 'fatal',
+      });
+    });
+
+    test('injected wrapper wins over the default set later', () {
+      final defaultWrapper = FakeSentryWrapper();
+      AppLogger.setSentryWrapper(defaultWrapper);
+
+      logger.error('Injected failure', Exception('boom'));
+
+      expect(fakeSentry.exceptions, hasLength(1));
+      expect(defaultWrapper.exceptions, isEmpty);
+    });
+
+    test(
+      'tag(), emoji() and fresh() follow a default replaced after they ran',
+      () {
+        final firstWrapper = FakeSentryWrapper();
+        final secondWrapper = FakeSentryWrapper();
+        AppLogger.setSentryWrapper(firstWrapper);
+        final chained = AppLogger().tag('Chained').emoji('🔗').fresh();
+
+        AppLogger.setSentryWrapper(secondWrapper);
+        chained.error('Chained failure', Exception('boom'));
+
+        expect(secondWrapper.exceptions, hasLength(1));
+        expect(firstWrapper.exceptions, isEmpty);
+      },
+    );
+
+    test('stops sending when the default wrapper is cleared', () {
+      final defaultWrapper = FakeSentryWrapper();
+      AppLogger.setSentryWrapper(defaultWrapper);
+      final earlyLogger = AppLogger().tag('Early');
+
+      AppLogger.setSentryWrapper(null);
+      earlyLogger.error('After clearing', Exception('boom'));
+
+      expect(defaultWrapper.exceptions, isEmpty);
+    });
+
     test('uses injected Config', () {
       final prodConfig = FakeAppConfig();
       prodConfig.setEnvironment(Environment.prod);

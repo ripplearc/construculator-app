@@ -151,15 +151,25 @@ void main() {
         expect(() => wrapper.deleteAll(), throwsA(isA<PlatformException>()));
       });
 
-      test('reports the failure to Sentry once', () async {
-        final sentry = FakeSentryWrapper();
-        AppLogger.setSentryWrapper(sentry);
-        addTearDown(() => AppLogger.setSentryWrapper(null));
+      test(
+        'reports a failure to Sentry once, even after an earlier failure before Sentry started',
+        () async {
+          await expectLater(
+            wrapper.read('k'),
+            throwsA(isA<PlatformException>()),
+          );
+          final sentry = FakeSentryWrapper();
+          AppLogger.setSentryWrapper(sentry);
+          addTearDown(() => AppLogger.setSentryWrapper(null));
 
-        await expectLater(wrapper.read('k'), throwsA(isA<PlatformException>()));
+          await expectLater(
+            wrapper.read('k'),
+            throwsA(isA<PlatformException>()),
+          );
 
-        expect(sentry.exceptions, hasLength(1));
-      });
+          expect(sentry.exceptions, hasLength(1));
+        },
+      );
     });
   });
 }
