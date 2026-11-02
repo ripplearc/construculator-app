@@ -1538,6 +1538,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'An amount takes at most two decimals.';
 
   @override
+  String get equipmentDeliveryRefusedKeyHint =>
+      'A delivery fee takes digits and one point.';
+
+  @override
   String equipmentDeliveryFeeLimitHint(String amount) {
     return 'The largest delivery fee is $amount.';
   }

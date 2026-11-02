@@ -3808,6 +3808,33 @@ void main() {
       });
     }
 
+    testWidgets('delivery refuses a pasted 12,50 and says what it takes', (
+      tester,
+    ) async {
+      await openField(tester, deliveryField);
+
+      await paste(tester, deliveryField, '12,50');
+
+      expect(fieldText(tester, deliveryField), '');
+      expect(
+        find.byKey(const Key('delivery_fee_refused_hint')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('delivery_fee_limit_hint')), findsNothing);
+      expect(find.text(l10n.equipmentDeliveryRefusedKeyHint), findsOneWidget);
+    });
+
+    testWidgets('delivery keeps the largest-fee hint above the limit', (
+      tester,
+    ) async {
+      await openField(tester, deliveryField);
+
+      await paste(tester, deliveryField, '1000000');
+
+      expect(find.byKey(const Key('delivery_fee_limit_hint')), findsOneWidget);
+      expect(find.byKey(const Key('delivery_fee_refused_hint')), findsNothing);
+    });
+
     testWidgets('the hint names the field it is under', (tester) async {
       await openField(tester, rateField);
       await paste(tester, rateField, '85.555');

@@ -125,11 +125,12 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _jobSelected = ValueNotifier<bool>(false);
 
   bool _deliveryExpanded = false;
-  bool _showDeliveryLimitHint = false;
+  _DeliveryHint _deliveryHint = _DeliveryHint.none;
   String _lastDeliveryText = '';
   late final _deliveryFeeFormatter = MoneyInputFormatter(
     largestAmount: largestMoneyAmount,
-    onLimitReached: _showDeliveryLimit,
+    onLimitReached: () => _showDeliveryHint(_DeliveryHint.limit),
+    onEditRefused: () => _showDeliveryHint(_DeliveryHint.refusedKey),
     deviceLocale: _deviceLocale,
   );
 
@@ -253,15 +254,16 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
-  void _showDeliveryLimit() {
+  void _showDeliveryHint(_DeliveryHint hint) {
     if (!mounted) return;
-    setState(() => _showDeliveryLimitHint = true);
+    setState(() => _deliveryHint = hint);
   }
 
   void _onDeliveryFeeChanged() {
     final text = _deliveryFeeController.text;
-    if (_showDeliveryLimitHint && text.length < _lastDeliveryText.length) {
-      setState(() => _showDeliveryLimitHint = false);
+    if (_deliveryHint != _DeliveryHint.none &&
+        text.length < _lastDeliveryText.length) {
+      setState(() => _deliveryHint = _DeliveryHint.none);
     }
     _lastDeliveryText = text;
     context.read<EquipmentCostFormBloc>().add(
@@ -282,7 +284,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void _onDeliveryFocusChanged() {
     if (!mounted) return;
     setState(() {
-      if (!_deliveryFocusNode.hasFocus) _showDeliveryLimitHint = false;
+      if (!_deliveryFocusNode.hasFocus) _deliveryHint = _DeliveryHint.none;
     });
   }
 
@@ -296,7 +298,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     if (_deliveryExpanded) {
       setState(() {
         _deliveryExpanded = false;
-        _showDeliveryLimitHint = false;
+        _deliveryHint = _DeliveryHint.none;
       });
       _deliveryFocusNode.unfocus();
       return;
@@ -1342,20 +1344,26 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 ),
               ),
             ),
-            if (_showDeliveryLimitHint)
+            if (_deliveryHint != _DeliveryHint.none)
               Padding(
                 padding: const EdgeInsets.only(top: CoreSpacing.space2),
                 child: Semantics(
                   liveRegion: true,
                   child: _hintRow(
                     context,
-                    key: const Key('delivery_fee_limit_hint'),
+                    key: Key(_deliveryHint.key),
                     icon: CoreIcons.info,
                     iconColor: colorTheme.iconGrayMid,
                     text: Text(
-                      l10n.equipmentDeliveryFeeLimitHint(
-                        DisplayFormatter.currency.format(largestMoneyAmount),
-                      ),
+                      switch (_deliveryHint) {
+                        _DeliveryHint.limit =>
+                          l10n.equipmentDeliveryFeeLimitHint(
+                            DisplayFormatter.currency.format(
+                              largestMoneyAmount,
+                            ),
+                          ),
+                        _ => l10n.equipmentDeliveryRefusedKeyHint,
+                      },
                       style: textTheme.bodySmallRegular.copyWith(
                         color: colorTheme.textBody,
                       ),
@@ -1639,4 +1647,14 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
       ),
     );
   }
+}
+
+enum _DeliveryHint {
+  none(''),
+  limit('delivery_fee_limit_hint'),
+  refusedKey('delivery_fee_refused_hint');
+
+  const _DeliveryHint(this.key);
+
+  final String key;
 }

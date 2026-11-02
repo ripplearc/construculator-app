@@ -65,9 +65,12 @@ class MoneyInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     if (newValue.text.isEmpty) return newValue;
-    final edit = _Edit.between(oldValue.text, newValue.text);
+    final edit = _Edit.of(oldValue, newValue.text);
     final typed = edit.inserted.replaceAll(_dollarSignOrSpace, '');
-    if (edit.inserted.isNotEmpty && typed.isEmpty) return oldValue;
+    if (edit.inserted.isNotEmpty && typed.isEmpty) {
+      onEditRefused?.call();
+      return oldValue;
+    }
     final text = edit.inserted.isEmpty
         ? newValue.text
         : _plainNumber(edit.head, typed, edit.tail);
@@ -136,6 +139,28 @@ class _Edit {
   final String tail;
 
   const _Edit(this.head, this.inserted, this.tail);
+
+  // The replaced part comes from the selection the edit started with, so a
+  // paste over a selected amount is cleaned whole. When the new text does not
+  // fit that selection (a delete, or no selection), the part is found by
+  // comparing the two texts.
+  factory _Edit.of(TextEditingValue before, String after) {
+    final selection = before.selection;
+    if (selection.isValid && selection.end <= before.text.length) {
+      final head = before.text.substring(0, selection.start);
+      final tail = before.text.substring(selection.end);
+      if (after.length >= head.length + tail.length &&
+          after.startsWith(head) &&
+          after.endsWith(tail)) {
+        return _Edit(
+          head,
+          after.substring(head.length, after.length - tail.length),
+          tail,
+        );
+      }
+    }
+    return _Edit.between(before.text, after);
+  }
 
   factory _Edit.between(String before, String after) {
     final shortest = before.length < after.length

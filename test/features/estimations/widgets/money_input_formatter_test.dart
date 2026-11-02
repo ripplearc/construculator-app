@@ -83,7 +83,6 @@ void main() {
       expect(after('', '123,456'), '123456');
       expect(after('', '12,345'), '12345');
       expect(after('', ' 85'), '85');
-      expect(after('', r'$ '), '');
       expect(refusedCalls, 0);
     });
 
@@ -97,10 +96,12 @@ void main() {
       expect(limitCalls, 0);
     });
 
-    test('drops a dollar sign or a space typed alone without a message', () {
+    test('drops a dollar sign or a space typed alone and says so', () {
       expect(after('85', r'85$'), '85');
       expect(after('85', '85 '), '85');
-      expect(refusedCalls, 0);
+      expect(after('', r'$ '), '');
+      expect(refusedCalls, 3);
+      expect(limitCalls, 0);
     });
 
     test('keeps the caret where the user put it when nothing is cleaned', () {
@@ -178,6 +179,43 @@ void main() {
         expect(refusedCalls, 1);
       },
     );
+
+    group('a paste over a selected amount', () {
+      String pasteOver(String held, String pasted) => formatter
+          .formatEditUpdate(
+            TextEditingValue(
+              text: held,
+              selection: TextSelection(
+                baseOffset: 0,
+                extentOffset: held.length,
+              ),
+            ),
+            TextEditingValue(text: pasted),
+          )
+          .text;
+
+      test('is cleaned the same as a paste into an empty field', () {
+        locale = const Locale('de', 'DE');
+        expect(pasteOver('', '1.000'), '1000');
+        expect(pasteOver('100', '1.000'), '1000');
+        expect(pasteOver('20', '2.500'), '2500');
+        expect(pasteOver('1.5', '1.250,00'), '1250.00');
+        expect(limitCalls, 0);
+        expect(refusedCalls, 0);
+      });
+
+      test('replaces only the selected part of the amount', () {
+        final result = formatter.formatEditUpdate(
+          const TextEditingValue(
+            text: '15',
+            selection: TextSelection(baseOffset: 1, extentOffset: 2),
+          ),
+          const TextEditingValue(text: '12'),
+        );
+
+        expect(result.text, '12');
+      });
+    });
 
     test('refuses a third decimal after the comma is read', () {
       locale = const Locale('de', 'DE');

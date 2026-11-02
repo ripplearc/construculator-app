@@ -2403,6 +2403,11 @@
     "description": "Grey hint under the equipment Job amount field, shown when a typed key or a pasted value is refused, for example because it would add a third decimal",
     "context": "N/A"
   },
+  "equipmentDeliveryRefusedKeyHint": "A delivery fee takes digits and one point.",
+  "@equipmentDeliveryRefusedKeyHint": {
+    "description": "Grey hint under the delivery-fee field, shown when a typed key or a pasted value is refused for a reason other than the largest fee or a third decimal",
+    "context": "N/A"
+  },
   "equipmentDeliveryFeeLimitHint": "The largest delivery fee is {amount}.",
   "@equipmentDeliveryFeeLimitHint": {
     "description": "Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount or would add a third decimal",
