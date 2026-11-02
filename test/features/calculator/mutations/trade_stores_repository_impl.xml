@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- TRADE STORES REPOSITORY MUTATION TESTING -->
+    <!-- Targets: TradeStoresRepositoryImpl, where Appendix B's defaults are
+         laid over the user's rows and a change becomes the one row of its
+         entry. A weakened guard here shows a deleted default again, hides
+         what the user added, lets an older phone's write win, puts an added
+         entry in the wrong place, writes for nobody, or answers "not found"
+         as saved. -->
+
+    <files>
+        <file>lib/features/calculator/data/repositories/trade_stores_repository_impl.dart</file>
+    </files>
+
+    <commands>
+        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/repositories/trade_stores_repository_impl_test.dart</command>
+    </commands>
+
+    <rules>
+        <!-- RULE 1: a signed-out watch shows nothing instead of the defaults -->
+        <regex pattern="if \(userId == null\) return Stream\.value\(store\.seeds\);" dotAll="true" id="trade_stores_repository.watch.signed_out_shows_nothing">
+            <mutation text="if (userId == null) return Stream.value(const []);"/>
+        </regex>
+
+        <!-- RULE 2: a user-added row the user deleted shows again -->
+        <regex pattern="if \(!row\.isDeleted &amp;&amp; store\.acceptsAdded\) added\.add\(row\);" dotAll="true" id="trade_stores_repository.lay_over.deleted_added_row_shows">
+            <mutation text="if (store.acceptsAdded) added.add(row);"/>
+            <mutation text="if (!row.isDeleted) added.add(row);"/>
+        </regex>
+
+        <!-- RULE 3: of two live rows for one default, the first read wins,
+             or the last read wins, instead of the newest write -->
+        <regex pattern="if \(current == null \|\| row\.updatedAt\.isAfter\(current\.updatedAt\)\) \{" dotAll="true" id="trade_stores_repository.lay_over.newest_write_wins">
+            <mutation text="if (current == null) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 4: a deleted default shows again -->
+        <regex pattern="if \(!row\.isDeleted\) store\.fromRow\(row\),\s*\] else" dotAll="true" id="trade_stores_repository.lay_over.deleted_default_shows">
+            <mutation text="store.fromRow(row),&#10;        ] else"/>
+        </regex>
+
+        <!-- RULE 5: what the user added never shows -->
+        <regex pattern="for \(final row in added\) store\.fromRow\(row\),\s*\];" dotAll="true" id="trade_stores_repository.lay_over.added_rows_hidden">
+            <mutation text="];"/>
+        </regex>
+
+        <!-- RULE 6: the entries are shown as read, not in position order -->
+        <regex pattern="return _inPositionOrder\(entries, store\.positionOf\);" dotAll="true" id="trade_stores_repository.lay_over.unordered">
+            <mutation text="return entries;"/>
+        </regex>
+
+        <!-- RULE 7: an added entry takes the place after the first, or the
+             place of the last -->
+        <regex pattern="final last = shown\.map\(store\.positionOf\)\.fold\(-1, max\);" dotAll="true" id="trade_stores_repository.add.after_the_first">
+            <mutation text="final last = shown.map(store.positionOf).fold(-1, min);"/>
+        </regex>
+        <regex pattern="toRow\(entryAt\(last \+ 1\), userId: userId, now: _clock\.now\(\)\)," dotAll="true" id="trade_stores_repository.add.at_the_last">
+            <mutation text="toRow(entryAt(last), userId: userId, now: _clock.now()),"/>
+        </regex>
+
+        <!-- RULE 8: an update of a row nobody has is answered as saved -->
+        <regex pattern="if \(!await _dataSource\.updateRow\(row\)\) throw const _NotFound\(\);" dotAll="true" id="trade_stores_repository.update.stranger_saved">
+            <mutation text="await _dataSource.updateRow(row);"/>
+        </regex>
+
+        <!-- RULE 9: an update of an entry that is neither stored nor a
+             default is written as a default -->
+        <regex pattern="return entity;\s*\}\s*if \(seed == null\) throw const _NotFound\(\);" dotAll="true" id="trade_stores_repository.update.seedless_written">
+            <mutation text="return entity;&#10;    }"/>
+        </regex>
+
+        <!-- RULE 10: a delete of a row nobody has is answered as done -->
+        <regex pattern="if \(!await _dataSource\.softDeleteRow\(id, now\)\) throw const _NotFound\(\);" dotAll="true" id="trade_stores_repository.delete.stranger_done">
+            <mutation text="await _dataSource.softDeleteRow(id, now);"/>
+        </regex>
+
+        <!-- RULE 11: a delete of an entry that is neither stored nor a
+             default is written as a default -->
+        <regex pattern="return;\s*\}\s*if \(seed == null\) throw const _NotFound\(\);" dotAll="true" id="trade_stores_repository.delete.seedless_written">
+            <mutation text="return;&#10;    }"/>
+        </regex>
+
+        <!-- RULE 12: deleting a default writes it live instead of deleted -->
+        <regex pattern="toRow\(entity, userId: userId, now: now\)\.copyWith\(deletedAt: now\)," dotAll="true" id="trade_stores_repository.delete.default_written_live">
+            <mutation text="toRow(entity, userId: userId, now: now),"/>
+        </regex>
+
+        <!-- RULE 13: a write with nobody signed in is written for someone -->
+        <regex pattern="_supabaseWrapper\.getInternalUserId\(\) \?\? \(throw const _NotSignedIn\(\)\);" dotAll="true" id="trade_stores_repository.write.signed_out_written">
+            <mutation text="_supabaseWrapper.getInternalUserId() ?? 'nobody';"/>
+        </regex>
+
+        <!-- RULE 14: a deleted fence row hides the fence -->
+        <regex pattern="fences\.isEmpty \? TradeStoreSeeds\.fence : fences\.first" dotAll="true" id="trade_stores_repository.fence.deleted_row_hides">
+            <mutation text="fences.first"/>
+        </regex>
+    </rules>
+</mutations>
