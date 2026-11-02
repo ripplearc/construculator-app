@@ -211,12 +211,20 @@ class _RecentsLoadError extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CoreInlineErrorRow(message: l10n.yourRatesLoadError),
-          const SizedBox(height: CoreSpacing.space2),
-          Text(
-            l10n.yourRatesRecentsLoadErrorHint,
-            style: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textBody,
+          Semantics(
+            liveRegion: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CoreInlineErrorRow(message: l10n.yourRatesLoadError),
+                const SizedBox(height: CoreSpacing.space2),
+                Text(
+                  l10n.yourRatesRecentsLoadErrorHint,
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: CoreSpacing.space3),
