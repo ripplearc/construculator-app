@@ -1,83 +1,47 @@
 // coverage:ignore-file
-import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
-import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
+import 'package:construculator/features/calculator/data/models/calculator_store_row_dto.dart';
 
-/// Reads and writes the trade stores held on the device.
+/// Reads and writes the `user_calculator_stores` rows the phone holds: the
+/// signed-in user's entries, delivered by the auto-subscribed sync stream
+/// and written here first for PowerSync to upload.
 ///
+/// Rows, not entities: one store kind is one shape, and which rows stand
+/// for which Appendix B default is the repository's business. Reads answer
+/// every row of a user's store, soft-deleted ones included, because a
+/// deleted default is a row the repository must see to hide the default.
 /// Methods throw on failure rather than returning a result type: the
-/// repository is the single place that decides what a failure means. Every
-/// `watch` emits the rows as they are now and again after each change, in
-/// the user's order; an update or delete answers `false` when no row has
-/// that id, so the repository can say "not found" without a second read.
+/// repository is the single place that decides what a failure means. An
+/// update or delete answers `false` when no row has that id, so the
+/// repository can say "not found" without a second read.
 abstract class LocalTradeStoresDataSource {
-  /// The sizes of one store under one unit system, in position order.
-  Future<List<StoredSize>> fetchSizes(
-    SizeStore store,
-    MeasurementSystem system,
+  /// Every row of one user's store, live and soft-deleted, in no order.
+  Future<List<CalculatorStoreRowDto>> fetchRows(
+    String userId,
+    CalculatorStoreKind kind,
   );
 
-  /// [fetchSizes], re-run after every change to the sizes table.
-  Stream<List<StoredSize>> watchSizes(
-    SizeStore store,
-    MeasurementSystem system,
+  /// [fetchRows], re-run after every change to the table.
+  Stream<List<CalculatorStoreRowDto>> watchRows(
+    String userId,
+    CalculatorStoreKind kind,
   );
 
-  /// Inserts a size with a fresh id and answers it.
-  Future<StoredSize> insertSize(StoredSize size);
+  /// Inserts a row with a fresh id and answers it.
+  Future<CalculatorStoreRowDto> insertRow(CalculatorStoreRowDto row);
 
-  /// Rewrites the row with the size's id; `false` when there is none.
-  Future<bool> updateSize(StoredSize size);
+  /// Rewrites the values, unit system, update time and deletion of the row
+  /// with the row's id; `false` when there is none.
+  Future<bool> updateRow(CalculatorStoreRowDto row);
 
-  /// Deletes the row with that id; `false` when there is none.
-  Future<bool> deleteSize(String id);
+  /// Soft-deletes the row with that id, stamping [deletedAt]; `false` when
+  /// there is none.
+  Future<bool> softDeleteRow(String id, DateTime deletedAt);
 
-  /// The spacings, in position order.
-  Future<List<StoredSpacing>> fetchSpacings();
-
-  /// [fetchSpacings], re-run after every change to the spacings table.
-  Stream<List<StoredSpacing>> watchSpacings();
-
-  /// Inserts a spacing with a fresh id and answers it.
-  Future<StoredSpacing> insertSpacing(StoredSpacing spacing);
-
-  /// Rewrites the row with the spacing's id; `false` when there is none.
-  Future<bool> updateSpacing(StoredSpacing spacing);
-
-  /// Deletes the row with that id; `false` when there is none.
-  Future<bool> deleteSpacing(String id);
-
-  /// The fence configuration, or `null` before it has been seeded.
-  Future<FenceConfiguration?> fetchFence();
-
-  /// [fetchFence], re-run after every change to the fence table.
-  Stream<FenceConfiguration?> watchFence();
-
-  /// Writes the one fence row, inserting it if there is none.
-  Future<void> upsertFence(FenceConfiguration fence);
-
-  /// Every stored rate.
-  Future<List<StoredRate>> fetchRates();
-
-  /// [fetchRates], re-run after every change to the rates table.
-  Stream<List<StoredRate>> watchRates();
-
-  /// Writes the row of the rate's unit, inserting it if there is none.
-  Future<void> upsertRate(StoredRate rate);
-
-  /// The densities, in position order.
-  Future<List<StoredDensity>> fetchDensities();
-
-  /// [fetchDensities], re-run after every change to the densities table.
-  Stream<List<StoredDensity>> watchDensities();
-
-  /// Inserts a density with a fresh id and answers it.
-  Future<StoredDensity> insertDensity(StoredDensity density);
-
-  /// Rewrites the row with the density's id; `false` when there is none.
-  Future<bool> updateDensity(StoredDensity density);
-
-  /// Deletes the row with that id; `false` when there is none.
-  Future<bool> deleteDensity(String id);
+  /// Writes the one row of a default: rewrites the row of the same user,
+  /// store and seed, live or soft-deleted, or inserts it when there is
+  /// none. The lookup and the write run in one transaction, so two writes
+  /// of one default cannot each insert a row. Answers the row with its id.
+  Future<CalculatorStoreRowDto> writeSeedRow(CalculatorStoreRowDto row);
 
   /// Ends every stream handed out; the database stays open.
   Future<void> dispose();

@@ -76,6 +76,17 @@
         <regex pattern="&amp;&amp;\s*_rateKey\(saved\[DatabaseConstants\.entryLabelColumn\]\) ==" dotAll="true" id="connector.key.ignore_label">
             <mutation text="&amp;&amp; true ||"/>
         </regex>
+
+        <!-- RULE: every table's values text is decoded, not only the trade
+             stores' -->
+        <regex pattern="if \(table != DatabaseConstants\.userCalculatorStoresTable\) return row;" dotAll="true" id="connector.server_row.decode_every_table">
+            <mutation text="if (false) return row;"/>
+        </regex>
+
+        <!-- RULE: a patch without values is decoded anyway -->
+        <regex pattern="if \(values is! String\) return row;" dotAll="true" id="connector.server_row.decode_missing_values">
+            <mutation text="if (false) return row;"/>
+        </regex>
     </rules>
 
     <commands>
