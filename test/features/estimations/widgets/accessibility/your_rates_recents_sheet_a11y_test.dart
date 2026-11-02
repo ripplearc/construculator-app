@@ -180,6 +180,16 @@ void main() {
         tester.getSemantics(find.text('Couldn’t open your saved prices.')),
         isSemantics(isLiveRegion: true),
       );
+      expect(
+        tester.getSemantics(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).yourRatesRecentsLoadErrorHint,
+          ),
+        ),
+        isSemantics(isLiveRegion: true),
+      );
       handle.dispose();
     });
   });
