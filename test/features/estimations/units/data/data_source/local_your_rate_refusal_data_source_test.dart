@@ -290,6 +290,65 @@ void main() {
       });
     });
 
+    group('write failure', () {
+      test(
+        'marking a refusal as shown rethrows when the phone cannot write',
+        () async {
+          database.seedRefusal(refusal());
+          database.executeError = StateError('disk full');
+
+          await expectLater(
+            dataSource.markRefusalShownByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            throwsA(isA<StateError>()),
+          );
+        },
+      );
+
+      test(
+        'forgetting a refusal rethrows when the phone cannot write',
+        () async {
+          database.seedRefusal(refusal());
+          database.executeError = StateError('disk full');
+
+          await expectLater(
+            dataSource.deleteRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            throwsA(isA<StateError>()),
+          );
+        },
+      );
+
+      test('forgetting an item with no refusal does nothing', () async {
+        database.seedRefusal(refusal(itemName: 'Excavator', method: 'day'));
+
+        await dataSource.deleteRefusalByItem(
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+
+        expect(
+          await dataSource.loadRefusalByItem(
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Excavator',
+            equipmentMethod: 'day',
+          ),
+          isNotNull,
+        );
+      });
+    });
+
     group('read failure', () {
       test('rethrows so the repository can map it', () async {
         database.getAllError = StateError('disk full');

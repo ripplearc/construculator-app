@@ -3,13 +3,22 @@ import 'package:equatable/equatable.dart';
 
 /// A Your rates default the server refused, as kept on the phone.
 class YourRateRefusalDto extends Equatable {
+  /// The `YourRateRefusalKey` of the item: company, category, name and method.
   final String id;
+
+  /// The company the refused default belongs to.
   final String companyId;
+
+  /// The cost item category of the refused default, for example `equipment`.
   final String category;
 
   /// The id of the your_rates row the server refused.
   final String refusedRowId;
+
+  /// The item name as the user saved it.
   final String itemName;
+
+  /// How the item is priced, or null for an item with no pricing method.
   final String? equipmentMethod;
 
   /// The label of the refused row, or null if it had none.
@@ -25,6 +34,7 @@ class YourRateRefusalDto extends Equatable {
   /// When the "Not kept" message was shown, or null if it has not been.
   final String? shownAt;
 
+  /// Creates a refusal as kept on the phone.
   const YourRateRefusalDto({
     required this.id,
     required this.companyId,

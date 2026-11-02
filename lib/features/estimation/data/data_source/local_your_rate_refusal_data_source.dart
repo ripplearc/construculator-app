@@ -25,6 +25,8 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       'DELETE FROM ${DatabaseConstants.yourRateRefusalsTable} '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
+  /// Creates the data source over the phone's [_database]; [_clock] stamps
+  /// when a message was shown.
   LocalYourRateRefusalDataSource({
     required this._database,
     required this._clock,
