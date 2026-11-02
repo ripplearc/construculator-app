@@ -328,7 +328,6 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
-// TODO: [CA-1316] replace with the CoreUI inline error row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1316
 class _RecentsLoadError extends StatelessWidget {
   final bool isRetrying;
   final VoidCallback onTryAgain;
@@ -351,37 +350,12 @@ class _RecentsLoadError extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            liveRegion: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CoreIconWidget(
-                      icon: CoreIcons.error,
-                      size: CoreIconSize.size16,
-                      color: colorTheme.iconRed,
-                    ),
-                    const SizedBox(width: CoreSpacing.space1),
-                    Expanded(
-                      child: Text(
-                        l10n.yourRatesLoadError,
-                        style: textTheme.bodySmallRegular.copyWith(
-                          color: colorTheme.textError,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: CoreSpacing.space2),
-                Text(
-                  l10n.yourRatesRecentsLoadErrorHint,
-                  style: textTheme.bodySmallRegular.copyWith(
-                    color: colorTheme.textBody,
-                  ),
-                ),
-              ],
+          CoreInlineErrorRow(message: l10n.yourRatesLoadError),
+          const SizedBox(height: CoreSpacing.space2),
+          Text(
+            l10n.yourRatesRecentsLoadErrorHint,
+            style: textTheme.bodySmallRegular.copyWith(
+              color: colorTheme.textBody,
             ),
           ),
           const SizedBox(height: CoreSpacing.space3),
