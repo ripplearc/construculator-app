@@ -15,8 +15,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// The tap waits until the button can receive the tap at its centre. The sheet
 /// slides in from below the screen, and a tap on a button that is still
-/// off-screen or covered reaches nothing, so the journey would stay on the
-/// same screen with no error.
+/// off-screen reaches nothing, so the journey would stay on the same screen
+/// with no error.
 ///
 /// A timeout thrown by this function means neither outcome happened within
 /// [timeout]; that is a genuine timeout. A caught, fast failure here means
