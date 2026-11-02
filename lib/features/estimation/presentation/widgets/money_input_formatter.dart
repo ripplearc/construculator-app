@@ -65,7 +65,7 @@ class MoneyInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     if (newValue.text.isEmpty) return newValue;
-    final edit = _Edit.of(oldValue, newValue.text);
+    final edit = _editOf(oldValue, newValue.text);
     final typed = edit.inserted.replaceAll(_dollarSignOrSpace, '');
     if (edit.inserted.isNotEmpty && typed.isEmpty) {
       onEditRefused?.call();
@@ -133,54 +133,46 @@ class MoneyInputFormatter extends TextInputFormatter {
 /// The part of a new text that differs from the old one: what stays in front
 /// ([head]), what was typed or pasted ([inserted]) and what stays behind
 /// ([tail]).
-class _Edit {
-  final String head;
-  final String inserted;
-  final String tail;
+typedef _Edit = ({String head, String inserted, String tail});
 
-  const _Edit(this.head, this.inserted, this.tail);
-
-  // The replaced part comes from the selection the edit started with, so a
-  // paste over a selected amount is cleaned whole. When the new text does not
-  // fit that selection (a delete, or no selection), the part is found by
-  // comparing the two texts.
-  factory _Edit.of(TextEditingValue before, String after) {
-    final selection = before.selection;
-    if (selection.isValid && selection.end <= before.text.length) {
-      final head = before.text.substring(0, selection.start);
-      final tail = before.text.substring(selection.end);
-      if (after.length >= head.length + tail.length &&
-          after.startsWith(head) &&
-          after.endsWith(tail)) {
-        return _Edit(
-          head,
-          after.substring(head.length, after.length - tail.length),
-          tail,
-        );
-      }
+// The replaced part comes from the selection the edit started with, so a paste
+// over a selected amount is cleaned whole. When the new text does not fit that
+// selection (a delete, or no selection), the part is found by comparing the
+// two texts.
+_Edit _editOf(TextEditingValue before, String after) {
+  final selection = before.selection;
+  if (selection.isValid && selection.end <= before.text.length) {
+    final head = before.text.substring(0, selection.start);
+    final tail = before.text.substring(selection.end);
+    if (after.length >= head.length + tail.length &&
+        after.startsWith(head) &&
+        after.endsWith(tail)) {
+      return (
+        head: head,
+        inserted: after.substring(head.length, after.length - tail.length),
+        tail: tail,
+      );
     }
-    return _Edit.between(before.text, after);
   }
+  return _editBetween(before.text, after);
+}
 
-  factory _Edit.between(String before, String after) {
-    final shortest = before.length < after.length
-        ? before.length
-        : after.length;
-    var headLength = 0;
-    while (headLength < shortest &&
-        before.codeUnitAt(headLength) == after.codeUnitAt(headLength)) {
-      headLength++;
-    }
-    var tailLength = 0;
-    while (tailLength < shortest - headLength &&
-        before.codeUnitAt(before.length - 1 - tailLength) ==
-            after.codeUnitAt(after.length - 1 - tailLength)) {
-      tailLength++;
-    }
-    return _Edit(
-      after.substring(0, headLength),
-      after.substring(headLength, after.length - tailLength),
-      after.substring(after.length - tailLength),
-    );
+_Edit _editBetween(String before, String after) {
+  final shortest = before.length < after.length ? before.length : after.length;
+  var headLength = 0;
+  while (headLength < shortest &&
+      before.codeUnitAt(headLength) == after.codeUnitAt(headLength)) {
+    headLength++;
   }
+  var tailLength = 0;
+  while (tailLength < shortest - headLength &&
+      before.codeUnitAt(before.length - 1 - tailLength) ==
+          after.codeUnitAt(after.length - 1 - tailLength)) {
+    tailLength++;
+  }
+  return (
+    head: after.substring(0, headLength),
+    inserted: after.substring(headLength, after.length - tailLength),
+    tail: after.substring(after.length - tailLength),
+  );
 }
