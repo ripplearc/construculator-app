@@ -7,7 +7,6 @@ void main() {
   const sheet = StoredSize(
     id: 'sheet-1',
     store: SizeStore.sheet,
-    system: MeasurementSystem.imperial,
     width: Length(48 * inch, unit: Unit.inch),
     height: Length(96 * inch, unit: Unit.inch),
     position: 0,
@@ -18,32 +17,31 @@ void main() {
       final metric = sheet.copyWith(
         id: 'sheet-2',
         store: SizeStore.masonry,
-        system: MeasurementSystem.metric,
         width: const Length(1, unit: Unit.millimetre),
         height: const Length(2, unit: Unit.millimetre),
         position: 3,
+        seed: 'masonry_8x16in',
       );
       expect(
         metric,
         const StoredSize(
           id: 'sheet-2',
           store: SizeStore.masonry,
-          system: MeasurementSystem.metric,
           width: Length(1, unit: Unit.millimetre),
           height: Length(2, unit: Unit.millimetre),
           position: 3,
+          seed: 'masonry_8x16in',
         ),
       );
       expect(sheet.copyWith(), sheet);
     });
 
-    test('is equal by value and has no id until stored', () {
+    test('is equal by value', () {
       final position = int.parse('0');
       expect(
         StoredSize(
           id: 'sheet-1',
           store: SizeStore.sheet,
-          system: MeasurementSystem.imperial,
           width: const Length(48 * inch, unit: Unit.inch),
           height: const Length(96 * inch, unit: Unit.inch),
           position: position,
@@ -51,6 +49,33 @@ void main() {
         sheet,
       );
       expect(sheet.copyWith(id: null).id, 'sheet-1');
+    });
+
+    test('has no id until stored and no seed unless it is a default', () {
+      const added = StoredSize(
+        store: SizeStore.sheet,
+        width: Length(48 * inch, unit: Unit.inch),
+        height: Length(96 * inch, unit: Unit.inch),
+        position: 0,
+      );
+      expect(added.id, isNull);
+      expect(added.seed, isNull);
+      expect(sheet.copyWith(seed: 'sheet_48x96in').seed, 'sheet_48x96in');
+    });
+
+    test('a size spelled in millimetres keeps its unit', () {
+      const metric = StoredSize(
+        store: SizeStore.sheet,
+        width: Length(3024, unit: Unit.millimetre),
+        height: Length(6047, unit: Unit.millimetre),
+        position: 0,
+        seed: 'sheet_1200x2400mm',
+      );
+      expect(metric.width.unit, Unit.millimetre);
+      expect(
+        metric,
+        isNot(metric.copyWith(width: const Length(3024, unit: Unit.inch))),
+      );
     });
   });
 
@@ -60,9 +85,14 @@ void main() {
         spacing: Length(16 * inch, unit: Unit.inch),
         position: 0,
       );
-      final stored = spacing.copyWith(id: 'oc-1', position: 1);
+      final stored = spacing.copyWith(
+        id: 'oc-1',
+        position: 1,
+        seed: 'spacing_16in',
+      );
       expect(stored.id, 'oc-1');
       expect(stored.position, 1);
+      expect(stored.seed, 'spacing_16in');
       expect(stored.spacing, spacing.spacing);
       expect(
         spacing
@@ -79,6 +109,8 @@ void main() {
         ),
         spacing,
       );
+      expect(spacing.id, isNull);
+      expect(spacing.seed, isNull);
     });
   });
 
@@ -108,20 +140,13 @@ void main() {
     });
   });
 
-  group('StoredRate', () {
-    test('starts with no waste and copies by value', () {
-      const rate = StoredRate(unit: RateUnit.squareFoot, rate: 12.3);
-      expect(rate.wastePercent, 0);
-      final withWaste = rate.copyWith(
-        wastePercent: 10,
-        rate: 13,
-        unit: RateUnit.squareYard,
-      );
-      expect(
-        withWaste,
-        const StoredRate(unit: RateUnit.squareYard, rate: 13, wastePercent: 10),
-      );
-      expect(rate.copyWith(), rate);
+  group('StoredWaste', () {
+    test('starts at 0% and copies by value', () {
+      const waste = StoredWaste(unit: RateUnit.squareFoot);
+      expect(waste.percent, 0);
+      final edited = waste.copyWith(percent: 10, unit: RateUnit.squareYard);
+      expect(edited, const StoredWaste(unit: RateUnit.squareYard, percent: 10));
+      expect(waste.copyWith(), waste);
       expect(RateUnit.values, hasLength(9));
     });
   });
@@ -132,6 +157,7 @@ void main() {
         name: 'concrete',
         poundsPerCubicYard: 4050,
         position: 0,
+        seed: 'density_concrete',
       );
       final stored = concrete.copyWith(
         id: 'd-1',
@@ -146,6 +172,7 @@ void main() {
           name: 'Concrete',
           poundsPerCubicYard: 4000,
           position: 2,
+          seed: 'density_concrete',
         ),
       );
       expect(concrete.copyWith(), concrete);
@@ -155,9 +182,11 @@ void main() {
           name: 'concrete',
           poundsPerCubicYard: 4050,
           position: position,
+          seed: 'density_concrete',
         ),
         concrete,
       );
+      expect(concrete.id, isNull);
     });
   });
 }

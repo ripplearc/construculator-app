@@ -5,44 +5,55 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
 /// The trade stores (UX Design Doc term 2.16, Section 9, Appendix B): the
-/// editable lists the material keys read and the pills write. Version one
-/// keeps them on the device only.
+/// editable lists the material keys read and the pills write. They follow
+/// the signed-in user's account through the synced `user_calculator_stores`
+/// table (Design Appendices B and E): only what the user added or changed is
+/// stored, and Appendix B's defaults are laid over those rows on every read,
+/// so there is nothing to seed and a fresh account shows the defaults at
+/// once. The rates are not here: since CA-1304 they are the company's saved
+/// rates, read through estimation; the waste factor stays.
 ///
 /// Every `watch` emits the store as it is now and again after each change,
-/// in the user's order; every write answers with what was stored or a
-/// [Failure], never a throw. A store that is empty on first use is seeded
-/// with Appendix B's defaults by [seedDefaults].
+/// in the user's order: the defaults in Appendix B's order, then what the
+/// user added, each new entry after the last. A default the user changed
+/// shows in its place and one the user deleted is hidden. Every write
+/// answers with what was stored or a [Failure], never a throw; a write with
+/// nobody signed in is refused. Update and delete take the entity rather
+/// than an id, because a default has no id until it is changed.
 abstract class TradeStoresRepository {
-  /// Fills every empty store with the seed values of Appendix B; a store
-  /// that already holds rows is left as it is. Safe to call on every start.
-  Future<Either<Failure, void>> seedDefaults();
-
-  /// The sizes of one store under one unit system, in the user's order.
+  /// The sizes of one store, in the user's order. [system] picks which
+  /// sheet-size defaults show, since Appendix B seeds them per unit system;
+  /// masonry and footing have one set, and a size the user added shows
+  /// under both systems (term 2.16).
   Stream<List<StoredSize>> watchSizes(
     SizeStore store,
     MeasurementSystem system,
   );
 
-  /// Adds a size at the end of its store and answers it with its id.
+  /// Adds a size after the last one of its store and answers it with its
+  /// id and position.
   Future<Either<Failure, StoredSize>> addSize(StoredSize size);
 
-  /// Rewrites the stored row the pill or detail panel came from.
+  /// Rewrites the size the pill or detail panel came from: a stored row by
+  /// its id, or a default by its seed, which stores it for the first time.
   Future<Either<Failure, StoredSize>> updateSize(StoredSize size);
 
-  /// Removes a size by its id.
-  Future<Either<Failure, void>> deleteSize(String id);
+  /// Removes a size: a stored row by its id, or a default by its seed, which
+  /// hides it on every phone.
+  Future<Either<Failure, void>> deleteSize(StoredSize size);
 
   /// The on-centre spacings, in the user's order.
   Stream<List<StoredSpacing>> watchSpacings();
 
-  /// Adds a spacing at the end and answers it with its id.
+  /// Adds a spacing after the last one and answers it with its id and
+  /// position.
   Future<Either<Failure, StoredSpacing>> addSpacing(StoredSpacing spacing);
 
-  /// Rewrites a stored spacing.
+  /// Rewrites a spacing, a stored row by its id or a default by its seed.
   Future<Either<Failure, StoredSpacing>> updateSpacing(StoredSpacing spacing);
 
-  /// Removes a spacing by its id.
-  Future<Either<Failure, void>> deleteSpacing(String id);
+  /// Removes a spacing, a stored row by its id or a default by its seed.
+  Future<Either<Failure, void>> deleteSpacing(StoredSpacing spacing);
 
   /// The fence configuration.
   Stream<FenceConfiguration> watchFence();
@@ -52,24 +63,24 @@ abstract class TradeStoresRepository {
     FenceConfiguration fence,
   );
 
-  /// Every rate with its waste factor, one per [RateUnit].
-  Stream<List<StoredRate>> watchRates();
+  /// The waste factor of every [RateUnit], in the enum's order.
+  Stream<List<StoredWaste>> watchWaste();
 
-  /// Rewrites the rate and waste factor of one unit.
-  Future<Either<Failure, StoredRate>> updateRate(StoredRate rate);
+  /// Rewrites the waste factor of one unit.
+  Future<Either<Failure, StoredWaste>> updateWaste(StoredWaste waste);
 
   /// The named densities, in the user's order.
   Stream<List<StoredDensity>> watchDensities();
 
-  /// Adds a material at the end and answers it with its id ("+ Add
-  /// material").
+  /// Adds a material after the last one and answers it with its id and
+  /// position ("+ Add material").
   Future<Either<Failure, StoredDensity>> addDensity(StoredDensity density);
 
-  /// Rewrites a stored density.
+  /// Rewrites a density, a stored row by its id or a default by its seed.
   Future<Either<Failure, StoredDensity>> updateDensity(StoredDensity density);
 
-  /// Removes a material by its id.
-  Future<Either<Failure, void>> deleteDensity(String id);
+  /// Removes a material, a stored row by its id or a default by its seed.
+  Future<Either<Failure, void>> deleteDensity(StoredDensity density);
 
   /// Ends every stream handed out.
   void dispose();

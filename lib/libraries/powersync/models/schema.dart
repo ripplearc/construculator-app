@@ -195,49 +195,37 @@ const Schema schema = Schema([
   ),
 
   // The calculator's trade stores (UX Design Doc term 2.16, Appendix B):
-  // the editable lists the material keys read. Local-only in version one --
-  // no sync stream, no upload queue, never cleared by a sync -- which is
-  // what `Table.localOnly` means to PowerSync; CA-1113 (Phase 2) syncs them.
-  // Lengths are whole ticks of 1/64 inch, the calculator engine's canonical
-  // unit, so a stored 47.24in and a computed area agree to the tick.
+  // the editable lists the material keys read. Synced by the auto-subscribed
+  // `user_calculator_stores` stream (Design Appendices E.4), filtered on the
+  // server to the signed-in user's rows, so these follow the account: a size
+  // typed on one phone is offered on every phone, and sign-out clears them
+  // with the other synced tables. Only what the user added or changed is a
+  // row; Appendix B's defaults ship in the app and are laid over at read
+  // time, so a fresh account has no rows at all.
   //
-  // Three stores of one shape share one table: drywall sheets, masonry
-  // pieces and footing cross-sections are all a width and a height, told
-  // apart by `store`. `system` keeps both seed sets (Appendix B seeds sheet
-  // sizes per unit system) so switching the System of units shows the other
-  // set without a reseed. `position` is the user's order, kept in Dart.
-  Table.localOnly('calculator_sizes', [
-    Column.text('store'),
-    Column.text('system'),
-    Column.integer('width_ticks'),
-    Column.integer('height_ticks'),
-    Column.integer('position'),
-  ]),
-
-  // On-centre spacings the Qty@OC key offers (16in, 24in).
-  Table.localOnly('calculator_spacings', [
-    Column.integer('ticks'),
-    Column.integer('position'),
-  ]),
-
-  // One row: the fence's post spacing and rails per section.
-  Table.localOnly('calculator_fence', [
-    Column.integer('on_centre_ticks'),
-    Column.integer('rails_per_section'),
-  ]),
-
-  // One row per rate unit (ft², yd³, sheet, 1,000 bf…), with the waste
-  // factor the Waste pill sets for that unit; waste starts at 0%.
-  Table.localOnly('calculator_rates', [
-    Column.text('unit'),
-    Column.real('rate'),
-    Column.real('waste_percent'),
-  ]),
-
-  // Named densities in lbs/yd³, user-extendable with "+ Add material".
-  Table.localOnly('calculator_densities', [
-    Column.text('name'),
-    Column.real('pounds_per_cubic_yard'),
-    Column.integer('position'),
-  ]),
+  // `values` is the row's fields as one JSON object, a text column here and
+  // jsonb on the server; its keys belong to TradeStoreRowMapper, which keeps
+  // every length in whole ticks of 1/64 inch so a stored size and a computed
+  // area agree to the tick. A changed default carries the default's key in
+  // "seed". `deleted_at` is synced so a delete made on one phone hides the
+  // row, or the default it stands for, on the others. Columns match the
+  // stream's SELECT; the index is the one read the app makes.
+  Table(
+    'user_calculator_stores',
+    [
+      Column.text('user_id'),
+      Column.text('store_kind'),
+      Column.text('values'),
+      Column.text('unit_system'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+      Column.text('deleted_at'),
+    ],
+    indexes: [
+      Index('by_user_kind', [
+        IndexedColumn('user_id'),
+        IndexedColumn('store_kind'),
+      ]),
+    ],
+  ),
 ]);
