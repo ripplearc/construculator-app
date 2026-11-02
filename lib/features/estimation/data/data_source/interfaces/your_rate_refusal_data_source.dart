@@ -3,8 +3,11 @@ import 'package:construculator/features/estimation/data/models/your_rate_refusal
 
 /// Reads and updates the record of Your rates defaults the server refused.
 /// The upload step writes the records; this only reads them and tracks
-/// whether the "Not kept" message was shown. Every call names the user, the
-/// company and the category, so one user's refusal is never read as another's.
+/// whether the "Not kept" message was shown. Every call that reads, marks or
+/// forgets one item names the user, the company and the category, so one
+/// user's refusal is never read as another's. [loadAllRefusals] is the
+/// exception: it returns the refusals of every user and company, so a caller
+/// must match them by the user and the id of the refused row.
 abstract class YourRateRefusalDataSource {
   /// Every refusal kept on the phone.
   ///
@@ -12,8 +15,8 @@ abstract class YourRateRefusalDataSource {
   Future<List<YourRateRefusalDto>> loadAllRefusals();
 
   /// The refusal kept for the item called [itemName] of [category] in
-  /// [companyId] for [userId] priced by [equipmentMethod], or null if the server has not
-  /// refused it.
+  /// [companyId] for [userId] priced by [equipmentMethod], or null if the
+  /// server has not refused it.
   ///
   /// Throws an exception if the read fails.
   Future<YourRateRefusalDto?> loadRefusalByItem({
