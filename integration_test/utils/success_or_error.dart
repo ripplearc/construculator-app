@@ -13,9 +13,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// in practice the app reporting a failure. Revisit if either screen starts
 /// showing a success or info toast.
 ///
-/// The tap waits until the button has stopped moving. The sheet slides in, and
-/// a tap on the button's position mid-slide can land on the modal barrier
-/// instead, which dismisses the sheet and leaves the journey on the same screen.
+/// The tap waits until the button can receive the tap at its centre. The sheet
+/// slides in from below the screen, and a tap on a button that is still
+/// off-screen or covered reaches nothing, so the journey would stay on the
+/// same screen with no error.
 ///
 /// A timeout thrown by this function means neither outcome happened within
 /// [timeout]; that is a genuine timeout. A caught, fast failure here means
@@ -26,19 +27,20 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// [PatrolTesterConfig.visibleTimeout] the CUJ files set. Changing one does
 /// not change the other.
 Future<void> tapSuccessSheetOrFailFast(
-  PatrolIntegrationTester $, {
+  WidgetTester tester, {
   Duration timeout = const Duration(seconds: 60),
 }) async {
   final deadline = DateTime.now().add(timeout);
-  final buttonFinder = find.descendant(
-    of: find.byType(BottomSheet),
-    matching: find.byType(CoreButton),
-  );
+  final buttonFinder = find
+      .descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byType(CoreButton),
+      )
+      .hitTestable();
   final toastFinder = find.byType(Toast);
-  Rect? buttonRectOnPreviousPump;
 
   while (DateTime.now().isBefore(deadline)) {
-    await $.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
 
     if (toastFinder.evaluate().isNotEmpty) {
       final messages = find
@@ -51,12 +53,8 @@ Future<void> tapSuccessSheetOrFailFast(
     }
 
     if (buttonFinder.evaluate().isNotEmpty) {
-      final buttonRect = $.tester.getRect(buttonFinder.first);
-      if (buttonRect == buttonRectOnPreviousPump) {
-        await $.tester.tap(buttonFinder.first);
-        return;
-      }
-      buttonRectOnPreviousPump = buttonRect;
+      await tester.tap(buttonFinder.first);
+      return;
     }
   }
 

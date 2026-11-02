@@ -26,7 +26,7 @@ void main() {
       // no key, so it is anchored to the sheet rather than to screen position.
       // Fails immediately on an error toast instead of waiting out the full
       // timeout for a success sheet a real error means will never appear.
-      await tapSuccessSheetOrFailFast($);
+      await tapSuccessSheetOrFailFast($.tester);
 
       await $(const Key('app_shell_bottom_nav_bar')).waitUntilVisible();
     },
