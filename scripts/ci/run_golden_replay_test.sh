@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/run_golden_replay.sh (CA-1116).
 #
-# Follows scripts/ci/resolve_build_features_test.sh: no shell-test framework,
+# Follows scripts/ci/assert_flavor_environment_test.sh: no shell-test framework,
 # set -uo pipefail, emoji status lines, non-zero exit on the first failure.
 # The Flutter command is replaced by a stub that prints a canned test run, so
 # the script's parsing and exit codes are what is under test.

@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/trigger_codemagic_builds.sh (CA-1240, CA-1346).
 #
-# Follows the repo's bash test convention (see resolve_build_features_test.sh):
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
 # no shell-test framework, non-zero exit if any case fails. curl is replaced by
 # a fake on PATH, so no request ever leaves the machine.
 #

@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/run_changed_tests_with_coverage.sh (CA-1240).
 #
-# Follows the repo's bash test convention (see resolve_build_features_test.sh):
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
 # no shell-test framework, non-zero exit if any case fails. Every case builds a
 # bare "origin" repo and a working clone in a temp directory, so the script's
 # real git logic runs. flutter is replaced by a fake that records which test

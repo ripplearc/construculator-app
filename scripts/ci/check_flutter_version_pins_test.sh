@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/check_flutter_version_pins.sh (CA-1240).
 #
-# Follows the repo's bash test convention (see resolve_build_features_test.sh):
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
 # no shell-test framework, non-zero exit if any case fails. Each case builds a
 # small repo layout in a temp directory.
 #
