@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "suite": "cuj_v1",
+  "captured_at": "2026-11-02T10:46:46Z",
+  "commit": "af023df",
+  "attempt_count": 2,
+  "duration_ms": 78831.0,
+  "total_duration_ms": 159112.0,
+  "totals": {
+    "cases": 1,
+    "ran": 1,
+    "passed": 0,
+    "flaked": 0,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.0,
+    "flake_rate": 0.0
+  },
+  "cases": [
+    {
+      "name": "runDartTest[features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard]",
+      "classname": "com.ripplearc.construculator.MainActivityTest",
+      "status": "failed",
+      "duration_ms": 75716.0,
+      "attempts": [
+        {
+          "attempt": 1,
+          "status": "failed",
+          "duration_ms": 77155.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following WaitUntilVisibleTimeoutException was thrown running\na test:\nTimeoutException after 0:01:00.000000: Finder \"Found 0 widgets\nwith key [<'app_shell_bottom_nav_bar'>]: []\" did not find any\nvisible (i.e. hit-testable) widgets\n\nWhen the exception was thrown, …"
+        },
+        {
+          "attempt": 2,
+          "status": "failed",
+          "duration_ms": 75716.0,
+          "failure": "java.lang.AssertionError: Dart test failed: features.auth.cuj_2_registration_test CUJ-2: Registration — new user completes OTP verification and lands on the dashboard\n══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════\nThe following WaitUntilVisibleTimeoutException was thrown running\na test:\nTimeoutException after 0:01:00.000000: Finder \"Found 0 widgets\nwith key [<'app_shell_bottom_nav_bar'>]: []\" did not find any\nvisible (i.e. hit-testable) widgets\n\nWhen the exception was thrown, …"
+        }
+      ]
+    }
+  ]
+}
