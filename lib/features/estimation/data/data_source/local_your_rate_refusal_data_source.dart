@@ -18,28 +18,24 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable} '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
-  // The refusal, unless the phone now holds a price for the same item and
-  // label that is neither the refused price nor the last accepted one: a newer
-  // save, on this phone or synced down from another, has replaced them.
-  static const _selectWhilePhonePriceIsOursSql =
-      'SELECT refusal.* FROM ${DatabaseConstants.yourRateRefusalsTable} refusal '
-      'WHERE refusal.${DatabaseConstants.idColumn} = ? AND NOT EXISTS ('
-      'SELECT 1 FROM ${DatabaseConstants.yourRatesTable} rate '
-      'WHERE rate.${DatabaseConstants.companyIdColumn} = '
+  // The refusal with every saved price of the same company, category and
+  // method beside it, one row for each. A refusal with no saved price gives
+  // one row with null price columns. The name and the label are compared in
+  // Dart, because SQL cannot collapse runs of spaces.
+  static const _selectWithSavedPricesSql =
+      'SELECT refusal.*, '
+      'rate.${DatabaseConstants.itemNameColumn} AS rate_item_name, '
+      'rate.${DatabaseConstants.entryLabelColumn} AS rate_entry_label, '
+      'rate.${DatabaseConstants.rateAmountColumn} AS rate_amount '
+      'FROM ${DatabaseConstants.yourRateRefusalsTable} refusal '
+      'LEFT JOIN ${DatabaseConstants.yourRatesTable} rate '
+      'ON rate.${DatabaseConstants.companyIdColumn} = '
       'refusal.${DatabaseConstants.companyIdColumn} '
       'AND rate.${DatabaseConstants.categoryColumn} = '
       'refusal.${DatabaseConstants.categoryColumn} '
-      'AND rate.${DatabaseConstants.itemNameColumn} = '
-      'refusal.${DatabaseConstants.itemNameColumn} '
       'AND rate.${DatabaseConstants.equipmentMethodColumn} IS '
       'refusal.${DatabaseConstants.equipmentMethodColumn} '
-      'AND rate.${DatabaseConstants.entryLabelColumn} IS '
-      'refusal.${DatabaseConstants.entryLabelColumn} '
-      'AND rate.${DatabaseConstants.rateAmountColumn} != '
-      'refusal.${DatabaseConstants.refusedAmountColumn} '
-      'AND (refusal.${DatabaseConstants.acceptedAmountColumn} IS NULL '
-      'OR rate.${DatabaseConstants.rateAmountColumn} != '
-      'refusal.${DatabaseConstants.acceptedAmountColumn}))';
+      'WHERE refusal.${DatabaseConstants.idColumn} = ?';
 
   static const _selectAllSql =
       'SELECT * FROM ${DatabaseConstants.yourRateRefusalsTable}';
@@ -117,13 +113,10 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   }) {
     return _database
         .watch(
-          _selectWhilePhonePriceIsOursSql,
+          _selectWithSavedPricesSql,
           parameters: [_keyOf(companyId, category, itemName, equipmentMethod)],
         )
-        .map(
-          (rows) =>
-              rows.isEmpty ? null : YourRateRefusalDto.fromJson(rows.first),
-        )
+        .map(_refusalUnlessPriceReplaced)
         .distinct()
         .transform(
           StreamTransformer.fromHandlers(
@@ -174,5 +167,34 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
       _logger.error('Failed to forget a refused default', e, stack);
       rethrow;
     }
+  }
+
+  // The refusal, unless the phone now holds a price for the same item and
+  // label that is neither the refused price nor the last accepted one: a newer
+  // save, on this phone or synced down from another, has replaced them.
+  static YourRateRefusalDto? _refusalUnlessPriceReplaced(
+    List<Map<String, dynamic>> rows,
+  ) {
+    if (rows.isEmpty) return null;
+    final refusal = YourRateRefusalDto.fromJson(rows.first);
+    return rows.any((row) => _isReplacingPrice(row, refusal)) ? null : refusal;
+  }
+
+  static bool _isReplacingPrice(
+    Map<String, dynamic> row,
+    YourRateRefusalDto refusal,
+  ) {
+    final name = row['rate_item_name'] as String?;
+    if (name == null) return false;
+    if (YourRateRefusalKey.normalizeName(name) !=
+        YourRateRefusalKey.normalizeName(refusal.itemName)) {
+      return false;
+    }
+    if (YourRateRefusalKey.normalizeLabel(row['rate_entry_label'] as String?) !=
+        YourRateRefusalKey.normalizeLabel(refusal.entryLabel)) {
+      return false;
+    }
+    final amount = (row['rate_amount'] as num).toDouble();
+    return amount != refusal.refusedAmount && amount != refusal.acceptedAmount;
   }
 }

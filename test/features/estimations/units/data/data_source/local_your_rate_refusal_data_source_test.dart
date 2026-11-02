@@ -28,6 +28,7 @@ void main() {
       double refused = 450.0,
       double? accepted = 400.0,
       String? shownAt,
+      String? entryLabel,
     }) => {
       'id': YourRateRefusalKey.of(
         userId: userId,
@@ -42,6 +43,7 @@ void main() {
       'refused_row_id': 'row-1',
       'item_name': itemName,
       'equipment_method': method,
+      'entry_label': entryLabel,
       'refused_amount': refused,
       'accepted_amount': accepted,
       'shown_at': shownAt,
@@ -50,11 +52,12 @@ void main() {
     Map<String, Object?> rateRow({
       required double amount,
       String? entryLabel,
+      String itemName = 'Dumpster — 30 yd',
     }) => {
       'id': 'rate-${entryLabel ?? 'plain'}-$amount',
       'company_id': companyA,
       'category': 'equipment',
-      'item_name': 'Dumpster — 30 yd',
+      'item_name': itemName,
       'equipment_method': 'job',
       'entry_label': entryLabel,
       'rate_amount': amount,
@@ -516,6 +519,99 @@ void main() {
           database.seedRow(rateRow(amount: 460.0));
 
           await emissions;
+        },
+      );
+
+      test(
+        'emits null when the newer price is saved under another spelling of the name',
+        () async {
+          database.seedRefusal(refusal(itemName: 'dumpster — 30 yd'));
+          database.seedRow(
+            rateRow(amount: 460.0, itemName: ' Dumpster —  30 YD '),
+          );
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'emits null when the newer price has the label in other capitals',
+        () async {
+          database.seedRefusal(refusal(entryLabel: 'Weekend'));
+          database.seedRow(rateRow(amount: 460.0, entryLabel: ' weekend  '));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'keeps emitting while the phone still holds the refused price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 450.0));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNotNull),
+          );
+        },
+      );
+
+      test(
+        'emits null when one of several rows holds the newer price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 999.0, entryLabel: 'Weekend'));
+          database.seedRow(rateRow(amount: 460.0));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'keeps emitting when only a row of another item holds another price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 999.0, itemName: 'Excavator'));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNotNull),
+          );
         },
       );
 

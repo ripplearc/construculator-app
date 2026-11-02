@@ -6,6 +6,14 @@ abstract final class YourRateRefusalKey {
   static String normalizeName(String name) =>
       name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
 
+  /// [label] the way [normalizeName] writes a name, or null when [label] is
+  /// null or has nothing left after trimming.
+  static String? normalizeLabel(String? label) {
+    if (label == null) return null;
+    final key = normalizeName(label);
+    return key.isEmpty ? null : key;
+  }
+
   /// The key of the item called [itemName] in [category] priced by
   /// [equipmentMethod], for [userId] of the company [companyId].
   static String of({

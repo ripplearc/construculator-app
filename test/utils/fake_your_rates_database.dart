@@ -90,27 +90,40 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     _refusalChanges.add(null);
   }
 
-  // Mirrors the NOT EXISTS clause of the real watch: a saved price for the
-  // same item and label that is neither the refused nor the accepted one.
-  bool _priceReplacedSince(Map<String, Object?> refusal) {
-    final accepted = refusal[DatabaseConstants.acceptedAmountColumn];
-    return _rows.any(
+  // Mirrors the LEFT JOIN of the real watch: the refusal beside every saved
+  // price of the same company, category and method, or beside null price
+  // columns when there is none.
+  List<Map<String, dynamic>> _refusalWithSavedPrices(
+    Map<String, Object?> refusal,
+  ) {
+    final prices = _rows.where(
       (rate) =>
           rate[DatabaseConstants.companyIdColumn] ==
               refusal[DatabaseConstants.companyIdColumn] &&
           rate[DatabaseConstants.categoryColumn] ==
               refusal[DatabaseConstants.categoryColumn] &&
-          rate[DatabaseConstants.itemNameColumn] ==
-              refusal[DatabaseConstants.itemNameColumn] &&
           rate[DatabaseConstants.equipmentMethodColumn] ==
-              refusal[DatabaseConstants.equipmentMethodColumn] &&
-          rate[DatabaseConstants.entryLabelColumn] ==
-              refusal[DatabaseConstants.entryLabelColumn] &&
-          rate[DatabaseConstants.rateAmountColumn] !=
-              refusal[DatabaseConstants.refusedAmountColumn] &&
-          (accepted == null ||
-              rate[DatabaseConstants.rateAmountColumn] != accepted),
+              refusal[DatabaseConstants.equipmentMethodColumn],
     );
+    if (prices.isEmpty) {
+      return [
+        {
+          ...refusal,
+          'rate_item_name': null,
+          'rate_entry_label': null,
+          'rate_amount': null,
+        },
+      ];
+    }
+    return [
+      for (final rate in prices)
+        {
+          ...refusal,
+          'rate_item_name': rate[DatabaseConstants.itemNameColumn],
+          'rate_entry_label': rate[DatabaseConstants.entryLabelColumn],
+          'rate_amount': rate[DatabaseConstants.rateAmountColumn],
+        },
+    ];
   }
 
   /// For the refused-defaults table, emits the row now and again after every
@@ -128,12 +141,8 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     final id = parameters.single;
     List<Map<String, dynamic>> current() {
       final refusal = _refusalRows[id];
-      if (refusal == null || _priceReplacedSince(refusal)) return [];
-      return [
-        {...refusal},
-      ];
+      return refusal == null ? [] : _refusalWithSavedPrices(refusal);
     }
-
     return Stream.multi((listener) {
       _openRefusalWatchCount++;
       listener.add(current());
