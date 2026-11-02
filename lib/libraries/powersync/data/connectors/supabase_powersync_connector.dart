@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
@@ -17,6 +19,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// A refused `your_rates` change is skipped so it cannot block the queue:
 /// a value the server rejects (23514), a duplicate from another phone (23505),
 /// and a PATCH whose row the server does not have (PGRST116).
+///
+/// A `user_calculator_stores` row is sent with its `values` decoded: the
+/// column is jsonb on the server and JSON text on the phone, and sent as text
+/// it would be stored as a JSON string, which the table's object CHECK
+/// refuses.
 ///
 /// When two phones save the same Your rates entry, the later upload overwrites
 /// the earlier one. Two entries are the same when the item name, pricing
@@ -343,7 +350,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.upsert(
           table: operation.table,
-          data: {...putData, 'id': operation.id},
+          data: {..._serverRow(operation.table, putData), 'id': operation.id},
           onConflict: 'id',
         );
       case UpdateType.patch:
@@ -355,7 +362,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.update(
           table: operation.table,
-          data: patchData,
+          data: _serverRow(operation.table, patchData),
           filterColumn: 'id',
           filterValue: operation.id,
         );
@@ -366,6 +373,15 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
           filterValue: operation.id,
         );
     }
+  }
+
+  // The row as the server's columns take it. Only the trade stores carry a
+  // JSON column; a patch that leaves `values` out is sent as it is.
+  Map<String, dynamic> _serverRow(String table, Map<String, dynamic> row) {
+    if (table != DatabaseConstants.userCalculatorStoresTable) return row;
+    final values = row[DatabaseConstants.valuesColumn];
+    if (values is! String) return row;
+    return {...row, DatabaseConstants.valuesColumn: jsonDecode(values)};
   }
 
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code

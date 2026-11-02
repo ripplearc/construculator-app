@@ -139,6 +139,95 @@ void main() {
         },
       );
 
+      test(
+        'PUT of a trade store row sends its values as a JSON object',
+        () async {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(
+                1,
+                UpdateType.put,
+                'user_calculator_stores',
+                'row-1',
+                null,
+                {
+                  'user_id': 'user-1',
+                  'store_kind': 'density',
+                  'values': '{"name": "slag", "pounds_per_cubic_yard": 2900}',
+                  'unit_system': 'imperial',
+                },
+              ),
+            ]),
+          );
+
+          await connector.uploadData(fakeDatabase);
+
+          final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+          expect(data, containsPair('id', 'row-1'));
+          expect(data, containsPair('store_kind', 'density'));
+          expect(
+            data['values'],
+            equals({'name': 'slag', 'pounds_per_cubic_yard': 2900}),
+          );
+        },
+      );
+
+      test('PATCH of a trade store row decodes values and leaves a patch '
+          'without them alone', () async {
+        fakeSupabase.addTableData('user_calculator_stores', [
+          {'id': 'row-1', 'values': '{}'},
+          {'id': 'row-2', 'values': '{}'},
+        ]);
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(
+              1,
+              UpdateType.patch,
+              'user_calculator_stores',
+              'row-1',
+              null,
+              {
+                'values': '{"seed": "fence", "rails_per_section": 2}',
+                'updated_at': '2026-11-02T10:00:00.000Z',
+              },
+            ),
+            CrudEntry(
+              2,
+              UpdateType.patch,
+              'user_calculator_stores',
+              'row-2',
+              null,
+              {'deleted_at': '2026-11-02T10:00:00.000Z'},
+            ),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final calls = fakeSupabase.getMethodCallsFor('update');
+        expect(calls, hasLength(2));
+        expect(
+          calls.first['data']['values'],
+          equals({'seed': 'fence', 'rails_per_section': 2}),
+        );
+        expect(calls.last['data'], {'deleted_at': '2026-11-02T10:00:00.000Z'});
+      });
+
+      test('another table\'s JSON text is sent as the text it is', () async {
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'values': '{"not": "decoded"}',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+        expect(data['values'], '{"not": "decoded"}');
+      });
+
       test('PATCH dispatches update with id as filter', () async {
         fakeSupabase.addTableData('projects', [
           {'id': 'proj-1', 'name': 'Original'},

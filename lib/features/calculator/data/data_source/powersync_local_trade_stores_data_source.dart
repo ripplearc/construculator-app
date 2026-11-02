@@ -1,248 +1,138 @@
 import 'dart:async';
 
 import 'package:construculator/features/calculator/data/data_source/interfaces/local_trade_stores_data_source.dart';
-import 'package:construculator/features/calculator/data/models/trade_store_row_mapper.dart';
-import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
-import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
+import 'package:construculator/features/calculator/data/models/calculator_store_row_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:powersync/powersync.dart';
+import 'package:powersync/sqlite_async.dart';
 
 /// [LocalTradeStoresDataSource] over PowerSync's local SQLite database.
 ///
-/// The five tables are `Table.localOnly`, so a write lands in SQLite and
-/// stays there: no upload queue is touched and no sync ever clears them.
-/// Everything else follows `PowerSyncLocalConsentDataSource`: SQL is
-/// assembled from `DatabaseConstants`, ids are minted with the SDK's own
-/// `uuid`, and every stream handed out is tracked so [dispose] can end it.
+/// `user_calculator_stores` is a synced table: a write lands in SQLite at
+/// once, PowerSync queues it for upload, and the stream brings the other
+/// phones' rows in. Everything else follows `PowerSyncLocalConsentDataSource`:
+/// SQL is assembled from `DatabaseConstants`, ids are minted with the SDK's
+/// own `uuid`, and every stream handed out is tracked so [dispose] can end
+/// it. Nothing is ordered in SQL: the repository orders entries by the
+/// position inside `values`.
 ///
-/// The one `ORDER BY` is on `position`, an integer column, so it is left to
-/// SQLite; nothing here sorts text.
-///
-/// An insert mints the row's id here, as the consent store does: the row is
-/// local, so nothing else will ever assign one. An update or delete checks
-/// that the row exists and answers `false` rather than writing nothing, so
-/// the repository can say "not found". A stream handed out after [dispose]
-/// answers once and ends, so a late subscriber is never left waiting; one
-/// handed out before is tracked and ended by [dispose].
+/// Every write that first looks a row up runs the lookup and the write in
+/// one write transaction, so two writes that race cannot both see "no row"
+/// and both insert; the one that gets the lock second finds the first's
+/// row. A stream handed out after [dispose] answers once and ends, so a late
+/// subscriber is never left waiting; one handed out before is tracked and
+/// ended by [dispose].
 class PowerSyncLocalTradeStoresDataSource
     implements LocalTradeStoresDataSource {
   final PowerSyncDatabase _database;
 
-  /// Live watches, keyed by the controller feeding the caller and valued by
-  /// the query subscription feeding it, so [dispose] can end both ends.
   final Map<MultiStreamController<Object?>, StreamSubscription<Object?>>
-  _watchers = {};
+  _watchSubscriptionsByController = {};
   var _disposed = false;
 
   /// Creates a data source over a PowerSync database.
   PowerSyncLocalTradeStoresDataSource({required this._database});
 
-  static const _sizeColumns =
-      '${DatabaseConstants.idColumn}, '
-      '${DatabaseConstants.storeColumn}, '
-      '${DatabaseConstants.systemColumn}, '
-      '${DatabaseConstants.widthTicksColumn}, '
-      '${DatabaseConstants.heightTicksColumn}, '
-      '${DatabaseConstants.positionColumn}';
-
-  static const _sizesSql =
-      'SELECT $_sizeColumns FROM ${DatabaseConstants.calculatorSizesTable} '
-      'WHERE ${DatabaseConstants.storeColumn} = ? '
-      'AND ${DatabaseConstants.systemColumn} = ? '
-      'ORDER BY ${DatabaseConstants.positionColumn}';
-
-  static const _spacingsSql =
+  // `values` is a keyword, so it is quoted wherever it names the column.
+  static const _rowsSql =
       'SELECT ${DatabaseConstants.idColumn}, '
-      '${DatabaseConstants.ticksColumn}, '
-      '${DatabaseConstants.positionColumn} '
-      'FROM ${DatabaseConstants.calculatorSpacingsTable} '
-      'ORDER BY ${DatabaseConstants.positionColumn}';
+      '${DatabaseConstants.userIdColumn}, '
+      '${DatabaseConstants.storeKindColumn}, '
+      '"${DatabaseConstants.valuesColumn}", '
+      '${DatabaseConstants.unitSystemColumn}, '
+      '${DatabaseConstants.createdAtColumn}, '
+      '${DatabaseConstants.updatedAtColumn}, '
+      '${DatabaseConstants.deletedAtColumn} '
+      'FROM ${DatabaseConstants.userCalculatorStoresTable} '
+      'WHERE ${DatabaseConstants.userIdColumn} = ? '
+      'AND ${DatabaseConstants.storeKindColumn} = ?';
 
-  static const _fenceSql =
-      'SELECT ${DatabaseConstants.idColumn}, '
-      '${DatabaseConstants.onCentreTicksColumn}, '
-      '${DatabaseConstants.railsPerSectionColumn} '
-      'FROM ${DatabaseConstants.calculatorFenceTable}';
+  static const _idSql =
+      'SELECT ${DatabaseConstants.idColumn} '
+      'FROM ${DatabaseConstants.userCalculatorStoresTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?';
 
-  static const _ratesSql =
-      'SELECT ${DatabaseConstants.idColumn}, '
-      '${DatabaseConstants.unitColumn}, '
-      '${DatabaseConstants.rateColumn}, '
-      '${DatabaseConstants.wastePercentColumn} '
-      'FROM ${DatabaseConstants.calculatorRatesTable}';
+  static const _rewriteSql =
+      'UPDATE ${DatabaseConstants.userCalculatorStoresTable} '
+      'SET "${DatabaseConstants.valuesColumn}" = ?, '
+      '${DatabaseConstants.unitSystemColumn} = ?, '
+      '${DatabaseConstants.updatedAtColumn} = ?, '
+      '${DatabaseConstants.deletedAtColumn} = ? '
+      'WHERE ${DatabaseConstants.idColumn} = ?';
 
-  static const _densitiesSql =
-      'SELECT ${DatabaseConstants.idColumn}, '
-      '${DatabaseConstants.nameColumn}, '
-      '${DatabaseConstants.poundsPerCubicYardColumn}, '
-      '${DatabaseConstants.positionColumn} '
-      'FROM ${DatabaseConstants.calculatorDensitiesTable} '
-      'ORDER BY ${DatabaseConstants.positionColumn}';
-
-  @override
-  Future<List<StoredSize>> fetchSizes(
-    SizeStore store,
-    MeasurementSystem system,
-  ) => _all(_sizesSql, [
-    store.name,
-    system.name,
-  ], TradeStoreRowMapper.sizeFromRow);
+  static const _softDeleteSql =
+      'UPDATE ${DatabaseConstants.userCalculatorStoresTable} '
+      'SET ${DatabaseConstants.deletedAtColumn} = ?, '
+      '${DatabaseConstants.updatedAtColumn} = ? '
+      'WHERE ${DatabaseConstants.idColumn} = ?';
 
   @override
-  Stream<List<StoredSize>> watchSizes(
-    SizeStore store,
-    MeasurementSystem system,
-  ) => _watchAll(
-    _sizesSql,
-    [store.name, system.name],
-    DatabaseConstants.calculatorSizesTable,
-    TradeStoreRowMapper.sizeFromRow,
-  );
+  Future<List<CalculatorStoreRowDto>> fetchRows(
+    String userId,
+    CalculatorStoreKind kind,
+  ) async => _rows(await _database.getAll(_rowsSql, [userId, kind.wire]));
 
   @override
-  Future<StoredSize> insertSize(StoredSize size) async => size.copyWith(
-    id: await _insert(
-      DatabaseConstants.calculatorSizesTable,
-      TradeStoreRowMapper.sizeToRow(size),
-    ),
-  );
-
-  @override
-  Future<bool> updateSize(StoredSize size) => _update(
-    DatabaseConstants.calculatorSizesTable,
-    size.id,
-    TradeStoreRowMapper.sizeToRow(size),
-  );
-
-  @override
-  Future<bool> deleteSize(String id) =>
-      _delete(DatabaseConstants.calculatorSizesTable, id);
-
-  @override
-  Future<List<StoredSpacing>> fetchSpacings() =>
-      _all(_spacingsSql, const [], TradeStoreRowMapper.spacingFromRow);
-
-  @override
-  Stream<List<StoredSpacing>> watchSpacings() => _watchAll(
-    _spacingsSql,
-    const [],
-    DatabaseConstants.calculatorSpacingsTable,
-    TradeStoreRowMapper.spacingFromRow,
-  );
-
-  @override
-  Future<StoredSpacing> insertSpacing(StoredSpacing spacing) async =>
-      spacing.copyWith(
-        id: await _insert(
-          DatabaseConstants.calculatorSpacingsTable,
-          TradeStoreRowMapper.spacingToRow(spacing),
-        ),
-      );
-
-  @override
-  Future<bool> updateSpacing(StoredSpacing spacing) => _update(
-    DatabaseConstants.calculatorSpacingsTable,
-    spacing.id,
-    TradeStoreRowMapper.spacingToRow(spacing),
-  );
-
-  @override
-  Future<bool> deleteSpacing(String id) =>
-      _delete(DatabaseConstants.calculatorSpacingsTable, id);
-
-  @override
-  Future<FenceConfiguration?> fetchFence() async => _single(
-    await _all(_fenceSql, const [], TradeStoreRowMapper.fenceFromRow),
-  );
-
-  @override
-  Stream<FenceConfiguration?> watchFence() => _tracked(
+  Stream<List<CalculatorStoreRowDto>> watchRows(
+    String userId,
+    CalculatorStoreKind kind,
+  ) => _tracked(
     _database
         .watch(
-          _fenceSql,
-          triggerOnTables: const [DatabaseConstants.calculatorFenceTable],
+          _rowsSql,
+          parameters: [userId, kind.wire],
+          triggerOnTables: const [DatabaseConstants.userCalculatorStoresTable],
         )
-        .map((rows) => _single(rows.map(TradeStoreRowMapper.fenceFromRow)))
-        .distinct(),
+        .map(_rows)
+        .distinct(_sameList),
   );
 
   @override
-  Future<void> upsertFence(FenceConfiguration fence) async {
-    final ids = await _database.getAll(
-      'SELECT ${DatabaseConstants.idColumn} '
-      'FROM ${DatabaseConstants.calculatorFenceTable}',
-    );
-    await _upsert(
-      DatabaseConstants.calculatorFenceTable,
-      _firstId(ids),
-      TradeStoreRowMapper.fenceToRow(fence),
-    );
+  Future<CalculatorStoreRowDto> insertRow(CalculatorStoreRowDto row) =>
+      _database.writeTransaction((transaction) => _insert(transaction, row));
+
+  @override
+  Future<bool> updateRow(CalculatorStoreRowDto row) {
+    final id = row.id;
+    if (id == null) return Future.value(false);
+    return _database.writeTransaction((transaction) async {
+      if (!await _exists(transaction, id)) return false;
+      await _rewrite(transaction, id, row);
+      return true;
+    });
   }
 
   @override
-  Future<List<StoredRate>> fetchRates() =>
-      _all(_ratesSql, const [], TradeStoreRowMapper.rateFromRow);
+  Future<bool> softDeleteRow(String id, DateTime deletedAt) =>
+      _database.writeTransaction((transaction) async {
+        if (!await _exists(transaction, id)) return false;
+        final stamp = deletedAt.toUtc().toIso8601String();
+        await transaction.execute(_softDeleteSql, [stamp, stamp, id]);
+        return true;
+      });
 
   @override
-  Stream<List<StoredRate>> watchRates() => _watchAll(
-    _ratesSql,
-    const [],
-    DatabaseConstants.calculatorRatesTable,
-    TradeStoreRowMapper.rateFromRow,
-  );
-
-  @override
-  Future<void> upsertRate(StoredRate rate) async {
-    final ids = await _database.getAll(
-      'SELECT ${DatabaseConstants.idColumn} '
-      'FROM ${DatabaseConstants.calculatorRatesTable} '
-      'WHERE ${DatabaseConstants.unitColumn} = ?',
-      [rate.unit.name],
-    );
-    await _upsert(
-      DatabaseConstants.calculatorRatesTable,
-      _firstId(ids),
-      TradeStoreRowMapper.rateToRow(rate),
-    );
+  Future<CalculatorStoreRowDto> writeSeedRow(CalculatorStoreRowDto row) async {
+    final seed = row.seed;
+    if (seed == null) {
+      throw ArgumentError.value(row, 'row', 'A default names its seed');
+    }
+    return _database.writeTransaction((transaction) async {
+      final existing = _rows(
+        await transaction.getAll(_rowsSql, [row.userId, row.storeKind.wire]),
+      ).where((candidate) => candidate.seed == seed).firstOrNull;
+      final id = existing?.id;
+      if (id == null) return _insert(transaction, row);
+      await _rewrite(transaction, id, row);
+      return row.copyWith(id: id);
+    });
   }
-
-  @override
-  Future<List<StoredDensity>> fetchDensities() =>
-      _all(_densitiesSql, const [], TradeStoreRowMapper.densityFromRow);
-
-  @override
-  Stream<List<StoredDensity>> watchDensities() => _watchAll(
-    _densitiesSql,
-    const [],
-    DatabaseConstants.calculatorDensitiesTable,
-    TradeStoreRowMapper.densityFromRow,
-  );
-
-  @override
-  Future<StoredDensity> insertDensity(StoredDensity density) async =>
-      density.copyWith(
-        id: await _insert(
-          DatabaseConstants.calculatorDensitiesTable,
-          TradeStoreRowMapper.densityToRow(density),
-        ),
-      );
-
-  @override
-  Future<bool> updateDensity(StoredDensity density) => _update(
-    DatabaseConstants.calculatorDensitiesTable,
-    density.id,
-    TradeStoreRowMapper.densityToRow(density),
-  );
-
-  @override
-  Future<bool> deleteDensity(String id) =>
-      _delete(DatabaseConstants.calculatorDensitiesTable, id);
 
   @override
   Future<void> dispose() async {
     _disposed = true;
-    final open = _watchers.entries.toList();
-    _watchers.clear();
+    final open = _watchSubscriptionsByController.entries.toList();
+    _watchSubscriptionsByController.clear();
     await Future.wait(
       open.map((watcher) async {
         await watcher.value.cancel();
@@ -251,90 +141,44 @@ class PowerSyncLocalTradeStoresDataSource
     );
   }
 
-  Future<List<T>> _all<T>(
-    String sql,
-    List<Object?> parameters,
-    T Function(Map<String, Object?>) fromRow,
+  Future<CalculatorStoreRowDto> _insert(
+    SqliteWriteContext transaction,
+    CalculatorStoreRowDto row,
   ) async {
-    final rows = await _database.getAll(sql, parameters);
-    return rows.map(fromRow).toList(growable: false);
-  }
-
-  Stream<List<T>> _watchAll<T>(
-    String sql,
-    List<Object?> parameters,
-    String table,
-    T Function(Map<String, Object?>) fromRow,
-  ) => _tracked(
-    _database
-        .watch(sql, parameters: parameters, triggerOnTables: [table])
-        .map((rows) => rows.map(fromRow).toList(growable: false))
-        .distinct(_sameList),
-  );
-
-  Future<String> _insert(String table, Map<String, Object> row) async {
     final id = uuid.v4();
-    final values = {DatabaseConstants.idColumn: id, ...row};
-    await _database.execute(
-      'INSERT INTO $table (${values.keys.join(', ')}) '
-      'VALUES (${List.filled(values.length, '?').join(', ')})',
-      values.values.toList(),
+    final columns = {DatabaseConstants.idColumn: id, ...row.toColumns()};
+    await transaction.execute(
+      'INSERT INTO ${DatabaseConstants.userCalculatorStoresTable} '
+      '(${columns.keys.map(_quoted).join(', ')}) '
+      'VALUES (${List.filled(columns.length, '?').join(', ')})',
+      columns.values.toList(),
     );
-    return id;
+    return row.copyWith(id: id);
   }
 
-  Future<bool> _update(
-    String table,
-    String? id,
-    Map<String, Object> row,
-  ) async {
-    if (id == null || !await _exists(table, id)) return false;
-    await _database.execute(
-      'UPDATE $table SET ${row.keys.map((column) => '$column = ?').join(', ')} '
-      'WHERE ${DatabaseConstants.idColumn} = ?',
-      [...row.values, id],
-    );
-    return true;
+  Future<void> _rewrite(
+    SqliteWriteContext transaction,
+    String id,
+    CalculatorStoreRowDto row,
+  ) {
+    final columns = row.toColumns();
+    return transaction.execute(_rewriteSql, [
+      columns[DatabaseConstants.valuesColumn],
+      columns[DatabaseConstants.unitSystemColumn],
+      columns[DatabaseConstants.updatedAtColumn],
+      columns[DatabaseConstants.deletedAtColumn],
+      id,
+    ]);
   }
 
-  Future<bool> _delete(String table, String id) async {
-    if (!await _exists(table, id)) return false;
-    await _database.execute(
-      'DELETE FROM $table WHERE ${DatabaseConstants.idColumn} = ?',
-      [id],
-    );
-    return true;
-  }
+  Future<bool> _exists(SqliteWriteContext transaction, String id) async =>
+      (await transaction.getAll(_idSql, [id])).isNotEmpty;
 
-  Future<void> _upsert(
-    String table,
-    String? id,
-    Map<String, Object> row,
-  ) async {
-    if (id == null) {
-      await _insert(table, row);
-    } else {
-      await _update(table, id, row);
-    }
-  }
+  String _quoted(String column) =>
+      column == DatabaseConstants.valuesColumn ? '"$column"' : column;
 
-  Future<bool> _exists(String table, String id) async {
-    final rows = await _database.getAll(
-      'SELECT ${DatabaseConstants.idColumn} FROM $table '
-      'WHERE ${DatabaseConstants.idColumn} = ?',
-      [id],
-    );
-    return rows.isNotEmpty;
-  }
-
-  String? _firstId(Iterable<Map<String, Object?>> rows) {
-    for (final row in rows) {
-      if (row[DatabaseConstants.idColumn] case final String id) return id;
-    }
-    return null;
-  }
-
-  T? _single<T>(Iterable<T> items) => items.isEmpty ? null : items.first;
+  List<CalculatorStoreRowDto> _rows(Iterable<Map<String, Object?>> rows) =>
+      rows.map(CalculatorStoreRowDto.fromRow).toList(growable: false);
 
   bool _sameList<T>(List<T> a, List<T> b) {
     if (a.length != b.length) return false;
@@ -355,9 +199,9 @@ class PowerSyncLocalTradeStoresDataSource
       controller.onCancel = subscription.cancel;
       return;
     }
-    _watchers[controller] = subscription;
+    _watchSubscriptionsByController[controller] = subscription;
     controller.onCancel = () {
-      _watchers.remove(controller);
+      _watchSubscriptionsByController.remove(controller);
       return subscription.cancel();
     };
   });

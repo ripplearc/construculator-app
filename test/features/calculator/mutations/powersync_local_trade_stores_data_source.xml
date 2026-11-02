@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- TRADE STORES DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: PowerSyncLocalTradeStoresDataSource and CalculatorStoreRowDto,
+         the row store under the trade stores repository. A weakened guard here
+         "updates" a row nobody has, writes a second row for one default, lets a
+         watch miss or repeat a change, reads a bad row as a good one, or keeps a
+         default deleted when it is brought back. -->
+
+    <files>
+        <file>lib/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart</file>
+        <file>lib/features/calculator/data/models/calculator_store_row_dto.dart</file>
+    </files>
+
+    <commands>
+        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_trade_stores_data_source_test.dart test/features/calculator/units/data/models/calculator_store_row_dto_test.dart</command>
+    </commands>
+
+    <rules>
+        <!-- RULE 1: an update of an unstored row is answered as done -->
+        <regex pattern="if \(id == null\) return Future\.value\(false\);" dotAll="true" id="trade_stores_data_source.update.unstored_row_done">
+            <mutation text="if (id == null) return Future.value(true);"/>
+        </regex>
+
+        <!-- RULE 2: an update of a row nobody has is attempted anyway -->
+        <regex pattern="if \(!await _exists\(transaction, id\)\) return false;\s*await _rewrite\(transaction, id, row\);" dotAll="true" id="trade_stores_data_source.update.skip_exists">
+            <mutation text="await _rewrite(transaction, id, row);"/>
+        </regex>
+
+        <!-- RULE 3: a soft delete of a row nobody has is attempted anyway -->
+        <regex pattern="if \(!await _exists\(transaction, id\)\) return false;\s*final stamp" dotAll="true" id="trade_stores_data_source.soft_delete.skip_exists">
+            <mutation text="final stamp"/>
+        </regex>
+
+        <!-- RULE 4: a soft delete stamps updated_at but not deleted_at -->
+        <regex pattern="await transaction\.execute\(_softDeleteSql, \[stamp, stamp, id\]\);" dotAll="true" id="trade_stores_data_source.soft_delete.no_deleted_at">
+            <mutation text="await transaction.execute(_softDeleteSql, [null, stamp, id]);"/>
+        </regex>
+
+        <!-- RULE 5: a row without a seed is written as a default -->
+        <regex pattern="if \(seed == null\) \{\s*throw ArgumentError" dotAll="true" id="trade_stores_data_source.seed_row.seedless_written">
+            <mutation text="if (false) {&#10;      throw ArgumentError"/>
+        </regex>
+
+        <!-- RULE 6: the row of a default is matched by any seed, or by none -->
+        <regex pattern="\.where\(\(candidate\) => candidate\.seed == seed\)\s*\.firstOrNull;" dotAll="true" id="trade_stores_data_source.seed_row.wrong_match">
+            <mutation text=".where((candidate) => candidate.seed != seed).firstOrNull;"/>
+            <mutation text=".where((candidate) => false).firstOrNull;"/>
+        </regex>
+
+        <!-- RULE 7: a second write of a default inserts a second row -->
+        <regex pattern="if \(id == null\) return _insert\(transaction, row\);" dotAll="true" id="trade_stores_data_source.seed_row.always_insert">
+            <mutation text="return _insert(transaction, row);"/>
+        </regex>
+
+        <!-- RULE 8: a watch collapses lists of different length, or repeats
+             an unchanged list -->
+        <regex pattern="if \(a\.length != b\.length\) return false;\s*for \(var i = 0; i &lt; a\.length; i\+\+\) \{\s*if \(a\[i\] != b\[i\]\) return false;\s*\}\s*return true;" dotAll="true" id="trade_stores_data_source.watch.same_list">
+            <mutation text="return true;"/>
+            <mutation text="return false;"/>
+        </regex>
+
+        <!-- RULE 9: a values column that is not an object is read anyway -->
+        <regex pattern="if \(decoded is! Map&lt;String, Object\?&gt;\) \{" dotAll="true" id="trade_stores_row_dto.values_not_object">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 10: a live row is read as deleted, or a deleted row as live -->
+        <regex pattern="deletedAt: row\[DatabaseConstants\.deletedAtColumn\] == null\s*\? null\s*: _time\(row, DatabaseConstants\.deletedAtColumn\)," dotAll="true" id="trade_stores_row_dto.deleted_at_read">
+            <mutation text="deletedAt: null,"/>
+        </regex>
+        <regex pattern="DatabaseConstants\.deletedAtColumn: deleted == null \? null : _iso\(deleted\)," dotAll="true" id="trade_stores_row_dto.deleted_at_written">
+            <mutation text="DatabaseConstants.deletedAtColumn: null,"/>
+        </regex>
+
+        <!-- RULE 11: a deleted default cannot be brought back -->
+        <regex pattern="deletedAt: clearDeletedAt \? null : deletedAt \?\? this\.deletedAt," dotAll="true" id="trade_stores_row_dto.clear_deleted_at">
+            <mutation text="deletedAt: deletedAt ?? this.deletedAt,"/>
+        </regex>
+
+        <!-- RULE 12: any label is read as the first kind -->
+        <regex pattern="values\.firstWhere\(\s*\(kind\) => kind\.wire == wire," dotAll="true" id="trade_stores_row_dto.kind_from_any_label">
+            <mutation text="values.firstWhere((kind) => true,"/>
+        </regex>
+    </rules>
+</mutations>

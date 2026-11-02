@@ -1,177 +1,45 @@
-import 'dart:async';
-
 import 'package:construculator/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart';
-import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
+import 'package:construculator/features/calculator/data/models/calculator_store_row_dto.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
-import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqlite3/common.dart';
 
-/// A [FakePowerSyncDatabase] that applies the statements
-/// [PowerSyncLocalTradeStoresDataSource] issues to in-memory rows.
-///
-/// Unlike the consent fake this one executes the writes, because the
-/// behaviour under test is a round trip: what an insert wrote is what the
-/// next read and the open watch see. The SQL shapes recognised are exactly
-/// the five the data source builds; anything else is a [StateError], so a
-/// changed query fails loudly rather than reading nothing.
-class _FakeTradeStoresDatabase extends FakePowerSyncDatabase {
-  /// Rows by table name, column names as in `schema.dart`.
-  final Map<String, List<Map<String, Object?>>> tables = {};
-
-  /// Thrown by the next read when set.
-  Object? readError;
-
-  /// Every statement executed, in order.
-  final List<String> executed = [];
-
-  final StreamController<String> _changes = StreamController.broadcast();
-
-  /// Closes the change stream, ending any [watch] this fake handed out.
-  Future<void> closeChanges() => _changes.close();
-
-  @override
-  Future<ResultSet> getAll(
-    String sql, [
-    List<Object?> parameters = const [],
-  ]) async => _query(sql, parameters);
-
-  @override
-  Future<ResultSet> execute(
-    String sql, [
-    List<Object?> parameters = const [],
-  ]) async {
-    executed.add(sql);
-    final insert = RegExp(
-      r'^INSERT INTO (\w+) \((.+)\) VALUES',
-    ).firstMatch(sql);
-    if (insert != null) {
-      final columns = insert.group(2)!.split(', ');
-      _rows(insert.group(1)!).add({
-        for (var i = 0; i < columns.length; i++) columns[i]: parameters[i],
-      });
-      _changes.add(insert.group(1)!);
-      return _empty();
-    }
-    final update = RegExp(
-      r'^UPDATE (\w+) SET (.+) WHERE id = \?$',
-    ).firstMatch(sql);
-    if (update != null) {
-      final columns = update
-          .group(2)!
-          .split(', ')
-          .map((c) => c.split(' = ').first)
-          .toList();
-      final row = _rows(
-        update.group(1)!,
-      ).firstWhere((r) => r['id'] == parameters.last);
-      for (var i = 0; i < columns.length; i++) {
-        row[columns[i]] = parameters[i];
-      }
-      _changes.add(update.group(1)!);
-      return _empty();
-    }
-    final delete = RegExp(r'^DELETE FROM (\w+) WHERE id = \?$').firstMatch(sql);
-    if (delete != null) {
-      _rows(delete.group(1)!).removeWhere((r) => r['id'] == parameters.first);
-      _changes.add(delete.group(1)!);
-      return _empty();
-    }
-    throw StateError('Unexpected statement: $sql');
-  }
-
-  @override
-  Stream<ResultSet> watch(
-    String sql, {
-    List<Object?> parameters = const [],
-    Duration throttle = const Duration(milliseconds: 30),
-    Iterable<String>? triggerOnTables,
-  }) => Stream<ResultSet>.multi((controller) {
-    void emit() {
-      try {
-        controller.add(_query(sql, parameters));
-      } catch (error, stackTrace) {
-        controller.addError(error, stackTrace);
-      }
-    }
-
-    final subscription = _changes.stream
-        .where(
-          (table) => triggerOnTables == null || triggerOnTables.contains(table),
-        )
-        .listen((_) => emit(), onDone: controller.close);
-    controller.onCancel = subscription.cancel;
-    emit();
-  });
-
-  List<Map<String, Object?>> _rows(String table) =>
-      tables.putIfAbsent(table, () => []);
-
-  ResultSet _query(String sql, List<Object?> parameters) {
-    final error = readError;
-    if (error != null) throw error;
-    final select = RegExp(
-      r'^SELECT (.+) FROM (\w+)(?: WHERE (.+?))?(?: ORDER BY position)?$',
-    ).firstMatch(sql);
-    if (select == null) throw StateError('Unexpected statement: $sql');
-    final columns = select.group(1)!.split(', ');
-    var rows = _rows(select.group(2)!).toList();
-    final where = select.group(3);
-    if (where != null) {
-      final conditions = where
-          .split(' AND ')
-          .map((c) => c.split(' = ').first)
-          .toList();
-      rows = rows.where((row) {
-        for (var i = 0; i < conditions.length; i++) {
-          if (row[conditions[i]] != parameters[i]) return false;
-        }
-        return true;
-      }).toList();
-    }
-    if (sql.endsWith('ORDER BY position')) {
-      rows.sort(
-        (a, b) => (a['position']! as int).compareTo(b['position']! as int),
-      );
-    }
-    if (rows.isEmpty) return _empty();
-    return ResultSet(columns, null, [
-      for (final row in rows) [for (final column in columns) row[column]],
-    ]);
-  }
-
-  ResultSet _empty() => ResultSet(const [], null, const []);
-}
+import '../../../helpers/fake_trade_stores_database.dart';
 
 void main() {
-  late _FakeTradeStoresDatabase database;
+  late FakeTradeStoresDatabase database;
   late PowerSyncLocalTradeStoresDataSource dataSource;
 
-  const inch = Length.ticksPerInch;
-  const sheet = StoredSize(
-    store: SizeStore.sheet,
-    system: MeasurementSystem.imperial,
-    width: Length(48 * inch, unit: Unit.inch),
-    height: Length(96 * inch, unit: Unit.inch),
-    position: 0,
+  final now = DateTime.utc(2026, 11, 2, 10);
+  final later = DateTime.utc(2026, 11, 2, 11);
+  const user = 'user-1';
+  const other = 'user-2';
+
+  CalculatorStoreRowDto row({
+    String userId = user,
+    CalculatorStoreKind kind = CalculatorStoreKind.density,
+    Map<String, Object?> values = const {'name': 'slag', 'position': 3},
+    MeasurementSystem system = MeasurementSystem.imperial,
+    DateTime? deletedAt,
+  }) => CalculatorStoreRowDto(
+    userId: userId,
+    storeKind: kind,
+    values: values,
+    unitSystem: system,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: deletedAt,
   );
-  const spacing = StoredSpacing(
-    spacing: Length(16 * inch, unit: Unit.inch),
-    position: 0,
-  );
-  const fence = FenceConfiguration(
-    onCentre: Length(8 * Length.ticksPerFoot, unit: Unit.foot),
-    railsPerSection: 3,
-  );
-  const rate = StoredRate(unit: RateUnit.squareFoot, rate: 12.3);
-  const concrete = StoredDensity(
-    name: 'concrete',
-    poundsPerCubicYard: 4050,
-    position: 0,
+
+  final concrete = row(
+    values: const {
+      'seed': 'density_concrete',
+      'name': 'concrete',
+      'position': 0,
+    },
   );
 
   setUp(() {
-    database = _FakeTradeStoresDatabase();
+    database = FakeTradeStoresDatabase();
     // The subject under test; resolving it through Modular would test the
     // module binding instead.
     // ignore: no_direct_instantiation
@@ -184,242 +52,243 @@ void main() {
   });
 
   group('PowerSyncLocalTradeStoresDataSource', () {
-    group('sizes', () {
-      test(
-        'inserts with a fresh id and reads back in position order',
-        () async {
-          final second = await dataSource.insertSize(
-            sheet.copyWith(position: 1),
-          );
-          final first = await dataSource.insertSize(sheet);
-          expect(first.id, isNotNull);
-          expect(first.id, isNot(second.id));
-          expect(
-            await dataSource.fetchSizes(
-              SizeStore.sheet,
-              MeasurementSystem.imperial,
-            ),
-            [first, second],
-          );
-        },
-      );
-
-      test('reads only the store and system asked for', () async {
-        await dataSource.insertSize(sheet);
-        await dataSource.insertSize(sheet.copyWith(store: SizeStore.masonry));
-        await dataSource.insertSize(
-          sheet.copyWith(system: MeasurementSystem.metric),
-        );
-        final sizes = await dataSource.fetchSizes(
-          SizeStore.sheet,
-          MeasurementSystem.imperial,
-        );
-        expect(sizes, hasLength(1));
-        expect(sizes.single.store, SizeStore.sheet);
-        expect(sizes.single.system, MeasurementSystem.imperial);
-      });
-
-      test(
-        'updates the row with the id and answers false for a stranger',
-        () async {
-          final stored = await dataSource.insertSize(sheet);
-          final wider = stored.copyWith(
-            width: const Length(50 * inch, unit: Unit.inch),
-          );
-          expect(await dataSource.updateSize(wider), isTrue);
-          expect(
-            await dataSource.fetchSizes(
-              SizeStore.sheet,
-              MeasurementSystem.imperial,
-            ),
-            [wider],
-          );
-          expect(
-            await dataSource.updateSize(wider.copyWith(id: 'nope')),
-            isFalse,
-          );
-          expect(await dataSource.updateSize(sheet), isFalse);
-        },
-      );
-
-      test(
-        'deletes the row with the id and answers false for a stranger',
-        () async {
-          final stored = await dataSource.insertSize(sheet);
-          expect(await dataSource.deleteSize('nope'), isFalse);
-          expect(await dataSource.deleteSize(stored.id!), isTrue);
-          expect(
-            await dataSource.fetchSizes(
-              SizeStore.sheet,
-              MeasurementSystem.imperial,
-            ),
-            isEmpty,
-          );
-        },
-      );
-
-      test('a watch emits now and after every change to the table', () async {
-        final seen = <List<StoredSize>>[];
-        final subscription = dataSource
-            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
-            .listen(seen.add);
-        addTearDown(subscription.cancel);
-        await pumpEventQueue();
-        final stored = await dataSource.insertSize(sheet);
-        await dataSource.insertSpacing(spacing);
-        await dataSource.deleteSize(stored.id!);
-        await pumpEventQueue();
-        expect(seen, [
-          <StoredSize>[],
-          [stored],
-          <StoredSize>[],
+    group('rows', () {
+      test('an insert mints a fresh id and reads back equal', () async {
+        final first = await dataSource.insertRow(row());
+        final second = await dataSource.insertRow(row());
+        expect(first.id, isNotNull);
+        expect(first.id, isNot(second.id));
+        expect(await dataSource.fetchRows(user, CalculatorStoreKind.density), [
+          first,
+          second,
         ]);
       });
-    });
-
-    group('spacings', () {
-      test('round-trips insert, update, delete', () async {
-        final stored = await dataSource.insertSpacing(spacing);
-        expect(await dataSource.fetchSpacings(), [stored]);
-        final wider = stored.copyWith(
-          spacing: const Length(24 * inch, unit: Unit.inch),
-        );
-        expect(await dataSource.updateSpacing(wider), isTrue);
-        expect(await dataSource.fetchSpacings(), [wider]);
-        expect(await dataSource.updateSpacing(spacing), isFalse);
-        expect(await dataSource.deleteSpacing(stored.id!), isTrue);
-        expect(await dataSource.deleteSpacing(stored.id!), isFalse);
-      });
 
       test(
-        'a watch re-emits a changed row and collapses an unchanged one',
+        'reads the rows of one user and one store, soft-deleted ones too',
         () async {
-          final seen = <List<StoredSpacing>>[];
-          final subscription = dataSource.watchSpacings().listen(seen.add);
-          addTearDown(subscription.cancel);
-          await pumpEventQueue();
-          final stored = await dataSource.insertSpacing(spacing);
-          final wider = stored.copyWith(
-            spacing: const Length(24 * inch, unit: Unit.inch),
-          );
-          await dataSource.updateSpacing(wider);
-          await dataSource.updateSpacing(wider);
-          await pumpEventQueue();
-          expect(seen, [
-            <StoredSpacing>[],
-            [stored],
-            [wider],
-          ]);
-        },
-      );
-
-      test('a watch follows the table', () async {
-        final seen = <List<StoredSpacing>>[];
-        final subscription = dataSource.watchSpacings().listen(seen.add);
-        addTearDown(subscription.cancel);
-        await pumpEventQueue();
-        final stored = await dataSource.insertSpacing(spacing);
-        await pumpEventQueue();
-        expect(seen.last, [stored]);
-      });
-    });
-
-    group('fence', () {
-      test(
-        'is null until written, then one row that upserts in place',
-        () async {
-          expect(await dataSource.fetchFence(), isNull);
-          await dataSource.upsertFence(fence);
-          expect(await dataSource.fetchFence(), fence);
-          await dataSource.upsertFence(fence.copyWith(railsPerSection: 2));
+          final mine = await dataSource.insertRow(row());
+          final gone = await dataSource.insertRow(row(deletedAt: later));
+          await dataSource.insertRow(row(userId: other));
+          await dataSource.insertRow(row(kind: CalculatorStoreKind.waste));
           expect(
-            await dataSource.fetchFence(),
-            fence.copyWith(railsPerSection: 2),
+            await dataSource.fetchRows(user, CalculatorStoreKind.density),
+            [mine, gone],
           );
-          expect(database.tables['calculator_fence'], hasLength(1));
+          expect(
+            await dataSource.fetchRows(other, CalculatorStoreKind.density),
+            hasLength(1),
+          );
         },
       );
 
-      test('a watch follows the row', () async {
-        final seen = <FenceConfiguration?>[];
-        final subscription = dataSource.watchFence().listen(seen.add);
-        addTearDown(subscription.cancel);
-        await pumpEventQueue();
-        await dataSource.upsertFence(fence);
-        await pumpEventQueue();
-        expect(seen, [null, fence]);
-      });
-    });
-
-    group('rates', () {
-      test('upserts one row per unit', () async {
-        await dataSource.upsertRate(rate);
-        await dataSource.upsertRate(
-          const StoredRate(unit: RateUnit.sheet, rate: 14.5),
+      test('an update rewrites the row with the id and answers false for a '
+          'stranger or an unstored row', () async {
+        final stored = await dataSource.insertRow(row());
+        final edited = stored.copyWith(
+          values: const {'name': 'slag', 'position': 1},
+          unitSystem: MeasurementSystem.metric,
+          updatedAt: later,
         );
-        await dataSource.upsertRate(rate.copyWith(wastePercent: 10));
-        final rates = await dataSource.fetchRates();
-        expect(rates, hasLength(2));
-        expect(rates, contains(rate.copyWith(wastePercent: 10)));
+        expect(await dataSource.updateRow(edited), isTrue);
+        expect(await dataSource.fetchRows(user, CalculatorStoreKind.density), [
+          edited,
+        ]);
+        expect(
+          await dataSource.updateRow(edited.copyWith(id: 'nope')),
+          isFalse,
+        );
+        expect(await dataSource.updateRow(row()), isFalse);
+        expect(database.tables['user_calculator_stores'], hasLength(1));
       });
 
-      test('a watch follows the table', () async {
-        final seen = <List<StoredRate>>[];
-        final subscription = dataSource.watchRates().listen(seen.add);
-        addTearDown(subscription.cancel);
-        await pumpEventQueue();
-        await dataSource.upsertRate(rate);
-        await pumpEventQueue();
-        expect(seen.last, [rate]);
+      test(
+        'a soft delete stamps the row and answers false for a stranger',
+        () async {
+          final stored = await dataSource.insertRow(row());
+          expect(await dataSource.softDeleteRow('nope', later), isFalse);
+          expect(await dataSource.softDeleteRow(stored.id!, later), isTrue);
+          final rows = await dataSource.fetchRows(
+            user,
+            CalculatorStoreKind.density,
+          );
+          expect(rows.single.deletedAt, later);
+          expect(rows.single.updatedAt, later);
+          expect(rows.single.values, stored.values);
+        },
+      );
+    });
+
+    group('seed rows', () {
+      test('the first write of a default inserts its row', () async {
+        final stored = await dataSource.writeSeedRow(concrete);
+        expect(stored.id, isNotNull);
+        expect(await dataSource.fetchRows(user, CalculatorStoreKind.density), [
+          stored,
+        ]);
+      });
+
+      test('a second write of the same default rewrites that row', () async {
+        final stored = await dataSource.writeSeedRow(concrete);
+        final heavier = await dataSource.writeSeedRow(
+          concrete.copyWith(
+            values: {...concrete.values, 'pounds_per_cubic_yard': 4100},
+            updatedAt: later,
+          ),
+        );
+        expect(heavier.id, stored.id);
+        final rows = await dataSource.fetchRows(
+          user,
+          CalculatorStoreKind.density,
+        );
+        expect(rows, hasLength(1));
+        expect(rows.single.values['pounds_per_cubic_yard'], 4100);
+        expect(rows.single.updatedAt, later);
+      });
+
+      test('a deleted default is brought back by writing it again', () async {
+        final gone = await dataSource.writeSeedRow(
+          concrete.copyWith(deletedAt: later),
+        );
+        final back = await dataSource.writeSeedRow(concrete);
+        expect(back.id, gone.id);
+        final rows = await dataSource.fetchRows(
+          user,
+          CalculatorStoreKind.density,
+        );
+        expect(rows.single.deletedAt, isNull);
+      });
+
+      test(
+        'two writes of one default at once leave one row, not two',
+        () async {
+          await Future.wait([
+            dataSource.writeSeedRow(concrete),
+            dataSource.writeSeedRow(
+              concrete.copyWith(values: {...concrete.values, 'position': 1}),
+            ),
+          ]);
+          final rows = await dataSource.fetchRows(
+            user,
+            CalculatorStoreKind.density,
+          );
+          expect(rows, hasLength(1));
+          expect(rows.single.values['position'], 1);
+        },
+      );
+
+      test('another user\'s row of the same default, and another default, are '
+          'left alone', () async {
+        final theirs = await dataSource.writeSeedRow(
+          concrete.copyWith(values: {...concrete.values, 'position': 9}),
+        );
+        final others = await dataSource.insertRow(
+          row(userId: other, values: concrete.values),
+        );
+        final gravel = await dataSource.writeSeedRow(
+          row(values: const {'seed': 'density_gravel', 'name': 'gravel'}),
+        );
+        expect(gravel.id, isNot(theirs.id));
+        expect(await dataSource.fetchRows(user, CalculatorStoreKind.density), [
+          theirs,
+          gravel,
+        ]);
+        expect(await dataSource.fetchRows(other, CalculatorStoreKind.density), [
+          others,
+        ]);
+      });
+
+      test('a row without a seed cannot be written as a default', () async {
+        await expectLater(dataSource.writeSeedRow(row()), throwsArgumentError);
+        expect(
+          await dataSource.fetchRows(user, CalculatorStoreKind.density),
+          isEmpty,
+        );
       });
     });
 
-    group('densities', () {
-      test('round-trips insert, update, delete', () async {
-        final stored = await dataSource.insertDensity(concrete);
-        expect(await dataSource.fetchDensities(), [stored]);
-        final heavier = stored.copyWith(poundsPerCubicYard: 4100);
-        expect(await dataSource.updateDensity(heavier), isTrue);
-        expect(await dataSource.fetchDensities(), [heavier]);
-        expect(await dataSource.updateDensity(concrete), isFalse);
-        expect(await dataSource.deleteDensity(stored.id!), isTrue);
-        expect(await dataSource.deleteDensity(stored.id!), isFalse);
+    group('watches', () {
+      test('a watch emits now and after every change to the table', () async {
+        final expectation = expectLater(
+          dataSource
+              .watchRows(user, CalculatorStoreKind.density)
+              .map((rows) => rows.map((r) => r.deletedAt).toList()),
+          emitsInOrder([
+            isEmpty,
+            [null],
+            [later],
+          ]),
+        );
+        final stored = await dataSource.insertRow(row());
+        await dataSource.insertRow(row(kind: CalculatorStoreKind.waste));
+        await dataSource.softDeleteRow(stored.id!, later);
+        await expectation;
       });
 
-      test('a watch follows the table', () async {
-        final seen = <List<StoredDensity>>[];
-        final subscription = dataSource.watchDensities().listen(seen.add);
-        addTearDown(subscription.cancel);
-        await pumpEventQueue();
-        final stored = await dataSource.insertDensity(concrete);
-        await pumpEventQueue();
-        expect(seen.last, [stored]);
+      test('a watch sees a transaction land whole', () async {
+        final expectation = expectLater(
+          dataSource
+              .watchRows(user, CalculatorStoreKind.density)
+              .map((rows) => rows.map((r) => r.values['position']).toList()),
+          emitsInOrder([
+            isEmpty,
+            [0],
+            [1],
+          ]),
+        );
+        await dataSource.writeSeedRow(concrete);
+        await dataSource.writeSeedRow(
+          concrete.copyWith(values: {...concrete.values, 'position': 1}),
+        );
+        await expectation;
       });
     });
 
     group('errors and lifecycle', () {
       test('a failing read throws through fetch and watch', () async {
         database.readError = StateError('locked');
-        expect(dataSource.fetchRates(), throwsStateError);
-        expect(dataSource.watchRates().first, throwsStateError);
+        await expectLater(
+          dataSource.fetchRows(user, CalculatorStoreKind.density),
+          throwsStateError,
+        );
+        await expectLater(
+          dataSource.watchRows(user, CalculatorStoreKind.density).first,
+          throwsStateError,
+        );
+      });
+
+      test('a failing write throws and stores nothing', () async {
+        database.writeError = StateError('locked');
+        await expectLater(dataSource.insertRow(row()), throwsStateError);
+        await expectLater(dataSource.writeSeedRow(concrete), throwsStateError);
+        database.writeError = null;
+        expect(
+          await dataSource.fetchRows(user, CalculatorStoreKind.density),
+          isEmpty,
+        );
       });
 
       test(
         'dispose ends the watches handed out and leaves the database usable',
         () async {
-          var done = false;
-          dataSource.watchSpacings().listen((_) {}, onDone: () => done = true);
-          await pumpEventQueue();
+          final rows = dataSource.watchRows(user, CalculatorStoreKind.density);
+          final ended = expectLater(rows, emitsInOrder([isEmpty, emitsDone]));
+          await expectLater(rows, emits(isEmpty));
           await dataSource.dispose();
-          await pumpEventQueue();
-          expect(done, isTrue);
-          expect(await dataSource.fetchSpacings(), isEmpty);
+          await ended;
+          expect(
+            await dataSource.fetchRows(user, CalculatorStoreKind.density),
+            isEmpty,
+          );
         },
       );
 
       test('a watch taken after dispose answers once and ends', () async {
         await dataSource.dispose();
-        expect(await dataSource.watchDensities().toList(), [<StoredDensity>[]]);
+        expect(
+          await dataSource.watchRows(user, CalculatorStoreKind.waste).toList(),
+          [<CalculatorStoreRowDto>[]],
+        );
       });
     });
   });
