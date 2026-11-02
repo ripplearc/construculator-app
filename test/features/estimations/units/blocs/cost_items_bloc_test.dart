@@ -208,4 +208,82 @@ void main() {
       ],
     );
   });
+
+  group('CostItems events and states', () {
+    test('requests for the same estimate are equal', () {
+      expect(
+        const CostItemsRequested('estimate-1'),
+        const CostItemsRequested('estimate-1'),
+      );
+    });
+
+    test('requests for different estimates are not equal', () {
+      expect(
+        const CostItemsRequested('estimate-1'),
+        isNot(const CostItemsRequested('estimate-2')),
+      );
+    });
+
+    test('refreshes are equal', () {
+      final first = CostItemsRefreshed();
+      final second = CostItemsRefreshed();
+
+      expect(first, second);
+    });
+
+    test('initial and loading states are each equal to themselves', () {
+      final initial = CostItemsInitial();
+      final loading = CostItemsLoading();
+
+      expect(initial, CostItemsInitial());
+      expect(loading, CostItemsLoading());
+      expect(initial, isNot(loading));
+    });
+
+    test('loaded states with the same subtotals are equal', () {
+      const loaded = CostItemsLoaded(
+        items: [],
+        materialsSubtotal: 1,
+        laborSubtotal: 2,
+        equipmentSubtotal: 3,
+      );
+
+      expect(
+        loaded,
+        const CostItemsLoaded(
+          items: [],
+          materialsSubtotal: 1,
+          laborSubtotal: 2,
+          equipmentSubtotal: 3,
+        ),
+      );
+      expect(
+        loaded,
+        isNot(
+          const CostItemsLoaded(
+            items: [],
+            materialsSubtotal: 1,
+            laborSubtotal: 2,
+            equipmentSubtotal: 4,
+          ),
+        ),
+      );
+    });
+
+    test('failure states are equal when they hold the same failure', () {
+      const failure = EstimationFailure(
+        errorType: EstimationErrorType.timeoutError,
+      );
+
+      expect(const CostItemsFailure(failure), const CostItemsFailure(failure));
+      expect(
+        const CostItemsFailure(failure),
+        isNot(
+          const CostItemsFailure(
+            EstimationFailure(errorType: EstimationErrorType.connectionError),
+          ),
+        ),
+      );
+    });
+  });
 }
