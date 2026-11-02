@@ -249,6 +249,42 @@ void main() {
       },
     );
 
+    test(
+      'console filter follows a default config replaced after the logger was built',
+      () {
+        final consoleLevels = <Level>[];
+        void recordLevel(OutputEvent event) => consoleLevels.add(event.level);
+        Logger.addOutputListener(recordLevel);
+        addTearDown(() => Logger.removeOutputListener(recordLevel));
+        AppLogger.setConfig(FakeAppConfig()..setEnvironment(Environment.prod));
+        final earlyLogger = AppLogger(debugMode: false);
+
+        earlyLogger.debug('Filtered in prod');
+        AppLogger.setConfig(FakeAppConfig()..setEnvironment(Environment.dev));
+        earlyLogger.debug('Shown in dev');
+
+        expect(consoleLevels, [Level.debug]);
+      },
+    );
+
+    test(
+      'console filter stops filtering when the default config is cleared',
+      () {
+        final consoleLevels = <Level>[];
+        void recordLevel(OutputEvent event) => consoleLevels.add(event.level);
+        Logger.addOutputListener(recordLevel);
+        addTearDown(() => Logger.removeOutputListener(recordLevel));
+        AppLogger.setConfig(FakeAppConfig()..setEnvironment(Environment.prod));
+        final earlyLogger = AppLogger(debugMode: false);
+
+        earlyLogger.debug('Filtered in prod');
+        AppLogger.setConfig(null);
+        earlyLogger.debug('Shown without a config');
+
+        expect(consoleLevels, [Level.debug]);
+      },
+    );
+
     test('injected Config wins over a default config set later', () {
       final consoleLevels = <Level>[];
       void recordLevel(OutputEvent event) => consoleLevels.add(event.level);
