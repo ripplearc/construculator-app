@@ -73,7 +73,10 @@ class AddToEstimateFooter extends StatelessWidget {
             ),
             if (errorMessage case final message?) ...[
               const SizedBox(height: CoreSpacing.space4),
-              _ErrorLine(message: message),
+              CoreInlineErrorRow(
+                key: AddToEstimateFooter.errorKey,
+                message: message,
+              ),
               const SizedBox(height: CoreSpacing.space2),
             ] else
               const SizedBox(height: CoreSpacing.space4),
@@ -85,39 +88,6 @@ class AddToEstimateFooter extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ErrorLine extends StatelessWidget {
-  final String message;
-
-  const _ErrorLine({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    return Semantics(
-      liveRegion: true,
-      child: Row(
-        key: AddToEstimateFooter.errorKey,
-        spacing: CoreSpacing.space2,
-        children: [
-          CoreIconWidget(
-            icon: CoreIcons.error,
-            size: CoreIconSize.size16,
-            color: colorTheme.textError,
-          ),
-          Expanded(
-            child: Text(
-              message,
-              style: context.textTheme.bodySmallRegular.copyWith(
-                color: colorTheme.textError,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
