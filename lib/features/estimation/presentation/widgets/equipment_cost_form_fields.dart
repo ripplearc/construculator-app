@@ -648,7 +648,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                     estimateName ?? '',
                   ),
                   style: context.textTheme.bodySmallRegular.copyWith(
-                    color: colorTheme.textError,
+                    color: colorTheme.textDark,
                   ),
                 ),
               ),
@@ -1182,7 +1182,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
                 children: [
                   if (widget.showRecalledRateHeader) ...[
                     ..._recalledRateHeader(context, data),
-                    const SizedBox(height: CoreSpacing.space5),
+                    SizedBox(
+                      height: data.refusedDefault == null
+                          ? CoreSpacing.space5
+                          : CoreSpacing.space2,
+                    ),
                   ],
                   ..._refusedDefaultNoticeAboveRate(context, data),
                   isDay

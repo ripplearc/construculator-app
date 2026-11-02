@@ -4180,6 +4180,55 @@ void main() {
       expect(database.refusalRow(refusalId)?['shown_at'], isNotNull);
     });
 
+    testWidgets('on a recalled rate, sits 8 dp under the saved rate header', (
+      tester,
+    ) async {
+      refuse();
+      await tester.pumpWidget(
+        makeWidget(
+          initialRateEntry: YourRateEntry(
+            id: 'rate-1',
+            companyId: 'company-1',
+            itemName: itemName,
+            category: CostItemType.equipment,
+            rate: const Money(amount: 400),
+            savedAt: DateTime(2026, 1, 1),
+            equipmentMethod: EquipmentPricingMethod.job,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final subtitleBottom = tester
+          .getBottomLeft(find.byKey(const Key('recalled_rate_subtitle')))
+          .dy;
+      final noticeTop = tester
+          .getTopLeft(find.byKey(const Key('refused_default_notice')))
+          .dy;
+      expect(noticeTop - subtitleBottom, CoreSpacing.space2);
+    });
+
+    testWidgets('is not recorded as shown when the estimate lookup then fails', (
+      tester,
+    ) async {
+      refuse();
+      keepOnLine();
+      await Modular.get<CurrentCompanyResolver>().resolve();
+      fakeSupabase
+        ..shouldDelayOperations = true
+        ..completer = Completer<void>();
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await pickItemOnJob(tester);
+      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+
+      fakeSupabase.shouldThrowOnSelectMatch = true;
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+
+      expect(database.refusalRow(refusalId)?['shown_at'], isNull);
+    });
+
     testWidgets('goes when a new default is saved for the item', (
       tester,
     ) async {
