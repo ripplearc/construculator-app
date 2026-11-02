@@ -13,9 +13,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// the Keystore.
 ///
 /// A failed call is logged once here and rethrown, so the caller decides
-/// whether the failure matters. A failure before Sentry has started reaches
-/// the console only. Later failures reach Sentry when a Sentry DSN is
-/// configured.
+/// whether the failure matters. Sentry starts before Supabase, so with a
+/// Sentry DSN configured the log reaches Sentry as well as the console.
 class SecureStorageWrapperImpl implements SecureStorageWrapper {
   static final _logger = AppLogger().tag('SecureStorageWrapperImpl');
 

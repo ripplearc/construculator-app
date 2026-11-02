@@ -20,7 +20,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// When [ignoreStoredSession] is true, whatever is stored reads as no session,
 /// so the app starts signed out. A new sign-in saves over the stored value.
-// TODO: [CA-1333] start Sentry before Supabase so the iOS start-up failure reaches Sentry
 class SecureSessionLocalStorage extends LocalStorage {
   final SecureStorageWrapper _secureStorage;
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
@@ -22,31 +24,35 @@ class SentryWrapperImpl implements SentryWrapper {
   });
 
   @override
-  Future<void> initialize(void Function() appRunner) async {
+  Future<void> initialize(FutureOr<void> Function() appRunner) async {
     final dsn = _envLoader.get(sentryDsnKey) ?? '';
 
     // Skip Sentry initialization if DSN is not configured
     // This prevents silent no-op scenarios where Sentry accepts empty DSN
     // but drops all events without indication
     if (dsn.isEmpty) {
-      appRunner();
+      await appRunner();
       return;
     }
 
-    await _sentrySdk.init((options) {
-      options.dsn = dsn;
-      options.environment = _config.getEnvironmentName(_config.environment);
+    await _sentrySdk.init(
+      (options) {
+        options.dsn = dsn;
+        options.environment = _config.getEnvironmentName(_config.environment);
 
-      options.tracesSampleRate = _config.isProd
-          ? _prodTracesSampleRate
-          : _nonProdTracesSampleRate;
-      options.enableAutoPerformanceTracing = true;
-      options.attachScreenshot = false;
-      options.enableAutoSessionTracking = true;
-      options.captureFailedRequests = true;
-    }, appRunner: appRunner);
-
-    _isInitialized = true;
+        options.tracesSampleRate = _config.isProd
+            ? _prodTracesSampleRate
+            : _nonProdTracesSampleRate;
+        options.enableAutoPerformanceTracing = true;
+        options.attachScreenshot = false;
+        options.enableAutoSessionTracking = true;
+        options.captureFailedRequests = true;
+      },
+      appRunner: () async {
+        _isInitialized = true;
+        await appRunner();
+      },
+    );
   }
 
   @override

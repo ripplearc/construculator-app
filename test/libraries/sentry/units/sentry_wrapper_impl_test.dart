@@ -1,11 +1,14 @@
 // ignore_for_file: no_direct_instantiation
 
+import 'dart:async';
+
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/sentry/testing/fake_sentry_sdk.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -77,6 +80,81 @@ void main() {
         expect(options.attachScreenshot, isFalse);
         expect(options.enableAutoSessionTracking, isTrue);
         expect(options.captureFailedRequests, isTrue);
+      });
+
+      test('reports an exception captured while the app runner is running',
+          () async {
+        fakeEnvLoader.setEnvVar(sentryDsnKey, testDsn);
+        final startupFailure = StateError('supabase start-up failed');
+
+        await sentryWrapper.initialize(() async {
+          await sentryWrapper.captureException(startupFailure);
+        });
+
+        expect(fakeSentrySdk.capturedExceptions, [startupFailure]);
+      });
+
+      test('does not finish until the async app runner finishes', () {
+        fakeEnvLoader.setEnvVar(sentryDsnKey, testDsn);
+        fakeAsync((async) {
+          final appRunnerGate = Completer<void>();
+          var initializeFinished = false;
+          sentryWrapper
+              .initialize(() => appRunnerGate.future)
+              .then((_) => initializeFinished = true);
+
+          async.flushMicrotasks();
+          expect(initializeFinished, isFalse);
+
+          appRunnerGate.complete();
+          async.flushMicrotasks();
+          expect(initializeFinished, isTrue);
+        });
+      });
+
+      test('does not finish until the async app runner finishes when DSN is '
+          'missing', () {
+        fakeAsync((async) {
+          final appRunnerGate = Completer<void>();
+          var initializeFinished = false;
+          sentryWrapper
+              .initialize(() => appRunnerGate.future)
+              .then((_) => initializeFinished = true);
+
+          async.flushMicrotasks();
+          expect(initializeFinished, isFalse);
+
+          appRunnerGate.complete();
+          async.flushMicrotasks();
+          expect(initializeFinished, isTrue);
+        });
+      });
+
+      test('passes on a failure thrown by the app runner when DSN is missing',
+          () async {
+        await expectLater(
+          sentryWrapper.initialize(() async {
+            throw StateError('supabase start-up failed');
+          }),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test(
+          'passes on a failure thrown by the app runner and keeps reporting '
+          'when DSN is set', () async {
+        fakeEnvLoader.setEnvVar(sentryDsnKey, testDsn);
+        final startupFailure = StateError('supabase start-up failed');
+
+        await expectLater(
+          sentryWrapper.initialize(() async {
+            throw startupFailure;
+          }),
+          throwsA(same(startupFailure)),
+        );
+        await sentryWrapper.captureException(startupFailure);
+
+        expect(fakeSentrySdk.capturedExceptions, [startupFailure]);
       });
 
       test('samples all transactions on non-prod environments', () async {

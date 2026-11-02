@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:equatable/equatable.dart';
 
@@ -20,8 +22,8 @@ class FakeSentryWrapper implements SentryWrapper {
 
   /// Executes [appRunner] immediately for tests.
   @override
-  Future<void> initialize(void Function() appRunner) async {
-    appRunner();
+  Future<void> initialize(FutureOr<void> Function() appRunner) async {
+    await appRunner();
   }
 
   /// Stores breadcrumb details so tests can assert on them.
