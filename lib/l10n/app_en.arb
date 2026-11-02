@@ -3193,11 +3193,6 @@
     "description": "Summary card note while the Job amount has an error. No Figma frame covers this case.",
     "context": "N/A"
   },
-  "addsToEstimateNoTotalText": "—",
-  "@addsToEstimateNoTotalText": {
-    "description": "Shown in place of the line total on the summary card while the line cannot be totalled yet; a dash, never a zero",
-    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
-  },
   "addsToEstimateTotalSemantics": "{estimateName} total before {before}, after {after}",
   "@addsToEstimateTotalSemantics": {
     "description": "Screen reader label for the summary card's last row, read in place of the arrow between the two totals",
