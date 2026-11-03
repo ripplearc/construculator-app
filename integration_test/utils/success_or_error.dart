@@ -13,6 +13,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// in practice the app reporting a failure. Revisit if either screen starts
 /// showing a success or info toast.
 ///
+/// The tap waits until the button has stopped moving. The sheet slides in, and
+/// a tap on the button's position mid-slide can land on the modal barrier
+/// instead, which dismisses the sheet and leaves the journey on the same screen.
+///
 /// A timeout thrown by this function means neither outcome happened within
 /// [timeout]; that is a genuine timeout. A caught, fast failure here means
 /// the app told us why it didn't succeed, and we should not have waited to
@@ -31,6 +35,7 @@ Future<void> tapSuccessSheetOrFailFast(
     matching: find.byType(CoreButton),
   );
   final toastFinder = find.byType(Toast);
+  Rect? buttonRectOnPreviousPump;
 
   while (DateTime.now().isBefore(deadline)) {
     await $.pump(const Duration(milliseconds: 300));
@@ -46,8 +51,12 @@ Future<void> tapSuccessSheetOrFailFast(
     }
 
     if (buttonFinder.evaluate().isNotEmpty) {
-      await $.tester.tap(buttonFinder.first);
-      return;
+      final buttonRect = $.tester.getRect(buttonFinder.first);
+      if (buttonRect == buttonRectOnPreviousPump) {
+        await $.tester.tap(buttonFinder.first);
+        return;
+      }
+      buttonRectOnPreviousPump = buttonRect;
     }
   }
 

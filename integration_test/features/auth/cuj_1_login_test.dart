@@ -4,6 +4,7 @@ import 'package:patrol/patrol.dart';
 import '../../utils/app_runner.dart';
 import '../../utils/e2e_teardown.dart';
 import '../../utils/success_or_error.dart';
+import '../../utils/tap_when_enabled.dart';
 import '../../utils/test_config.dart';
 
 void main() {
@@ -14,12 +15,12 @@ void main() {
       await startApp($);
 
       await $(const Key('login_email_field')).enterText(TestConfig.loginEmail);
-      await $(const Key('login_email_continue_button')).tap();
+      await tapWhenEnabled($, const Key('login_email_continue_button'));
 
       await $(
         const Key('login_password_field'),
       ).enterText(TestConfig.loginPassword);
-      await $(const Key('login_password_continue_button')).tap();
+      await tapWhenEnabled($, const Key('login_password_continue_button'));
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.

@@ -48,6 +48,15 @@ runs:
       with:
         version: ${{ inputs.supabase-version }}
 
+    # The Supabase database image comes from ghcr.io. Anonymous pulls share one
+    # request budget across GitHub's runners and are refused when it runs out.
+    - name: Log in to ghcr.io
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
     - name: Start environment
       shell: bash
       env:

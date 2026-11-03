@@ -5,6 +5,7 @@ import '../../utils/app_runner.dart';
 import '../../utils/e2e_teardown.dart';
 import '../../utils/mailpit_client.dart';
 import '../../utils/success_or_error.dart';
+import '../../utils/tap_when_enabled.dart';
 import '../../utils/test_config.dart';
 
 void main() {
@@ -19,7 +20,7 @@ void main() {
 
       final email = TestConfig.uniqueRegisterEmail();
       await $(const Key('register_email_field')).enterText(email);
-      await $(const Key('register_email_continue_button')).tap();
+      await tapWhenEnabled($, const Key('register_email_continue_button'));
 
       final otp = await MailpitClient.waitForOtp(email);
       await $(const Key('pin_input')).enterText(otp);
@@ -42,7 +43,9 @@ void main() {
       ).enterText(TestConfig.registerPassword);
       // The submit button sits below the fold on this form once the soft
       // keyboard is up — scroll it into the (keyboard-resized) viewport first.
-      await $(const Key('create_account_submit_button')).scrollTo().tap();
+      // It stays disabled until the form validation settles, so the tap waits.
+      await $(const Key('create_account_submit_button')).scrollTo();
+      await tapWhenEnabled($, const Key('create_account_submit_button'));
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.
