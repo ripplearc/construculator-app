@@ -95,32 +95,46 @@ class CalculatorState extends Equatable {
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
 
   /// Row 1 of the strip (Section 1.2), in a fixed order with no ranking: a
-  /// pending trig chip's answer leads (rule 4.4). While an operator has
-  /// values on both sides the running total follows it as Calc, in place of
-  /// the rule answers, so that the user always sees the running total
-  /// before the next operator and = lands it (term 2.15; walkthrough 12.3,
-  /// "Multiplication 2. Strip: Calc: 8ft 0in"). Otherwise the rule answers
-  /// the named values earn, minus the ones already landed as result chips
+  /// pending trig chip's answer leads (rule 4.4) when the chip stands alone
+  /// or builds its own ratio across ÷ ([ATAN] 16 ÷ 12, walkthrough 23.3).
+  /// While an operator has values on both sides the running total is
+  /// offered as Calc, in place of the rule answers, so that the user always
+  /// sees the running total before the next operator and = lands it (term
+  /// 2.15; walkthrough 12.3, "Multiplication 2. Strip: Calc: 8ft 0in"); a
+  /// trig chip that continues the chain (5 × [SIN] 30) follows Calc, since
+  /// = banks the running total (rule 4.6). Otherwise the rule answers the
+  /// named values earn, minus the ones already landed as result chips
   /// (Section 8: after Pitch-rise is accepted the other two spellings stay
-  /// on offer). Empty after an error chip ("after an error the area stays
-  /// empty on purpose") and while a bracket is open (Section 7: no preview
-  /// until the group closes).
+  /// on offer). Empty while the chain holds an error chip or a step it
+  /// cannot compute ("after an error the area stays empty on purpose";
+  /// ÷ 0 before and after its =, doc line 771) and while a bracket is open
+  /// (Section 7: no preview until the group closes).
   List<CalculatorSuggestion> get suggestions {
     if (_stripIsSilent) return const [];
+    final trigAnswer = switch (tape.trigAnswer) {
+      final answer? => _answer(answer.key, answer.value),
+      null => null,
+    };
+    final runningTotal = switch (tape.runningTotal) {
+      ChainValue(:final value, isCalculation: true) => CalculatorSuggestion(
+        key: Tape.calcKey,
+        value: value,
+        kind: CalculatorSuggestionKind.runningTotal,
+        text: tape.formatter.format(value),
+      ),
+      _ => null,
+    };
+    final trigLeads = trigAnswer != null && !tape.trigAnswerContinuesAChain;
     return [
-      if (tape.trigAnswer case final answer?) _answer(answer.key, answer.value),
-      if (tape.runningTotal case ChainValue(:final value, isCalculation: true))
-        CalculatorSuggestion(
-          key: Tape.calcKey,
-          value: value,
-          kind: CalculatorSuggestionKind.runningTotal,
-          text: tape.formatter.format(value),
-        )
+      if (trigLeads) trigAnswer,
+      if (runningTotal != null)
+        runningTotal
       else
         for (final answer in const DeterministicRules().answersFor(
           tape.namedValues,
         ))
           if (!_hasLanded(answer.key)) _answer(answer.key, answer.value),
+      if (trigAnswer != null && !trigLeads) trigAnswer,
     ];
   }
 
@@ -128,18 +142,19 @@ class CalculatorState extends Equatable {
   /// 2.12; Section 6, "Where conversions show"), as plain values with no
   /// label. The value being typed once it is complete, else the answer the
   /// tape ends on; a typed angle is left to the Read-as pill (term 2.14),
-  /// and an angle answer offers its other spelling. Empty after an error
-  /// and while a bracket is open, as row 1 is.
+  /// and an angle answer offers its other spelling, except a pitch: D:M:S
+  /// is not a pitch reading (Section 8), and row 1 lists its other two
+  /// readings. Empty while the chain holds an error and while a bracket is
+  /// open, as row 1 is.
   List<CalculatorSuggestion> get conversions {
     if (_stripIsSilent) return const [];
     final value = switch (_chipRead) {
-      final ValueChip chip when chip.trigFunction == null => switch (chip.value(
-        tape.parser,
-      )) {
+      final ValueChip chip => switch (chip.value(tape.parser)) {
         Angle() || Scalar() || null => null,
         final value => value,
       },
-      ResultChip(:final value) => value,
+      ResultChip(:final key, :final value) =>
+        DeterministicRules.isPitchKey(key) ? null : value,
       _ => null,
     };
     if (value == null) return const [];
@@ -168,7 +183,27 @@ class CalculatorState extends Equatable {
     CalculatorSuggestion(:final key) => key,
   };
 
-  bool get _stripIsSilent => tape.endsWithError || tape.openBracket != null;
+  bool get _stripIsSilent =>
+      tape.openBracket != null ||
+      switch (tape.runningTotal) {
+        ChainFailed() => true,
+        ChainValue(isCalculation: true) => false,
+        ChainValue() || ChainEmpty() => _chainHoldsAnError,
+      };
+
+  bool get _chainHoldsAnError {
+    for (final chip in tape.chips.reversed) {
+      switch (chip) {
+        case ErrorChip():
+          return true;
+        case ResultChip():
+          return false;
+        case ValueChip(:final operator) || BracketChip(:final operator):
+          if (operator == null) return false;
+      }
+    }
+    return false;
+  }
 
   CalculatorSuggestion _answer(String key, Quantity value) =>
       CalculatorSuggestion(
