@@ -106,6 +106,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
 
   @override
   Stream<YourRateRefusalDto?> watchRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -114,7 +115,9 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
     return _database
         .watch(
           _selectWithSavedPricesSql,
-          parameters: [_keyOf(companyId, category, itemName, equipmentMethod)],
+          parameters: [
+            _keyOf(userId, companyId, category, itemName, equipmentMethod),
+          ],
         )
         .map(_refusalUnlessPriceReplaced)
         .distinct()

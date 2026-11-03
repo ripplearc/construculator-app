@@ -34,6 +34,7 @@ abstract class YourRateRefusalDataSource {
   ///
   /// Emits an error if a read fails.
   Stream<YourRateRefusalDto?> watchRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,

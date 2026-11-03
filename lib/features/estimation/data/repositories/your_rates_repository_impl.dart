@@ -172,8 +172,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     required String itemName,
     EquipmentPricingMethod? equipmentMethod,
   }) {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return Stream.value(const Right(null));
     return refusalDataSource
         .watchRefusalByItem(
+          userId: userId,
           companyId: companyId,
           category: category.toJson(),
           itemName: itemName,
@@ -197,8 +200,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     required String itemName,
     EquipmentPricingMethod? equipmentMethod,
   }) async {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return const Right(null);
     try {
       await refusalDataSource.markRefusalShownByItem(
+        userId: userId,
         companyId: companyId,
         category: category.toJson(),
         itemName: itemName,

@@ -420,6 +420,22 @@ void main() {
       test('emits null while the server has refused nothing', () async {
         await expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNull),
+        );
+      });
+
+      test('emits null for another user of the same company', () async {
+        database.seedRefusal(refusal(userId: userA));
+
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userB,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -432,6 +448,7 @@ void main() {
       test('emits the refusal when the upload step records one', () async {
         final emissions = expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -457,6 +474,7 @@ void main() {
 
         final emissions = expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -477,6 +495,7 @@ void main() {
         );
 
         await dataSource.markRefusalShownByItem(
+          userId: userA,
           companyId: companyA,
           category: 'equipment',
           itemName: 'Dumpster — 30 yd',
@@ -492,6 +511,7 @@ void main() {
 
         await expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -508,6 +528,7 @@ void main() {
 
           final emissions = expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -532,6 +553,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'dumpster — 30 yd',
@@ -550,6 +572,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -568,6 +591,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -587,6 +611,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -605,6 +630,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -621,6 +647,7 @@ void main() {
 
         await expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -638,6 +665,7 @@ void main() {
 
           await expectLater(
             dataSource.watchRefusalByItem(
+              userId: userA,
               companyId: companyA,
               category: 'equipment',
               itemName: 'Dumpster — 30 yd',
@@ -653,6 +681,7 @@ void main() {
 
         await expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyB,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -667,6 +696,7 @@ void main() {
 
         final emissions = expectLater(
           dataSource.watchRefusalByItem(
+            userId: userA,
             companyId: companyA,
             category: 'equipment',
             itemName: 'Dumpster — 30 yd',
@@ -676,6 +706,7 @@ void main() {
         );
 
         await dataSource.deleteRefusalByItem(
+          userId: userA,
           companyId: companyA,
           category: 'equipment',
           itemName: 'Dumpster — 30 yd',
