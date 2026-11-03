@@ -144,6 +144,7 @@ class EstimationModule extends Module {
       () => YourRatesRepositoryImpl(
         dataSource: i.get(),
         refusalDataSource: i.get(),
+        authRepository: i.get(),
       ),
     );
 

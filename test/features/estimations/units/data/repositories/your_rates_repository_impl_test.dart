@@ -6,6 +6,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -20,6 +21,7 @@ void main() {
     late FakeYourRatesDatabase database;
 
     const testCompanyId = 'company-1';
+    const testUserId = 'user-1';
 
     Map<String, dynamic> row({
       required String id,
@@ -78,11 +80,13 @@ void main() {
 
     setUpAll(() {
       database = FakeYourRatesDatabase();
+      final supabaseWrapper = FakeSupabaseWrapper(clock: FakeClockImpl())
+        ..setCurrentUser(
+          FakeUser(id: testUserId, createdAt: '2026-01-01T00:00:00.000Z'),
+        );
       Modular.init(
         EstimationModule(
-          FakeAppBootstrapFactory.create(
-            supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-          ),
+          FakeAppBootstrapFactory.create(supabaseWrapper: supabaseWrapper),
         ),
       );
       Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
@@ -950,6 +954,7 @@ void main() {
 
     group('after the server refused a default', () {
       final excavatorKey = YourRateRefusalKey.of(
+        userId: testUserId,
         companyId: testCompanyId,
         category: 'equipment',
         itemName: 'Excavator',
@@ -961,14 +966,17 @@ void main() {
         double? accepted = 400.0,
         String refusedRowId = 'r1',
         String companyId = testCompanyId,
+        String userId = testUserId,
       }) {
         database.seedRefusal({
           'id': YourRateRefusalKey.of(
+            userId: userId,
             companyId: companyId,
             category: 'equipment',
             itemName: 'Excavator',
             equipmentMethod: 'day',
           ),
+          'user_id': userId,
           'company_id': companyId,
           'category': 'equipment',
           'refused_row_id': refusedRowId,
@@ -995,6 +1003,15 @@ void main() {
         final entries = await lookUp();
 
         expect(entries.single.rate.amount, 400.0);
+      });
+
+      test('another user\'s refusal does not change the lookup', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse(userId: 'user-2');
+
+        final entries = await lookUp();
+
+        expect(entries.single.rate.amount, 450.0);
       });
 
       test('a saved item lookup shows the last accepted price', () async {

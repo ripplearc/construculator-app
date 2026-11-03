@@ -7,9 +7,11 @@ import 'package:construculator/features/estimation/data/models/your_rate_entry_d
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -44,6 +46,9 @@ void main() {
 
     setUp(() {
       server.reset();
+      server.setCurrentUser(
+        FakeUser(id: 'user-1', createdAt: '2026-10-01T08:00:00.000Z'),
+      );
       phone.reset();
     });
 
@@ -111,7 +116,10 @@ class _FlowTestModule extends Module {
   _FlowTestModule(this.bootstrap, this.phone);
 
   @override
-  List<Module> get imports => [PowerSyncModule(bootstrap)];
+  List<Module> get imports => [
+    AuthLibraryModule(bootstrap),
+    PowerSyncModule(bootstrap),
+  ];
 
   @override
   void binds(Injector i) {
@@ -129,6 +137,7 @@ class _FlowTestModule extends Module {
         () => YourRatesRepositoryImpl(
           dataSource: i.get(),
           refusalDataSource: i.get(),
+          authRepository: i.get(),
         ),
       );
   }

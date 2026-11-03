@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/y
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -14,6 +15,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   YourRatesRepositoryImpl({
     required this.dataSource,
     required this.refusalDataSource,
+    required this.authRepository,
   });
 
   final YourRatesDataSource dataSource;
@@ -21,6 +23,10 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   /// The record of defaults the server refused, so a refused price is not
   /// shown as the saved one.
   final YourRateRefusalDataSource refusalDataSource;
+
+  /// Tells whose refusals to read and forget: a user never sees another
+  /// user's refusal, even in the same company.
+  final AuthRepository authRepository;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
@@ -157,8 +163,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   Future<void> _forgetRefusalOf(YourRateEntry entry) async {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return;
     try {
       await refusalDataSource.deleteRefusalByItem(
+        userId: userId,
         companyId: entry.companyId,
         category: entry.category.toJson(),
         itemName: entry.itemName,
@@ -181,9 +190,10 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       category: category,
       companyId: companyId,
     );
+    final userId = authRepository.getCurrentCredentials()?.id;
     final refusals = {
       for (final refusal in await refusalDataSource.loadAllRefusals())
-        refusal.refusedRowId: refusal,
+        if (refusal.userId == userId) refusal.refusedRowId: refusal,
     };
     final lastAccepted = <YourRateEntryDto>[];
     for (final dto in dtos) {
