@@ -2866,6 +2866,24 @@ abstract class AppLocalizations {
   /// **'Delivery'**
   String get equipmentDeliveryRowLabel;
 
+  /// Grey hint under the equipment Rate field, shown when a typed key or a pasted value is refused, for example because it would add a third decimal
+  ///
+  /// In en, this message translates to:
+  /// **'A rate takes at most two decimals.'**
+  String get equipmentRateDecimalsLimitHint;
+
+  /// Grey hint under the equipment Job amount field, shown when a typed key or a pasted value is refused, for example because it would add a third decimal
+  ///
+  /// In en, this message translates to:
+  /// **'An amount takes at most two decimals.'**
+  String get equipmentAmountDecimalsLimitHint;
+
+  /// Grey hint under the delivery-fee field, shown when a typed key or a pasted value is refused for a reason other than the largest fee or a third decimal
+  ///
+  /// In en, this message translates to:
+  /// **'A delivery fee takes digits and one point.'**
+  String get equipmentDeliveryRefusedKeyHint;
+
   /// Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount or would add a third decimal
   ///
   /// In en, this message translates to:

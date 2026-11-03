@@ -2393,6 +2393,21 @@
   "@equipmentDeliveryRowLabel": {
     "description": "Label prefix for the delivery-fee row and the field label of its expanded editor on the equipment cost form (manually mode)"
   },
+  "equipmentRateDecimalsLimitHint": "A rate takes at most two decimals.",
+  "@equipmentRateDecimalsLimitHint": {
+    "description": "Grey hint under the equipment Rate field, shown when a typed key or a pasted value is refused, for example because it would add a third decimal",
+    "context": "N/A"
+  },
+  "equipmentAmountDecimalsLimitHint": "An amount takes at most two decimals.",
+  "@equipmentAmountDecimalsLimitHint": {
+    "description": "Grey hint under the equipment Job amount field, shown when a typed key or a pasted value is refused, for example because it would add a third decimal",
+    "context": "N/A"
+  },
+  "equipmentDeliveryRefusedKeyHint": "A delivery fee takes digits and one point.",
+  "@equipmentDeliveryRefusedKeyHint": {
+    "description": "Grey hint under the delivery-fee field, shown when a typed key or a pasted value is refused for a reason other than the largest fee or a third decimal",
+    "context": "N/A"
+  },
   "equipmentDeliveryFeeLimitHint": "The largest delivery fee is {amount}.",
   "@equipmentDeliveryFeeLimitHint": {
     "description": "Grey hint under the delivery-fee field, shown when a typed digit is refused because the fee would go above the largest accepted amount or would add a third decimal",
