@@ -290,10 +290,64 @@ void main() {
         expect(rules.refusalFor(wall.namedValues), RuleRefusal.pitchOutOfRange);
       });
 
-      test('0° and a 0% grade are the same silence at the other end; a 0.5% '
-          'grade is a real slope', () {
+      test('a flat pitch is real: alone it offers its spellings, with a Run '
+          'or a Diag it answers Rise 0ft, with a Rise alone it has no run; '
+          'below 0° it is out of range (Q57, 2026-10-15)', () {
+        final flat = press(const Tape(), '[Pitch] 0');
+        expect(rules.refusalFor(flat.namedValues), isNull);
+        expect(strip(flat), [
+          'Pitch-degrees: 0°',
+          'Pitch-rise per 12in run: 0in/12in',
+          'Pitch-grade: 0%',
+        ]);
+        final withRun = press(flat, '[Run] 1 0 ft');
+        expect(rules.refusalFor(withRun.namedValues), isNull);
+        expect(strip(withRun), ['Rise: 0ft', 'Diagonal: 10ft']);
+        final withDiag = press(flat, '[Diag] 1 0 ft');
+        expect(rules.refusalFor(withDiag.namedValues), isNull);
+        expect(strip(withDiag), ['Rise: 0ft', 'Run: 10ft']);
+        final withRise = press(flat, '[Rise] 1 0 ft');
         expect(
-          rules.refusalFor(press(const Tape(), '[Pitch] 0').namedValues),
+          rules.refusalFor(withRise.namedValues),
+          RuleRefusal.flatPitchHasNoRun,
+        );
+        expect(strip(withRise), isEmpty);
+        expect(
+          rules.refusalFor(press(withRise, '[Run] 4 0 ft').namedValues),
+          isNull,
+          reason: 'Rise and Run solve the pitch themselves',
+        );
+        final withRiseAndDiag = press(withRise, '[Diag] 2 0 ft');
+        expect(rules.refusalFor(withRiseAndDiag.namedValues), isNull);
+        expect(strip(withRiseAndDiag), ['Rise: 0ft', 'Run: 20ft']);
+        final steepWithRise = press(const Tape(), '[Pitch] 3 0 [Rise] 1 0 ft');
+        expect(rules.refusalFor(steepWithRise.namedValues), isNull);
+        expect(strip(steepWithRise).first, 'Run: 17.32ft');
+        final flatSlope = press(const Tape(), '[Slope] 0');
+        expect(
+          rules.refusalFor(flatSlope.namedValues),
+          RuleRefusal.slopeOutOfRange,
+        );
+        expect(strip(flatSlope), isEmpty, reason: 'a 0% grade is no pitch');
+        expect(
+          rules.refusalFor(
+            press(const Tape(), '[Pitch] 0 in [Rise] 1 0 ft').namedValues,
+          ),
+          RuleRefusal.flatPitchHasNoRun,
+        );
+        expect(
+          rules.refusalFor(press(const Tape(), '[Pitch] 0 in').namedValues),
+          isNull,
+        );
+        expect(
+          rules.refusalFor({'Pitch': const Angle(-1)}),
+          RuleRefusal.pitchOutOfRange,
+        );
+        expect(
+          rules.refusalFor({
+            'Pitch': const Angle(-0.01),
+            'Run': const Length(64, unit: Unit.inch),
+          }),
           RuleRefusal.pitchOutOfRange,
         );
         expect(
