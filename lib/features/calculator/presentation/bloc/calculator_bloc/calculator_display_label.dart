@@ -26,8 +26,9 @@ final class CalculatorDisplayLabel extends Equatable {
 
   /// Whether the value is still being typed, so the label ends in an
   /// ellipsis: an entry not complete yet, or an empty chip a key opened. A
-  /// bare number after an operator is complete enough (Section 7:
-  /// "Addition 3").
+  /// bare number with no key after an operator is complete enough (Section
+  /// 7: "Addition 3"); a keyed value still waiting for its unit keeps the
+  /// dots after an operator too ("Width…" over 18, term 2.6).
   final bool isTyping;
 
   const CalculatorDisplayLabel({
@@ -37,14 +38,6 @@ final class CalculatorDisplayLabel extends Equatable {
     this.bracketExpression,
     this.isTyping = false,
   });
-
-  /// Whether the label names nothing: an empty tape.
-  bool get isEmpty =>
-      keyId == null &&
-      operator == null &&
-      reading == null &&
-      bracketExpression == null &&
-      !isTyping;
 
   @override
   List<Object?> get props => [

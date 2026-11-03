@@ -1436,8 +1436,15 @@ void main() {
         'the label names the key, the operator of a chip with no key, or '
         'a bare value, with the reading of a bare number (S134, S42, S95)',
         () {
-          expect(stateOf('').displayLabel, const CalculatorDisplayLabel());
-          expect(stateOf('').displayLabel.isEmpty, isTrue);
+          expect(stateOf('').displayLabel, isNull);
+          expect(
+            stateOf('1 2 ft').displayLabel,
+            const CalculatorDisplayLabel(),
+          );
+          expect(
+            stateOf('1 2').displayLabel,
+            const CalculatorDisplayLabel(isTyping: true),
+          );
           expect(
             stateOf('[Length] 2 2').displayLabel,
             const CalculatorDisplayLabel(keyId: 'Length', isTyping: true),
@@ -1453,6 +1460,23 @@ void main() {
           expect(
             stateOf('2 + 1 2').displayLabel,
             const CalculatorDisplayLabel(operator: Operator.add),
+          );
+          expect(
+            stateOf('2 × [Width] 1 8').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Width',
+              operator: Operator.multiply,
+              isTyping: true,
+            ),
+          );
+          expect(
+            stateOf('2 × [Pitch] 3 0 .').displayLabel,
+            const CalculatorDisplayLabel(
+              keyId: 'Pitch',
+              operator: Operator.multiply,
+              reading: NumberReading.degrees,
+              isTyping: true,
+            ),
           );
           expect(
             stateOf('[Slope] 7').displayLabel,
@@ -1562,11 +1586,15 @@ void main() {
         expect(open.valueText, '4');
 
         final empty = stateOf('2 + (');
-        expect(
-          empty.displayLabel,
-          const CalculatorDisplayLabel(operator: Operator.add, isTyping: true),
-        );
+        expect(empty.displayLabel, isNull);
         expect(empty.valueText, '');
+        expect(
+          stateOf('2 + ( 3 ×').displayLabel,
+          const CalculatorDisplayLabel(
+            operator: Operator.multiply,
+            isTyping: true,
+          ),
+        );
         expect([for (final chip in empty.chipsList) chip.value], ['2', '+(']);
       });
 
@@ -1578,6 +1606,21 @@ void main() {
         expect(stateOf('[Pitch] 8 . 4 5').valueText, '8.45°');
         expect(stateOf('[Pitch] 8 in').valueText, '8in/12in');
         expect(stateOf('[Pitch] 6 / 1 2').valueText, '6/12');
+        expect(
+          [
+            for (final chip in stateOf('[Pitch] 6 / 1 2 +').chipsList)
+              chip.value,
+          ],
+          ['6in/12in', '+'],
+        );
+        expect(stateOf('[Pitch] 1 / 4 in').valueText, '1/4in/12in');
+        expect(
+          [
+            for (final chip in stateOf('[Pitch] 1 / 4 in +').chipsList)
+              chip.value,
+          ],
+          ['1/4in/12in', '+'],
+        );
         expect(stateOf('[Slope] 7').valueText, '7%');
         expect(stateOf('[SIN] 3 8 . 3 0').valueText, '38.30°');
         expect(stateOf('[ACOS] 0 . 5').valueText, '0.5');

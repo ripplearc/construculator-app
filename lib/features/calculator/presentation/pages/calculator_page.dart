@@ -188,11 +188,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           : const AlwaysScrollableScrollPhysics(),
                       child: CoreDisplayArea(
                         label: switch (state.displayLabel) {
-                          CalculatorDisplayLabel(isEmpty: true) => null,
-                          final label => labels.labelText(label),
+                          final label? => labels.labelText(label),
+                          null => null,
                         },
                         value: state.valueText,
-                        isTyping: state.displayLabel.isTyping,
+                        isTyping: state.displayLabel?.isTyping ?? false,
                         closeSemanticLabel: l10n.closeButton,
                         historyPlaceholder: l10n.calculatorHistoryPlaceholder,
                         chipsList: labels.localizeChips(state.chipsList),

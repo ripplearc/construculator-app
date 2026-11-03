@@ -387,6 +387,25 @@ void main() {
     expect(display.value, '8.45°');
   });
 
+  testWidgets('the label reads Value over a finished bare value, as over '
+      'one still typed (term 2.6)', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    await press(tester, 'calc_key_one');
+    await press(tester, 'calc_key_two');
+    var display = tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea));
+    expect(display.label, l10n.calculatorLabelValue);
+    expect(display.isTyping, isTrue);
+
+    await press(tester, 'calc_key_feet');
+
+    display = tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea));
+    expect(display.label, l10n.calculatorLabelValue);
+    expect(display.isTyping, isFalse);
+    expect(display.value, '12ft');
+    expect(find.text(l10n.calculatorLabelValue), findsOneWidget);
+  });
+
   testWidgets('a chip with no key is named by its operator, and a closed '
       'bracket by its inside over its value', (tester) async {
     await pumpPage(tester);

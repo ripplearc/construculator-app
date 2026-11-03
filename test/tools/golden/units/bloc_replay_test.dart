@@ -77,9 +77,11 @@ class BlocScenarioDriver implements ScenarioDriver {
     final state = _bloc.state;
     final label = state.displayLabel;
     return Snapshot(
-      label: label.isEmpty
-          ? ''
-          : '${_labels.labelText(label)}${label.isTyping ? '…' : ''}',
+      label: switch (label) {
+        final label? =>
+          '${_labels.labelText(label)}${label.isTyping ? '…' : ''}',
+        null => '',
+      },
       value: state.valueText,
       tape: [
         for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',

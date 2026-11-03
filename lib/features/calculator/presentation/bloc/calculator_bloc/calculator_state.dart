@@ -102,11 +102,15 @@ class CalculatorState extends Equatable {
   };
 
   /// What the label row names for the chip on the display (Section 1.1):
-  /// the key, the operator of a chip with no key, or a bare value; the
-  /// reading of a bare number (rule 4.10); the inside of a closed bracket
-  /// (Section 7); and whether the value is still being typed.
-  CalculatorDisplayLabel get displayLabel => switch (_chipRead) {
-    null => const CalculatorDisplayLabel(),
+  /// the key, the operator of a chip with no key, or a bare value ("Value"
+  /// over a finished 12ft as over a 12 still typed, term 2.6: the label
+  /// shows always); the reading of a bare number (rule 4.10); the inside
+  /// of a closed bracket (Section 7); and whether the value is still being
+  /// typed. `null` when there is no chip to read: an empty tape, or a
+  /// bracket just opened with nothing in it (Section 7: "Label and value
+  /// are empty").
+  CalculatorDisplayLabel? get displayLabel => switch (_chipRead) {
+    null => null,
     final ValueChip chip => CalculatorDisplayLabel(
       keyId: chip.key,
       operator: chip.operator,
@@ -115,10 +119,7 @@ class CalculatorState extends Equatable {
     ),
     ResultChip(:final key) => CalculatorDisplayLabel(keyId: key),
     ErrorChip(:final error) => CalculatorDisplayLabel(keyId: error.name),
-    BracketChip(isOpen: true, :final operator) => CalculatorDisplayLabel(
-      operator: operator,
-      isTyping: true,
-    ),
+    BracketChip(isOpen: true) => null,
     BracketChip(:final operator, :final inner) => CalculatorDisplayLabel(
       operator: operator,
       bracketExpression: inner.map(_valueTextOf).join(),
@@ -151,30 +152,43 @@ class CalculatorState extends Equatable {
 
   bool _isStillTyping(ValueChip chip) =>
       !chip.entry.isComplete &&
-      !(chip.operator != null && chip.bareNumber != null);
+      !(chip.key == null &&
+          chip.trigFunction == null &&
+          chip.operator != null &&
+          chip.bareNumber != null);
 
   String _entryTextOf(ValueChip chip) {
     final reading = _readingOf(chip);
+    if (reading == NumberReading.risePerFoot &&
+        _isAFinishedRiseFraction(chip)) {
+      return switch (chip.value(tape.parser)) {
+        final value? => tape.formatter.format(value),
+        null => chip.entry.text,
+      };
+    }
     if (reading == null || !_writesItsReading(chip, reading)) {
       return chip.entry.text;
     }
     return _withReadingSuffix(chip.entry.text, reading);
   }
 
+  static bool _isAFinishedRiseFraction(ValueChip chip) =>
+      !chip.isActive &&
+      switch (chip.entry.tokens) {
+        [Token(denominator: _?, unit: null)] => true,
+        _ => false,
+      };
+
   static bool _writesItsReading(ValueChip chip, NumberReading reading) =>
       switch (reading) {
         NumberReading.degrees || NumberReading.grade => chip.bareNumber != null,
         NumberReading.risePerFoot => switch (chip.entry.tokens) {
-          [Token(unit: Unit.inch, denominator: null)] => true,
+          [Token(unit: Unit.inch)] => true,
           _ => false,
         },
         NumberReading.ratio || NumberReading.degreesMinutesSeconds => false,
       };
 
-  // [text] with the mark of [reading] after it, as the prototype's value
-  // row writes a bare number: 30°, 7%, 8in/12in. A number still ending in
-  // its point and a D:M:S spelling are left as typed; the ratio reading of
-  // a slope is a percent (0.65 read as a ratio is 65%).
   static String _withReadingSuffix(String text, NumberReading reading) {
     if (text.isEmpty || text.endsWith('.')) return text;
     return switch (reading) {
