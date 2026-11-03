@@ -45,6 +45,9 @@ void main() {
 
   setUp(() async {
     fakeSupabase.reset();
+    fakeSupabase.setCurrentUser(
+      FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00.000Z'),
+    );
     database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
@@ -134,9 +137,6 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      fakeSupabase.setCurrentUser(
-        FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00.000Z'),
-      );
       database.seedRefusal({
         'id': YourRateRefusalKey.of(
           userId: 'user-1',

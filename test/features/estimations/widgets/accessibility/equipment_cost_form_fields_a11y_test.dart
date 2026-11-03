@@ -42,6 +42,9 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    fakeSupabase.setCurrentUser(
+      FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00.000Z'),
+    );
     database.reset();
     // CurrentCompanyResolverImpl caches its result for the resolver's own
     // lifetime, which outlives a single test here (it's a lazy singleton
@@ -192,9 +195,6 @@ void main() {
     ) async {
       await setupA11yTest(tester);
       final semantics = tester.ensureSemantics();
-      fakeSupabase.setCurrentUser(
-        FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00.000Z'),
-      );
       database.seedRefusal({
         'id': YourRateRefusalKey.of(
           userId: 'user-1',
