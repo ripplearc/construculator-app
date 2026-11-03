@@ -212,6 +212,7 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         await pumpWidget(tester: tester, theme: theme);
         await tester.enterText(find.byKey(const Key('rate_field')), '85.55');
+        await tester.pump();
         await tester.enterText(find.byKey(const Key('rate_field')), '85.555');
         await tester.pumpAndSettle();
         await expectFieldsGolden(tester, 'rate_decimals_limit_hint', suffix);

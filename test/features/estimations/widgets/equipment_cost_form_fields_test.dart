@@ -3761,8 +3761,8 @@ void main() {
     };
 
     String fieldText(WidgetTester tester, String fieldKey) => tester
-        .widget<UnderlineTextField>(find.byKey(Key(fieldKey)))
-        .controller
+        .widget<CoreUnderlineTextField>(find.byKey(Key(fieldKey)))
+        .controller!
         .text;
 
     Finder limitHint(String fieldKey) => fieldKey == deliveryField
