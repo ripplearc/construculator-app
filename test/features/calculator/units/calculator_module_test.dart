@@ -10,6 +10,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:powersync/powersync.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../helpers/fake_trade_stores_database.dart';
@@ -51,6 +52,9 @@ void main() {
         );
         Modular.replaceInstance<AuthNotifier>(authNotifier);
         Modular.replaceInstance<AuthManager>(authManager);
+        // Modular keeps the first test's database across destroy; without
+        // this every later test would run on a closed one.
+        Modular.replaceInstance<PowerSyncDatabase>(database);
       });
 
       tearDown(() async {

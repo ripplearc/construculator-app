@@ -28,11 +28,14 @@
             <mutation text="if (!row.isDeleted) added.add(row);"/>
         </regex>
 
-        <!-- RULE 3: of two live rows for one default, the first read wins,
-             or the last read wins, instead of the newest write -->
+        <!-- RULE 3: of two rows for one default, the first read wins, the
+             last read wins, a live row beats a newer delete, or a delete
+             beats a newer change, instead of the newest write -->
         <regex pattern="if \(current == null \|\| row\.updatedAt\.isAfter\(current\.updatedAt\)\) \{" dotAll="true" id="trade_stores_repository.lay_over.newest_write_wins">
             <mutation text="if (current == null) {"/>
             <mutation text="if (true) {"/>
+            <mutation text="if (current != null &amp;&amp; !current.isDeleted &amp;&amp; row.isDeleted) {} else if (current == null || row.updatedAt.isAfter(current.updatedAt)) {"/>
+            <mutation text="if (current != null &amp;&amp; current.isDeleted) {} else if (current == null || row.updatedAt.isAfter(current.updatedAt)) {"/>
         </regex>
 
         <!-- RULE 4: a deleted default shows again -->
