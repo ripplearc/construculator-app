@@ -131,6 +131,27 @@ void main() {
       );
     });
 
+    testWidgets('a11y: "Try again" on the failed-read message is a labelled '
+        'button with a 48 x 48 dp zone', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      final zone = tester.getSize(
+        find.byKey(const Key('your_rates_try_again_button')),
+      );
+      expect(zone.width, greaterThanOrEqualTo(48));
+      expect(zone.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Try again')),
+        isSemantics(label: 'Try again', isButton: true, hasTapAction: true),
+      );
+      handle.dispose();
+    });
+
     testWidgets('a11y: the failed-read message is a live region so a screen '
         'reader reads it when it appears', (tester) async {
       await setupA11yTest(tester);
