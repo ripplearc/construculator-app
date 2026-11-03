@@ -3158,11 +3158,15 @@
   "@calculatorNotePitchUnderRightAngle": {
     "description": "Strip note shown in place of the calculator suggestions while Pitch holds 90° or more"
   },
-  "calculatorNotePitchAboveZero": "A pitch must be above 0°. Edit the Pitch chip.",
-  "@calculatorNotePitchAboveZero": {
-    "description": "Strip note shown in place of the calculator suggestions while Pitch holds 0° or less"
+  "calculatorNotePitchAtLeastZero": "A pitch must be 0° or more. Edit the Pitch chip.",
+  "@calculatorNotePitchAtLeastZero": {
+    "description": "Strip note shown in place of the calculator suggestions while Pitch holds an angle below 0°"
   },
-  "calculatorNoteSlopeAboveZero": "A grade of 0% is flat — there is no slope to work from. Edit the Slope chip to a grade above 0.",
+  "calculatorNoteFlatPitchHasNoRun": "A flat pitch has no run. Edit the Pitch chip.",
+  "@calculatorNoteFlatPitchHasNoRun": {
+    "description": "Strip note shown in place of the calculator suggestions while Pitch holds 0° with a Rise named and no Run or Diag to solve from"
+  },
+  "calculatorNoteSlopeAboveZero": "A slope must be above 0%. Edit the Slope chip.",
   "@calculatorNoteSlopeAboveZero": {
     "description": "Strip note shown in place of the calculator suggestions while Slope holds a grade of 0% or less"
   },

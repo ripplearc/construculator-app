@@ -1754,42 +1754,63 @@ void main() {
       CalculatorState stateOf(String keys) =>
           CalculatorState(tape: pressed(keys));
 
-      test(
-        'a pitch of 90° or more, or 0° or less, and a slope of 0% say why '
-        'the strip is empty, and keep saying it under a second value (S89)',
-        () {
-          expect(
-            stateOf('[Pitch] 8 9 9').stripNote,
-            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
-          );
-          expect(stateOf('[Pitch] 8 9 9').suggestions, isEmpty);
-          expect(
-            stateOf('[Pitch] 9 0').stripNote,
-            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
-          );
-          expect(
-            stateOf('[Pitch] 0').stripNote,
-            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
-          );
-          expect(
-            stateOf('[Pitch] 9 5 [Diag] 2 2 ft').stripNote,
-            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
-          );
-          expect(stateOf('[Pitch] 9 5 [Diag] 2 2 ft').suggestions, isEmpty);
-          expect(
-            stateOf('[Slope] 0').stripNote,
-            const CalculatorSlopeOutOfRangeNote(),
-          );
-          expect(
-            stateOf('[Pitch] 0 in').stripNote,
-            const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
-          );
-          expect(stateOf('[Pitch] 8 in').stripNote, isNull);
-          expect(stateOf('[Pitch] 8 9').stripNote, isNull);
-          expect(stateOf('[Slope] 7').stripNote, isNull);
-          expect(stateOf('').stripNote, isNull);
-        },
-      );
+      test('a pitch of 90° or more, a flat pitch with a Rise alone, and a '
+          'slope of 0% say why the strip is empty, and keep saying it under '
+          'a second value (S89); a flat pitch with a Run answers Rise 0ft', () {
+        expect(
+          stateOf('[Pitch] 8 9 9').stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        );
+        expect(stateOf('[Pitch] 8 9 9').suggestions, isEmpty);
+        expect(
+          stateOf('[Pitch] 9 0').stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        );
+        expect(stateOf('[Pitch] 0').stripNote, isNull);
+        expect(
+          [for (final s in stateOf('[Pitch] 0').suggestions) s.key],
+          [
+            DeterministicRules.pitchDegreesKey,
+            DeterministicRules.pitchRiseKey,
+            DeterministicRules.pitchGradeKey,
+          ],
+        );
+        expect(stateOf('[Pitch] 0 [Run] 1 0 ft').stripNote, isNull);
+        expect(
+          [
+            for (final s in stateOf('[Pitch] 0 [Run] 1 0 ft').suggestions)
+              '${s.key}: ${s.text}',
+          ],
+          ['Rise: 0ft', 'Diagonal: 10ft'],
+        );
+        expect(
+          stateOf('[Pitch] 0 [Rise] 1 0 ft').stripNote,
+          const CalculatorFlatPitchHasNoRunNote(),
+        );
+        expect(stateOf('[Pitch] 0 [Rise] 1 0 ft').suggestions, isEmpty);
+        expect(stateOf('[Pitch] 0 [Rise] 1 0 ft').conversions, isEmpty);
+        expect(
+          stateOf('[Pitch] 9 5 [Diag] 2 2 ft').stripNote,
+          const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: true),
+        );
+        expect(stateOf('[Pitch] 9 5 [Diag] 2 2 ft').suggestions, isEmpty);
+        expect(
+          stateOf('[Slope] 0').stripNote,
+          const CalculatorSlopeOutOfRangeNote(),
+        );
+        expect(stateOf('[Pitch] 0 in').stripNote, isNull);
+        expect(
+          stateOf('[Pitch] 9 5 [Run] 1 0 ft').conversions,
+          isEmpty,
+          reason: 'a note takes the place of both rows (Section 1.8)',
+        );
+        expect(stateOf('[Slope] 0 [Run] 1 0 ft').conversions, isEmpty);
+        expect(stateOf('[Pitch] 9 5 [Diag] 2 2 ft').conversions, isEmpty);
+        expect(stateOf('[Pitch] 8 in').stripNote, isNull);
+        expect(stateOf('[Pitch] 8 9').stripNote, isNull);
+        expect(stateOf('[Slope] 7').stripNote, isNull);
+        expect(stateOf('').stripNote, isNull);
+      });
 
       test('a prefix trig chip its function cannot answer says so while the '
           'operand stays (Section 5.4)', () {

@@ -3784,16 +3784,22 @@ abstract class AppLocalizations {
   /// **'A pitch must be under 90°. Edit the Pitch chip.'**
   String get calculatorNotePitchUnderRightAngle;
 
-  /// Strip note shown in place of the calculator suggestions while Pitch holds 0° or less
+  /// Strip note shown in place of the calculator suggestions while Pitch holds an angle below 0°
   ///
   /// In en, this message translates to:
-  /// **'A pitch must be above 0°. Edit the Pitch chip.'**
-  String get calculatorNotePitchAboveZero;
+  /// **'A pitch must be 0° or more. Edit the Pitch chip.'**
+  String get calculatorNotePitchAtLeastZero;
+
+  /// Strip note shown in place of the calculator suggestions while Pitch holds 0° with a Rise named and no Run or Diag to solve from
+  ///
+  /// In en, this message translates to:
+  /// **'A flat pitch has no run. Edit the Pitch chip.'**
+  String get calculatorNoteFlatPitchHasNoRun;
 
   /// Strip note shown in place of the calculator suggestions while Slope holds a grade of 0% or less
   ///
   /// In en, this message translates to:
-  /// **'A grade of 0% is flat — there is no slope to work from. Edit the Slope chip to a grade above 0.'**
+  /// **'A slope must be above 0%. Edit the Slope chip.'**
   String get calculatorNoteSlopeAboveZero;
 
   /// Strip note shown after the D:M:S key is pressed on a calculator pitch answer, until the next key

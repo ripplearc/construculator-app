@@ -286,9 +286,11 @@ class CalculatorState extends Equatable {
   /// except a pitch: D:M:S
   /// is not a pitch reading (Section 8), and row 1 lists its other two
   /// readings. Empty while the chain holds an error and while a bracket is
-  /// open, as row 1 is.
+  /// open, as row 1 is, and while a note shows, since the note takes the
+  /// place of both rows (Section 1.8) and the display draws it only when
+  /// the strip has nothing else to show.
   List<CalculatorSuggestion> get conversions {
-    if (_stripIsSilent) return const [];
+    if (_stripIsSilent || stripNote != null) return const [];
     final value = switch (_chipRead) {
       ValueChip(key: PlainNumberKeys.pitch) => null,
       final ValueChip chip => switch (chip.value(tape.parser)) {
@@ -368,6 +370,8 @@ class CalculatorState extends Equatable {
         return CalculatorPitchOutOfRangeNote(
           isAtLeastARightAngle: _pitchDegrees >= DeterministicRules.rightAngle,
         );
+      case RuleRefusal.flatPitchHasNoRun:
+        return const CalculatorFlatPitchHasNoRunNote();
       case RuleRefusal.slopeOutOfRange:
         return const CalculatorSlopeOutOfRangeNote();
       case null:
