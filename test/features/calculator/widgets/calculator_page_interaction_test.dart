@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../utils/screenshot/font_loader.dart';
 import '../utils/calculator_test_harness.dart';
 
 void main() {
@@ -28,6 +29,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
   }
+
+  AppLocalizations l10nOf(WidgetTester tester) =>
+      AppLocalizations.of(tester.element(find.byType(CoreKeyboard)))!;
 
   Future<void> press(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(ValueKey(key)));
@@ -217,5 +221,114 @@ void main() {
       bloc.state.refusal,
       const TapeRefused(TapeRefusal.nothingBeingTyped),
     );
+  });
+
+  group('W1: the settings', () {
+    late CalculatorTestHarness harness;
+
+    setUpAll(loadAppFontsAll);
+
+    setUp(() => harness = CalculatorTestHarness());
+
+    tearDown(() => harness.dispose());
+
+    Future<void> pumpSignedIn(
+      WidgetTester tester, {
+      Size size = const Size(390, 844),
+      double textScale = 1.0,
+    }) async {
+      harness.signIn(harness.userWith({}));
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: CalculatorPage(calculatorBlocFactory: harness.createBloc),
+        ),
+      );
+    }
+
+    String pillLabel(WidgetTester tester) => tester
+        .widget<CoreButton>(find.byKey(CalculatorPage.unitsPillKey))
+        .label!;
+
+    testWidgets('the System of units pill reads Imperial on the empty tape '
+        'row, hides while anything is typed, and one tap switches it with '
+        'the choice kept (S121)', (tester) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+
+      expect(pillLabel(tester), l10n.calculatorUnitsImperial);
+      expect(
+        tester.getSemantics(find.byKey(CalculatorPage.unitsPillKey)).hint,
+        l10n.calculatorUnitsSwitchToMetric,
+      );
+
+      await press(tester, 'calc_key_five');
+      expect(find.byKey(CalculatorPage.unitsPillKey), findsNothing);
+
+      await press(tester, 'calc_key_clearAll');
+      expect(pillLabel(tester), l10n.calculatorUnitsImperial);
+
+      await tester.tap(find.byKey(CalculatorPage.unitsPillKey));
+      await tester.pump();
+      expect(pillLabel(tester), l10n.calculatorUnitsMetric);
+      expect(bloc.state.currentUnitSystem, UnitSystem.metric);
+      expect(
+        tester
+            .widget<CoreKeyboard>(find.byType(CoreKeyboard))
+            .currentUnitSystem,
+        UnitSystem.metric,
+      );
+
+      await press(tester, 'calc_key_five');
+      await press(tester, 'calc_key_clearAll');
+      expect(pillLabel(tester), l10n.calculatorUnitsMetric);
+
+      await press(tester, 'calc_key_paren');
+      expect(find.byKey(CalculatorPage.unitsPillKey), findsNothing);
+
+      await press(tester, 'calc_key_clearAll');
+      await tester.tap(find.byKey(CalculatorPage.unitsPillKey));
+      await tester.pump();
+      expect(pillLabel(tester), l10n.calculatorUnitsImperial);
+      expect(bloc.state.currentUnitSystem, UnitSystem.imperial);
+    });
+
+    testWidgets('the placeholder text and the pill share the empty tape row: '
+        'on a narrow phone and at a larger text size the text wraps before '
+        'the pill and never runs under it', (tester) async {
+      for (final (size, textScale) in const [
+        (Size(360, 844), 1.0),
+        (Size(320, 844), 1.0),
+        (Size(390, 844), 1.3),
+        (Size(360, 844), 1.5),
+      ]) {
+        await pumpSignedIn(tester, size: size, textScale: textScale);
+        final l10n = l10nOf(tester);
+
+        final text = tester.getRect(
+          find.text(l10n.calculatorHistoryPlaceholder),
+        );
+        final pill = tester.getRect(find.byKey(CalculatorPage.unitsPillKey));
+
+        expect(
+          text.right,
+          lessThanOrEqualTo(pill.left),
+          reason: '$size at text size $textScale',
+        );
+        expect(tester.takeException(), isNull);
+      }
+    });
   });
 }

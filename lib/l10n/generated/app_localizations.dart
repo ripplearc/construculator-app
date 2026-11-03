@@ -3544,6 +3544,30 @@ abstract class AppLocalizations {
   /// **'Too large'**
   String get calculatorErrorTooLarge;
 
+  /// Face of the calculator's System of units pill while imperial units are in force
+  ///
+  /// In en, this message translates to:
+  /// **'Imperial'**
+  String get calculatorUnitsImperial;
+
+  /// Face of the calculator's System of units pill while metric units are in force
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get calculatorUnitsMetric;
+
+  /// Screen reader hint of the System of units pill while imperial units are in force
+  ///
+  /// In en, this message translates to:
+  /// **'Switches to metric units'**
+  String get calculatorUnitsSwitchToMetric;
+
+  /// Screen reader hint of the System of units pill while metric units are in force
+  ///
+  /// In en, this message translates to:
+  /// **'Switches to imperial units'**
+  String get calculatorUnitsSwitchToImperial;
+
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:
