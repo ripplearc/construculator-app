@@ -588,15 +588,18 @@ void main() {
         await expectation;
       });
 
-      test(
-        'dispose never throws, even when the source fails to let go',
-        () async {
-          final densities = repository.watchDensities();
-          await expectLater(densities, emits(hasLength(3)));
-          database.cancelError = StateError('busy');
-          expect(repository.dispose, returnsNormally);
-        },
-      );
+      test('dispose never throws and still ends the watches, even when the '
+          'source fails to let go', () async {
+        final densities = repository.watchDensities();
+        final ended = expectLater(
+          densities,
+          emitsInOrder([hasLength(3), emitsDone]),
+        );
+        await expectLater(densities, emits(hasLength(3)));
+        database.cancelError = StateError('busy');
+        expect(repository.dispose, returnsNormally);
+        await ended;
+      });
     });
   });
 }
