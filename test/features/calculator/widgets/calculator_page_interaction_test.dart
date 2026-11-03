@@ -313,8 +313,9 @@ void main() {
   testWidgets('a suggestion whose name does not fit keeps the = sign on the '
       'key, and = still lands it', (tester) async {
     // A tablet-wide view: CoreCalculatorChip and the label row do not yet
-    // ellipsize a key as long as "Pitch-rise per 12in run" at phone width,
-    // which T1a (CA-1092) takes up with the display area.
+    // ellipsize a key as long as "Pitch-rise per 12in run" at phone width.
+    // TODO: [CA-1405] Run this test at 390 px once CoreUI cuts the label.
+    // https://ripplearc.youtrack.cloud/issue/CA-1405
     await pumpPage(tester, size: const Size(800, 844));
     final bloc = blocOf(tester);
     for (final key in const [

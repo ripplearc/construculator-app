@@ -982,6 +982,60 @@ void main() {
     });
   });
 
+  group('= after a result, and on an operator waiting for its number', () {
+    test('a second = after a result is refused as the result already shown, '
+        'and the tape keeps its one result', () {
+      final landed = press(const Tape(), '2 ft × 3 =');
+      expect(landed.endsWithResult, isTrue);
+      expect(
+        landed.pressEquals(),
+        const TapeRefused(TapeRefusal.resultAlreadyShown),
+      );
+      expect(
+        press(landed, '× 4').pressEquals(),
+        isA<TapeChanged>(),
+        reason: 'a chain continued from the result lands again',
+      );
+    });
+
+    test('= on a trailing operator asks for its number and keeps the '
+        'operator; a chip with a number is not waiting', () {
+      final waiting = press(const Tape(), '2 0 ft +');
+      expect(waiting.endsWithOperator, isTrue);
+      expect(
+        waiting.pressEquals(),
+        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+      );
+      expect(texts(waiting), ['20ft', '']);
+      expect(press(const Tape(), '2 0 ft + 3').endsWithOperator, isFalse);
+      expect(press(const Tape(), '2 0 ft').endsWithOperator, isFalse);
+      expect(const Tape().endsWithOperator, isFalse);
+      expect(
+        press(const Tape(), '5 ÷ 0 =').pressEquals(),
+        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+        reason: 'the divisor reopened after ÷ 0 waits for its number too',
+      );
+    });
+  });
+
+  group('a result converts to acres and back (walkthrough 14.5)', () {
+    test('[Acre] on Calc 16,000ft² reads 0.3673acre, [Feet] brings the '
+        'square feet back, and the result keeps its key', () {
+      final lot = press(const Tape(), '2 0 0 ft × 8 0 ft =');
+      final acres = changed(lot.pressUnit(Unit.acre));
+      expect(acres.chips.last, isA<ResultChip>());
+      expect(
+        (acres.chips.last as ResultChip).value,
+        const Area(16000.0 * 64 * 64 * 144, unit: Unit.acre),
+      );
+      expect((acres.chips.last as ResultChip).key, Tape.calcKey);
+      expect(
+        (changed(acres.pressUnit(Unit.foot)).chips.last as ResultChip).value,
+        const Area(16000.0 * 64 * 64 * 144, unit: Unit.foot),
+      );
+    });
+  });
+
   group('Tape.landAnswer', () {
     const area = Area(16896.0 * 9216.0, unit: Unit.foot);
 

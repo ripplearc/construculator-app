@@ -258,6 +258,18 @@
         <regex pattern="final tape = _withFractionClosedAsInches\(\)\._withFieldClosed\(\);\s*final answer = ResultChip\(key: key, value: value\);" dotAll="true" id="tape.land_answer.skips_close">
             <mutation text="final tape = this; final answer = ResultChip(key: key, value: value);"/>
         </regex>
+
+        <!-- RULE CA-1088e: a second = after a result lands one more chip, or
+             = on a trailing operator lands over it -->
+        <regex pattern="if \(endsWithResult\) \{\s*return const TapeRefused\(TapeRefusal\.resultAlreadyShown\);\s*\}" dotAll="true" id="tape.press_equals.after_result">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.press_equals.on_trailing_operator">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="ValueChip\(operator: _\?, :final entry\) =&gt; entry\.isEmpty," dotAll="true" id="tape.ends_with_operator.any_operator_chip">
+            <mutation text="ValueChip(operator: _?) =&gt; true,"/>
+        </regex>
     </rules>
 
     <commands>

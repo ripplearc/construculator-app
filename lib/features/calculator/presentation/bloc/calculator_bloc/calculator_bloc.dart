@@ -124,8 +124,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorEqualsPressed event,
     Emitter<CalculatorState> emit,
   ) {
-    if (state.suggestions.firstOrNull case final leading?) {
-      return _accept(emit, leading);
+    final tape = state.tape;
+    if (!tape.endsWithResult && !tape.endsWithOperator) {
+      if (state.suggestions.firstOrNull case final leading?) {
+        return _accept(emit, leading);
+      }
     }
     _press(emit, (tape) => tape.pressEquals());
   }
@@ -154,7 +157,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   TapeOutcome _converted(Tape tape, Quantity spelling) => switch (spelling) {
     Angle() => tape.pressDmsKey(),
-    Length(unit: Unit.footInch) => _pressUnit(tape, Unit.foot),
     Length(:final unit) ||
     Area(:final unit) ||
     Volume(:final unit) ||
