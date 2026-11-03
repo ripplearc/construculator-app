@@ -35,16 +35,3 @@ final class CalculatorReadAsPill extends CalculatorDependentKey {
   @override
   List<Object?> get props => [offer, sourceText, targetText];
 }
-
-/// The "Shown as" pill under a pitch answer (Section 8): the spelling the
-/// answer wears, in/12in, degrees or grade; a tap cycles to the next, as
-/// pressing Pitch does.
-final class CalculatorPitchSpellingPill extends CalculatorDependentKey {
-  /// The spelling the pitch answer is written in.
-  final AngleSpelling spelling;
-
-  const CalculatorPitchSpellingPill(this.spelling);
-
-  @override
-  List<Object?> get props => [spelling];
-}

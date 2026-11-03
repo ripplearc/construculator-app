@@ -95,12 +95,6 @@ class CalculatorReadAsAccepted extends CalculatorEvent {
   const CalculatorReadAsAccepted();
 }
 
-/// The "Shown as" pill under a pitch answer was tapped (Section 8): the
-/// answer is re-spelled in the next of its three spellings.
-class CalculatorPitchSpellingCycled extends CalculatorEvent {
-  const CalculatorPitchSpellingCycled();
-}
-
 /// The display's ✕ was tapped: it clears the value being typed.
 class CalculatorActiveValueCleared extends CalculatorEvent {
   const CalculatorActiveValueCleared();
