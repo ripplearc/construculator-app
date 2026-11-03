@@ -16,6 +16,7 @@ import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -36,6 +37,7 @@ void main() {
 
     const testEquipmentType = 'Excavator';
     const testEstimateId = 'estimate-123';
+    const testUserId = 'user-1';
 
     setUpAll(() {
       Modular.init(
@@ -60,6 +62,9 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeSupabaseWrapper.setCurrentUser(
+        FakeUser(id: testUserId, createdAt: '2026-01-01T00:00:00.000Z'),
+      );
       database.reset();
       bloc = Modular.get<EquipmentCostFormBloc>();
     });
@@ -1876,11 +1881,13 @@ void main() {
       }) {
         database.seedRefusal({
           'id': YourRateRefusalKey.of(
+            userId: testUserId,
             companyId: company,
             category: 'equipment',
             itemName: itemName,
             equipmentMethod: method,
           ),
+          'user_id': testUserId,
           'company_id': company,
           'category': 'equipment',
           'refused_row_id': 'refused-row',
@@ -2036,6 +2043,7 @@ void main() {
           expect(
             database.refusalRow(
               YourRateRefusalKey.of(
+                userId: testUserId,
                 companyId: companyId,
                 category: 'equipment',
                 itemName: itemName,
@@ -2220,6 +2228,7 @@ void main() {
           await noticeAfterPicking();
 
           await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+            userId: testUserId,
             companyId: companyId,
             category: 'equipment',
             itemName: itemName,
@@ -2241,6 +2250,7 @@ void main() {
           await recorded;
 
           await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+            userId: testUserId,
             companyId: companyId,
             category: 'equipment',
             itemName: itemName,
@@ -2395,6 +2405,7 @@ void main() {
         bloc.add(const EquipmentRefusalNoticeSeen());
         await recorded;
         await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+          userId: testUserId,
           companyId: companyId,
           category: 'equipment',
           itemName: itemName,
@@ -2417,6 +2428,7 @@ void main() {
           ..completer = Completer<void>();
         await noticeAfterPicking();
         await Modular.get<YourRateRefusalDataSource>().deleteRefusalByItem(
+          userId: testUserId,
           companyId: companyId,
           category: 'equipment',
           itemName: itemName,
