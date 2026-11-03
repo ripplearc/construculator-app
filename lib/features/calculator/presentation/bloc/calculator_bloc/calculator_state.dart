@@ -35,12 +35,12 @@ class CalculatorState extends Equatable {
   final CalculatorSetting? openSettingSheet;
 
   /// The setting Update just saved, for the toast titled with its name
-  /// (Appendix C), or `null`; the next event clears it, as it clears
+  /// (Appendix C), or `null`; the next key clears it, as it clears
   /// [refusal]. The System of units pill saves with no toast (1.1).
   final CalculatorSetting? settingSaved;
 
   /// Why the last save did not reach the repository, or `null`; the next
-  /// event clears it. The screen keeps the chosen setting meanwhile.
+  /// key clears it. The screen keeps the chosen setting meanwhile.
   final Failure? settingSaveFailure;
 
   /// Creates a [CalculatorState].
@@ -82,9 +82,9 @@ class CalculatorState extends Equatable {
         : this.settingSaveFailure,
   );
 
-  /// The same state with what the last event said cleared — the notice,
-  /// the refusal, the saved setting and the save failure — as every event
-  /// starts from.
+  /// The same state with what the last key said cleared — the notice, the
+  /// refusal, the saved setting and the save failure — as every key starts
+  /// from.
   CalculatorState get silenced => copyWith(
     notice: () => null,
     refusal: () => null,
