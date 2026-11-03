@@ -18,6 +18,8 @@ import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
 
+final _l10n = lookupAppLocalizations(const Locale('en'));
+
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeYourRatesDatabase database;
@@ -146,8 +148,12 @@ void main() {
       expect(zone.width, greaterThanOrEqualTo(48));
       expect(zone.height, greaterThanOrEqualTo(48));
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Try again')),
-        isSemantics(label: 'Try again', isButton: true, hasTapAction: true),
+        tester.getSemantics(find.bySemanticsLabel(_l10n.yourRatesTryAgain)),
+        isSemantics(
+          label: _l10n.yourRatesTryAgain,
+          isButton: true,
+          hasTapAction: true,
+        ),
       );
       handle.dispose();
     });
@@ -162,7 +168,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        tester.getSemantics(find.text('Couldn’t open your saved prices.')),
+        tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
         isSemantics(isLiveRegion: true),
       );
       handle.dispose();
