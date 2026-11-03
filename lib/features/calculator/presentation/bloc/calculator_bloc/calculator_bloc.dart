@@ -31,29 +31,40 @@ part 'calculator_state.dart';
 /// what was typed"), the System of units pill re-renders at once and then
 /// saves, so the tape and the keyboard agree on one value, and a save that
 /// fails says so without taking the choice back. The four setting sheets
-/// save the same way (2/4).
+/// save the same way (2/4). Settings that arrive are not a key: what the
+/// last key said stays.
+///
+/// A save sends the change, never the whole row: the repository applies it
+/// to the settings it holds once the signed-in profile has been read, so a
+/// choice made before that profile arrives changes its own setting only
+/// and the other four keep what the user saved. What the screen shows is
+/// what last arrived with the saves still in flight applied on top — the
+/// profile that lands after such a choice is shown with the choice still
+/// on it, the echo of an older save cannot take a newer choice back, and a
+/// change from another device during a save is shown with the in-flight
+/// change on top until the save's own echo arrives, which is what the
+/// profile then holds: the newest write wins, in the order the server took
+/// them (decided 1 November 2026). A save stays in flight until its echo
+/// arrives, and the echo of a newer save ends the older ones with it (the
+/// repository lets only the newest echo due through); a save equal to the
+/// stream's last emission — what last arrived, or the last echo still due
+/// — is never echoed, since the distinct stream never repeats itself, so
+/// that save leaves the list as it returns.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   final CalculatorPreferencesRepository _preferencesRepository;
 
   late final StreamSubscription<CalculatorPreferences> _preferencesSubscription;
 
-  // The settings saved from here whose echo has not arrived yet. The
-  // repository re-emits every save a moment after it lands, and the echo
-  // of an older save arriving after a newer choice was applied would take
-  // that choice back; the screen already shows every save, so each echo is
-  // consumed once and not applied. A save equal to the stream's last
-  // emission — what last arrived, or the last echo still expected — is
-  // never echoed (the stream is distinct), so none is expected for it. A
-  // change from another device that happens to equal a pending echo is
-  // taken for it, and arrives with the next profile read. Two saves in
-  // flight at once race to the profile, the last to land winning, which a
-  // user tapping twice within one round trip sees as the second tap.
-  final List<CalculatorPreferences> _echoesExpected = [];
+  final List<_SaveInFlight> _savesInFlight = [];
 
   CalculatorPreferences _lastArrived = CalculatorPreferences.defaults;
 
-  CalculatorPreferences get _lastEmitted =>
-      _echoesExpected.isNotEmpty ? _echoesExpected.last : _lastArrived;
+  CalculatorPreferences get _lastEmitted {
+    for (final save in _savesInFlight.reversed) {
+      if (save.saved case final saved?) return saved;
+    }
+    return _lastArrived;
+  }
 
   CalculatorBloc({
     required CalculatorPreferencesRepository preferencesRepository,
@@ -88,9 +99,15 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
   ) {
     _lastArrived = event.preferences;
-    if (_echoesExpected.remove(event.preferences)) return;
-    // Settings arriving are not a key: what the last key said stays.
-    emit(state.copyWith(tape: state.tape.withPreferences(event.preferences)));
+    final echoed = _savesInFlight.indexWhere(
+      (save) => save.saved == event.preferences,
+    );
+    if (echoed >= 0) _savesInFlight.removeRange(0, echoed + 1);
+    final shown = _savesInFlight.fold(
+      event.preferences,
+      (preferences, save) => save.change(preferences),
+    );
+    emit(state.copyWith(tape: state.tape.withPreferences(shown)));
   }
 
   Future<void> _onUnitSystemToggled(
@@ -103,14 +120,23 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   Future<void> _saved(
     Emitter<CalculatorState> emit,
-    CalculatorPreferences preferences,
+    CalculatorPreferences Function(CalculatorPreferences) change,
   ) async {
-    final result = await _preferencesRepository.savePreferences(preferences);
+    final save = _SaveInFlight(change);
+    _savesInFlight.add(save);
+    final result = await _preferencesRepository.updatePreferences(change);
     emit(
       result.fold(
-        (failure) => state.copyWith(settingSaveFailure: () => failure),
+        (failure) {
+          _savesInFlight.remove(save);
+          return state.copyWith(settingSaveFailure: () => failure);
+        },
         (saved) {
-          if (saved != _lastEmitted) _echoesExpected.add(saved);
+          if (saved == _lastEmitted) {
+            _savesInFlight.remove(save);
+          } else {
+            save.saved = saved;
+          }
           return state;
         },
       ),
@@ -228,11 +254,14 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
     MeasurementSystem system,
   ) async {
-    final preferences = state.tape.preferences.copyWith(system: system);
+    CalculatorPreferences change(CalculatorPreferences current) =>
+        current.copyWith(system: system);
     emit(
-      state.silenced.copyWith(tape: state.tape.withPreferences(preferences)),
+      state.silenced.copyWith(
+        tape: state.tape.withPreferences(change(state.tape.preferences)),
+      ),
     );
-    await _saved(emit, preferences);
+    await _saved(emit, change);
   }
 
   void _onResetRequested(
@@ -256,4 +285,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     tape: Tape(preferences: state.tape.preferences),
     currentGroupIndex: state.currentGroupIndex,
   );
+}
+
+class _SaveInFlight {
+  final CalculatorPreferences Function(CalculatorPreferences) change;
+
+  CalculatorPreferences? saved;
+
+  _SaveInFlight(this.change);
 }

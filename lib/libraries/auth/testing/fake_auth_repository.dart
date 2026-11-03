@@ -40,6 +40,11 @@ class FakeAuthRepository implements AuthRepository {
   /// saves then land in the order they were made.
   Completer<void>? updateUserProfileGate;
 
+  final _profileUpdates = StreamController<User>.broadcast(sync: true);
+
+  /// Every profile written by [updateUserProfile], as it lands.
+  Stream<User> get profileUpdates => _profileUpdates.stream;
+
   /// List of get user profile calls
   final List<String> getUserProfileCalls = [];
 
@@ -234,6 +239,7 @@ class FakeAuthRepository implements AuthRepository {
     if (updateUserProfileGate case final gate?) await gate.future;
     final updatedUser = user.copyWith(updatedAt: _clock.now());
     _userProfiles[credentialId] = updatedUser;
+    _profileUpdates.add(updatedUser);
     return updatedUser;
   }
 }
