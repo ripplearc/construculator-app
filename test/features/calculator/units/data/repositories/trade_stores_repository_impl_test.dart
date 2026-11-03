@@ -334,6 +334,49 @@ void main() {
           ]);
         },
       );
+
+      for (final (order, liveFirst) in [
+        ('the live row read first', true),
+        ('the deleted row read first', false),
+      ]) {
+        test('a newer delete hides a default and a newer change shows it, with '
+            '$order', () async {
+          final seed = TradeStoreSeeds.sizes(
+            SizeStore.sheet,
+            MeasurementSystem.imperial,
+          )[0];
+          CalculatorStoreRowDto rowOf(int width) =>
+              TradeStoreRowMapper.sizeToRow(
+                seed.copyWith(width: Length(width * inch, unit: Unit.inch)),
+                userId: user,
+                now: clock.now(),
+              );
+          final olderLive = rowOf(40);
+          clock.advance(const Duration(minutes: 1));
+          final newerDeleted = rowOf(44).copyWith(deletedAt: clock.now());
+          for (final row
+              in liveFirst
+                  ? [olderLive, newerDeleted]
+                  : [newerDeleted, olderLive]) {
+            await dataSource.insertRow(row);
+          }
+          expect(
+            render(
+              await shownSizes(SizeStore.sheet, MeasurementSystem.imperial),
+            ),
+            ['48in x 108in', '48in x 120in'],
+          );
+
+          clock.advance(const Duration(minutes: 1));
+          await dataSource.insertRow(rowOf(46));
+          expect(
+            render(
+              await shownSizes(SizeStore.sheet, MeasurementSystem.imperial),
+            ),
+            ['46in x 96in', '48in x 108in', '48in x 120in'],
+          );
+        });
+      }
     });
 
     group('spacings and densities', () {
