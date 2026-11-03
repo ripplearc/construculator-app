@@ -157,12 +157,13 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   ) async {
     if (operation.table != DatabaseConstants.yourRatesTable) return;
     if (_refusedRateAmount(operation) == null) return;
+    final userId = _supabaseWrapper.currentUser?.id;
     final item = await _phoneRateOf(database, operation);
-    if (item == null) return;
+    if (userId == null || item == null) return;
     await database.execute(
       'DELETE FROM ${DatabaseConstants.yourRateRefusalsTable} '
       'WHERE ${DatabaseConstants.idColumn} = ?',
-      [_refusalKeyOf(item)],
+      [_refusalKeyOf(userId, item)],
     );
   }
 
@@ -178,12 +179,15 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     return row == null ? null : Map<String, dynamic>.of(row);
   }
 
-  String _refusalKeyOf(Map<String, dynamic> rate) => YourRateRefusalKey.of(
-    companyId: rate[DatabaseConstants.companyIdColumn] as String,
-    category: rate[DatabaseConstants.categoryColumn] as String,
-    itemName: rate[DatabaseConstants.itemNameColumn] as String,
-    equipmentMethod: rate[DatabaseConstants.equipmentMethodColumn] as String?,
-  );
+  String _refusalKeyOf(String userId, Map<String, dynamic> rate) =>
+      YourRateRefusalKey.of(
+        userId: userId,
+        companyId: rate[DatabaseConstants.companyIdColumn] as String,
+        category: rate[DatabaseConstants.categoryColumn] as String,
+        itemName: rate[DatabaseConstants.itemNameColumn] as String,
+        equipmentMethod:
+            rate[DatabaseConstants.equipmentMethodColumn] as String?,
+      );
 
   Future<void> _recordRefusal(
     PowerSyncDatabase database,
@@ -191,12 +195,14 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   ) async {
     final refusedAmount = _refusedRateAmount(operation);
     if (refusedAmount == null) return;
+    final userId = _supabaseWrapper.currentUser?.id;
     final item = await _phoneRateOf(database, operation);
-    if (item == null) return;
+    if (userId == null || item == null) return;
 
     await database.execute(
       'INSERT OR REPLACE INTO ${DatabaseConstants.yourRateRefusalsTable} '
-      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.companyIdColumn}, '
+      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.userIdColumn}, '
+      '${DatabaseConstants.companyIdColumn}, '
       '${DatabaseConstants.categoryColumn}, '
       '${DatabaseConstants.refusedRowIdColumn}, '
       '${DatabaseConstants.itemNameColumn}, '
@@ -205,9 +211,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       '${DatabaseConstants.refusedAmountColumn}, '
       '${DatabaseConstants.acceptedAmountColumn}, '
       '${DatabaseConstants.shownAtColumn}) '
-      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
       [
-        _refusalKeyOf(item),
+        _refusalKeyOf(userId, item),
+        userId,
         item[DatabaseConstants.companyIdColumn],
         item[DatabaseConstants.categoryColumn],
         operation.id,

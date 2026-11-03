@@ -6,6 +6,7 @@ import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -39,6 +40,9 @@ void main() {
 
     setUp(() {
       server.reset();
+      server.setCurrentUser(
+        FakeUser(id: 'user-1', createdAt: '2026-10-01T08:00:00.000Z'),
+      );
       phone.reset();
     });
 
@@ -106,6 +110,7 @@ void main() {
 
     group('refused by the server', () {
       final excavatorKey = YourRateRefusalKey.of(
+        userId: 'user-1',
         companyId: 'company-1',
         category: 'equipment',
         itemName: 'Excavator',
@@ -189,6 +194,26 @@ void main() {
         await connector.uploadData(database);
 
         expect(phone.refusalRow(excavatorKey)!['entry_label'], 'Weekend');
+      });
+
+      test('records no refusal when nobody is signed in', () async {
+        server.setCurrentUser(null);
+
+        await uploadRefusedAmountChange(
+          code: PostgresErrorCode.checkViolation,
+          acceptedOnServer: 400,
+        );
+
+        expect(phone.refusalRow(excavatorKey), isNull);
+      });
+
+      test('keeps the refusal under the user who saved the price', () async {
+        await uploadRefusedAmountChange(
+          code: PostgresErrorCode.checkViolation,
+          acceptedOnServer: 400,
+        );
+
+        expect(phone.refusalRow(excavatorKey)!['user_id'], 'user-1');
       });
 
       test('treats no access to the account as a refusal', () async {
@@ -384,6 +409,7 @@ void main() {
 
       void seedRefusalOfExcavator() => phone.seedRefusal({
         'id': excavatorKey,
+        'user_id': 'user-1',
         'company_id': 'company-1',
         'category': 'equipment',
         'refused_row_id': 'older-row',
@@ -519,11 +545,13 @@ void main() {
         () async {
           phone.seedRefusal({
             'id': YourRateRefusalKey.of(
+              userId: 'user-1',
               companyId: 'company-1',
               category: 'equipment',
               itemName: 'Dozer',
               equipmentMethod: 'day',
             ),
+            'user_id': 'user-1',
             'company_id': 'company-1',
             'category': 'equipment',
             'refused_row_id': 'dozer-row',
@@ -546,6 +574,7 @@ void main() {
           expect(
             phone.refusalRow(
               YourRateRefusalKey.of(
+                userId: 'user-1',
                 companyId: 'company-1',
                 category: 'equipment',
                 itemName: 'Dozer',
