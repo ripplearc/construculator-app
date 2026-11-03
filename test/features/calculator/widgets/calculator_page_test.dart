@@ -572,7 +572,11 @@ void main() {
       labels.stripText(
         const CalculatorPitchOutOfRangeNote(isAtLeastARightAngle: false),
       ),
-      l10n.calculatorNotePitchAboveZero,
+      l10n.calculatorNotePitchAtLeastZero,
+    );
+    expect(
+      labels.stripText(const CalculatorFlatPitchHasNoRunNote()),
+      l10n.calculatorNoteFlatPitchHasNoRun,
     );
     expect(
       labels.stripText(const CalculatorSlopeOutOfRangeNote()),

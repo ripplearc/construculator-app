@@ -9,15 +9,25 @@ sealed class CalculatorStripNote extends Equatable {
 }
 
 /// Pitch holds an angle the rules cannot use (Section 5.4, "A pitch has to
-/// be under 90°"): 90° or more, or 0° or less. Stays while the cause stays.
+/// be under 90°"): 90° or more, or below 0°. Stays while the cause stays.
 final class CalculatorPitchOutOfRangeNote extends CalculatorStripNote {
-  /// Whether the pitch is at or above a right angle, else at or below 0°.
+  /// Whether the pitch is at or above a right angle, else below 0°.
   final bool isAtLeastARightAngle;
 
   const CalculatorPitchOutOfRangeNote({required this.isAtLeastARightAngle});
 
   @override
   List<Object?> get props => [isAtLeastARightAngle];
+}
+
+/// Pitch holds 0° with a Rise named and nothing to solve the run from: a
+/// flat roof has no run (open item Q57, decided 2026-10-15). Stays while
+/// the cause stays.
+final class CalculatorFlatPitchHasNoRunNote extends CalculatorStripNote {
+  const CalculatorFlatPitchHasNoRunNote();
+
+  @override
+  List<Object?> get props => const [];
 }
 
 /// Slope holds a grade of 0% or less, which is flat (Section 5.4). Stays

@@ -2135,12 +2135,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'A pitch must be under 90°. Edit the Pitch chip.';
 
   @override
-  String get calculatorNotePitchAboveZero =>
-      'A pitch must be above 0°. Edit the Pitch chip.';
+  String get calculatorNotePitchAtLeastZero =>
+      'A pitch must be 0° or more. Edit the Pitch chip.';
+
+  @override
+  String get calculatorNoteFlatPitchHasNoRun =>
+      'A flat pitch has no run. Edit the Pitch chip.';
 
   @override
   String get calculatorNoteSlopeAboveZero =>
-      'A grade of 0% is flat — there is no slope to work from. Edit the Slope chip to a grade above 0.';
+      'A slope must be above 0%. Edit the Slope chip.';
 
   @override
   String get calculatorNotePitchHasNoDms =>
