@@ -210,6 +210,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     YourRateEntry? selected,
   ) {
     final l10n = context.l10n;
+    // TODO: [CA-1411] keep the error row with "Try again" disabled while retrying (https://ripplearc.youtrack.cloud/issue/CA-1411)
     if (state is YourRatesLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: CoreSpacing.space6),
