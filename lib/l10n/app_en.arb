@@ -3154,10 +3154,6 @@
   "@calculatorPillReadAsHint": {
     "description": "Screen reader hint of the Read-as pill under the calculator value"
   },
-  "calculatorPillShownAsHint": "Changes how the pitch is shown",
-  "@calculatorPillShownAsHint": {
-    "description": "Screen reader hint of the Shown as pill under a calculator pitch answer"
-  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"

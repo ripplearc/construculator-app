@@ -3778,12 +3778,6 @@ abstract class AppLocalizations {
   /// **'Rewrites the number the other way'**
   String get calculatorPillReadAsHint;
 
-  /// Screen reader hint of the Shown as pill under a calculator pitch answer
-  ///
-  /// In en, this message translates to:
-  /// **'Changes how the pitch is shown'**
-  String get calculatorPillShownAsHint;
-
   /// Label for the Shapes function group tab in the calculator
   ///
   /// In en, this message translates to:
