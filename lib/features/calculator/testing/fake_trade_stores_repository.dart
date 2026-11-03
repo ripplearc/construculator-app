@@ -12,6 +12,11 @@ import 'package:construculator/libraries/errors/failures.dart';
 /// store in memory as the real one shows it — Appendix B's defaults from the
 /// start, each with its seed and no id until changed — mints ids by
 /// counting, and lets a test fail the next write or sign the user out.
+///
+/// A deleted entry stays in its list, hidden from the watches, and comes
+/// back when it is changed again, as the real repository's soft-deleted row
+/// does. With nobody signed in a watch shows Appendix B alone and ends, as
+/// the real one does.
 class FakeTradeStoresRepository implements TradeStoresRepository {
   /// Every size on show, defaults and user-added, across the three stores
   /// and both sheet seed sets.
@@ -36,6 +41,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
   bool signedIn = true;
 
   final _changes = StreamController<void>.broadcast();
+  final _hiddenKeys = <String>{};
   var _nextId = 0;
 
   /// Creates a fake showing Appendix B's defaults.
@@ -51,13 +57,14 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
     final seeds = TradeStoreSeeds.sizes(store, system).map((s) => s.seed);
     return _watch(
       () => _inOrder(
-        sizes.where(
+        _shown(sizes).where(
           (size) =>
               size.store == store &&
               (size.seed == null || seeds.contains(size.seed)),
         ),
         (size) => size.position,
       ),
+      () => TradeStoreSeeds.sizes(store, system),
     );
   }
 
@@ -69,7 +76,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
       width: size.width,
       height: size.height,
       position: _after(
-        sizes.where((s) => s.store == size.store),
+        _shown(sizes).where((s) => s.store == size.store),
         (s) => s.position,
       ),
     );
@@ -86,8 +93,10 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
       _write(() => _remove(sizes, size));
 
   @override
-  Stream<List<StoredSpacing>> watchSpacings() =>
-      _watch(() => _inOrder(spacings, (s) => s.position));
+  Stream<List<StoredSpacing>> watchSpacings() => _watch(
+    () => _inOrder(_shown(spacings), (s) => s.position),
+    () => TradeStoreSeeds.spacings,
+  );
 
   @override
   Future<Either<Failure, StoredSpacing>> addSpacing(StoredSpacing spacing) =>
@@ -95,7 +104,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
         final stored = StoredSpacing(
           id: _id(),
           spacing: spacing.spacing,
-          position: _after(spacings, (s) => s.position),
+          position: _after(_shown(spacings), (s) => s.position),
         );
         spacings.add(stored);
         return stored;
@@ -110,7 +119,8 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
       _write(() => _remove(spacings, spacing));
 
   @override
-  Stream<FenceConfiguration> watchFence() => _watch(() => fence);
+  Stream<FenceConfiguration> watchFence() =>
+      _watch(() => fence, () => TradeStoreSeeds.fence);
 
   @override
   Future<Either<Failure, FenceConfiguration>> updateFence(
@@ -118,7 +128,8 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
   ) => _write(() => this.fence = fence);
 
   @override
-  Stream<List<StoredWaste>> watchWaste() => _watch(() => waste.toList());
+  Stream<List<StoredWaste>> watchWaste() =>
+      _watch(() => waste.toList(), () => TradeStoreSeeds.waste);
 
   @override
   Future<Either<Failure, StoredWaste>> updateWaste(StoredWaste waste) =>
@@ -128,8 +139,10 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
       });
 
   @override
-  Stream<List<StoredDensity>> watchDensities() =>
-      _watch(() => _inOrder(densities, (d) => d.position));
+  Stream<List<StoredDensity>> watchDensities() => _watch(
+    () => _inOrder(_shown(densities), (d) => d.position),
+    () => TradeStoreSeeds.densities,
+  );
 
   @override
   Future<Either<Failure, StoredDensity>> addDensity(StoredDensity density) =>
@@ -138,7 +151,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
           id: _id(),
           name: density.name,
           poundsPerCubicYard: density.poundsPerCubicYard,
-          position: _after(densities, (d) => d.position),
+          position: _after(_shown(densities), (d) => d.position),
         );
         densities.add(stored);
         return stored;
@@ -156,6 +169,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
   /// signed in.
   void reset() {
     _seed();
+    _hiddenKeys.clear();
     writeFailure = null;
     signedIn = true;
     _notify();
@@ -192,14 +206,20 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
     if (!_changes.isClosed) _changes.add(null);
   }
 
-  Stream<T> _watch<T>(T Function() read) => Stream<T>.multi((controller) {
-    controller.add(read());
-    final subscription = _changes.stream.listen(
-      (_) => controller.add(read()),
-      onDone: controller.close,
-    );
-    controller.onCancel = subscription.cancel;
-  });
+  Stream<T> _watch<T>(T Function() read, T Function() defaults) {
+    if (!signedIn) return Stream.value(defaults());
+    return Stream<T>.multi((controller) {
+      controller.add(read());
+      final subscription = _changes.stream.listen(
+        (_) => controller.add(read()),
+        onDone: controller.close,
+      );
+      controller.onCancel = subscription.cancel;
+    });
+  }
+
+  Iterable<T> _shown<T>(List<T> list) =>
+      list.where((entry) => !_hiddenKeys.contains(_keyOf(entry)));
 
   Future<Either<Failure, T>> _write<T>(T Function() write) async {
     if (!signedIn) {
@@ -241,6 +261,7 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
     final index = _indexOf(list, value);
     if (index < 0) throw StateError('not found');
     final replacement = _idOf(value) == null ? stored(value) : value;
+    _hiddenKeys.remove(_keyOf(list[index]));
     list[index] = replacement;
     return replacement;
   }
@@ -248,8 +269,11 @@ class FakeTradeStoresRepository implements TradeStoresRepository {
   void _remove<T>(List<T> list, T value) {
     final index = _indexOf(list, value);
     if (index < 0) throw StateError('not found');
-    list.removeAt(index);
+    final key = _keyOf(list[index]);
+    if (key != null) _hiddenKeys.add(key);
   }
+
+  String? _keyOf(Object? entry) => _seedOf(entry) ?? _idOf(entry);
 
   String? _idOf(Object? entry) => switch (entry) {
     StoredSize(:final id) ||

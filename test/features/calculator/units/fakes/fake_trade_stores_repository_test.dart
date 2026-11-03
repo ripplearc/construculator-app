@@ -246,6 +246,75 @@ void main() {
       },
     );
 
+    test(
+      'a deleted entry stays hidden and comes back when changed again, as the '
+      'real one\'s soft-deleted row does',
+      () async {
+        final blocks = TradeStoreSeeds.sizes(
+          SizeStore.masonry,
+          MeasurementSystem.imperial,
+        );
+        expect(await repository.deleteSize(blocks.first), isRight(null));
+        expect(
+          await repository
+              .watchSizes(SizeStore.masonry, MeasurementSystem.imperial)
+              .first,
+          [blocks.last],
+        );
+        final back = right(
+          await repository.updateSize(
+            blocks.first.copyWith(
+              width: const Length(6 * inch, unit: Unit.inch),
+            ),
+          ),
+        );
+        expect(back.id, isNotNull);
+        expect(
+          await repository
+              .watchSizes(SizeStore.masonry, MeasurementSystem.imperial)
+              .first,
+          [back, blocks.last],
+        );
+        final added = right(await repository.addDensity(slag));
+        expect(await repository.deleteDensity(added), isRight(null));
+        expect(
+          (await repository.watchDensities().first).map((d) => d.name),
+          isNot(contains('slag')),
+        );
+        expect(right(await repository.addDensity(slag)).position, 3);
+        expect(await repository.updateDensity(added), isRight(added));
+        expect((await repository.watchDensities().first).map((d) => d.name), [
+          'concrete',
+          'gravel',
+          'sand',
+          'slag',
+          'slag',
+        ]);
+      },
+    );
+
+    test('signed out, a watch shows Appendix B alone and ends', () async {
+      await repository.addSize(sheet);
+      await repository.updateFence(
+        TradeStoreSeeds.fence.copyWith(railsPerSection: 1),
+      );
+      repository.signedIn = false;
+      expect(
+        await repository
+            .watchSizes(SizeStore.sheet, MeasurementSystem.imperial)
+            .toList(),
+        [TradeStoreSeeds.sizes(SizeStore.sheet, MeasurementSystem.imperial)],
+      );
+      expect(await repository.watchSpacings().toList(), [
+        TradeStoreSeeds.spacings,
+      ]);
+      expect(await repository.watchFence().toList(), [TradeStoreSeeds.fence]);
+      expect(await repository.watchWaste().toList(), [TradeStoreSeeds.waste]);
+      expect(await repository.watchDensities().toList(), [
+        TradeStoreSeeds.densities,
+      ]);
+    });
+
     test('dispose ends its streams', () async {
       final ended = expectLater(
         repository.watchSpacings(),
