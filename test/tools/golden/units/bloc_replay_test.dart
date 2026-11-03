@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -11,16 +13,22 @@ import '../../../../scripts/golden/scenario.dart';
 import '../../../../scripts/golden/snapshot.dart';
 
 /// Drives [CalculatorBloc] with the prototype's keys and reads its state back
-/// as a [Snapshot].
+/// as a [Snapshot], in the words the page would show in English.
 ///
-/// The bloc does not consume the engine yet (that is G3's work), so most
-/// scenarios fail at their first checkpoint — which is what this driver is
-/// for today: the readable diff of what the app shows against what the
-/// prototype showed, and the score the CI job reports. Keys the bloc has no
-/// event for (accepting a strip chip, tapping a tape chip, the sheet) are
-/// refused, and the runner reports the scenario as unsupported from there.
+/// The bloc maps what the engine answers today (S1b); the ladder's rungs,
+/// the sheets and the tape's own taps are still to come, so a scenario
+/// that needs them fails at that checkpoint — which is what this driver is
+/// for: the readable diff of what the app shows against what the prototype
+/// showed, and the score the CI job reports. A strip chip is accepted by the
+/// prefix of its text, as the prototype's `{accept}` step names it; steps
+/// the bloc has no event for (tapping a tape chip, the sheet) are refused,
+/// and the runner reports the scenario as unsupported from there.
 class BlocScenarioDriver implements ScenarioDriver {
   CalculatorBloc _bloc = CalculatorBloc();
+
+  static final CalculatorLabelFormatter _labels = CalculatorLabelFormatter(
+    AppLocalizationsEn(),
+  );
 
   /// The bloc under test, for the test to close.
   CalculatorBloc get bloc => _bloc;
@@ -33,13 +41,36 @@ class BlocScenarioDriver implements ScenarioDriver {
 
   @override
   Future<bool> perform(ScenarioStep step) async {
-    if (step is! KeyStep) return false;
-    final event = _eventFor(step.key);
+    final event = switch (step) {
+      KeyStep(:final key) => _eventFor(key),
+      AcceptStep(:final prefix) => _acceptEventFor(prefix),
+      _ => null,
+    };
     if (event == null) return false;
     _bloc.add(event);
     await pumpEventQueue();
     return true;
   }
+
+  /// The chip whose text starts with [prefix], row 1 first then row 2, as
+  /// the prototype's `accept` step finds it.
+  CalculatorEvent? _acceptEventFor(String prefix) {
+    final state = _bloc.state;
+    for (final suggestion in state.suggestions) {
+      if (_rowOneText(suggestion).startsWith(prefix)) {
+        return CalculatorSuggestionAccepted(suggestion);
+      }
+    }
+    for (final suggestion in state.conversions) {
+      if (suggestion.text.startsWith(prefix)) {
+        return CalculatorSuggestionAccepted(suggestion);
+      }
+    }
+    return null;
+  }
+
+  static String _rowOneText(CalculatorSuggestion suggestion) =>
+      '${_labels.suggestionLabel(suggestion)}: ${suggestion.text}';
 
   @override
   Snapshot snapshot() {
@@ -63,6 +94,17 @@ class BlocScenarioDriver implements ScenarioDriver {
             _ => 't-input',
           },
       ],
+      strip: [
+        for (final suggestion in state.suggestions) _rowOneText(suggestion),
+      ],
+      strip2: state.conversions.isEmpty
+          ? null
+          : [for (final suggestion in state.conversions) suggestion.text],
+      equalsLabel: switch (_labels.equalsLabel(state.equalsKeyId)) {
+        CalculatorLabelFormatter.equalsSign => '',
+        final label => label,
+      },
+      bracketOpen: state.tape.openBracket != null,
       unitToggleLabel: state.currentUnitSystem == UnitSystem.metric
           ? 'Metric'
           : 'Imperial',
@@ -207,30 +249,65 @@ void main() {
       );
     });
 
-    test(
-      'S01 against the stub engine produces a readable failure diff',
-      () async {
-        final s01 = scenarios.firstWhere((s) => s.id == 'S01');
-        final result = await runScenario(s01, driver);
-        expect(result.passed, isFalse);
-        final diff = ReplayReport.describeFailure(result).join('\n');
-        expect(
-          diff,
-          contains(
-            'S01 Area happy path — FAILED at step 11 "top chip Area: 410.67ft²"',
-          ),
-        );
-        expect(diff, contains("expected: strip[0] == 'Area: 410.67ft²'"));
-        expect(diff, contains('actual:   '));
-        expect(diff, contains('tape=[Length22ft, Width18ft 8in]'));
-        expect(diff, contains("source:   r=>r.strip[0]==='Area: 410.67ft²'"));
-      },
-    );
+    test('S01 passes the engine\'s checkpoints, accepts Area from the strip, '
+        'and fails at the first trade rung with a readable diff', () async {
+      final s01 = scenarios.firstWhere((s) => s.id == 'S01');
+      final result = await runScenario(s01, driver);
+      expect(result.passed, isFalse);
+      final diff = ReplayReport.describeFailure(result).join('\n');
+      expect(
+        diff,
+        contains(
+          'S01 Area happy path — FAILED at step 16 '
+          '"material suggestion follows"',
+        ),
+      );
+      expect(diff, contains("expected: strip[0] startsWith 'Drywall:'"));
+      expect(diff, contains('actual:   '));
+      expect(diff, contains('tape=[Length22ft, Width18ft 8in, Area410.67ft²]'));
+      expect(diff, contains('strip=[Diagonal: 28.85ft, Perimeter: 81.33ft]'));
+      expect(diff, contains("source:   r=>r.strip[0].startsWith('Drywall:')"));
+    });
 
-    test('the driver refuses steps the bloc has no event for', () async {
+    test('the driver refuses steps the bloc has no event for, and an accept '
+        'that names no chip on the strip', () async {
       expect(await driver.perform(const AcceptStep('Area')), isFalse);
       expect(await driver.perform(const KeyStep('view-all')), isFalse);
       expect(await driver.perform(const KeyStep('toggle-system')), isFalse);
+      expect(await driver.perform(const TapChipStep('Length')), isFalse);
+    });
+
+    test('the driver accepts a strip chip by the prefix of its text, row 1 '
+        'first, then a conversion by its value', () async {
+      for (final key in const [
+        'fk:Length',
+        'd:2',
+        'd:2',
+        'unit:ft',
+        'fk:Width',
+        'd:1',
+        'd:8',
+        'unit:ft',
+        'd:8',
+        'unit:in',
+      ]) {
+        await driver.perform(KeyStep(key));
+      }
+      final offered = driver.snapshot();
+      expect(offered.strip, [
+        'Area: 410.67ft²',
+        'Diagonal: 28.85ft',
+        'Perimeter: 81.33ft',
+      ]);
+      expect(offered.strip2, ['224in', '5.69m']);
+      expect(offered.equalsLabel, 'Area');
+
+      expect(await driver.perform(const AcceptStep('Area')), isTrue);
+      expect(driver.snapshot().tape.last, 'Area410.67ft²');
+
+      expect(await driver.perform(const AcceptStep('45.63yd²')), isTrue);
+      expect(driver.snapshot().tape.last, 'Area45.63yd²');
+      expect(driver.snapshot().strip2, isNot(contains('45.63yd²')));
     });
 
     test('the driver reads the bloc state back as a snapshot', () async {
@@ -267,8 +344,12 @@ void main() {
       expect(chained.tapeKinds, ['t-input', 't-input', 't-input', 't-result']);
       expect(chained.label, 'Calc');
       expect(chained.value, '24ft 0in');
+      expect(chained.strip2, ['288in', '7.32m']);
+      expect(chained.equalsLabel, '');
       await driver.perform(const KeyStep('paren'));
       expect(driver.snapshot().tape.last, '(');
+      expect(driver.snapshot().bracketOpen, isTrue);
+      expect(driver.snapshot().strip, isEmpty);
       expect(driver.snapshot().unitToggleLabel, 'Imperial');
     });
   });

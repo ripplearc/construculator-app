@@ -185,6 +185,21 @@ void main() {
       });
     });
 
+    group('an area converts to and from acres (walkthrough 14.5)', () {
+      const lot = Area(16000.0 * 64 * 64 * 144, unit: Unit.foot);
+
+      test('[Acre] on 16,000ft² reads 0.3673acre', () {
+        expect(
+          press(const [
+            Token(digits: '16000', unit: Unit.foot, power: 2),
+          ], Unit.acre),
+          UnitKeyConverted(lot.spelledIn(Unit.acre), const [
+            Token(digits: '0.3673', unit: Unit.acre),
+          ]),
+        );
+      });
+    });
+
     group('the same key pressed again raises the dimension', () {
       test('2in then [Inch] reads 2in², then 2in³', () {
         const inch = Token(digits: '2', unit: Unit.inch);

@@ -127,10 +127,21 @@ enum TapeRefusal {
 
   /// = with no operator to apply and no value waiting for one ("Nothing to
   /// compute yet"); the strip's top suggestion, if any, is the caller's to
-  /// land instead. After a result or an error chip the prototype stays
-  /// quiet (rule 4.12): [Tape.endsWithResult] and [Tape.endsWithError] tell
-  /// the caller when to.
+  /// land instead. After an error chip the prototype stays quiet (rule
+  /// 4.12): [Tape.endsWithError] tells the caller when to.
   nothingToCompute,
+
+  /// = on an operator still waiting for its number (20ft + =): "Type a
+  /// number first", "Type the number after +, then press =" (team decision
+  /// of 1 November 2026; rule 4.12, a key is never silently dead). The
+  /// operator stays, and no strip answer lands over it. The caller names
+  /// the operator from the tape.
+  operatorNeedsANumber,
+
+  /// = straight after a result chip (Area = =): "Result already shown",
+  /// "Press C to start a new entry" (owner decision of 31 October 2026).
+  /// Nothing lands; a strip chip tapped still lands its answer.
+  resultAlreadyShown,
 
   /// A digit straight after a closed bracket ("Add an operator first").
   addAnOperatorFirst,
@@ -420,6 +431,14 @@ class Tape extends Equatable {
   /// chip in place (rule 4.12). A bracket opened here without banking still
   /// folds, because an error chip ends only its own chain.
   bool get endsWithError => chips.isNotEmpty && chips.last is ErrorChip;
+
+  /// Whether the tape ends on an operator still waiting for its number
+  /// (20ft +), so that = is refused with [TapeRefusal.operatorNeedsANumber]
+  /// rather than landing a strip answer over the operator.
+  bool get endsWithOperator => switch (active) {
+    ValueChip(operator: _?, :final entry) => entry.isEmpty,
+    _ => false,
+  };
 
   bool get _hasResult => chips.any((chip) => chip is ResultChip);
 
@@ -1442,8 +1461,12 @@ class Tape extends Equatable {
 
   /// = lands the running total as a Calc result chip, or a Dimension Error
   /// (or Division by zero) chip when a step is refused. With no operator
-  /// applied, or an operator still waiting for its number, it says what it
-  /// needs; a number with no unit cannot be left. With a bracket open it
+  /// applied it says there is nothing to compute; on an operator still
+  /// waiting for its number it asks for the number and keeps the operator
+  /// ([TapeRefusal.operatorNeedsANumber]); straight after a result it says
+  /// the result is already shown ([TapeRefusal.resultAlreadyShown]), since
+  /// a second = would land one more chip the user did not ask for; a
+  /// number with no unit cannot be left. With a bracket open it
   /// closes the bracket first (Section 7) and then lands the Calc: a
   /// reopened bracket the edit emptied is brought back as it was and the
   /// Calc lands on the restored group, with the notice kept. What the
@@ -1476,6 +1499,12 @@ class Tape extends Equatable {
         final TapeOutcome refused => refused,
       };
     }
+    if (endsWithResult) {
+      return const TapeRefused(TapeRefusal.resultAlreadyShown);
+    }
+    if (endsWithOperator) {
+      return const TapeRefused(TapeRefusal.operatorNeedsANumber);
+    }
     final tape = _withFractionClosedAsInches()._withFieldClosed();
     if (tape.active case final chip? when !chip.entry.isEmpty) {
       if (tape._unfinished case final refusal?) return refusal;
@@ -1505,6 +1534,30 @@ class Tape extends Equatable {
       ChainValue() ||
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
+  }
+
+  /// Lands an answer the strip offered (Section 1.2) as a result chip
+  /// labelled [key]: the chip being typed is closed the way = closes it — a
+  /// fraction typed after whole inches read as inches, an angle's open
+  /// field sealed with its carry — and sealed before the answer; a chip
+  /// nothing was typed into is dropped, since the key that opened it asked
+  /// for the answer; and an unfinished chip keeps the answer out with the
+  /// reason = gives it (Section 5.1, "Finish this value first"; a bare
+  /// fraction; a trig chip its function cannot answer). Inside a bracket
+  /// nothing is offered, so the key is refused as a function key is.
+  TapeOutcome landAnswer(String key, Quantity value) {
+    if (openBracket != null) {
+      return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);
+    }
+    final tape = _withFractionClosedAsInches()._withFieldClosed();
+    final answer = ResultChip(key: key, value: value);
+    if (tape.active case final chip? when chip.entry.isEmpty) {
+      return TapeChanged(
+        tape._with(tape.chips.sublist(0, tape.chips.length - 1)).append(answer),
+      );
+    }
+    if (tape._unfinished case final refusal?) return refusal;
+    return TapeChanged(tape.append(answer));
   }
 
   bool get _endsOnTheFailedDivisor {

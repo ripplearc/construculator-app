@@ -225,17 +225,20 @@ void main() {
         );
       });
 
-      test('on an operator waiting for its number says nothing to compute', () {
+      test('on an operator waiting for its number asks for the number and '
+          'keeps the operator', () {
+        final waiting = press(const Tape(), '1 8 ft ×');
         expect(
-          press(const Tape(), '1 8 ft ×').pressEquals(),
-          const TapeRefused(TapeRefusal.nothingToCompute),
+          waiting.pressEquals(),
+          const TapeRefused(TapeRefusal.operatorNeedsANumber),
         );
+        expect(waiting.chips, hasLength(2));
       });
 
-      test('after a result says nothing to compute', () {
+      test('after a result says the result is already shown', () {
         expect(
           press(const Tape(), '2 + 3 =').pressEquals(),
-          const TapeRefused(TapeRefusal.nothingToCompute),
+          const TapeRefused(TapeRefusal.resultAlreadyShown),
         );
       });
 
@@ -395,7 +398,7 @@ void main() {
         expect(landed.runningTotal, const ChainEmpty());
         expect(
           landed.pressEquals(),
-          const TapeRefused(TapeRefusal.nothingToCompute),
+          const TapeRefused(TapeRefusal.operatorNeedsANumber),
         );
       });
 
