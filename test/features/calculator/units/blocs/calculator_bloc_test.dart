@@ -523,7 +523,7 @@ void main() {
         expect: () => [
           tapeState(pressed('2 ft + 1 8 ✕')),
           tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
-            refusal: () => const TapeRefused(TapeRefusal.nothingToCompute),
+            refusal: () => const TapeRefused(TapeRefusal.operatorNeedsANumber),
           ),
           tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
@@ -1270,6 +1270,171 @@ void main() {
           expect(bloc.state.labelKeyId, Tape.calcKey);
         },
       );
+    });
+
+    group('S1b 3/6: what = lands and what an accepted chip lands', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'ft' => const CalculatorUnitSelected(Unit.foot),
+            'in' => const CalculatorUnitSelected(Unit.inch),
+            'yd' => const CalculatorUnitSelected(Unit.yard),
+            'm' => const CalculatorKeySelected('m'),
+            '×' => const CalculatorOperatorPressed(Operator.multiply),
+            '÷' => const CalculatorOperatorPressed(Operator.divide),
+            '+' => const CalculatorOperatorPressed(Operator.add),
+            '=' => const CalculatorEqualsPressed(),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      for (final (keys, calc) in const [
+        ('5 + [SIN] 3 0 =', '5.5'),
+        ('2 × [COS] 6 0 =', '1'),
+        ('5 + [ATAN] 1 6 ÷ 1 2 =', '58.13°'),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          '= lands the chain a trig chip continues, not the trig answer: '
+          '$keys is Calc $calc (term 2.15, rule 4.6)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, keys),
+          skip: keys.split(' ').length - 1,
+          expect: () => [tapeState(pressed(keys))],
+          verify: (bloc) {
+            expect(bloc.state.labelKeyId, Tape.calcKey);
+            expect(bloc.state.valueText, calc);
+          },
+        );
+      }
+
+      for (final operator in const ['+', '×']) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          '= after a trailing $operator is refused and keeps the operator, '
+          'in place of landing the leading suggestion over it (rule 4.12)',
+          build: () => bloc,
+          act: (bloc) =>
+              type(bloc, '[Length] 2 0 ft [Width] 1 0 ft $operator ='),
+          skip: 9,
+          expect: () => [
+            tapeState(
+              pressed('[Length] 2 0 ft [Width] 1 0 ft $operator'),
+            ).copyWith(
+              refusal: () =>
+                  const TapeRefused(TapeRefusal.operatorNeedsANumber),
+            ),
+          ],
+          verify: (bloc) {
+            expect(bloc.state.tape.endsWithOperator, isTrue);
+            expect(
+              bloc.state.suggestions.first.key,
+              DeterministicRules.areaKey,
+            );
+            expect(
+              [for (final chip in bloc.state.chipsList) chip.value],
+              ['20ft', '10ft', operator],
+            );
+          },
+        );
+      }
+
+      Tape landedOn(Tape tape, int offer) {
+        final answer = CalculatorState(tape: tape).suggestions[offer];
+        return switch (tape.landAnswer(answer.key!, answer.value)) {
+          TapeChanged(:final tape) => tape,
+          final other => throw StateError('$other'),
+        };
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the first = lands Area; a second and a third = are refused as the '
+        'result already shown, while a tapped chip still lands its answer',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 0 ft [Width] 1 0 ft = = =');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              CalculatorState(
+                tape: landedOn(pressed('[Length] 2 0 ft [Width] 1 0 ft'), 0),
+              ).suggestions.first,
+            ),
+          );
+        },
+        skip: 8,
+        expect: () {
+          final area = landedOn(pressed('[Length] 2 0 ft [Width] 1 0 ft'), 0);
+          return [
+            tapeState(area),
+            tapeState(area).copyWith(
+              refusal: () => const TapeRefused(TapeRefusal.resultAlreadyShown),
+            ),
+            tapeState(landedOn(area, 0)),
+          ];
+        },
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.label],
+            ['Length', 'Width', 'Area', 'Diagonal'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting the acre chip converts the area result in place '
+        '(walkthrough 14.5), and the other conversions stay on offer',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '2 0 0 ft × 8 0 ft =');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('2 0 0 ft × 8 0 ft =').conversions.last,
+            ),
+          );
+        },
+        skip: 9,
+        expect: () => [
+          isA<CalculatorState>()
+              .having((s) => s.valueText, 'valueText', '0.3673acre')
+              .having((s) => s.labelKeyId, 'labelKeyId', Tape.calcKey)
+              .having((s) => s.refusal, 'refusal', isNull),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final s in bloc.state.conversions) s.text],
+            ['16,000ft²', '1,777.78yd²', '2,304,000in²', '1,486.45m²'],
+          );
+        },
+      );
+
+      for (final (keys, chip) in const [
+        ('2 yd', '6ft 0in'),
+        ('2 6 4 in', '22ft 0in'),
+        ('1 2 ft × 5 ft =', '6.67yd²'),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'accepting the conversion chip "$chip" lands the text the chip '
+          'shows: $keys (Section 1.2, walkthrough 14.2)',
+          build: () => bloc,
+          act: (bloc) {
+            type(bloc, keys);
+            bloc.add(
+              CalculatorSuggestionAccepted(stateOf(keys).conversions.first),
+            );
+          },
+          skip: keys.split(' ').length,
+          expect: () => [
+            isA<CalculatorState>()
+                .having((s) => s.valueText, 'valueText', chip)
+                .having((s) => s.refusal, 'refusal', isNull),
+          ],
+        );
+      }
     });
 
     test(
