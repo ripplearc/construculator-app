@@ -225,6 +225,18 @@ void main() {
         throwsFormatException,
       );
       expect(
+        () => TradeStoreRowMapper.sizeFromRow(
+          size.copyWith(values: {...size.values, 'unit': 'cubit'}),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => TradeStoreRowMapper.wasteFromRow(
+          size.copyWith(values: const {'seed': 'cubits', 'percent': 5}),
+        ),
+        throwsFormatException,
+      );
+      expect(
         () => TradeStoreRowMapper.spacingFromRow(
           size.copyWith(values: const {'ticks': 64, 'unit': 'inch'}),
         ),

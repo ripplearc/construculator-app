@@ -39,8 +39,10 @@ abstract class LocalTradeStoresDataSource {
 
   /// Writes the one row of a default: rewrites the row of the same user,
   /// store and seed, live or soft-deleted, or inserts it when there is
-  /// none. The lookup and the write run in one transaction, so two writes
-  /// of one default cannot each insert a row. Answers the row with its id.
+  /// none, under the id every phone derives for that default, so two
+  /// phones' writes of one default are one row on the server too. The
+  /// lookup and the write run in one transaction, so two writes of one
+  /// default cannot each insert a row. Answers the row with its id.
   Future<CalculatorStoreRowDto> writeSeedRow(CalculatorStoreRowDto row);
 
   /// Ends every stream handed out; the database stays open.

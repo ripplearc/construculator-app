@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- SUPABASE POWERSYNC CONNECTOR MUTATION TESTING -->
-    <!-- Targets: which refused your_rates changes are skipped, and when two phones' saves are treated as the same entry -->
+    <!-- Targets: which refused your_rates changes are skipped, when two phones' saves are treated as the same entry,
+         and which refused user_calculator_stores changes overwrite the live row of their default or are skipped -->
 
     <files>
         <file>lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart</file>
@@ -86,6 +87,29 @@
         <!-- RULE: a patch without values is decoded anyway -->
         <regex pattern="if \(values is! String\) return row;" dotAll="true" id="connector.server_row.decode_missing_values">
             <mutation text="if (false) return row;"/>
+        </regex>
+
+        <!-- RULE: a duplicate on any table is handled as a trade store default's -->
+        <regex pattern="operation\.table == DatabaseConstants\.userCalculatorStoresTable &amp;&amp;" dotAll="true" id="connector.duplicate_default.any_table">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE: a duplicate on a delete of a trade store row is skipped instead of retried -->
+        <regex pattern="operation\.op != UpdateType\.delete &amp;&amp;" dotAll="true" id="connector.duplicate_default.delete_skipped">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <!-- RULE: any refusal of a trade store row is handled as a duplicate -->
+        <regex pattern="PostgresErrorCode\.fromCode\(error\.code\) ==\s*PostgresErrorCode\.uniqueViolation;" dotAll="true" id="connector.duplicate_default.any_refusal">
+            <mutation text="true;"/>
+        </regex>
+
+        <!-- RULE: a deleted row of the default, or a row of another default, is the one overwritten -->
+        <regex pattern="candidate\[DatabaseConstants\.deletedAtColumn\] == null &amp;&amp;" dotAll="true" id="connector.duplicate_default.overwrite_deleted_row">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="_seedOf\(candidate\) == seed," dotAll="true" id="connector.duplicate_default.overwrite_other_seed">
+            <mutation text="true,"/>
         </regex>
     </rules>
 

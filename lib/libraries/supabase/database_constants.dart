@@ -227,4 +227,9 @@ class DatabaseConstants {
 
   /// When an entry was deleted on a phone; `null` for a live row.
   static const String deletedAtColumn = 'deleted_at';
+
+  /// The key inside `values` under which a changed default names the
+  /// default it replaces; the server's one-live-row-per-default index reads
+  /// it, so the upload connector knows it too.
+  static const String seedKey = 'seed';
 }
