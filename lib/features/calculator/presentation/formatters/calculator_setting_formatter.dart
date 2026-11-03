@@ -3,7 +3,8 @@ import 'package:construculator/libraries/calculator_engine/calculator_engine.dar
 
 /// The words the calculator page shows for its settings (UX Design Doc
 /// term 2.20, Appendix C): the face of the System of units pill and what a
-/// tap on it does; the setting sheets' titles and options follow (4/4).
+/// tap on it does. The bloc names a setting by its stable id; this is
+/// where it becomes text.
 class CalculatorSettingFormatter {
   /// The translations the words come from.
   final AppLocalizations l10n;
