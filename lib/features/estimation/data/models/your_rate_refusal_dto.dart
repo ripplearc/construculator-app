@@ -3,8 +3,11 @@ import 'package:equatable/equatable.dart';
 
 /// A Your rates default the server refused, as kept on the phone.
 class YourRateRefusalDto extends Equatable {
-  /// The `YourRateRefusalKey` of the item: company, category, name and method.
+  /// The `YourRateRefusalKey` of the item: user, company, category, name and method.
   final String id;
+
+  /// The user whose save the server refused.
+  final String userId;
 
   /// The company the refused default belongs to.
   final String companyId;
@@ -37,6 +40,7 @@ class YourRateRefusalDto extends Equatable {
   /// Creates a refusal as kept on the phone.
   const YourRateRefusalDto({
     required this.id,
+    required this.userId,
     required this.companyId,
     required this.category,
     required this.refusedRowId,
@@ -54,6 +58,7 @@ class YourRateRefusalDto extends Equatable {
   factory YourRateRefusalDto.fromJson(Map<String, dynamic> json) {
     return YourRateRefusalDto(
       id: json[DatabaseConstants.idColumn] as String,
+      userId: json[DatabaseConstants.userIdColumn] as String,
       companyId: json[DatabaseConstants.companyIdColumn] as String,
       category: json[DatabaseConstants.categoryColumn] as String,
       refusedRowId: json[DatabaseConstants.refusedRowIdColumn] as String,
@@ -71,6 +76,7 @@ class YourRateRefusalDto extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    userId,
     companyId,
     category,
     refusedRowId,

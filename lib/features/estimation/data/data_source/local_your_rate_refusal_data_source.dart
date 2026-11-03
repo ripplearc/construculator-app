@@ -33,11 +33,13 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   });
 
   static String _keyOf(
+    String userId,
     String companyId,
     String category,
     String itemName,
     String? equipmentMethod,
   ) => YourRateRefusalKey.of(
+    userId: userId,
     companyId: companyId,
     category: category,
     itemName: itemName,
@@ -46,6 +48,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
 
   @override
   Future<YourRateRefusalDto?> loadRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -53,7 +56,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   }) async {
     try {
       final rows = await _database.getAll(_selectByIdSql, [
-        _keyOf(companyId, category, itemName, equipmentMethod),
+        _keyOf(userId, companyId, category, itemName, equipmentMethod),
       ]);
       return rows.isEmpty ? null : YourRateRefusalDto.fromJson(rows.first);
     } catch (e, stack) {
@@ -68,6 +71,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
 
   @override
   Future<void> markRefusalShownByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -76,7 +80,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
     try {
       await _database.execute(_markShownSql, [
         _clock.now().toUtc().toIso8601String(),
-        _keyOf(companyId, category, itemName, equipmentMethod),
+        _keyOf(userId, companyId, category, itemName, equipmentMethod),
       ]);
     } catch (e, stack) {
       _logger.error('Failed to mark a refusal as shown', e, stack);
@@ -86,6 +90,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
 
   @override
   Future<void> deleteRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -93,7 +98,7 @@ class LocalYourRateRefusalDataSource implements YourRateRefusalDataSource {
   }) async {
     try {
       await _database.execute(_deleteByIdSql, [
-        _keyOf(companyId, category, itemName, equipmentMethod),
+        _keyOf(userId, companyId, category, itemName, equipmentMethod),
       ]);
     } catch (e, stack) {
       _logger.error('Failed to forget a refused default', e, stack);

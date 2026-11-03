@@ -3,15 +3,16 @@ import 'package:construculator/features/estimation/data/models/your_rate_refusal
 
 /// Reads and updates the record of Your rates defaults the server refused.
 /// The upload step writes the records; this only reads them and tracks
-/// whether the "Not kept" message was shown. Every call names the company and
-/// the category, so one company's refusal is never read as another's.
+/// whether the "Not kept" message was shown. Every call names the user, the
+/// company and the category, so one user's refusal is never read as another's.
 abstract class YourRateRefusalDataSource {
   /// The refusal kept for the item called [itemName] of [category] in
-  /// [companyId] priced by [equipmentMethod], or null if the server has not
+  /// [companyId] for [userId] priced by [equipmentMethod], or null if the server has not
   /// refused it.
   ///
   /// Throws an exception if the read fails.
   Future<YourRateRefusalDto?> loadRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -23,6 +24,7 @@ abstract class YourRateRefusalDataSource {
   ///
   /// Throws an exception if the write fails.
   Future<void> markRefusalShownByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
@@ -33,6 +35,7 @@ abstract class YourRateRefusalDataSource {
   ///
   /// Throws an exception if the write fails.
   Future<void> deleteRefusalByItem({
+    required String userId,
     required String companyId,
     required String category,
     required String itemName,
