@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../utils/calculator_test_harness.dart';
 
 void main() {
   testWidgets('renders a Scaffold using the core page background color', (
@@ -19,7 +20,7 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -36,7 +37,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
         ),
       );
 
@@ -60,7 +61,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -133,7 +134,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
         ),
       );
 
@@ -172,7 +173,7 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -203,7 +204,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -245,7 +246,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -268,7 +269,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -294,7 +295,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -327,7 +328,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -359,7 +360,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -387,7 +388,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -431,7 +432,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
         ),
       );
 
@@ -461,7 +462,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
       ),
     );
 
@@ -514,7 +515,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(calculatorBlocFactory: calculatorBlocForTests),
         ),
       );
 

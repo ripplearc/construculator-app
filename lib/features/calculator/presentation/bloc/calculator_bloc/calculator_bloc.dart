@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -18,12 +22,56 @@ part 'calculator_state.dart';
 /// number ([PlainNumberKeys]), and a unit under a length-only key (Section
 /// 3, "Takes: A length") or under Slope goes to the tape with that said,
 /// read off the chip being typed wherever it is. Nothing here reads a
-/// store, the recents or the preferences repository; the System of units
-/// toggle sets the tape's own preferences, so the tape and the keyboard
-/// agree on one value. The engine's answers (the strip, the pills, the
+/// store or the recents. The engine's answers (the strip, the pills, the
 /// equals-key label) are mapped in S1b (CA-1088).
+///
+/// The settings (W1, CA-1103) are the signed-in user's, watched from the
+/// [CalculatorPreferencesRepository]: the tape renders under whatever
+/// arrives (rule 4.14, "a setting re-renders a value; it never changes
+/// what was typed"), the System of units pill re-renders at once and then
+/// saves, so the tape and the keyboard agree on one value, and a save that
+/// fails says so without taking the choice back. The four setting sheets
+/// save the same way (2/4). Settings that arrive are not a key: what the
+/// last key said stays.
+///
+/// A save sends the change, never the whole row: the repository applies it
+/// to the settings it holds once the signed-in profile has been read, so a
+/// choice made before that profile arrives changes its own setting only
+/// and the other four keep what the user saved. What the screen shows is
+/// what last arrived with the saves still in flight applied on top — the
+/// profile that lands after such a choice is shown with the choice still
+/// on it, the echo of an older save cannot take a newer choice back, and a
+/// change from another device during a save is shown with the in-flight
+/// change on top until the save's own echo arrives, which is what the
+/// profile then holds: the newest write wins, in the order the server took
+/// them (decided 1 November 2026). A save stays in flight until its echo
+/// arrives, and the echo of a newer save ends the older ones with it (the
+/// repository lets only the newest echo due through); a save equal to the
+/// stream's last emission — what last arrived, or the last echo still due
+/// — is never echoed, since the distinct stream never repeats itself, so
+/// that save leaves the list as it returns.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
-  CalculatorBloc() : super(CalculatorState.initial()) {
+  final CalculatorPreferencesRepository _preferencesRepository;
+
+  late final StreamSubscription<CalculatorPreferences> _preferencesSubscription;
+
+  final List<_SaveInFlight> _savesInFlight = [];
+
+  CalculatorPreferences _lastArrived = CalculatorPreferences.defaults;
+
+  CalculatorPreferences get _lastEmitted {
+    for (final save in _savesInFlight.reversed) {
+      if (save.saved case final saved?) return saved;
+    }
+    return _lastArrived;
+  }
+
+  CalculatorBloc({
+    required CalculatorPreferencesRepository preferencesRepository,
+  }) : _preferencesRepository = preferencesRepository,
+       super(CalculatorState.initial()) {
+    on<CalculatorPreferencesArrived>(_onPreferencesArrived);
+    on<CalculatorUnitSystemToggled>(_onUnitSystemToggled);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -35,6 +83,64 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
+    _preferencesSubscription = preferencesRepository.watchPreferences().listen(
+      (preferences) => add(CalculatorPreferencesArrived(preferences)),
+    );
+  }
+
+  @override
+  Future<void> close() async {
+    await _preferencesSubscription.cancel();
+    return super.close();
+  }
+
+  void _onPreferencesArrived(
+    CalculatorPreferencesArrived event,
+    Emitter<CalculatorState> emit,
+  ) {
+    _lastArrived = event.preferences;
+    final echoed = _savesInFlight.indexWhere(
+      (save) => save.saved == event.preferences,
+    );
+    if (echoed >= 0) _savesInFlight.removeRange(0, echoed + 1);
+    final shown = _savesInFlight.fold(
+      event.preferences,
+      (preferences, save) => save.change(preferences),
+    );
+    emit(state.copyWith(tape: state.tape.withPreferences(shown)));
+  }
+
+  Future<void> _onUnitSystemToggled(
+    CalculatorUnitSystemToggled event,
+    Emitter<CalculatorState> emit,
+  ) => _applySystem(emit, switch (state.tape.preferences.system) {
+    MeasurementSystem.imperial => MeasurementSystem.metric,
+    MeasurementSystem.metric => MeasurementSystem.imperial,
+  });
+
+  Future<void> _saved(
+    Emitter<CalculatorState> emit,
+    CalculatorPreferences Function(CalculatorPreferences) change,
+  ) async {
+    final save = _SaveInFlight(change);
+    _savesInFlight.add(save);
+    final result = await _preferencesRepository.updatePreferences(change);
+    emit(
+      result.fold(
+        (failure) {
+          _savesInFlight.remove(save);
+          return state.copyWith(settingSaveFailure: () => failure);
+        },
+        (saved) {
+          if (saved == _lastEmitted) {
+            _savesInFlight.remove(save);
+          } else {
+            save.saved = saved;
+          }
+          return state;
+        },
+      ),
+    );
   }
 
   static const Map<String, Unit> _unitKeys = {
@@ -134,23 +240,28 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onGroupSelected(
     CalculatorGroupSelected event,
     Emitter<CalculatorState> emit,
-  ) => emit(state.copyWith(currentGroupIndex: event.groupIndex));
+  ) => emit(state.silenced.copyWith(currentGroupIndex: event.groupIndex));
 
-  void _onUnitSystemChanged(
+  Future<void> _onUnitSystemChanged(
     CalculatorUnitSystemChanged event,
     Emitter<CalculatorState> emit,
-  ) {
-    final system = switch (event.unitSystem) {
-      UnitSystem.imperial => MeasurementSystem.imperial,
-      UnitSystem.metric => MeasurementSystem.metric,
-    };
+  ) => _applySystem(emit, switch (event.unitSystem) {
+    UnitSystem.imperial => MeasurementSystem.imperial,
+    UnitSystem.metric => MeasurementSystem.metric,
+  });
+
+  Future<void> _applySystem(
+    Emitter<CalculatorState> emit,
+    MeasurementSystem system,
+  ) async {
+    CalculatorPreferences change(CalculatorPreferences current) =>
+        current.copyWith(system: system);
     emit(
-      state.copyWith(
-        tape: state.tape.withPreferences(
-          state.tape.preferences.copyWith(system: system),
-        ),
+      state.silenced.copyWith(
+        tape: state.tape.withPreferences(change(state.tape.preferences)),
       ),
     );
+    await _saved(emit, change);
   }
 
   void _onResetRequested(
@@ -164,11 +275,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) {
     switch (press(state.tape)) {
       case TapeChanged(:final tape, :final notice):
-        emit(
-          state.copyWith(tape: tape, notice: () => notice, refusal: () => null),
-        );
+        emit(state.silenced.copyWith(tape: tape, notice: () => notice));
       case final TapeOutcome refusal:
-        emit(state.copyWith(notice: () => null, refusal: () => refusal));
+        emit(state.silenced.copyWith(refusal: () => refusal));
     }
   }
 
@@ -176,4 +285,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     tape: Tape(preferences: state.tape.preferences),
     currentGroupIndex: state.currentGroupIndex,
   );
+}
+
+class _SaveInFlight {
+  final CalculatorPreferences Function(CalculatorPreferences) change;
+
+  CalculatorPreferences? saved;
+
+  _SaveInFlight(this.change);
 }

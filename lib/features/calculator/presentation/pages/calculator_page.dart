@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -6,8 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// The calculator screen: the display area, the suggestion strip and the
+/// keyboard over one [CalculatorBloc], which the page creates from
+/// [calculatorBlocFactory] for its lifetime and closes with it.
 class CalculatorPage extends StatefulWidget {
-  const CalculatorPage({super.key});
+  /// Builds the bloc the page owns, resolved by the module.
+  final CalculatorBloc Function() calculatorBlocFactory;
+
+  const CalculatorPage({super.key, required this.calculatorBlocFactory});
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
@@ -47,7 +55,21 @@ class CalculatorPage extends StatefulWidget {
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
+  late final CalculatorBloc _bloc;
+
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = widget.calculatorBlocFactory();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_bloc.close());
+    super.dispose();
+  }
 
   Locale? _groupsLocale;
   List<FunctionGroup>? _groups;
@@ -322,8 +344,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
       for (final group in groups) group.name: _accentFor(colors, group.name.id),
     };
 
-    return BlocProvider<CalculatorBloc>(
-      create: (_) => CalculatorBloc(),
+    return BlocProvider<CalculatorBloc>.value(
+      value: _bloc,
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: SafeArea(
