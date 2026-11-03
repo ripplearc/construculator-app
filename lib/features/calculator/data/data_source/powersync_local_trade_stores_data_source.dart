@@ -27,7 +27,8 @@ import 'package:powersync/sqlite_async.dart';
 /// and both insert; the one that gets the lock second finds the first's
 /// row. A stream handed out after [dispose] answers once and ends, so a late
 /// subscriber is never left waiting; one handed out before is tracked and
-/// ended by [dispose].
+/// ended by [dispose], closed even when the database refuses to let its
+/// query go, in which case [dispose] throws that refusal to the caller.
 class PowerSyncLocalTradeStoresDataSource
     implements LocalTradeStoresDataSource {
   final PowerSyncDatabase _database;
@@ -144,8 +145,11 @@ class PowerSyncLocalTradeStoresDataSource
     _watchSubscriptionsByController.clear();
     await Future.wait(
       open.map((watcher) async {
-        await watcher.value.cancel();
-        await watcher.key.close();
+        try {
+          await watcher.value.cancel();
+        } finally {
+          await watcher.key.close();
+        }
       }),
     );
   }
@@ -216,9 +220,7 @@ class PowerSyncLocalTradeStoresDataSource
       return;
     }
     _watchSubscriptionsByController[controller] = subscription;
-    controller.onCancel = () {
-      _watchSubscriptionsByController.remove(controller);
-      return subscription.cancel();
-    };
+    controller.onCancel = () =>
+        _watchSubscriptionsByController.remove(controller)?.cancel();
   });
 }

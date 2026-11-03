@@ -111,5 +111,17 @@
         <regex pattern="RateUnit\.values\.asNameMap\(\)\[_text\(\s*values,\s*CalculatorStoreRowDto\.seedKey,\s*\)\] \?\?\s*\(throw FormatException\(\s*'Unreadable trade store values: \$\{CalculatorStoreRowDto\.seedKey\}',\s*\)\);" dotAll="true" id="trade_stores_row_mapper.unknown_waste_unit_read">
             <mutation text="RateUnit.values.asNameMap()[_text(values, CalculatorStoreRowDto.seedKey)] ?? RateUnit.sheet;"/>
         </regex>
+
+        <!-- RULE 16: a watch whose cancel the database refuses is left open
+             for ever by dispose -->
+        <regex pattern="try \{\s*await watcher\.value\.cancel\(\);\s*\} finally \{\s*await watcher\.key\.close\(\);\s*\}" dotAll="true" id="trade_stores_data_source.dispose.refused_cancel_leaves_open">
+            <mutation text="await watcher.value.cancel();&#10;        await watcher.key.close();"/>
+        </regex>
+
+        <!-- RULE 17: a watch dispose already ended cancels its query a
+             second time, surfacing the refusal again -->
+        <regex pattern="controller\.onCancel = \(\) =&gt;\s*_watchSubscriptionsByController\.remove\(controller\)\?\.cancel\(\);" dotAll="true" id="trade_stores_data_source.watch.cancel_twice">
+            <mutation text="controller.onCancel = () {&#10;      _watchSubscriptionsByController.remove(controller);&#10;      return subscription.cancel();&#10;    };"/>
+        </regex>
     </rules>
 </mutations>

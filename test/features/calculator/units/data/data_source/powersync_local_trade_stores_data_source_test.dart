@@ -332,6 +332,19 @@ void main() {
         },
       );
 
+      test(
+        'dispose closes a watch even when the database refuses to let it go, '
+        'and throws the refusal',
+        () async {
+          final rows = dataSource.watchRows(user, CalculatorStoreKind.density);
+          final ended = expectLater(rows, emitsInOrder([isEmpty, emitsDone]));
+          await expectLater(rows, emits(isEmpty));
+          database.cancelError = StateError('busy');
+          await expectLater(dataSource.dispose(), throwsStateError);
+          await ended;
+        },
+      );
+
       test('a watch taken after dispose answers once and ends', () async {
         await dataSource.dispose();
         expect(
