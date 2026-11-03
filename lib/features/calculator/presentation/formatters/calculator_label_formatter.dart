@@ -178,8 +178,9 @@ class CalculatorLabelFormatter {
         onPressed: () {},
       );
 
-  /// The chips of the tape with their labels translated; the values are
-  /// already text.
+  /// The chips of the tape with their labels translated: every other field
+  /// of a chip is carried over as it is, so a field the state sets later
+  /// reaches the screen.
   List<CoreCalculatorChip> localizeChips(List<CoreCalculatorChip> chips) => [
     for (final chip in chips)
       CoreCalculatorChip(
@@ -192,6 +193,11 @@ class CalculatorLabelFormatter {
         value: chip.value,
         factor: chip.factor,
         onTap: chip.onTap,
+        tapSemanticLabel: chip.tapSemanticLabel,
+        onLongPress: chip.onLongPress,
+        longPressSemanticLabel: chip.longPressSemanticLabel,
+        semanticsLabel: chip.semanticsLabel,
+        inert: chip.inert,
       ),
   ];
 
