@@ -182,6 +182,18 @@ set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' in_progress null b
 COMMENT_BODY="#runcheck FORCE" run_target
 assert_true "force never starts a second copy of a running workflow" field_is .skip '["comprehensive-check"]'
 
+set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' completed success b1)" "$(run_json $CM 'Comprehensive Check' completed success b2)"
+COMMENT_BODY="#RunCheck ios" run_target
+assert_true "#RunCheck ios starts a finished iOS build again and nothing else" field_is .skip '["comprehensive-check"]'
+
+set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' in_progress null b1)"
+COMMENT_BODY="#RunCheck ios" run_target
+assert_true "#RunCheck ios never starts a second copy of a running iOS build" field_is .skip '["ios-debug-build"]'
+
+set_runs headsha0123456 "$(run_json $CM 'Ios Debug Build' completed success b1)"
+COMMENT_BODY="#RunCheck iosx" run_target
+assert_true "does not read #RunCheck iosx as the iOS force word" field_is .skip '["ios-debug-build"]'
+
 set_runs headsha0123456 "$(run_json $CM 'Comprehensive Check' completed success b1)"
 COMMENT_BODY="#RunCheck forced" run_target
 assert_true "does not read #RunCheck forced as the force word" field_is .skip '["comprehensive-check"]'
