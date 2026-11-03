@@ -674,20 +674,114 @@ void main() {
         final offered = CalculatorState(
           tape: pressed('[Rise] 6 ft [Run] 1 2 ft'),
         );
-        expect(row1(offered).take(3), [
+        expect(row1(offered), [
           'Pitch-rise per 12in run: 6in/12in',
           'Pitch-degrees: 26.57°',
           'Pitch-grade: 50%',
+          'Diagonal: 13.42ft',
+          'Arc angle: 180°',
+          'Arc radius: 6ft',
+          'Arc length: 18.85ft',
         ]);
         expect(offered.equalsKeyId, DeterministicRules.pitchRiseKey);
         final landed = CalculatorState(
           tape: pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch]'),
         );
-        expect(row1(landed).take(2), [
+        expect(row1(landed), [
           'Pitch-degrees: 26.57°',
           'Pitch-grade: 50%',
+          'Diagonal: 13.42ft',
+          'Arc angle: 180°',
+          'Arc radius: 6ft',
+          'Arc length: 18.85ft',
         ]);
         expect(row2(landed), isEmpty);
+      });
+
+      test('row 2 offers no D:M:S under a pitch answer, which is not a pitch '
+          'reading, while another angle answer still offers it', () {
+        final degrees = CalculatorState(
+          tape: pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch]'),
+        );
+        expect(degrees.valueText, '26.57°');
+        expect(row2(degrees), isEmpty);
+        expect(row2(CalculatorState(tape: pressed('1 2 ÷ 2 3 [ATAN]'))), [
+          '27°33\'10"',
+        ]);
+      });
+
+      test('row 2 offers no lengths for a number typed under Pitch in inches, '
+          'which is a rise per 12in, while a length under another key still '
+          'converts', () {
+        for (final keys in ['[Pitch] 8 in', '[Pitch] 0 in']) {
+          expect(row2(CalculatorState(tape: pressed(keys))), isEmpty);
+        }
+        expect(row2(CalculatorState(tape: pressed('[Rise] 8 in'))), isNotEmpty);
+      });
+
+      test('a division by zero silences the strip while it is typed, after '
+          'the = that lands its error chip, and until the divisor is retyped '
+          '(doc line 771)', () {
+        const sides = '[Length] 2 2 ft [Width] 1 8 ft 8 in';
+        final typed = CalculatorState(tape: pressed('$sides ÷ 0'));
+        expect(row1(typed), isEmpty);
+        expect(row2(typed), isEmpty);
+        expect(typed.equalsKeyId, isNull);
+        final landed = CalculatorState(tape: pressed('$sides ÷ 0 ='));
+        expect(landed.tape.endsWithError, isFalse);
+        expect(row1(landed), isEmpty);
+        expect(row2(landed), isEmpty);
+        expect(landed.equalsKeyId, isNull);
+        final retyped = CalculatorState(tape: pressed('$sides ÷ 0 = 2'));
+        expect(row1(retyped), ['Calc: 9ft 4in']);
+        expect(retyped.equalsKeyId, Tape.calcKey);
+      });
+
+      test('an error chip that ends the chain hides the rule answers the '
+          'named values would earn, and a result after it starts a chain '
+          'that is offered again', () {
+        final error = CalculatorState(
+          tape: pressed('[Length] 2 2 ft [Width] 1 8 ft + 7 8 lbs ='),
+        );
+        expect(error.tape.endsWithError, isTrue);
+        expect(row1(error), isEmpty);
+        expect(row2(error), isEmpty);
+        expect(error.equalsKeyId, isNull);
+        expect(row1(CalculatorState(tape: pressed('5 ÷ 0 = 2 = + 1'))), [
+          'Calc: 3.5',
+        ]);
+      });
+
+      test('a trig chip that continues a chain follows Calc, so = lands the '
+          'chain; one that stands alone or builds its own ratio leads '
+          '(term 2.15, rule 4.6, walkthrough 23.3)', () {
+        final product = CalculatorState(tape: pressed('5 × [SIN] 3 0'));
+        expect(row1(product), ['Calc: 2.5', 'Sine: 0.5']);
+        expect(product.equalsKeyId, Tape.calcKey);
+        final sum = CalculatorState(tape: pressed('5 + [SIN] 3 0'));
+        expect(row1(sum), ['Calc: 5.5', 'Sine: 0.5']);
+        expect(sum.equalsKeyId, Tape.calcKey);
+        final reach = CalculatorState(tape: pressed('5 + [ATAN] 1 6 ÷ 1 2'));
+        expect(row1(reach), ['Calc: 58.13°', 'Arctangent(16 ÷ 12): 53.13°']);
+        expect(reach.equalsKeyId, Tape.calcKey);
+        final alone = CalculatorState(tape: pressed('[ATAN] 1 6 ÷ 1 2'));
+        expect(row1(alone), ['Arctangent(16 ÷ 12): 53.13°', 'Calc: 1.33']);
+        expect(alone.equalsKeyId, 'Arctangent(16 ÷ 12)');
+        final typed = CalculatorState(tape: pressed('[SIN] 3 0'));
+        expect(row1(typed), ['Sine: 0.5']);
+        expect(typed.equalsKeyId, 'Sine');
+      });
+
+      test('a bracket that continues a chain from a result offers Calc with '
+          'Ans on the equals key (doc line 1011)', () {
+        final group = CalculatorState(
+          tape: pressed('3 6 ft ÷ 1 2 ft = × ( 4 + 1 ('),
+        );
+        expect(row1(group), ['Calc: 15']);
+        expect(group.equalsKeyId, CalculatorState.ansKey);
+        final open = CalculatorState(tape: pressed('3 6 ft ÷ 1 2 ft = × ( 4'));
+        expect(row1(open), isEmpty);
+        expect(open.equalsKeyId, isNull);
       });
 
       test('row 2 holds the value on screen in its other units: a typed '

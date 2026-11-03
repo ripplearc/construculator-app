@@ -240,6 +240,13 @@
         <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{" dotAll="true" id="tape.clear_active.emptied_group">
             <mutation text="if (bracket.inner.isEmpty) {"/>
         </regex>
+
+        <!-- RULE CA-1088d: a trig chip on the right of an operator no longer
+             says it continues the chain, or every trig chip does -->
+        <regex pattern="bool get trigAnswerContinuesAChain =&gt; _trigQuestion\?\.chip\.operator != null;" dotAll="true" id="tape.trig_answer.continues_a_chain">
+            <mutation text="bool get trigAnswerContinuesAChain =&gt; false;"/>
+            <mutation text="bool get trigAnswerContinuesAChain =&gt; _trigQuestion != null;"/>
+        </regex>
     </rules>
 
     <commands>
