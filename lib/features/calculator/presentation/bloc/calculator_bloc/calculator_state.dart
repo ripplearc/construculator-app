@@ -126,6 +126,20 @@ class CalculatorState extends Equatable {
     ),
   };
 
+  /// The pills under the value (Section 1.1): the Read-as offer the tape
+  /// makes for the number on the display (term 2.14). A pitch answer
+  /// carries no pill: the strip lists its other two readings and Pitch
+  /// cycles them (Section 8, "There is no 'Pitch written as' pill").
+  List<CalculatorDependentKey> get dependentKeys => [
+    if (tape.readAsOffer case final offer?)
+      if (tape.chips[offer.chipIndex] case final ValueChip chip)
+        CalculatorReadAsPill(
+          offer: offer,
+          sourceText: _entryTextOf(chip),
+          targetText: _withReadingSuffix(offer.next.text, offer.to),
+        ),
+  ];
+
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
 
   NumberReading? _readingOf(ValueChip chip) {

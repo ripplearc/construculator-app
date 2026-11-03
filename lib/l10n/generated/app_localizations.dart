@@ -3730,7 +3730,7 @@ abstract class AppLocalizations {
   /// **'Division'**
   String get calculatorOperatorDivision;
 
-  /// Reading of a bare number named after the key on the calculator label row, and the spelling of a pitch answer on the Shown as pill: decimal degrees
+  /// Reading of a bare number named after the key on the calculator label row: decimal degrees
   ///
   /// In en, this message translates to:
   /// **'degrees'**
@@ -3748,17 +3748,35 @@ abstract class AppLocalizations {
   /// **'a ratio'**
   String get calculatorReadingRatio;
 
-  /// Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row and the Shown as pill
+  /// Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row
   ///
   /// In en, this message translates to:
   /// **'in/12in'**
   String get calculatorReadingRisePerFoot;
 
-  /// Reading of a bare number under Slope as a percent grade, on the calculator label row and the Shown as pill
+  /// Reading of a bare number under Slope as a percent grade, on the calculator label row
   ///
   /// In en, this message translates to:
   /// **'grade'**
   String get calculatorReadingGrade;
+
+  /// Label of the Read-as pill under the calculator value, followed by the other reading of the number being typed: Input 8.45° as 8.45in/12in
+  ///
+  /// In en, this message translates to:
+  /// **'Input {value} as'**
+  String calculatorPillInputAs(String value);
+
+  /// Label of the Read-as pill when a trigonometric answer already stands after the number and the tap rewrites it: Re-input 38.30° as 38°30'00"
+  ///
+  /// In en, this message translates to:
+  /// **'Re-input {value} as'**
+  String calculatorPillReInputAs(String value);
+
+  /// Screen reader hint of the Read-as pill under the calculator value
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrites the number the other way'**
+  String get calculatorPillReadAsHint;
 
   /// Label for the Shapes function group tab in the calculator
   ///
