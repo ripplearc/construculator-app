@@ -33,8 +33,12 @@ part 'calculator_state.dart';
 /// re-render at once and then save, so the tape, the keyboard and the
 /// sheet agree on one value, and a save that fails says so without taking
 /// the choice back. The toast after Update is raised from the save
-/// ([CalculatorState.settingSaved]), not from a toast queue (S2b).
-/// Settings that arrive are not a key: what the last key said stays.
+/// ([CalculatorState.settingSaved]), not from a toast queue (S2b); Update
+/// on the choice already in force closes the sheet with no save and no
+/// toast, and the pill's save raises none. A sheet opening or closing is
+/// not a key either: the Alert of the last key stays under the sheet and
+/// is still there when it closes, as settings that arrive leave what the
+/// last key said alone (decided 1 November 2026).
 ///
 /// A save sends the change, never the whole row: the repository applies it
 /// to the settings it holds once the signed-in profile has been read, so a
@@ -126,24 +130,28 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onSettingSheetOpened(
     CalculatorSettingSheetOpened event,
     Emitter<CalculatorState> emit,
-  ) => emit(state.silenced.copyWith(openSettingSheet: () => event.setting));
+  ) => emit(state.copyWith(openSettingSheet: () => event.setting));
 
   void _onSettingSheetClosed(
     CalculatorSettingSheetClosed event,
     Emitter<CalculatorState> emit,
   ) {
     if (state.openSettingSheet == null) return;
-    emit(state.silenced.copyWith(openSettingSheet: () => null));
+    emit(state.copyWith(openSettingSheet: () => null));
   }
 
   Future<void> _onSettingUpdated(
     CalculatorSettingUpdated event,
     Emitter<CalculatorState> emit,
   ) async {
+    if (event.setting.selectedOptionId(state.tape.preferences) ==
+        event.optionId) {
+      return emit(state.copyWith(openSettingSheet: () => null));
+    }
     CalculatorPreferences change(CalculatorPreferences current) =>
         event.setting.applied(current, event.optionId);
     emit(
-      state.silenced.copyWith(
+      state.copyWith(
         tape: state.tape.withPreferences(change(state.tape.preferences)),
         openSettingSheet: () => null,
       ),
@@ -293,7 +301,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorPreferences change(CalculatorPreferences current) =>
         current.copyWith(system: system);
     emit(
-      state.silenced.copyWith(
+      state.copyWith(
         tape: state.tape.withPreferences(change(state.tape.preferences)),
       ),
     );

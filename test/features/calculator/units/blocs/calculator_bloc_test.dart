@@ -1185,13 +1185,21 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'a save equal to what last arrived expects no echo, so a later '
-        'change from another device to that same value is applied',
+        'a change from another device is applied before and after an '
+        'Update, and leaves the toast signal of the save alone',
         build: () {
           harness.signIn(harness.userWith({}));
           return bloc;
         },
         act: (bloc) async {
+          harness.announce(
+            harness.userWith({
+              'calculator': {'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
+          );
           bloc.add(
             const CalculatorSettingUpdated(
               CalculatorSetting.tonDefinition,
@@ -1207,19 +1215,11 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
           );
-          harness.announce(
-            harness.userWith({
-              'calculator': {'pounds_per_ton': 2000},
-            }),
-          );
-          await bloc.stream.firstWhere(
-            (s) => s.tape.preferences.tonDefinition == TonDefinition.shortTon,
-          );
         },
         skip: 1,
-        // Settings arriving are not a key, so the toast signal of the save
-        // stays until the next key.
         expect: () => [
+          const CalculatorState(),
+          const CalculatorState(settingSaved: CalculatorSetting.tonDefinition),
           const CalculatorState(
             tape: Tape(
               preferences: CalculatorPreferences(
@@ -1228,7 +1228,6 @@ void main() {
             ),
             settingSaved: CalculatorSetting.tonDefinition,
           ),
-          const CalculatorState(settingSaved: CalculatorSetting.tonDefinition),
         ],
       );
 
@@ -1256,7 +1255,6 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s.settingSaved != null);
           bloc.add(const CalculatorSettingSheetClosed());
-          await pumpEventQueue();
         },
         verify: (bloc) {
           expect(bloc.state.currentUnitSystem, UnitSystem.imperial);
@@ -1265,6 +1263,154 @@ void main() {
             bloc.state.tape.preferences.metreDisplay,
             MetreDisplay.oneDecimal,
           );
+        },
+      );
+
+      late Completer<void> saveGate;
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the pill\'s save landing after an Update leaves the toast signal '
+        'alone: only a key clears it',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          harness.announce(harness.userWith({}));
+          saveGate = Completer<void>();
+          harness.authRepository.updateUserProfileGate = saveGate;
+          return bloc;
+        },
+        act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          final echoed = harness.repository.watchPreferences().firstWhere(
+            (preferences) => preferences.system == MeasurementSystem.metric,
+          );
+          bloc
+            ..add(
+              const CalculatorSettingUpdated(
+                CalculatorSetting.tonDefinition,
+                'longTon',
+              ),
+            )
+            ..add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          final toastRaised = bloc.stream.firstWhere(
+            (s) => s.settingSaved != null,
+          );
+          saveGate.complete();
+          await rowsWritten;
+          await echoed;
+          await toastRaised;
+          await bloc.close();
+        },
+        skip: 2,
+        expect: () => [
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+                tonDefinition: TonDefinition.longTon,
+              ),
+            ),
+            settingSaved: CalculatorSetting.tonDefinition,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a sheet opening and closing keeps the Alert of the last key: = '
+        'with nothing typed is still refused under the sheet and after it',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorEqualsPressed())
+          ..add(
+            const CalculatorSettingSheetOpened(
+              CalculatorSetting.fractionResolution,
+            ),
+          )
+          ..add(const CalculatorSettingSheetClosed()),
+        expect: () => [
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.nothingToCompute),
+          ),
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.nothingToCompute),
+            openSettingSheet: CalculatorSetting.fractionResolution,
+          ),
+          const CalculatorState(
+            refusal: TapeRefused(TapeRefusal.nothingToCompute),
+          ),
+        ],
+      );
+
+      test('Update with a new choice and the pill keep the Alert and the save '
+          'signal; only the next keypad key clears them (decision tree row '
+          '208)', () async {
+        harness.signIn(harness.userWith({}));
+        const refused = TapeRefused(TapeRefusal.nothingToCompute);
+        bloc
+          ..add(const CalculatorEqualsPressed())
+          ..add(
+            const CalculatorSettingSheetOpened(
+              CalculatorSetting.fractionResolution,
+            ),
+          )
+          ..add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.fractionResolution,
+              'half',
+            ),
+          );
+        final saved = await bloc.stream.firstWhere(
+          (state) => state.settingSaved != null,
+        );
+        expect(saved.refusal, refused);
+
+        bloc.add(const CalculatorUnitSystemToggled());
+        final toggled = await bloc.stream.firstWhere(
+          (state) => state.tape.preferences.system == MeasurementSystem.metric,
+        );
+        expect(toggled.refusal, refused);
+        expect(toggled.settingSaved, CalculatorSetting.fractionResolution);
+
+        bloc.add(const CalculatorDigitPressed('1'));
+        final typed = await bloc.stream.firstWhere(
+          (state) => state.tape.chips.isNotEmpty,
+        );
+        expect(typed.refusal, isNull);
+        expect(typed.settingSaved, isNull);
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Update on the choice already in force closes the sheet with no '
+        'save and no toast',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) => bloc
+          ..add(
+            const CalculatorSettingSheetOpened(
+              CalculatorSetting.fractionResolution,
+            ),
+          )
+          ..add(
+            const CalculatorSettingUpdated(
+              CalculatorSetting.fractionResolution,
+              'sixteenth',
+            ),
+          ),
+        expect: () => [
+          const CalculatorState(
+            openSettingSheet: CalculatorSetting.fractionResolution,
+          ),
+          const CalculatorState(),
+        ],
+        verify: (bloc) {
+          expect(harness.authRepository.updateProfileCalls, isEmpty);
+          expect(bloc.state.settingSaved, isNull);
         },
       );
 
