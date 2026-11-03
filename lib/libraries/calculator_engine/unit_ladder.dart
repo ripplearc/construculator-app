@@ -134,6 +134,11 @@ class UnitLadder extends Equatable {
       if (value is Area) return _convert(value.spelledIn(key));
       if (value is Volume) return _convert(value.spelledIn(key));
     }
+    if (value is Area &&
+        key != value.unit &&
+        (isLengthKey || key == Unit.acre)) {
+      return _convert(value.spelledIn(key));
+    }
     if (isLengthKey && value is Length) {
       return _convert(value.spelledIn(_footInchOrKey(value, key, tokens)));
     }
