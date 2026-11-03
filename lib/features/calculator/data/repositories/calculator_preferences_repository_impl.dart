@@ -52,6 +52,23 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 /// if that fails too, answers with the auth library's error type rather
 /// than "no profile".
 ///
+/// ## A save is the newest profile seen
+///
+/// A save writes [updatePreferences]'s change applied to the settings the
+/// last profile seen holds, once the signed-in profile has been read, with
+/// the changes of the saves still in flight applied before it, in the
+/// order they were made: a second save made before the first one returns
+/// carries the first one's change too, so the row that lands last holds
+/// both. The row a save wrote becomes the last profile seen as it returns.
+/// The echo of a save — the profile
+/// re-announced a moment after the write lands — is let through to the
+/// watchers only when it is the newest write due, so that a watcher never
+/// sees an older row come back after a newer one, and never moves the
+/// last profile seen back either. A row from another device that happens
+/// to equal a write due is taken for its echo, and arrives with the next
+/// profile read; the server-side merge of CA-1224 is what makes two
+/// devices' writes commute.
+///
 /// ## Sign-out and a user switch
 ///
 /// A sign-out announces no profile — the dashboard reads a `null` profile
@@ -76,6 +93,9 @@ class CalculatorPreferencesRepositoryImpl
   StreamSubscription<AuthState>? _authStateSubscription;
   ({String credentialId, Future<AuthErrorType?> result})? _signedInProfileFetch;
   User? _fetchEcho;
+  final List<CalculatorPreferences> _echoesDue = [];
+  final List<CalculatorPreferences Function(CalculatorPreferences)>
+  _changesInFlight = [];
   int _profileVersion = 0;
   User? _user;
   CalculatorPreferences _current = CalculatorPreferences.defaults;
@@ -102,6 +122,22 @@ class CalculatorPreferencesRepositoryImpl
   @override
   Future<Either<Failure, CalculatorPreferences>> savePreferences(
     CalculatorPreferences preferences,
+  ) => updatePreferences((_) => preferences);
+
+  @override
+  Future<Either<Failure, CalculatorPreferences>> updatePreferences(
+    CalculatorPreferences Function(CalculatorPreferences current) change,
+  ) async {
+    _changesInFlight.add(change);
+    try {
+      return await _written(change);
+    } finally {
+      _changesInFlight.remove(change);
+    }
+  }
+
+  Future<Either<Failure, CalculatorPreferences>> _written(
+    CalculatorPreferences Function(CalculatorPreferences current) change,
   ) async {
     _followProfile();
     final credentials = _authManager.getCurrentCredentials();
@@ -124,6 +160,10 @@ class CalculatorPreferencesRepositoryImpl
       _logger.warning('No signed-in profile to save calculator preferences to');
       return Left(UserNotFoundFailure());
     }
+    final preferences = _changesInFlight.fold(
+      _current,
+      (preferences, change) => change(preferences),
+    );
     final updated = user.copyWith(
       userPreferences: {
         ...user.userPreferences,
@@ -142,10 +182,14 @@ class CalculatorPreferencesRepositoryImpl
       _logger.warning('Saving calculator preferences failed: $errorType');
       return Left(AuthFailure(errorType: errorType));
     }
-    if (result.data == null) {
+    final written = result.data;
+    if (written == null) {
       _logger.warning('No profile row to save calculator preferences to');
       return Left(UserNotFoundFailure());
     }
+    _user = written;
+    _current = preferences;
+    _echoesDue.add(preferences);
     return Right(preferences);
   }
 
@@ -181,6 +225,7 @@ class CalculatorPreferencesRepositoryImpl
   void _forgetProfile() {
     _profileVersion++;
     _signedInProfileFetch = null;
+    _echoesDue.clear();
     _onProfileChanged(null);
   }
 
@@ -190,8 +235,17 @@ class CalculatorPreferencesRepositoryImpl
       return;
     }
     _profileVersion++;
+    if (user != null && _echoesDue.remove(_preferencesOf(user))) {
+      if (_echoesDue.isEmpty) _onProfileChanged(user);
+      return;
+    }
     _onProfileChanged(user);
   }
+
+  static CalculatorPreferences _preferencesOf(User? user) =>
+      CalculatorPreferencesDto.fromJson(
+        user?.userPreferences[CalculatorPreferencesDto.preferencesKey],
+      ).preferences;
 
   Future<AuthErrorType?> _loadSignedInProfile() {
     if (_signedInProfileFetch case final inFlight?) return inFlight.result;
@@ -219,9 +273,7 @@ class CalculatorPreferencesRepositoryImpl
   void _onProfileChanged(User? user) {
     if (_isDisposed) return;
     _user = user;
-    _current = CalculatorPreferencesDto.fromJson(
-      user?.userPreferences[CalculatorPreferencesDto.preferencesKey],
-    ).preferences;
+    _current = _preferencesOf(user);
     _preferences.add(_current);
   }
 }

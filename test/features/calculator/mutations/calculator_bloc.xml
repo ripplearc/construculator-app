@@ -42,6 +42,13 @@
         <regex pattern="takesACount: key == PlainNumberKeys\.sides," dotAll="true" id="calculator_bloc.press_unit.sides_takes_a_unit">
             <mutation text="takesACount: false,"/>
         </regex>
+
+        <!-- RULE (W1 1/4, R2 blocker): a save equal to what last arrived ends
+             only itself, so an older save stays in flight for ever and hides
+             every later change from another device -->
+        <regex pattern="if \(saved == _lastArrived\) \{\s*_savesInFlight\.removeRange\(0, _savesInFlight\.indexOf\(save\) \+ 1\);" dotAll="true" id="calculator_bloc.saved.older_save_kept">
+            <mutation text="if (saved == _lastArrived) { _savesInFlight.remove(save);"/>
+        </regex>
     </rules>
 
     <commands>

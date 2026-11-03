@@ -799,6 +799,17 @@ void main() {
       const longTon = CalculatorPreferences(
         tonDefinition: TonDefinition.longTon,
       );
+      const metric = CalculatorState(
+        tape: Tape(
+          preferences: CalculatorPreferences(system: MeasurementSystem.metric),
+        ),
+      );
+
+      Object? written(String key) => harness
+          .authRepository
+          .updateProfileCalls
+          .single
+          .userPreferences[CalculatorPreferencesDto.preferencesKey][key];
 
       blocTest<CalculatorBloc, CalculatorState>(
         'the settings that arrive re-render every result on the tape and '
@@ -849,26 +860,20 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
+          final rowWritten = harness.authRepository.profileUpdates.first;
+          final echoed = harness.repository.watchPreferences().skip(1).first;
           bloc.add(const CalculatorUnitSystemChanged(UnitSystem.metric));
           await bloc.stream.firstWhere(
             (s) => s.currentUnitSystem == UnitSystem.metric,
           );
-          await pumpEventQueue();
+          await rowWritten;
+          expect((await echoed).system, MeasurementSystem.metric);
+          await bloc.close();
         },
-        expect: () => [
-          const CalculatorState(
-            tape: Tape(
-              preferences: CalculatorPreferences(
-                system: MeasurementSystem.metric,
-              ),
-            ),
-          ),
-        ],
-        verify: (bloc) async {
+        expect: () => [metric],
+        verify: (bloc) {
           expect(bloc.state.settingSaveFailure, isNull);
-          await harness.repository.watchPreferences().firstWhere(
-            (preferences) => preferences.system == MeasurementSystem.metric,
-          );
+          expect(written(CalculatorPreferencesDto.systemKey), 'metric');
         },
       );
 
@@ -880,6 +885,14 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          final echoes = harness.repository
+              .watchPreferences()
+              .skip(1)
+              .take(2)
+              .toList();
           bloc.add(const CalculatorUnitSystemToggled());
           await bloc.stream.firstWhere(
             (s) => s.currentUnitSystem == UnitSystem.metric,
@@ -888,23 +901,14 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s.currentUnitSystem == UnitSystem.imperial,
           );
-          await pumpEventQueue();
-        },
-        expect: () => [
-          const CalculatorState(
-            tape: Tape(
-              preferences: CalculatorPreferences(
-                system: MeasurementSystem.metric,
-              ),
-            ),
-          ),
-          const CalculatorState(),
-        ],
-        verify: (bloc) async {
-          await harness.repository.watchPreferences().firstWhere(
-            (preferences) => preferences.system == MeasurementSystem.imperial,
+          await rowsWritten;
+          expect(
+            [for (final echo in await echoes) echo.system],
+            [MeasurementSystem.metric, MeasurementSystem.imperial],
           );
+          await bloc.close();
         },
+        expect: () => [metric, const CalculatorState()],
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -916,13 +920,7 @@ void main() {
           await bloc.stream.firstWhere((s) => s.settingSaveFailure != null);
         },
         expect: () => [
-          const CalculatorState(
-            tape: Tape(
-              preferences: CalculatorPreferences(
-                system: MeasurementSystem.metric,
-              ),
-            ),
-          ),
+          metric,
           isA<CalculatorState>()
               .having(
                 (s) => s.tape.preferences.system,
@@ -945,27 +943,109 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          final echoes = harness.repository
+              .watchPreferences()
+              .skip(1)
+              .take(2)
+              .toList();
           bloc
             ..add(const CalculatorUnitSystemToggled())
             ..add(const CalculatorUnitSystemToggled());
           await bloc.stream.firstWhere(
             (s) => s.currentUnitSystem == UnitSystem.imperial,
           );
-          await pumpEventQueue();
+          await rowsWritten;
+          await echoes;
+          await bloc.close();
         },
-        expect: () => [
-          const CalculatorState(
-            tape: Tape(
-              preferences: CalculatorPreferences(
-                system: MeasurementSystem.metric,
-              ),
-            ),
-          ),
-          const CalculatorState(),
-        ],
+        expect: () => [metric, const CalculatorState()],
       );
 
       late Completer<void> saveGate;
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'two quick taps while the writes are held leave nothing in flight '
+        'once both saves return, so every later change from another device '
+        'is shown as the profile holds it (R2 blocker)',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          saveGate = Completer<void>();
+          harness.authRepository.updateUserProfileGate = saveGate;
+          return bloc;
+        },
+        act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.imperial,
+          );
+          saveGate.complete();
+          await rowsWritten;
+          harness.announce(
+            harness.userWith({
+              'calculator': {'system': 'metric', 'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
+          );
+          harness.announce(
+            harness.userWith({
+              'calculator': {'system': 'imperial', 'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.imperial,
+          );
+          harness.announce(
+            harness.userWith({
+              'calculator': {'system': 'metric', 'pounds_per_ton': 2000},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.shortTon,
+          );
+        },
+        expect: () => containsAllInOrder([
+          metric,
+          const CalculatorState(),
+          // step 5: metric and long ton from another device are shown as
+          // the profile holds them (a metric profile reads density in kg/m³)
+          CalculatorState(
+            tape: Tape(
+              preferences: metric.tape.preferences.copyWith(
+                tonDefinition: TonDefinition.longTon,
+                densityUnit: DensityUnit.kilogramsPerCubicMetre,
+              ),
+            ),
+          ),
+          // step 6: imperial again
+          CalculatorState(
+            tape: Tape(
+              preferences: const CalculatorPreferences(
+                tonDefinition: TonDefinition.longTon,
+              ),
+            ),
+          ),
+          // step 7: metric again, nothing in flight hides it
+          CalculatorState(
+            tape: Tape(
+              preferences: metric.tape.preferences.copyWith(
+                densityUnit: DensityUnit.kilogramsPerCubicMetre,
+              ),
+            ),
+          ),
+        ]),
+      );
 
       blocTest<CalculatorBloc, CalculatorState>(
         'the echo of a save that lands after a newer choice was made does '
@@ -977,6 +1057,14 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          final echoes = harness.repository
+              .watchPreferences()
+              .skip(1)
+              .take(2)
+              .toList();
           bloc.add(const CalculatorUnitSystemToggled());
           await bloc.stream.firstWhere(
             (s) => s.currentUnitSystem == UnitSystem.metric,
@@ -986,18 +1074,11 @@ void main() {
             (s) => s.currentUnitSystem == UnitSystem.imperial,
           );
           saveGate.complete();
-          await pumpEventQueue();
+          await rowsWritten;
+          await echoes;
+          await bloc.close();
         },
-        expect: () => [
-          const CalculatorState(
-            tape: Tape(
-              preferences: CalculatorPreferences(
-                system: MeasurementSystem.metric,
-              ),
-            ),
-          ),
-          const CalculatorState(),
-        ],
+        expect: () => [metric, const CalculatorState()],
         verify: (bloc) {
           expect(
             harness.authRepository.updateProfileCalls.map(
@@ -1009,6 +1090,173 @@ void main() {
           );
         },
       );
+
+      late Completer<void> fetchGate;
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a System of units change made before the saved settings arrive '
+        'changes only the system: the profile keeps the long ton and the '
+        '1/4in step, and the screen keeps metric when they land',
+        build: () {
+          harness.signIn(
+            harness.userWith({
+              'calculator': {
+                'pounds_per_ton': 2240,
+                'fractional_resolution': 4,
+              },
+            }),
+          );
+          fetchGate = Completer<void>();
+          harness.authRepository.getUserProfileGate = fetchGate;
+          return bloc;
+        },
+        act: (bloc) async {
+          final rowWritten = harness.authRepository.profileUpdates.first;
+          final echoed = harness.repository.watchPreferences().firstWhere(
+            (preferences) => preferences.system == MeasurementSystem.metric,
+          );
+          bloc.add(const CalculatorUnitSystemChanged(UnitSystem.metric));
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          fetchGate.complete();
+          await rowWritten;
+          await echoed;
+          await bloc.close();
+        },
+        expect: () => [
+          metric,
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+                tonDefinition: TonDefinition.longTon,
+                fractionResolution: FractionResolution.quarter,
+              ),
+            ),
+          ),
+        ],
+        verify: (bloc) {
+          expect(written(CalculatorPreferencesDto.systemKey), 'metric');
+          expect(written(CalculatorPreferencesDto.poundsPerTonKey), 2240);
+          expect(written(CalculatorPreferencesDto.fractionResolutionKey), 4);
+          expect(bloc.state.settingSaveFailure, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a change from another device that arrives while a save is in '
+        'flight shows with the in-flight choice on top, and the save\'s own '
+        'echo then wins: the newest write, in the order the server took them',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          harness.announce(harness.userWith({}));
+          saveGate = Completer<void>();
+          harness.authRepository.updateUserProfileGate = saveGate;
+          return bloc;
+        },
+        act: (bloc) async {
+          final rowWritten = harness.authRepository.profileUpdates.first;
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          harness.announce(
+            harness.userWith({
+              'calculator': {'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
+          );
+          saveGate.complete();
+          await rowWritten;
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.shortTon,
+          );
+          await bloc.close();
+        },
+        expect: () => [
+          metric,
+          const CalculatorState(
+            tape: Tape(
+              preferences: CalculatorPreferences(
+                system: MeasurementSystem.metric,
+                tonDefinition: TonDefinition.longTon,
+              ),
+            ),
+          ),
+          metric,
+        ],
+        verify: (bloc) async {
+          expect(written(CalculatorPreferencesDto.systemKey), 'metric');
+          expect(written(CalculatorPreferencesDto.poundsPerTonKey), 2000);
+          expect(
+            bloc.state.tape.preferences,
+            await harness.repository.watchPreferences().firstWhere(
+              (preferences) => preferences.system == MeasurementSystem.metric,
+            ),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'once the echo of the newest save has come, a change from another '
+        'device is shown as it is: no older save is applied on top of it',
+        build: () {
+          harness.signIn(harness.userWith({}));
+          return bloc;
+        },
+        act: (bloc) async {
+          final rowsWritten = harness.authRepository.profileUpdates
+              .take(2)
+              .toList();
+          final echoes = harness.repository
+              .watchPreferences()
+              .skip(1)
+              .take(2)
+              .toList();
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.metric,
+          );
+          bloc.add(const CalculatorUnitSystemToggled());
+          await bloc.stream.firstWhere(
+            (s) => s.currentUnitSystem == UnitSystem.imperial,
+          );
+          await rowsWritten;
+          await echoes;
+          harness.announce(
+            harness.userWith({
+              'calculator': {'pounds_per_ton': 2240},
+            }),
+          );
+          await bloc.stream.firstWhere(
+            (s) => s.tape.preferences.tonDefinition == TonDefinition.longTon,
+          );
+          await bloc.close();
+        },
+        expect: () => [
+          metric,
+          const CalculatorState(),
+          const CalculatorState(tape: Tape(preferences: longTon)),
+        ],
+      );
+
+      test('a profile change after the bloc is closed reaches nothing: '
+          'close() ends the subscription', () async {
+        harness.signIn(harness.userWith({}));
+        await bloc.close();
+        harness.announce(
+          harness.userWith({
+            'calculator': {'pounds_per_ton': 2240},
+          }),
+        );
+        await harness.repository.watchPreferences().firstWhere(
+          (preferences) => preferences.tonDefinition == TonDefinition.longTon,
+        );
+        expect(bloc.isClosed, isTrue);
+      });
 
       test('the System of units pill shows only while the tape is empty', () {
         expect(CalculatorState.initial().showsUnitsPill, isTrue);
