@@ -383,6 +383,25 @@ void main() {
           );
         }
 
+        test('a your_rates upsert the server answers with no row is still '
+            'retried', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.noDataFound;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'your_rates', 'rate-1', null, {
+              'id': 'rate-1',
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await expectLater(
+            connector.uploadData(fakeDatabase),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+          expect(transaction.isCompleted, isFalse);
+        });
+
         test('a duplicate on another table is still retried', () async {
           fakeSupabase.shouldThrowOnUpsert = true;
           fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
@@ -399,6 +418,161 @@ void main() {
             throwsA(isA<supabase.PostgrestException>()),
           );
           expect(transaction.isCompleted, isFalse);
+        });
+
+        group('a trade store default changed on two phones', () {
+          Map<String, dynamic> serverRow({
+            required String id,
+            String seed = 'masonry_8x16in',
+            String? deletedAt,
+          }) => {
+            'id': id,
+            'user_id': 'user-1',
+            'store_kind': 'masonry_piece',
+            'values': {'seed': seed, 'width_ticks': 512},
+            'unit_system': 'imperial',
+            'deleted_at': deletedAt,
+          };
+
+          final secondPhoneChange = {
+            'user_id': 'user-1',
+            'store_kind': 'masonry_piece',
+            'values': '{"seed": "masonry_8x16in", "width_ticks": 384}',
+            'unit_system': 'imperial',
+          };
+
+          Future<FakeCrudTransaction> uploadSecondPhone(CrudEntry entry) async {
+            fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.deleteExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabase.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+            final transaction = FakeCrudTransaction([entry]);
+            fakeDatabase.setNextTransaction(transaction);
+            await connector.uploadData(fakeDatabase);
+            return transaction;
+          }
+
+          test('the later upload overwrites the live row of that default; a '
+              'deleted row of it and another default are left alone', () async {
+            fakeSupabase.addTableData('user_calculator_stores', [
+              serverRow(id: 'gone', deletedAt: '2026-11-01T10:00:00.000Z'),
+              serverRow(id: 'other', seed: 'masonry_4x8in'),
+              serverRow(id: 'server-1'),
+            ]);
+            fakeSupabase.shouldThrowOnUpsert = true;
+
+            final transaction = await uploadSecondPhone(
+              CrudEntry(
+                1,
+                UpdateType.put,
+                'user_calculator_stores',
+                'phone-2-id',
+                null,
+                secondPhoneChange,
+              ),
+            );
+
+            final update = fakeSupabase.getMethodCallsFor('update').single;
+            expect(update['filterValue'], 'server-1');
+            expect(update['data']['values'], {
+              'seed': 'masonry_8x16in',
+              'width_ticks': 384,
+            });
+            expect(update['data'], isNot(contains('id')));
+            expect(transaction.isCompleted, isTrue);
+          });
+
+          test(
+            'a duplicate whose live row the server does not have is skipped, '
+            'never retried',
+            () async {
+              fakeSupabase.addTableData('user_calculator_stores', [
+                serverRow(id: 'gone', deletedAt: '2026-11-01T10:00:00.000Z'),
+              ]);
+              fakeSupabase.shouldThrowOnUpsert = true;
+
+              final transaction = await uploadSecondPhone(
+                CrudEntry(
+                  1,
+                  UpdateType.put,
+                  'user_calculator_stores',
+                  'phone-2-id',
+                  null,
+                  secondPhoneChange,
+                ),
+              );
+
+              expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+              expect(transaction.isCompleted, isTrue);
+            },
+          );
+
+          test(
+            'a duplicate on a patch that names no user is skipped',
+            () async {
+              fakeSupabase.shouldThrowOnUpdate = true;
+
+              final transaction = await uploadSecondPhone(
+                CrudEntry(
+                  1,
+                  UpdateType.patch,
+                  'user_calculator_stores',
+                  'phone-2-id',
+                  null,
+                  {'values': '{"seed": "fence", "rails_per_section": 2}'},
+                ),
+              );
+
+              expect(fakeSupabase.getMethodCallsFor('update'), hasLength(1));
+              expect(transaction.isCompleted, isTrue);
+            },
+          );
+
+          test('a duplicate on a delete is still retried', () async {
+            fakeSupabase.shouldThrowOnDelete = true;
+
+            await expectLater(
+              uploadSecondPhone(
+                CrudEntry(
+                  1,
+                  UpdateType.delete,
+                  'user_calculator_stores',
+                  'phone-2-id',
+                  null,
+                  null,
+                ),
+              ),
+              throwsA(isA<supabase.PostgrestException>()),
+            );
+          });
+
+          test(
+            'another refusal of a trade store row is still retried',
+            () async {
+              fakeSupabase.shouldThrowOnUpsert = true;
+              fakeSupabase.upsertExceptionType =
+                  SupabaseExceptionType.postgrest;
+              fakeSupabase.postgrestErrorCode =
+                  PostgresErrorCode.checkViolation;
+              final transaction = FakeCrudTransaction([
+                CrudEntry(
+                  1,
+                  UpdateType.put,
+                  'user_calculator_stores',
+                  'phone-2-id',
+                  null,
+                  secondPhoneChange,
+                ),
+              ]);
+              fakeDatabase.setNextTransaction(transaction);
+
+              await expectLater(
+                connector.uploadData(fakeDatabase),
+                throwsA(isA<supabase.PostgrestException>()),
+              );
+              expect(transaction.isCompleted, isFalse);
+            },
+          );
         });
 
         test(

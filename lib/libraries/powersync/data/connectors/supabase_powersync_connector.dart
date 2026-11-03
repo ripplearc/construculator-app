@@ -23,7 +23,12 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// A `user_calculator_stores` row is sent with its `values` decoded: the
 /// column is jsonb on the server and JSON text on the phone, and sent as text
 /// it would be stored as a JSON string, which the table's object CHECK
-/// refuses.
+/// refuses. A change of a default the server refuses as a duplicate (23505,
+/// a second live row of one user, store and seed) overwrites the live row of
+/// that default, so the last change received wins, or is skipped when that
+/// row cannot be found; it never blocks the queue. The data source derives
+/// one id per default on every phone, so this is a safety net, not the path
+/// a change normally takes.
 ///
 /// When two phones save the same Your rates entry, the later upload overwrites
 /// the earlier one. Two entries are the same when the item name, pricing
@@ -111,6 +116,15 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       await _processOperation(operation);
       await _forgetRefusalWithoutBlocking(database, operation);
     } on supabase.PostgrestException catch (error) {
+      if (_isDuplicateDefault(error, operation)) {
+        if (await _overwroteDefaultWithSameSeed(operation)) return;
+        _logger.warning(
+          'The server refused a user_calculator_stores change as a duplicate '
+          '(code ${error.code}) and the live row to overwrite was not found: '
+          '${error.message}. Skipping it so the queue is not blocked.',
+        );
+        return;
+      }
       if (!_isRefusedRateChange(error, operation)) rethrow;
       // TODO: [CA-1306] Derive the rate id from its name and label so a clash is one row and later edits find it.
       // https://ripplearc.youtrack.cloud/issue/CA-1306
@@ -319,6 +333,58 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     return (key == null || key.isEmpty) ? null : key;
   }
 
+  bool _isDuplicateDefault(
+    supabase.PostgrestException error,
+    CrudEntry operation,
+  ) =>
+      operation.table == DatabaseConstants.userCalculatorStoresTable &&
+      operation.op != UpdateType.delete &&
+      PostgresErrorCode.fromCode(error.code) ==
+          PostgresErrorCode.uniqueViolation;
+
+  Future<bool> _overwroteDefaultWithSameSeed(CrudEntry operation) async {
+    final sent = operation.opData;
+    if (sent == null) return false;
+    final row = _withDecodedValues(operation.table, sent);
+    final userId = row[DatabaseConstants.userIdColumn];
+    final kind = row[DatabaseConstants.storeKindColumn];
+    final seed = _seedOf(row);
+    if (userId == null || kind == null || seed == null) return false;
+
+    final saved = await _supabaseWrapper.selectMatch(
+      table: operation.table,
+      filters: {
+        DatabaseConstants.userIdColumn: userId,
+        DatabaseConstants.storeKindColumn: kind,
+      },
+    );
+    final live = saved
+        .where(
+          (candidate) =>
+              candidate[DatabaseConstants.deletedAtColumn] == null &&
+              _seedOf(candidate) == seed,
+        )
+        .firstOrNull;
+    if (live == null) return false;
+
+    _logger.info(
+      'Another phone changed this default first; '
+      'this change overwrites it, so the last change received wins',
+    );
+    await _supabaseWrapper.update(
+      table: operation.table,
+      data: row,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: live[DatabaseConstants.idColumn],
+    );
+    return true;
+  }
+
+  String? _seedOf(Map<String, dynamic> row) {
+    final values = row[DatabaseConstants.valuesColumn];
+    return values is Map ? values[DatabaseConstants.seedKey] as String? : null;
+  }
+
   bool _isRefusedRateChange(
     supabase.PostgrestException error,
     CrudEntry operation,
@@ -350,7 +416,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.upsert(
           table: operation.table,
-          data: {..._serverRow(operation.table, putData), 'id': operation.id},
+          data: {
+            ..._withDecodedValues(operation.table, putData),
+            'id': operation.id,
+          },
           onConflict: 'id',
         );
       case UpdateType.patch:
@@ -362,7 +431,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.update(
           table: operation.table,
-          data: _serverRow(operation.table, patchData),
+          data: _withDecodedValues(operation.table, patchData),
           filterColumn: 'id',
           filterValue: operation.id,
         );
@@ -375,9 +444,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
-  // The row as the server's columns take it. Only the trade stores carry a
-  // JSON column; a patch that leaves `values` out is sent as it is.
-  Map<String, dynamic> _serverRow(String table, Map<String, dynamic> row) {
+  Map<String, dynamic> _withDecodedValues(
+    String table,
+    Map<String, dynamic> row,
+  ) {
     if (table != DatabaseConstants.userCalculatorStoresTable) return row;
     final values = row[DatabaseConstants.valuesColumn];
     if (values is! String) return row;

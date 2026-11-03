@@ -198,6 +198,55 @@ void main() {
         ]);
       });
 
+      test('a default gets the same id on every phone; another user, store or '
+          'default gets another', () async {
+        final secondDatabase = FakeTradeStoresDatabase();
+        // ignore: no_direct_instantiation
+        final secondPhone = PowerSyncLocalTradeStoresDataSource(
+          database: secondDatabase,
+        );
+        final first = await dataSource.writeSeedRow(concrete);
+        final second = await secondPhone.writeSeedRow(concrete);
+        expect(second.id, first.id);
+        final theirs = await secondPhone.writeSeedRow(
+          row(userId: other, values: concrete.values),
+        );
+        final elsewhere = await secondPhone.writeSeedRow(
+          row(kind: CalculatorStoreKind.waste, values: concrete.values),
+        );
+        final gravel = await secondPhone.writeSeedRow(
+          row(values: const {'seed': 'density_gravel', 'name': 'gravel'}),
+        );
+        expect({theirs.id, elsewhere.id, gravel.id}, hasLength(3));
+        expect({theirs.id, elsewhere.id, gravel.id}, isNot(contains(first.id)));
+        await secondPhone.dispose();
+        await secondDatabase.closeChanges();
+      });
+
+      test('a default written in inches and then in millimetres stays one row, '
+          'the newer one', () async {
+        final inches = await dataSource.writeSeedRow(
+          row(
+            kind: CalculatorStoreKind.masonryPiece,
+            values: const {'seed': 'masonry_8x16in', 'unit': 'inch'},
+          ),
+        );
+        final millimetres = await dataSource.writeSeedRow(
+          row(
+            kind: CalculatorStoreKind.masonryPiece,
+            values: const {'seed': 'masonry_8x16in', 'unit': 'millimetre'},
+            system: MeasurementSystem.metric,
+          ).copyWith(updatedAt: later),
+        );
+        expect(millimetres.id, inches.id);
+        final rows = await dataSource.fetchRows(
+          user,
+          CalculatorStoreKind.masonryPiece,
+        );
+        expect(rows, [millimetres]);
+        expect(rows.single.unitSystem, MeasurementSystem.metric);
+      });
+
       test('a row without a seed cannot be written as a default', () async {
         await expectLater(dataSource.writeSeedRow(row()), throwsArgumentError);
         expect(

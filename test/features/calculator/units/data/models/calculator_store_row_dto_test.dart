@@ -108,7 +108,7 @@ void main() {
           ...columns,
           'unit_system': 'cubits',
         }),
-        throwsArgumentError,
+        throwsFormatException,
       );
     });
   });

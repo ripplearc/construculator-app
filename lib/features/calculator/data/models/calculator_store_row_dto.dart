@@ -51,7 +51,7 @@ enum CalculatorStoreKind {
 /// stays so every phone hides the same entry, or the default it stands for.
 class CalculatorStoreRowDto extends Equatable {
   /// The key under which a changed default names the default it replaces.
-  static const String seedKey = 'seed';
+  static const String seedKey = DatabaseConstants.seedKey;
 
   /// The row's id, `null` before it is stored.
   final String? id;
@@ -112,9 +112,7 @@ class CalculatorStoreRowDto extends Equatable {
         _text(row, DatabaseConstants.storeKindColumn),
       ),
       values: decoded,
-      unitSystem: MeasurementSystem.values.byName(
-        _text(row, DatabaseConstants.unitSystemColumn),
-      ),
+      unitSystem: _system(_text(row, DatabaseConstants.unitSystemColumn)),
       createdAt: _time(row, DatabaseConstants.createdAtColumn),
       updatedAt: _time(row, DatabaseConstants.updatedAtColumn),
       deletedAt: row[DatabaseConstants.deletedAtColumn] == null
@@ -159,6 +157,12 @@ class CalculatorStoreRowDto extends Equatable {
   );
 
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
+
+  static MeasurementSystem _system(String name) =>
+      MeasurementSystem.values.asNameMap()[name] ??
+      (throw const FormatException(
+        'Unreadable trade store row: ${DatabaseConstants.unitSystemColumn}',
+      ));
 
   static String _text(Map<String, Object?> row, String column) {
     if (row[column] case final String value) return value;

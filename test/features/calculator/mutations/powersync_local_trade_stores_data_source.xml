@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- TRADE STORES DATA SOURCE MUTATION TESTING -->
-    <!-- Targets: PowerSyncLocalTradeStoresDataSource and CalculatorStoreRowDto,
-         the row store under the trade stores repository. A weakened guard here
-         "updates" a row nobody has, writes a second row for one default, lets a
-         watch miss or repeat a change, reads a bad row as a good one, or keeps a
-         default deleted when it is brought back. -->
+    <!-- Targets: PowerSyncLocalTradeStoresDataSource, CalculatorStoreRowDto and
+         TradeStoreRowMapper, the row store under the trade stores repository.
+         A weakened guard here "updates" a row nobody has, writes a second row
+         for one default, gives a default a different row on every phone, lets
+         a watch miss or repeat a change, reads a bad row as a good one, or
+         keeps a default deleted when it is brought back. -->
 
     <files>
         <file>lib/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart</file>
         <file>lib/features/calculator/data/models/calculator_store_row_dto.dart</file>
+        <file>lib/features/calculator/data/models/trade_store_row_mapper.dart</file>
     </files>
 
     <commands>
-        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_trade_stores_data_source_test.dart test/features/calculator/units/data/models/calculator_store_row_dto_test.dart</command>
+        <command group="test" expected-return="0" working-directory=".">fvm flutter test test/features/calculator/units/data/data_source/powersync_local_trade_stores_data_source_test.dart test/features/calculator/units/data/models/calculator_store_row_dto_test.dart test/features/calculator/units/data/models/trade_store_row_mapper_test.dart</command>
     </commands>
 
     <rules>
@@ -81,6 +83,33 @@
         <!-- RULE 12: any label is read as the first kind -->
         <regex pattern="values\.firstWhere\(\s*\(kind\) => kind\.wire == wire," dotAll="true" id="trade_stores_row_dto.kind_from_any_label">
             <mutation text="values.firstWhere((kind) => true,"/>
+        </regex>
+
+        <!-- RULE 13: a default's first row gets a random id, so two phones
+             that change it offline write two rows the server cannot merge -->
+        <regex pattern="return _insert\(transaction, row, id: _defaultRowId\(row, seed\)\);" dotAll="true" id="trade_stores_data_source.seed_row.random_id">
+            <mutation text="return _insert(transaction, row);"/>
+        </regex>
+
+        <!-- RULE 14: a default's id leaves out the user, the store or the
+             seed, so another user's, another store's or another default's row
+             takes the same id -->
+        <regex pattern="'\$\{DatabaseConstants\.userCalculatorStoresTable\}/\$\{row\.userId\}/'\s*'\$\{row\.storeKind\.wire\}/\$seed'," dotAll="true" id="trade_stores_data_source.seed_row.id_ignores_a_key">
+            <mutation text="'${DatabaseConstants.userCalculatorStoresTable}/${row.storeKind.wire}/$seed',"/>
+            <mutation text="'${DatabaseConstants.userCalculatorStoresTable}/${row.userId}/$seed',"/>
+            <mutation text="'${DatabaseConstants.userCalculatorStoresTable}/${row.userId}/${row.storeKind.wire}',"/>
+        </regex>
+
+        <!-- RULE 15: an unknown unit system, unit or waste unit is read as
+             the first one instead of a format error -->
+        <regex pattern="MeasurementSystem\.values\.asNameMap\(\)\[name\] \?\?\s*\(throw const FormatException\(\s*'Unreadable trade store row: \$\{DatabaseConstants\.unitSystemColumn\}',\s*\)\);" dotAll="true" id="trade_stores_row_dto.unknown_system_read">
+            <mutation text="MeasurementSystem.values.asNameMap()[name] ?? MeasurementSystem.imperial;"/>
+        </regex>
+        <regex pattern="Unit\.values\.asNameMap\(\)\[_text\(values, unitKey\)\] \?\?\s*\(throw FormatException\('Unreadable trade store values: \$unitKey'\)\);" dotAll="true" id="trade_stores_row_mapper.unknown_unit_read">
+            <mutation text="Unit.values.asNameMap()[_text(values, unitKey)] ?? Unit.inch;"/>
+        </regex>
+        <regex pattern="RateUnit\.values\.asNameMap\(\)\[_text\(\s*values,\s*CalculatorStoreRowDto\.seedKey,\s*\)\] \?\?\s*\(throw FormatException\(\s*'Unreadable trade store values: \$\{CalculatorStoreRowDto\.seedKey\}',\s*\)\);" dotAll="true" id="trade_stores_row_mapper.unknown_waste_unit_read">
+            <mutation text="RateUnit.values.asNameMap()[_text(values, CalculatorStoreRowDto.seedKey)] ?? RateUnit.sheet;"/>
         </regex>
     </rules>
 </mutations>

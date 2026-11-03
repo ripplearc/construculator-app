@@ -11,10 +11,16 @@ import 'package:powersync/sqlite_async.dart';
 /// `user_calculator_stores` is a synced table: a write lands in SQLite at
 /// once, PowerSync queues it for upload, and the stream brings the other
 /// phones' rows in. Everything else follows `PowerSyncLocalConsentDataSource`:
-/// SQL is assembled from `DatabaseConstants`, ids are minted with the SDK's
-/// own `uuid`, and every stream handed out is tracked so [dispose] can end
-/// it. Nothing is ordered in SQL: the repository orders entries by the
-/// position inside `values`.
+/// SQL is assembled from `DatabaseConstants`, an added entry's id is minted
+/// with the SDK's own `uuid`, and every stream handed out is tracked so
+/// [dispose] can end it. Nothing is ordered in SQL: the repository orders
+/// entries by the position inside `values`.
+///
+/// A default's row has the one id every phone derives from the user, the
+/// store and the seed (a name-based UUID over the URL namespace), so two
+/// phones that change one default while offline write the same row, and the
+/// server merges the later upload into it instead of refusing it as a second
+/// live row of that default.
 ///
 /// Every write that first looks a row up runs the lookup and the write in
 /// one write transaction, so two writes that race cannot both see "no row"
@@ -33,7 +39,8 @@ class PowerSyncLocalTradeStoresDataSource
   /// Creates a data source over a PowerSync database.
   PowerSyncLocalTradeStoresDataSource({required this._database});
 
-  // `values` is a keyword, so it is quoted wherever it names the column.
+  static const _rfc9562UrlNamespace = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
+
   static const _rowsSql =
       'SELECT ${DatabaseConstants.idColumn}, '
       '${DatabaseConstants.userIdColumn}, '
@@ -122,7 +129,9 @@ class PowerSyncLocalTradeStoresDataSource
         await transaction.getAll(_rowsSql, [row.userId, row.storeKind.wire]),
       ).where((candidate) => candidate.seed == seed).firstOrNull;
       final id = existing?.id;
-      if (id == null) return _insert(transaction, row);
+      if (id == null) {
+        return _insert(transaction, row, id: _defaultRowId(row, seed));
+      }
       await _rewrite(transaction, id, row);
       return row.copyWith(id: id);
     });
@@ -143,18 +152,25 @@ class PowerSyncLocalTradeStoresDataSource
 
   Future<CalculatorStoreRowDto> _insert(
     SqliteWriteContext transaction,
-    CalculatorStoreRowDto row,
-  ) async {
-    final id = uuid.v4();
-    final columns = {DatabaseConstants.idColumn: id, ...row.toColumns()};
+    CalculatorStoreRowDto row, {
+    String? id,
+  }) async {
+    final rowId = id ?? uuid.v4();
+    final columns = {DatabaseConstants.idColumn: rowId, ...row.toColumns()};
     await transaction.execute(
       'INSERT INTO ${DatabaseConstants.userCalculatorStoresTable} '
       '(${columns.keys.map(_quoted).join(', ')}) '
       'VALUES (${List.filled(columns.length, '?').join(', ')})',
       columns.values.toList(),
     );
-    return row.copyWith(id: id);
+    return row.copyWith(id: rowId);
   }
+
+  String _defaultRowId(CalculatorStoreRowDto row, String seed) => uuid.v5(
+    _rfc9562UrlNamespace,
+    '${DatabaseConstants.userCalculatorStoresTable}/${row.userId}/'
+    '${row.storeKind.wire}/$seed',
+  );
 
   Future<void> _rewrite(
     SqliteWriteContext transaction,

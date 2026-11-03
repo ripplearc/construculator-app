@@ -189,9 +189,7 @@ abstract final class TradeStoreRowMapper {
 
   /// A waste factor from its row; the unit is the row's seed.
   static StoredWaste wasteFromRow(CalculatorStoreRowDto row) => StoredWaste(
-    unit: RateUnit.values.byName(
-      _text(row.values, CalculatorStoreRowDto.seedKey),
-    ),
+    unit: _rateUnit(row.values),
     percent: _real(row.values, percentKey),
   );
 
@@ -257,7 +255,17 @@ abstract final class TradeStoreRowMapper {
   };
 
   static Unit _unit(Map<String, Object?> values) =>
-      Unit.values.byName(_text(values, unitKey));
+      Unit.values.asNameMap()[_text(values, unitKey)] ??
+      (throw FormatException('Unreadable trade store values: $unitKey'));
+
+  static RateUnit _rateUnit(Map<String, Object?> values) =>
+      RateUnit.values.asNameMap()[_text(
+        values,
+        CalculatorStoreRowDto.seedKey,
+      )] ??
+      (throw FormatException(
+        'Unreadable trade store values: ${CalculatorStoreRowDto.seedKey}',
+      ));
 
   static String _text(Map<String, Object?> values, String key) {
     if (values[key] case final String value) return value;
