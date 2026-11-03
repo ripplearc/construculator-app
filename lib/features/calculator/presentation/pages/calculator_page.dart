@@ -204,12 +204,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           for (final key in dependentKeys)
                             labels.dependentKey(
                               key,
-                              onPressed: () => bloc.add(switch (key) {
-                                CalculatorReadAsPill() =>
-                                  const CalculatorReadAsAccepted(),
-                                CalculatorPitchSpellingPill() =>
-                                  const CalculatorPitchSpellingCycled(),
-                              }),
+                              onPressed: () =>
+                                  bloc.add(const CalculatorReadAsAccepted()),
                             ),
                         ],
                         // TODO: [CA-1092] Close the calculator when ✕ is

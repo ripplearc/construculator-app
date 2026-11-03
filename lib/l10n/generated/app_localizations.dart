@@ -3730,7 +3730,7 @@ abstract class AppLocalizations {
   /// **'Division'**
   String get calculatorOperatorDivision;
 
-  /// Reading of a bare number named after the key on the calculator label row, and the spelling of a pitch answer on the Shown as pill: decimal degrees
+  /// Reading of a bare number named after the key on the calculator label row: decimal degrees
   ///
   /// In en, this message translates to:
   /// **'degrees'**
@@ -3748,13 +3748,13 @@ abstract class AppLocalizations {
   /// **'a ratio'**
   String get calculatorReadingRatio;
 
-  /// Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row and the Shown as pill
+  /// Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row
   ///
   /// In en, this message translates to:
   /// **'in/12in'**
   String get calculatorReadingRisePerFoot;
 
-  /// Reading of a bare number under Slope as a percent grade, on the calculator label row and the Shown as pill
+  /// Reading of a bare number under Slope as a percent grade, on the calculator label row
   ///
   /// In en, this message translates to:
   /// **'grade'**
@@ -3777,12 +3777,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rewrites the number the other way'**
   String get calculatorPillReadAsHint;
-
-  /// Screen reader hint of the Shown as pill under a calculator pitch answer
-  ///
-  /// In en, this message translates to:
-  /// **'Changes how the pitch is shown'**
-  String get calculatorPillShownAsHint;
 
   /// Label for the Shapes function group tab in the calculator
   ///

@@ -2131,9 +2131,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorPillReadAsHint => 'Rewrites the number the other way';
 
   @override
-  String get calculatorPillShownAsHint => 'Changes how the pitch is shown';
-
-  @override
   String get calculatorGroupShapes => 'Shapes';
 
   @override

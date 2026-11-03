@@ -1665,6 +1665,11 @@ void main() {
         expect(pillOf('3 8 . 3 0 [SIN]').sourceText, '38.30°');
         expect(pillOf('3 8 . 3 0 [SIN]').rebuildsAnAnswer, isTrue);
         expect(stateOf('[Pitch] 1 0 0').dependentKeys, isEmpty);
+        expect(
+          stateOf('[Rise] 6 ft [Run] 1 2 ft [Pitch]').dependentKeys,
+          isEmpty,
+          reason: 'a pitch answer carries no pill (Section 8)',
+        );
         expect(stateOf('[Slope] 2 . 5').dependentKeys, isEmpty);
         expect(stateOf('[Length] 2 2 ft').dependentKeys, isEmpty);
         expect(stateOf('[ACOS] 0 . 5').dependentKeys, isEmpty);
@@ -1709,54 +1714,6 @@ void main() {
         expect: () => [
           const CalculatorState(
             refusal: TapeRefused(TapeRefusal.nothingToReInput),
-          ),
-        ],
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'a pitch answer carries the Shown as pill, and a tap cycles its '
-        'spelling: in/12in, degrees, grade (S42)',
-        build: () => bloc,
-        act: (bloc) => bloc
-          ..add(const CalculatorKeySelected('Rise'))
-          ..add(const CalculatorDigitPressed('6'))
-          ..add(const CalculatorUnitSelected(Unit.foot))
-          ..add(const CalculatorKeySelected('Run'))
-          ..add(const CalculatorDigitPressed('1'))
-          ..add(const CalculatorDigitPressed('2'))
-          ..add(const CalculatorUnitSelected(Unit.foot))
-          ..add(const CalculatorKeySelected('Pitch'))
-          ..add(const CalculatorPitchSpellingCycled())
-          ..add(const CalculatorPitchSpellingCycled()),
-        skip: 7,
-        expect: () => [
-          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch]')),
-          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch]')),
-          tapeState(
-            pressed('[Rise] 6 ft [Run] 1 2 ft [Pitch] [Pitch] [Pitch]'),
-          ),
-        ],
-        verify: (bloc) {
-          final landed = stateOf('[Rise] 6 ft [Run] 1 2 ft [Pitch]');
-          expect(landed.valueText, '6in/12in');
-          expect(landed.dependentKeys, [
-            const CalculatorPitchSpellingPill(AngleSpelling.risePerFoot),
-          ]);
-          expect(bloc.state.valueText, '50%');
-          expect(bloc.state.dependentKeys, [
-            const CalculatorPitchSpellingPill(AngleSpelling.grade),
-          ]);
-          expect(bloc.state.conversions, isEmpty);
-        },
-      );
-
-      blocTest<CalculatorBloc, CalculatorState>(
-        'the Shown as pill tapped under no pitch answer is refused',
-        build: () => bloc,
-        act: (bloc) => bloc.add(const CalculatorPitchSpellingCycled()),
-        expect: () => [
-          const CalculatorState(
-            refusal: TapeRefused(TapeRefusal.noPitchToCycle),
           ),
         ],
       );

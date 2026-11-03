@@ -45,7 +45,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorEqualsPressed>(_onEqualsPressed);
     on<CalculatorSuggestionAccepted>(_onSuggestionAccepted);
     on<CalculatorReadAsAccepted>(_onReadAsAccepted);
-    on<CalculatorPitchSpellingCycled>(_onPitchSpellingCycled);
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorActiveValueCleared>(_onActiveValueCleared);
     on<CalculatorGroupSelected>(_onGroupSelected);
@@ -118,11 +117,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorReadAsAccepted event,
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) => tape.reInput());
-
-  void _onPitchSpellingCycled(
-    CalculatorPitchSpellingCycled event,
-    Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => tape.cyclePitchSpelling());
 
   void _onActiveValueCleared(
     CalculatorActiveValueCleared event,

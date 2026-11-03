@@ -381,21 +381,6 @@ void main() {
 
       await driver.perform(const KeyStep('clear'));
       for (final key in const [
-        'fk:Rise',
-        'd:6',
-        'unit:ft',
-        'fk:Run',
-        'd:1',
-        'd:2',
-        'unit:ft',
-        'fk:Pitch',
-      ]) {
-        await driver.perform(KeyStep(key));
-      }
-      expect(driver.snapshot().depKey, 'Shown as: in/12in');
-
-      await driver.perform(const KeyStep('clear'));
-      for (final key in const [
         'd:2',
         'op:+',
         'paren',
