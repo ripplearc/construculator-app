@@ -128,36 +128,38 @@ class _CalculatorPageState extends State<CalculatorPage> {
       );
 
   Future<void> _showSettingSheet(CalculatorSetting setting) async {
-    final l10n = context.l10n;
-    final settings = CalculatorSettingFormatter(l10n);
     await CoreQuickSheet.show<void>(
       context: context,
-      // The tick follows a setting synced from another device while the
-      // sheet is open; the sheet keeps a choice already made on it.
-      child: BlocBuilder<CalculatorBloc, CalculatorState>(
-        bloc: _bloc,
-        buildWhen: (previous, current) =>
-            previous.tape.preferences != current.tape.preferences,
-        builder: (context, state) => CorePreferenceOptionSheet(
-          title: settings.title(setting),
-          options: [
-            for (final id in setting.optionIds)
-              CorePreferenceOption(
-                id: id,
-                label: settings.optionLabel(setting, id),
-              ),
-          ],
-          selectedOptionId: setting.selectedOptionId(state.tape.preferences),
-          updateLabel: l10n.calculatorSettingUpdate,
-          backSemanticsLabel: l10n.calculatorSettingBack,
-          onUpdate: (id) => _bloc.add(CalculatorSettingUpdated(setting, id)),
-          optionKeyOf: CalculatorPage.settingOptionKey,
-          updateButtonKey: CalculatorPage.settingUpdateKey,
-        ),
-      ),
+      child: _sheetFollowingSyncedSettings(setting),
     );
     if (!mounted) return;
     _bloc.add(const CalculatorSettingSheetClosed());
+  }
+
+  Widget _sheetFollowingSyncedSettings(CalculatorSetting setting) {
+    final l10n = context.l10n;
+    final settings = CalculatorSettingFormatter(l10n);
+    return BlocBuilder<CalculatorBloc, CalculatorState>(
+      bloc: _bloc,
+      buildWhen: (previous, current) =>
+          previous.tape.preferences != current.tape.preferences,
+      builder: (context, state) => CorePreferenceOptionSheet(
+        title: settings.title(setting),
+        options: [
+          for (final id in setting.optionIds)
+            CorePreferenceOption(
+              id: id,
+              label: settings.optionLabel(setting, id),
+            ),
+        ],
+        selectedOptionId: setting.selectedOptionId(state.tape.preferences),
+        updateLabel: l10n.calculatorSettingUpdate,
+        backSemanticsLabel: l10n.calculatorSettingBack,
+        onUpdate: (id) => _bloc.add(CalculatorSettingUpdated(setting, id)),
+        optionKeyOf: CalculatorPage.settingOptionKey,
+        updateButtonKey: CalculatorPage.settingUpdateKey,
+      ),
+    );
   }
 
   void _onSettingsChanged(BuildContext context, CalculatorState state) {

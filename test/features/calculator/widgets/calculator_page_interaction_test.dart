@@ -429,6 +429,37 @@ void main() {
       expect(find.byKey(CalculatorPage.settingUpdateKey), findsNothing);
     });
 
+    testWidgets('Update on the choice already in force closes the sheet with '
+        'no save and no toast', (tester) async {
+      await pumpSignedIn(tester);
+      final bloc = blocOf(tester);
+      final l10n = l10nOf(tester);
+
+      bloc.add(
+        const CalculatorSettingSheetOpened(
+          CalculatorSetting.fractionResolution,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        tester.getSemantics(
+          find.byKey(CalculatorPage.settingOptionKey('sixteenth')),
+        ),
+        isSemantics(isSelected: true),
+      );
+
+      await tester.tap(find.byKey(CalculatorPage.settingUpdateKey));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(bloc.state.openSettingSheet, isNull);
+      expect(find.byKey(CalculatorPage.settingUpdateKey), findsNothing);
+      expect(find.text(l10n.calculatorSettingUpdatedMessage), findsNothing);
+      expect(harness.authRepository.updateProfileCalls, isEmpty);
+    });
+
     testWidgets('a sheet closed without Update changes nothing', (
       tester,
     ) async {
