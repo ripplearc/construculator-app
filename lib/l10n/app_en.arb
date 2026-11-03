@@ -2982,6 +2982,83 @@
   "@calculatorUnitsSwitchToImperial": {
     "description": "Screen reader hint of the System of units pill while metric units are in force"
   },
+  "calculatorSettingFractionResolution": "Fractional resolution",
+  "@calculatorSettingFractionResolution": {
+    "description": "Name of the calculator setting for the step fractions of an inch round to; title of its sheet and of its toast"
+  },
+  "calculatorSettingPoundsPerTon": "Pounds per ton",
+  "@calculatorSettingPoundsPerTon": {
+    "description": "Name of the calculator setting for how many pounds make a ton; title of its sheet and of its toast"
+  },
+  "calculatorSettingMeterLengthDisplay": "Meter length display",
+  "@calculatorSettingMeterLengthDisplay": {
+    "description": "Name of the calculator setting for the decimals of a length shown in metres; title of its sheet and of its toast"
+  },
+  "calculatorSettingDensityDisplayUnit": "Density display unit",
+  "@calculatorSettingDensityDisplayUnit": {
+    "description": "Name of the calculator setting for the unit densities render in; title of its sheet and of its toast"
+  },
+  "calculatorOptionShortTon": "2,000 lb (US short ton)",
+  "@calculatorOptionShortTon": {
+    "description": "Option of the Pounds per ton setting"
+  },
+  "calculatorOptionLongTon": "2,240 lb (long ton)",
+  "@calculatorOptionLongTon": {
+    "description": "Option of the Pounds per ton setting"
+  },
+  "calculatorOptionMetreOneDecimal": "0.0",
+  "@calculatorOptionMetreOneDecimal": {
+    "description": "Option of the Meter length display setting: one decimal"
+  },
+  "calculatorOptionMetreTwoDecimals": "0.00",
+  "@calculatorOptionMetreTwoDecimals": {
+    "description": "Option of the Meter length display setting: two decimals"
+  },
+  "calculatorOptionMetreThreeDecimals": "0.000",
+  "@calculatorOptionMetreThreeDecimals": {
+    "description": "Option of the Meter length display setting: three decimals"
+  },
+  "calculatorOptionDensityPoundsPerCubicYard": "lbs/yd³",
+  "@calculatorOptionDensityPoundsPerCubicYard": {
+    "description": "Option of the Density display unit setting"
+  },
+  "calculatorOptionDensityPoundsPerCubicFoot": "lbs/ft³",
+  "@calculatorOptionDensityPoundsPerCubicFoot": {
+    "description": "Option of the Density display unit setting"
+  },
+  "calculatorOptionDensityTonsPerCubicYard": "tons/yd³",
+  "@calculatorOptionDensityTonsPerCubicYard": {
+    "description": "Option of the Density display unit setting"
+  },
+  "calculatorOptionDensityKilogramsPerCubicMetre": "kg/m³",
+  "@calculatorOptionDensityKilogramsPerCubicMetre": {
+    "description": "Option of the Density display unit setting"
+  },
+  "calculatorSettingUpdate": "Update",
+  "@calculatorSettingUpdate": {
+    "description": "Label of the button that saves the choice on a calculator setting sheet"
+  },
+  "calculatorSettingBack": "Back to the calculator",
+  "@calculatorSettingBack": {
+    "description": "Screen reader label of the back button on a calculator setting sheet"
+  },
+  "calculatorSettingUpdatedMessage": "Preference updated — results re-render; your entries keep their typed units.",
+  "@calculatorSettingUpdatedMessage": {
+    "description": "Body of the toast shown after a calculator setting is saved; the toast is titled with the setting's name"
+  },
+  "calculatorSettingSaveFailed": "The setting could not be saved. It stays on this screen; try again later.",
+  "@calculatorSettingSaveFailed": {
+    "description": "Body of the toast shown when a calculator setting could not be saved to the profile"
+  },
+  "calculatorOptionFraction": "1/{denominator}",
+  "@calculatorOptionFraction": {
+    "description": "Option of the Fractional resolution setting: the fraction of an inch results round to",
+    "placeholders": {
+      "denominator": {
+        "type": "int"
+      }
+    }
+  },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {
     "description": "Label for the Shapes function group tab in the calculator"
