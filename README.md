@@ -612,7 +612,9 @@ in its own footer, so the two are read together.
 Charts render empty rather than guessing when there is no data. **No baselines
 exist yet** — CA-476 defines the methodology but a baseline cannot be recorded
 before a harness has produced one — so no threshold line is drawn until a
-`baselines.json` appears in the perf store, keyed by journey.
+`baselines.json` appears in the perf store, keyed by journey and then by
+metric id: `cold_start_ms` for TTID (cold), `warm_start_ms` for TTID (warm),
+`memory` and `jank`.
 
 ### How the dashboard is built and published
 

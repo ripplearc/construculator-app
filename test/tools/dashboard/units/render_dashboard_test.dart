@@ -136,12 +136,13 @@ void main() {
       expect(html, contains('710 <span class="unit-inline">ms</span>'));
     });
 
-    test('no longer claims TTID is missing a producer', () {
+    test('explains that both TTID series are one measurement', () {
       final String html = render(
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
       expect(html, contains('TTID (cold) and TTID (warm) are one measurement'));
+      expect(html, contains('under two'));
     });
 
     test('marks a metric with no recorded value as not recorded', () {
@@ -150,7 +151,7 @@ void main() {
       );
 
       expect(html, contains('Peak memory'));
-      expect(html, contains('not recorded'));
+      expect(html, contains('<span class="muted">not recorded</span>'));
     });
 
     test('gives each journey its own heading', () {
