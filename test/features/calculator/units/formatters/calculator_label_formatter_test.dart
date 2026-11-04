@@ -137,6 +137,88 @@ void main() {
       },
     );
 
+    test('gives a bracket chip a worded screen-reader label, the open and '
+        'the closed bracket apart, since the chip\'s own would read the same '
+        'for both', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+      const open = CoreCalculatorChip(
+        type: CoreCalculatorChipType.bracketOpen,
+        value: '3×4',
+      );
+      const closed = CoreCalculatorChip(
+        type: CoreCalculatorChipType.bracketClosed,
+        value: '3×4',
+      );
+
+      final localized = labels.localizeChips([open, closed]);
+
+      expect(
+        localized[0].semanticsLabel,
+        l10n.calculatorBracketOpenSemantics('3×4'),
+      );
+      expect(
+        localized[1].semanticsLabel,
+        l10n.calculatorBracketClosedSemantics('3×4'),
+      );
+      expect(
+        localized[0].semanticsLabel,
+        isNot(equals(localized[1].semanticsLabel)),
+      );
+    });
+
+    test('a bracket led by an operator is read with it, as a value chip is, '
+        'whichever of the four operators its factor draws', () {
+      final l10n = AppLocalizationsEn();
+      final labels = CalculatorLabelFormatter(l10n);
+      const leads = {
+        CoreIcons.addOperator: '+',
+        CoreIcons.subtractOperator: '−',
+        CoreIcons.multiplyOperator: '×',
+        CoreIcons.divide: '÷',
+      };
+
+      for (final MapEntry(key: factor, value: symbol) in leads.entries) {
+        final localized = labels.localizeChips([
+          CoreCalculatorChip(
+            type: CoreCalculatorChipType.bracketOpen,
+            value: '3×4',
+            factor: factor,
+          ),
+          CoreCalculatorChip(
+            type: CoreCalculatorChipType.bracketClosed,
+            value: '3×4',
+            factor: factor,
+          ),
+        ]);
+
+        expect(
+          localized[0].semanticsLabel,
+          '$symbol${l10n.calculatorBracketOpenSemantics('3×4')}',
+          reason: 'open bracket after $symbol',
+        );
+        expect(
+          localized[1].semanticsLabel,
+          '$symbol${l10n.calculatorBracketClosedSemantics('3×4')}',
+          reason: 'closed bracket after $symbol',
+        );
+      }
+    });
+
+    test('a bracket just opened, with nothing inside yet, is read with an '
+        'empty inside rather than the word null', () {
+      final l10n = AppLocalizationsEn();
+      const open = CoreCalculatorChip(type: CoreCalculatorChipType.bracketOpen);
+
+      final localized = CalculatorLabelFormatter(l10n).localizeChips([open]);
+
+      expect(
+        localized.single.semanticsLabel,
+        l10n.calculatorBracketOpenSemantics(''),
+      );
+      expect(localized.single.semanticsLabel, isNot(contains('null')));
+    });
+
     test('leaves a chip with no label unlabelled', () {
       final labels = CalculatorLabelFormatter(AppLocalizationsEn());
       const chip = CoreCalculatorChip(

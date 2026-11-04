@@ -2,12 +2,21 @@ import 'package:construculator/features/calculator/presentation/bloc/calculator_
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// The calculator screen: the display area, the suggestion strip and the
+/// keyboard over one [CalculatorBloc] the page owns. It is pushed above the
+/// shell, so ✕ with no value in progress leaves it through [router] and
+/// returns to Home (UX Design Doc Section 1.1).
 class CalculatorPage extends StatefulWidget {
-  const CalculatorPage({super.key});
+  /// Pops the page when the bloc says the calculator closes.
+  final AppRouter router;
+
+  /// Creates the page over the app's [router].
+  const CalculatorPage({super.key, required this.router});
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
@@ -176,7 +185,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: SafeArea(
-          child: BlocBuilder<CalculatorBloc, CalculatorState>(
+          child: BlocConsumer<CalculatorBloc, CalculatorState>(
+            listenWhen: (previous, current) =>
+                current.closesCalculator && !previous.closesCalculator,
+            listener: (_, _) => widget.router.pop(),
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
               final dependentKeys = state.dependentKeys;
@@ -209,9 +221,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
                                   bloc.add(const CalculatorReadAsAccepted()),
                             ),
                         ],
-                        // TODO: [CA-1092] Close the calculator when ✕ is
-                        // refused with nothing being typed (Section 1.1).
-                        // https://ripplearc.youtrack.cloud/issue/CA-1092
                         onClose: () =>
                             bloc.add(const CalculatorActiveValueCleared()),
                         onStageChanged: (stage) {

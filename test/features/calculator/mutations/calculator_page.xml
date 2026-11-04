@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR PAGE: ✕ AT REST LEAVES FOR HOME (T1a, CA-1092) -->
+    <!-- Targets: the one listener that pops the page when the bloc says the
+         calculator closes, and only on the state that says it first. -->
+
+    <files>
+        <file>lib/features/calculator/presentation/pages/calculator_page.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the page never leaves -->
+        <regex pattern="current\.closesCalculator &amp;&amp; !previous\.closesCalculator," dotAll="true" id="calculator_page.close.never_pops">
+            <mutation text="false,"/>
+        </regex>
+
+        <!-- RULE 2: every later state pops the page again -->
+        <regex pattern="current\.closesCalculator &amp;&amp; !previous\.closesCalculator," dotAll="true" id="calculator_page.close.pops_again">
+            <mutation text="current.closesCalculator,"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="calculator_page" expected-return="0">flutter test test/features/calculator/widgets/calculator_page_interaction_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
