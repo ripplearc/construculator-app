@@ -68,6 +68,10 @@
             <mutation text="if (loadedEstimateId != null)"/>
         </regex>
 
+        <regex pattern="(transformer: \(events, mapper\) =&gt; events\.switchMap\(mapper\),)" id="cost_items.events.drop_switch_map">
+            <mutation text=""/>
+        </regex>
+
     </rules>
 
     <commands>

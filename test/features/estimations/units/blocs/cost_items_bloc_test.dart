@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_items_bloc/cost_items_bloc.dart';
@@ -156,6 +158,36 @@ void main() {
         isA<CostItemsLoaded>()
             .having((s) => s.items.length, 'items', 2)
             .having((s) => s.equipmentSubtotal, 'equipment', 600),
+      ],
+    );
+
+    final heldRead = Completer<void>();
+
+    blocTest<CostItemsBloc, CostItemsState>(
+      'a newer request replaces one that is still loading',
+      setUp: () {
+        seedItems([
+          material('m1', 100),
+          {...material('m2', 7), 'estimate_id': 'estimate-2'},
+        ]);
+        fakeSupabaseWrapper.shouldDelayOperations = true;
+        fakeSupabaseWrapper.completer = heldRead;
+      },
+      build: () => Modular.get<CostItemsBloc>(),
+      act: (bloc) async {
+        bloc.add(const CostItemsRequested(estimateId));
+        bloc.add(const CostItemsRequested('estimate-2'));
+        await bloc.stream.firstWhere((s) => s is CostItemsLoading);
+        heldRead.complete();
+        await bloc.stream.firstWhere((s) => s is CostItemsLoaded);
+      },
+      expect: () => [
+        isA<CostItemsLoading>(),
+        isA<CostItemsLoaded>().having(
+          (s) => s.items.map((item) => item.id),
+          'ids',
+          ['m2'],
+        ),
       ],
     );
 
