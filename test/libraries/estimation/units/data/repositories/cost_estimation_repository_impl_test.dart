@@ -1428,7 +1428,7 @@ void main() {
         },
       );
 
-      test('should refetch estimations when delete fails', () async {
+      test('should show the deleted estimate again when delete fails', () async {
         final maps = seedEstimations(smallDatasetSize);
         final expectedEstimations = mapsToDomainEntities(
           maps.reversed.toList(),
@@ -3226,7 +3226,31 @@ void main() {
             testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
+          expect(result.getLeftOrNull(), isA<UnexpectedFailure>());
+        },
+      );
+
+      test(
+        'a list that failed on an unreadable row is not replaced by the old list when a write republishes',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          Map<String, dynamic> broken(String createdAt) => buildEstimationMap(
+            id: 'estimate-broken',
+            projectId: testProjectId,
+            createdAt: createdAt,
+          );
+          fakePhoneDatabase.seedRows([broken('not-a-date')]);
+          expect((await queue.next).isLeft(), isTrue);
+
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          fakePhoneDatabase.replaceRow(broken('2026-07-01T00:00:00.000Z'));
+
+          expect(idsIn(await queue.next), contains('estimate-broken'));
+          await queue.cancel();
         },
       );
 

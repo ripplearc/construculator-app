@@ -121,8 +121,8 @@
         <regex pattern="_republishProject\(estimation\.projectId\);" dotAll="true" id="repo.create.skip_republish">
             <mutation text="// _republishProject(estimation.projectId);"/>
         </regex>
-        <regex pattern="if \(edit\.isReflected\(estimates, view\)\) \{" dotAll="true" id="repo.edits.apply_before_reflected_check">
-            <mutation text="if (!edit.isReflected(estimates, view)) {"/>
+        <regex pattern="if \(_isReflectedOn\(edit, estimates, view\)\) \{" dotAll="true" id="repo.edits.apply_before_reflected_check">
+            <mutation text="if (!_isReflectedOn(edit, estimates, view)) {"/>
         </regex>
         <regex pattern="if \(edit\.awaitingKeys\.remove\(streamKey\)\) edit\.wasReflected = true;" dotAll="true" id="repo.edits.never_mark_reflected">
             <mutation text="edit.awaitingKeys.remove(streamKey);"/>
@@ -145,14 +145,14 @@
         <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
             <mutation text="// edit not remembered"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(renameEdit, edit\);" dotAll="true" id="repo.edits.keep_failed_rename">
-            <mutation text="// _forgetPendingEdit(renameEdit, edit);"/>
+        <regex pattern="_forgetPendingEdit\(renameEdit\);" dotAll="true" id="repo.edits.keep_failed_rename">
+            <mutation text="// _forgetPendingEdit(renameEdit);"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(lockEdit, edit\);" dotAll="true" id="repo.edits.keep_failed_lock">
-            <mutation text="// _forgetPendingEdit(lockEdit, edit);"/>
+        <regex pattern="_forgetPendingEdit\(lockEdit\);" dotAll="true" id="repo.edits.keep_failed_lock">
+            <mutation text="// _forgetPendingEdit(lockEdit);"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(deleteEdit, edit\);" dotAll="true" id="repo.edits.keep_failed_delete">
-            <mutation text="// _forgetPendingEdit(deleteEdit, edit);"/>
+        <regex pattern="_forgetPendingEdit\(deleteEdit\);" dotAll="true" id="repo.edits.keep_failed_delete">
+            <mutation text="// _forgetPendingEdit(deleteEdit);"/>
         </regex>
         <regex pattern="showsWrite\(e\) \|\|" dotAll="true" id="repo.edits.reflected_ignores_write">
             <mutation text=""/>
@@ -206,6 +206,10 @@
         </regex>
         <regex pattern="'\$kind:\$estimationId:\$\{_editCount\+\+\}'" dotAll="true" id="repo.edits.share_key_per_row">
             <mutation text="'$kind:$estimationId'"/>
+        </regex>
+        <regex pattern="_phoneCopies\.remove\(streamKey\);\n\s*publish\(\n\s*Left\(\n\s*_handleError\(\n\s*e,\n\s*.reading estimations from the phone." dotAll="true" id="repo.local.unreadable_row_keeps_old_copy">
+            <mutation text="publish(Left(_handleError(e,
+ 'reading estimations from the phone'"/>
         </regex>
     </rules>
 
