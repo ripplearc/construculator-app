@@ -86,7 +86,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
 
     try {
       for (final operation in transaction.crud) {
-        await _processOperationUnlessRefused(operation);
+        await _processOperationUnlessRefused(database, operation);
       }
 
       await transaction.complete();
@@ -96,20 +96,165 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
-  Future<void> _processOperationUnlessRefused(CrudEntry operation) async {
+  Future<void> _processOperationUnlessRefused(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
     try {
       await _processOperation(operation);
+      await _forgetRefusalWithoutBlocking(database, operation);
     } on supabase.PostgrestException catch (error) {
       if (!_isRefusedRateChange(error, operation)) rethrow;
       // TODO: [CA-1306] Derive the rate id from its name and label so a clash is one row and later edits find it.
       // https://ripplearc.youtrack.cloud/issue/CA-1306
-      if (await _overwroteRateWithSameKey(error, operation)) return;
+      if (await _overwroteRateWithSameKey(error, operation)) {
+        await _forgetRefusalWithoutBlocking(database, operation);
+        return;
+      }
       _logger.warning(
         'The server refused a your_rates change (code ${error.code}): '
         '${error.message}. Skipping it so the queue is not blocked.',
       );
-      // TODO: [CA-1273] Tell the user the default was not kept and put back the last accepted price.
-      // https://ripplearc.youtrack.cloud/issue/CA-1273
+      await _recordRefusalWithoutBlocking(database, operation);
+    }
+  }
+
+  Future<void> _recordRefusalWithoutBlocking(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    try {
+      await _recordRefusal(database, operation);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not record the refused your_rates change; '
+        'the user will not be told it was not kept',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _forgetRefusalWithoutBlocking(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    try {
+      await _forgetRefusal(database, operation);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not forget the refusal of an accepted your_rates change; '
+        'the form may still say the price was not kept',
+        error,
+        stackTrace,
+      );
+    }
+  }
+
+  Future<void> _forgetRefusal(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    if (operation.table != DatabaseConstants.yourRatesTable) return;
+    if (_refusedRateAmount(operation) == null) return;
+    final userId = _supabaseWrapper.currentUser?.id;
+    final item = await _phoneRateOf(database, operation);
+    if (userId == null || item == null) return;
+    await database.execute(
+      'DELETE FROM ${DatabaseConstants.yourRateRefusalsTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?',
+      [_refusalKeyOf(userId, item)],
+    );
+  }
+
+  Future<Map<String, dynamic>?> _phoneRateOf(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    final row = await database.getOptional(
+      'SELECT * FROM ${DatabaseConstants.yourRatesTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?',
+      [operation.id],
+    );
+    return row == null ? null : Map<String, dynamic>.of(row);
+  }
+
+  String _refusalKeyOf(String userId, Map<String, dynamic> rate) =>
+      YourRateRefusalKey.of(
+        userId: userId,
+        companyId: rate[DatabaseConstants.companyIdColumn] as String,
+        category: rate[DatabaseConstants.categoryColumn] as String,
+        itemName: rate[DatabaseConstants.itemNameColumn] as String,
+        equipmentMethod:
+            rate[DatabaseConstants.equipmentMethodColumn] as String?,
+      );
+
+  Future<void> _recordRefusal(
+    PowerSyncDatabase database,
+    CrudEntry operation,
+  ) async {
+    final refusedAmount = _refusedRateAmount(operation);
+    if (refusedAmount == null) return;
+    final userId = _supabaseWrapper.currentUser?.id;
+    final item = await _phoneRateOf(database, operation);
+    if (userId == null || item == null) return;
+
+    await database.execute(
+      'INSERT OR REPLACE INTO ${DatabaseConstants.yourRateRefusalsTable} '
+      '(${DatabaseConstants.idColumn}, ${DatabaseConstants.userIdColumn}, '
+      '${DatabaseConstants.companyIdColumn}, '
+      '${DatabaseConstants.categoryColumn}, '
+      '${DatabaseConstants.refusedRowIdColumn}, '
+      '${DatabaseConstants.itemNameColumn}, '
+      '${DatabaseConstants.equipmentMethodColumn}, '
+      '${DatabaseConstants.entryLabelColumn}, '
+      '${DatabaseConstants.refusedAmountColumn}, '
+      '${DatabaseConstants.acceptedAmountColumn}, '
+      '${DatabaseConstants.shownAtColumn}) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+      [
+        _refusalKeyOf(userId, item),
+        userId,
+        item[DatabaseConstants.companyIdColumn],
+        item[DatabaseConstants.categoryColumn],
+        operation.id,
+        item[DatabaseConstants.itemNameColumn],
+        item[DatabaseConstants.equipmentMethodColumn],
+        item[DatabaseConstants.entryLabelColumn],
+        refusedAmount,
+        await _lastAcceptedAmountOrNull(operation, item),
+      ],
+    );
+  }
+
+  double? _refusedRateAmount(CrudEntry operation) =>
+      (operation.opData?[DatabaseConstants.rateAmountColumn] as num?)
+          ?.toDouble();
+
+  // The accepted row is found by what the item is, not by the refused row's
+  // id: a refused insert has an id the server never saw.
+  Future<double?> _lastAcceptedAmountOrNull(
+    CrudEntry operation,
+    Map<String, dynamic> item,
+  ) async {
+    try {
+      final rows = await _supabaseWrapper.selectMatch(
+        table: operation.table,
+        filters: {
+          DatabaseConstants.companyIdColumn:
+              item[DatabaseConstants.companyIdColumn],
+          DatabaseConstants.categoryColumn:
+              item[DatabaseConstants.categoryColumn],
+        },
+      );
+      final accepted = rows
+          .where((row) => _hasSameRateKey(row, item))
+          .firstOrNull;
+      return (accepted?[DatabaseConstants.rateAmountColumn] as num?)
+          ?.toDouble();
+    } catch (error) {
+      _logger.warning('Could not read the last accepted price: $error');
+      return null;
     }
   }
 
@@ -175,6 +320,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     final code = PostgresErrorCode.fromCode(error.code);
     return code == PostgresErrorCode.checkViolation ||
         code == PostgresErrorCode.uniqueViolation ||
+        code == PostgresErrorCode.rlsViolation ||
         (operation.op == UpdateType.patch &&
             code == PostgresErrorCode.noDataFound);
   }

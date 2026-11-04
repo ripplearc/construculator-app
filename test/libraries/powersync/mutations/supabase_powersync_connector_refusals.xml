@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SUPABASE POWERSYNC CONNECTOR MUTATION TESTING (recording a refused default) -->
+
+    <files>
+        <file>lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(refusedAmount == null\) return;" id="connector.refusal.skip_when_amount_missing">
+            <mutation text="if (refusedAmount != null) return;"/>
+        </regex>
+
+        <regex pattern="if \(item == null\) return;" id="connector.refusal.skip_when_row_missing">
+            <mutation text="if (item != null) return;"/>
+        </regex>
+
+        <regex pattern="operation\.id,\s*item\[DatabaseConstants\.itemNameColumn\]," id="connector.refusal.wrong_row_id">
+            <mutation text="'', item[DatabaseConstants.itemNameColumn],"/>
+        </regex>
+
+        <regex pattern="_refusalKeyOf\(item\)," id="connector.refusal.wrong_key">
+            <mutation text="'',"/>
+        </regex>
+
+        <regex pattern="refusedAmount," id="connector.refusal.wrong_refused_amount">
+            <mutation text="0.0,"/>
+        </regex>
+
+        <regex pattern="await _lastAcceptedAmountOrNull\(operation, item\)," id="connector.refusal.drop_accepted">
+            <mutation text="null,"/>
+        </regex>
+
+        <regex pattern="return \(accepted\?\[DatabaseConstants\.rateAmountColumn\] as num\?\)\s*\?\.toDouble\(\);" id="connector.refusal.drop_accepted_value">
+            <mutation text="return null;"/>
+        </regex>
+
+        <regex pattern="\.where\(\(row\) =&gt; _hasSameRateKey\(row, item\)\)" id="connector.refusal.any_row_is_accepted">
+            <mutation text=".where((row) =&gt; true)"/>
+        </regex>
+
+        <regex pattern="DatabaseConstants\.companyIdColumn:\s*item\[DatabaseConstants\.companyIdColumn\]," id="connector.refusal.wrong_accepted_company">
+            <mutation text="DatabaseConstants.companyIdColumn: '',"/>
+        </regex>
+
+        <regex pattern="DatabaseConstants\.categoryColumn:\s*item\[DatabaseConstants\.categoryColumn\]," id="connector.refusal.wrong_accepted_category">
+            <mutation text="DatabaseConstants.categoryColumn: '',"/>
+        </regex>
+
+        <regex pattern="code == PostgresErrorCode\.rlsViolation \|\|" id="connector.refusal.rls_not_refusal">
+            <mutation text="false ||"/>
+        </regex>
+
+        <regex pattern="await _recordRefusalWithoutBlocking\(database, operation\);" id="connector.refusal.never_record">
+            <mutation text="// not recorded"/>
+        </regex>
+
+        <regex pattern="await _forgetRefusalWithoutBlocking\(database, operation\);" id="connector.refusal.never_forget">
+            <mutation text="// not forgotten"/>
+        </regex>
+
+        <regex pattern="if \(operation\.table != DatabaseConstants\.yourRatesTable\) return;" id="connector.refusal.forget_on_other_table">
+            <mutation text=""/>
+        </regex>
+
+
+        <regex pattern="if \(_refusedRateAmount\(operation\) == null\) return;" id="connector.refusal.forget_without_price">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="operation\.opData\?\[DatabaseConstants\.rateAmountColumn\]" id="connector.refusal.no_amount_read">
+            <mutation text="null"/>
+        </regex>
+
+        <regex pattern="saved\[DatabaseConstants\.equipmentMethodColumn\] ==\s*rate\[DatabaseConstants\.equipmentMethodColumn\] &amp;&amp;" id="connector.refusal.same_key_ignores_method">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+
+        <regex pattern="_rateKey\(saved\[DatabaseConstants\.entryLabelColumn\]\) ==\s*_rateKey\(rate\[DatabaseConstants\.entryLabelColumn\]\);" id="connector.refusal.same_key_ignores_label">
+            <mutation text="true;"/>
+        </regex>
+
+        <regex pattern="return _rateKey\(saved\[DatabaseConstants\.itemNameColumn\]\) ==\s*_rateKey\(rate\[DatabaseConstants\.itemNameColumn\]\) &amp;&amp;" id="connector.refusal.same_key_ignores_name">
+            <mutation text="return true &amp;&amp;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="connector_refusals" expected-return="0">flutter test test/features/estimations/units/data/your_rates_upload_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
