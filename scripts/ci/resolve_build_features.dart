@@ -254,9 +254,8 @@ void main(List<String> args) {
 File _manifestFile(Directory projectRoot, String flavor) =>
     File('${projectRoot.path}/config/flavors/$flavor.json');
 
-String _withoutComments(String code) => code
-    .replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '')
-    .replaceAll(RegExp(r'//[^\n]*'), '');
+String _withoutComments(String code) =>
+    code.replaceAll(RegExp(r'//[^\n]*|/\*.*?\*/', dotAll: true), '');
 
 String _readRequired(File file, String description) {
   if (!file.existsSync()) {

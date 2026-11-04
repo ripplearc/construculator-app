@@ -164,13 +164,18 @@
         </regex>
 
         <!-- RULE 31: Keep block comments in the source text -->
-        <regex pattern="RegExp\(r'/\\\*\.\*\?\\\*/', dotAll: true\)" dotAll="true" id="comments.keep_block_comments">
-            <mutation text="RegExp(r'/\\\*NEVER\\\*/', dotAll: true)"/>
+        <regex pattern="RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\)" dotAll="true" id="comments.keep_block_comments">
+            <mutation text="RegExp(r'//.*')"/>
         </regex>
 
         <!-- RULE 32: Keep line comments in the source text -->
-        <regex pattern="\.replaceAll\(RegExp\(r'//\[\^\\n\]\*'\), ''\)" dotAll="true" id="comments.keep_line_comments">
-            <mutation text=".replaceAll(RegExp(r'NEVER'), '')"/>
+        <regex pattern="RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\)" dotAll="true" id="comments.keep_line_comments">
+            <mutation text="RegExp(r'/[*].*?[*]/', dotAll: true)"/>
+        </regex>
+
+        <!-- RULE 32b: Remove block comments first and line comments second, as the tool did before -->
+        <regex pattern="code\.replaceAll\(RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\), ''\)" dotAll="true" id="comments.remove_block_before_line">
+            <mutation text="code.replaceAll(RegExp(r'/[*].*?[*]/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '')"/>
         </regex>
 
         <!-- RULE 33: Accept a feature listed twice -->
@@ -180,7 +185,7 @@
 
         <!-- RULE 34: Let a file system error escape -->
         <regex pattern="on FileSystemException catch \(error\) \{" dotAll="true" id="cli.skip_file_system_error">
-            <mutation text="on ArgumentError catch (error) {"/>
+            <mutation text="on FileSystemException catch (error) { rethrow;"/>
         </regex>
     </rules>
 

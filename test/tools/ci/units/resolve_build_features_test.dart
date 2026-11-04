@@ -184,6 +184,33 @@ void main() {
         '{\n  "ENABLE_CALCULATOR": false,\n  "ENABLE_GLOBAL_SEARCH": false\n}\n',
       );
     });
+
+    test(
+      'a comment with a glob path does not hide the enum values around it',
+      () {
+        writeFile(
+          'lib/libraries/config/feature_availability.dart',
+          'enum Feature {\n'
+              '  /// Screens under lib/features/calculator/*.dart\n'
+              '  calculator,\n'
+              '  /// New one. Tests under test/features/**/search_test.dart\n'
+              '  globalSearch,\n'
+              '}\n',
+        );
+        writeBuildFeatures(<String>[
+          'ENABLE_CALCULATOR',
+          'ENABLE_GLOBAL_SEARCH',
+        ]);
+        writeNestedManifests();
+
+        resolveBuildFeatures('prod', root);
+
+        expect(
+          resolvedFile('prod'),
+          '{\n  "ENABLE_CALCULATOR": false,\n  "ENABLE_GLOBAL_SEARCH": false\n}\n',
+        );
+      },
+    );
   });
 
   group('a missing or broken manifest', () {
