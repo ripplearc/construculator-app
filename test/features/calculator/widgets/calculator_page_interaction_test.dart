@@ -3,6 +3,7 @@ import 'package:construculator/features/calculator/presentation/formatters/calcu
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     Size size = const Size(390, 844),
+    FakeAppRouter? router,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -21,7 +23,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: router ?? FakeAppRouter()),
       ),
     );
   }
@@ -198,10 +200,10 @@ void main() {
   });
 
   testWidgets('the display area close control empties the value being typed '
-      'and keeps its key, and with nothing typed it is refused', (
-    tester,
-  ) async {
-    await pumpPage(tester);
+      'and keeps its key, and with nothing typed it leaves the calculator '
+      'for Home (Section 1.1)', (tester) async {
+    final router = FakeAppRouter();
+    await pumpPage(tester, router: router);
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(CoreKeyboard)),
@@ -216,12 +218,70 @@ void main() {
     expect(bloc.state.labelKeyId, 'Length');
     expect(bloc.state.valueText, '');
     expect(bloc.state.refusal, isNull);
+    expect(router.popCalls, 0);
 
     await tester.tap(find.bySemanticsLabel(l10n.closeButton));
     await tester.pump();
+    expect(bloc.state.refusal, isNull);
+    expect(bloc.state.closesCalculator, isTrue);
+    expect(router.popCalls, 1);
+  });
+
+  testWidgets('✕ on the empty tape leaves the calculator at once, and no '
+      'toast is asked for', (tester) async {
+    final router = FakeAppRouter();
+    await pumpPage(tester, router: router);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+
+    await tester.tap(find.bySemanticsLabel(l10n.closeButton));
+    await tester.pump();
+
+    expect(router.popCalls, 1);
+    expect(router.navigationHistory, isEmpty);
+    expect(blocOf(tester).state.refusal, isNull);
+
+    blocOf(tester).add(const CalculatorGroupSelected(1));
+    await tester.pump();
+
+    expect(blocOf(tester).state.closesCalculator, isTrue);
+    expect(router.popCalls, 1);
+  });
+
+  testWidgets('a bracket is one chip on the tape, in its open face while the '
+      'keypad types inside it and in its closed face once it has its ")", '
+      'with the chips before it dimmed only while it is open', (tester) async {
+    await pumpPage(tester);
+
+    await press(tester, 'calc_key_two');
+    await press(tester, 'calc_key_add');
+    await press(tester, 'calc_key_paren');
+    await press(tester, 'calc_key_three');
+
+    CoreCalculatorChip chipOf(CoreCalculatorChipType type) => tester.widget(
+      find.byWidgetPredicate(
+        (widget) => widget is CoreCalculatorChip && widget.type == type,
+      ),
+    );
+    final open = chipOf(CoreCalculatorChipType.bracketOpen);
+    expect(open.displayedValue, '(3');
+    expect(open.factor, CoreIcons.addOperator);
+    expect(chipOf(CoreCalculatorChipType.editable).inert, isTrue);
+
+    await press(tester, 'calc_key_paren');
+
+    final closed = chipOf(CoreCalculatorChipType.bracketClosed);
+    expect(closed.displayedValue, '(3)');
+    expect(closed.factor, CoreIcons.addOperator);
+    expect(chipOf(CoreCalculatorChipType.editable).inert, isFalse);
     expect(
-      bloc.state.refusal,
-      const TapeRefused(TapeRefusal.nothingBeingTyped),
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CoreCalculatorChip &&
+            widget.type == CoreCalculatorChipType.bracketOpen,
+      ),
+      findsNothing,
     );
   });
 
