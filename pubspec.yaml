@@ -47,6 +47,8 @@ dependencies:
   # version so lib/ may import it to move old sessions into secure storage.
   shared_preferences: 2.5.5
 
+  connectivity_plus: 7.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
