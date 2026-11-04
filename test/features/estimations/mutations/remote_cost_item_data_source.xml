@@ -135,6 +135,14 @@
         <regex pattern="return estimate\?\[DatabaseConstants\.estimateNameColumn\] as String\?;" id="cost_item.estimate_name.return_null">
             <mutation text="return null;"/>
         </regex>
+
+        <!-- The estimate lookup reads only the newest 50 lines -->
+        <regex pattern="limit: _estimateLookupLineLimit," id="cost_item.lookup.drop_limit">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="_estimateLookupLineLimit = 50;" id="cost_item.lookup.change_limit">
+            <mutation text="_estimateLookupLineLimit = 5;"/>
+        </regex>
     </rules>
 
     <commands>

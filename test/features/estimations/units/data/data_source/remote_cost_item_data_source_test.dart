@@ -505,6 +505,22 @@ void main() {
         expect(name, 'Garage');
       });
 
+      test('reads only the 50 newest matching lines', () async {
+        seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Garage')]);
+
+        await dataSource.fetchNewestEstimateNameByEquipmentRate(
+          companyId: 'company-1',
+          itemName: 'Mini excavator',
+          pricingMethod: 'job',
+          rateAmount: 450.0,
+        );
+
+        expect(
+          fakeSupabaseWrapper.getMethodCallsFor('selectMatch').single['limit'],
+          50,
+        );
+      });
+
       test('does not retry the read', () async {
         seedItemTable([equipmentLine(id: 'line-1', estimateName: 'Garage')]);
 

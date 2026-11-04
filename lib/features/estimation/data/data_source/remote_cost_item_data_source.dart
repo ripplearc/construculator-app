@@ -22,6 +22,11 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   /// How long the estimate lookup waits for the server before it gives up.
   final Duration lookupTimeout;
 
+  /// How many of the newest matching lines the estimate lookup reads. A line
+  /// further back is not found, and the message is then shown without an
+  /// estimate name.
+  static const _estimateLookupLineLimit = 50;
+
   RemoteCostItemDataSource({
     required this._supabaseWrapper,
     this.lookupTimeout = const Duration(seconds: 3),
@@ -123,6 +128,7 @@ class RemoteCostItemDataSource implements CostItemDataSource {
           },
           orderBy: DatabaseConstants.createdAtColumn,
           ascending: false,
+          limit: _estimateLookupLineLimit,
           retry: false,
         )
         .timeout(lookupTimeout);
