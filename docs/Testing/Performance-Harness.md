@@ -282,6 +282,15 @@ If scheduled runs still start before the laptop has finished waking, set it to
 never sleep while on AC power and to do nothing when the lid closes. Windows
 power settings are not managed by this repository.
 
+### `Installing ... apk` never finishes
+
+On the lab phone a streamed `adb install` stalls about half the time. A plain
+`adb push` of the same file and `adb install --no-streaming` do not. Flutter
+cannot pass `--no-streaming`, so the workflow's `Install APKs without streaming`
+step builds an SDK folder whose `adb` adds it (`make_no_streaming_adb_sdk.sh`)
+and points `ANDROID_HOME` at that folder. If an install still hangs, check that
+this step ran, then time `adb install --no-streaming` by hand on the lab machine.
+
 ### No `start_up_info.json` produced
 
 Startup tracing is only downloaded by `flutter run --trace-startup`.
