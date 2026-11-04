@@ -314,6 +314,7 @@ void main() {
               find.byKey(const Key('rate_field')),
               '85.55',
             );
+            await tester.pump();
             await tester.enterText(
               find.byKey(const Key('rate_field')),
               '85.555',

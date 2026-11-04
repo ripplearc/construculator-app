@@ -7,7 +7,6 @@ import 'package:construculator/features/estimation/presentation/bloc/equipment_c
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
-import 'package:construculator/features/estimation/presentation/widgets/underline_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
@@ -154,7 +153,7 @@ void main() {
     final focus = FocusManager.instance.primaryFocus;
     expect(focus, isNotNull);
     focus!.unfocus();
-    await tester.pump();
+    await tester.pumpAndSettle();
   }
 
   RateStatus rateStatusOf(WidgetTester tester) {
@@ -192,7 +191,11 @@ void main() {
   // the bloc decides whether the submit needs the outsized-fee dialog.
   Future<void> triggerOutsizedFeeCheck(WidgetTester tester) async {
     final nameField = find.byKey(const Key('equipment_name_field'));
-    if (tester.widget<UnderlineTextField>(nameField).controller.text.isEmpty) {
+    if (tester
+        .widget<CoreUnderlineTextField>(nameField)
+        .controller!
+        .text
+        .isEmpty) {
       await tester.enterText(nameField, 'Excavator');
       await tester.pump();
     }
@@ -578,10 +581,10 @@ void main() {
       await tester.tap(find.byKey(const Key('job_method_chip')));
       await tester.pumpAndSettle();
 
-      final nameField = tester.widget<UnderlineTextField>(
+      final nameField = tester.widget<CoreUnderlineTextField>(
         find.byKey(const Key('equipment_name_field')),
       );
-      expect(nameField.errorTextList, isNull);
+      expect(nameField.errorText, isNull);
       expect(find.text(l10n.equipmentAmountOutOfRangeError), findsNothing);
     });
 
@@ -620,10 +623,10 @@ void main() {
       await tester.pump();
       expect(
         tester
-            .widget<UnderlineTextField>(
+            .widget<CoreUnderlineTextField>(
               find.byKey(const Key('equipment_name_field')),
             )
-            .errorTextList,
+            .errorText,
         isNull,
       );
 
@@ -631,10 +634,10 @@ void main() {
       await tester.pump();
       expect(
         tester
-            .widget<UnderlineTextField>(
+            .widget<CoreUnderlineTextField>(
               find.byKey(const Key('equipment_name_field')),
             )
-            .errorTextList,
+            .errorText,
         isNull,
       );
     });
@@ -684,6 +687,23 @@ void main() {
           find.text(l10n.equipmentDurationNotPositiveError),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets(
+      'shows no duration error when Job removes the focused field and Day brings it back',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('day_method_chip')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
       },
     );
 
@@ -748,7 +768,7 @@ void main() {
 
       await unfocusAll(tester);
 
-      expect(labelColor(), colors.statusError);
+      expect(labelColor(), colors.textError);
     });
 
     testWidgets(
@@ -1262,10 +1282,10 @@ void main() {
 
         expect(
           tester
-              .widget<UnderlineTextField>(
+              .widget<CoreUnderlineTextField>(
                 find.byKey(const Key('delivery_fee_field')),
               )
-              .errorTextList,
+              .errorText,
           isNull,
         );
       },
@@ -1288,10 +1308,10 @@ void main() {
 
         expect(
           tester
-              .widget<UnderlineTextField>(
+              .widget<CoreUnderlineTextField>(
                 find.byKey(const Key('delivery_fee_field')),
               )
-              .errorTextList,
+              .errorText,
           isNull,
         );
       },
@@ -2826,7 +2846,7 @@ void main() {
       Future<void> editAmount(WidgetTester tester, String amount) async {
         await typeAmount(tester, amount);
         FocusManager.instance.primaryFocus!.unfocus();
-        await tester.pump();
+        await tester.pumpAndSettle();
       }
 
       Future<void> saveUnderLabel(WidgetTester tester) async {
@@ -2934,7 +2954,7 @@ void main() {
         );
 
         FocusManager.instance.primaryFocus!.unfocus();
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('recalled_amount_hint')), findsOneWidget);
         expect(
@@ -3758,8 +3778,8 @@ void main() {
     };
 
     String fieldText(WidgetTester tester, String fieldKey) => tester
-        .widget<UnderlineTextField>(find.byKey(Key(fieldKey)))
-        .controller
+        .widget<CoreUnderlineTextField>(find.byKey(Key(fieldKey)))
+        .controller!
         .text;
 
     Finder limitHint(String fieldKey) => fieldKey == deliveryField
