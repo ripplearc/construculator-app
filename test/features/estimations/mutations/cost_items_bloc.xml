@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ITEMS BLOC MUTATION TESTING -->
+    <!-- Targets: subtotal per type, load/refresh flow, failure path -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/cost_items_bloc/cost_items_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="(item\.itemType == type)" id="cost_items.subtotal.negate_type">
+            <mutation text="item.itemType != type"/>
+        </regex>
+
+        <regex pattern="(item\.itemTotalCost \* 100)" id="cost_items.subtotal.wrong_scale">
+            <mutation text="item.itemTotalCost * 10"/>
+        </regex>
+
+        <regex pattern="(\(item\.itemTotalCost \* 100\)\.round\(\))" id="cost_items.subtotal.drop_rounding">
+            <mutation text="(item.itemTotalCost * 100).truncate()"/>
+        </regex>
+
+        <regex pattern="(sum \+ \()" id="cost_items.subtotal.subtract">
+            <mutation text="sum - ("/>
+        </regex>
+
+        <regex pattern="(return cents / 100;)" id="cost_items.subtotal.wrong_divisor">
+            <mutation text="return cents / 10;"/>
+        </regex>
+
+        <regex pattern="(materialsSubtotal: _subtotalOf\(items, CostItemType\.material\))" id="cost_items.loaded.materials_uses_labor">
+            <mutation text="materialsSubtotal: _subtotalOf(items, CostItemType.labor)"/>
+        </regex>
+
+        <regex pattern="(laborSubtotal: _subtotalOf\(items, CostItemType\.labor\))" id="cost_items.loaded.labor_uses_equipment">
+            <mutation text="laborSubtotal: _subtotalOf(items, CostItemType.equipment)"/>
+        </regex>
+
+        <regex pattern="(equipmentSubtotal: _subtotalOf\(items, CostItemType\.equipment\))" id="cost_items.loaded.equipment_uses_material">
+            <mutation text="equipmentSubtotal: _subtotalOf(items, CostItemType.material)"/>
+        </regex>
+
+        <regex pattern="(items: items,)" id="cost_items.loaded.drop_items">
+            <mutation text="items: const [],"/>
+        </regex>
+
+        <regex pattern="(\(failure\) =&gt; emit\(CostItemsFailure\(failure\)\))" id="cost_items.failure.emit_loading">
+            <mutation text="(failure) =&gt; emit(const CostItemsLoading())"/>
+        </regex>
+
+        <regex pattern="(emit\(const CostItemsLoading\(\)\);)" id="cost_items.request.skip_loading">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(_estimateId = estimateId;)" id="cost_items.request.forget_estimate">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(loadedEstimateId == null\) return;)" id="cost_items.refresh.skip_guard">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(loadedEstimateId == null\))" id="cost_items.refresh.invert_guard">
+            <mutation text="if (loadedEstimateId != null)"/>
+        </regex>
+
+        <regex pattern="(transformer: \(events, mapper\) =&gt; events\.switchMap\(mapper\),)" id="cost_items.events.drop_switch_map">
+            <mutation text=""/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="cost_items_bloc" expected-return="0">fvm flutter test test/features/estimations/units/blocs/cost_items_bloc_test.dart</command>
+    </commands>
+</mutations>
