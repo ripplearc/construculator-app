@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ITEM REPOSITORY IMPL MUTATION TESTING -->
+    <!-- Targets: getCostItemsForEstimate -->
+
+    <files>
+        <file>lib/features/estimation/data/repositories/cost_item_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="(return Right\(dtos\.map\(\(dto\) =&gt; dto\.toEntity\(\)\)\.toList\(\)\);)" id="cost_item_repo.get.return_empty">
+            <mutation text="return const Right(&lt;CostItem&gt;[]);"/>
+        </regex>
+
+        <regex pattern="(return Right\(dtos\.map\(\(dto\) =&gt; dto\.toEntity\(\)\)\.toList\(\)\);)" id="cost_item_repo.get.reverse_order">
+            <mutation text="return Right(dtos.map((dto) =&gt; dto.toEntity()).toList().reversed.toList());"/>
+        </regex>
+
+        <regex pattern="(estimateId: estimateId,\s*\);\s*if \(dtos)" id="cost_item_repo.get.wrong_estimate">
+            <mutation text="estimateId: '', ); if (dtos"/>
+        </regex>
+
+        <regex pattern="(return _handleError\(e, 'fetching cost items'\);)" id="cost_item_repo.get.swallow_error">
+            <mutation text="return const Right(&lt;CostItem&gt;[]);"/>
+        </regex>
+        <regex pattern="(if \(dtos\.length &gt;= _maxRowsPerRequest\))" id="cost_item_repo.get.limit_off_by_one">
+            <mutation text="if (dtos.length &gt; _maxRowsPerRequest)"/>
+        </regex>
+
+        <regex pattern="(if \(dtos\.length &gt;= _maxRowsPerRequest\))" id="cost_item_repo.get.limit_never">
+            <mutation text="if (false)"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_item_repository_impl" expected-return="0">fvm flutter test test/features/estimations/units/data/repositories/cost_item_repository_impl_test.dart</command>
+    </commands>
+</mutations>
