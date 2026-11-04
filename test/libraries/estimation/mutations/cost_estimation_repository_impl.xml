@@ -145,9 +145,6 @@
         <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
             <mutation text="// edit not remembered"/>
         </regex>
-        <regex pattern="if \(identical\(_pendingEdits\[editKey\], edit\)\) _pendingEdits\.remove\(editKey\);" dotAll="true" id="repo.edits.forget_other_calls_edit">
-            <mutation text="_pendingEdits.remove(editKey);"/>
-        </regex>
         <regex pattern="_forgetPendingEdit\(renameEdit, edit\);" dotAll="true" id="repo.edits.keep_failed_rename">
             <mutation text="// _forgetPendingEdit(renameEdit, edit);"/>
         </regex>
@@ -200,6 +197,15 @@
             <mutation text="edit.wasReflected = false;
     }
     _pendingEdits[editKey]"/>
+        </regex>
+        <regex pattern="return !rowIsStillBeingCreated &amp;&amp; edit\.isReflected\(estimates, view\);" dotAll="true" id="repo.edits.ignore_row_still_being_created">
+            <mutation text="return edit.isReflected(estimates, view);"/>
+        </regex>
+        <regex pattern="_pendingEdits\.containsKey\('create:\$estimationId'\) &amp;&amp;" dotAll="true" id="repo.edits.created_check_ignores_pending_create">
+            <mutation text="false &amp;&amp;"/>
+        </regex>
+        <regex pattern="'\$kind:\$estimationId:\$\{_editCount\+\+\}'" dotAll="true" id="repo.edits.share_key_per_row">
+            <mutation text="'$kind:$estimationId'"/>
         </regex>
     </rules>
 
