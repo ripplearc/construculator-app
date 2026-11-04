@@ -163,9 +163,21 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _deliveryFeeController.addListener(_onDeliveryFeeChanged);
     _deliveryFocusNode.addListener(_onDeliveryFocusChanged);
     _noteController.addListener(_onDescriptionChanged);
-    _markTouchedOnBlur(_durationFocusNode, 'duration_field');
-    _markTouchedOnBlur(_dailyRateFocusNode, 'rate_field');
-    _markTouchedOnBlur(_jobAmountFocusNode, 'amount_field');
+    _markTouchedOnBlur(
+      _durationFocusNode,
+      'duration_field',
+      shownFor: (method) => method == EquipmentPricingMethod.day,
+    );
+    _markTouchedOnBlur(
+      _dailyRateFocusNode,
+      'rate_field',
+      shownFor: (method) => method == EquipmentPricingMethod.day,
+    );
+    _markTouchedOnBlur(
+      _jobAmountFocusNode,
+      'amount_field',
+      shownFor: (method) => method == EquipmentPricingMethod.job,
+    );
     final initialEntry = widget.initialRateEntry;
     if (initialEntry != null) {
       _applySavedRate(initialEntry, fromRecents: true);
@@ -390,12 +402,24 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     widget.onTotalChanged?.call(hasFieldError ? 0 : data.lineTotal);
   }
 
-  void _markTouchedOnBlur(FocusNode node, String fieldKey) {
+  void _markTouchedOnBlur(
+    FocusNode node,
+    String fieldKey, {
+    required bool Function(EquipmentPricingMethod method) shownFor,
+  }) {
     var hadFocus = false;
     node.addListener(() {
+      if (!mounted) return;
       if (node.hasFocus) {
         hadFocus = true;
-      } else if (hadFocus && _touchedFieldKeys.add(fieldKey) && mounted) {
+        return;
+      }
+      final method = context
+          .read<EquipmentCostFormBloc>()
+          .state
+          .formData
+          .method;
+      if (hadFocus && shownFor(method) && _touchedFieldKeys.add(fieldKey)) {
         setState(() {});
       }
     });

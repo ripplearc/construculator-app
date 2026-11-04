@@ -691,6 +691,23 @@ void main() {
     );
 
     testWidgets(
+      'shows no duration error when Job removes the focused field and Day brings it back',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '0');
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('job_method_chip')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('day_method_chip')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.equipmentDurationNotPositiveError), findsNothing);
+      },
+    );
+
+    testWidgets(
       'shows the half-day error when the field loses focus with 1.3',
       (tester) async {
         await tester.pumpWidget(makeWidget());
