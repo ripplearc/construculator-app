@@ -80,11 +80,11 @@ ENVIRONMENT=perf bash scripts/ci/generate_env_file.sh
 
 bash scripts/perf/capture_perf_run.sh \
   --device-id <device-id> \
-  --output-dir build/perf/local
+  --output-dir /tmp/perf-local
 
 fvm dart run scripts/perf/build_perf_report.dart \
-  --input build/perf/local \
-  --output build/perf/local/perf-run.json
+  --input /tmp/perf-local \
+  --output /tmp/perf-local/perf-run.json
 ```
 
 `publish_perf_run.sh` does not push unless given `--push`, so it is safe to run
@@ -109,8 +109,9 @@ The clean is not optional. flutter does not rebuild when only the entry-point
 `--target` changes, so without it the drive legs run whatever the startup legs
 compiled (`lib/main.dart`) instead of the journey, and the driver never
 connects. Because a clean deletes `build/`, `capture_perf_run.sh` stages every
-artifact in a temporary directory and copies the finished set to `--output-dir`
-at the end.
+artifact in a temporary directory and copies each phase to `--output-dir` as soon
+as it finishes. `--output-dir` must therefore be outside `build/`, and the script
+refuses a path under it. The workflow uses `$RUNNER_TEMP/perf/<run id>`.
 
 The **jank leg** runs with `--no-dds`. The `integration_test` binding's
 `traceAction` opens its own VM-service connection to record the timeline, and

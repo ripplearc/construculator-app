@@ -82,7 +82,10 @@ jobs:
           fi
           echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
           echo "iterations=${INPUT_ITERATIONS:-5}" >> "$GITHUB_OUTPUT"
-          echo "run_id=$(date -u +%Y-%m-%dT%H-%M-%SZ)" >> "$GITHUB_OUTPUT"
+          RUN_ID="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          # Not under build/: every drive leg runs `flutter clean`, which deletes it.
+          echo "output_dir=$RUNNER_TEMP/perf/$RUN_ID" >> "$GITHUB_OUTPUT"
 
       - name: Install Flutter version via FVM
         run: fvm install
@@ -120,14 +123,14 @@ jobs:
         run: |
           bash scripts/perf/capture_perf_run.sh \
             --device-id "${{ steps.params.outputs.device_id }}" \
-            --output-dir "build/perf/${{ steps.params.outputs.run_id }}" \
+            --output-dir "${{ steps.params.outputs.output_dir }}" \
             --iterations "${{ steps.params.outputs.iterations }}"
 
       - name: Build perf-run.json
         run: |
           fvm dart run scripts/perf/build_perf_report.dart \
-            --input "build/perf/${{ steps.params.outputs.run_id }}" \
-            --output "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json"
+            --input "${{ steps.params.outputs.output_dir }}" \
+            --output "${{ steps.params.outputs.output_dir }}/perf-run.json"
 
       - name: Publish run to trend store
         # Only runs measured on the default branch become trend points. A
@@ -141,7 +144,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           bash scripts/perf/publish_perf_run.sh \
-            --run-file "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json" \
+            --run-file "${{ steps.params.outputs.output_dir }}/perf-run.json" \
             --push
 
       - name: Upload performance run
@@ -153,6 +156,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: perf-run-${{ steps.params.outputs.run_id }}
-          path: build/perf/${{ steps.params.outputs.run_id }}
+          path: ${{ steps.params.outputs.output_dir }}
           if-no-files-found: error
           retention-days: 90

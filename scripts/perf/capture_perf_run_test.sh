@@ -57,7 +57,7 @@ run_target() {
   OUTPUT="$(cd "$REPO_ROOT" && PATH="${WORK_DIR}/bin:$PATH" FAKE_DIR="$state" \
     FAKE_SERIAL="$SERIAL" HANG_MODE="$1" PERF_DRIVE_TIMEOUT="${DRIVE_TIMEOUT_FOR_TEST:-1}" \
     ENSURE_ATTACH_SCRIPT="${WORK_DIR}/ensure_attached" \
-    bash "$TARGET" --device-id "$SERIAL" --output-dir "${WORK_DIR}/out" --iterations 1 2>&1)"
+    bash "$TARGET" --device-id "$SERIAL" --output-dir "${OUT_DIR_FOR_TEST:-${WORK_DIR}/out}" --iterations 1 2>&1)"
   STATUS=$?
   DRIVE_CALLS="$(wc -l <"$state/drive_calls" | tr -d ' ')"
   ATTACH_CALLS="$(wc -l <"$state/attach_calls" | tr -d ' ')"
@@ -88,5 +88,10 @@ check "the phone is re-attached between attempts but not after the last one" \
 DRIVE_TIMEOUT_FOR_TEST=abc run_target first
 check "a bad PERF_DRIVE_TIMEOUT stops the script before any drive attempt" \
   "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"PERF_DRIVE_TIMEOUT must be"* ]] && echo yes || echo no)"
+
+OUT_DIR_FOR_TEST="${REPO_ROOT}/build/perf-test" run_target never
+check "an --output-dir under build/ stops the script before any drive attempt" \
+  "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"must not be under"* ]] && echo yes || echo no)"
+rmdir "${REPO_ROOT}/build/perf-test" 2>/dev/null; rmdir "${REPO_ROOT}/build" 2>/dev/null || true
 
 [[ "$FAILURES" -eq 0 ]] || { echo "$FAILURES case(s) failed"; echo "$OUTPUT" | tail -15; exit 1; }
