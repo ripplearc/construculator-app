@@ -21,4 +21,21 @@ abstract class CostItemRepository {
 
   /// Creates a new cost item and returns the persisted entity.
   Future<Either<Failure, CostItem>> createCostItem(CostItem item);
+
+  /// The name of the estimate of [companyId]'s projects holding the newest
+  /// equipment line called [itemName] that is priced by [pricingMethod] at
+  /// exactly [rateAmount] (the daily rate under day pricing, the job amount
+  /// under job pricing).
+  ///
+  /// Returns `Right(null)` when no line keeps that price.
+  ///
+  /// Cost lines are not stored on the phone, so this asks the server. With no
+  /// network it returns `Left(EstimationFailure)` after a few seconds, with no
+  /// retry. A caller must not wait for it before showing the refusal message.
+  Future<Either<Failure, String?>> getEstimateNameKeepingEquipmentRate({
+    required String companyId,
+    required String itemName,
+    required EquipmentPricingMethod pricingMethod,
+    required double rateAmount,
+  });
 }
