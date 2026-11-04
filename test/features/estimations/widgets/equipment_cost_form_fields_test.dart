@@ -4174,7 +4174,7 @@ void main() {
 
       await pickItemOnJob(tester);
 
-      expect(database.refusalRow(refusalId)?['shown_at'], isNotNull);
+      expect(database.refusalRow(refusalId)!['shown_at'], isNotNull);
     });
 
     testWidgets('on a recalled rate, sits 8 dp under the saved rate header', (
@@ -4223,7 +4223,7 @@ void main() {
       fakeSupabase.completer!.complete();
       await tester.pumpAndSettle();
 
-      expect(database.refusalRow(refusalId)?['shown_at'], isNull);
+      expect(database.refusalRow(refusalId)!['shown_at'], isNull);
     });
 
     testWidgets('goes when a new default is saved for the item', (
