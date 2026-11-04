@@ -27,7 +27,7 @@
 ///
 /// Values are supplied per flavor via
 /// `--dart-define-from-file=build/generated/flavors/<flavor>.json`, generated
-/// by `scripts/ci/resolve_build_features.sh` from `config/flavors/<flavor>.json`'s
+/// by `scripts/ci/resolve_build_features.dart` from `config/flavors/<flavor>.json`'s
 /// feature list (see `codemagic.yaml`). `defaultValue: true` is deliberate: a
 /// bare `flutter run` or `flutter test`, with no manifest passed, compiles
 /// the complete module graph.

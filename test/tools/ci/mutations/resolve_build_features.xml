@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- RESOLVE BUILD FEATURES MUTATION TESTING -->
+    <!-- Targets: the feature enum reader, BuildFeatures check, manifest reader, nesting check and output writer -->
+
+    <files>
+        <file>scripts/ci/resolve_build_features.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^\s*//.*$" dotAll="false"/>
+        <regex pattern="^\s*///.*$" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Treat a missing file as readable -->
+        <regex pattern="if \(!file\.existsSync\(\)\) \{" dotAll="true" id="read.skip_missing_file_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: Skip the "no enum Feature" failure -->
+        <regex pattern="throw ResolveException\('\$\{source\.path\} has no &quot;enum Feature&quot;'\);" dotAll="true" id="enum.skip_missing_enum_check">
+            <mutation text="return &lt;String&gt;[];"/>
+        </regex>
+
+        <!-- RULE 3: Skip the plain-identifier check on enum values -->
+        <regex pattern="if \(!RegExp\(r'\^\[a-z\]\[A-Za-z0-9\]\*\$'\)\.hasMatch\(name\)\) \{" dotAll="true" id="enum.skip_identifier_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 4: Skip the empty enum failure -->
+        <regex pattern="if \(names\.isEmpty\) \{" dotAll="true" id="enum.skip_empty_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 5: Stop dropping blank enum entries -->
+        <regex pattern="\.where\(\(String value\) =&gt; value\.isNotEmpty\)" dotAll="true" id="enum.keep_blank_entries">
+            <mutation text=".where((String value) =&gt; true)"/>
+        </regex>
+
+        <!-- RULE 6: Stop reading semicolon-terminated enums -->
+        <regex pattern="split\(RegExp\(r'\[,;\]'\)\)" dotAll="true" id="enum.comma_only_split">
+            <mutation text="split(RegExp(r','))"/>
+        </regex>
+
+        <!-- RULE 7: Do not lower-case the camelCase hump -->
+        <regex pattern="\(match\.group\(0\) \?\? ''\)\.toLowerCase\(\)" dotAll="true" id="name.keep_upper_case_hump">
+            <mutation text="(match.group(0) ?? '')"/>
+        </regex>
+
+        <!-- RULE 8: Drop the ENABLE_ prefix -->
+        <regex pattern="'ENABLE_\$\{manifestNameOf\(enumName\)\.toUpperCase\(\)\}'" dotAll="true" id="name.drop_prefix">
+            <mutation text="'${manifestNameOf(enumName).toUpperCase()}'"/>
+        </regex>
+
+        <!-- RULE 9: Keep the key lower case -->
+        <regex pattern="manifestNameOf\(enumName\)\.toUpperCase\(\)" dotAll="true" id="name.skip_upper_case">
+            <mutation text="manifestNameOf(enumName)"/>
+        </regex>
+
+        <!-- RULE 10: Accept a feature that has no BuildFeatures constant -->
+        <regex pattern="if \(!declaredKeys\.contains\(key\)\) \{" dotAll="true" id="coverage.skip_missing_constant_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 11: Fail on a constant that is present instead of one that is missing -->
+        <regex pattern="if \(!declaredKeys\.contains\(key\)\) \{" dotAll="true" id="coverage.invert_missing_constant_check">
+            <mutation text="if (declaredKeys.contains(key)) {"/>
+        </regex>
+
+        <!-- RULE 12: Only read single-quoted constants -->
+        <regex pattern="\['&quot;\]" dotAll="true" id="coverage.single_quote_only">
+            <mutation text="[']"/>
+        </regex>
+
+        <!-- RULE 13: Skip the invalid JSON failure -->
+        <regex pattern="on FormatException catch \(error\) \{" dotAll="true" id="manifest.skip_invalid_json">
+            <mutation text="on StateError catch (error) {"/>
+        </regex>
+
+        <!-- RULE 14: Treat a manifest with no features list as empty -->
+        <regex pattern="throw ResolveException\('\$\{manifest\.path\} has no &quot;features&quot; list'\);" dotAll="true" id="manifest.skip_no_features_check">
+            <mutation text="return &lt;String&gt;{};"/>
+        </regex>
+
+        <!-- RULE 15: Accept a top level that is not an object -->
+        <regex pattern="decoded is Map&lt;String, Object\?&gt;\s*\?\s*decoded\['features'\]\s*:\s*null" dotAll="true" id="manifest.accept_any_top_level">
+            <mutation text="(decoded as dynamic)['features']"/>
+        </regex>
+
+        <!-- RULE 16: Skip the unknown feature failure -->
+        <regex pattern="throw ResolveException\(\s*'Unknown feature[^;]*;" dotAll="true" id="manifest.skip_unknown_feature_check">
+            <mutation text="continue;"/>
+        </regex>
+
+        <!-- RULE 17: Fail on every known feature name -->
+        <regex pattern="if \(enumName == null\) \{" dotAll="true" id="manifest.invert_unknown_feature_check">
+            <mutation text="if (enumName == null || enumName.isNotEmpty) {"/>
+        </regex>
+
+        <!-- RULE 18: Never mark a listed feature as enabled -->
+        <regex pattern="if \(!enabled\.add\(enumName\)\) \{" dotAll="true" id="manifest.skip_enable">
+            <mutation text="if (!enabled.add('')) {"/>
+        </regex>
+
+        <!-- RULE 19: Check only the first nesting pair -->
+        <regex pattern="i \+ 1 &lt; flavorsFewestFeaturesFirst\.length" dotAll="true" id="nest.check_first_pair_only">
+            <mutation text="i + 1 &lt; flavorsFewestFeaturesFirst.length - 1"/>
+        </regex>
+
+        <!-- RULE 20: Skip the nesting failure -->
+        <regex pattern="if \(innerFeatures\.contains\(name\) &amp;&amp; !outerFeatures\.contains\(name\)\) \{" dotAll="true" id="nest.skip_failure">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 21: Flag a feature that is in both manifests -->
+        <regex pattern="innerFeatures\.contains\(name\) &amp;&amp; !outerFeatures\.contains\(name\)" dotAll="true" id="nest.drop_negation">
+            <mutation text="innerFeatures.contains(name) &amp;&amp; outerFeatures.contains(name)"/>
+        </regex>
+
+        <!-- RULE 22: Flag a feature that is only in the outer manifest -->
+        <regex pattern="innerFeatures\.contains\(name\) &amp;&amp; !outerFeatures\.contains\(name\)" dotAll="true" id="nest.reverse_direction">
+            <mutation text="!innerFeatures.contains(name) &amp;&amp; outerFeatures.contains(name)"/>
+        </regex>
+
+        <!-- RULE 23: Accept any number of arguments -->
+        <regex pattern="args\.length != 1 \|\| args\.single\.isEmpty" dotAll="true" id="cli.accept_any_argument_count">
+            <mutation text="args.isEmpty || args.first.isEmpty"/>
+        </regex>
+
+        <!-- RULE 24: Accept an empty flavor -->
+        <regex pattern="args\.length != 1 \|\| args\.single\.isEmpty" dotAll="true" id="cli.accept_empty_flavor">
+            <mutation text="args.length != 1"/>
+        </regex>
+
+        <!-- RULE 25: Exit 0 on a usage error, a resolve error or a file system error -->
+        <regex pattern="return 1;" dotAll="false" id="cli.exit_zero_on_failure">
+            <mutation text="return 0;"/>
+        </regex>
+
+        <!-- RULE 26: Write false for an enabled feature -->
+        <regex pattern="\$\{enabled\.contains\(name\)\}" dotAll="true" id="output.invert_enabled">
+            <mutation text="${!enabled.contains(name)}"/>
+        </regex>
+
+        <!-- RULE 27: Drop the comma between entries -->
+        <regex pattern="\.join\(',\\n'\)" dotAll="true" id="output.drop_separator">
+            <mutation text=".join('\n')"/>
+        </regex>
+
+        <!-- RULE 28: Drop the trailing newline -->
+        <regex pattern="return '\{\\n\$entries\\n\}\\n';" dotAll="true" id="output.drop_trailing_newline">
+            <mutation text="return '{\n$entries\n}';"/>
+        </regex>
+
+        <!-- RULE 29: Skip the manifest nesting check -->
+        <regex pattern="checkManifestsNest\(projectRoot, enumNames\);" dotAll="true" id="resolve.skip_nesting_check">
+            <mutation text=";"/>
+        </regex>
+
+        <!-- RULE 30: Skip the BuildFeatures coverage check -->
+        <regex pattern="checkBuildFeaturesCoverEnum\(\s*enumNames,\s*File\('\$\{projectRoot\.path\}/\$_buildFeaturesPath'\),\s*\);" dotAll="true" id="resolve.skip_constant_check">
+            <mutation text=";"/>
+        </regex>
+
+        <!-- RULE 31: Keep block comments in the source text -->
+        <regex pattern="RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\)" dotAll="true" id="comments.keep_block_comments">
+            <mutation text="RegExp(r'//.*')"/>
+        </regex>
+
+        <!-- RULE 32: Keep line comments in the source text -->
+        <regex pattern="RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\)" dotAll="true" id="comments.keep_line_comments">
+            <mutation text="RegExp(r'/[*].*?[*]/', dotAll: true)"/>
+        </regex>
+
+        <!-- RULE 32b: Remove block comments first and line comments second, as the tool did before -->
+        <regex pattern="code\.replaceAll\(RegExp\(r'//\[\^\\n\]\*\|/\\\*\.\*\?\\\*/', dotAll: true\), ''\)" dotAll="true" id="comments.remove_block_before_line">
+            <mutation text="code.replaceAll(RegExp(r'/[*].*?[*]/', dotAll: true), '').replaceAll(RegExp(r'//.*'), '')"/>
+        </regex>
+
+        <!-- RULE 33: Accept a feature listed twice -->
+        <regex pattern="if \(!enabled\.add\(enumName\)\) \{" dotAll="true" id="manifest.skip_duplicate_check">
+            <mutation text="enabled.add(enumName); if (false) {"/>
+        </regex>
+
+        <!-- RULE 34: Let a file system error escape -->
+        <regex pattern="on FileSystemException catch \(error\) \{" dotAll="true" id="cli.skip_file_system_error">
+            <mutation text="on FileSystemException catch (error) { rethrow;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="resolve_build_features" expected-return="0">flutter test test/tools/ci/units/resolve_build_features_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>

@@ -2,7 +2,7 @@
 #
 # Manual test harness for scripts/ci/cancel_codemagic_builds.sh (CA-1240).
 #
-# Follows the repo's bash test convention (see resolve_build_features_test.sh):
+# Follows the repo's bash test convention (see assert_flavor_environment_test.sh):
 # no shell-test framework, non-zero exit if any case fails. curl is replaced by
 # a fake on PATH that records every URL. Ids listed in FAKE_REJECT_IDS fail the
 # way curl --fail-with-body does.
