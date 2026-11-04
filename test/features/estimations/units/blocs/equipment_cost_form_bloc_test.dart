@@ -1915,6 +1915,16 @@ void main() {
         ]);
       }
 
+      bool noticeNamesEstimate(EquipmentCostFormState state) {
+        final notice = state.formData.refusedDefault;
+        return notice != null && notice.estimateName != null;
+      }
+
+      bool noticeLookupFailed(EquipmentCostFormState state) {
+        final notice = state.formData.refusedDefault;
+        return notice != null && notice.estimateLookupFailed;
+      }
+
       Matcher noticeIs({
         double refused = 450.0,
         double? accepted = 400.0,
@@ -1989,9 +1999,7 @@ void main() {
           keepOnLine();
 
           await noticeAfterPicking();
-          final named = await bloc.stream.firstWhere(
-            (s) => s.formData.refusedDefault?.estimateName != null,
-          );
+          final named = await bloc.stream.firstWhere(noticeNamesEstimate);
 
           expect(named, noticeIs(estimateName: 'Bedroom 2'));
         },
@@ -2011,9 +2019,7 @@ void main() {
         fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
 
         await noticeAfterPicking();
-        final failed = await bloc.stream.firstWhere(
-          (s) => s.formData.refusedDefault?.estimateLookupFailed ?? false,
-        );
+        final failed = await bloc.stream.firstWhere(noticeLookupFailed);
 
         expect(failed, noticeIs(lookupFailed: true));
       });
@@ -2035,9 +2041,7 @@ void main() {
           await bloc.stream.firstWhere((s) => s.formData.jobAmount == 500);
           fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
           fakeSupabaseWrapper.completer!.complete();
-          await bloc.stream.firstWhere(
-            (s) => s.formData.refusedDefault?.estimateLookupFailed ?? false,
-          );
+          await bloc.stream.firstWhere(noticeLookupFailed);
           await bloc.close();
 
           expect(
