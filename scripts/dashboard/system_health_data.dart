@@ -16,11 +16,6 @@ class _MetricDefinition {
   final String path;
 }
 
-// The four metrics the system-health view plots.
-//
-// Startup is one measurement under two conditions, so it is two series. The
-// ids stay `cold_start_ms` and `warm_start_ms` because they are the keys the
-// harness stores and the keys baselines are filed under.
 const List<_MetricDefinition> _systemHealthMetrics = <_MetricDefinition>[
   _MetricDefinition('cold_start_ms', 'TTID (cold)', 'ms', 'cold_start_ms.median'),
   _MetricDefinition('warm_start_ms', 'TTID (warm)', 'ms', 'warm_start_ms.median'),
@@ -37,6 +32,10 @@ class SystemHealthGroup {
 }
 
 /// Builds one group per journey found in [perfStore].
+///
+/// Startup is two series, TTID (cold) and TTID (warm), whose ids stay
+/// `cold_start_ms` and `warm_start_ms`: the keys the harness stores and
+/// baselines are filed under.
 ///
 /// Runs are grouped rather than concatenated because CA-782 partitions by
 /// journey precisely so that a journey change starts a new series; flattening
