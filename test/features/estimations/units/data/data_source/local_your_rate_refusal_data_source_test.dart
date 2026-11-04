@@ -83,9 +83,9 @@ void main() {
           equipmentMethod: 'job',
         );
 
-        expect(found?.refusedAmount, 450.0);
-        expect(found?.acceptedAmount, 400.0);
-        expect(found?.shownAt, isNull);
+        expect(found!.refusedAmount, 450.0);
+        expect(found.acceptedAmount, 400.0);
+        expect(found.shownAt, isNull);
       });
 
       test(
@@ -101,7 +101,7 @@ void main() {
             equipmentMethod: 'job',
           );
 
-          expect(found?.acceptedAmount, isNull);
+          expect(found!.acceptedAmount, isNull);
         },
       );
 
@@ -204,7 +204,7 @@ void main() {
           itemName: 'Dumpster — 30 yd',
           equipmentMethod: 'job',
         );
-        expect(found?.shownAt, '2026-10-07T09:00:00.000Z');
+        expect(found!.shownAt, '2026-10-07T09:00:00.000Z');
       });
 
       test('leaves another item\'s refusal unshown', () async {
@@ -226,7 +226,7 @@ void main() {
           itemName: 'Excavator',
           equipmentMethod: 'day',
         );
-        expect(other?.shownAt, isNull);
+        expect(other!.shownAt, isNull);
       });
 
       test('does nothing when the item has no refusal', () async {
@@ -270,7 +270,7 @@ void main() {
           itemName: 'Dumpster — 30 yd',
           equipmentMethod: 'job',
         );
-        expect(found?.shownAt, isNull);
+        expect(found!.shownAt, isNull);
       });
     });
 
@@ -293,7 +293,7 @@ void main() {
           itemName: 'Dumpster — 30 yd',
           equipmentMethod: 'job',
         );
-        expect(found?.shownAt, isNull);
+        expect(found!.shownAt, isNull);
       });
     });
 
