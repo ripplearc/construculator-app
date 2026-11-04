@@ -82,6 +82,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     DashboardLogoutRequested event,
     Emitter<DashboardState> emit,
   ) async {
+    // TODO: [CA-1297] warn before signing out while Your rates defaults are still unsent, and count them in the warning. https://ripplearc.youtrack.cloud/issue/CA-1297
     await _authManager.logout();
     emit(const DashboardNavigateToLogin());
   }

@@ -7,7 +7,9 @@ import 'package:construculator/features/estimation/presentation/widgets/equipmen
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/fake_your_rates_database.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   const size = Size(390.0, 600.0);
@@ -42,6 +45,9 @@ void main() {
 
   setUp(() async {
     fakeSupabase.reset();
+    fakeSupabase.setCurrentUser(
+      FakeUser(id: 'user-1', createdAt: '2026-01-01T00:00:00.000Z'),
+    );
     database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
@@ -122,6 +128,72 @@ void main() {
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
           'goldens/equipment_cost_form_fields/${size.width}x${size.height}/manually_job$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the Not kept message above the amount', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      database.seedRefusal({
+        'id': YourRateRefusalKey.of(
+          userId: 'user-1',
+          companyId: 'company-1',
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        ),
+        'user_id': 'user-1',
+        'company_id': 'company-1',
+        'category': 'equipment',
+        'refused_row_id': 'refused-row',
+        'item_name': 'Dumpster — 30 yd',
+        'equipment_method': 'job',
+        'refused_amount': 450.0,
+        'accepted_amount': 400.0,
+        'shown_at': null,
+      });
+      database.seedRows([
+        {
+          'id': 'rate-1',
+          'company_id': 'company-1',
+          'category': 'equipment',
+          'item_name': 'Dumpster — 30 yd',
+          'rate_amount': 400,
+          'rate_currency': 'USD',
+          'equipment_method': 'job',
+          'saved_at': DateTime(2026, 1, 1).toIso8601String(),
+        },
+      ]);
+      fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+        {
+          ...CostItemTestDataMapFactory.createEquipmentItemData(
+            itemName: 'Dumpster — 30 yd',
+            pricingMethod: 'job',
+            jobAmount: 450.0,
+          ),
+          'cost_estimates': {
+            'estimate_name': 'Bedroom 2',
+            'projects': {'owning_company_id': 'company-1'},
+          },
+        },
+      ]);
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: savedRate(
+          'Dumpster — 30 yd',
+          400.0,
+          EquipmentPricingMethod.job,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/refused_default_notice$suffix.png',
         ),
       );
     });
