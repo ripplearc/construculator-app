@@ -124,6 +124,10 @@ done
 # the phases. A clean deletes build/, which is where --output-dir usually lives,
 # so the artifacts cannot be captured there directly.
 OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
+if [[ "$OUTPUT_DIR" == "$PWD/build" || "$OUTPUT_DIR" == "$PWD/build/"* ]]; then
+  echo "❌ --output-dir must not be under $PWD/build, because every drive leg runs 'flutter clean' and deletes it: $OUTPUT_DIR" >&2
+  exit 1
+fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK"/{cold,warm,jank,memory}
