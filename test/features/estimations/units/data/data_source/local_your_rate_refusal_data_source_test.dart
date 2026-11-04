@@ -54,7 +54,7 @@ void main() {
       String? entryLabel,
       String itemName = 'Dumpster — 30 yd',
     }) => {
-      'id': 'rate-${entryLabel ?? 'plain'}-$amount',
+      'id': 'rate-${entryLabel.toString()}-$amount',
       'company_id': companyA,
       'category': 'equipment',
       'item_name': itemName,
