@@ -20,7 +20,7 @@
             <mutation text="if (!refusal.wasShown) {"/>
         </regex>
 
-        <regex pattern="_shownNotices\.remove\(shownKey\);" id="equipment_form.refusal.keep_notice_after_forget">
+        <regex pattern="_noticesKeptAfterShownByItem\.remove\(shownKey\);" id="equipment_form.refusal.keep_notice_after_forget">
             <mutation text=""/>
         </regex>
 
@@ -56,7 +56,7 @@
             <mutation text="if (marked.isLeft()) {"/>
         </regex>
 
-        <regex pattern="_shownNotices\[_shownKeyOf\(itemName, method\)\] = notice;" id="equipment_form.refusal.never_remember_notice">
+        <regex pattern="_noticesKeptAfterShownByItem\[_shownKeyOf\(itemName, method\)\] = notice;" id="equipment_form.refusal.never_remember_notice">
             <mutation text=""/>
         </regex>
 

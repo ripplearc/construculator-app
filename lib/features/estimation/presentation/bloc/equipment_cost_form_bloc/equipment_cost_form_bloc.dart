@@ -40,9 +40,7 @@ class EquipmentCostFormBloc
   Future<void>? _estimateLookup;
   String? _companyId;
 
-  // Notices this form already marked as shown, by item, so the notice stays
-  // on screen when the watch reports the refusal as shown.
-  final Map<String, RefusedDefaultNotice> _shownNotices = {};
+  final Map<String, RefusedDefaultNotice> _noticesKeptAfterShownByItem = {};
 
   EquipmentCostFormBloc({
     required this._repository,
@@ -61,14 +59,14 @@ class EquipmentCostFormBloc
               : null,
         ),
       );
-      _watchRefusalOf(e.value, state.formData.method);
+      _watchRefusalWhenItemChanges(e.value, state.formData.method);
     });
     on<EquipmentRefusalWatchRequested>(_onRefusalWatchRequested);
     on<EquipmentRefusalReported>(_onRefusalReported);
     on<EquipmentRefusalNoticeLookedUp>(_onRefusalNoticeLookedUp);
     on<EquipmentRefusalNoticeSeen>(_onRefusalNoticeSeen);
     on<EquipmentMethodSwitchedEvent>((e, emit) {
-      _watchRefusalOf(state.formData.equipmentType, e.method);
+      _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);
       _emit(emit, (d) {
         if (e.method == d.method) return d;
         return d.copyWith(
@@ -101,7 +99,7 @@ class EquipmentCostFormBloc
       );
     });
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
-      _watchRefusalOf(state.formData.equipmentType, e.method);
+      _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);
       _emit(emit, (d) {
         final recalled = d.copyWith(
           method: e.method,
@@ -149,9 +147,10 @@ class EquipmentCostFormBloc
     on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
   }
 
-  // Starts watching the refusal of the item unless the item and method are the
-  // ones already watched: a restart would lose a notice that was shown.
-  void _watchRefusalOf(String itemName, EquipmentPricingMethod method) {
+  void _watchRefusalWhenItemChanges(
+    String itemName,
+    EquipmentPricingMethod method,
+  ) {
     final key =
         '${YourRateRefusalKey.normalizeName(itemName)}|${method.toJson()}';
     if (key == _watchedRefusalKey) return;
@@ -166,7 +165,7 @@ class EquipmentCostFormBloc
     await _refusalWatch?.cancel();
     _refusalWatch = null;
     if (event.itemName.trim().isEmpty) {
-      emit(_stateWithNotice(null));
+      emit(_currentStateKeepingTypeWithNotice(null));
       return;
     }
     final companyId = await _resolveCompanyId();
@@ -175,7 +174,7 @@ class EquipmentCostFormBloc
       return;
     }
     if (companyId == null) {
-      emit(_stateWithNotice(null));
+      emit(_currentStateKeepingTypeWithNotice(null));
       return;
     }
     try {
@@ -215,12 +214,16 @@ class EquipmentCostFormBloc
     if (shownKey != _watchedRefusalKey) return;
     final refusal = result.getRightOrNull();
     if (refusal == null) {
-      _shownNotices.remove(shownKey);
-      emit(_stateWithNotice(null));
+      _noticesKeptAfterShownByItem.remove(shownKey);
+      emit(_currentStateKeepingTypeWithNotice(null));
       return;
     }
     if (refusal.wasShown) {
-      emit(_stateWithNotice(_shownNotices[shownKey]));
+      emit(
+        _currentStateKeepingTypeWithNotice(
+          _noticesKeptAfterShownByItem[shownKey],
+        ),
+      );
       return;
     }
     add(
@@ -230,7 +233,11 @@ class EquipmentCostFormBloc
         refusal: refusal,
       ),
     );
-    emit(_stateWithNotice(_noticeOf(refusal, estimateName: null)));
+    emit(
+      _currentStateKeepingTypeWithNotice(
+        _noticeOf(refusal, estimateName: null),
+      ),
+    );
   }
 
   Future<String?> _resolveCompanyId() async {
@@ -259,7 +266,7 @@ class EquipmentCostFormBloc
       final base = _noticeOf(event.refusal, estimateName: null);
       if (current != base) return;
       emit(
-        _stateWithNotice(
+        _currentStateKeepingTypeWithNotice(
           lookup.fold(
             (_) => _noticeOf(
               event.refusal,
@@ -293,7 +300,7 @@ class EquipmentCostFormBloc
       equipmentMethod: method,
     );
     if (marked.isRight()) {
-      _shownNotices[_shownKeyOf(itemName, method)] = notice;
+      _noticesKeptAfterShownByItem[_shownKeyOf(itemName, method)] = notice;
     }
   }
 
@@ -311,10 +318,9 @@ class EquipmentCostFormBloc
     estimateLookupFailed: estimateLookupFailed,
   );
 
-  // Changes only the notice of the current state, whatever the state is, so a
-  // refusal that arrives late cannot turn a confirmation or a success back
-  // into plain editing.
-  EquipmentCostFormState _stateWithNotice(RefusedDefaultNotice? notice) {
+  EquipmentCostFormState _currentStateKeepingTypeWithNotice(
+    RefusedDefaultNotice? notice,
+  ) {
     final current = state;
     if (current.formData.refusedDefault == notice) return current;
     final data = current.formData.copyWith(refusedDefault: notice);
