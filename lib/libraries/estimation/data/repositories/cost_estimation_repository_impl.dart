@@ -47,8 +47,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final Map<String, Completer<Either<Failure, List<CostEstimate>>>>
   _firstResults = {};
 
-  // TODO: [CA-1289] [Estimation] Remove pending edits once saves go through the phone.
-  // https://ripplearc.youtrack.cloud/issue/CA-1289
+  // TODO: [CA-1423] [Estimation] Remove pending edits once saves go through the phone.
+  // https://ripplearc.youtrack.cloud/issue/CA-1423
   final Map<String, _PendingEdit> _pendingEdits = {};
 
   static const int defaultPageSize = 10;
