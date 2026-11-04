@@ -21,8 +21,8 @@
             <mutation text="return Right(dtos.map((dto) =&gt; dto.toEntity()).toList().reversed.toList());"/>
         </regex>
 
-        <regex pattern="(estimateId: estimateId,\s*\);\s*return Right\(dtos)" id="cost_item_repo.get.wrong_estimate">
-            <mutation text="estimateId: '', ); return Right(dtos"/>
+        <regex pattern="(estimateId: estimateId,\s*\);\s*if \(dtos)" id="cost_item_repo.get.wrong_estimate">
+            <mutation text="estimateId: '', ); if (dtos"/>
         </regex>
 
         <regex pattern="(return _handleError\(e, 'fetching cost items'\);)" id="cost_item_repo.get.swallow_error">
