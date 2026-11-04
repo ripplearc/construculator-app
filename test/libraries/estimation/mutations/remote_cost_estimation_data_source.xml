@@ -25,12 +25,12 @@
             <mutation text="DatabaseConstants.isLockedColumn: !isLocked"/>
         </regex>
 
-        <!-- RULE 9: In `changeLockStatus` and `renameEstimation`, use wrong filter column -->
+        <!-- RULE 9: In every method that filters by `estimationId`, use wrong filter column -->
         <regex pattern="(filterColumn:\s*DatabaseConstants\.idColumn,\s*filterValue:\s*estimationId,)" id="estimation.lock.wrong_filter_column">
             <mutation text="filterColumn: DatabaseConstants.projectIdColumn, filterValue: estimationId,"/>
         </regex>
 
-        <!-- RULE 10: In `changeLockStatus`, use empty filter value -->
+        <!-- RULE 10: In every method that filters by `estimationId`, use empty filter value -->
         <regex pattern="(filterValue:\s*estimationId,)" id="estimation.lock.empty_filter">
             <mutation text="filterValue: '',"/>
         </regex>
@@ -44,7 +44,6 @@
         <regex pattern="(\{DatabaseConstants\.estimateNameColumn:\s*newName\})" id="estimation.rename.empty_value">
             <mutation text="{DatabaseConstants.estimateNameColumn: ''}"/>
         </regex>
-
     </rules>
 
     <commands>
