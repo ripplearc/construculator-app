@@ -3,6 +3,8 @@ import 'package:construculator/features/calculator/data/repositories/calculator_
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/router_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// The calculator feature: its page and the settings repository it reads,
@@ -17,7 +19,7 @@ class CalculatorModule extends Module {
   CalculatorModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [AuthLibraryModule(appBootstrap)];
+  List<Module> get imports => [AuthLibraryModule(appBootstrap), RouterModule()];
 
   @override
   void binds(Injector i) {
@@ -32,6 +34,9 @@ class CalculatorModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.child('/', child: (_) => const CalculatorPage());
+    r.child(
+      '/',
+      child: (_) => CalculatorPage(router: Modular.get<AppRouter>()),
+    );
   }
 }

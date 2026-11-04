@@ -3046,6 +3046,24 @@
   "@calculatorStripPlaceholder": {
     "description": "Text of the calculator suggestion strip when nothing applies yet"
   },
+  "calculatorBracketOpenSemantics": "Open bracket, {inside}",
+  "@calculatorBracketOpenSemantics": {
+    "description": "Screen-reader label of a tape chip for a bracket the user is still typing inside; inside is what has been typed in it so far",
+    "placeholders": {
+      "inside": {
+        "type": "String"
+      }
+    }
+  },
+  "calculatorBracketClosedSemantics": "Bracket, {inside}",
+  "@calculatorBracketClosedSemantics": {
+    "description": "Screen-reader label of a tape chip for a closed bracket; inside is what was typed in it",
+    "placeholders": {
+      "inside": {
+        "type": "String"
+      }
+    }
+  },
   "calculatorStripHiddenChips": "+{count}",
   "@calculatorStripHiddenChips": {
     "description": "Marker on the calculator suggestion strip for the suggestions that do not fit in the row",

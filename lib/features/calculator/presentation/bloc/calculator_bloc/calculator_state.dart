@@ -39,12 +39,21 @@ class CalculatorState extends Equatable {
   /// [TapeChanged].
   final TapeOutcome? refusal;
 
+  /// Whether the last key was ✕ with no value in progress, which closes the
+  /// calculator and returns to Home (Section 1.1; Section 5, "Closes the
+  /// calculator"). Only that key sets it: the tape refuses `/` with the same
+  /// word ([TapeRefusal.nothingBeingTyped]) and `/` closes nothing, so this
+  /// is not read off [refusal]. The next key clears it, as it does [notice]
+  /// and [refusal].
+  final bool closesCalculator;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
     this.currentGroupIndex = 0,
     this.notice,
     this.refusal,
+    this.closesCalculator = false,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -58,11 +67,13 @@ class CalculatorState extends Equatable {
     int? currentGroupIndex,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
+    bool? closesCalculator,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
+    closesCalculator: closesCalculator ?? this.closesCalculator,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -391,33 +402,54 @@ class CalculatorState extends Equatable {
   }
 
   /// The tape as chips the display area draws: a value chip is its key over
-  /// its text, an answer its key over the formatted value, a bracket its
-  /// inside between parentheses, each led by the operator that joins it to
-  /// the chain, as the prototype's tape reads (2 | +(3×4) | ×5 | Calc70); an
-  /// error chip carries its error as the label the page titles it by.
-  // TODO: [CA-1092] draw a bracket with the bracketOpen and bracketClosed
-  // types and its operator as the factor.
-  List<CoreCalculatorChip> get chipsList => [
-    for (final chip in tape.chips)
-      CoreCalculatorChip(
-        label: switch (chip) {
-          ValueChip(:final key) => key,
-          ResultChip(:final key) => key,
-          ErrorChip(:final error) => error.name,
-          BracketChip() => null,
-        },
-        value: switch (chip) {
-          ErrorChip() => null,
-          _ => _valueTextOf(chip),
-        },
-        type: switch (chip) {
-          ValueChip(isActive: true) => CoreCalculatorChipType.active,
-          ValueChip() || BracketChip() => CoreCalculatorChipType.editable,
-          ResultChip() => CoreCalculatorChipType.result,
-          ErrorChip() => CoreCalculatorChipType.error,
-        },
-      ),
-  ];
+  /// its text, an answer its key over the formatted value, each led by the
+  /// operator that joins it to the chain, as the prototype's tape reads
+  /// (2 | +(3×4) | ×5 | Calc70); an error chip carries its error as the
+  /// label the page titles it by. A bracket is one chip in the face of its
+  /// state (term 2.22): open while the keypad types inside it, closed once
+  /// it has its ")"; it holds what was typed inside — the chip draws the
+  /// parentheses — and the operator that leads it is its factor. The chips
+  /// before an open bracket are inert: dimmed and deaf to a tap until it
+  /// closes ("Chips before an open bracket are dimmed and cannot be tapped").
+  List<CoreCalculatorChip> get chipsList {
+    final waitsOnOpenBracket = tape.openBracket != null;
+    return [
+      for (final (index, chip) in tape.chips.indexed)
+        CoreCalculatorChip(
+          label: switch (chip) {
+            ValueChip(:final key) => key,
+            ResultChip(:final key) => key,
+            ErrorChip(:final error) => error.name,
+            BracketChip() => null,
+          },
+          value: switch (chip) {
+            ErrorChip() => null,
+            BracketChip(:final inner) => inner.map(_valueTextOf).join(),
+            _ => _valueTextOf(chip),
+          },
+          factor: switch (chip) {
+            BracketChip(:final operator?) => _factorOf(operator),
+            _ => null,
+          },
+          type: switch (chip) {
+            ValueChip(isActive: true) => CoreCalculatorChipType.active,
+            ValueChip() => CoreCalculatorChipType.editable,
+            BracketChip(isOpen: true) => CoreCalculatorChipType.bracketOpen,
+            BracketChip() => CoreCalculatorChipType.bracketClosed,
+            ResultChip() => CoreCalculatorChipType.result,
+            ErrorChip() => CoreCalculatorChipType.error,
+          },
+          inert: waitsOnOpenBracket && index < tape.chips.length - 1,
+        ),
+    ];
+  }
+
+  static CoreIconData _factorOf(Operator operator) => switch (operator) {
+    Operator.add => CoreIcons.addOperator,
+    Operator.subtract => CoreIcons.subtractOperator,
+    Operator.multiply => CoreIcons.multiplyOperator,
+    Operator.divide => CoreIcons.divide,
+  };
 
   String _valueTextOf(TapeChip chip) => switch (chip) {
     final ValueChip chip => '${_lead(chip.operator)}${_entryTextOf(chip)}',
@@ -431,5 +463,11 @@ class CalculatorState extends Equatable {
   static String _lead(Operator? operator) => operator?.symbol ?? '';
 
   @override
-  List<Object?> get props => [tape, currentGroupIndex, notice, refusal];
+  List<Object?> get props => [
+    tape,
+    currentGroupIndex,
+    notice,
+    refusal,
+    closesCalculator,
+  ];
 }
