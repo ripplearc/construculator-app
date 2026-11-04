@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- NETWORK STATUS SERVICE MUTATION TESTING (connectivity_plus mapping and change detection) -->
+    <!-- NETWORK STATUS SERVICE MUTATION TESTING (network changes, internet check, timer, lifecycle and dispose) -->
 
     <files>
         <file>lib/libraries/network_status/network_status_service_impl.dart</file>
@@ -16,24 +16,107 @@
             <mutation text="NetworkStatus _current = NetworkStatus.offline;"/>
         </regex>
 
-        <regex pattern="results\.every\(\(result\) =&gt; result == ConnectivityResult\.none\)" id="status.every_to_any">
-            <mutation text="results.any((result) =&gt; result == ConnectivityResult.none)"/>
+        <regex pattern="results\.any\(\(result\) =&gt; result != ConnectivityResult\.none\)" id="network.any_to_every">
+            <mutation text="results.every((result) =&gt; result != ConnectivityResult.none)"/>
         </regex>
 
-        <regex pattern="result == ConnectivityResult\.none" id="status.none_negated">
-            <mutation text="result != ConnectivityResult.none"/>
+        <regex pattern="result != ConnectivityResult\.none" id="network.none_negated">
+            <mutation text="result == ConnectivityResult.none"/>
         </regex>
 
-        <regex pattern="\? NetworkStatus\.offline" id="status.swap_offline_branch">
-            <mutation text="? NetworkStatus.online"/>
+        <regex pattern="if \(!_hasNetwork\) \{\s*_checkGeneration\+\+;" id="network.lost_skip_generation_bump">
+            <mutation text="if (!_hasNetwork) {"/>
         </regex>
 
-        <regex pattern=": NetworkStatus\.online;" id="status.swap_online_branch">
-            <mutation text=": NetworkStatus.offline;"/>
+        <regex pattern="unawaited\(_stopPolling\(\)\);\s*_apply\(NetworkStatus\.offline\);" id="network.lost_skip_stop_polling">
+            <mutation text="_apply(NetworkStatus.offline);"/>
         </regex>
 
-        <regex pattern="if \(status == _current\) return;" id="change.emit_even_when_same">
-            <mutation text="if (status != _current) return;"/>
+        <regex pattern="_apply\(NetworkStatus\.offline\);\s*return;" id="network.lost_skip_offline">
+            <mutation text="return;"/>
+        </regex>
+
+        <regex pattern="if \(!_hasNetwork\) \{" id="network.lost_negated">
+            <mutation text="if (_hasNetwork) {"/>
+        </regex>
+
+        <regex pattern="\}\s*_startChecking\(\);\s*\}\s*void _onForegroundChange" id="network.attached_skip_checking">
+            <mutation text="}
+  }
+
+  void _onForegroundChange"/>
+        </regex>
+
+        <regex pattern="if \(!_hasNetwork\) return;\s*if \(_appLifecycle" id="foreground.skip_no_network_guard">
+            <mutation text="if (_appLifecycle"/>
+        </regex>
+
+        <regex pattern="if \(_appLifecycle\.isInForeground\) \{\s*_startChecking\(\);" id="foreground.swap_start_stop">
+            <mutation text="if (!_appLifecycle.isInForeground) {
+      _startChecking();"/>
+        </regex>
+
+        <regex pattern="\} else \{\s*_checkGeneration\+\+;\s*unawaited\(_stopPolling\(\)\);\s*\}" id="foreground.never_stop">
+            <mutation text="} else {}"/>
+        </regex>
+
+        <regex pattern="\} else \{\s*_checkGeneration\+\+;" id="foreground.skip_generation_bump">
+            <mutation text="} else {"/>
+        </regex>
+
+        <regex pattern="if \(!_appLifecycle\.isInForeground\) return;" id="checking.skip_background_guard">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_ticksSub \?\?= _reachabilitySdk\.checkTicks\.listen\(\s*\(_\) =&gt; unawaited\(_checkNow\(\)\),\s*\);" id="checking.skip_polling">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="\);\s*unawaited\(_checkNow\(\)\);\s*\}\s*Future&lt;void&gt; _stopPolling" id="checking.skip_immediate_check">
+            <mutation text=");
+  }
+
+  Future&lt;void&gt; _stopPolling"/>
+        </regex>
+
+        <regex pattern="_ticksSub \?\?= " id="polling.recreate_each_time">
+            <mutation text="_ticksSub = "/>
+        </regex>
+
+        <regex pattern="\(_\) =&gt; unawaited\(_checkNow\(\)\)" id="polling.tick_skips_check">
+            <mutation text="(_) {}"/>
+        </regex>
+
+        <regex pattern="_ticksSub = null;\s*await subscription\?\.cancel\(\);" id="polling.skip_clear">
+            <mutation text="await subscription?.cancel();"/>
+        </regex>
+
+        <regex pattern="await subscription\?\.cancel\(\);" id="polling.skip_cancel">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(generation != _checkGeneration\) return;" id="check.skip_stale_guard">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(generation != _checkGeneration\) return;" id="check.stale_guard_negated">
+            <mutation text="if (generation == _checkGeneration) return;"/>
+        </regex>
+
+        <regex pattern="final generation = \+\+_checkGeneration;" id="check.skip_generation_bump">
+            <mutation text="final generation = _checkGeneration;"/>
+        </regex>
+
+        <regex pattern="_apply\(isReachable \? NetworkStatus\.online : NetworkStatus\.offline\);" id="check.skip_apply">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="isReachable \? NetworkStatus\.online : NetworkStatus\.offline" id="check.swap_branches">
+            <mutation text="isReachable ? NetworkStatus.offline : NetworkStatus.online"/>
+        </regex>
+
+        <regex pattern="status == _current\) return;" id="change.emit_even_when_same">
+            <mutation text="status != _current) return;"/>
         </regex>
 
         <regex pattern="_current = status;" id="change.skip_store">
@@ -44,12 +127,24 @@
             <mutation text=""/>
         </regex>
 
+        <regex pattern="if \(_isDisposed \|\| status == _current\) return;" id="apply.skip_disposed_guard">
+            <mutation text="if (status == _current) return;"/>
+        </regex>
+
         <regex pattern="if \(_isDisposed \|\| _hasHeardFromSystem\) return;" id="initial.skip_newer_event_guard">
             <mutation text="if (_isDisposed) return;"/>
         </regex>
 
         <regex pattern="if \(_isDisposed \|\| _hasHeardFromSystem\) return;" id="initial.skip_disposed_guard">
             <mutation text="if (_hasHeardFromSystem) return;"/>
+        </regex>
+
+        <regex pattern="if \(!_hasHeardFromSystem\) _startChecking\(\);" id="initial.failure_skip_check">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(!_hasHeardFromSystem\) _startChecking\(\);" id="initial.failure_ignore_heard_guard">
+            <mutation text="_startChecking();"/>
         </regex>
 
         <regex pattern="_hasHeardFromSystem = true;" id="initial.never_mark_heard">
@@ -60,13 +155,22 @@
             <mutation text=""/>
         </regex>
 
-        <regex pattern="await _subscription\.cancel\(\);" id="dispose.skip_cancel">
+        <regex pattern="await _connectivitySub\.cancel\(\);" id="dispose.skip_connectivity_cancel">
             <mutation text=""/>
+        </regex>
+
+        <regex pattern="await _lifecycleSub\.cancel\(\);" id="dispose.skip_lifecycle_cancel">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="await _stopPolling\(\);\s*await _changes\.close\(\);" id="dispose.skip_stop_polling">
+            <mutation text="await _changes.close();"/>
         </regex>
 
         <regex pattern="await _changes\.close\(\);" id="dispose.skip_close">
             <mutation text=""/>
         </regex>
+
     </rules>
 
     <commands>
