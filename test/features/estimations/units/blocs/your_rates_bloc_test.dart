@@ -151,11 +151,13 @@ void main() {
         },
         expect: () => [
           isA<YourRatesLoading>(),
-          isA<YourRatesSearchResults>().having(
-            (s) => s.results.map((e) => e.itemName).toList(),
-            'results',
-            ['Excavator'],
-          ),
+          isA<YourRatesSearchResults>()
+              .having(
+                (s) => s.results.map((e) => e.itemName).toList(),
+                'results',
+                ['Excavator'],
+              )
+              .having((s) => s.query, 'query', 'excav'),
         ],
       );
 
@@ -522,6 +524,39 @@ void main() {
           await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
         },
         expect: () => [isA<YourRatesLoading>(), isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a typed query after a failed read emits Retrying, not Loading',
+        setUp: seedRates,
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesError(
+          EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+        ),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'an immediate typed query does not wait out the debounce',
+        setUp: seedRates,
+        build: longDebounceBloc,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried(
+              'exc',
+              CostItemType.equipment,
+              immediate: true,
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesSearchResults>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(

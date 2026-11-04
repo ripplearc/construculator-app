@@ -82,7 +82,8 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       transformer: _recentsTransformer(
         queryDebounce,
         (event) => switch (event) {
-          YourRatesRecentsQueried(:final query) => query.trim(),
+          YourRatesRecentsQueried(:final query, :final immediate) =>
+            immediate ? '' : query.trim(),
           YourRatesRefreshRecents() => '',
         },
       ),
@@ -137,21 +138,32 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   Future<void> _onSearched(
     YourRatesSearched event,
     Emitter<YourRatesState> emit,
-  ) async {
-    emit(const YourRatesLoading());
+  ) => _search(event.query, event.category, emit);
+
+  Future<void> _search(
+    String query,
+    CostItemType? category,
+    Emitter<YourRatesState> emit, {
+    bool retryAfterError = false,
+  }) async {
+    emit(
+      retryAfterError && state is YourRatesError
+          ? const YourRatesRetrying()
+          : const YourRatesLoading(),
+    );
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
-      onNoCompany: () => emit(const YourRatesSearchResults([])),
+      onNoCompany: () => emit(YourRatesSearchResults(const [], query.trim())),
     );
     if (companyId == null) return;
     final result = await _repository.search(
-      event.query,
-      category: event.category,
+      query,
+      category: category,
       companyId: companyId,
     );
     result.fold(
       (failure) => emit(YourRatesError(failure)),
-      (entries) => emit(YourRatesSearchResults(entries)),
+      (entries) => emit(YourRatesSearchResults(entries, query.trim())),
     );
   }
 
@@ -164,9 +176,11 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       YourRatesRecentsQueried(:final query, :final category)
           when query.trim().isEmpty =>
         _onRefreshRecents(YourRatesRefreshRecents(category), emit),
-      YourRatesRecentsQueried(:final query, :final category) => _onSearched(
-        YourRatesSearched(query, category: category),
+      YourRatesRecentsQueried(:final query, :final category) => _search(
+        query,
+        category,
         emit,
+        retryAfterError: true,
       ),
     };
   }
