@@ -141,9 +141,9 @@ void main() {
   group('MetricSeries', () {
     test('reports no data when every point is a gap', () {
       final MetricSeries series = MetricSeries(
-        id: 'ttid_ms',
-        label: 'TTID',
-        unit: 'ms',
+        id: 'memory',
+        label: 'Peak memory',
+        unit: 'KB',
         points: <SeriesPoint>[
           SeriesPoint(capturedAt: '2026-08-24T03:00:00Z'),
         ],

@@ -28,8 +28,8 @@ assumes those definitions and describes the machinery.
 
 | Metric | Source | Reported as |
 |---|---|---|
-| Cold start | `start_up_info.json` per iteration | median |
-| Warm start | `start_up_info.json` per iteration | median |
+| TTID (cold) | `start_up_info.json` per iteration | median |
+| TTID (warm) | `start_up_info.json` per iteration | median |
 | Jank | flutter_driver timeline summary | p90 |
 | Memory | DevTools memory profile | peak RSS |
 

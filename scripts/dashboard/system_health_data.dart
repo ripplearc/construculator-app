@@ -16,16 +16,14 @@ class _MetricDefinition {
   final String path;
 }
 
-// The five metrics the system-health view is required to plot.
+// The four metrics the system-health view plots.
 //
-// `ttid_ms` has no producer yet: CA-782 records startup from
-// `timeToFirstFrameRasterizedMicros` as cold and warm start and emits no
-// separate TTID field. It is declared here so the view renders its slot with
-// an explicit empty state rather than silently showing four of five metrics.
+// Startup is one measurement under two conditions, so it is two series. The
+// ids stay `cold_start_ms` and `warm_start_ms` because they are the keys the
+// harness stores and the keys baselines are filed under.
 const List<_MetricDefinition> _systemHealthMetrics = <_MetricDefinition>[
-  _MetricDefinition('cold_start_ms', 'Cold start', 'ms', 'cold_start_ms.median'),
-  _MetricDefinition('ttid_ms', 'TTID', 'ms', 'ttid_ms.median'),
-  _MetricDefinition('warm_start_ms', 'Warm start', 'ms', 'warm_start_ms.median'),
+  _MetricDefinition('cold_start_ms', 'TTID (cold)', 'ms', 'cold_start_ms.median'),
+  _MetricDefinition('warm_start_ms', 'TTID (warm)', 'ms', 'warm_start_ms.median'),
   _MetricDefinition('memory', 'Peak memory', 'KB', 'memory.peak_rss_kb'),
   _MetricDefinition('jank', 'Jank (p90 build)', 'ms', 'jank.p90_frame_build_ms'),
 ];
