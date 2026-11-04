@@ -1,9 +1,7 @@
 /// Identifies a Your rates item for one user of one company by its category,
 /// name and pricing method. The name rule matches the server's `item_name_key`: it
 /// ignores case and extra spaces.
-class YourRateRefusalKey {
-  const YourRateRefusalKey._();
-
+abstract final class YourRateRefusalKey {
   /// [name] with outer spaces removed, runs of spaces made one, in lower case.
   static String normalizeName(String name) =>
       name.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
