@@ -3664,6 +3664,18 @@ abstract class AppLocalizations {
   /// **'Here you can see smart suggestions from us'**
   String get calculatorStripPlaceholder;
 
+  /// Screen-reader label of a tape chip for a bracket the user is still typing inside; inside is what has been typed in it so far
+  ///
+  /// In en, this message translates to:
+  /// **'Open bracket, {inside}'**
+  String calculatorBracketOpenSemantics(String inside);
+
+  /// Screen-reader label of a tape chip for a closed bracket; inside is what was typed in it
+  ///
+  /// In en, this message translates to:
+  /// **'Bracket, {inside}'**
+  String calculatorBracketClosedSemantics(String inside);
+
   /// Marker on the calculator suggestion strip for the suggestions that do not fit in the row
   ///
   /// In en, this message translates to:

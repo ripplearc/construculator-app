@@ -230,16 +230,11 @@
             <mutation text="final chip = active; if (chip == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return _replaceLast(chip.copyWith(entry: const EntryBuffer(), exact: () =&gt; null, poundsPerTon: () =&gt; null));"/>
             <mutation text="final chip = active; if (chip == null || chip.entry.isEmpty) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
         </regex>
-        <regex pattern="if \(openBracket case final bracket\?\) \{\s*if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return const TapeRefused\(TapeRefusal\.nothingTypedInGroup\);\s*\}\s*return _inside\(bracket, \(inner\) =&gt; inner\.clearActive\(\)\);\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
+        <regex pattern="if \(openBracket case final bracket\?\) \{\s*return switch \(_inside\(bracket, \(inner\) =&gt; inner\.clearActive\(\)\)\) \{\s*TapeRefused\(reason: TapeRefusal\.nothingBeingTyped\) =&gt;\s*const TapeRefused\(\s*TapeRefusal\.nothingTypedInGroup,\s*\),\s*final outcome =&gt; outcome,\s*\};\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
             <mutation text=""/>
             <mutation text="if (openBracket case final bracket?) { return _inside(bracket, (inner) =&gt; inner.clearActive()); }"/>
         </regex>
 
-        <!-- RULE CA-1087: ✕ in a group whose only chip ✕ emptied says nothing
-             is being typed, instead of nothing typed in this group yet -->
-        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{" dotAll="true" id="tape.clear_active.emptied_group">
-            <mutation text="if (bracket.inner.isEmpty) {"/>
-        </regex>
 
         <!-- RULE CA-1088d: a trig chip on the right of an operator no longer
              says it continues the chain, or every trig chip does -->

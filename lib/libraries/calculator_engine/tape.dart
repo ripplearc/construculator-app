@@ -1292,20 +1292,26 @@ class Tape extends Equatable {
   /// backspace to delete the chip"; walkthrough 21.2, step 12: ✕ on Length
   /// 7 leaves "Length…"), so 22ft + 18 ✕ 20 [Feet] = is 42ft, Width 5 [Lbs]
   /// (refused) ✕ 5 [Feet] is Width 5ft, and 2 + (3 × 4 ✕ 5) = is 17; inside
-  /// an open bracket it empties the chip being typed there, and on a bracket
-  /// with nothing typed in it yet, or nothing left after ✕ emptied its
-  /// chip, it is refused ([TapeRefusal.nothingTypedInGroup]). With nothing being typed — the
-  /// empty chip an operator just opened, the divisor ÷ 0 reopened, or a
-  /// finished tape — it is refused ([TapeRefusal.nothingBeingTyped]): ✕
-  /// "clears the value in progress when something is typed" (Section 5,
-  /// "Closes the calculator"), so 2 + (3 + ✕ 4) = is 9 and 5 ÷ 0 = ✕ 2 = is
-  /// 2.5, and on a finished tape the caller closes the calculator instead.
+  /// an open bracket it empties the chip being typed there, and with
+  /// nothing typed in the group — just opened, its chip emptied by a
+  /// first ✕, or the empty chip an operator opened inside — it is refused
+  /// with the group's own reason ([TapeRefusal.nothingTypedInGroup];
+  /// Section 7, "Nothing typed in this group yet"; decision tree row 166),
+  /// so 2 + (3 ✕ ✕ never reads as nothing being typed and 2 + (3 + ✕ 4) =
+  /// is 9. With nothing being typed outside a bracket — the empty chip an
+  /// operator just opened, the divisor ÷ 0 reopened, or a finished tape —
+  /// it is refused ([TapeRefusal.nothingBeingTyped]): ✕ "clears the value
+  /// in progress when something is typed" (Section 5, "Closes the
+  /// calculator"), and the caller closes the calculator in its place, as
+  /// the prototype's ✕ does with nothing typed.
   TapeOutcome clearActive() {
     if (openBracket case final bracket?) {
-      if (bracket.inner.every(_holdsNothingTyped)) {
-        return const TapeRefused(TapeRefusal.nothingTypedInGroup);
-      }
-      return _inside(bracket, (inner) => inner.clearActive());
+      return switch (_inside(bracket, (inner) => inner.clearActive())) {
+        TapeRefused(reason: TapeRefusal.nothingBeingTyped) => const TapeRefused(
+          TapeRefusal.nothingTypedInGroup,
+        ),
+        final outcome => outcome,
+      };
     }
     final chip = active;
     if (chip == null || chip.entry.isEmpty) {
@@ -1319,9 +1325,6 @@ class Tape extends Equatable {
       ),
     );
   }
-
-  static bool _holdsNothingTyped(TapeChip chip) =>
-      chip is ValueChip && chip.entry.isEmpty && chip.operator == null;
 
   /// [/] goes into the active chip. A recalled angle is a finished value
   /// (rule 4.16), so the key is refused on it as the unit keys are: 45

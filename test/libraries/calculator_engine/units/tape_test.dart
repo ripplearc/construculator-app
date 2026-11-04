@@ -588,7 +588,11 @@ void main() {
         expect(press(const Tape(), '2 2 ft +').clearActive(), refused);
         final opened = changed(press(const Tape(), '2 +').pressBracket());
         final plus = press(opened, '3 +');
-        expect(plus.clearActive(), refused);
+        expect(
+          plus.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+          reason: 'inside a group the refusal names the group',
+        );
         expect(
           landed(press(changed(press(plus, '4').pressBracket()), '=')),
           '9',
@@ -601,15 +605,12 @@ void main() {
         expect(landed(press(reopened, '2 =')), '2.5');
       });
 
-      test('✕ in a bracket with nothing typed in it is refused with its own '
-          'reason, before anything is typed and again once ✕ emptied the '
-          'chip inside, while a group that holds a value says nothing is '
-          'being typed (walkthrough 12.9)', () {
+      test('✕ in a bracket with nothing typed in it is refused with the '
+          'group\'s own reason, whether the group is empty or ✕ emptied the '
+          'chip inside (Section 7; decision tree row 166)', () {
+        const refused = TapeRefused(TapeRefusal.nothingTypedInGroup);
         final opened = changed(press(const Tape(), '2 +').pressBracket());
-        expect(
-          opened.clearActive(),
-          const TapeRefused(TapeRefusal.nothingTypedInGroup),
-        );
+        expect(opened.clearActive(), refused);
         final emptied = changed(press(opened, '3').clearActive());
         expect(
           (emptied.chips.last as BracketChip).inner.single,
@@ -617,14 +618,13 @@ void main() {
               .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
               .having((chip) => chip.isActive, 'active', isTrue),
         );
+        expect(emptied.clearActive(), refused);
         expect(
-          emptied.clearActive(),
-          const TapeRefused(TapeRefusal.nothingTypedInGroup),
-        );
-        final waiting = changed(press(opened, '3').pressOperator(Operator.add));
-        expect(
-          waiting.clearActive(),
-          const TapeRefused(TapeRefusal.nothingBeingTyped),
+          press(opened, '3 +').clearActive(),
+          refused,
+          reason:
+              '✕ on the empty chip an operator opened inside is the same '
+              'refusal, and the group stays',
         );
       });
 
