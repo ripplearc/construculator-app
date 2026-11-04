@@ -459,6 +459,29 @@ void main() {
           expect(transaction.isCompleted, isTrue);
         });
 
+        test('a your_rates insert the server cannot find is still retried, '
+            'never skipped', () async {
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeSupabase.postgrestErrorCode = PostgresErrorCode.noDataFound;
+          final transaction = FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'your_rates', 'phone-2-id', null, {
+              'company_id': 'company-1',
+              'category': 'equipment',
+              'item_name': 'Mini excavator',
+              'rate_amount': 400.0,
+            }),
+          ]);
+          fakeDatabase.setNextTransaction(transaction);
+
+          await expectLater(
+            connector.uploadData(fakeDatabase),
+            throwsException,
+          );
+
+          expect(transaction.isCompleted, isFalse);
+        });
+
         test('a missing row on another table is still retried', () async {
           fakeSupabase.shouldThrowOnUpdate = true;
           fakeSupabase.updateExceptionType = SupabaseExceptionType.postgrest;

@@ -143,15 +143,14 @@ void main() {
         server.shouldThrowOnUpdate = true;
         server.updateExceptionType = SupabaseExceptionType.postgrest;
         server.postgrestErrorCode = code;
+        final patch = <String, Object?>{'rate_amount': refusedAmount};
+        if (changes != null) {
+          patch
+            ..clear()
+            ..addAll(changes);
+        }
         final transaction = FakeCrudTransaction([
-          CrudEntry(
-            2,
-            UpdateType.patch,
-            'your_rates',
-            saved.id,
-            null,
-            changes ?? {'rate_amount': refusedAmount},
-          ),
+          CrudEntry(2, UpdateType.patch, 'your_rates', saved.id, null, patch),
         ]);
         final database = FakePhoneBackedPowerSyncDatabase(phone)
           ..setNextTransaction(transaction);
