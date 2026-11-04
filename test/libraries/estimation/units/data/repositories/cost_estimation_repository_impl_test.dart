@@ -3230,6 +3230,143 @@ void main() {
         },
       );
 
+      group('a new estimate the phone does not have yet', () {
+        Future<CostEstimate> createUnsyncedEstimate(
+          StreamQueue<Either<Failure, List<CostEstimate>>> queue,
+        ) async {
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.next;
+          return created;
+        }
+
+        test('shows a rename made before the phone has the row', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = await createUnsyncedEstimate(queue);
+
+          await repository.renameEstimation(
+            estimationId: created.id,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          syncUnrelatedEstimate();
+
+          expect(
+            estimateIn(await queue.next, created.id).estimateName,
+            newEstimateName,
+          );
+          await queue.cancel();
+        });
+
+        test('shows a lock made before the phone has the row', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = await createUnsyncedEstimate(queue);
+
+          await repository.changeLockStatus(
+            estimationId: created.id,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          syncUnrelatedEstimate();
+
+          expect(
+            estimateIn(await queue.next, created.id).lockStatus.isLocked,
+            isTrue,
+          );
+          await queue.cancel();
+        });
+
+        test(
+          'stays gone after a delete made before the phone has the row',
+          () async {
+            final queue = await watchSeeded([projectEstimate()]);
+            final created = await createUnsyncedEstimate(queue);
+
+            await repository.deleteEstimation(created.id, testProjectId);
+            expect(idsIn(await queue.next), [estimateIdDefault]);
+            syncUnrelatedEstimate();
+
+            expect(idsIn(await queue.next), [
+              estimateIdDefault,
+              unrelatedEstimateId,
+            ]);
+            await queue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a rename made before the phone had the row stops being applied once the row arrives with it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.next;
+          await repository.renameEstimation(
+            estimationId: created.id,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          Map<String, dynamic> row(String name) => buildEstimationMap(
+            id: created.id,
+            projectId: testProjectId,
+            estimateName: name,
+            createdAt: '2026-07-01T00:00:00.000Z',
+          );
+
+          fakePhoneDatabase.seedRows([row(newEstimateName)]);
+          await queue.next;
+          fakePhoneDatabase.replaceRow(row('Renamed by a teammate'));
+
+          expect(
+            estimateIn(await queue.next, created.id).estimateName,
+            'Renamed by a teammate',
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a failed second rename of the same estimate keeps the first rename on screen',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+
+          final second = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: 'Second name',
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          syncUnrelatedEstimate();
+
+          expect(second.isLeft(), isTrue);
+          expect(estimateIn(await queue.next).estimateName, newEstimateName);
+          await queue.cancel();
+        },
+      );
+
       group('an edit that outlived its list', () {
         Map<String, dynamic> renamedBy(String name) => buildEstimationMap(
           id: estimateIdDefault,

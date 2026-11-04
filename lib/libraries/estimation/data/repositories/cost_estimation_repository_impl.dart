@@ -42,6 +42,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final Map<String, PaginationState> _paginationStates = {};
   final Map<String, int> _visibleLimits = {};
   final Map<String, _PhoneCopy> _phoneCopies = {};
+  int _editCount = 0;
   final Map<String, StreamSubscription<List<CostEstimateDto>>>
   _localSubscriptions = {};
   final Map<String, Completer<Either<Failure, List<CostEstimate>>>>
@@ -304,7 +305,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _phoneCopies[streamKey] = (estimates: estimates, view: view);
     var shown = estimates;
     for (final edit in _pendingEditsOf(projectId)) {
-      if (edit.isReflected(estimates, view)) {
+      if (_isReflectedOn(edit, estimates, view)) {
         if (edit.awaitingKeys.remove(streamKey)) edit.wasReflected = true;
       } else {
         shown = edit.apply(shown, view);
@@ -342,16 +343,18 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String projectId, {
     required _Apply apply,
     required _IsReflected isReflected,
+    String? estimationId,
   }) {
     // ignore: no_direct_instantiation, reason: file-private value holder, not a service
     final edit = _PendingEdit(
       projectId: projectId,
       apply: apply,
       isReflected: isReflected,
+      estimationId: estimationId,
     );
     for (final key in _watchedKeysOf(projectId)) {
       final copy = _phoneCopies[key];
-      if (copy == null || !isReflected(copy.estimates, copy.view)) {
+      if (copy == null || !_isReflectedOn(edit, copy.estimates, copy.view)) {
         edit.awaitingKeys.add(key);
       }
     }
@@ -362,9 +365,23 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     return edit;
   }
 
-  void _forgetPendingEdit(String editKey, _PendingEdit edit) {
-    if (identical(_pendingEdits[editKey], edit)) _pendingEdits.remove(editKey);
+  bool _isReflectedOn(
+    _PendingEdit edit,
+    List<CostEstimate> estimates,
+    _ListView view,
+  ) {
+    final estimationId = edit.estimationId;
+    final rowIsStillBeingCreated =
+        estimationId != null &&
+        _pendingEdits.containsKey('create:$estimationId') &&
+        estimates.every((e) => e.id != estimationId);
+    return !rowIsStillBeingCreated && edit.isReflected(estimates, view);
   }
+
+  String _newEditKey(String kind, String estimationId) =>
+      '$kind:$estimationId:${_editCount++}';
+
+  void _forgetPendingEdit(String editKey) => _pendingEdits.remove(editKey);
 
   void _rememberServerVersion(
     _PendingEdit edit, {
@@ -583,10 +600,11 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
     String projectId,
   ) async {
-    final deleteEdit = 'delete:$estimationId';
-    final edit = _rememberPendingEdit(
+    final deleteEdit = _newEditKey('delete', estimationId);
+    _rememberPendingEdit(
       deleteEdit,
       projectId,
+      estimationId: estimationId,
       apply: (estimates, _) =>
           estimates.where((e) => e.id != estimationId).toList(),
       isReflected: (estimates, _) =>
@@ -613,7 +631,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
-      _forgetPendingEdit(deleteEdit, edit);
+      _forgetPendingEdit(deleteEdit);
       _republishProject(projectId);
 
       return Left(failure);
@@ -626,7 +644,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required bool isLocked,
     required String projectId,
   }) async {
-    final lockEdit = 'lock:$estimationId';
+    final lockEdit = _newEditKey('lock', estimationId);
     final optimisticLockStatus = isLocked
         ? LockStatus.locked()
         : LockStatus.unlocked();
@@ -634,6 +652,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     final edit = _rememberPendingEdit(
       lockEdit,
       projectId,
+      estimationId: estimationId,
       apply: (estimates, _) => _replaceEstimation(
         estimates,
         estimationId,
@@ -666,7 +685,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       return Right(updatedEstimation);
     } catch (e) {
-      _forgetPendingEdit(lockEdit, edit);
+      _forgetPendingEdit(lockEdit);
       _republishProject(projectId);
       return Left(
         _handleError(
@@ -706,11 +725,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required String projectId,
   }) async {
     final originalEstimation = _getOriginalEstimation(projectId, estimationId);
-    final renameEdit = 'rename:$estimationId';
+    final renameEdit = _newEditKey('rename', estimationId);
     bool showsWrite(CostEstimate e) => e.estimateName == newName;
     final edit = _rememberPendingEdit(
       renameEdit,
       projectId,
+      estimationId: estimationId,
       apply: (estimates, _) => _replaceEstimation(
         estimates,
         estimationId,
@@ -749,7 +769,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       return Right(updatedEstimation);
     } catch (e) {
-      _forgetPendingEdit(renameEdit, edit);
+      _forgetPendingEdit(renameEdit);
       _republishProject(projectId);
       return Left(
         _handleError(
@@ -776,9 +796,11 @@ class _PendingEdit {
     required this.projectId,
     required this.apply,
     required this.isReflected,
+    this.estimationId,
   });
 
   final String projectId;
+  final String? estimationId;
   final Set<String> awaitingKeys = {};
   _Apply apply;
   _IsReflected isReflected;
