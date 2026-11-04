@@ -206,6 +206,7 @@ class EstimationModule extends Module {
       () => EquipmentCostFormBloc(
         repository: i.get(),
         yourRatesRepository: i.get(),
+        companyResolver: i.get(),
         clock: i.get(),
       ),
     );

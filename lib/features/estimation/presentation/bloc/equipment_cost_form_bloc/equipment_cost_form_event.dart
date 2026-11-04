@@ -115,3 +115,52 @@ class EquipmentOutsizedFeeAcceptedEvent extends EquipmentCostFormEvent {
 class EquipmentOutsizedFeeDeclinedEvent extends EquipmentCostFormEvent {
   const EquipmentOutsizedFeeDeclinedEvent();
 }
+
+/// Fired when the item name or the pricing method changes, to start watching
+/// whether the server refused the saved default of that item. Restarts the
+/// previous watch. The bloc fires it itself.
+class EquipmentRefusalWatchRequested extends EquipmentCostFormEvent {
+  const EquipmentRefusalWatchRequested({
+    required this.itemName,
+    required this.method,
+  });
+
+  final String itemName;
+  final EquipmentPricingMethod method;
+}
+
+/// Fired for every report of the refusal watch, so the bloc handles the
+/// report like any other event. The bloc fires it itself.
+class EquipmentRefusalReported extends EquipmentCostFormEvent {
+  const EquipmentRefusalReported({
+    required this.companyId,
+    required this.itemName,
+    required this.method,
+    required this.result,
+  });
+
+  final String companyId;
+  final String itemName;
+  final EquipmentPricingMethod method;
+  final Either<Failure, RefusedYourRate?> result;
+}
+
+/// Fired when a refusal is shown, to look up the estimate whose line keeps the
+/// refused price and add its name to the notice. The bloc fires it itself.
+class EquipmentRefusalNoticeLookedUp extends EquipmentCostFormEvent {
+  const EquipmentRefusalNoticeLookedUp({
+    required this.companyId,
+    required this.itemName,
+    required this.refusal,
+  });
+
+  final String companyId;
+  final String itemName;
+  final RefusedYourRate refusal;
+}
+
+/// Fired by the form once it has drawn the "Not kept" message, so the refusal
+/// is recorded as shown only when the user could see it.
+class EquipmentRefusalNoticeSeen extends EquipmentCostFormEvent {
+  const EquipmentRefusalNoticeSeen();
+}

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- EQUIPMENT COST FORM BLOC MUTATION TESTING (Not kept notice) -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(result\.isLeft\(\)\) return;" id="equipment_form.refusal.ignore_read_failure">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(refusal\.wasShown\) \{" id="equipment_form.refusal.invert_was_shown">
+            <mutation text="if (!refusal.wasShown) {"/>
+        </regex>
+
+        <regex pattern="_noticesKeptAfterShownByItem\.remove\(shownKey\);" id="equipment_form.refusal.keep_notice_after_forget">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(shownKey != _watchedRefusalKey\) return;" id="equipment_form.refusal.accept_stale_report">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(key == _watchedRefusalKey\) return;" id="equipment_form.refusal.restart_same_key">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(event\.itemName\.trim\(\)\.isEmpty\) \{" id="equipment_form.refusal.blank_name_watches">
+            <mutation text="if (event.itemName.trim().isNotEmpty) {"/>
+        </regex>
+
+        <regex pattern="if \(companyId == null\) \{" id="equipment_form.refusal.no_company_watches">
+            <mutation text="if (companyId != null) {"/>
+        </regex>
+
+        <regex pattern="await _estimateLookup;" id="equipment_form.refusal.seen_does_not_wait">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(notice\.estimateLookupFailed\) return;" id="equipment_form.refusal.mark_after_failed_lookup">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(current != base\) return;" id="equipment_form.refusal.name_replaces_changed_notice">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(marked\.isRight\(\)\) \{" id="equipment_form.refusal.remember_when_mark_fails">
+            <mutation text="if (marked.isLeft()) {"/>
+        </regex>
+
+        <regex pattern="_noticesKeptAfterShownByItem\[_shownKeyOf\(itemName, method\)\] = notice;" id="equipment_form.refusal.never_remember_notice">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="estimateName: estimateName," id="equipment_form.refusal.drop_estimate">
+            <mutation text="estimateName: null,"/>
+        </regex>
+
+        <regex pattern="acceptedAmount: refusal\.acceptedAmount," id="equipment_form.refusal.drop_accepted">
+            <mutation text="acceptedAmount: null,"/>
+        </regex>
+
+        <regex pattern="refusedAmount: refusal\.refusedAmount," id="equipment_form.refusal.drop_refused">
+            <mutation text="refusedAmount: 0,"/>
+        </regex>
+
+        <regex pattern="if \(isClosed \|\|" id="equipment_form.refusal.watch_after_close">
+            <mutation text="if (false ||"/>
+        </regex>
+
+        <regex pattern="await _refusalWatch\?\.cancel\(\);\s*_refusalWatch = null;" id="equipment_form.refusal.leak_previous_watch">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="EquipmentCostFormOutsizedFeeConfirm\(\) =&gt;\s*EquipmentCostFormOutsizedFeeConfirm\(data\)," id="equipment_form.refusal.late_notice_resets_confirm">
+            <mutation text="EquipmentCostFormOutsizedFeeConfirm() =&gt; EquipmentCostFormEditing(data),"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="equipment_form_bloc" expected-return="0">flutter test test/features/estimations/units/blocs/equipment_cost_form_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="70">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

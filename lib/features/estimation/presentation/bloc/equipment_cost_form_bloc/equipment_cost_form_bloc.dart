@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,16 +30,26 @@ class EquipmentCostFormBloc
     extends Bloc<EquipmentCostFormEvent, EquipmentCostFormState> {
   final CostItemRepository _repository;
   final YourRatesRepository _yourRatesRepository;
+  final CurrentCompanyResolver _companyResolver;
+  static final _logger = AppLogger().tag('EquipmentCostFormBloc');
   final Clock _clock;
   EquipmentCostFormData _formValuesAtOpening = const EquipmentCostFormData();
+
+  String? _watchedRefusalKey;
+  StreamSubscription<Either<Failure, RefusedYourRate?>>? _refusalWatch;
+  Future<void>? _estimateLookup;
+  String? _companyId;
+
+  final Map<String, RefusedDefaultNotice> _noticesKeptAfterShownByItem = {};
 
   EquipmentCostFormBloc({
     required this._repository,
     required this._yourRatesRepository,
+    required this._companyResolver,
     required this._clock,
   }) : super(const EquipmentCostFormInitial()) {
-    on<EquipmentCostItemTypeChanged>(
-      (e, emit) => _emit(
+    on<EquipmentCostItemTypeChanged>((e, emit) {
+      _emit(
         emit,
         (d) => d.copyWith(
           equipmentType: e.value,
@@ -41,9 +58,15 @@ class EquipmentCostFormBloc
               ? d.recalledRateMethod
               : null,
         ),
-      ),
-    );
+      );
+      _watchRefusalWhenItemChanges(e.value, state.formData.method);
+    });
+    on<EquipmentRefusalWatchRequested>(_onRefusalWatchRequested);
+    on<EquipmentRefusalReported>(_onRefusalReported);
+    on<EquipmentRefusalNoticeLookedUp>(_onRefusalNoticeLookedUp);
+    on<EquipmentRefusalNoticeSeen>(_onRefusalNoticeSeen);
     on<EquipmentMethodSwitchedEvent>((e, emit) {
+      _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);
       _emit(emit, (d) {
         if (e.method == d.method) return d;
         return d.copyWith(
@@ -76,6 +99,7 @@ class EquipmentCostFormBloc
       );
     });
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
+      _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);
       _emit(emit, (d) {
         final recalled = d.copyWith(
           method: e.method,
@@ -121,6 +145,206 @@ class EquipmentCostFormBloc
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
     on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
+  }
+
+  void _watchRefusalWhenItemChanges(
+    String itemName,
+    EquipmentPricingMethod method,
+  ) {
+    final key =
+        '${YourRateRefusalKey.normalizeName(itemName)}|${method.toJson()}';
+    if (key == _watchedRefusalKey) return;
+    _watchedRefusalKey = key;
+    add(EquipmentRefusalWatchRequested(itemName: itemName, method: method));
+  }
+
+  Future<void> _onRefusalWatchRequested(
+    EquipmentRefusalWatchRequested event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    await _refusalWatch?.cancel();
+    _refusalWatch = null;
+    if (event.itemName.trim().isEmpty) {
+      emit(_currentStateKeepingTypeWithNotice(null));
+      return;
+    }
+    final companyId = await _resolveCompanyId();
+    if (isClosed ||
+        _shownKeyOf(event.itemName, event.method) != _watchedRefusalKey) {
+      return;
+    }
+    if (companyId == null) {
+      emit(_currentStateKeepingTypeWithNotice(null));
+      return;
+    }
+    try {
+      _refusalWatch = _yourRatesRepository
+          .watchRefusal(
+            companyId: companyId,
+            category: CostItemType.equipment,
+            itemName: event.itemName,
+            equipmentMethod: event.method,
+          )
+          .listen(
+            (result) => add(
+              EquipmentRefusalReported(
+                companyId: companyId,
+                itemName: event.itemName,
+                method: event.method,
+                result: result,
+              ),
+            ),
+          );
+    } catch (error, stack) {
+      _logger.warning(
+        'Could not watch the refusal of the item; the form shows no notice',
+        error,
+        stack,
+      );
+    }
+  }
+
+  void _onRefusalReported(
+    EquipmentRefusalReported event,
+    Emitter<EquipmentCostFormState> emit,
+  ) {
+    final result = event.result;
+    if (result.isLeft()) return;
+    final shownKey = _shownKeyOf(event.itemName, event.method);
+    if (shownKey != _watchedRefusalKey) return;
+    final refusal = result.getRightOrNull();
+    if (refusal == null) {
+      _noticesKeptAfterShownByItem.remove(shownKey);
+      emit(_currentStateKeepingTypeWithNotice(null));
+      return;
+    }
+    if (refusal.wasShown) {
+      emit(
+        _currentStateKeepingTypeWithNotice(
+          _noticesKeptAfterShownByItem[shownKey],
+        ),
+      );
+      return;
+    }
+    add(
+      EquipmentRefusalNoticeLookedUp(
+        companyId: event.companyId,
+        itemName: event.itemName,
+        refusal: refusal,
+      ),
+    );
+    emit(
+      _currentStateKeepingTypeWithNotice(
+        _noticeOf(refusal, estimateName: null),
+      ),
+    );
+  }
+
+  Future<String?> _resolveCompanyId() async {
+    final resolved = _companyId;
+    if (resolved != null) return resolved;
+    final result = await _companyResolver.resolve();
+    return _companyId = result.getRightOrNull();
+  }
+
+  Future<void> _onRefusalNoticeLookedUp(
+    EquipmentRefusalNoticeLookedUp event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    final method = event.refusal.equipmentMethod;
+    if (method == null) return;
+    final lookupDone = Completer<void>();
+    _estimateLookup = lookupDone.future;
+    try {
+      final lookup = await _repository.getEstimateNameKeepingEquipmentRate(
+        companyId: event.companyId,
+        itemName: event.refusal.itemName,
+        pricingMethod: method,
+        rateAmount: event.refusal.refusedAmount,
+      );
+      final current = state.formData.refusedDefault;
+      final base = _noticeOf(event.refusal, estimateName: null);
+      if (current != base) return;
+      emit(
+        _currentStateKeepingTypeWithNotice(
+          lookup.fold(
+            (_) => _noticeOf(
+              event.refusal,
+              estimateName: null,
+              estimateLookupFailed: true,
+            ),
+            (name) => _noticeOf(event.refusal, estimateName: name),
+          ),
+        ),
+      );
+    } finally {
+      lookupDone.complete();
+    }
+  }
+
+  Future<void> _onRefusalNoticeSeen(
+    EquipmentRefusalNoticeSeen event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    await _estimateLookup;
+    final notice = state.formData.refusedDefault;
+    final companyId = _companyId;
+    if (notice == null || companyId == null) return;
+    if (notice.estimateLookupFailed) return;
+    final itemName = state.formData.equipmentType;
+    final method = state.formData.method;
+    final marked = await _yourRatesRepository.markRefusalShown(
+      companyId: companyId,
+      category: CostItemType.equipment,
+      itemName: itemName,
+      equipmentMethod: method,
+    );
+    if (marked.isRight()) {
+      _noticesKeptAfterShownByItem[_shownKeyOf(itemName, method)] = notice;
+    }
+  }
+
+  static String _shownKeyOf(String itemName, EquipmentPricingMethod method) =>
+      '${YourRateRefusalKey.normalizeName(itemName)}|${method.toJson()}';
+
+  RefusedDefaultNotice _noticeOf(
+    RefusedYourRate refusal, {
+    required String? estimateName,
+    bool estimateLookupFailed = false,
+  }) => RefusedDefaultNotice(
+    refusedAmount: refusal.refusedAmount,
+    acceptedAmount: refusal.acceptedAmount,
+    estimateName: estimateName,
+    estimateLookupFailed: estimateLookupFailed,
+  );
+
+  EquipmentCostFormState _currentStateKeepingTypeWithNotice(
+    RefusedDefaultNotice? notice,
+  ) {
+    final current = state;
+    if (current.formData.refusedDefault == notice) return current;
+    final data = current.formData.copyWith(refusedDefault: notice);
+    return switch (current) {
+      EquipmentCostFormInitial() ||
+      EquipmentCostFormEditing() => EquipmentCostFormEditing(_validated(data)),
+      EquipmentCostFormOutsizedFeeConfirm() =>
+        EquipmentCostFormOutsizedFeeConfirm(data),
+      EquipmentCostFormSubmitting() => EquipmentCostFormSubmitting(data),
+      EquipmentCostFormSuccess(:final createdItem) => EquipmentCostFormSuccess(
+        data,
+        createdItem,
+      ),
+      EquipmentCostFormFailure(:final failure) => EquipmentCostFormFailure(
+        data,
+        failure,
+      ),
+    };
+  }
+
+  @override
+  Future<void> close() async {
+    await _refusalWatch?.cancel();
+    return super.close();
   }
 
   void _emit(
