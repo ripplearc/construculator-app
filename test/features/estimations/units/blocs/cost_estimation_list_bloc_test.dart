@@ -9,6 +9,7 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
@@ -22,7 +23,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../../utils/fake_cost_estimates_database.dart';
 
 void main() {
   group('CostEstimationListBloc', () {

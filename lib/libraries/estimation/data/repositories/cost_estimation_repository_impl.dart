@@ -327,8 +327,18 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       key: _cachedEstimations[key] ?? [],
   };
 
-  void _restoreCachedLists(Map<String, List<CostEstimate>> lists) {
-    lists.forEach((key, estimates) => _emitToStream(key, Right(estimates)));
+  void _putBackDeletedEstimation(
+    String estimationId,
+    Map<String, List<CostEstimate>> originalLists,
+  ) {
+    originalLists.forEach((key, original) {
+      final index = original.indexWhere((e) => e.id == estimationId);
+      final current = _cachedEstimations[key] ?? const <CostEstimate>[];
+      if (index == -1 || current.any((e) => e.id == estimationId)) return;
+      final restored = [...current]
+        ..insert(index.clamp(0, current.length), original[index]);
+      _emitToStream(key, Right(restored));
+    });
   }
 
   CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
@@ -529,7 +539,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
-      _restoreCachedLists(originalLists);
+      _putBackDeletedEstimation(estimationId, originalLists);
 
       return Left(failure);
     }

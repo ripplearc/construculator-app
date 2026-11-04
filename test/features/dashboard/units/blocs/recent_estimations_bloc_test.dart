@@ -7,6 +7,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -19,7 +20,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../../utils/fake_cost_estimates_database.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
