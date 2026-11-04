@@ -30,9 +30,9 @@ abstract class SentryWrapper {
   /// If SENTRY_DSN is not set or empty, the app will run without Sentry
   /// initialization to prevent silent no-op scenarios.
   ///
-  /// [appRunner] The function that runs the Flutter app. It may be async and
-  /// is awaited, so anything it does before `runApp`, such as starting other
-  /// services, reports its failures to Sentry.
+  /// [appRunner] The function that runs the Flutter app. It can be async and
+  /// is awaited. A failure it throws is passed on to the caller. With a Sentry
+  /// DSN configured, the SDK's global error handlers report that failure.
   Future<void> initialize(FutureOr<void> Function() appRunner);
 
   /// Add a breadcrumb to track user actions leading up to an error
