@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -46,9 +47,27 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// write without failing the saves around it.
   bool failRefusalDeletes = false;
 
+  /// How many watches on the refused-defaults table are open right now.
+  int get openRefusalWatchCount => _openRefusalWatchCount;
+  int _openRefusalWatchCount = 0;
+
+  final StreamController<Object> _refusalFailures = StreamController.broadcast(
+    sync: true,
+  );
+
+  /// Makes every open watch on the refused-defaults table report [error], as
+  /// a failed read of the phone's database would.
+  void failRefusalWatches(Object error) => _refusalFailures.add(error);
+
+  final StreamController<void> _refusalChanges = StreamController.broadcast(
+    sync: true,
+  );
+
   /// Puts [row] in the refused-defaults table as the upload step would have.
-  void seedRefusal(Map<String, Object?> row) =>
-      _refusalRows[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+  void seedRefusal(Map<String, Object?> row) {
+    _refusalRows[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
+    _refusalChanges.add(null);
+  }
 
   /// The refused-defaults row with [id], or null if there is none.
   Map<String, Object?>? refusalRow(String id) => _refusalRows[id];
@@ -66,7 +85,78 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   void seedRows(List<Map<String, Object?>> rows) => rows.forEach(seedRow);
 
   /// Puts [row] on the phone as though sync had delivered it.
-  void seedRow(Map<String, Object?> row) => _rows.add(Map.of(row));
+  void seedRow(Map<String, Object?> row) {
+    _rows.add(Map.of(row));
+    _refusalChanges.add(null);
+  }
+
+  // Mirrors the LEFT JOIN of the real watch: the refusal beside every saved
+  // price of the same company, category and method, or beside null price
+  // columns when there is none.
+  List<Map<String, dynamic>> _refusalWithSavedPrices(
+    Map<String, Object?> refusal,
+  ) {
+    final prices = _rows.where(
+      (rate) =>
+          rate[DatabaseConstants.companyIdColumn] ==
+              refusal[DatabaseConstants.companyIdColumn] &&
+          rate[DatabaseConstants.categoryColumn] ==
+              refusal[DatabaseConstants.categoryColumn] &&
+          rate[DatabaseConstants.equipmentMethodColumn] ==
+              refusal[DatabaseConstants.equipmentMethodColumn],
+    );
+    if (prices.isEmpty) {
+      return [
+        {
+          ...refusal,
+          'rate_item_name': null,
+          'rate_entry_label': null,
+          'rate_amount': null,
+        },
+      ];
+    }
+    return [
+      for (final rate in prices)
+        {
+          ...refusal,
+          'rate_item_name': rate[DatabaseConstants.itemNameColumn],
+          'rate_entry_label': rate[DatabaseConstants.entryLabelColumn],
+          'rate_amount': rate[DatabaseConstants.rateAmountColumn],
+        },
+    ];
+  }
+
+  /// For the refused-defaults table, emits the row now and again after every
+  /// change to that table, as the real database does. Any other query is
+  /// answered by the base fake.
+  @override
+  Stream<List<Map<String, dynamic>>> watch(
+    String sql, {
+    List<Object?> parameters = const [],
+    Duration throttle = kDefaultWatchThrottle,
+  }) {
+    if (!sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
+      return super.watch(sql, parameters: parameters, throttle: throttle);
+    }
+    final id = parameters.single;
+    List<Map<String, dynamic>> current() {
+      final refusal = _refusalRows[id];
+      return refusal == null ? [] : _refusalWithSavedPrices(refusal);
+    }
+    return Stream.multi((listener) {
+      _openRefusalWatchCount++;
+      listener.add(current());
+      final subscription = _refusalChanges.stream.listen(
+        (_) => listener.add(current()),
+      );
+      final failures = _refusalFailures.stream.listen(listener.addError);
+      listener.onCancel = () {
+        _openRefusalWatchCount--;
+        failures.cancel();
+        return subscription.cancel();
+      };
+    });
+  }
 
   @override
   Future<List<Map<String, dynamic>>> getAll(
@@ -76,7 +166,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     await super.getAll(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       if (parameters.isEmpty) {
-        return [for (final row in _refusalRows.values) {...row}];
+        return [
+          for (final row in _refusalRows.values) {...row},
+        ];
       }
       final row = _refusalRows[parameters.single];
       return [
@@ -126,6 +218,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       if (sql.startsWith('DELETE')) {
         if (failRefusalDeletes) throw StateError('disk full');
         _refusalRows.remove(parameters.single);
+        _refusalChanges.add(null);
       } else if (sql.startsWith('INSERT')) {
         final columns = _insertColumns
             .firstMatch(sql)!
@@ -140,6 +233,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       } else {
         _refusalRows[parameters.last]?[DatabaseConstants.shownAtColumn] =
             parameters.first;
+        _refusalChanges.add(null);
       }
       return;
     }
@@ -168,6 +262,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       };
       _rows.add(inserted);
       insertedRows.add(inserted);
+      _refusalChanges.add(null);
     } else if (sql.startsWith('UPDATE')) {
       final assigned = _assignedColumns
           .allMatches(_updateAssignments.firstMatch(sql)!.group(1)!)
@@ -184,6 +279,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       for (var i = 0; i < assigned.length; i++) {
         row[assigned[i]] = parameters[i];
       }
+      _refusalChanges.add(null);
     }
   }
 
@@ -215,6 +311,8 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     _companyRows.clear();
     _refusalRows.clear();
     failRefusalDeletes = false;
+
+    _openRefusalWatchCount = 0;
     getAllGate = null;
     insertedRows.clear();
     updatedRowIds.clear();

@@ -36,6 +36,59 @@
         </regex>
         <regex pattern="words\.any\(name\.contains\)" dotAll="false" id="your_rates_repo.search.any_to_every">
             <mutation text="words.every(name.contains)"/>
+
+        </regex>
+
+        <regex pattern="refusal == null \|\| refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.keep_when_amounts_match">
+            <mutation text="refusal == null &amp;&amp; refusal.refusedAmount != dto.rateAmount"/>
+        </regex>
+
+        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.compare_equal">
+            <mutation text="refusal.refusedAmount == dto.rateAmount"/>
+        </regex>
+
+        <regex pattern="if \(acceptedAmount != null\)" id="your_rates.mask.drop_null_accepted">
+            <mutation text="if (acceptedAmount == null)"/>
+        </regex>
+
+        <regex pattern="lastAccepted\.add\(dto\.withRateAmount\(acceptedAmount\)\)" id="your_rates.mask.keep_refused_price">
+            <mutation text="lastAccepted.add(dto)"/>
+        </regex>
+
+        <regex pattern="refusal\.refusedRowId: refusal," id="your_rates.mask.key_by_wrong_id">
+            <mutation text="refusal.id: refusal,"/>
+        </regex>
+
+        <regex pattern="refusals\[dto\.id\]" id="your_rates.mask.look_up_wrong_row">
+            <mutation text="refusals[dto.companyId]"/>
+        </regex>
+
+        <regex pattern="await _forgetRefusalOf\(normalizedEntry\);" id="your_rates.save.keep_refusal">
+            <mutation text="// kept"/>
+        </regex>
+
+        <regex pattern="asLastAccepted: false," id="your_rates.save.check_filtered_rows">
+            <mutation text="asLastAccepted: true,"/>
+        </regex>
+
+        <regex pattern="\(refusal\) =&gt; Right\(refusal\?\.toEntity\(\)\)" id="your_rates.watch.drop_refusal">
+            <mutation text="(refusal) =&gt; const Right(null)"/>
+        </regex>
+
+        <regex pattern="sink\.add\(Left\(_handleError\(error\)\)\)" id="your_rates.watch.swallow_error">
+            <mutation text="sink.add(const Right(null))"/>
+        </regex>
+
+        <regex pattern="category: category\.toJson\(\),\s*itemName: itemName," id="your_rates.watch.wrong_category">
+            <mutation text="category: 'material', itemName: itemName,"/>
+        </regex>
+
+        <regex pattern="companyId: companyId,\s*category: category\.toJson\(\),\s*itemName: itemName,\s*equipmentMethod: equipmentMethod\?\.toJson\(\),\s*\);\s*return const Right\(null\);" id="your_rates.shown.skip_write">
+            <mutation text="return const Right(null);"/>
+        </regex>
+
+        <regex pattern="equipmentMethod: equipmentMethod\?\.toJson\(\),\s*\);\s*return const Right\(null\);" id="your_rates.shown.wrong_method">
+            <mutation text="equipmentMethod: null, ); return const Right(null);"/>
         </regex>
 
         <regex pattern="refusal\.userId == userId" dotAll="false" id="your_rates_repo.refusal.any_user">

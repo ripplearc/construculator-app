@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
@@ -156,6 +159,57 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   Future<Either<Failure, void>> recordRateUse(String rateId) async {
     try {
       await dataSource.stampLastUsedAtById(rateId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_handleError(e));
+    }
+  }
+
+  @override
+  Stream<Either<Failure, RefusedYourRate?>> watchRefusal({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  }) {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return Stream.value(const Right(null));
+    return refusalDataSource
+        .watchRefusalByItem(
+          userId: userId,
+          companyId: companyId,
+          category: category.toJson(),
+          itemName: itemName,
+          equipmentMethod: equipmentMethod?.toJson(),
+        )
+        .map<Either<Failure, RefusedYourRate?>>(
+          (refusal) => Right(refusal?.toEntity()),
+        )
+        .transform(
+          StreamTransformer.fromHandlers(
+            handleError: (error, stack, sink) =>
+                sink.add(Left(_handleError(error))),
+          ),
+        );
+  }
+
+  @override
+  Future<Either<Failure, void>> markRefusalShown({
+    required String companyId,
+    required CostItemType category,
+    required String itemName,
+    EquipmentPricingMethod? equipmentMethod,
+  }) async {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return const Right(null);
+    try {
+      await refusalDataSource.markRefusalShownByItem(
+        userId: userId,
+        companyId: companyId,
+        category: category.toJson(),
+        itemName: itemName,
+        equipmentMethod: equipmentMethod?.toJson(),
+      );
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e));

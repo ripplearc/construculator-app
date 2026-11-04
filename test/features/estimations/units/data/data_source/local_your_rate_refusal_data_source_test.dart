@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/local_your_rate_refusal_data_source.dart';
+import 'package:construculator/features/estimation/data/models/your_rate_refusal_dto.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -27,6 +28,7 @@ void main() {
       double refused = 450.0,
       double? accepted = 400.0,
       String? shownAt,
+      String? entryLabel,
     }) => {
       'id': YourRateRefusalKey.of(
         userId: userId,
@@ -41,9 +43,24 @@ void main() {
       'refused_row_id': 'row-1',
       'item_name': itemName,
       'equipment_method': method,
+      'entry_label': entryLabel,
       'refused_amount': refused,
       'accepted_amount': accepted,
       'shown_at': shownAt,
+    };
+
+    Map<String, Object?> rateRow({
+      required double amount,
+      String? entryLabel,
+      String itemName = 'Dumpster — 30 yd',
+    }) => {
+      'id': 'rate-${entryLabel.toString()}-$amount',
+      'company_id': companyA,
+      'category': 'equipment',
+      'item_name': itemName,
+      'equipment_method': 'job',
+      'entry_label': entryLabel,
+      'rate_amount': amount,
     };
 
     setUp(() {
@@ -396,6 +413,307 @@ void main() {
           ),
           isNotNull,
         );
+      });
+    });
+
+    group('watchRefusalByItem', () {
+      test('emits null while the server has refused nothing', () async {
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNull),
+        );
+      });
+
+      test('emits null for another user of the same company', () async {
+        database.seedRefusal(refusal(userId: userA));
+
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userB,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNull),
+        );
+      });
+
+      test('emits the refusal when the upload step records one', () async {
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emitsInOrder([
+            isNull,
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.refusedAmount,
+              'refusedAmount',
+              450.0,
+            ),
+          ]),
+        );
+
+        database.seedRefusal(refusal());
+
+        await emissions;
+      });
+
+      test('emits the shown time once the message was shown', () async {
+        database.seedRefusal(refusal());
+
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emitsInOrder([
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.shownAt,
+              'shownAt',
+              isNull,
+            ),
+            isA<YourRateRefusalDto>().having(
+              (refusal) => refusal.shownAt,
+              'shownAt',
+              isNotNull,
+            ),
+          ]),
+        );
+
+        await dataSource.markRefusalShownByItem(
+          userId: userA,
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+
+        await emissions;
+      });
+
+      test('emits null while the phone holds a newer price', () async {
+        database.seedRefusal(refusal());
+        database.seedRow(rateRow(amount: 460.0));
+
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNull),
+        );
+      });
+
+      test(
+        'emits null when a newer price syncs down after the refusal',
+        () async {
+          database.seedRefusal(refusal());
+
+          final emissions = expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emitsInOrder([isNotNull, isNull]),
+          );
+
+          database.seedRow(rateRow(amount: 460.0));
+
+          await emissions;
+        },
+      );
+
+      test(
+        'emits null when the newer price is saved under another spelling of the name',
+        () async {
+          database.seedRefusal(refusal(itemName: 'dumpster — 30 yd'));
+          database.seedRow(
+            rateRow(amount: 460.0, itemName: ' Dumpster —  30 YD '),
+          );
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'emits null when the newer price has the label in other capitals',
+        () async {
+          database.seedRefusal(refusal(entryLabel: 'Weekend'));
+          database.seedRow(rateRow(amount: 460.0, entryLabel: ' weekend  '));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'keeps emitting while the phone still holds the refused price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 450.0));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNotNull),
+          );
+        },
+      );
+
+      test(
+        'emits null when one of several rows holds the newer price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 999.0, entryLabel: 'Weekend'));
+          database.seedRow(rateRow(amount: 460.0));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNull),
+          );
+        },
+      );
+
+      test(
+        'keeps emitting when only a row of another item holds another price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 999.0, itemName: 'Excavator'));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNotNull),
+          );
+        },
+      );
+
+      test('keeps emitting while the phone holds the accepted price', () async {
+        database.seedRefusal(refusal());
+        database.seedRow(rateRow(amount: 400.0));
+
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNotNull),
+        );
+      });
+
+      test(
+        'keeps emitting when only another label holds another price',
+        () async {
+          database.seedRefusal(refusal());
+          database.seedRow(rateRow(amount: 999.0, entryLabel: 'Weekend'));
+
+          await expectLater(
+            dataSource.watchRefusalByItem(
+              userId: userA,
+              companyId: companyA,
+              category: 'equipment',
+              itemName: 'Dumpster — 30 yd',
+              equipmentMethod: 'job',
+            ),
+            emits(isNotNull),
+          );
+        },
+      );
+
+      test('does not emit another company\'s refusal', () async {
+        database.seedRefusal(refusal(companyId: companyA));
+
+        await expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyB,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emits(isNull),
+        );
+      });
+
+      test('emits null again once the refusal is forgotten', () async {
+        database.seedRefusal(refusal());
+
+        final emissions = expectLater(
+          dataSource.watchRefusalByItem(
+            userId: userA,
+            companyId: companyA,
+            category: 'equipment',
+            itemName: 'Dumpster — 30 yd',
+            equipmentMethod: 'job',
+          ),
+          emitsInOrder([isNotNull, isNull]),
+        );
+
+        await dataSource.deleteRefusalByItem(
+          userId: userA,
+          companyId: companyA,
+          category: 'equipment',
+          itemName: 'Dumpster — 30 yd',
+          equipmentMethod: 'job',
+        );
+
+        await emissions;
       });
     });
 

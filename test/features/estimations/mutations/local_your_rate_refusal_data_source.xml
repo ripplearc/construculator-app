@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- LOCAL YOUR RATE REFUSAL DATA SOURCE: the watch that hides a refusal once the phone holds a newer price -->
+    <files>
+        <file>lib/features/estimation/data/data_source/local_your_rate_refusal_data_source.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(rows\.isEmpty\) return null;" id="refusal_source.watch.keep_empty_refusal">
+            <mutation text="if (rows.isNotEmpty) return null;"/>
+        </regex>
+
+        <regex pattern="rows\.any\(\(row\) =&gt; _isReplacingPrice\(row, refusal\)\) \? null : refusal" id="refusal_source.watch.ignore_newer_price">
+            <mutation text="refusal"/>
+        </regex>
+
+        <regex pattern="rows\.any\(\(row\) =&gt; _isReplacingPrice\(row, refusal\)\)" id="refusal_source.watch.every_row_must_replace">
+            <mutation text="rows.every((row) =&gt; _isReplacingPrice(row, refusal))"/>
+        </regex>
+
+        <regex pattern="if \(name == null\) return false;" id="refusal_source.price.no_row_replaces">
+            <mutation text="if (name == null) return true;"/>
+        </regex>
+
+        <regex pattern="YourRateRefusalKey\.normalizeName\(name\) !=\s*YourRateRefusalKey\.normalizeName\(refusal\.itemName\)" id="refusal_source.price.name_exact">
+            <mutation text="name != refusal.itemName"/>
+        </regex>
+
+        <regex pattern="YourRateRefusalKey\.normalizeName\(name\) !=" id="refusal_source.price.name_ignored">
+            <mutation text="false &amp;&amp; YourRateRefusalKey.normalizeName(name) !="/>
+        </regex>
+
+        <regex pattern="YourRateRefusalKey\.normalizeLabel\(row\['rate_entry_label'\] as String\?\) !=\s*YourRateRefusalKey\.normalizeLabel\(refusal\.entryLabel\)" id="refusal_source.price.label_exact">
+            <mutation text="row['rate_entry_label'] != refusal.entryLabel"/>
+        </regex>
+
+        <regex pattern="return amount != refusal\.refusedAmount &amp;&amp; amount != refusal\.acceptedAmount;" id="refusal_source.price.refused_counts_as_newer">
+            <mutation text="return amount != refusal.acceptedAmount;"/>
+        </regex>
+
+        <regex pattern="return amount != refusal\.refusedAmount &amp;&amp; amount != refusal\.acceptedAmount;" id="refusal_source.price.accepted_counts_as_newer">
+            <mutation text="return amount != refusal.refusedAmount;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="refusal_source" expected-return="0">flutter test test/features/estimations/units/data/data_source/local_your_rate_refusal_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>
