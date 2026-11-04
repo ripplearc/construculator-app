@@ -3844,12 +3844,6 @@ abstract class AppLocalizations {
   /// **'Needs a valid amount before it can total'**
   String get addsToEstimateInvalidAmountNote;
 
-  /// Shown in place of the line total on the summary card while the line cannot be totalled yet; a dash, never a zero
-  ///
-  /// In en, this message translates to:
-  /// **'—'**
-  String get addsToEstimateNoTotalText;
-
   /// Screen reader label for the summary card's last row, read in place of the arrow between the two totals
   ///
   /// In en, this message translates to:
