@@ -18,6 +18,8 @@ import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
 
+final _l10n = lookupAppLocalizations(const Locale('en'));
+
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeYourRatesDatabase database;
@@ -117,6 +119,59 @@ void main() {
           await tester.pumpAndSettle();
         },
       );
+    });
+
+    testWidgets('a11y: "Try again" on the failed-read message meets tap target '
+        'and label guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget,
+        find.byKey(const Key('your_rates_try_again_button')),
+      );
+    });
+
+    testWidgets('a11y: "Try again" on the failed-read message is a labelled '
+        'button with a 48 x 48 dp zone', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      final zone = tester.getSize(
+        find.byKey(const Key('your_rates_try_again_button')),
+      );
+      expect(zone.width, greaterThanOrEqualTo(48));
+      expect(zone.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSemantics(find.bySemanticsLabel(_l10n.yourRatesTryAgain)),
+        isSemantics(
+          label: _l10n.yourRatesTryAgain,
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('a11y: the failed-read message is a live region so a screen '
+        'reader reads it when it appears', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
+        isSemantics(isLiveRegion: true),
+      );
+      handle.dispose();
     });
   });
 }
