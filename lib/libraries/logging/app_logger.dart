@@ -8,8 +8,7 @@ class AppLogger {
   final String _tag;
   final String _emojiPrefix;
   final Logger _internalLogger;
-  final SentryWrapper? _sentryWrapper;
-  final Config? _config;
+  final SentryWrapper? _sentryOverride;
 
   /// Static default SentryWrapper instance used when none is provided
   static SentryWrapper? _defaultSentryWrapper;
@@ -34,28 +33,40 @@ class AppLogger {
     this._tag,
     this._emojiPrefix,
     this._internalLogger,
-    this._sentryWrapper,
-    this._config,
+    this._sentryOverride,
   );
 
+  SentryWrapper? get _sentryWrapper => _sentryOverride ?? _defaultSentryWrapper;
+
   /// Creates an [AppLogger] with optional [sentryWrapper] and [config] overrides.
-  /// Falls back to the static defaults set via [setSentryWrapper] and [setConfig].
-  AppLogger({SentryWrapper? sentryWrapper, Config? config})
-    : _tag = 'Construculator',
-      _emojiPrefix = '',
-      _sentryWrapper = sentryWrapper ?? _defaultSentryWrapper,
-      _config = config ?? _defaultConfig,
-      _internalLogger = Logger(
-        filter: AppLogFilter(config: config ?? _defaultConfig),
-        printer: PrettyPrinter(
-          methodCount: 1,
-          errorMethodCount: 5,
-          lineLength: 80,
-          colors: true,
-          printEmojis: true,
-        ),
-        output: ConsoleOutput(),
-      );
+  ///
+  /// Without [sentryWrapper], each log call uses the wrapper set via
+  /// [setSentryWrapper] at that moment, so a logger built before the wrapper is
+  /// set still reaches Sentry afterwards. Without [config], the console filter
+  /// uses the config set via [setConfig] at the moment each message is logged.
+  /// [debugMode] replaces [kDebugMode] in the console filter for tests.
+  AppLogger({
+    SentryWrapper? sentryWrapper,
+    Config? config,
+    @visibleForTesting bool? debugMode,
+  }) : _tag = 'Construculator',
+       _emojiPrefix = '',
+       _sentryOverride = sentryWrapper,
+       _internalLogger = Logger(
+         filter: AppLogFilter(
+           config: config,
+           defaultConfig: () => _defaultConfig,
+           debugMode: debugMode,
+         ),
+         printer: PrettyPrinter(
+           methodCount: 1,
+           errorMethodCount: 5,
+           lineLength: 80,
+           colors: true,
+           printEmojis: true,
+         ),
+         output: ConsoleOutput(),
+       );
 
   String _formatMessage(String message) {
     String prefix = '';
@@ -73,8 +84,7 @@ class AppLogger {
       'Construculator',
       '',
       _internalLogger,
-      _sentryWrapper,
-      _config,
+      _sentryOverride,
     );
   }
 
@@ -85,8 +95,7 @@ class AppLogger {
       newTag,
       _emojiPrefix,
       _internalLogger,
-      _sentryWrapper,
-      _config,
+      _sentryOverride,
     );
   }
 
@@ -97,8 +106,7 @@ class AppLogger {
       _tag,
       newEmojiPrefix,
       _internalLogger,
-      _sentryWrapper,
-      _config,
+      _sentryOverride,
     );
   }
 
@@ -195,22 +203,26 @@ class AppLogger {
 @visibleForTesting
 class AppLogFilter extends LogFilter {
   final Config? config;
+
+  /// Looked up on every message when [config] is null.
+  final Config? Function()? defaultConfig;
   final bool isDebugMode;
 
-  AppLogFilter({this.config, bool? debugMode})
+  AppLogFilter({this.config, this.defaultConfig, bool? debugMode})
     : isDebugMode = debugMode ?? kDebugMode;
 
   @override
   bool shouldLog(LogEvent event) {
-    if (config == null) {
+    final activeConfig = config ?? defaultConfig?.call();
+    if (activeConfig == null) {
       return true;
     }
 
-    if ((config?.isProd == true) && !isDebugMode) {
+    if (activeConfig.isProd && !isDebugMode) {
       return event.level.index >= Level.warning.index;
     }
 
-    if ((config?.isQa == true) && !isDebugMode) {
+    if (activeConfig.isQa && !isDebugMode) {
       return event.level.index >= Level.info.index;
     }
 
