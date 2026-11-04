@@ -172,9 +172,6 @@
         <regex pattern="bool showsWrite\(CostEstimate e\) =&gt; e\.lockStatus\.isLocked == isLocked;" dotAll="true" id="repo.edits.lock_reflected_negated">
             <mutation text="bool showsWrite(CostEstimate e) =&gt; e.lockStatus.isLocked != isLocked;"/>
         </regex>
-        <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)," dotAll="true" id="repo.edits.delete_reflected_any">
-            <mutation text="estimates.any((e) =&gt; e.id != estimationId),"/>
-        </regex>
         <regex pattern="position == -1 \? estimates\.length : position" dotAll="true" id="repo.create.ignore_sort_position">
             <mutation text="0"/>
         </regex>
@@ -193,17 +190,16 @@
         <regex pattern="!_withCreated\(\s*estimates,\s*createdEstimation,\s*view,\s*\)\.any\(\(e\) =&gt; e\.id == createdEstimation\.id\)" dotAll="true" id="repo.create.hidden_when_not_fit_never_reflected">
             <mutation text="false"/>
         </regex>
-        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(lockStatus: updatedEstimation\.lockStatus\)," dotAll="true" id="repo.lock.patch_replaces_all">
-            <mutation text="patch: (e) =&gt; updatedEstimation,"/>
-        </regex>
-        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(\s*estimateName: updatedEstimation\.estimateName," dotAll="true" id="repo.rename.patch_replaces_all">
-            <mutation text="patch: (e) =&gt; updatedEstimation, // "/>
-        </regex>
         <regex pattern="writtenAt: updatedEstimationFromRemote\.updatedAt," dotAll="true" id="repo.rename.written_at_is_shown_date">
             <mutation text="writtenAt: updatedEstimation.updatedAt,"/>
         </regex>
         <regex pattern="_localSubscriptions\.remove\(streamKey\)\?\.cancel\(\);\s*_forgetStream\(streamKey\);" dotAll="true" id="repo.local.keep_copy_of_unwatched_list">
             <mutation text="_localSubscriptions.remove(streamKey)?.cancel();"/>
+        </regex>
+        <regex pattern="edit\.wasReflected = true;\n    \}\n    _pendingEdits\[editKey\]" dotAll="true" id="repo.edits.skip_settle_when_reflected_everywhere">
+            <mutation text="edit.wasReflected = false;
+    }
+    _pendingEdits[editKey]"/>
         </regex>
     </rules>
 

@@ -243,7 +243,22 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         )
         .listen(
           (dtos) {
-            final localEstimates = dtos.map((dto) => dto.toDomain()).toList();
+            final List<CostEstimate> localEstimates;
+            try {
+              localEstimates = dtos.map((dto) => dto.toDomain()).toList();
+            } catch (e) {
+              _phoneCopies.remove(streamKey);
+              publish(
+                Left(
+                  _handleError(
+                    e,
+                    'reading estimations from the phone',
+                    projectId: projectId,
+                  ),
+                ),
+              );
+              return;
+            }
             // TODO: [CA-1374] [Estimation] Treat rows before the first sync as loading, not as the full list.
             // https://ripplearc.youtrack.cloud/issue/CA-1374
             final hasMore = localEstimates.length >= visibleLimit;
@@ -258,6 +273,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
             );
           },
           onError: (Object error) {
+            _phoneCopies.remove(streamKey);
             publish(
               Left(
                 _handleError(
@@ -318,6 +334,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _dropSettledEdits();
   }
 
+  bool _isSettledOnEveryWatchedList(String projectId, _PendingEdit edit) =>
+      edit.awaitingKeys.isEmpty && _watchedKeysOf(projectId).isNotEmpty;
+
   _PendingEdit _rememberPendingEdit(
     String editKey,
     String projectId, {
@@ -335,6 +354,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       if (copy == null || !isReflected(copy.estimates, copy.view)) {
         edit.awaitingKeys.add(key);
       }
+    }
+    if (_isSettledOnEveryWatchedList(projectId, edit)) {
+      edit.wasReflected = true;
     }
     _pendingEdits[editKey] = edit;
     return edit;
