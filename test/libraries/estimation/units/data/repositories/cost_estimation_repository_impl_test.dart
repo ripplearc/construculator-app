@@ -3182,6 +3182,54 @@ void main() {
         },
       );
 
+      test(
+        'a created estimate that the phone already had is not brought back after a teammate deletes it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: '1',
+              projectId: testProjectId,
+              estimateName: estimateName2,
+              createdAt: '2026-07-01T00:00:00.000Z',
+            ),
+          ]);
+          await queue.next;
+          await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          );
+          await queue.next;
+
+          fakePhoneDatabase.removeRow('1');
+
+          expect(idsIn(await queue.next), [estimateIdDefault]);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a row the phone holds in a form that cannot be read fails the list instead of hanging',
+        () async {
+          seedEstimationTable([
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              createdAt: 'not-a-date',
+            ),
+          ]);
+
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+        },
+      );
+
       group('an edit that outlived its list', () {
         Map<String, dynamic> renamedBy(String name) => buildEstimationMap(
           id: estimateIdDefault,
