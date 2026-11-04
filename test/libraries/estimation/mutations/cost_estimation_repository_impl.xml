@@ -133,7 +133,6 @@
             <mutation text="// firstResult.complete(result);"/>
         </regex>
 
-        <!-- Pending edits stay until the phone copy shows the change -->
 
         <!-- Newer review rules -->
         <regex pattern="\? cachedEstimations\s*: \[newEstimation, \.\.\.cachedEstimations\];" dotAll="true" id="repo.create.duplicate_when_synced_first">
