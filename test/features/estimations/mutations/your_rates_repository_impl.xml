@@ -37,6 +37,40 @@
         <regex pattern="words\.any\(name\.contains\)" dotAll="false" id="your_rates_repo.search.any_to_every">
             <mutation text="words.every(name.contains)"/>
         </regex>
+
+        <regex pattern="refusal\.userId == userId" dotAll="false" id="your_rates_repo.refusal.any_user">
+            <mutation text="true"/>
+        </regex>
+        <regex pattern="refusals\[dto\.id\]" dotAll="false" id="your_rates_repo.refusal.match_wrong_key">
+            <mutation text="refusals[dto.itemName]"/>
+        </regex>
+        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" dotAll="false" id="your_rates_repo.refusal.ignore_amount">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="if \(acceptedAmount != null\)" dotAll="false" id="your_rates_repo.refusal.negate_accepted">
+            <mutation text="if (acceptedAmount == null)"/>
+        </regex>
+        <regex pattern="dto\.withRateAmount\(acceptedAmount\)" dotAll="false" id="your_rates_repo.refusal.keep_refused_amount">
+            <mutation text="dto"/>
+        </regex>
+        <regex pattern="await _forgetRefusalOf\(normalizedEntry\);" dotAll="false" id="your_rates_repo.forget.skip">
+            <mutation text=";"/>
+        </regex>
+        <regex pattern="companyId: entry\.companyId," dotAll="false" id="your_rates_repo.forget.wrong_company">
+            <mutation text="companyId: 'other-company',"/>
+        </regex>
+        <regex pattern="category: entry\.category\.toJson\(\)," dotAll="false" id="your_rates_repo.forget.wrong_category">
+            <mutation text="category: 'material',"/>
+        </regex>
+        <regex pattern="itemName: entry\.itemName," dotAll="false" id="your_rates_repo.forget.wrong_item">
+            <mutation text="itemName: 'other item',"/>
+        </regex>
+        <regex pattern="equipmentMethod: entry\.equipmentMethod\?\.toJson\(\)," dotAll="false" id="your_rates_repo.forget.wrong_method">
+            <mutation text="equipmentMethod: null,"/>
+        </regex>
+        <regex pattern="asLastAccepted: false," dotAll="false" id="your_rates_repo.save.duplicate_check_on_filtered_rows">
+            <mutation text="asLastAccepted: true,"/>
+        </regex>
     </rules>
 
     <commands>

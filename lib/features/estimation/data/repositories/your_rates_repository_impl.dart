@@ -1,17 +1,32 @@
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 
 /// Implementation of [YourRatesRepository] over the phone's own database.
 class YourRatesRepositoryImpl implements YourRatesRepository {
-  YourRatesRepositoryImpl({required this.dataSource});
+  YourRatesRepositoryImpl({
+    required this.dataSource,
+    required this.refusalDataSource,
+    required this.authRepository,
+  });
 
   final YourRatesDataSource dataSource;
+
+  /// The record of defaults the server refused, so a refused price is not
+  /// shown as the saved one.
+  final YourRateRefusalDataSource refusalDataSource;
+
+  /// Tells whose refusals to read and forget: a user never sees another
+  /// user's refusal, even in the same company.
+  final AuthRepository authRepository;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
@@ -26,12 +41,11 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }) async {
     if (companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
-      final dtos = await dataSource.loadRates(
+      final dtos = await _loadRatesAsLastAccepted(
         category: category?.toJson(),
         companyId: companyId,
       );
-      final entries = dtos.map(_toEntry).toList()
-        ..sort(_mostRecentlyUsedFirst);
+      final entries = dtos.map(_toEntry).toList()..sort(_mostRecentlyUsedFirst);
 
       final words = query
           .toLowerCase()
@@ -95,6 +109,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
                 normalizedEntry.category,
                 normalizedEntry.itemName,
                 companyId: normalizedEntry.companyId,
+                asLastAccepted: false,
               ))
               .where(
                 (candidate) =>
@@ -107,6 +122,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         await dataSource.insertRate(
           YourRateEntryDto.fromEntity(normalizedEntry),
         );
+        await _forgetRefusalOf(normalizedEntry);
         return const Right(null);
       }
 
@@ -129,6 +145,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       }
 
       await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
+      await _forgetRefusalOf(normalizedEntry);
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e));
@@ -145,16 +162,70 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     }
   }
 
+  Future<void> _forgetRefusalOf(YourRateEntry entry) async {
+    final userId = authRepository.getCurrentCredentials()?.id;
+    if (userId == null) return;
+    try {
+      await refusalDataSource.deleteRefusalByItem(
+        userId: userId,
+        companyId: entry.companyId,
+        category: entry.category.toJson(),
+        itemName: entry.itemName,
+        equipmentMethod: entry.equipmentMethod?.toJson(),
+      );
+    } catch (e, stack) {
+      _logger.warning(
+        'Could not forget the refusal of a saved rate; the save itself worked',
+        e,
+        stack,
+      );
+    }
+  }
+
+  Future<List<YourRateEntryDto>> _loadRatesAsLastAccepted({
+    String? category,
+    String? companyId,
+  }) async {
+    final dtos = await dataSource.loadRates(
+      category: category,
+      companyId: companyId,
+    );
+    final userId = authRepository.getCurrentCredentials()?.id;
+    final refusals = {
+      for (final refusal in await refusalDataSource.loadAllRefusals())
+        if (refusal.userId == userId) refusal.refusedRowId: refusal,
+    };
+    final lastAccepted = <YourRateEntryDto>[];
+    for (final dto in dtos) {
+      final refusal = refusals[dto.id];
+      if (refusal == null || refusal.refusedAmount != dto.rateAmount) {
+        lastAccepted.add(dto);
+        continue;
+      }
+      final acceptedAmount = refusal.acceptedAmount;
+      if (acceptedAmount != null) {
+        lastAccepted.add(dto.withRateAmount(acceptedAmount));
+      }
+    }
+    return lastAccepted;
+  }
+
   Future<List<YourRateEntry>> _entriesNamed(
     CostItemType category,
     String itemName, {
     required String companyId,
+    bool asLastAccepted = true,
   }) async {
     final nameKey = _matchKey(itemName);
-    final dtos = await dataSource.loadRates(
-      category: category.toJson(),
-      companyId: companyId,
-    );
+    final dtos = asLastAccepted
+        ? await _loadRatesAsLastAccepted(
+            category: category.toJson(),
+            companyId: companyId,
+          )
+        : await dataSource.loadRates(
+            category: category.toJson(),
+            companyId: companyId,
+          );
     return dtos
         .map(_toEntry)
         .where((entry) => _matchKey(entry.itemName) == nameKey)
@@ -162,7 +233,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   static String _matchKey(String text) =>
-      text.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase();
+      YourRateRefusalKey.normalizeName(text);
 
   static String? _normalizeLabel(String? label) {
     final trimmed = label?.trim();

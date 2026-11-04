@@ -141,7 +141,11 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<YourRatesRepository>(
-      () => YourRatesRepositoryImpl(dataSource: i.get()),
+      () => YourRatesRepositoryImpl(
+        dataSource: i.get(),
+        refusalDataSource: i.get(),
+        authRepository: i.get(),
+      ),
     );
 
     i.addLazySingleton<AddCostEstimationUseCase>(

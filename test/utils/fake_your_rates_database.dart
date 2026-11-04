@@ -42,6 +42,10 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   final List<Map<String, Object?>> _companyRows = [];
   final Map<String, Map<String, Object?>> _refusalRows = {};
 
+  /// While true, forgetting a refusal throws, so a test can fail that one
+  /// write without failing the saves around it.
+  bool failRefusalDeletes = false;
+
   /// Puts [row] in the refused-defaults table as the upload step would have.
   void seedRefusal(Map<String, Object?> row) =>
       _refusalRows[row[DatabaseConstants.idColumn]! as String] = Map.of(row);
@@ -71,6 +75,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   ]) async {
     await super.getAll(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
+      if (parameters.isEmpty) {
+        return [for (final row in _refusalRows.values) {...row}];
+      }
       final row = _refusalRows[parameters.single];
       return [
         if (row != null) {...row},
@@ -117,6 +124,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     await super.execute(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       if (sql.startsWith('DELETE')) {
+        if (failRefusalDeletes) throw StateError('disk full');
         _refusalRows.remove(parameters.single);
       } else if (sql.startsWith('INSERT')) {
         final columns = _insertColumns
@@ -206,6 +214,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     _rows.clear();
     _companyRows.clear();
     _refusalRows.clear();
+    failRefusalDeletes = false;
     getAllGate = null;
     insertedRows.clear();
     updatedRowIds.clear();
