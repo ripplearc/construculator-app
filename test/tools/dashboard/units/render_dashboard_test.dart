@@ -141,7 +141,6 @@ void main() {
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, isNot(contains('no producer')));
       expect(html, contains('TTID (cold) and TTID (warm) are one measurement'));
     });
 

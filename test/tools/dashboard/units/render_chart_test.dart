@@ -11,7 +11,7 @@ void main() {
   }) {
     return MetricSeries(
       id: 'cold_start_ms',
-      label: 'Cold start',
+      label: 'TTID (cold)',
       unit: unit,
       baseline: baseline,
       points: <SeriesPoint>[
@@ -100,7 +100,7 @@ void main() {
     test('omits the commit segment from a tooltip when no commit is recorded', () {
       final MetricSeries series = MetricSeries(
         id: 'cold_start_ms',
-        label: 'Cold start',
+        label: 'TTID (cold)',
         unit: 'ms',
         points: <SeriesPoint>[
           SeriesPoint(capturedAt: '2026-08-01T03:00:00Z', value: 800),
