@@ -44,6 +44,7 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
     Duration throttle = kDefaultWatchThrottle,
   }) {
+    _orderOf(sql);
     super.watch(sql, parameters: parameters, throttle: throttle);
     return Stream.multi((listener) {
       final error = watchError;
@@ -73,9 +74,17 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
     _rowsChanged.close();
   }
 
+  RegExpMatch _orderOf(String sql) {
+    final order = _orderBy.firstMatch(sql);
+    if (order == null) {
+      throw ArgumentError.value(sql, 'sql', 'has no ORDER BY clause');
+    }
+    return order;
+  }
+
   List<Map<String, dynamic>> _select(String sql, List<Object?> parameters) {
-    final order = _orderBy.firstMatch(sql)!;
-    final column = order.group(1)!;
+    final order = _orderOf(sql);
+    final column = order.group(1) as String;
     final ascending = order.group(2) == 'ASC';
     final limit = parameters.length > 1 ? parameters[1] as int : null;
     final matching =

@@ -145,13 +145,22 @@
         <regex pattern="waiting\.complete\(Right\(_cachedEstimations\[streamKey\] \?\? \[\]\)\);" dotAll="true" id="repo.local.leave_caller_waiting">
             <mutation text="// waiting.complete(Right(_cachedEstimations[streamKey] ?? []));"/>
         </regex>
-        <regex pattern="lists\.forEach\(\(key, estimates\) =&gt; _emitToStream\(key, Right\(estimates\)\)\);" dotAll="true" id="repo.delete.skip_restore_lists">
-            <mutation text="lists.forEach((key, estimates) =&gt; null);"/>
+        <regex pattern="_emitToStream\(key, Right\(restored\)\);" dotAll="true" id="repo.delete.skip_put_back_emit">
+            <mutation text="// _emitToStream(key, Right(restored));"/>
+        </regex>
+        <regex pattern="index\.clamp\(0, current\.length\)" dotAll="true" id="repo.delete.put_back_at_end">
+            <mutation text="current.length"/>
+        </regex>
+        <regex pattern="index == -1 \|\| current\.any\(\(e\) =&gt; e\.id == estimationId\)" dotAll="true" id="repo.delete.put_back_duplicate">
+            <mutation text="index == -1"/>
+        </regex>
+        <regex pattern="index == -1 \|\| current\.any" dotAll="true" id="repo.delete.put_back_into_list_without_row">
+            <mutation text="current.any"/>
         </regex>
         <regex pattern="key: _cachedEstimations\[key\] \?\? \[\]," dotAll="true" id="repo.delete.snapshot_empty_lists">
             <mutation text="key: const &lt;CostEstimate&gt;[],"/>
         </regex>
-        <regex pattern="_restoreCachedLists\(originalLists\);" dotAll="true" id="repo.delete.skip_restore_on_failure">
+        <regex pattern="_putBackDeletedEstimation\(estimationId, originalLists\);" dotAll="true" id="repo.delete.skip_restore_on_failure">
             <mutation text=""/>
         </regex>
     </rules>

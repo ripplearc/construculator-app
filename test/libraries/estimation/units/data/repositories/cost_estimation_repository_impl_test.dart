@@ -11,6 +11,7 @@ import 'package:construculator/libraries/estimation/domain/enums/estimation_sort
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -21,7 +22,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../../../utils/fake_cost_estimates_database.dart';
 import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
@@ -1511,6 +1511,117 @@ void main() {
           );
           await newestQueue.cancel();
           await oldestQueue.cancel();
+        },
+      );
+
+      test(
+        'should keep the phone copy of other rows when a delete fails after a sync arrived',
+        () async {
+          final maps = seedEstimations(2);
+          final renamedNeighbour = buildEstimationMap(
+            id: 'estimate-1',
+            projectId: testProjectId,
+            estimateName: 'Renamed by a teammate',
+            createdAt: '2026-01-02T00:00:00.000Z',
+          );
+          final extraRow = buildEstimationMap(
+            id: 'estimate-2',
+            projectId: testProjectId,
+            estimateName: 'Estimate 2',
+            createdAt: '2026-01-03T00:00:00.000Z',
+          );
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(mapsToDomainEntities([maps[1], maps[0]])),
+              ),
+            ),
+          );
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = Completer<void>();
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+
+          final deleting = repository.deleteEstimation(
+            'estimate-0',
+            testProjectId,
+          );
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(equals(mapsToDomainEntities([maps[1]]))),
+            ),
+          );
+          fakePhoneDatabase.replaceRow(renamedNeighbour);
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(mapsToDomainEntities([renamedNeighbour, maps[0]])),
+              ),
+            ),
+          );
+          fakeSupabaseWrapper.completer!.complete();
+          final result = await deleting;
+          fakePhoneDatabase.seedRows([extraRow]);
+
+          expect(result.isLeft(), isTrue);
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(
+                  mapsToDomainEntities([extraRow, renamedNeighbour, maps[0]]),
+                ),
+              ),
+            ),
+          );
+          await queue.cancel();
+        },
+      );
+      test(
+        'should not add the deleted row to a list that never held it when delete fails',
+        () async {
+          final maps = seedEstimations(3);
+          final newestRow = buildEstimationMap(
+            id: 'estimate-3',
+            projectId: testProjectId,
+            estimateName: 'Estimate 3',
+            createdAt: '2026-01-04T00:00:00.000Z',
+          );
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final latestOnlyQueue = StreamQueue(
+            repository.watchEstimations(testProjectId, limit: 1),
+          );
+          await expectLater(
+            latestOnlyQueue.next,
+            completion(
+              rightEstimations(equals(mapsToDomainEntities([maps[2]]))),
+            ),
+          );
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+
+          final result = await repository.deleteEstimation(
+            'estimate-0',
+            testProjectId,
+          );
+          fakePhoneDatabase.seedRows([newestRow]);
+
+          expect(result.isLeft(), isTrue);
+          await latestOnlyQueue.next;
+          await expectLater(
+            latestOnlyQueue.next,
+            completion(
+              rightEstimations(equals(mapsToDomainEntities([newestRow]))),
+            ),
+          );
+          await latestOnlyQueue.cancel();
         },
       );
     });
