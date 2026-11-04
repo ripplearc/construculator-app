@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -22,7 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// method and label match, where a name or label matches ignoring capital
 /// letters and extra spaces. That copies the server rule behind the
 /// `item_name_key` column: trim, collapse runs of spaces to one, lower-case.
-/// If the server rule changes, change `_rateKey` with it.
+/// If the server rule changes, change `YourRateRefusalKey.normalizeName` with it.
 class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
@@ -160,10 +161,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   }
 
   String? _rateKey(Object? text) {
-    final key = (text as String?)
-        ?.trim()
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .toLowerCase();
+    final key = text == null
+        ? null
+        : YourRateRefusalKey.normalizeName(text as String);
     return (key == null || key.isEmpty) ? null : key;
   }
 

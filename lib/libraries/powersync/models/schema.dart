@@ -114,6 +114,26 @@ const Schema schema = Schema([
     Column.text('company_id'),
   ]),
 
+  // Never uploaded or synced. One row per refused Your rates item of one
+  // user of one company, with the YourRateRefusalKey of the item as its id.
+  // `refused_row_id` is the id of the your_rates row the server refused.
+  // `accepted_amount` is null when the server never accepted a price;
+  // `shown_at` is null until shown.
+  // TODO: [CA-1399] register this table as "clear when the user changes", so a user's old rows do not pile up on a shared phone.
+  // https://ripplearc.youtrack.cloud/issue/CA-1399
+  Table.localOnly('your_rate_refusals', [
+    Column.text('user_id'),
+    Column.text('company_id'),
+    Column.text('category'),
+    Column.text('refused_row_id'),
+    Column.text('item_name'),
+    Column.text('equipment_method'),
+    Column.text('entry_label'),
+    Column.real('refused_amount'),
+    Column.real('accepted_amount'),
+    Column.text('shown_at'),
+  ]),
+
   // On-demand stream: call `db.syncStream('user_rates')` before reading. The
   // backend's `item_name_key` column is generated server-side and not synced.
   Table(
