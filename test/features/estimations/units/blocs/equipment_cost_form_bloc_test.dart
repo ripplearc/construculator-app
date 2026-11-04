@@ -2044,18 +2044,16 @@ void main() {
           await bloc.stream.firstWhere(noticeLookupFailed);
           await bloc.close();
 
-          expect(
-            database.refusalRow(
-              YourRateRefusalKey.of(
-                userId: testUserId,
-                companyId: companyId,
-                category: 'equipment',
-                itemName: itemName,
-                equipmentMethod: 'job',
-              ),
-            )?['shown_at'],
-            isNull,
+          final refusal = database.refusalRow(
+            YourRateRefusalKey.of(
+              userId: testUserId,
+              companyId: companyId,
+              category: 'equipment',
+              itemName: itemName,
+              equipmentMethod: 'job',
+            ),
           );
+          expect(refusal!['shown_at'], isNull);
         },
       );
 
