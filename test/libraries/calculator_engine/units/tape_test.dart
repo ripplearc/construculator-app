@@ -18,6 +18,7 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'cm' => current.pressUnit(Unit.centimetre),
+        'mm' => current.pressUnit(Unit.millimetre),
         'm' => current.pressUnit(Unit.metre),
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
@@ -26,6 +27,7 @@ void main() {
         '=' => current.pressEquals(),
         '/' => current.typeFraction(),
         '⌫' => current.backspace(),
+        '(' => current.pressBracket(),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
           keyWantsUnit: !PlainNumberKeys.all.contains(
@@ -341,6 +343,76 @@ void main() {
           );
         },
       );
+
+      group('CA-1365: a unit key never carries a value above the limit', () {
+        const tooLarge = TapeEntryRefused(EntryRefusal.tooLarge);
+
+        test('converting a finished value up past 19,999,999.99 is refused '
+            'and the value keeps its unit', () {
+          final feet = press(const Tape(), '15000000 ft');
+          expect(feet.pressUnit(Unit.inch), tooLarge);
+          expect(texts(feet), ['15000000ft']);
+          expect(
+            press(const Tape(), '15000000 yd').pressUnit(Unit.foot),
+            tooLarge,
+          );
+          expect(
+            press(const Tape(), '19999999 yd').pressUnit(Unit.foot),
+            tooLarge,
+          );
+          expect(texts(press(const Tape(), '6666666 yd ft')), ['19999998ft']);
+          expect(
+            press(const Tape(), '6666667 yd').pressUnit(Unit.foot),
+            tooLarge,
+          );
+          expect(texts(press(const Tape(), '19999999 ft yd')), [
+            '6666666.333yd',
+          ]);
+        });
+
+        test('raising the dimension keeps the number, so it is never refused '
+            'for its size', () {
+          expect(texts(press(const Tape(), '15000000 ft ft ft')), [
+            '15000000ft³',
+          ]);
+        });
+
+        test('a carry on the unit key that would pass the limit is refused '
+            'and the compound stays as typed', () {
+          final open = press(const Tape(), '19999999 ft 13');
+          expect(open.pressUnit(Unit.inch), tooLarge);
+          expect(texts(open), ['19999999ft 13']);
+          expect(texts(press(const Tape(), '19999999 ft 11 in')), [
+            '19999999ft 11in',
+          ]);
+          expect(texts(press(const Tape(), '19999998 ft 13 in')), [
+            '19999999ft 1in',
+          ]);
+        });
+
+        test('a result converted past the limit stays in the unit it had', () {
+          final feet = press(const Tape(), '2000000 ft × 1 =');
+          expect(feet.pressUnit(Unit.inch), tooLarge);
+          expect(feet.chips.last, isA<ResultChip>());
+          final cubic = press(const Tape(), '9999999 m m m × 1 =');
+          expect(cubic.pressUnit(Unit.millimetre), tooLarge);
+          expect(
+            (cubic.chips.last as ResultChip).value,
+            isA<Volume>().having((v) => v.unit, 'unit', Unit.metre),
+          );
+          final small = press(const Tape(), '100 m × 1 = mm');
+          expect(
+            (small.chips.last as ResultChip).value,
+            isA<Length>().having((l) => l.unit, 'unit', Unit.millimetre),
+          );
+        });
+
+        test('inside a bracket the same unit key is refused the same way', () {
+          final inner = press(const Tape(), '( 15000000 ft');
+          expect(inner.pressUnit(Unit.inch), tooLarge);
+          expect(inner.openBracket, isNotNull);
+        });
+      });
 
       test('a refusal from the number being typed is passed through', () {
         expect(
