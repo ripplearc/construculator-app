@@ -84,9 +84,9 @@ enum EntryRefusal {
 
   /// A sixteenth digit typed into one number ([EntryBuffer.maxDigits];
   /// Section 5.1, "A number can have up to 15 digits."; owner decision of 28
-  /// October 2026). The digit is refused and the number stays as typed, and
-  /// the message is the grey strip's, not an error box. The bottom number of
-  /// a fraction never gets this far: it is [tooLarge] at eight digits.
+  /// October 2026). The digit is refused and the number stays as typed; the
+  /// message and its look are the caller's. The bottom number of a fraction
+  /// never gets this far: it is [tooLarge] at eight digits.
   tooManyDigits,
 }
 
@@ -179,11 +179,12 @@ class EntryBuffer extends Equatable {
   const EntryBuffer([this.tokens = const []]);
 
   /// The most digits one typed number can have (Section 5.1; owner decision
-  /// of 28 October 2026): every typed digit counts, zeros after the point
-  /// included, so that the number always fits a [Rational] and a difference
-  /// typed in its last digit is never rounded away (Section 6). The zeros
-  /// that lead a whole part (0.5, 007) add nothing to the number and are not
-  /// counted.
+  /// of 28 October 2026): every typed digit counts, the zeros that lead a
+  /// number (0.5, 007) and the zeros after the point included, so that the
+  /// number always fits a [Rational] and a difference typed in its last
+  /// digit is never rounded away (Section 6). Only the 0 the tape writes in
+  /// front of a leading point (.5 reads 0.5) was never typed and is not
+  /// counted ([Token.startedWithPoint]).
   static const int maxDigits = 15;
 
   /// Whether nothing has been typed.
@@ -377,7 +378,12 @@ class EntryBuffer extends Equatable {
       ).typeDigit(digit, readsAngles: readsAngles);
     }
     if (last == null || last.unit != null) {
-      return _changed([...tokens, Token(digits: digit == '.' ? '0.' : digit)]);
+      return _changed([
+        ...tokens,
+        digit == '.'
+            ? const Token(digits: '0.', startedWithPoint: true)
+            : Token(digits: digit),
+      ]);
     }
     if (last.denominator case final denominator?) {
       if (digit == '.') {
@@ -401,7 +407,7 @@ class EntryBuffer extends Equatable {
       return _replaceLast(_asDegreesMinutesSeconds(last, closingMinutes: true));
     }
     final digits = '${last.digits}$digit';
-    if (_hasTooManyDigits(digits)) {
+    if (_hasTooManyDigits(digits, startedWithPoint: last.startedWithPoint)) {
       return const EntryRefused(EntryRefusal.tooManyDigits);
     }
     if (_isTooLarge(digits)) return const EntryRefused(EntryRefusal.tooLarge);
@@ -489,16 +495,15 @@ class EntryBuffer extends Equatable {
   static bool _isTooLarge(String digits) =>
       double.parse(digits) > Quantity.largestShown;
 
-  static bool _hasTooManyDigits(String digits) =>
-      _countedDigits(digits) > maxDigits;
+  static bool _hasTooManyDigits(
+    String digits, {
+    required bool startedWithPoint,
+  }) => _countedDigits(digits, startedWithPoint: startedWithPoint) > maxDigits;
 
-  static int _countedDigits(String digits) {
-    final [whole, ...fraction] = digits.split('.');
-    return whole.replaceFirst(_leadingZeros, '').length +
-        fraction.join().length;
-  }
+  static int _countedDigits(String digits, {required bool startedWithPoint}) =>
+      _digit.allMatches(digits).length - (startedWithPoint ? 1 : 0);
 
-  static final RegExp _leadingZeros = RegExp('^0+');
+  static final RegExp _digit = RegExp(r'\d');
 
   /// [/]: splits the open number into a fraction, 7 [/] 16 [Inch] → 7/16in.
   EntryOutcome typeFraction() {

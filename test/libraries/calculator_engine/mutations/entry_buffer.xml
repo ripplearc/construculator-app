@@ -13,8 +13,8 @@
 
     <rules>
         <!-- RULE 1: a leading point is not read as 0. -->
-        <regex pattern="Token\(digits: digit == '\.' \? '0\.' : digit\)" dotAll="true" id="entry_buffer.type_digit.no_leading_zero">
-            <mutation text="Token(digits: digit)"/>
+        <regex pattern="digit == '\.'\s*\? const Token\(digits: '0\.', startedWithPoint: true\)\s*: Token\(digits: digit\)," dotAll="true" id="entry_buffer.type_digit.no_leading_zero">
+            <mutation text="Token(digits: digit),"/>
         </regex>
 
         <!-- RULE 2: a second decimal point is accepted -->
@@ -24,8 +24,8 @@
 
         <!-- RULE 3: a digit after a finished token is appended to it instead
              of starting a new one -->
-        <regex pattern="if \(last == null \|\| last\.unit != null\) \{\s*return _changed\(\[\.\.\.tokens, Token" dotAll="true" id="entry_buffer.type_digit.append_to_finished">
-            <mutation text="if (last == null) { return _changed([...tokens, Token"/>
+        <regex pattern="if \(last == null \|\| last\.unit != null\) \{\s*return _changed\(\[\s*\.\.\.tokens," dotAll="true" id="entry_buffer.type_digit.append_to_finished">
+            <mutation text="if (last == null) { return _changed([ ...tokens,"/>
         </regex>
 
         <!-- RULE 4: [/] is accepted on a decimal -->
@@ -194,16 +194,23 @@
 
         <!-- RULE CA-1236 (R6, B6): the sixteenth digit is accepted, or the
              fifteenth refused -->
-        <regex pattern="static bool _hasTooManyDigits\(String digits\) =&gt;\s*_countedDigits\(digits\) &gt; maxDigits;" dotAll="true" id="entry_buffer.type_digit.too_many_digits">
-            <mutation text="static bool _hasTooManyDigits(String digits) =&gt; false;"/>
-            <mutation text="static bool _hasTooManyDigits(String digits) =&gt; _countedDigits(digits) &gt;= maxDigits;"/>
+        <regex pattern="\}\) =&gt; _countedDigits\(digits, startedWithPoint: startedWithPoint\) &gt; maxDigits;" dotAll="true" id="entry_buffer.type_digit.too_many_digits">
+            <mutation text="}) =&gt; false;"/>
+            <mutation text="}) =&gt; _countedDigits(digits, startedWithPoint: startedWithPoint) &gt;= maxDigits;"/>
         </regex>
 
-        <!-- RULE CA-1236 (R6, B6): the zeros that lead a number count, or
-             the digits after the point do not -->
-        <regex pattern="return whole\.replaceFirst\(_leadingZeros, ''\)\.length \+\s*fraction\.join\(\)\.length;" dotAll="true" id="entry_buffer.counted_digits.leading_zeros">
-            <mutation text="return whole.length + fraction.join().length;"/>
-            <mutation text="return whole.replaceFirst(_leadingZeros, '').length;"/>
+        <!-- RULE CA-1236 (R7): the 0 written for a leading point counts, the
+             zeros that lead a typed number do not, or the point itself counts -->
+        <regex pattern="_digit\.allMatches\(digits\)\.length - \(startedWithPoint \? 1 : 0\);" dotAll="true" id="entry_buffer.counted_digits.leading_point">
+            <mutation text="_digit.allMatches(digits).length;"/>
+            <mutation text="_digit.allMatches(digits.replaceFirst(RegExp('^0+'), '')).length - (startedWithPoint ? 1 : 0);"/>
+            <mutation text="digits.length - (startedWithPoint ? 1 : 0);"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R7): a leading point forgets that its 0 was written,
+             not typed -->
+        <regex pattern="const Token\(digits: '0\.', startedWithPoint: true\)" dotAll="true" id="entry_buffer.type_digit.leading_point_counts">
+            <mutation text="const Token(digits: '0.')"/>
         </regex>
     </rules>
 
