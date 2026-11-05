@@ -195,6 +195,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     );
   }
 
+  // TODO: [CA-1424] [Estimation] List the estimates of all projects, not one project id.
+  // https://ripplearc.youtrack.cloud/issue/CA-1424
   Future<Either<Failure, List<CostEstimate>>> _watchLocalEstimations(
     String streamKey,
     String projectId,
