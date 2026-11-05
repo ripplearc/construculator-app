@@ -214,6 +214,19 @@
             <mutation text="arithmetic: const ChainArithmetic(),"/>
         </regex>
 
+        <!-- RULE CA-1365a: a finished value converted past the limit is
+             taken, or refused when it is within it -->
+        <regex pattern="UnitKeyConverted\(:final value\) when formatter\.isTooLarge\(value\) =&gt;\s*const TapeEntryRefused\(EntryRefusal\.tooLarge\),\s*UnitKeyConverted\(:final value, :final tokens\) \|\|" dotAll="true" id="tape.press_unit.convert_past_limit">
+            <mutation text="UnitKeyConverted(:final value, :final tokens) ||"/>
+            <mutation text="UnitKeyConverted(:final value) when !formatter.isTooLarge(value) =&gt; const TapeEntryRefused(EntryRefusal.tooLarge), UnitKeyConverted(:final value, :final tokens) ||"/>
+        </regex>
+
+        <!-- RULE CA-1365b: a carry on the unit key passes the limit -->
+        <regex pattern="if \(value != null &amp;&amp; formatter\.isTooLarge\(value\)\) \{\s*return const TapeEntryRefused\(EntryRefusal\.tooLarge\);\s*\}" dotAll="true" id="tape.press_unit.carry_past_limit">
+            <mutation text=""/>
+            <mutation text="if (value != null &amp;&amp; !formatter.isTooLarge(value)) { return const TapeEntryRefused(EntryRefusal.tooLarge); }"/>
+        </regex>
+
         <!-- RULE 21: the formatter ignores the settings -->
         <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
