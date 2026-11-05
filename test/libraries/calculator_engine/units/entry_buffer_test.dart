@@ -33,19 +33,34 @@ void main() {
         expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
       });
 
-      test('B6: the sixteenth digit of one number is refused, zeros after '
-          'the point counted and the zeros that lead the number not', () {
+      test('B6, R7: the sixteenth digit of one number is refused, every '
+          'typed digit counted, the zeros that lead it included', () {
         const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
         final fifteen = type('9999999.99999999');
         expect(fifteen.text, '9999999.99999999');
         expect(fifteen.typeDigit('9'), tooMany);
         expect(type('1.00000000000000').typeDigit('0'), tooMany);
         expect(type('1.00000000000000').typeDigit('1'), tooMany);
+        expect(type('0.00000000000001').typeDigit('2'), tooMany);
+        expect(type('007.000000000000').text, '007.000000000000');
+        expect(type('007.000000000000').typeDigit('1'), tooMany);
+        expect(type('1.0000000000000').typeDigit('1'), isA<EntryChanged>());
+        expect(type('0.0000000000000').typeDigit('1'), isA<EntryChanged>());
+      });
+
+      test('R7: the 0 the tape writes for a leading point was not typed and '
+          'does not count, before or after a backspace', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
         expect(type('.000000000000001').text, '0.000000000000001');
         expect(type('.000000000000001').typeDigit('1'), tooMany);
-        expect(type('007.00000000000001').text, '007.00000000000001');
-        expect(type('007.00000000000001').typeDigit('1'), tooMany);
-        expect(type('1.0000000000000').typeDigit('1'), isA<EntryChanged>());
+        expect(type('.00000000000000').typeDigit('1'), isA<EntryChanged>());
+        final left = changed(type('.').backspace());
+        expect(left.text, '0');
+        expect(
+          type('.00000000000000', left).typeDigit('1'),
+          isA<EntryChanged>(),
+        );
+        expect(type('.000000000000001', left).typeDigit('1'), tooMany);
       });
 
       test('fills the open number and echoes it', () {

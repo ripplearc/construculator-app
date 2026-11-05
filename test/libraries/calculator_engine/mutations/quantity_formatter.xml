@@ -83,9 +83,10 @@
         </regex>
 
         <!-- RULE 14: a fraction that rounds up to a whole inch is taken off
-             instead of carried -->
-        <regex pattern="whole \+= fraction\.carry;\s*final text =" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
-            <mutation text="whole -= fraction.carry; final text ="/>
+             instead of carried (re-anchored on the feet-and-inches split,
+             CA-1236 R7) -->
+        <regex pattern="wholeInches \+= fraction\.carry;\s*if \(wholeInches == 12\) \{" dotAll="true" id="quantity_formatter.inches.carry_subtracted">
+            <mutation text="wholeInches -= fraction.carry; if (wholeInches == 12) {"/>
         </regex>
 
         <!-- RULE 15: a stored size under Metric divides by the millimetres

@@ -159,8 +159,8 @@
             <mutation text="final String? typedAs = null;"/>
             <mutation text="final typedAs = plain.typedAs ?? plain.digits;"/>
         </regex>
-        <regex pattern="last\.copyWith\(digits: '\$\{last\.digits\}\$digit', typedAs: \(\) =&gt; null\)," dotAll="true" id="read_as.typed_as.kept_through_digit">
-            <mutation text="last.copyWith(digits: '${last.digits}$digit'),"/>
+        <regex pattern="last\.copyWith\(digits: digits, typedAs: \(\) =&gt; null\)" dotAll="true" id="read_as.typed_as.kept_through_digit">
+            <mutation text="last.copyWith(digits: digits)"/>
         </regex>
         <regex pattern="digits: last\.digits\.substring\(0, last\.digits\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.kept_through_backspace">
             <mutation text="digits: last.digits.substring(0, last.digits.length - 1),"/>
@@ -183,8 +183,8 @@
         <regex pattern="_withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
             <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null),"/>
         </regex>
-        <regex pattern="seconds,\s*typedAs,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
-            <mutation text="seconds, ];"/>
+        <regex pattern="seconds,\s*typedAs,\s*startedWithPoint,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
+            <mutation text="seconds, startedWithPoint, ];"/>
         </regex>
 
         <!-- RULE 15 (R1): a pill whose reading has no answer under the key

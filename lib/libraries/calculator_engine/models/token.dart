@@ -58,6 +58,11 @@ class Token extends Equatable {
   /// it, since the way back belongs to the digits it was made from.
   final String? typedAs;
 
+  /// Whether the number was begun with the decimal point, so that the 0 in
+  /// front of it was written by the tape and never typed: it does not count
+  /// toward [EntryBuffer.maxDigits], where a typed 0 does (Section 5.1).
+  final bool startedWithPoint;
+
   const Token({
     required this.digits,
     this.denominator,
@@ -66,6 +71,7 @@ class Token extends Equatable {
     this.minutes,
     this.seconds,
     this.typedAs,
+    this.startedWithPoint = false,
   }) : assert(power >= 1 && power <= 3, 'the unit ladder stops at cubic'),
        assert(
          seconds == null || minutes != null,
@@ -119,6 +125,7 @@ class Token extends Equatable {
     String? Function()? minutes,
     String? Function()? seconds,
     String? Function()? typedAs,
+    bool? startedWithPoint,
   }) {
     return Token(
       digits: digits ?? this.digits,
@@ -128,6 +135,7 @@ class Token extends Equatable {
       minutes: minutes != null ? minutes() : this.minutes,
       seconds: seconds != null ? seconds() : this.seconds,
       typedAs: typedAs != null ? typedAs() : this.typedAs,
+      startedWithPoint: startedWithPoint ?? this.startedWithPoint,
     );
   }
 
@@ -140,5 +148,6 @@ class Token extends Equatable {
     minutes,
     seconds,
     typedAs,
+    startedWithPoint,
   ];
 }
