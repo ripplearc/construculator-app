@@ -807,7 +807,10 @@ class Tape extends Equatable {
   };
 
   Angle? get _pitchTheRulesRead {
-    for (final answer in const DeterministicRules().answersFor(namedValues)) {
+    for (final answer in const DeterministicRules().answersFor(
+      namedValues,
+      formatter: formatter,
+    )) {
       if (DeterministicRules.isPitchKey(answer.key)) {
         if (answer.value case final Angle pitch) return pitch;
       }
