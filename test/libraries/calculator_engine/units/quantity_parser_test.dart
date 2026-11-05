@@ -225,6 +225,25 @@ void main() {
       });
     });
 
+    group('CA-1339: a length with more digits than a Rational holds', () {
+      test('is no value at all, since a typed number never has one (a digit '
+          'past the fifteenth is refused as it is typed)', () {
+        expect(
+          parser.parse(const [
+            Token(digits: '1.123456789012345678', unit: Unit.foot),
+          ]),
+          isNull,
+        );
+        expect(
+          parser.parse(const [
+            Token(digits: '1', unit: Unit.foot),
+            Token(digits: '0.1234567890123456789', unit: Unit.inch),
+          ]),
+          isNull,
+        );
+      });
+    });
+
     group('inchesOf', () {
       test('is the exact inches of a length token', () {
         expect(
