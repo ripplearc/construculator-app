@@ -26,20 +26,39 @@ class _CalculatorPageState extends State<CalculatorPage> {
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
 
   Locale? _groupsLocale;
-  List<FunctionGroup>? _groups;
+  Map<String, FunctionGroup>? _groupsById;
+  List<String>? _orderedFor;
+  List<FunctionGroup>? _orderedGroups;
 
-  List<FunctionGroup> _groupsFor(
+  Map<String, FunctionGroup> _groupsFor(
     BuildContext context,
     CalculatorLabelFormatter labels,
   ) {
     final locale = Localizations.localeOf(context);
-    var groups = _groups;
+    var groups = _groupsById;
     if (groups == null || _groupsLocale != locale) {
       _groupsLocale = locale;
       groups = _buildGroups(labels);
-      _groups = groups;
+      _groupsById = groups;
     }
     return groups;
+  }
+
+  // The groups in the order the state gives them, built once per order: the
+  // keyboard refreshes its "View all" sheet whenever it is handed a new list
+  // object, so a list rebuilt on every state would refresh it on every key.
+  List<FunctionGroup> _groupsInOrder(
+    Map<String, FunctionGroup> groupsById,
+    List<String> order,
+  ) {
+    if (_orderedGroups case final groups? when identical(_orderedFor, order)) {
+      return groups;
+    }
+    _orderedFor = order;
+    return _orderedGroups = [
+      for (final id in order)
+        groupsById[id] ?? (throw StateError('No function group "$id"')),
+    ];
   }
 
   static const List<({String groupId, List<String> keyIds})> _groupTable = [
@@ -156,9 +175,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
       ),
   ];
 
-  List<FunctionGroup> _buildGroups(CalculatorLabelFormatter labels) => [
+  Map<String, FunctionGroup> _buildGroups(CalculatorLabelFormatter labels) => {
     for (final group in _groupTable)
-      FunctionGroup(
+      group.groupId: FunctionGroup(
         name: GroupNameType(
           id: group.groupId,
           label: labels.groupLabel(group.groupId),
@@ -168,16 +187,17 @@ class _CalculatorPageState extends State<CalculatorPage> {
             _key(id: id, groupId: group.groupId, labels: labels),
         ],
       ),
-  ];
+  };
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final l10n = context.l10n;
     final labels = CalculatorLabelFormatter(l10n);
-    final groups = _groupsFor(context, labels);
+    final groupsById = _groupsFor(context, labels);
     final groupAccentColors = {
-      for (final group in groups) group.name: _accentFor(colors, group.name.id),
+      for (final group in groupsById.values)
+        group.name: _accentFor(colors, group.name.id),
     };
 
     return BlocProvider<CalculatorBloc>(
@@ -192,6 +212,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
               final dependentKeys = state.dependentKeys;
+              final groups = _groupsInOrder(groupsById, state.groupOrder);
 
               return Column(
                 children: [
@@ -306,6 +327,16 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         );
                         bloc.add(CalculatorGroupSelected(index));
                       },
+                      onGroupsReordered: (oldIndex, newIndex) => bloc.add(
+                        CalculatorGroupsReordered(
+                          oldIndex: oldIndex,
+                          newIndex: newIndex,
+                        ),
+                      ),
+                      reorderSemanticsLabelBuilder:
+                          l10n.calculatorReorderGroupSemantics,
+                      parenSemanticLabel: l10n.calculatorBracketKeySemantics,
+                      parenSemanticHint: l10n.calculatorBracketKeyHint,
                       onKeyTapped: (key) =>
                           bloc.add(CalculatorKeySelected(key.id)),
                       onUnitSystemChanged: (unitSystem) =>

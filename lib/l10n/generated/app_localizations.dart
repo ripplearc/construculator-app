@@ -4394,6 +4394,24 @@ abstract class AppLocalizations {
   /// **'Equipment'**
   String get costSectionEquipment;
 
+  /// Screen reader label of the calculator keyboard's ( ) key, bottom left (UX Design Doc Section 1.3)
+  ///
+  /// In en, this message translates to:
+  /// **'Bracket key'**
+  String get calculatorBracketKeySemantics;
+
+  /// Screen reader hint of the ( ) key; withheld while the key is disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a bracket; the next press closes it'**
+  String get calculatorBracketKeyHint;
+
+  /// Screen reader label of a group's drag handle in the calculator's View all sheet (UX Design Doc Section 1.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to move the {group} group'**
+  String calculatorReorderGroupSemantics(String group);
+
   /// Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
