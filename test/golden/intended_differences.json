@@ -302,6 +302,18 @@
    "checkpoint": "committed 267",
    "reason": "Waits for S2b (CA-1091): an operator after a result banks the old tape (rule 4.9); until history lands the engine keeps every chip and chains off the result in place, so the result sits two chips further along.",
    "dart": {"kind": "tapeAt", "index": 4, "equals": "Calc267"}
+  },
+  {
+   "scenario": "S66",
+   "checkpoint": "close after a real edit: sealed + Area recomputed",
+   "reason": "The prototype gives a chip that was edited once a second class, t-editable, beside t-input for a chip typed once. The design has one face for a finished value, editable (UX doc term 2.2), so a sealed chip reads t-input whether it was edited or not; the recomputed Area is checked as the prototype checks it.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeKindAt", "index": 1, "equals": "t-input"}, {"kind": "tapeAt", "index": 2, "equals": "Area440ft²"}]}
+  },
+  {
+   "scenario": "S66",
+   "checkpoint": "fixed (5ft) → closes, Area follows",
+   "reason": "As above: one face for a finished value (UX doc term 2.2), so the sealed chip reads t-input; the recomputed Area is checked as the prototype checks it.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeKindAt", "index": 1, "equals": "t-input"}, {"kind": "tapeAt", "index": 2, "equals": "Area110ft²"}]}
   }
  ]
 }

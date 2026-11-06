@@ -35,6 +35,25 @@
             <mutation text="if (value == factor) return key.symbol; } return Operator.add.symbol;"/>
         </regex>
 
+        <!-- RULE 4 (S1c 3/5, CA-1089): every chip says a tap edits it -->
+        <regex pattern="CoreCalculatorChipType\.editable when onChipTap != null =&gt;\s*l10n\.calculatorChipTapToEdit," dotAll="true" id="calculator_label_formatter.chips.every_chip_says_edit">
+            <mutation text="_ when onChipTap != null =&gt; l10n.calculatorChipTapToEdit,"/>
+        </regex>
+
+        <!-- RULE 4a: the chip being edited says a tap edits it -->
+        <regex pattern="CoreCalculatorChipType\.active when onChipTap != null =&gt;\s*l10n\.calculatorChipTapToFinish," dotAll="true" id="calculator_label_formatter.chips.active_says_edit">
+            <mutation text="CoreCalculatorChipType.active when onChipTap != null =&gt; l10n.calculatorChipTapToEdit,"/>
+        </regex>
+
+        <!-- RULE 5: every chip taps back as the first one -->
+        <regex pattern="\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.tap_index_lost">
+            <mutation text="() =&gt; onChipTap(0),"/>
+        </regex>
+
+        <!-- RULE 6: a result chip taps back too -->
+        <regex pattern="CoreCalculatorChipType\.editable \|\| CoreCalculatorChipType\.active\s*when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.result_taps_back">
+            <mutation text="_ when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>
+        </regex>
     </rules>
 
     <commands>
