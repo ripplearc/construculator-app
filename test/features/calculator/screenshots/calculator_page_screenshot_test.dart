@@ -170,6 +170,41 @@ void main() {
       );
     });
 
+    testWidgets(
+      'renders a bracket reopened in the middle of a calculation: the '
+      'chips around it wait and the answer reads a dash (Section 7)',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+        await pumpCalculatorPage(tester: tester, theme: theme);
+
+        blocOf(tester)
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorChipTapped(1));
+        await tester.pump();
+        await tester.pump();
+
+        expect(blocOf(tester).state.tape.openBracketIndex, 1);
+        expect(blocOf(tester).state.chipsList.last.value, '—');
+        await expectLater(
+          find.byType(Scaffold),
+          matchesGoldenFile(
+            'goldens/calculator_page/${size.width}x${size.height}/calculator_page_tape_bracket_reopened$suffix.png',
+          ),
+        );
+      },
+    );
+
     testWidgets('renders the "View all" sheet over the page', (tester) async {
       tester.view.physicalSize = sheetSize;
       tester.view.devicePixelRatio = ratio;
