@@ -81,6 +81,11 @@ class CalculatorState extends Equatable {
   /// never by a timer), so the page draws [toast] while this is false.
   final bool toastClosed;
 
+  /// The unit the last key stood for while the tape refused it, so that the
+  /// toast can spell it out ("Can't append yards here", Section 5.2);
+  /// `null` when the tape took the key or the key was not a unit.
+  final Unit? refusedUnit;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
@@ -92,6 +97,7 @@ class CalculatorState extends Equatable {
     this.removedResults = const [],
     this.toastsRaised = 0,
     this.toastClosed = false,
+    this.refusedUnit,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -110,6 +116,7 @@ class CalculatorState extends Equatable {
     List<String>? removedResults,
     int? toastsRaised,
     bool? toastClosed,
+    Unit? Function()? refusedUnit,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -120,6 +127,7 @@ class CalculatorState extends Equatable {
     removedResults: removedResults ?? this.removedResults,
     toastsRaised: toastsRaised ?? this.toastsRaised,
     toastClosed: toastClosed ?? this.toastClosed,
+    refusedUnit: refusedUnit != null ? refusedUnit() : this.refusedUnit,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -549,23 +557,43 @@ class CalculatorState extends Equatable {
     refusal,
     closesCalculator,
     removedResults,
+    refusedUnit,
     toastsRaised,
     toastClosed,
   ];
 
   /// What the last key left to say in a toast (Section 5), or `null`: the
   /// result an edit removed; the editing guard, with the incomplete number
-  /// as the value row shows it, which is nothing for an empty chip. Any
-  /// other refusal has no toast here yet; a result, an error and a bracket
-  /// chip take no tap on the page, so the tape's refusal of one never
-  /// reaches a toast.
+  /// as the value row shows it, which is nothing for an empty chip; and the
+  /// unit guards of a reopened chip, named for the unit the key stood for.
+  /// Any other refusal has no toast here yet; a result, an error and a
+  /// bracket chip take no tap on the page, so the tape's refusal of one
+  /// never reaches a toast.
   CalculatorToast? get toast {
     if (removedResults.isNotEmpty) {
       return CalculatorResultRemovedToast(keys: removedResults);
     }
-    return switch (refusal) {
-      TapeRefused(reason: TapeRefusal.finishThisValueFirst) =>
+    final key = tape.beingTyped?.key ?? '';
+    return switch ((refusal, refusedUnit)) {
+      (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _) =>
         CalculatorFinishValueToast(value: valueText),
+      (TapeEntryRefused(reason: EntryRefusal.cannotAppendUnit), final unit?) =>
+        CalculatorCannotAppendUnitToast(value: valueText, unit: unit),
+      (TapeEntryRefused(reason: EntryRefusal.needsLength), final unit?) =>
+        CalculatorNeedsLengthToast(key: key, unit: unit),
+      (TapeEntryRefused(reason: EntryRefusal.tailNeedsLength), final unit?) =>
+        CalculatorNeedsLengthToast(
+          key: key,
+          unit: unit,
+          tail: tape.beingTyped?.entry.tokens.lastOrNull?.digits,
+        ),
+      (
+        TapeUnitRefused(
+          refusal: UnitKeyRefused(reason: UnitKeyRefusal.keepsLength),
+        ),
+        final unit?,
+      ) =>
+        CalculatorKeepsLengthToast(key: key, unit: unit, value: valueText),
       _ => null,
     };
   }

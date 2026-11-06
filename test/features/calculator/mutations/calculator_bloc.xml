@@ -32,9 +32,8 @@
         </regex>
 
         <!-- RULE 3: the close is said as not closing -->
-        <regex pattern="refusal: \(\) => null,\s*removedResults: const \[\],\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
-            <mutation text="refusal: () => null, removedResults: const [], closesCalculator: false,"/>
-        </regex>
+        <regex pattern="refusal: \(\) => null,\s*removedResults: const \[\],\s*refusedUnit: \(\) => null,\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
+            <mutation text="refusal: () => null, removedResults: const [], refusedUnit: () => null, closesCalculator: false,"/>
 
         <!-- RULE 4: a taken key keeps the close -->
         <regex pattern="notice: \(\) => notice,\s*refusal: \(\) => null,\s*closesCalculator: false," dotAll="true" id="calculator_bloc.fold.taken_key_keeps_close">
@@ -47,9 +46,8 @@
         </regex>
 
         <!-- RULE 6: the close is left out of the state's equality -->
-        <regex pattern="closesCalculator,\s*removedResults,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
-            <mutation text="removedResults, toastsRaised, toastClosed, ];"/>
-        </regex>
+        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="removedResults, refusedUnit, toastsRaised, toastClosed, ];"/>
 
         <!-- RULE 7: no chip is ever inert -->
         <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.never_inert">
@@ -166,20 +164,26 @@
 
         <!-- RULE 26 (S1c 4/5, CA-1089): the removed result is not carried into
              the state -->
-        <regex pattern="removedResults: removed,\s*toastClosed: false," dotAll="true" id="calculator_bloc.fold.removed_result_dropped">
-            <mutation text="removedResults: const [], toastClosed: false,"/>
-            <mutation text="removedResults: removed,"/>
+        <regex pattern="removedResults: removed,\s*refusedUnit: \(\) =&gt; null,\s*toastClosed: false," dotAll="true" id="calculator_bloc.fold.removed_result_dropped">
+            <mutation text="removedResults: const [], refusedUnit: () =&gt; null, toastClosed: false,"/>
+            <mutation text="removedResults: removed, refusedUnit: () =&gt; null,"/>
         </regex>
 
         <!-- RULE 27: a refused key keeps the removed result -->
-        <regex pattern="refusal: \(\) =&gt; refusal,\s*closesCalculator: false,\s*removedResults: const \[\],\s*toastClosed: false," dotAll="true" id="calculator_bloc.fold.removed_result_kept_on_refusal">
-            <mutation text="refusal: () =&gt; refusal, closesCalculator: false,"/>
+        <regex pattern="refusal: \(\) =&gt; refusal,\s*closesCalculator: false,\s*removedResults: const \[\],\s*refusedUnit: \(\) =&gt; unit,\s*toastClosed: false," dotAll="true" id="calculator_bloc.fold.removed_result_kept_on_refusal">
+            <mutation text="refusal: () =&gt; refusal, closesCalculator: false, refusedUnit: () =&gt; unit, toastClosed: false,"/>
         </regex>
 
         <!-- RULE 28: a toast is never counted, so the same guard raised
              twice is one state -->
         <regex pattern="next\.toast == null\s*\? next\s*: next\.copyWith\(toastsRaised: next\.toastsRaised \+ 1\)," dotAll="true" id="calculator_bloc.fold.toast_uncounted">
             <mutation text="next,"/>
+        </regex>
+
+        <!-- RULE 28a: C forgets how many toasts were raised, so the page
+             would show the toast C's state still holds -->
+        <regex pattern="groupOrder: state\.groupOrder,\s*toastsRaised: state\.toastsRaised," dotAll="true" id="calculator_bloc.cleared.toast_count_forgotten">
+            <mutation text="groupOrder: state.groupOrder,"/>
         </regex>
 
         <!-- RULE 29: every state is counted as a toast, so the page shows
@@ -197,6 +201,31 @@
             <mutation text="emit(state);"/>
         </regex>
 
+
+        <!-- RULE 31 (S1c 5/5, CA-1089): the refused unit is not kept -->
+        <regex pattern="removedResults: const \[\],\s*refusedUnit: \(\) =&gt; unit," dotAll="true" id="calculator_bloc.fold.refused_unit_dropped">
+            <mutation text="removedResults: const [], refusedUnit: () =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 32: a taken key keeps the refused unit -->
+        <regex pattern="removedResults: removed,\s*refusedUnit: \(\) =&gt; null," dotAll="true" id="calculator_bloc.fold.refused_unit_kept">
+            <mutation text="removedResults: removed,"/>
+        </regex>
+
+        <!-- RULE 33: the unit column's key is not named to the toast -->
+        <regex pattern="_press\(emit, \(tape\) =&gt; _pressUnit\(tape, event\.unit\), unit: event\.unit\);" dotAll="true" id="calculator_bloc.unit_selected.unit_unnamed">
+            <mutation text="_press(emit, (tape) =&gt; _pressUnit(tape, event.unit));"/>
+        </regex>
+
+        <!-- RULE 34: the Unit group's key is not named to the toast -->
+        <regex pattern="return _press\(emit, \(tape\) =&gt; _pressUnit\(tape, unit\), unit: unit\);" dotAll="true" id="calculator_bloc.key_selected.unit_unnamed">
+            <mutation text="return _press(emit, (tape) =&gt; _pressUnit(tape, unit));"/>
+        </regex>
+
+        <!-- RULE 35: a tail is never named -->
+        <regex pattern="tail: tape\.beingTyped\?\.entry\.tokens\.lastOrNull\?\.digits," dotAll="true" id="calculator_state.toast.tail_unnamed">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>
