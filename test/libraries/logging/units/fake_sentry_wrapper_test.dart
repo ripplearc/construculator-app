@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -15,6 +18,23 @@ void main() {
         var ran = false;
         sentry.initialize(() => ran = true);
         expect(ran, isTrue);
+      });
+
+      test('does not finish until an async appRunner finishes', () {
+        fakeAsync((async) {
+          final appRunnerGate = Completer<void>();
+          var initializeFinished = false;
+          sentry
+              .initialize(() => appRunnerGate.future)
+              .then((_) => initializeFinished = true);
+
+          async.flushMicrotasks();
+          expect(initializeFinished, isFalse);
+
+          appRunnerGate.complete();
+          async.flushMicrotasks();
+          expect(initializeFinished, isTrue);
+        });
       });
     });
 
