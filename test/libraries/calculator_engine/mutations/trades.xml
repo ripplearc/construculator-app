@@ -13,8 +13,13 @@
 
     <rules>
         <!-- RULE 1: the face is the width alone -->
-        <regex pattern="double get squareTicks =&gt; width\.ticks \* height\.ticks\.toDouble\(\);" dotAll="true" id="trades.piece.face_is_width">
-            <mutation text="double get squareTicks =&gt; width.ticks.toDouble();"/>
+        <regex pattern="double get squareTicks =&gt; width\.preciseTicks \* height\.preciseTicks;" dotAll="true" id="trades.piece.face_is_width">
+            <mutation text="double get squareTicks =&gt; width.preciseTicks;"/>
+        </regex>
+
+        <!-- RULE 1a: the face is rounded to whole ticks before the division -->
+        <regex pattern="double get squareTicks =&gt; width\.preciseTicks \* height\.preciseTicks;" dotAll="true" id="trades.piece.face_from_whole_ticks">
+            <mutation text="double get squareTicks =&gt; width.ticks * height.ticks.toDouble();"/>
         </regex>
 
         <!-- RULE 2: the count multiplies instead of divides -->
@@ -23,9 +28,22 @@
         </regex>
 
         <!-- RULE 3: a recount forgets the area or the trade -->
-        <regex pattern="TradeCount\(trade: trade, area: area, size: size\);" dotAll="true" id="trades.recount.forgets">
-            <mutation text="TradeCount(trade: trade, area: const Area(0), size: size);"/>
-            <mutation text="TradeCount(trade: Trade.drywall, area: area, size: size);"/>
+        <regex pattern="return TradeCount\(trade: trade, area: area, size: size\);" dotAll="true" id="trades.recount.forgets">
+            <mutation text="return TradeCount(trade: trade, area: const Area(0), size: size);"/>
+            <mutation text="return TradeCount(trade: Trade.drywall, area: area, size: size);"/>
+        </regex>
+
+        <!-- RULE 3a: a recount takes a size with no face, or refuses one with a face -->
+        <regex pattern="if \(size\.squareTicks &lt;= 0\) return null;" dotAll="true" id="trades.recount.no_face_taken">
+            <mutation text=""/>
+            <mutation text="if (size.squareTicks &lt; 0) return null;"/>
+        </regex>
+
+        <!-- RULE 6: an area of zero or less is counted -->
+        <regex pattern="if \(area\.squareTicks &lt;= 0\) return const \[\];" dotAll="true" id="trades.counts.area_below_zero_counted">
+            <mutation text=""/>
+            <mutation text="if (area.squareTicks &lt; 0) return const [];"/>
+            <mutation text="if (area.squareTicks &lt;= 1) return const [];"/>
         </regex>
 
         <!-- RULE 4: a size with no face is counted -->
