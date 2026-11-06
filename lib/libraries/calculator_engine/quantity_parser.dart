@@ -35,7 +35,7 @@ class QuantityParser extends Equatable {
   /// [Rational] (1,844,674,407,370,955 ft) is a [RationalOverflow], which
   /// [parse] answers `null` for too.
   Rational inchesOf(Token token) {
-    final exact = _exactValueOf(token);
+    final exact = exactValueOf(token);
     if (exact == null) {
       throw ArgumentError.value(token, 'token', 'has no exact value');
     }
@@ -88,7 +88,7 @@ class QuantityParser extends Equatable {
           return null;
         }
         if (unit.dimension == Dimension.length) {
-          if (_exactValueOf(token) == null) return null;
+          if (exactValueOf(token) == null) return null;
           inches += inchesOf(token);
         } else {
           hundredthsOfPound +=
@@ -108,7 +108,14 @@ class QuantityParser extends Equatable {
     );
   }
 
-  Rational? _exactValueOf(Token token) {
+  /// The number [token] spells, exactly: its digits over the fraction's
+  /// bottom number when [/] was pressed, so "0.1" is 1/10 and "7/8" is 7/8.
+  /// `null` when it cannot be kept exactly: a fraction over zero, a fraction
+  /// still open, or more digits than a [Rational] holds, which a typed
+  /// number never has ([EntryBuffer.maxDigits]). This is what a
+  /// bare number carries as [Scalar.exact], and what a length token is made
+  /// of.
+  Rational? exactValueOf(Token token) {
     final numerator = Rational.tryParse(token.digits);
     if (numerator == null) return null;
     final denominator = token.denominator;

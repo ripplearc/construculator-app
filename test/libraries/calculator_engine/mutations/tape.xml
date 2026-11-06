@@ -153,8 +153,8 @@
 
         <!-- RULE 17b: a plain number under Pitch is a scalar, or every
              plain number is an angle -->
-        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;\s*return Scalar\(entry\.tokens\.first\.value\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
-            <mutation text="return Scalar(entry.tokens.first.value);"/>
+        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;\s*final number = entry\.tokens\.first;\s*return Scalar\(number\.value, exact: parser\.exactValueOf\(number\)\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
+            <mutation text="final number = entry.tokens.first; return Scalar(number.value, exact: parser.exactValueOf(number));"/>
             <mutation text="return _typedAngle;"/>
         </regex>
 
