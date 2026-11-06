@@ -258,8 +258,8 @@
         <!-- RULE CA-1087: ⌫ on a bracket whose only chip ✕ emptied removes the
              hidden empty chip instead of the bracket, so nothing changes on
              screen -->
-        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return TapeChanged\(_removeBracket\(bracket\)\);\s*\}" dotAll="true" id="tape.backspace.emptied_group_kept">
-            <mutation text="if (bracket.inner.isEmpty) { return TapeChanged(_removeBracket(bracket)); }"/>
+        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return _bracketRemoved\(index, bracket\);\s*\}" dotAll="true" id="tape.backspace.emptied_group_kept">
+            <mutation text="if (bracket.inner.isEmpty) { return _bracketRemoved(index, bracket); }"/>
         </regex>
 
         <!-- RULE (R2 of #820, F1): a unit under a key that takes a count is
