@@ -2425,4 +2425,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String unitPillSemanticLabel(String unit) {
     return 'Unit: $unit. Tap to change';
   }
+
+  @override
+  String get calculatorBracketKeySemantics => 'Bracket key';
+
+  @override
+  String get calculatorBracketKeyHint =>
+      'Opens a bracket; the next press closes it';
+
+  @override
+  String calculatorReorderGroupSemantics(String group) {
+    return 'Drag to move the $group group';
+  }
 }
