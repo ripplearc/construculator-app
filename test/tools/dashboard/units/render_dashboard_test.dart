@@ -42,8 +42,9 @@ void main() {
     return SystemHealthGroup(
       journey: journey,
       metrics: <MetricSeries>[
-        seriesOf('cold_start_ms', 'Cold start', <double?>[800, 820]),
-        seriesOf('ttid_ms', 'TTID', <double?>[null, null]),
+        seriesOf('cold_start_ms', 'TTID (cold)', <double?>[800, 820]),
+        seriesOf('warm_start_ms', 'TTID (warm)', <double?>[700, 710]),
+        seriesOf('memory', 'Peak memory', <double?>[null, null], unit: 'KB'),
       ],
     );
   }
@@ -129,17 +130,28 @@ void main() {
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, contains('Cold start'));
+      expect(html, contains('TTID (cold)'));
       expect(html, contains('820 <span class="unit-inline">ms</span>'));
+      expect(html, contains('TTID (warm)'));
+      expect(html, contains('710 <span class="unit-inline">ms</span>'));
     });
 
-    test('marks a metric with no producer as not recorded', () {
+    test('explains that both TTID series are one measurement', () {
       final String html = render(
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, contains('TTID'));
-      expect(html, contains('not recorded'));
+      expect(html, contains('TTID (cold) and TTID (warm) are one measurement'));
+      expect(html, contains('under two'));
+    });
+
+    test('marks a metric with no recorded value as not recorded', () {
+      final String html = render(
+        systemHealth: <SystemHealthGroup>[healthGroup()],
+      );
+
+      expect(html, contains('Peak memory'));
+      expect(html, contains('<span class="muted">not recorded</span>'));
     });
 
     test('gives each journey its own heading', () {

@@ -599,7 +599,7 @@ a source change, so it is deliberately not done here.
 
 ### What the dashboard shows
 
-- **System health** — cold start, TTID, warm start, peak memory and jank,
+- **System health** — TTID (cold), TTID (warm), peak memory and jank,
   plotted per perf journey against a baseline when one has been recorded.
 - **E2E suite** — pass rate, flake rate and run duration per suite, plus a
   per-CUJ table of failures, flakes and last status with a failures-per-run
@@ -612,9 +612,9 @@ in its own footer, so the two are read together.
 Charts render empty rather than guessing when there is no data. **No baselines
 exist yet** — CA-476 defines the methodology but a baseline cannot be recorded
 before a harness has produced one — so no threshold line is drawn until a
-`baselines.json` appears in the perf store, keyed by journey. TTID likewise has
-no producer yet: the harness records startup as cold and warm start and emits no
-separate TTID field, so that chart stays empty until it does.
+`baselines.json` appears in the perf store, keyed by journey and then by
+metric id: `cold_start_ms` for TTID (cold), `warm_start_ms` for TTID (warm),
+`memory` and `jank`.
 
 ### How the dashboard is built and published
 

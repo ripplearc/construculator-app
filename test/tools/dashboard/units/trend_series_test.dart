@@ -141,9 +141,9 @@ void main() {
   group('MetricSeries', () {
     test('reports no data when every point is a gap', () {
       final MetricSeries series = MetricSeries(
-        id: 'ttid_ms',
-        label: 'TTID',
-        unit: 'ms',
+        id: 'memory',
+        label: 'Peak memory',
+        unit: 'KB',
         points: <SeriesPoint>[
           SeriesPoint(capturedAt: '2026-08-24T03:00:00Z'),
         ],
@@ -155,7 +155,7 @@ void main() {
     test('reports data when any point carries a value', () {
       final MetricSeries series = MetricSeries(
         id: 'cold_start_ms',
-        label: 'Cold start',
+        label: 'TTID (cold)',
         unit: 'ms',
         points: <SeriesPoint>[
           SeriesPoint(capturedAt: '2026-08-24T03:00:00Z'),

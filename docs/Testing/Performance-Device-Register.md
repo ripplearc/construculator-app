@@ -37,7 +37,7 @@ device. This register is the mapping from the `device_id` recorded in every
 > **No baselines are recorded yet.** Recording one before the hardware is fixed
 > would produce a number that cannot be reproduced or compared against.
 
-| Device | Journey | Cold start (median) | Warm start (median) | Jank (p90 build) |
+| Device | Journey | TTID (cold), median | TTID (warm), median | Jank (p90 build) |
 |---|---|---|---|---|
 | _(none yet)_ | | | | |
 

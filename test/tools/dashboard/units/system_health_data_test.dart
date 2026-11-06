@@ -67,7 +67,7 @@ void main() {
     return group.metrics.firstWhere((MetricSeries m) => m.id == id);
   }
 
-  test('plots the five required metrics even when one has no producer', () {
+  test('plots TTID for both conditions plus memory and jank', () {
     writeIndex(<Map<String, Object?>>[indexEntry()]);
     writeRun();
 
@@ -75,13 +75,18 @@ void main() {
 
     expect(group.metrics.map((MetricSeries m) => m.id).toList(), <String>[
       'cold_start_ms',
-      'ttid_ms',
       'warm_start_ms',
       'memory',
       'jank',
     ]);
-    expect(metric(group, 'ttid_ms').hasData, isFalse);
+    expect(group.metrics.map((MetricSeries m) => m.label).toList(), <String>[
+      'TTID (cold)',
+      'TTID (warm)',
+      'Peak memory',
+      'Jank (p90 build)',
+    ]);
     expect(metric(group, 'cold_start_ms').points.single.value, 800.0);
+    expect(metric(group, 'warm_start_ms').points.single.value, 300.0);
     expect(metric(group, 'jank').points.single.value, 12.5);
   });
 
@@ -171,6 +176,6 @@ void main() {
   test('still plots the metric slots when a run file is missing', () {
     writeIndex(<Map<String, Object?>>[indexEntry()]);
 
-    expect(loadSystemHealth(store).single.metrics, hasLength(5));
+    expect(loadSystemHealth(store).single.metrics, hasLength(4));
   });
 }
