@@ -787,6 +787,123 @@ void main() {
       );
     });
 
+    group('T1b: the order of the function-key groups (Section 1.5)', () {
+      const reorderedUnitFirst = [
+        CalculatorGroupId.unit,
+        CalculatorGroupId.basicGeometry,
+        CalculatorGroupId.shapes,
+        CalculatorGroupId.materials,
+        CalculatorGroupId.trigonometry,
+      ];
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a group dragged to the front in View all leads the order, and the '
+        'group on the keyboard follows to its new index',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorGroupSelected(3))
+          ..add(const CalculatorGroupsReordered(oldIndex: 3, newIndex: 0)),
+        skip: 1,
+        expect: () => [
+          const CalculatorState(
+            currentGroupIndex: 0,
+            groupOrder: reorderedUnitFirst,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a group dragged in front of the one on the keyboard moves that one '
+        'back by a place',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const CalculatorGroupsReordered(oldIndex: 4, newIndex: 0)),
+        expect: () => [
+          const CalculatorState(
+            currentGroupIndex: 1,
+            groupOrder: [
+              CalculatorGroupId.trigonometry,
+              CalculatorGroupId.basicGeometry,
+              CalculatorGroupId.shapes,
+              CalculatorGroupId.materials,
+              CalculatorGroupId.unit,
+            ],
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a drag that leaves the shown group where it is still changes the '
+        'order',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const CalculatorGroupsReordered(oldIndex: 3, newIndex: 4)),
+        expect: () => [
+          const CalculatorState(
+            groupOrder: [
+              CalculatorGroupId.basicGeometry,
+              CalculatorGroupId.shapes,
+              CalculatorGroupId.materials,
+              CalculatorGroupId.trigonometry,
+              CalculatorGroupId.unit,
+            ],
+          ),
+        ],
+      );
+
+      test('two states that differ only in the order of the groups are not '
+          'equal, so the keyboard redraws after a drag', () {
+        expect(
+          const CalculatorState(groupOrder: reorderedUnitFirst),
+          isNot(equals(const CalculatorState())),
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a drag that ends where it started changes nothing',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const CalculatorGroupsReordered(oldIndex: 2, newIndex: 2)),
+        expect: () => const <CalculatorState>[],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a drag from or to a place outside the five groups changes nothing',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorGroupsReordered(oldIndex: 0, newIndex: 5))
+          ..add(const CalculatorGroupsReordered(oldIndex: 5, newIndex: 0))
+          ..add(const CalculatorGroupsReordered(oldIndex: -1, newIndex: 0))
+          ..add(const CalculatorGroupsReordered(oldIndex: 0, newIndex: -1)),
+        expect: () => const <CalculatorState>[],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C and a reset keep the order of the groups',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorGroupsReordered(oldIndex: 3, newIndex: 0))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorDigitPressed('4'))
+          ..add(const CalculatorResetRequested()),
+        skip: 2,
+        expect: () => [
+          const CalculatorState(
+            currentGroupIndex: 1,
+            groupOrder: reorderedUnitFirst,
+          ),
+          tapeState(
+            pressed('4'),
+          ).copyWith(currentGroupIndex: 1, groupOrder: reorderedUnitFirst),
+          const CalculatorState(
+            currentGroupIndex: 1,
+            groupOrder: reorderedUnitFirst,
+          ),
+        ],
+      );
+    });
+
     group('S1b 2/4: the strip and the equals key', () {
       List<String> row1(CalculatorState state) => [
         for (final suggestion in state.suggestions)
@@ -2078,6 +2195,7 @@ void main() {
         final state = CalculatorState.initial();
         expect(state.tape, const Tape());
         expect(state.currentGroupIndex, 0);
+        expect(state.groupOrder, CalculatorGroupId.defaultOrder);
         expect(state.currentUnitSystem, UnitSystem.imperial);
         expect(state.tape.beingTyped, isNull);
         expect(state.labelKeyId, isNull);
