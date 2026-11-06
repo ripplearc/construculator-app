@@ -2502,4 +2502,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorChipTapToFinish => 'Finish editing';
+
+  @override
+  String get calculatorToastFinishValueTitle => 'Finish this value first';
+
+  @override
+  String calculatorToastFinishValueBody(String value) {
+    return '$value isn\'t complete — close the number with a unit, backspace, or ✕ to retype.';
+  }
+
+  @override
+  String get calculatorToastValueEmptyBody =>
+      'The value is empty — type a new value, or backspace to delete the chip.';
+
+  @override
+  String calculatorToastResultRemoved(String key) {
+    return '$key removed — can\'t recompute from the new value.';
+  }
 }

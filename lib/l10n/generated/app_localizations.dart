@@ -4405,6 +4405,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish editing'**
   String get calculatorChipTapToFinish;
+
+  /// Title of the toast when a key would leave a reopened chip incomplete (UX Design Doc Section 5, 'Finish this value first')
+  ///
+  /// In en, this message translates to:
+  /// **'Finish this value first'**
+  String get calculatorToastFinishValueTitle;
+
+  /// Body of the 'Finish this value first' toast for a number with no unit (UX Design Doc Section 5)
+  ///
+  /// In en, this message translates to:
+  /// **'{value} isn\'t complete — close the number with a unit, backspace, or ✕ to retype.'**
+  String calculatorToastFinishValueBody(String value);
+
+  /// Body of the 'Finish this value first' toast when the reopened chip holds nothing (UX Design Doc Section 5)
+  ///
+  /// In en, this message translates to:
+  /// **'The value is empty — type a new value, or backspace to delete the chip.'**
+  String get calculatorToastValueEmptyBody;
+
+  /// Toast when an edit leaves a result with no valid answer and that one chip is removed (UX Design Doc Section 5.5)
+  ///
+  /// In en, this message translates to:
+  /// **'{key} removed — can\'t recompute from the new value.'**
+  String calculatorToastResultRemoved(String key);
 }
 
 class _AppLocalizationsDelegate

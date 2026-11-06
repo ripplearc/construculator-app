@@ -12,6 +12,7 @@ part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 part 'calculator_strip_note.dart';
 part 'calculator_suggestion.dart';
+part 'calculator_toast.dart';
 
 /// Presses the keyboard's keys on the engine's tape and keeps the tape as
 /// its state (UX Design Doc Sections 1.1, 1.3 and 4; CA-1087, S1a).
@@ -146,6 +147,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         state.copyWith(
           notice: () => null,
           refusal: () => null,
+          removedResult: () => null,
           closesCalculator: true,
         ),
       );
@@ -273,25 +275,39 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome) {
     switch (outcome) {
-      case TapeChanged(:final tape, :final notice):
-        emit(
+      case TapeChanged(:final tape, :final notice, :final removed):
+        _emitCounted(
+          emit,
           state.copyWith(
             tape: tape,
             notice: () => notice,
             refusal: () => null,
             closesCalculator: false,
+            removedResult: () => removed,
           ),
         );
       case final TapeOutcome refusal:
-        emit(
+        _emitCounted(
+          emit,
           state.copyWith(
             notice: () => null,
             refusal: () => refusal,
             closesCalculator: false,
+            removedResult: () => null,
           ),
         );
     }
   }
+
+  // Emits [next], counting the toast it raises, so that the same guard
+  // raised twice over is a new state twice over and the page shows it
+  // again (rule 4.12).
+  void _emitCounted(Emitter<CalculatorState> emit, CalculatorState next) =>
+      emit(
+        next.toast == null
+            ? next
+            : next.copyWith(toastsRaised: next.toastsRaised + 1),
+      );
 
   CalculatorState _cleared() => CalculatorState(
     tape: Tape(preferences: state.tape.preferences),
