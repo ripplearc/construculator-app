@@ -151,6 +151,10 @@ class BlocScenarioDriver implements ScenarioDriver {
         null => '',
       },
       value: state.valueText,
+      toast: switch (state.toast) {
+        final toast? => _labels.toastBody(toast),
+        null => null,
+      },
       hint: switch (state.stripNote) {
         final note? => _labels.stripText(note),
         null =>
@@ -406,6 +410,18 @@ void main() {
       await driver.perform(const KeyStep('d:5'));
       expect(await driver.perform(const KeyStep('unit:lbs')), isTrue);
       expect(driver.snapshot().tape, ['5lbs']);
+    });
+
+    test('a guard the tape raises on an edit reads as the toast, in the words '
+        'of Section 5, and goes with the next key', () async {
+      for (final key in const ['fk:Length', 'd:1', 'd:8']) {
+        await driver.perform(KeyStep(key));
+      }
+      await driver.perform(const KeyStep('fk:Width'));
+      expect(driver.snapshot().toast, contains("18 isn't complete"));
+
+      await driver.perform(const KeyStep('unit:ft'));
+      expect(driver.snapshot().toast, isNull);
     });
 
     test('a tape chip is tapped by the prefix of its text: the chip reopens, '

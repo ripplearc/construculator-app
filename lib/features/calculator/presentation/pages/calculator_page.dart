@@ -207,8 +207,22 @@ class _CalculatorPageState extends State<CalculatorPage> {
         body: SafeArea(
           child: BlocConsumer<CalculatorBloc, CalculatorState>(
             listenWhen: (previous, current) =>
-                current.closesCalculator && !previous.closesCalculator,
-            listener: (_, _) => widget.router.pop(),
+                (current.closesCalculator && !previous.closesCalculator) ||
+                current.toastsRaised != previous.toastsRaised,
+            listener: (context, state) {
+              if (state.closesCalculator) {
+                widget.router.pop();
+                return;
+              }
+              if (state.toast case final toast?) {
+                CoreToast.showError(
+                  context,
+                  labels.toastBody(toast),
+                  l10n.closeButton,
+                  title: labels.toastTitle(toast),
+                );
+              }
+            },
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
               final dependentKeys = state.dependentKeys;

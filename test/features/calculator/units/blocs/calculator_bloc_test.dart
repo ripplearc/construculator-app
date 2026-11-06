@@ -58,6 +58,9 @@ void main() {
         '[ASIN]' => current.pressTrigKey(TrigFunction.arcsine),
         '[ACOS]' => current.pressTrigKey(TrigFunction.arccosine),
         '[ATAN]' => current.pressTrigKey(TrigFunction.arctangent),
+        _ when key.startsWith('tap:') => current.tapChip(
+          int.parse(key.substring(4)),
+        ),
         _ when key.startsWith('[') => current.pressFunctionKey(
           key.substring(1, key.length - 1),
           keyWantsUnit: !PlainNumberKeys.all.contains(
@@ -328,9 +331,11 @@ void main() {
           tapeState(pressed('1 /')),
           tapeState(pressed('1 /')).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
           ),
           tapeState(pressed('1 /')).copyWith(
             refusal: () => const TapeEntryRefused(EntryRefusal.zeroDenominator),
+            toastsRaised: 1,
           ),
         ],
       );
@@ -821,6 +826,127 @@ void main() {
         expect([
           for (final chip in CalculatorState(tape: sealed).chipsList) chip.type,
         ], everyElement(isNot(CoreCalculatorChipType.dashed)));
+      });
+
+      test('the editing guard reads as a toast with the incomplete number, or '
+          'with no number for an empty chip (Section 5, "Finish this value '
+          'first")', () {
+        final dangling = CalculatorState(
+          tape: pressed('[Length] 1 8'),
+          refusal: const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+        expect(dangling.toast, const CalculatorFinishValueToast(value: '18'));
+
+        final emptied = (lengthWidthArea().tapChip(1) as TapeChanged).tape;
+        final empty = CalculatorState(
+          tape: (emptied.clearActive() as TapeChanged).tape,
+          refusal: const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+        expect(empty.toast, const CalculatorFinishValueToast(value: ''));
+      });
+
+      test('a refusal with no words yet reads as no toast, and so does the '
+          'tape\'s refusal of a tap on a result, which the page never sends '
+          'since a result chip takes no tap', () {
+        expect(
+          CalculatorState(
+            tape: lengthWidthArea(),
+            refusal: const TapeRefused(TapeRefusal.chipCannotBeEdited),
+          ).toast,
+          isNull,
+        );
+        expect(
+          CalculatorState(
+            tape: lengthWidthArea(),
+            refusal: const TapeRefused(TapeRefusal.typeANumberFirst),
+          ).toast,
+          isNull,
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a result an edit removes is named in the state for its toast, and '
+        'the next key clears it',
+        build: () => bloc,
+        seed: () => CalculatorState(
+          tape: (pressed('0 . 5 [ASIN]').tapChip(0) as TapeChanged).tape,
+        ),
+        act: (bloc) => bloc
+          ..add(const CalculatorControlActioned(ControlAction.delete))
+          ..add(const CalculatorControlActioned(ControlAction.delete))
+          ..add(const CalculatorControlActioned(ControlAction.delete))
+          ..add(const CalculatorControlActioned(ControlAction.delete))
+          ..add(const CalculatorDigitPressed('2')),
+        skip: 3,
+        verify: (bloc) {
+          expect(bloc.state.removedResult, isNull);
+          expect(bloc.state.toast, isNull);
+          expect(bloc.state.valueText, '2');
+        },
+        expect: () {
+          final emptied = pressed('0 . 5 [ASIN] tap:0 ⌫ ⌫ ⌫');
+          final removed = emptied.backspace() as TapeChanged;
+          expect(removed.removed, 'Arcsine');
+          return [
+            CalculatorState(
+              tape: removed.tape,
+              notice: TapeNotice.resultRemoved,
+              removedResult: 'Arcsine',
+              toastsRaised: 1,
+            ),
+            tapeState(pressed('2')).copyWith(toastsRaised: 1),
+          ];
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a key the tape refuses clears a removed result too, so the toast is '
+        'not shown twice',
+        build: () => bloc,
+        seed: () => CalculatorState(
+          tape: pressed('[Length] 1 8'),
+          removedResult: 'Arcsine',
+        ),
+        act: (bloc) => bloc.add(const CalculatorKeySelected('Width')),
+        expect: () => [
+          CalculatorState(
+            tape: pressed('[Length] 1 8'),
+            refusal: const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the same guard raised twice is counted twice, so the page shows its '
+        'toast twice, and a key that says nothing leaves the count alone',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Length'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('[Length] 1 8')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('[Length] 1 8')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 2,
+          ),
+          tapeState(pressed('[Length] 1 8 ft')).copyWith(toastsRaised: 2),
+        ],
+      );
+
+      test('a removed result reads as its toast', () {
+        expect(
+          const CalculatorState(removedResult: 'Arcsine').toast,
+          const CalculatorResultRemovedToast(key: 'Arcsine'),
+        );
       });
 
       test('a chip being typed at the end leaves no result dashed', () {
@@ -1499,6 +1625,7 @@ void main() {
             pressed('[Length] 2 0 ft [Width] 1 0 ft [Height] 8'),
           ).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
           ),
         ],
       );

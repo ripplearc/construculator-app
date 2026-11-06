@@ -1,3 +1,4 @@
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/widgets.dart';
@@ -5,6 +6,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
+  group('CalculatorLabelFormatter toasts (Section 5)', () {
+    final l10n = AppLocalizationsEn();
+    final labels = CalculatorLabelFormatter(l10n);
+
+    test('the editing guard is titled "Finish this value first" and names '
+        'the incomplete number, or says the value is empty', () {
+      const dangling = CalculatorFinishValueToast(value: '18');
+      expect(labels.toastTitle(dangling), l10n.calculatorToastFinishValueTitle);
+      expect(
+        labels.toastBody(dangling),
+        l10n.calculatorToastFinishValueBody('18'),
+      );
+      expect(labels.toastBody(dangling), contains("18 isn't complete"));
+
+      const empty = CalculatorFinishValueToast(value: '');
+      expect(labels.toastTitle(empty), l10n.calculatorToastFinishValueTitle);
+      expect(labels.toastBody(empty), l10n.calculatorToastValueEmptyBody);
+      expect(labels.toastBody(empty), contains('empty'));
+    });
+
+    test('a removed result is one sentence naming the result by its label', () {
+      const toast = CalculatorResultRemovedToast(key: 'Arcsine');
+      expect(labels.toastTitle(toast), isNull);
+      expect(
+        labels.toastBody(toast),
+        l10n.calculatorToastResultRemoved(labels.displayLabel('Arcsine')),
+      );
+      expect(labels.toastBody(toast), contains('removed'));
+    });
+  });
+
   group('CalculatorLabelFormatter.localizeChips with a chip tap', () {
     final l10n = AppLocalizationsEn();
     final labels = CalculatorLabelFormatter(l10n);
