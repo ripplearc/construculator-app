@@ -32,8 +32,8 @@
         </regex>
 
         <!-- RULE 3: the close is said as not closing -->
-        <regex pattern="refusal: \(\) => null,\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
-            <mutation text="refusal: () => null, closesCalculator: false,"/>
+        <regex pattern="refusal: \(\) => null,\s*removedResult: \(\) => null,\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
+            <mutation text="refusal: () => null, removedResult: () => null, closesCalculator: false,"/>
         </regex>
 
         <!-- RULE 4: a taken key keeps the close -->
@@ -47,8 +47,8 @@
         </regex>
 
         <!-- RULE 6: the close is left out of the state's equality -->
-        <regex pattern="refusal,\s*closesCalculator,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
-            <mutation text="refusal, ];"/>
+        <regex pattern="closesCalculator,\s*removedResult,\s*toastsRaised,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="removedResult, toastsRaised, ];"/>
         </regex>
 
         <!-- RULE 7: no chip is ever inert -->
@@ -162,6 +162,34 @@
              before it too -->
         <regex pattern="ResultChip\(\) when editedIndex != null &amp;&amp; index &gt; editedIndex =&gt;" dotAll="true" id="calculator_state.chips.results_before_edit_dashed">
             <mutation text="ResultChip() when editedIndex != null =&gt;"/>
+        </regex>
+
+        <!-- RULE 26 (S1c 4/5, CA-1089): the removed result is not carried into
+             the state -->
+        <regex pattern="removedResult: \(\) =&gt; removed," dotAll="true" id="calculator_bloc.fold.removed_result_dropped">
+            <mutation text="removedResult: () =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 27: a refused key keeps the removed result -->
+        <regex pattern="refusal: \(\) =&gt; refusal,\s*closesCalculator: false,\s*removedResult: \(\) =&gt; null," dotAll="true" id="calculator_bloc.fold.removed_result_kept_on_refusal">
+            <mutation text="refusal: () =&gt; refusal, closesCalculator: false,"/>
+        </regex>
+
+        <!-- RULE 28: a toast is never counted, so the same guard raised
+             twice is one state -->
+        <regex pattern="next\.toast == null\s*\? next\s*: next\.copyWith\(toastsRaised: next\.toastsRaised \+ 1\)," dotAll="true" id="calculator_bloc.fold.toast_uncounted">
+            <mutation text="next,"/>
+        </regex>
+
+        <!-- RULE 29: every state is counted as a toast, so the page shows
+             one on a key that said nothing -->
+        <regex pattern="next\.toast == null\s*\? next\s*: next\.copyWith\(toastsRaised: next\.toastsRaised \+ 1\)," dotAll="true" id="calculator_bloc.fold.every_state_counted">
+            <mutation text="next.copyWith(toastsRaised: next.toastsRaised + 1),"/>
+        </regex>
+
+        <!-- RULE 30: a removed result has no toast -->
+        <regex pattern="if \(removedResult case final key\?\) \{\s*return CalculatorResultRemovedToast\(key: key\);\s*\}" dotAll="true" id="calculator_state.toast.removed_result_silent">
+            <mutation text=""/>
         </regex>
     </rules>
 
