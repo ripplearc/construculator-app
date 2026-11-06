@@ -4412,6 +4412,18 @@ abstract class AppLocalizations {
   /// **'Drag to move the {group} group'**
   String calculatorReorderGroupSemantics(String group);
 
+  /// Screen reader hint of a tap on an input chip of the calculator tape: the tap reopens the chip to edit it (UX Design Doc Section 1.1)
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get calculatorChipTapToEdit;
+
+  /// Screen reader hint of a tap on the chip being typed or edited on the calculator tape: the tap seals the chip, as = does (UX Design Doc rule 4.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Finish editing'**
+  String get calculatorChipTapToFinish;
+
   /// Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
