@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE: A CHIP REOPENED BY A TAP (S1c 1/5, CA-1089) -->
+    <!-- Targets: Tape.tapChip and the edit it opens — which chip is active,
+         when an edit is open, and the guard no exit key may pass. Critical
+         path: a wrong guard discards a value or closes the calculator
+         mid-edit. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: a chip being typed at the end counts as an edit -->
+        <regex pattern="if \(index == null \|\| index == chips\.length - 1\) return null;" dotAll="true" id="tape_edit.editing.entry_counts_as_edit">
+            <mutation text="if (index == null) return null;"/>
+        </regex>
+
+        <!-- RULE 2: a tap on a result or an error chip reopens it -->
+        <regex pattern="if \(chips\[index\] is! ValueChip\) \{\s*return const TapeRefused\(TapeRefusal\.chipCannotBeEdited\);\s*\}" dotAll="true" id="tape_edit.tap.result_reopened">
+            <mutation text="if (chips[index] is ErrorChip) { return const TapeRefused(TapeRefusal.chipCannotBeEdited); }"/>
+        </regex>
+
+        <!-- RULE 3: a tap while a bracket is open goes through -->
+        <regex pattern="if \(openBracket != null\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*if \(chips\[index\] is! ValueChip\)" dotAll="true" id="tape_edit.tap.open_bracket_ignored">
+            <mutation text="if (chips[index] is! ValueChip)"/>
+        </regex>
+
+        <!-- RULE 4: a second tap on the edited chip reopens it instead of
+             finishing the edit -->
+        <regex pattern="if \(activeIndex == index\) return _leavingEdit\(TapeChanged\.new\);" dotAll="true" id="tape_edit.tap.second_tap_not_a_close">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 5: an empty operator chip is dropped by a tap too -->
+        <regex pattern="current\.entry\.isEmpty &amp;&amp;\s*current\.operator == null\) \{" dotAll="true" id="tape_edit.tap.operator_chip_dropped">
+            <mutation text="current.entry.isEmpty) {"/>
+        </regex>
+
+        <!-- RULE 6: a tap on another chip abandons a broken edit -->
+        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*tape = closed\._sealed\(\);" dotAll="true" id="tape_edit.tap.switch_abandons_broken_edit">
+            <mutation text="tape = _withFractionClosedAsInches()._sealed();"/>
+        </regex>
+
+        <!-- RULE 7: an exit key abandons a broken edit -->
+        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*return key\(closed\._sealed\(\)\);" dotAll="true" id="tape_edit.leaving.guard_dropped">
+            <mutation text="return key(_withFractionClosedAsInches()._sealed());"/>
+        </regex>
+
+        <!-- RULE 8: = on an edit lands a second result instead of sealing -->
+        <regex pattern="if \(editing != null\) return _leavingEdit\(TapeChanged\.new\);" dotAll="true" id="tape_edit.equals.not_a_seal">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9: ✕ on an emptied edit closes the calculator -->
+        <regex pattern="if \(editing != null\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);" dotAll="true" id="tape_edit.clear.empty_edit_closes_calculator">
+            <mutation text="return const TapeRefused(TapeRefusal.nothingBeingTyped);"/>
+        </regex>
+
+        <!-- RULE 10: a unit that cannot continue the compound splits a new
+             chip off the edited one -->
+        <regex pattern="editing: editing != null,\s*holdsLengthOnly: holdsLengthOnly," dotAll="true" id="tape_edit.unit.split_while_editing">
+            <mutation text="holdsLengthOnly: holdsLengthOnly,"/>
+        </regex>
+
+        <!-- RULE 11: ⌫ on an emptied edit reopens the bracket at the end -->
+        <regex pattern="if \(editing == null &amp;&amp; chips\.isNotEmpty\) \{" dotAll="true" id="tape_edit.backspace.bracket_before_edit">
+            <mutation text="if (chips.isNotEmpty) {"/>
+        </regex>
+
+        <!-- RULE 12: ⌫ on an emptied edit keeps the chip -->
+        <regex pattern="if \(editing case \(\s*:final index,\s*chip: ValueChip\(entry: EntryBuffer\(isEmpty: true\)\),\s*\)\) \{\s*return _withChipRemoved\(index\);\s*\}" dotAll="true" id="tape_edit.backspace.empty_edit_kept">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 13: the Read-as pill is offered during an edit -->
+        <regex pattern="if \(openBracket != null \|\| editing != null\) return null;" dotAll="true" id="tape_edit.read_as.offered_while_editing">
+            <mutation text="if (openBracket != null) return null;"/>
+        </regex>
+
+        <!-- RULE 15: a digit into a chip edited before a closed bracket is
+             refused for the bracket -->
+        <regex pattern="if \(editing == null &amp;&amp; _endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);" dotAll="true" id="tape_edit.digit.closed_bracket_wins_over_edit">
+            <mutation text="if (_endsWithClosedBracket) { return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
+        </regex>
+
+        <!-- RULE 16: a unit onto a chip edited before a closed bracket is
+             refused for the bracket -->
+        <regex pattern="if \(editing == null &amp;&amp; _endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.groupCannotTakeUnit\);" dotAll="true" id="tape_edit.unit.closed_bracket_wins_over_edit">
+            <mutation text="if (_endsWithClosedBracket) { return const TapeRefused(TapeRefusal.groupCannotTakeUnit);"/>
+        </regex>
+
+        <!-- RULE 17: a digit on a reopened recalled angle seals it and starts
+             a chip at the end -->
+        <regex pattern="if \(editing != null\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}" dotAll="true" id="tape_edit.digit.recalled_angle_sealed_mid_edit">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 18: the strip's answer lands over an emptied edit, dropping
+             the chip -->
+        <regex pattern="if \(editing != null\) \{\s*return _leavingEdit\(\(tape\) => tape\.landAnswer\(key, value\)\);\s*\}" dotAll="true" id="tape_edit.land_answer.guard_dropped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 14: the active chip is only ever the last one -->
+        <regex pattern="for \(var index = chips\.length - 1; index &gt;= 0; index--\) \{\s*if \(chips\[index\] case ValueChip\(isActive: true\)\) return index;\s*\}\s*return null;" dotAll="true" id="tape_edit.active.last_only">
+            <mutation text="if (chips.lastOrNull case ValueChip(isActive: true)) return chips.length - 1; return null;"/>
+        </regex>
+        </rules>
+
+    <commands>
+        <command group="tape_edit" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_edit_test.dart test/libraries/calculator_engine/units/tape_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
