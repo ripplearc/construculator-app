@@ -300,6 +300,15 @@ void main() {
       });
     });
 
+    group('CA-1237: a length times a bracketed area is a volume', () {
+      test('4ft × (3ft × 2ft) = lands Calc 24ft³ (Q13)', () {
+        expect(
+          lastResult(press(const Tape(), '4 ft × ( 3 ft × 2 ft ( =')),
+          'Calc 24ft³',
+        );
+      });
+    });
+
     group('an error inside a bracket (Section 5.3)', () {
       test('keeps the bracket open with everything typed and ⌫ repairs it', () {
         final open = press(const Tape(), '1 ft + ( 1 ft + 2');
