@@ -121,6 +121,13 @@ void main() {
       expect(labels.toastBody(toast), contains('would make this 4in²'));
     });
 
+    test('"Editing this group" is one sentence saying how to close it', () {
+      const toast = CalculatorEditingGroupToast();
+      expect(labels.toastTitle(toast), isNull);
+      expect(labels.toastBody(toast), l10n.calculatorToastEditingGroup);
+      expect(labels.toastBody(toast), contains('Press ( ) to close it'));
+    });
+
     test('a removed result is one sentence naming the result by its label', () {
       const toast = CalculatorResultRemovedToast(key: 'Arcsine');
       expect(labels.toastTitle(toast), isNull);
@@ -166,6 +173,31 @@ void main() {
       );
       expect(localized[2].tapSemanticLabel, isNull);
       expect(localized[3].tapSemanticLabel, isNull);
+    });
+
+    test('a bracket chip taps back too: a closed one says a tap edits it, '
+        'the open one that a tap closes it (Section 7)', () {
+      final tapped = <int>[];
+      final localized = labels.localizeChips(const [
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.bracketClosed,
+          value: '3×4',
+        ),
+        CoreCalculatorChip(
+          type: CoreCalculatorChipType.bracketOpen,
+          value: '3×',
+        ),
+      ], onChipTap: tapped.add);
+
+      localized[0].onTap!();
+      localized[1].onTap!();
+      expect(tapped, [0, 1]);
+      expect(localized[0].tapSemanticLabel, l10n.calculatorChipTapToEdit);
+      expect(localized[1].tapSemanticLabel, l10n.calculatorChipTapToClose);
+      expect(
+        localized[1].tapSemanticLabel,
+        isNot(equals(localized[0].tapSemanticLabel)),
+      );
     });
 
     test('without a tap handler the chips keep their own taps and hints', () {
