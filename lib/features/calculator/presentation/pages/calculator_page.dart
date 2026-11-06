@@ -230,7 +230,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         isTyping: state.displayLabel?.isTyping ?? false,
                         closeSemanticLabel: l10n.closeButton,
                         historyPlaceholder: l10n.calculatorHistoryPlaceholder,
-                        chipsList: labels.localizeChips(state.chipsList),
+                        chipsList: labels.localizeChips(
+                          state.chipsList,
+                          onChipTap: (index) =>
+                              bloc.add(CalculatorChipTapped(index)),
+                        ),
                         // TODO(CA-965): previousSessions is unwired pending
                         // research into archiving trigger, data model, and
                         // persistence approach for calculation history.

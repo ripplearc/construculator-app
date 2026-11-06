@@ -2437,4 +2437,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String calculatorReorderGroupSemantics(String group) {
     return 'Drag to move the $group group';
   }
+
+  @override
+  String get calculatorChipTapToEdit => 'Edit';
+
+  @override
+  String get calculatorChipTapToFinish => 'Finish editing';
 }
