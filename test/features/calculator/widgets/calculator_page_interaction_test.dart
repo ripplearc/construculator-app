@@ -601,4 +601,62 @@ void main() {
       l10n.calculatorStripPlaceholder,
     );
   });
+
+  testWidgets(
+    'a swipe on the function-key strip moves to the next group and back, '
+    'through the bloc (Section 1.3)',
+    (tester) async {
+      await pumpPage(tester);
+      final bloc = blocOf(tester);
+
+      await tester.drag(
+        find.byKey(const ValueKey('calc_key_Width')),
+        const Offset(-120, 0),
+      );
+      await settle(tester);
+      expect(bloc.state.currentGroupIndex, 1);
+      expect(
+        tester.widget<CoreKeyboard>(find.byType(CoreKeyboard)).currentGroup.id,
+        CalculatorGroupId.shapes,
+      );
+
+      await tester.drag(
+        find.byKey(const ValueKey('calc_key_Diameter')),
+        const Offset(120, 0),
+      );
+      await settle(tester);
+      expect(bloc.state.currentGroupIndex, 0);
+    },
+  );
+
+  testWidgets('every function key of the five groups sends its id to the tape '
+      '(Section 3)', (tester) async {
+    // Wider than a phone: CoreUI's label row overflows at 390 px under a
+    // trig chip's long label (CA-1405), and an overflow fails the test.
+    await pumpPage(tester, size: const Size(600, 844));
+    final bloc = blocOf(tester);
+    final groups = tester
+        .widget<CoreKeyboard>(find.byType(CoreKeyboard))
+        .allGroups;
+    expect(groups, hasLength(5));
+
+    for (final (index, group) in groups.indexed) {
+      bloc.add(CalculatorGroupSelected(index));
+      await settle(tester);
+      for (final key in group.keys) {
+        bloc.add(const CalculatorResetRequested());
+        await tester.pump();
+        await press(tester, 'calc_key_${key.id}');
+        final state = bloc.state;
+        // A named chip opens (a trig key names it by its function, Sine
+        // for SIN), or the tape says why it refused the key: either way the
+        // key reached the tape, where a reset had left nothing.
+        expect(
+          state.labelKeyId != null || state.refusal != null,
+          isTrue,
+          reason: '${key.id} of ${group.name.id} did not reach the tape',
+        );
+      }
+    }
+  });
 }

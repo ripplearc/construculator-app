@@ -6,6 +6,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 part 'calculator_dependent_key.dart';
 part 'calculator_display_label.dart';
 part 'calculator_event.dart';
+part 'calculator_group_id.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 part 'calculator_strip_note.dart';
@@ -49,6 +50,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorActiveValueCleared>(_onActiveValueCleared);
     on<CalculatorGroupSelected>(_onGroupSelected);
+    on<CalculatorGroupsReordered>(_onGroupsReordered);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
   }
@@ -214,6 +216,26 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
   ) => emit(state.copyWith(currentGroupIndex: event.groupIndex));
 
+  void _onGroupsReordered(
+    CalculatorGroupsReordered event,
+    Emitter<CalculatorState> emit,
+  ) {
+    final order = [...state.groupOrder];
+    final CalculatorGroupsReordered(:oldIndex, :newIndex) = event;
+    bool inRange(int index) => index >= 0 && index < order.length;
+    if (!inRange(oldIndex) || !inRange(newIndex) || oldIndex == newIndex) {
+      return;
+    }
+    final shown = order[state.currentGroupIndex];
+    order.insert(newIndex, order.removeAt(oldIndex));
+    emit(
+      state.copyWith(
+        groupOrder: List.unmodifiable(order),
+        currentGroupIndex: order.indexOf(shown),
+      ),
+    );
+  }
+
   void _onUnitSystemChanged(
     CalculatorUnitSystemChanged event,
     Emitter<CalculatorState> emit,
@@ -266,5 +288,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   CalculatorState _cleared() => CalculatorState(
     tape: Tape(preferences: state.tape.preferences),
     currentGroupIndex: state.currentGroupIndex,
+    groupOrder: state.groupOrder,
   );
 }

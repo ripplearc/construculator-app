@@ -29,8 +29,15 @@ class CalculatorState extends Equatable {
   /// The tape of chips, with the preferences it is rendered by.
   final Tape tape;
 
-  /// Index of the group of function keys shown above the number pad.
+  /// Index into [groupOrder] of the group of function keys shown above the
+  /// number pad.
   final int currentGroupIndex;
+
+  /// The five function-key groups by id, in the order the keyboard shows
+  /// them: Appendix B's until the user drags one to a new place in the
+  /// "View all" sheet (Section 1.5). Kept for the screen only; the order
+  /// that survives a restart is CA-1307's.
+  final List<String> groupOrder;
 
   /// What the tape said when it took the last key, or `null`.
   final TapeNotice? notice;
@@ -51,6 +58,7 @@ class CalculatorState extends Equatable {
   const CalculatorState({
     this.tape = const Tape(),
     this.currentGroupIndex = 0,
+    this.groupOrder = CalculatorGroupId.defaultOrder,
     this.notice,
     this.refusal,
     this.closesCalculator = false,
@@ -65,12 +73,14 @@ class CalculatorState extends Equatable {
   CalculatorState copyWith({
     Tape? tape,
     int? currentGroupIndex,
+    List<String>? groupOrder,
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
     bool? closesCalculator,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
+    groupOrder: groupOrder ?? this.groupOrder,
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
     closesCalculator: closesCalculator ?? this.closesCalculator,
@@ -466,6 +476,7 @@ class CalculatorState extends Equatable {
   List<Object?> get props => [
     tape,
     currentGroupIndex,
+    groupOrder,
     notice,
     refusal,
     closesCalculator,
