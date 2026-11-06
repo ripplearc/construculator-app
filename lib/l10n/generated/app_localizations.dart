@@ -4334,6 +4334,12 @@ abstract class AppLocalizations {
   /// **'Finish editing'**
   String get calculatorChipTapToFinish;
 
+  /// A calculator unit spelled out in a toast, by the engine's unit id (UX Design Doc Section 5.2: 'titled with the unit spelled out')
+  ///
+  /// In en, this message translates to:
+  /// **'{unit, select, inch{inches} foot{feet} footInch{feet and inches} yard{yards} metre{meters} centimetre{centimeters} millimetre{millimeters} acre{acres} pound{pounds} kilogram{kilograms} ton{tons} metricTon{metric tons} boardFoot{board feet} other{{unit}}}'**
+  String calculatorUnitName(String unit);
+
   /// Title of the toast when a key would leave a reopened chip incomplete (UX Design Doc Section 5, 'Finish this value first')
   ///
   /// In en, this message translates to:
@@ -4357,6 +4363,52 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{key} removed — can\'t recompute from the new value.'**
   String calculatorToastResultRemoved(String key);
+
+  /// Title of the toast when a unit cannot continue a reopened compound value (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t append {unit} here'**
+  String calculatorToastCannotAppendTitle(String unit);
+
+  /// Body of the 'Can't append <unit> here' toast (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'A compound value steps down within one system — 18ft 8in, 1m 20cm. {value} can\'t continue with {unit}. Use a smaller unit, backspace, or ✕ to retype.'**
+  String calculatorToastCannotAppendBody(String value, String unit);
+
+  /// Title of the toast when a weight unit is pressed under a dimension key (UX Design Doc Section 5.2, '<Key> needs a length')
+  ///
+  /// In en, this message translates to:
+  /// **'{key} needs a length, not a weight.'**
+  String calculatorToastNeedsLengthTitle(String key);
+
+  /// Body of the '<Key> needs a length' toast (UX Design Doc Section 5.2: 'Press ⌫ to remove Lbs, then press Feet or Inch.'); unit is the face of the key that was pressed
+  ///
+  /// In en, this message translates to:
+  /// **'Press ⌫ to remove {unit}, then press Feet or Inch.'**
+  String calculatorToastNeedsLengthBody(String unit);
+
+  /// Body of the '<Key> needs a length' toast after a number typed behind a finished length (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'{key} takes lengths and not {unit}. Press a length unit for the {tail}, or backspace to remove it.'**
+  String calculatorToastTailNeedsLengthBody(
+    String key,
+    String unit,
+    String tail,
+  );
+
+  /// Title of the toast when a unit is pressed again under a dimension key that holds lengths only (UX Design Doc Section 5.2, '<Key> keeps <value>')
+  ///
+  /// In en, this message translates to:
+  /// **'{key} keeps {value}'**
+  String calculatorToastKeepsLengthTitle(String key, String value);
+
+  /// Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)
+  ///
+  /// In en, this message translates to:
+  /// **'Pressing {unit} again would make this {value}² — {key} can\'t hold an area or volume.'**
+  String calculatorToastKeepsLengthBody(String unit, String value, String key);
 }
 
 class _AppLocalizationsDelegate

@@ -59,6 +59,17 @@
             <mutation text="() =&gt; onChipTap(0),"/>
         </regex>
 
+        <!-- RULE 7 (S1c 5/5, CA-1089): the weight to remove is named, not
+             its key -->
+        <regex pattern="l10n\.calculatorToastNeedsLengthBody\(unitKeyFace\(unit\)\)," dotAll="true" id="calculator_label_formatter.toast.remove_unit_by_name">
+            <mutation text="l10n.calculatorToastNeedsLengthBody(unitName(unit)),"/>
+        </regex>
+
+        <!-- RULE 8: Lbs is the face of Kg -->
+        <regex pattern="Unit\.pound => l10n\.calculatorKeyLbs," dotAll="true" id="calculator_label_formatter.face.lbs_as_kg">
+            <mutation text="Unit.pound => l10n.calculatorKeyKg,"/>
+        </regex>
+
         <!-- RULE 6: a result chip taps back too -->
         <regex pattern="CoreCalculatorChipType\.editable \|\| CoreCalculatorChipType\.active\s*when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.result_taps_back">
             <mutation text="_ when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>

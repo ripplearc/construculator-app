@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -24,6 +25,100 @@ void main() {
       expect(labels.toastTitle(empty), l10n.calculatorToastFinishValueTitle);
       expect(labels.toastBody(empty), l10n.calculatorToastValueEmptyBody);
       expect(labels.toastBody(empty), contains('empty'));
+    });
+
+    test('a unit is spelled out by its engine id', () {
+      expect(labels.unitName(Unit.yard), 'yards');
+      expect(labels.unitName(Unit.pound), 'pounds');
+      expect(labels.unitName(Unit.metricTon), 'metric tons');
+      expect(labels.unitName(Unit.footInch), 'feet and inches');
+    });
+
+    test('every unit the engine knows is spelled out, none by its raw id', () {
+      for (final unit in Unit.values) {
+        expect(labels.unitName(unit), isNot(unit.name), reason: unit.name);
+        expect(labels.unitName(unit), isNotEmpty, reason: unit.name);
+      }
+    });
+
+    test('a unit key of the Unit group is named by its face, as the doc '
+        'points at it ("Press ⌫ to remove Lbs"); a unit column key by its '
+        'name', () {
+      expect(labels.unitKeyFace(Unit.pound), l10n.calculatorKeyLbs);
+      expect(labels.unitKeyFace(Unit.kilogram), l10n.calculatorKeyKg);
+      expect(labels.unitKeyFace(Unit.ton), l10n.calculatorKeyTons);
+      expect(labels.unitKeyFace(Unit.metricTon), l10n.calculatorKeyMetricTons);
+      expect(labels.unitKeyFace(Unit.boardFoot), l10n.calculatorKeyBdFt);
+      expect(labels.unitKeyFace(Unit.metre), l10n.calculatorKeyMetre);
+      expect(labels.unitKeyFace(Unit.centimetre), l10n.calculatorKeyCentimetre);
+      expect(labels.unitKeyFace(Unit.millimetre), l10n.calculatorKeyMillimetre);
+      expect(labels.unitKeyFace(Unit.foot), labels.unitName(Unit.foot));
+    });
+
+    test('"Can\'t append <unit> here" is titled with the unit spelled out and '
+        'says what cannot continue with it', () {
+      const toast = CalculatorCannotAppendUnitToast(
+        value: '18ft 8in 78',
+        unit: Unit.yard,
+      );
+      expect(
+        labels.toastTitle(toast),
+        l10n.calculatorToastCannotAppendTitle('yards'),
+      );
+      expect(
+        labels.toastBody(toast),
+        l10n.calculatorToastCannotAppendBody('18ft 8in 78', 'yards'),
+      );
+      expect(labels.toastBody(toast), contains('steps down'));
+    });
+
+    test('"<Key> needs a length" names the key, and its body the unit to '
+        'remove, or the tail a length unit would finish', () {
+      const plain = CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound);
+      expect(
+        labels.toastTitle(plain),
+        l10n.calculatorToastNeedsLengthTitle(l10n.calculatorKeyWidth),
+      );
+      expect(
+        labels.toastBody(plain),
+        l10n.calculatorToastNeedsLengthBody(l10n.calculatorKeyLbs),
+      );
+      expect(labels.toastBody(plain), contains('remove Lbs'));
+
+      const tail = CalculatorNeedsLengthToast(
+        key: 'Width',
+        unit: Unit.kilogram,
+        tail: '8',
+      );
+      expect(
+        labels.toastBody(tail),
+        l10n.calculatorToastTailNeedsLengthBody(
+          l10n.calculatorKeyWidth,
+          'kilograms',
+          '8',
+        ),
+      );
+    });
+
+    test('"<Key> keeps <value>" says what the unit would make the value', () {
+      const toast = CalculatorKeepsLengthToast(
+        key: 'Width',
+        unit: Unit.inch,
+        value: '4in',
+      );
+      expect(
+        labels.toastTitle(toast),
+        l10n.calculatorToastKeepsLengthTitle(l10n.calculatorKeyWidth, '4in'),
+      );
+      expect(
+        labels.toastBody(toast),
+        l10n.calculatorToastKeepsLengthBody(
+          'inches',
+          '4in',
+          l10n.calculatorKeyWidth,
+        ),
+      );
+      expect(labels.toastBody(toast), contains('would make this 4in²'));
     });
 
     test('a removed result is one sentence naming the result by its label', () {
