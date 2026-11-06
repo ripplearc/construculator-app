@@ -36,7 +36,10 @@ class EstimationLibraryModule extends Module {
     );
 
     i.addLazySingleton<CostEstimationRepository>(
-      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+      () => CostEstimationRepositoryImpl(
+        dataSource: i.get<CostEstimationDataSource>(),
+        localDataSource: i.get<PowerSyncCostEstimationDataSource>(),
+      ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
   }

@@ -32,9 +32,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
-import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -117,11 +115,6 @@ class EstimationModule extends Module {
 
     i.addLazySingleton<YourRatesDataSource>(
       () => i.get<LocalYourRatesDataSource>(),
-    );
-
-    i.addLazySingleton<CostEstimationRepository>(
-      () => CostEstimationRepositoryImpl(dataSource: i.get()),
-      config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 
     i.addLazySingleton<CostEstimationLogRepository>(
