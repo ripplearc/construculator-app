@@ -1,12 +1,20 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/calculator/data/data_source/interfaces/local_trade_stores_data_source.dart';
+import 'package:construculator/features/calculator/data/data_source/powersync_local_trade_stores_data_source.dart';
 import 'package:construculator/features/calculator/data/repositories/calculator_preferences_repository_impl.dart';
+import 'package:construculator/features/calculator/data/repositories/trade_stores_repository_impl.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
+import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/powersync/powersync_module.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:powersync/powersync.dart';
 
-/// The calculator feature: its page and the settings repository it reads,
-/// which follows the signed-in profile through the auth library.
+/// The calculator feature: its page, the settings repository it reads,
+/// which follows the signed-in profile through the auth library, and the
+/// trade stores repository over the synced `user_calculator_stores` rows.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
   /// [AuthLibraryModule] so the repository sees the same auth state as the
@@ -17,7 +25,11 @@ class CalculatorModule extends Module {
   CalculatorModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [AuthLibraryModule(appBootstrap)];
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    PowerSyncModule(appBootstrap),
+    ClockModule(),
+  ];
 
   @override
   void binds(Injector i) {
@@ -25,6 +37,20 @@ class CalculatorModule extends Module {
       () => CalculatorPreferencesRepositoryImpl(
         authNotifier: i(),
         authManager: i(),
+      ),
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+    i.addLazySingleton<LocalTradeStoresDataSource>(
+      () => PowerSyncLocalTradeStoresDataSource(
+        database: Modular.get<PowerSyncDatabase>(),
+      ),
+      config: BindConfig(onDispose: (source) => source.dispose()),
+    );
+    i.addLazySingleton<TradeStoresRepository>(
+      () => TradeStoresRepositoryImpl(
+        dataSource: i(),
+        supabaseWrapper: appBootstrap.supabaseWrapper,
+        clock: i(),
       ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
