@@ -18,8 +18,8 @@
   {
    "scenario": "S127",
    "checkpoint": "the edit is cancelled: 2, +(3×4) and Calc14 are back, no group open, nothing dashed",
-   "reason": "The prototype brings the old bracket back after backspacing an emptied bracket. The design removes the bracket, as on any empty bracket (UX doc Section 7, Editing a bracket; review edit of 26 September). Fix asked for on the prototype. The prototype's own check reads the DOM, so only the Dart answer is evaluated here: no group open, and no bracket chip where the group was.",
-   "dart": {"kind": "all", "checks": [{"kind": "bracketOpen", "equals": false}, {"kind": "tapeBracketAt", "index": 1, "equals": false}]}
+   "reason": "The prototype brings the old bracket back after backspacing an emptied bracket. The design removes the bracket, as on any empty bracket, and the operator before it waits again; the answer that has nothing left to compute goes with it (UX doc Section 7, Editing a bracket; Section 5.5; review edit of 26 September). One ⌫ later than the prototype's, that waiting + is gone too. The prototype's own check reads the DOM, so only the Dart answer is evaluated here.",
+   "dart": {"kind": "all", "checks": [{"kind": "bracketOpen", "equals": false}, {"kind": "tapeJoined", "separator": "|", "equals": "2…"}]}
   },
   {
    "scenario": "S85",
@@ -326,6 +326,12 @@
    "checkpoint": "blocked: Width takes lengths, chip flagged red",
    "reason": "The prototype's toast reads 'Width takes lengths…pounds' for a weight unit on a bare number. The design titles it '<Key> needs a length, not a weight.' and its body tells which unit to remove, 'Press ⌫ to remove Lbs, then press Feet or Inch.', the key's own face (UX doc Section 5.2, '<Key> needs a length'); the 'takes lengths and not pounds' wording is the design's for a number typed after a finished length. The red outline of the edited chip is a DOM check with no face in CoreUI yet (CA-1405).",
    "dart": {"kind": "all", "checks": [{"kind": "toastShown", "equals": true}, {"kind": "toastIncludes", "text": "remove Lbs"}, {"kind": "toastIncludes", "text": "Feet or Inch"}]}
+  },
+  {
+   "scenario": "S127",
+   "checkpoint": "the group chip is still open and now empty, reading just \"+(\", with the answer chip still waiting beside it, dimmed, showing a dash",
+   "reason": "Inside a bracket a bare number ⌫ empties is dropped at once (UX doc Section 7: '⌫ removes the last token inside the bracket; on an empty bracket it removes the bracket'), so the design reaches the empty group one ⌫ before the prototype and the fourth ⌫ already removes it: the + waits again and the answer with nothing left to compute is gone (Section 5.5).",
+   "dart": {"kind": "all", "checks": [{"kind": "bracketOpen", "equals": false}, {"kind": "tapeJoined", "separator": "|", "equals": "2|+…"}]}
   }
  ]
 }
