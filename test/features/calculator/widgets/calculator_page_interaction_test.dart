@@ -757,4 +757,98 @@ void main() {
     expect(faceOf(0), CoreCalculatorChipType.editable);
     expect(faceOf(2), CoreCalculatorChipType.result);
   });
+
+  testWidgets('a key that would leave a reopened chip incomplete shows the '
+      '"Finish this value first" toast with the number (Section 5.5)', (
+    tester,
+  ) async {
+    CoreToast.disableTimers();
+    addTearDown(CoreToast.enableTimers);
+    addTearDown(CoreToast.cleanup);
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_Width',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+
+    expect(bloc.state.toast, const CalculatorFinishValueToast(value: '18'));
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsOneWidget);
+    expect(
+      find.text(l10n.calculatorToastFinishValueBody('18')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the same guard raised twice shows its toast twice: a key '
+      'refused the same way is never silently dead (rule 4.12)', (
+    tester,
+  ) async {
+    CoreToast.disableTimers();
+    addTearDown(CoreToast.enableTimers);
+    addTearDown(CoreToast.cleanup);
+    await pumpPage(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_Width',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('toast_close_button')));
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsNothing);
+
+    await press(tester, 'calc_key_Width');
+    await settle(tester);
+
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsOneWidget);
+  });
+
+  testWidgets('a state that merely still holds the toast does not show it '
+      'again: swiping to another group after the guard shows nothing', (
+    tester,
+  ) async {
+    CoreToast.disableTimers();
+    addTearDown(CoreToast.enableTimers);
+    addTearDown(CoreToast.cleanup);
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_Width',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('toast_close_button')));
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsNothing);
+
+    bloc.add(const CalculatorGroupSelected(2));
+    await settle(tester);
+
+    expect(bloc.state.toast, const CalculatorFinishValueToast(value: '18'));
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsNothing);
+  });
 }
