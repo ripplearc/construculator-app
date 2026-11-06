@@ -246,6 +246,11 @@ enum TapeNotice {
   /// [TapeRefusal.nothingToCompute], in the prototype's order (close, then
   /// refuse).
   entryClosedNothingToCompute,
+
+  /// An edit left a result with no valid answer, so that one result chip
+  /// was removed and every other chip kept tracking (Section 5.5, "A result
+  /// that can no longer be computed"); [TapeChanged.removed] names it.
+  resultRemoved,
 }
 
 /// What a key did to the tape.
@@ -262,10 +267,14 @@ final class TapeChanged extends TapeOutcome {
   /// usually does.
   final TapeNotice? notice;
 
-  const TapeChanged(this.tape, {this.notice});
+  /// The key of the result chip an edit removed, with
+  /// [TapeNotice.resultRemoved]; `null` otherwise.
+  final String? removed;
+
+  const TapeChanged(this.tape, {this.notice, this.removed});
 
   @override
-  List<Object?> get props => [tape, notice];
+  List<Object?> get props => [tape, notice, removed];
 }
 
 /// Closing a bracket was refused because its inside cannot be computed; the
@@ -427,12 +436,11 @@ class Tape extends Equatable {
   }
 
   /// The chip a tap reopened in place, with the chips after it still on the
-  /// tape (rule 4.8), or `null`: a chip being typed at the end of the tape
-  /// is entry, not an edit. While an edit is open the display draws the
-  /// results after it dashed, and a key that would leave the edit with the
-  /// value broken is refused ([TapeRefusal.finishThisValueFirst], Section
-  /// 5.5). What the results after the chip do as its value changes is the
-  /// next PR's.
+  /// tape (rule 4.8: "every result after it recomputes live"), or `null`:
+  /// a chip being typed at the end of the tape is entry, not an edit. While
+  /// an edit is open the display draws the results after it dashed, and a
+  /// key that would leave the edit with the value broken is refused
+  /// ([TapeRefusal.finishThisValueFirst], Section 5.5).
   ({int index, ValueChip chip})? get editing {
     final index = _activeIndex;
     if (index == null || index == chips.length - 1) return null;
@@ -1820,10 +1828,11 @@ class Tape extends Equatable {
   /// A tap on the chip at [index] (Section 1.1, "Tap an input chip to edit
   /// it"; rule 4.8). On a finished value it reopens the chip in place with
   /// its old value still in the buffer, so ✕ clears it and the keys retype
-  /// it. On the chip being edited, or the one being typed, it finishes the
-  /// edit as = does: the chip seals. On another chip while an edit is open
-  /// it finishes that edit first; an edit that leaves its value broken
-  /// cannot be left this way either
+  /// it, and every result after it recomputes as the value changes. On the
+  /// chip being edited, or the one being typed, it finishes the edit as =
+  /// does: the chip seals, and the results after it are rebuilt once more.
+  /// On another chip while an edit is open it finishes that edit first; an
+  /// edit that leaves its value broken cannot be left this way either
   /// ([TapeRefusal.finishThisValueFirst], Section 5.5: "another chip is
   /// tapped while an edited chip holds a dangling number"). A chip a key
   /// opened and nothing was typed into is dropped by the tap, as the strip's
@@ -1844,6 +1853,7 @@ class Tape extends Equatable {
     final activeIndex = _activeIndex;
     if (activeIndex == index) return _leavingEdit(TapeChanged.new);
     var tape = this;
+    String? removed;
     if (activeIndex != null) {
       final current = chips[activeIndex] as ValueChip;
       if (activeIndex == chips.length - 1 &&
@@ -1853,22 +1863,154 @@ class Tape extends Equatable {
       } else {
         final closed = _withFractionClosedAsInches();
         if (closed._unfinished case final refusal?) return refusal;
-        tape = closed._sealed();
+        (tape: tape, removed: removed) = closed._sealedReporting();
       }
     }
     final tapped = tape.chips[index] as ValueChip;
-    return TapeChanged(tape._replaceChipAt(index, tape._reactivated(tapped)));
+    return _changed(
+      tape._replaceChipAt(index, tape._reactivated(tapped)),
+      removed: removed,
+    );
   }
 
   TapeOutcome _leavingEdit(TapeOutcome Function(Tape sealed) key) {
     final closed = _withFractionClosedAsInches();
     if (closed._unfinished case final refusal?) return refusal;
-    return key(closed._sealed());
+    final (:tape, :removed) = closed._sealedReporting();
+    return switch (key(tape)) {
+      TapeChanged(tape: final after, :final notice) when removed != null =>
+        _changed(after, notice: notice, removed: removed),
+      final outcome => outcome,
+    };
   }
 
-  TapeOutcome _withChipRemoved(int index) => TapeChanged(
-    _with([...chips.sublist(0, index), ...chips.sublist(index + 1)]),
+  TapeOutcome _withChipRemoved(int index) {
+    final remaining = _with([
+      ...chips.sublist(0, index),
+      ...chips.sublist(index + 1),
+    ]);
+    final (:tape, :removed) = remaining._recomputedFrom(
+      index,
+      removesStale: true,
+    );
+    return _changed(tape, removed: removed);
+  }
+
+  static TapeOutcome _changed(
+    Tape tape, {
+    TapeNotice? notice,
+    String? removed,
+  }) => TapeChanged(
+    tape,
+    notice: removed != null ? TapeNotice.resultRemoved : notice,
+    removed: removed,
   );
+
+  // The results after the chip at [index] rebuilt from the chips before
+  // each; a chip that does not read yet (emptied, a fraction half typed)
+  // gives them no answer, so they stand. A result the chips give no answer
+  // for is kept as it stands while
+  // the edit is still open — the display draws it dashed, and the next key
+  // may give it an answer again — and once the edit is sealed
+  // ([removesStale]) a Calc whose chain fails lands the error chip = would,
+  // and any other is removed, by name: the first one removed is the one
+  // named. An error chip is rebuilt from its chain the same way: the chain
+  // repaired lands its Calc in its place, still failing it keeps its error.
+  // The error chip ÷ 0 lands before its reopened divisor stands as it is.
+  ({Tape tape, String? removed}) _recomputedAfter(
+    int index, {
+    required bool removesStale,
+  }) {
+    if (index >= chips.length - 1) return (tape: this, removed: null);
+    return _recomputedFrom(index + 1, removesStale: removesStale);
+  }
+
+  ({Tape tape, String? removed}) _recomputedFrom(
+    int first, {
+    required bool removesStale,
+  }) {
+    final kept = <TapeChip>[...chips.sublist(0, first)];
+    String? removed;
+    for (final (offset, chip) in chips.sublist(first).indexed) {
+      final TapeChip? rebuilt;
+      switch (chip) {
+        case final ResultChip result:
+          rebuilt = _with(kept)._rebuilt(result, failsAsError: removesStale);
+        case final ErrorChip error when !_leadsIntoAnOperator(first + offset):
+          rebuilt = _with(kept)._rebuiltError(error);
+        default:
+          kept.add(chip);
+          continue;
+      }
+      if (rebuilt != null) {
+        kept.add(rebuilt);
+      } else if (!removesStale) {
+        kept.add(chip);
+      } else if (chip case ResultChip(:final key)) {
+        removed ??= key;
+      }
+    }
+    return (tape: _with(kept), removed: removed);
+  }
+
+  bool _leadsIntoAnOperator(int index) =>
+      index + 1 < chips.length &&
+      chips[index + 1] is ValueChip &&
+      (chips[index + 1] as ValueChip).operator != null;
+
+  TapeChip? _rebuiltError(ErrorChip error) => switch (runningTotal) {
+    ChainFailed(:final error) => ErrorChip(error),
+    ChainValue(:final value, isCalculation: true) => ResultChip(
+      key: calcKey,
+      value: value,
+    ),
+    _ => null,
+  };
+
+  TapeChip? _rebuilt(ResultChip result, {required bool failsAsError}) {
+    if (TrigFunction.values.any((function) => _isAnswerOf(result, function))) {
+      return rebuiltTrigAnswer(result);
+    }
+    if (result.key == calcKey) {
+      return switch (runningTotal) {
+        ChainValue(:final value, isCalculation: true) => ResultChip(
+          key: calcKey,
+          value: value,
+          operator: result.operator,
+        ),
+        ChainFailed(:final error) when failsAsError => ErrorChip(error),
+        _ => null,
+      };
+    }
+
+    final answers = const DeterministicRules().answersFor(namedValues);
+    for (final answer in answers) {
+      if (answer.key == result.key) {
+        return ResultChip(
+          key: result.key,
+          value: answer.value,
+          operator: result.operator,
+        );
+      }
+    }
+    if (DeterministicRules.isPitchKey(result.key)) {
+      for (final answer in answers) {
+        if (DeterministicRules.isPitchKey(answer.key)) {
+          if ((answer.value, result.value) case (
+            final Angle pitch,
+            Angle(:final spelling),
+          )) {
+            return ResultChip(
+              key: result.key,
+              value: pitch.spelledAs(spelling),
+              operator: result.operator,
+            );
+          }
+        }
+      }
+    }
+    return null;
+  }
 
   Tape _replaceChipAt(int index, TapeChip chip) =>
       _with([...chips.sublist(0, index), chip, ...chips.sublist(index + 1)]);
@@ -1995,11 +2137,13 @@ class Tape extends Equatable {
     };
   }
 
-  Tape _sealed() {
+  Tape _sealed() => _sealedReporting().tape;
+
+  ({Tape tape, String? removed}) _sealedReporting() {
     final closed = _withFieldClosed();
     final chip = closed.active;
-    if (chip == null) return this;
-    return closed._replaceActive(chip.copyWith(isActive: false));
+    if (chip == null) return (tape: this, removed: null);
+    return closed._replacedActive(chip.copyWith(isActive: false));
   }
 
   Tape _withFieldClosed() {
@@ -2023,13 +2167,22 @@ class Tape extends Equatable {
 
   TapeOutcome _replaceLast(ValueChip chip) => _changedActive(chip);
 
-  TapeOutcome _changedActive(ValueChip chip, {TapeNotice? notice}) =>
-      TapeChanged(_replaceActive(chip), notice: notice);
+  TapeOutcome _changedActive(ValueChip chip, {TapeNotice? notice}) {
+    final (:tape, :removed) = _replacedActive(chip);
+    return _changed(tape, notice: notice, removed: removed);
+  }
 
-  Tape _replaceActive(ValueChip chip) {
+  Tape _replaceActive(ValueChip chip) => _replacedActive(chip).tape;
+
+  // The active chip replaced by [chip]; the results after it follow, and a
+  // stale one goes only once the chip is sealed.
+  ({Tape tape, String? removed}) _replacedActive(ValueChip chip) {
     final index = _activeIndex;
-    if (index == null) return append(chip);
-    return _replaceChipAt(index, chip);
+    if (index == null) return (tape: append(chip), removed: null);
+    return _replaceChipAt(
+      index,
+      chip,
+    )._recomputedAfter(index, removesStale: !chip.isActive);
   }
 
   Tape _with(List<TapeChip> chips) =>
