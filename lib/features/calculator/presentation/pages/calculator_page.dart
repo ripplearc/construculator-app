@@ -214,13 +214,23 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 widget.router.pop();
                 return;
               }
-              if (state.toast case final toast?) {
-                CoreToast.showError(
-                  context,
-                  labels.toastBody(toast),
-                  l10n.closeButton,
-                  title: labels.toastTitle(toast),
-                );
+              switch (state.toast) {
+                case final CalculatorEditingGroupToast toast:
+                  CoreToast.showReceipt(
+                    context,
+                    labels.toastBody(toast),
+                    l10n.closeButton,
+                    CoreToast.cleanup,
+                  );
+                case final CalculatorToast toast:
+                  CoreToast.showError(
+                    context,
+                    labels.toastBody(toast),
+                    l10n.closeButton,
+                    title: labels.toastTitle(toast),
+                  );
+                case null:
+                  break;
               }
             },
             builder: (context, state) {

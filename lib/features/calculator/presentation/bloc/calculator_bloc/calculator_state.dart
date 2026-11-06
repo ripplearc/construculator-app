@@ -70,6 +70,15 @@ class CalculatorState extends Equatable {
   /// `null` when the tape took the key or the key was not a unit.
   final Unit? refusedUnit;
 
+  /// How many times a closed bracket has been reopened on this screen — C
+  /// starts a fresh tape, not a fresh screen — so that the "Editing this
+  /// group" toast shows for the first [groupEditToastsShown] of them only
+  /// (Section 5.6).
+  final int groupEditsNoticed;
+
+  /// How many reopenings of a bracket are told how to close it.
+  static const int groupEditToastsShown = 3;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
@@ -81,6 +90,7 @@ class CalculatorState extends Equatable {
     this.removedResult,
     this.toastsRaised = 0,
     this.refusedUnit,
+    this.groupEditsNoticed = 0,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -99,6 +109,7 @@ class CalculatorState extends Equatable {
     String? Function()? removedResult,
     int? toastsRaised,
     Unit? Function()? refusedUnit,
+    int? groupEditsNoticed,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -109,6 +120,7 @@ class CalculatorState extends Equatable {
     removedResult: removedResult != null ? removedResult() : this.removedResult,
     toastsRaised: toastsRaised ?? this.toastsRaised,
     refusedUnit: refusedUnit != null ? refusedUnit() : this.refusedUnit,
+    groupEditsNoticed: groupEditsNoticed ?? this.groupEditsNoticed,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -444,13 +456,15 @@ class CalculatorState extends Equatable {
   /// state (term 2.22): open while the keypad types inside it, closed once
   /// it has its ")"; it holds what was typed inside — the chip draws the
   /// parentheses — and the operator that leads it is its factor. The chips
-  /// before an open bracket are inert: dimmed and deaf to a tap until it
-  /// closes ("Chips before an open bracket are dimmed and cannot be tapped").
+  /// other than an open bracket are inert — dimmed and deaf to a tap until
+  /// it closes ("Chips before an open bracket are dimmed and cannot be
+  /// tapped"; Section 7, "The chips after it wait, dimmed") — and a result
+  /// after a reopened bracket keeps its chip but reads a dash.
   /// While a chip is being edited in place the results after it are drawn
   /// dashed (rule 4.8: "results downstream show dashed while the edit is
   /// open"); they keep their value, which recomputes as the edit goes.
   List<CoreCalculatorChip> get chipsList {
-    final waitsOnOpenBracket = tape.openBracket != null;
+    final openIndex = tape.openBracketIndex;
     final editedIndex = tape.editing?.index;
     return [
       for (final (index, chip) in tape.chips.indexed)
@@ -465,6 +479,8 @@ class CalculatorState extends Equatable {
           value: switch (chip) {
             ErrorChip() => null,
             BracketChip(:final inner) => inner.map(_valueTextOf).join(),
+            ResultChip() when openIndex != null && index > openIndex =>
+              _staleResultDash,
             _ => _valueTextOf(chip),
           },
           factor: switch (chip) {
@@ -481,10 +497,15 @@ class CalculatorState extends Equatable {
             ResultChip() => CoreCalculatorChipType.result,
             ErrorChip() => CoreCalculatorChipType.error,
           },
-          inert: waitsOnOpenBracket && index < tape.chips.length - 1,
+          inert: openIndex != null && index != openIndex,
         ),
     ];
   }
+
+  // What a result after a reopened bracket reads while the bracket is open
+  // (Section 7: "shows a dash, 'Calc —', so that no out-of-date number can
+  // be read").
+  static const String _staleResultDash = '—';
 
   static CoreIconData _factorOf(Operator operator) => switch (operator) {
     Operator.add => CoreIcons.addOperator,
@@ -514,6 +535,7 @@ class CalculatorState extends Equatable {
     closesCalculator,
     removedResult,
     refusedUnit,
+    groupEditsNoticed,
     toastsRaised,
   ];
 
@@ -527,6 +549,10 @@ class CalculatorState extends Equatable {
   CalculatorToast? get toast {
     if (removedResult case final key?) {
       return CalculatorResultRemovedToast(key: key);
+    }
+    if (notice == TapeNotice.editingThisGroup &&
+        groupEditsNoticed <= groupEditToastsShown) {
+      return const CalculatorEditingGroupToast();
     }
     final key = tape.beingTyped?.key ?? '';
     return switch ((refusal, refusedUnit)) {

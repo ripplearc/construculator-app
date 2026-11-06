@@ -1083,11 +1083,164 @@ void main() {
         );
       });
 
+      test(
+        'while a bracket is reopened in the middle every other chip waits, '
+        'and a result after it keeps its label but reads a dash (Section 7)',
+        () {
+          final open = pressed('2 + ( 3 × 4 ( × 5 = tap:1');
+          final chips = CalculatorState(tape: open).chipsList;
+
+          expect(
+            [for (final chip in chips) chip.inert],
+            [true, false, true, true],
+          );
+          expect(chips[1].type, CoreCalculatorChipType.bracketOpen);
+          expect(chips[3].label, Tape.calcKey);
+          expect(chips[3].value, '—');
+          expect(chips[3].type, CoreCalculatorChipType.result);
+
+          final closed = CalculatorState(
+            tape: pressed('2 + ( 3 × 4 ( × 5 = tap:1 ('),
+          );
+          expect([
+            for (final chip in closed.chipsList) chip.inert,
+          ], everyElement(isFalse));
+          expect(closed.chipsList[3].value, '70');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the "Editing this group" toast shows the first three times a bracket '
+        'is reopened, and no more (Section 5.6)',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: pressed('2 + ( 3 × 4 (')),
+        act: (bloc) {
+          for (var reopened = 1; reopened <= 4; reopened++) {
+            bloc
+              ..add(const CalculatorChipTapped(1))
+              ..add(const CalculatorControlActioned(ControlAction.paren));
+          }
+        },
+        verify: (bloc) => expect(bloc.state.groupEditsNoticed, 4),
+        expect: () {
+          final closed = pressed('2 + ( 3 × 4 (');
+          final open = pressed('2 + ( 3 × 4 ( tap:1');
+          // The first three reopenings raise the toast; the fourth does not.
+          int raised(int reopened) =>
+              reopened < CalculatorState.groupEditToastsShown
+              ? reopened
+              : CalculatorState.groupEditToastsShown;
+          return [
+            for (var reopened = 1; reopened <= 4; reopened++) ...[
+              CalculatorState(
+                tape: open,
+                notice: TapeNotice.editingThisGroup,
+                groupEditsNoticed: reopened,
+                toastsRaised: raised(reopened),
+              ),
+              CalculatorState(
+                tape: closed,
+                groupEditsNoticed: reopened,
+                toastsRaised: raised(reopened),
+              ),
+            ],
+          ];
+        },
+      );
+
+      test(
+        'the toast reads only while the count is within the first three',
+        () {
+          final open = pressed('2 + ( 3 × 4 ( tap:1');
+          expect(
+            CalculatorState(
+              tape: open,
+              notice: TapeNotice.editingThisGroup,
+              groupEditsNoticed: 3,
+            ).toast,
+            const CalculatorEditingGroupToast(),
+          );
+          expect(
+            CalculatorState(
+              tape: open,
+              notice: TapeNotice.editingThisGroup,
+              groupEditsNoticed: 4,
+            ).toast,
+            isNull,
+          );
+          expect(
+            CalculatorState(tape: open, groupEditsNoticed: 1).toast,
+            isNull,
+            reason: 'the next key clears the notice and with it the toast',
+          );
+        },
+      );
+
       test('a chip being typed at the end leaves no result dashed', () {
         final tape = pressed('3 × 4 = × 2');
         expect([
           for (final chip in CalculatorState(tape: tape).chipsList) chip.type,
         ], isNot(contains(CoreCalculatorChipType.dashed)));
+      });
+    });
+
+    group('S1c bracket edit: the count of reopenings (Section 5.6)', () {
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C starts a fresh tape, not a fresh screen: the reopenings already '
+        'counted stay counted, so the toast does not come back',
+        build: () => bloc,
+        seed: () => CalculatorState(
+          tape: pressed('2 + ( 3 × 4 ('),
+          groupEditsNoticed: CalculatorState.groupEditToastsShown,
+          toastsRaised: 3,
+        ),
+        act: (bloc) => bloc
+          ..add(const CalculatorControlActioned(ControlAction.clearAll))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorChipTapped(1)),
+        skip: 6,
+        verify: (bloc) => expect(bloc.state.toast, isNull),
+        expect: () => [
+          tapeState(
+            pressed('2 + ( 3 ( tap:1'),
+            notice: TapeNotice.editingThisGroup,
+          ).copyWith(
+            groupEditsNoticed: CalculatorState.groupEditToastsShown + 1,
+            toastsRaised: 3,
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '⌫ straight after ) reopens the bracket and counts as a reopening, '
+        'with the toast raised, as a tap does',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: pressed('2 + ( 3 × 4 (')),
+        act: (bloc) =>
+            bloc.add(const CalculatorControlActioned(ControlAction.delete)),
+        verify: (bloc) =>
+            expect(bloc.state.toast, const CalculatorEditingGroupToast()),
+        expect: () => [
+          tapeState(
+            pressed('2 + ( 3 × 4 ( ⌫'),
+            notice: TapeNotice.editingThisGroup,
+          ).copyWith(groupEditsNoticed: 1, toastsRaised: 1),
+        ],
+      );
+
+      test('a result before the reopened bracket keeps its number; only the '
+          'results after it read a dash', () {
+        final tape = pressed('2 + ( 3 ( = + ( 4 ( tap:3');
+        expect(tape.openBracketIndex, 3);
+
+        final chips = CalculatorState(tape: tape).chipsList;
+        expect(chips[2].value, '5');
+        expect(chips[2].inert, isTrue);
+        expect(chips[3].inert, isFalse);
       });
     });
 

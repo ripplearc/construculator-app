@@ -292,6 +292,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             closesCalculator: false,
             removedResult: () => removed,
             refusedUnit: () => null,
+            groupEditsNoticed: notice == TapeNotice.editingThisGroup
+                ? state.groupEditsNoticed + 1
+                : null,
           ),
         );
       case final TapeOutcome refusal:
@@ -323,5 +326,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     currentGroupIndex: state.currentGroupIndex,
     groupOrder: state.groupOrder,
     toastsRaised: state.toastsRaised,
+    groupEditsNoticed: state.groupEditsNoticed,
   );
 }

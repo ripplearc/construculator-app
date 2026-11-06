@@ -76,6 +76,16 @@ final class CalculatorNeedsLengthToast extends CalculatorToast {
   List<Object?> get props => [key, unit, tail];
 }
 
+/// "Editing this group. Press ( ) to close it. If you type nothing,
+/// everything stays as it was." — a closed bracket reopened, shown the first
+/// three times only (Section 5.6; Section 7, "Editing a bracket").
+final class CalculatorEditingGroupToast extends CalculatorToast {
+  const CalculatorEditingGroupToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
 /// "`<Key>` keeps `<value>`": [unit] pressed again under the dimension
 /// [key], which cannot hold an area or a volume (Section 5.2).
 final class CalculatorKeepsLengthToast extends CalculatorToast {

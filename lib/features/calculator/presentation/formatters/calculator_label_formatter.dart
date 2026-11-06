@@ -303,11 +303,12 @@ class CalculatorLabelFormatter {
   /// reaches the screen. A bracket chip is read in words that tell an open
   /// bracket from a closed one, led by the operator its factor draws, as a
   /// value chip's text is led by its own ("+3"): the factor icon itself is
-  /// silent to a screen reader. With [onChipTap] a tap on a value chip
-  /// reaches it with the chip's index: a finished chip says a tap edits it,
-  /// the chip being typed or edited that a tap finishes the edit (Section
-  /// 1.1, "Tap an input chip to edit it"); a result, an error and a bracket
-  /// chip take no tap here.
+  /// silent to a screen reader. With [onChipTap] a tap on a value chip or a
+  /// bracket chip reaches it with the chip's index: a finished chip and a
+  /// closed bracket say a tap edits them, the chip being typed or edited
+  /// that a tap finishes the edit, and the open bracket that a tap closes
+  /// it (Section 1.1, "Tap an input chip to edit it"; Section 7, "Editing a
+  /// bracket"); a result and an error chip take no tap here.
   List<CoreCalculatorChip> localizeChips(
     List<CoreCalculatorChip> chips, {
     void Function(int index)? onChipTap,
@@ -323,16 +324,21 @@ class CalculatorLabelFormatter {
         value: chip.value,
         factor: chip.factor,
         onTap: switch (chip.type) {
-          CoreCalculatorChipType.editable || CoreCalculatorChipType.active
-              when onChipTap != null =>
+          CoreCalculatorChipType.editable ||
+          CoreCalculatorChipType.active ||
+          CoreCalculatorChipType.bracketClosed ||
+          CoreCalculatorChipType.bracketOpen when onChipTap != null =>
             () => onChipTap(index),
           _ => chip.onTap,
         },
         tapSemanticLabel: switch (chip.type) {
-          CoreCalculatorChipType.editable when onChipTap != null =>
+          CoreCalculatorChipType.editable ||
+          CoreCalculatorChipType.bracketClosed when onChipTap != null =>
             l10n.calculatorChipTapToEdit,
           CoreCalculatorChipType.active when onChipTap != null =>
             l10n.calculatorChipTapToFinish,
+          CoreCalculatorChipType.bracketOpen when onChipTap != null =>
+            l10n.calculatorChipTapToClose,
           _ => chip.tapSemanticLabel,
         },
         onLongPress: chip.onLongPress,
@@ -380,7 +386,7 @@ class CalculatorLabelFormatter {
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
-    CalculatorResultRemovedToast() => null,
+    CalculatorResultRemovedToast() || CalculatorEditingGroupToast() => null,
     CalculatorCannotAppendUnitToast(:final unit) =>
       l10n.calculatorToastCannotAppendTitle(unitName(unit)),
     CalculatorNeedsLengthToast(:final key) =>
@@ -396,6 +402,7 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastFinishValueBody(value),
     CalculatorResultRemovedToast(:final key) =>
       l10n.calculatorToastResultRemoved(displayLabel(key)),
+    CalculatorEditingGroupToast() => l10n.calculatorToastEditingGroup,
     CalculatorCannotAppendUnitToast(:final value, :final unit) =>
       l10n.calculatorToastCannotAppendBody(value, unitName(unit)),
     CalculatorNeedsLengthToast(:final unit, tail: null) =>
