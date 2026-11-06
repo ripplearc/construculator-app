@@ -511,6 +511,23 @@ void main() {
       });
     });
 
+    group('the chip being typed', () {
+      test('is read inside an open bracket too, where the tape itself ends '
+          'on the bracket', () {
+        final typed = press(const Tape(), '2 2 ft + 1 8');
+        expect(typed.beingTyped, typed.active);
+        final opened = changed(press(const Tape(), '2 +').pressBracket());
+        expect(opened.beingTyped, isNull);
+        final inside = press(opened, '3 × 4');
+        expect(inside.active, isNull);
+        expect(
+          inside.beingTyped,
+          isA<ValueChip>().having((chip) => chip.entry.text, 'text', '4'),
+        );
+        expect(changed(inside.pressBracket()).beingTyped, isNull);
+      });
+    });
+
     group('backspace', () {
       test(
         'walkthrough 21.2: removes the error chip and reopens the value before it',

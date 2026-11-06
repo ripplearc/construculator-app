@@ -374,6 +374,14 @@ class Tape extends Equatable {
     return null;
   }
 
+  /// The chip being typed wherever it is: the one inside the open bracket
+  /// while a bracket is open, else [active]. What the display's value row
+  /// and a key that asks which chip it lands on read.
+  ValueChip? get beingTyped {
+    if (openBracket case final bracket?) return _with(bracket.inner).active;
+    return active;
+  }
+
   /// Whether the tape ends on an answer, so that a digit, a function key
   /// or the bracket key starts a new session (rule 4.9); the session itself
   /// is the caller's to bank. A bracket opened here without banking starts
