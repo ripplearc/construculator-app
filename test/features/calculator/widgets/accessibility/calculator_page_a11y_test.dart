@@ -393,6 +393,87 @@ void main() {
     );
 
     testWidgets(
+      'the Close action of the "Editing this group" receipt is labelled and '
+      'meets the tap target and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        CoreToast.disableTimers();
+        addTearDown(CoreToast.enableTimers);
+        addTearDown(CoreToast.cleanup);
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          for (final key in const [
+            'calc_key_two',
+            'calc_key_add',
+            'calc_key_paren',
+            'calc_key_three',
+            'calc_key_paren',
+          ]) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.tap(find.byKey(const ValueKey('calc_chip_1')));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          // Tap target size is disabled as in the close-button test: the
+          // receipt's action is CoreUI's 40×40 button (tracked in CoreUI).
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(const Key('toast_action_button')),
+            checkTapTargetSize: false,
+          );
+          CoreToast.cleanup();
+          await tester.pump();
+        }
+      },
+    );
+
+    testWidgets(
+      'a closed bracket chip says that a tap edits it, and the open one that '
+      'a tap closes it',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        CoreToast.disableTimers();
+        addTearDown(CoreToast.enableTimers);
+        addTearDown(CoreToast.cleanup);
+        await tester.pumpWidget(makeTestableWidget());
+
+        for (final key in const [
+          'calc_key_two',
+          'calc_key_add',
+          'calc_key_paren',
+          'calc_key_three',
+          'calc_key_paren',
+        ]) {
+          await tester.tap(find.byKey(ValueKey(key)));
+          await tester.pump();
+        }
+        final bracket = find.byKey(const ValueKey('calc_chip_1'));
+        expect(
+          tester.getSemantics(bracket).hintOverrides!.onTapHint,
+          l10n.calculatorChipTapToEdit,
+        );
+
+        await tester.tap(bracket);
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(
+          tester.getSemantics(bracket).hintOverrides!.onTapHint,
+          l10n.calculatorChipTapToClose,
+        );
+      },
+    );
+
+    testWidgets(
       'a finished chip says that a tap edits it, the chip being typed that '
       'a tap finishes the edit, and a result chip says nothing',
       (tester) async {

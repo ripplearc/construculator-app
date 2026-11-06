@@ -48,24 +48,18 @@
         </regex>
 
         <!-- RULE 6: the close is left out of the state's equality -->
-        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
-            <mutation text="removedResults, refusedUnit, toastsRaised, toastClosed, ];"/>
-
-        <!-- RULE 7: no chip is ever inert -->
+        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*groupEditsNoticed,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="removedResults, refusedUnit, groupEditsNoticed, toastsRaised, toastClosed, ];"/>
         </regex>
 
-        <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.never_inert">
+        <!-- RULE 7: no chip is ever inert -->
+        <regex pattern="inert: openIndex != null &amp;&amp; index != openIndex," dotAll="true" id="calculator_state.chips.never_inert">
             <mutation text="inert: false,"/>
         </regex>
 
-        <!-- RULE 8: the open bracket itself is inert too -->
-        <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.open_bracket_inert_too">
-            <mutation text="inert: waitsOnOpenBracket,"/>
-        </regex>
-
         <!-- RULE 9: the chips are inert while no bracket is open -->
-        <regex pattern="final waitsOnOpenBracket = tape\.openBracket != null;" dotAll="true" id="calculator_state.chips.inert_without_open_bracket">
-            <mutation text="final waitsOnOpenBracket = tape.openBracket == null;"/>
+        <regex pattern="final openIndex = tape\.openBracketIndex;" dotAll="true" id="calculator_state.chips.inert_without_open_bracket">
+            <mutation text="final openIndex = tape.openBracketIndex ?? -1;"/>
         </regex>
 
         <!-- RULE 10: the open and the closed faces are swapped -->
@@ -237,6 +231,37 @@
              message for no key -->
         <regex pattern="final key = tape\.beingTyped\?\.key;" dotAll="true" id="calculator_state.toast.empty_key_named">
             <mutation text="final key = tape.beingTyped?.key ?? '';"/>
+        </regex>
+
+        <!-- RULE 35b (S1c bracket edit 2/2, CA-1089): C forgets how many times a
+             bracket was reopened, so the toast comes back three more times -->
+        <regex pattern="toastsRaised: state\.toastsRaised,\s*groupEditsNoticed: state\.groupEditsNoticed," dotAll="true" id="calculator_bloc.cleared.reopenings_forgotten">
+            <mutation text="toastsRaised: state.toastsRaised,"/>
+        </regex>
+
+        <!-- RULE 36 (S1c bracket edit 2/2, CA-1089): a reopening is never counted -->
+        <regex pattern="groupEditsNoticed: notice == TapeNotice\.editingThisGroup\s*\? state\.groupEditsNoticed \+ 1\s*: null," dotAll="true" id="calculator_bloc.fold.reopening_uncounted">
+            <mutation text="groupEditsNoticed: null,"/>
+        </regex>
+
+        <!-- RULE 37: the toast never stops -->
+        <regex pattern="groupEditsNoticed &lt;= groupEditToastsShown\) \{" dotAll="true" id="calculator_state.toast.group_toast_never_stops">
+            <mutation text="true) {"/>
+        </regex>
+
+        <!-- RULE 38: the toast stops one reopening early -->
+        <regex pattern="static const int groupEditToastsShown = 3;" dotAll="true" id="calculator_state.toast.group_toast_count">
+            <mutation text="static const int groupEditToastsShown = 2;"/>
+        </regex>
+
+        <!-- RULE 39: the open bracket waits too -->
+        <regex pattern="inert: openIndex != null &amp;&amp; index != openIndex," dotAll="true" id="calculator_state.chips.open_bracket_inert">
+            <mutation text="inert: openIndex != null,"/>
+        </regex>
+
+        <!-- RULE 40: a result after a reopened bracket shows its stale number -->
+        <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
+            <mutation text=""/>
         </regex>
     </rules>
 

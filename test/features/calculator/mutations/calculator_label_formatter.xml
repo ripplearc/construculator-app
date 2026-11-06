@@ -36,8 +36,14 @@
         </regex>
 
         <!-- RULE 4 (S1c 3/5, CA-1089): every chip says a tap edits it -->
-        <regex pattern="CoreCalculatorChipType\.editable when onChipTap != null =&gt;\s*l10n\.calculatorChipTapToEdit," dotAll="true" id="calculator_label_formatter.chips.every_chip_says_edit">
+        <regex pattern="CoreCalculatorChipType\.editable \|\|\s*CoreCalculatorChipType\.bracketClosed when onChipTap != null =&gt;\s*l10n\.calculatorChipTapToEdit," dotAll="true" id="calculator_label_formatter.chips.every_chip_says_edit">
             <mutation text="_ when onChipTap != null =&gt; l10n.calculatorChipTapToEdit,"/>
+        </regex>
+
+        <!-- RULE 4b (S1c bracket edit 2/2, CA-1089): the open bracket says a
+             tap edits it, not that it closes it -->
+        <regex pattern="CoreCalculatorChipType\.bracketOpen when onChipTap != null =&gt;\s*l10n\.calculatorChipTapToClose," dotAll="true" id="calculator_label_formatter.chips.open_bracket_says_edit">
+            <mutation text="CoreCalculatorChipType.bracketOpen when onChipTap != null =&gt; l10n.calculatorChipTapToEdit,"/>
         </regex>
 
         <!-- RULE 4a: the chip being edited says a tap edits it -->
@@ -62,7 +68,7 @@
         </regex>
 
         <!-- RULE 6: a result chip taps back too -->
-        <regex pattern="CoreCalculatorChipType\.editable \|\| CoreCalculatorChipType\.active\s*when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.result_taps_back">
+        <regex pattern="CoreCalculatorChipType\.editable \|\|\s*CoreCalculatorChipType\.active \|\|\s*CoreCalculatorChipType\.bracketClosed \|\|\s*CoreCalculatorChipType\.bracketOpen when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.result_taps_back">
             <mutation text="_ when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>
         </regex>
         <!-- RULE 4 (S1c 4/5 R1): two removed results are named as one, or
@@ -74,6 +80,11 @@
             <mutation text="l10n.calculatorToastResultsRemovedMore(displayLabel(first), more.length + 1),"/>
         </regex>
 
+
+        <!-- RULE 6a: a bracket chip takes no tap -->
+        <regex pattern="CoreCalculatorChipType\.editable \|\|\s*CoreCalculatorChipType\.active \|\|\s*CoreCalculatorChipType\.bracketClosed \|\|\s*CoreCalculatorChipType\.bracketOpen when onChipTap != null =&gt;\s*\(\) =&gt; onChipTap\(index\)," dotAll="true" id="calculator_label_formatter.chips.bracket_takes_no_tap">
+            <mutation text="CoreCalculatorChipType.editable || CoreCalculatorChipType.active when onChipTap != null =&gt; () =&gt; onChipTap(index),"/>
+        </regex>
     </rules>
 
     <commands>

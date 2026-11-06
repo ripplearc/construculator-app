@@ -930,4 +930,90 @@ void main() {
     expect(bloc.state.toast, const CalculatorFinishValueToast(value: '18'));
     expect(find.text(l10n.calculatorToastFinishValueTitle), findsNothing);
   });
+
+  testWidgets('a tap on a closed bracket reopens it with the "Editing this '
+      'group" message, the other chips wait, and the answer reads a dash '
+      '(Section 7, walkthrough 12.8)', (tester) async {
+    CoreToast.disableTimers();
+    addTearDown(CoreToast.enableTimers);
+    addTearDown(CoreToast.cleanup);
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_paren',
+      'calc_key_three',
+      'calc_key_multiply',
+      'calc_key_four',
+      'calc_key_paren',
+      'calc_key_multiply',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await settle(tester);
+    expect(bloc.state.valueText, '70');
+
+    CoreCalculatorChip chipAt(int index) => tester.widget<CoreCalculatorChip>(
+      find.byKey(ValueKey('calc_chip_$index')),
+    );
+    final bracket = find.byKey(const ValueKey('calc_chip_1'));
+    expect(chipAt(1).type, CoreCalculatorChipType.bracketClosed);
+    await tester.tap(bracket);
+    await settle(tester);
+
+    expect(bloc.state.tape.openBracketIndex, 1);
+    expect(find.text(l10n.calculatorToastEditingGroup), findsOneWidget);
+    expect(chipAt(1).type, CoreCalculatorChipType.bracketOpen);
+    expect(chipAt(1).inert, isFalse);
+    expect(chipAt(3).value, '—');
+    expect(chipAt(3).inert, isTrue);
+
+    await press(tester, 'calc_key_paren');
+    await settle(tester);
+    expect(bloc.state.tape.openBracket, isNull);
+    expect(chipAt(3).value, '70');
+  });
+
+  testWidgets('a tap on the reopened bracket itself closes it, as the '
+      'bracket key does, and the answer after it comes back', (tester) async {
+    CoreToast.disableTimers();
+    addTearDown(CoreToast.enableTimers);
+    addTearDown(CoreToast.cleanup);
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_paren',
+      'calc_key_three',
+      'calc_key_paren',
+    ]) {
+      await press(tester, key);
+    }
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    await settle(tester);
+    expect(bloc.state.valueText, '5');
+
+    final bracket = find.byKey(const ValueKey('calc_chip_1'));
+    await tester.tap(bracket);
+    await settle(tester);
+    expect(bloc.state.tape.openBracketIndex, 1);
+
+    await tester.tap(bracket);
+    await settle(tester);
+
+    expect(bloc.state.tape.openBracket, isNull);
+    expect(
+      tester
+          .widget<CoreCalculatorChip>(find.byKey(const ValueKey('calc_chip_2')))
+          .value,
+      '5',
+    );
+  });
 }
