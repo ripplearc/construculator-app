@@ -421,11 +421,16 @@ class CalculatorState extends Equatable {
   /// parentheses — and the operator that leads it is its factor. The chips
   /// before an open bracket are inert: dimmed and deaf to a tap until it
   /// closes ("Chips before an open bracket are dimmed and cannot be tapped").
+  /// While a chip is being edited in place the results after it are drawn
+  /// dashed (rule 4.8: "results downstream show dashed while the edit is
+  /// open"); they keep their value, which recomputes as the edit goes.
   List<CoreCalculatorChip> get chipsList {
     final waitsOnOpenBracket = tape.openBracket != null;
+    final editedIndex = tape.editing?.index;
     return [
       for (final (index, chip) in tape.chips.indexed)
         CoreCalculatorChip(
+          key: ValueKey('calc_chip_$index'),
           label: switch (chip) {
             ValueChip(:final key) => key,
             ResultChip(:final key) => key,
@@ -444,6 +449,8 @@ class CalculatorState extends Equatable {
           type: switch (chip) {
             ValueChip(isActive: true) => CoreCalculatorChipType.active,
             ValueChip() => CoreCalculatorChipType.editable,
+            ResultChip() when editedIndex != null && index > editedIndex =>
+              CoreCalculatorChipType.dashed,
             BracketChip(isOpen: true) => CoreCalculatorChipType.bracketOpen,
             BracketChip() => CoreCalculatorChipType.bracketClosed,
             ResultChip() => CoreCalculatorChipType.result,
