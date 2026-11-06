@@ -2507,6 +2507,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get calculatorChipTapToEdit => 'Edit';
+
+  @override
+  String get calculatorChipTapToFinish => 'Finish editing';
+
+  @override
   String unitNamePieces(num count) {
     final intl.NumberFormat countNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

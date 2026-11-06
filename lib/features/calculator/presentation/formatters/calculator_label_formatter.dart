@@ -308,9 +308,16 @@ class CalculatorLabelFormatter {
   /// reaches the screen. A bracket chip is read in words that tell an open
   /// bracket from a closed one, led by the operator its factor draws, as a
   /// value chip's text is led by its own ("+3"): the factor icon itself is
-  /// silent to a screen reader.
-  List<CoreCalculatorChip> localizeChips(List<CoreCalculatorChip> chips) => [
-    for (final chip in chips)
+  /// silent to a screen reader. With [onChipTap] a tap on a value chip
+  /// reaches it with the chip's index: a finished chip says a tap edits it,
+  /// the chip being typed or edited that a tap finishes the edit (Section
+  /// 1.1, "Tap an input chip to edit it"); a result, an error and a bracket
+  /// chip take no tap here.
+  List<CoreCalculatorChip> localizeChips(
+    List<CoreCalculatorChip> chips, {
+    void Function(int index)? onChipTap,
+  }) => [
+    for (final (index, chip) in chips.indexed)
       CoreCalculatorChip(
         key: chip.key,
         type: chip.type,
@@ -320,8 +327,19 @@ class CalculatorLabelFormatter {
         },
         value: chip.value,
         factor: chip.factor,
-        onTap: chip.onTap,
-        tapSemanticLabel: chip.tapSemanticLabel,
+        onTap: switch (chip.type) {
+          CoreCalculatorChipType.editable || CoreCalculatorChipType.active
+              when onChipTap != null =>
+            () => onChipTap(index),
+          _ => chip.onTap,
+        },
+        tapSemanticLabel: switch (chip.type) {
+          CoreCalculatorChipType.editable when onChipTap != null =>
+            l10n.calculatorChipTapToEdit,
+          CoreCalculatorChipType.active when onChipTap != null =>
+            l10n.calculatorChipTapToFinish,
+          _ => chip.tapSemanticLabel,
+        },
         onLongPress: chip.onLongPress,
         longPressSemanticLabel: chip.longPressSemanticLabel,
         semanticsLabel: switch (chip.type) {
