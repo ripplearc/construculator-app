@@ -320,6 +320,12 @@
    "checkpoint": "switching chips blocked too — Width still the active edit",
    "reason": "The prototype reads the untouched Length chip as t-editable here where it reads a finished chip as t-input elsewhere; the design has one face for a finished value (UX doc term 2.2). The guard itself is checked as the prototype checks it: the toast shows and Width stays the active edit.",
    "dart": {"kind": "all", "checks": [{"kind": "toastShown", "equals": true}, {"kind": "tapeKindAt", "index": 1, "equals": "t-active"}, {"kind": "tapeKindAt", "index": 0, "equals": "t-input"}]}
+  },
+  {
+   "scenario": "S69",
+   "checkpoint": "blocked: Width takes lengths, chip flagged red",
+   "reason": "The prototype's toast reads 'Width takes lengths…pounds' for a weight unit on a bare number. The design titles it '<Key> needs a length, not a weight.' and its body tells which unit to remove, 'Press ⌫ to remove Lbs, then press Feet or Inch.', the key's own face (UX doc Section 5.2, '<Key> needs a length'); the 'takes lengths and not pounds' wording is the design's for a number typed after a finished length. The red outline of the edited chip is a DOM check with no face in CoreUI yet (CA-1405).",
+   "dart": {"kind": "all", "checks": [{"kind": "toastShown", "equals": true}, {"kind": "toastIncludes", "text": "remove Lbs"}, {"kind": "toastIncludes", "text": "Feet or Inch"}]}
   }
  ]
 }

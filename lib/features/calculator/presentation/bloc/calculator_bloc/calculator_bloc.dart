@@ -83,17 +83,23 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onKeySelected(
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) {
+  ) {
     final id = event.id;
-    if (_unitKeys[id] case final unit?) return _pressUnit(tape, unit);
-    if (_trigKeys[id] case final function?) return tape.pressTrigKey(function);
-    if (id == _dmsKey) return tape.pressDmsKey();
-    return tape.pressFunctionKey(
-      id,
-      keyWantsUnit: !PlainNumberKeys.all.contains(id),
-      readsDegrees: id == PlainNumberKeys.pitch,
-    );
-  });
+    if (_unitKeys[id] case final unit?) {
+      return _press(emit, (tape) => _pressUnit(tape, unit), unit: unit);
+    }
+    _press(emit, (tape) {
+      if (_trigKeys[id] case final function?) {
+        return tape.pressTrigKey(function);
+      }
+      if (id == _dmsKey) return tape.pressDmsKey();
+      return tape.pressFunctionKey(
+        id,
+        keyWantsUnit: !PlainNumberKeys.all.contains(id),
+        readsDegrees: id == PlainNumberKeys.pitch,
+      );
+    });
+  }
 
   void _onDigitPressed(
     CalculatorDigitPressed event,
@@ -108,7 +114,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onUnitSelected(
     CalculatorUnitSelected event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => _pressUnit(tape, event.unit));
+  ) => _press(emit, (tape) => _pressUnit(tape, event.unit), unit: event.unit);
 
   TapeOutcome _pressUnit(Tape tape, Unit unit) {
     final key = tape.beingTyped?.key;
@@ -145,6 +151,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
           notice: () => null,
           refusal: () => null,
           removedResult: () => null,
+          refusedUnit: () => null,
           closesCalculator: true,
         ),
       );
@@ -269,10 +276,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   void _press(
     Emitter<CalculatorState> emit,
-    TapeOutcome Function(Tape tape) press,
-  ) => _fold(emit, press(state.tape));
+    TapeOutcome Function(Tape tape) press, {
+    Unit? unit,
+  }) => _fold(emit, press(state.tape), unit: unit);
 
-  void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome) {
+  void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome, {Unit? unit}) {
     switch (outcome) {
       case TapeChanged(:final tape, :final notice, :final removed):
         _emitCounted(
@@ -283,6 +291,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             refusal: () => null,
             closesCalculator: false,
             removedResult: () => removed,
+            refusedUnit: () => null,
           ),
         );
       case final TapeOutcome refusal:
@@ -293,6 +302,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
             refusal: () => refusal,
             closesCalculator: false,
             removedResult: () => null,
+            refusedUnit: () => unit,
           ),
         );
     }
@@ -312,5 +322,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     tape: Tape(preferences: state.tape.preferences),
     currentGroupIndex: state.currentGroupIndex,
     groupOrder: state.groupOrder,
+    toastsRaised: state.toastsRaised,
   );
 }

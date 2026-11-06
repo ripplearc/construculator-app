@@ -358,10 +358,35 @@ class CalculatorLabelFormatter {
     return '';
   }
 
+  /// The unit spelled out for a toast ("yards", "pounds"; Section 5.2).
+  String unitName(Unit unit) => l10n.calculatorUnitName(unit.name);
+
+  /// The face of the key that presses [unit], for a toast that points at
+  /// the key ("Press ⌫ to remove Lbs"; Section 5.2): the Unit group's keys
+  /// by their localized labels, and a unit column key by its spelled-out
+  /// name, since its face is the keyboard's own.
+  String unitKeyFace(Unit unit) => switch (unit) {
+    Unit.pound => l10n.calculatorKeyLbs,
+    Unit.kilogram => l10n.calculatorKeyKg,
+    Unit.ton => l10n.calculatorKeyTons,
+    Unit.metricTon => l10n.calculatorKeyMetricTons,
+    Unit.boardFoot => l10n.calculatorKeyBdFt,
+    Unit.metre => l10n.calculatorKeyMetre,
+    Unit.centimetre => l10n.calculatorKeyCentimetre,
+    Unit.millimetre => l10n.calculatorKeyMillimetre,
+    _ => unitName(unit),
+  };
+
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {
     CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
     CalculatorResultRemovedToast() => null,
+    CalculatorCannotAppendUnitToast(:final unit) =>
+      l10n.calculatorToastCannotAppendTitle(unitName(unit)),
+    CalculatorNeedsLengthToast(:final key) =>
+      l10n.calculatorToastNeedsLengthTitle(displayLabel(key)),
+    CalculatorKeepsLengthToast(:final key, :final value) =>
+      l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
   };
 
   /// The body of [toast], in the words of UX Design Doc Section 5.
@@ -371,6 +396,22 @@ class CalculatorLabelFormatter {
       l10n.calculatorToastFinishValueBody(value),
     CalculatorResultRemovedToast(:final key) =>
       l10n.calculatorToastResultRemoved(displayLabel(key)),
+    CalculatorCannotAppendUnitToast(:final value, :final unit) =>
+      l10n.calculatorToastCannotAppendBody(value, unitName(unit)),
+    CalculatorNeedsLengthToast(:final unit, tail: null) =>
+      l10n.calculatorToastNeedsLengthBody(unitKeyFace(unit)),
+    CalculatorNeedsLengthToast(:final key, :final unit, :final tail?) =>
+      l10n.calculatorToastTailNeedsLengthBody(
+        displayLabel(key),
+        unitName(unit),
+        tail,
+      ),
+    CalculatorKeepsLengthToast(:final key, :final unit, :final value) =>
+      l10n.calculatorToastKeepsLengthBody(
+        unitName(unit),
+        value,
+        displayLabel(key),
+      ),
   };
 
   String _untranslated(String id) {
