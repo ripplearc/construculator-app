@@ -31,8 +31,12 @@ final class PieceSize extends Equatable {
 
   const PieceSize({required this.width, required this.height});
 
-  /// The piece's face in square ticks.
-  double get squareTicks => width.ticks * height.ticks.toDouble();
+  /// The piece's face in square ticks, from the exact sides
+  /// ([Length.preciseTicks]): a metric or a decimal-inch side is no whole
+  /// number of ticks, and a face rounded before the division counts 172.8
+  /// m² of 1200 × 2400 mm sheets as 59.99 instead of 60 (Sections 6 and 9:
+  /// nothing is rounded until it is displayed).
+  double get squareTicks => width.preciseTicks * height.preciseTicks;
 
   @override
   List<Object?> get props => [width, height];
@@ -66,9 +70,14 @@ final class TradeCount extends Equatable {
   /// The count as the bare number the result chip holds.
   Scalar get value => Scalar(count);
 
-  /// The same area counted in another size, as the pill recomputes it.
-  TradeCount recount(PieceSize size) =>
-      TradeCount(trade: trade, area: area, size: size);
+  /// The same area counted in another size, as the pill recomputes it, or
+  /// `null` for a size with no face — a side of zero or less — which is
+  /// refused so that the caller keeps the last good size ("Size must be
+  /// more than zero"; product owner, 5 November 2026).
+  TradeCount? recount(PieceSize size) {
+    if (size.squareTicks <= 0) return null;
+    return TradeCount(trade: trade, area: area, size: size);
+  }
 
   @override
   List<Object?> get props => [trade, area, size];
@@ -83,14 +92,19 @@ final class TradeCount extends Equatable {
 class Trades extends Equatable {
   const Trades();
 
-  /// A count of [area] for each of [sizes], in their order. A size with no
-  /// face — a width or a height of nothing — counts nothing and is left
-  /// out, because nothing divides by it.
-  List<TradeCount> countsFor(Trade trade, Area area, List<PieceSize> sizes) => [
-    for (final size in sizes)
-      if (size.squareTicks > 0)
-        TradeCount(trade: trade, area: area, size: size),
-  ];
+  /// A count of [area] for each of [sizes], in their order. An area of
+  /// zero or less has no count at all, so that the screen can refuse the
+  /// key ("Area must be more than zero"; product owner, 5 November 2026).
+  /// A size with no face — a width or a height of nothing — counts nothing
+  /// and is left out, because nothing divides by it.
+  List<TradeCount> countsFor(Trade trade, Area area, List<PieceSize> sizes) {
+    if (area.squareTicks <= 0) return const [];
+    return [
+      for (final size in sizes)
+        if (size.squareTicks > 0)
+          TradeCount(trade: trade, area: area, size: size),
+    ];
+  }
 
   @override
   List<Object?> get props => const [];
