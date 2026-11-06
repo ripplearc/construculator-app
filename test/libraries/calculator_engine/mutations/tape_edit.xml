@@ -38,13 +38,13 @@
         </regex>
 
         <!-- RULE 2: a tap on a result or an error chip reopens it -->
-        <regex pattern="if \(chips\[index\] is! ValueChip\) \{\s*return const TapeRefused\(TapeRefusal\.chipCannotBeEdited\);\s*\}" dotAll="true" id="tape_edit.tap.result_reopened">
-            <mutation text="if (chips[index] is ErrorChip) { return const TapeRefused(TapeRefusal.chipCannotBeEdited); }"/>
+        <regex pattern="if \(chips\[index\] case ResultChip\(\) \|\| ErrorChip\(\)\) \{\s*return const TapeRefused\(TapeRefusal\.chipCannotBeEdited\);\s*\}" dotAll="true" id="tape_edit.tap.result_reopened">
+            <mutation text=""/>
         </regex>
 
         <!-- RULE 3: a tap while a bracket is open goes through -->
-        <regex pattern="if \(openBracket != null\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*if \(chips\[index\] is! ValueChip\)" dotAll="true" id="tape_edit.tap.open_bracket_ignored">
-            <mutation text="if (chips[index] is! ValueChip)"/>
+        <regex pattern="if \(openBracketIndex case final open\?\) \{\s*if \(open == index\) return closeBracket\(\);\s*return const TapeRefused\(TapeRefusal\.chipCannotBeEdited\);\s*\}\s*if \(chips\[index\] case ResultChip\(\) \|\| ErrorChip\(\)\)" dotAll="true" id="tape_edit.tap.open_bracket_ignored">
+            <mutation text="if (chips[index] case ResultChip() || ErrorChip())"/>
         </regex>
 
         <!-- RULE 4: a second tap on the edited chip reopens it instead of
