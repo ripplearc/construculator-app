@@ -46,6 +46,7 @@ void main() {
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
         '+' => current.pressOperator(Operator.add),
+        '−' => current.pressOperator(Operator.subtract),
         '=' => current.pressEquals(),
         '⌫' => current.backspace(),
         '(' => current.pressBracket(),
@@ -187,7 +188,14 @@ void main() {
         verify: (bloc) {
           expect(
             [for (final chip in bloc.state.chipsList) chip.value],
-            ['2', '+(3×4)'],
+            ['2', '3×4'],
+          );
+          final bracket = bloc.state.chipsList.last;
+          expect(bracket.type, CoreCalculatorChipType.bracketClosed);
+          expect(bracket.factor, CoreIcons.addOperator);
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.inert],
+            [false, false],
           );
           expect(bloc.state.labelKeyId, isNull);
         },
@@ -202,8 +210,11 @@ void main() {
         skip: 1,
         expect: () => [tapeState(pressed('( 3'))],
         verify: (bloc) {
-          expect(bloc.state.chipsList.single.value, '(3');
-          expect(bloc.state.chipsList.single.label, isNull);
+          final bracket = bloc.state.chipsList.single;
+          expect(bracket.value, '3');
+          expect(bracket.type, CoreCalculatorChipType.bracketOpen);
+          expect(bracket.factor, isNull);
+          expect(bracket.label, isNull);
         },
       );
 
@@ -226,10 +237,48 @@ void main() {
           expect(bloc.state.valueText, '4');
           expect(
             [for (final chip in bloc.state.chipsList) chip.value],
-            ['2', '+(3×4'],
+            ['2', '3×4'],
+          );
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.type],
+            [
+              CoreCalculatorChipType.editable,
+              CoreCalculatorChipType.bracketOpen,
+            ],
+          );
+          expect(bloc.state.chipsList.last.factor, CoreIcons.addOperator);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the chips before an open bracket are inert until it closes (term '
+        '2.22: dimmed and cannot be tapped)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorOperatorPressed(Operator.add))
+          ..add(const CalculatorControlActioned(ControlAction.paren))
+          ..add(const CalculatorDigitPressed('3'))
+          ..add(const CalculatorControlActioned(ControlAction.paren)),
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('2 + ( 3')),
+          tapeState(pressed('2 + ( 3 (')),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.inert],
+            [false, false],
           );
         },
       );
+
+      test('while a bracket is open every chip before it is inert, and the '
+          'bracket itself is not', () {
+        final open = tapeState(pressed('2 + ( 3'));
+        expect([for (final chip in open.chipsList) chip.inert], [true, false]);
+        expect(open.chipsList.last.type, CoreCalculatorChipType.bracketOpen);
+      });
     });
 
     group('what the tape says comes with the state', () {
@@ -508,7 +557,8 @@ void main() {
 
       blocTest<CalculatorBloc, CalculatorState>(
         '✕ clears the value being typed and leaves the tape before it; with '
-        'nothing being typed it is refused',
+        'nothing typed in the chip it emptied, a second ✕ closes the '
+        'calculator',
         build: () => bloc,
         act: (bloc) => bloc
           ..add(const CalculatorDigitPressed('2'))
@@ -525,12 +575,112 @@ void main() {
           tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.operatorNeedsANumber),
           ),
-          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
-            refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
-          ),
+          tapeState(pressed('2 ft + 1 8 ✕')).copyWith(closesCalculator: true),
         ],
       );
     });
+
+    group(
+      'T1a (CA-1092): ✕ with no value in progress closes the calculator',
+      () {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'on an empty tape ✕ closes the calculator and the tape stays empty',
+          build: () => bloc,
+          act: (bloc) => bloc.add(const CalculatorActiveValueCleared()),
+          expect: () => [const CalculatorState(closesCalculator: true)],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'after an answer ✕ closes the calculator: a result is not a value in '
+          'progress',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorOperatorPressed(Operator.multiply))
+            ..add(const CalculatorDigitPressed('3'))
+            ..add(const CalculatorEqualsPressed())
+            ..add(const CalculatorActiveValueCleared()),
+          skip: 4,
+          expect: () => [
+            tapeState(pressed('2 × 3 =')).copyWith(closesCalculator: true),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'inside an open bracket ✕ on the empty chip an operator opened is '
+          'refused, not a close: 2 + (3 + ✕ 4) = is 9',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorOperatorPressed(Operator.add))
+            ..add(const CalculatorControlActioned(ControlAction.paren))
+            ..add(const CalculatorDigitPressed('3'))
+            ..add(const CalculatorOperatorPressed(Operator.add))
+            ..add(const CalculatorActiveValueCleared())
+            ..add(const CalculatorDigitPressed('4'))
+            ..add(const CalculatorControlActioned(ControlAction.paren))
+            ..add(const CalculatorEqualsPressed()),
+          skip: 5,
+          expect: () => [
+            tapeState(pressed('2 + ( 3 +')).copyWith(
+              refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
+            ),
+            tapeState(pressed('2 + ( 3 + 4')),
+            tapeState(pressed('2 + ( 3 + 4 (')),
+            tapeState(pressed('2 + ( 3 + 4 ( =')),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'after ÷ 0 = the divisor is reopened with nothing typed in it, so ✕ '
+          'closes the calculator, as the prototype\'s does after its error',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorDigitPressed('5'))
+            ..add(const CalculatorOperatorPressed(Operator.divide))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorEqualsPressed())
+            ..add(const CalculatorActiveValueCleared()),
+          skip: 4,
+          expect: () => [
+            tapeState(pressed('5 ÷ 0 =')).copyWith(closesCalculator: true),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the fraction key with nothing typed is refused with the same word '
+          'and closes nothing',
+          build: () => bloc,
+          act: (bloc) => bloc.add(const CalculatorFractionPressed()),
+          expect: () => [
+            const CalculatorState(
+              refusal: TapeRefused(TapeRefusal.nothingBeingTyped),
+            ),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
+          'the next key taken or refused clears the close, as it clears a '
+          'notice or a refusal',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorActiveValueCleared())
+            ..add(const CalculatorDigitPressed('5'))
+            ..add(const CalculatorActiveValueCleared())
+            ..add(const CalculatorActiveValueCleared())
+            ..add(const CalculatorEqualsPressed()),
+          expect: () => [
+            const CalculatorState(closesCalculator: true),
+            tapeState(pressed('5')),
+            tapeState(pressed('5 ✕')),
+            tapeState(pressed('5 ✕')).copyWith(closesCalculator: true),
+            tapeState(pressed('5 ✕')).copyWith(
+              refusal: () => const TapeRefused(TapeRefusal.nothingToCompute),
+            ),
+          ],
+        );
+      },
+    );
 
     group('the keyboard around the tape', () {
       blocTest<CalculatorBloc, CalculatorState>(
@@ -1555,6 +1705,25 @@ void main() {
         },
       );
 
+      test('a bracket\'s factor is the icon of the operator that leads it, '
+          'and none when the bracket starts the chain', () {
+        expect(
+          stateOf('2 + ( 3 (').chipsList.last.factor,
+          CoreIcons.addOperator,
+        );
+        expect(
+          stateOf('2 − ( 3 (').chipsList.last.factor,
+          CoreIcons.subtractOperator,
+        );
+        expect(
+          stateOf('2 × ( 3 (').chipsList.last.factor,
+          CoreIcons.multiplyOperator,
+        );
+        expect(stateOf('2 ÷ ( 3 (').chipsList.last.factor, CoreIcons.divide);
+        expect(stateOf('( 3 (').chipsList.last.factor, isNull);
+        expect(stateOf('2 + 3').chipsList.last.factor, isNull);
+      });
+
       test('a closed bracket is named by its operator and its inside, and '
           'the value row shows what it is worth (Section 7)', () {
         final closed = stateOf('2 + ( 3 × 4 (');
@@ -1566,10 +1735,7 @@ void main() {
           ),
         );
         expect(closed.valueText, '12');
-        expect(
-          [for (final chip in closed.chipsList) chip.value],
-          ['2', '+(3×4)'],
-        );
+        expect([for (final chip in closed.chipsList) chip.value], ['2', '3×4']);
 
         final first = stateOf('( 3 × 4 (');
         expect(
@@ -1595,7 +1761,9 @@ void main() {
             isTyping: true,
           ),
         );
-        expect([for (final chip in empty.chipsList) chip.value], ['2', '+(']);
+        expect([for (final chip in empty.chipsList) chip.value], ['2', '']);
+        expect(empty.chipsList.last.type, CoreCalculatorChipType.bracketOpen);
+        expect(empty.chipsList.last.factor, CoreIcons.addOperator);
       });
 
       test('the value row and the tape write a bare number\'s reading after '

@@ -300,7 +300,10 @@ class CalculatorLabelFormatter {
 
   /// The chips of the tape with their labels translated: every other field
   /// of a chip is carried over as it is, so a field the state sets later
-  /// reaches the screen.
+  /// reaches the screen. A bracket chip is read in words that tell an open
+  /// bracket from a closed one, led by the operator its factor draws, as a
+  /// value chip's text is led by its own ("+3"): the factor icon itself is
+  /// silent to a screen reader.
   List<CoreCalculatorChip> localizeChips(List<CoreCalculatorChip> chips) => [
     for (final chip in chips)
       CoreCalculatorChip(
@@ -316,10 +319,26 @@ class CalculatorLabelFormatter {
         tapSemanticLabel: chip.tapSemanticLabel,
         onLongPress: chip.onLongPress,
         longPressSemanticLabel: chip.longPressSemanticLabel,
-        semanticsLabel: chip.semanticsLabel,
+        semanticsLabel: switch (chip.type) {
+          CoreCalculatorChipType.bracketOpen =>
+            '${_leadOf(chip.factor)}'
+                '${l10n.calculatorBracketOpenSemantics(chip.value ?? '')}',
+          CoreCalculatorChipType.bracketClosed =>
+            '${_leadOf(chip.factor)}'
+                '${l10n.calculatorBracketClosedSemantics(chip.value ?? '')}',
+          _ => chip.semanticsLabel,
+        },
         inert: chip.inert,
       ),
   ];
+
+  static String _leadOf(CoreIconData? factor) {
+    if (factor == CoreIcons.addOperator) return Operator.add.symbol;
+    if (factor == CoreIcons.subtractOperator) return Operator.subtract.symbol;
+    if (factor == CoreIcons.multiplyOperator) return Operator.multiply.symbol;
+    if (factor == CoreIcons.divide) return Operator.divide.symbol;
+    return '';
+  }
 
   String _untranslated(String id) {
     assert(false, 'No localized label for calculator id "$id"');

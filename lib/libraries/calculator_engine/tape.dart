@@ -1297,8 +1297,9 @@ class Tape extends Equatable {
   /// empty chip an operator just opened, the divisor ÷ 0 reopened, or a
   /// finished tape — it is refused ([TapeRefusal.nothingBeingTyped]): ✕
   /// "clears the value in progress when something is typed" (Section 5,
-  /// "Closes the calculator"), so 2 + (3 + ✕ 4) = is 9 and 5 ÷ 0 = ✕ 2 = is
-  /// 2.5, and on a finished tape the caller closes the calculator instead.
+  /// "Closes the calculator"). Inside a bracket that refusal is the whole
+  /// answer, so 2 + (3 + ✕ 4) = is 9; outside one the caller closes the
+  /// calculator in its place, as the prototype's ✕ does with nothing typed.
   TapeOutcome clearActive() {
     if (openBracket case final bracket?) {
       if (bracket.inner.isEmpty) {

@@ -122,7 +122,25 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onActiveValueCleared(
     CalculatorActiveValueCleared event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => tape.clearActive());
+  ) {
+    final outcome = state.tape.clearActive();
+    // With no value in progress the tape refuses ✕, and that is the key's
+    // other meaning (Section 1.1): the state says "closes" in place of it.
+    // Inside a bracket the bracket itself is in progress, so there the
+    // tape's answer stands (Section 7: 2 + (3 + ✕ 4) = is 9).
+    if (state.tape.openBracket == null &&
+        outcome == const TapeRefused(TapeRefusal.nothingBeingTyped)) {
+      emit(
+        state.copyWith(
+          notice: () => null,
+          refusal: () => null,
+          closesCalculator: true,
+        ),
+      );
+      return;
+    }
+    _fold(emit, outcome);
+  }
 
   void _onOperatorPressed(
     CalculatorOperatorPressed event,
@@ -221,14 +239,27 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _press(
     Emitter<CalculatorState> emit,
     TapeOutcome Function(Tape tape) press,
-  ) {
-    switch (press(state.tape)) {
+  ) => _fold(emit, press(state.tape));
+
+  void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome) {
+    switch (outcome) {
       case TapeChanged(:final tape, :final notice):
         emit(
-          state.copyWith(tape: tape, notice: () => notice, refusal: () => null),
+          state.copyWith(
+            tape: tape,
+            notice: () => notice,
+            refusal: () => null,
+            closesCalculator: false,
+          ),
         );
       case final TapeOutcome refusal:
-        emit(state.copyWith(notice: () => null, refusal: () => refusal));
+        emit(
+          state.copyWith(
+            notice: () => null,
+            refusal: () => refusal,
+            closesCalculator: false,
+          ),
+        );
     }
   }
 

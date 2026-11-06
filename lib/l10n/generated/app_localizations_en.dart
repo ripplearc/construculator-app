@@ -2065,6 +2065,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here you can see smart suggestions from us';
 
   @override
+  String calculatorBracketOpenSemantics(String inside) {
+    return 'Open bracket, $inside';
+  }
+
+  @override
+  String calculatorBracketClosedSemantics(String inside) {
+    return 'Bracket, $inside';
+  }
+
+  @override
   String calculatorStripHiddenChips(int count) {
     return '+$count';
   }

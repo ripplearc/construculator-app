@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -19,7 +20,7 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const CalculatorPage(),
+      home: CalculatorPage(router: FakeAppRouter()),
     );
   }
 
@@ -191,6 +192,69 @@ void main() {
         );
       }
     });
+
+    testWidgets(
+      'the value row is a live region, so a screen reader announces the '
+      'value as it changes (CA-1043)',
+      (tester) async {
+        await tester.pumpWidget(makeTestableWidget());
+
+        await tester.tap(find.byKey(const ValueKey('calc_key_Length')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_two')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_four')));
+        await tester.pump();
+
+        // The chip reads "Length 24"; only the value row's node is "24".
+        final valueRow = find.semantics.byLabel('24').evaluate().single;
+        expect(valueRow.flagsCollection.isLiveRegion, isTrue);
+      },
+    );
+
+    testWidgets(
+      'a chip on the tape is read by the name of its key and its value, and '
+      'a bracket chip in words that tell an open bracket from a closed one, '
+      'led by the operator before it',
+      (tester) async {
+        final l10n = AppLocalizationsEn();
+        await tester.pumpWidget(makeTestableWidget());
+
+        await tester.tap(find.byKey(const ValueKey('calc_key_Length')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_two')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_feet')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_add')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_paren')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('calc_key_three')));
+        await tester.pump();
+
+        Finder chip(CoreCalculatorChipType type) => find.byWidgetPredicate(
+          (widget) => widget is CoreCalculatorChip && widget.type == type,
+        );
+        final length = tester.getSemantics(
+          chip(CoreCalculatorChipType.editable),
+        );
+        expect(length.label, contains(l10n.calculatorKeyLength));
+        expect(length.label, contains('2ft'));
+        expect(
+          tester.getSemantics(chip(CoreCalculatorChipType.bracketOpen)).label,
+          '+${l10n.calculatorBracketOpenSemantics('3')}',
+        );
+
+        await tester.tap(find.byKey(const ValueKey('calc_key_paren')));
+        await tester.pump();
+
+        expect(
+          tester.getSemantics(chip(CoreCalculatorChipType.bracketClosed)).label,
+          '+${l10n.calculatorBracketClosedSemantics('3')}',
+        );
+      },
+    );
 
     testWidgets(
       'an abbreviated key is read by its face, then its full name as a hint',
