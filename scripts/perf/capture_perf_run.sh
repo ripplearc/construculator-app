@@ -14,11 +14,14 @@
 #   PERF_DRIVE_TIMEOUT       time limit for one `flutter drive` attempt, a whole
 #                            number above 0 with an optional s, m, h or d
 #                            (default: 10m)
+#   PERF_STARTUP_TIMEOUT     time limit for one `flutter run --trace-startup`
+#                            launch, same format (default: 5m)
 #   ENSURE_ATTACH_SCRIPT     script that re-attaches the phone between failed
 #                            drive attempts (default: ensure_lab_device_attached.sh)
 #
 # The capture step runs the startup phases (about 5 minutes), then two drive
-# legs. One leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach
+# legs. A startup launch that passes its time limit is retried up to 3 times,
+# with a re-attach between attempts. One leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach
 # of up to 5 minutes after each of the first two: 40 minutes at the default.
 # One leg that fails all 3 attempts fits in the 60 minute step limit in
 # .github/workflows/weekly_system_health.yml. A run where both legs need
@@ -44,6 +47,7 @@ DRIVER="test_driver/perf_driver.dart"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRIVE_TIMEOUT="${PERF_DRIVE_TIMEOUT:-10m}"
+STARTUP_TIMEOUT="${PERF_STARTUP_TIMEOUT:-5m}"
 ENSURE_ATTACH_SCRIPT="${ENSURE_ATTACH_SCRIPT:-$SCRIPT_DIR/ensure_lab_device_attached.sh}"
 
 DEVICE_ID=""
@@ -73,6 +77,11 @@ fi
 
 if ! [[ "$DRIVE_TIMEOUT" =~ ^[1-9][0-9]*[smhd]?$ ]]; then
   echo "❌ PERF_DRIVE_TIMEOUT must be a whole number above 0 with an optional s, m, h or d, got: $DRIVE_TIMEOUT" >&2
+  exit 1
+fi
+
+if ! [[ "$STARTUP_TIMEOUT" =~ ^[1-9][0-9]*[smhd]?$ ]]; then
+  echo "❌ PERF_STARTUP_TIMEOUT must be a whole number above 0 with an optional s, m, h or d, got: $STARTUP_TIMEOUT" >&2
   exit 1
 fi
 
@@ -131,17 +140,34 @@ publish_phase() {
 # cold variant adds --purge-persistent-cache. `flutter run --trace-startup` is
 # used rather than `flutter drive` because only the run path downloads the
 # startup trace; flutter drive produces no start_up_info.json.
+#
+# Each launch has a time limit. `flutter run` can wait forever for the first
+# frame when the app never starts on the phone, so without a limit one stuck
+# launch uses the whole 60 minute step limit and the run is cancelled.
 capture_startup() {
   local destination="$1"
   shift
-  mkdir -p "$destination"
-  FLUTTER_TEST_OUTPUTS_DIR="$destination" fvm flutter run \
-    --profile \
-    --trace-startup \
-    --flavor "$FLAVOR" \
-    --dart-define=ENVIRONMENT=dev \
-    -d "$DEVICE_ID" \
-    "$@"
+  local attempt
+  for attempt in 1 2 3; do
+    mkdir -p "$destination"
+    if FLUTTER_TEST_OUTPUTS_DIR="$destination" "$TIMEOUT_BIN" --kill-after=30 "$STARTUP_TIMEOUT" fvm flutter run \
+      --profile \
+      --trace-startup \
+      --flavor "$FLAVOR" \
+      --dart-define=ENVIRONMENT=dev \
+      -d "$DEVICE_ID" \
+      "$@"; then
+      return 0
+    fi
+    if [[ "$attempt" -lt 3 ]]; then
+      echo "⚠️  startup launch attempt $attempt/3 failed; re-attaching the phone and retrying..." >&2
+      bash "$ENSURE_ATTACH_SCRIPT" --device-id "$DEVICE_ID" \
+        || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
+      adb -s "$DEVICE_ID" forward --remove-all || true
+    fi
+  done
+  echo "❌ startup launch failed after 3 attempts" >&2
+  return 1
 }
 
 # Runs one `flutter drive` leg of the journey, with $1 as PERF_OUTPUT_DIR and the

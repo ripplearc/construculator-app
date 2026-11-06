@@ -1,10 +1,12 @@
 #!/bin/bash
 #
-# Manual test harness for the drive-leg time limit in scripts/perf/capture_perf_run.sh.
+# Manual test harness for the startup and drive-leg time limits in
+# scripts/perf/capture_perf_run.sh.
 #
-# Runs the script against a fake fvm whose `flutter drive` can hang, the way it
-# does when the phone's USB link freezes `adb install`, so the time limit and
-# retry can be checked without hardware.
+# Runs the script against a fake fvm whose `flutter drive` and `flutter run` can
+# hang, the way they do when the phone's USB link freezes `adb install` or the app
+# never renders a first frame, so the time limits and retries can be checked
+# without hardware.
 #
 # Usage:
 #   scripts/perf/capture_perf_run_test.sh
@@ -36,6 +38,12 @@ case "$2" in
     fi
     mkdir -p "$PERF_OUTPUT_DIR"
     echo '{}' >"$PERF_OUTPUT_DIR/fake.json" ;;
+  run)
+    echo run >>"$FAKE_DIR/run_calls"
+    calls="$(wc -l <"$FAKE_DIR/run_calls")"
+    if [[ "$STARTUP_HANG_MODE" == always || ( "$STARTUP_HANG_MODE" == first && "$calls" -eq 1 ) ]]; then
+      exec sleep 60
+    fi ;;
   *) ;;
 esac
 EOF2
@@ -50,16 +58,20 @@ echo attach >>"$FAKE_DIR/attach_calls"
 EOF2
 chmod +x "${WORK_DIR}/bin/fvm" "${WORK_DIR}/bin/adb" "${WORK_DIR}/ensure_attached"
 
-# run_target <hang mode>: runs the script and fills OUTPUT / STATUS / DRIVE_CALLS.
+# run_target <drive hang mode> [startup hang mode]: runs the script and fills
+# OUTPUT / STATUS / DRIVE_CALLS / RUN_CALLS / ATTACH_CALLS.
 run_target() {
   local state="${WORK_DIR}/state"
-  rm -rf "$state" "${WORK_DIR}/out"; mkdir -p "$state"; : >"$state/drive_calls"; : >"$state/attach_calls"
+  rm -rf "$state" "${WORK_DIR}/out"; mkdir -p "$state"
+  : >"$state/drive_calls"; : >"$state/run_calls"; : >"$state/attach_calls"
   OUTPUT="$(cd "$REPO_ROOT" && PATH="${WORK_DIR}/bin:$PATH" FAKE_DIR="$state" \
-    FAKE_SERIAL="$SERIAL" HANG_MODE="$1" PERF_DRIVE_TIMEOUT="${DRIVE_TIMEOUT_FOR_TEST:-1}" \
+    FAKE_SERIAL="$SERIAL" HANG_MODE="$1" STARTUP_HANG_MODE="${2:-never}" \
+    PERF_DRIVE_TIMEOUT="${DRIVE_TIMEOUT_FOR_TEST:-1}" PERF_STARTUP_TIMEOUT="${STARTUP_TIMEOUT_FOR_TEST:-1}" \
     ENSURE_ATTACH_SCRIPT="${WORK_DIR}/ensure_attached" \
     bash "$TARGET" --device-id "$SERIAL" --output-dir "${WORK_DIR}/out" --iterations 1 2>&1)"
   STATUS=$?
   DRIVE_CALLS="$(wc -l <"$state/drive_calls" | tr -d ' ')"
+  RUN_CALLS="$(wc -l <"$state/run_calls" | tr -d ' ')"
   ATTACH_CALLS="$(wc -l <"$state/attach_calls" | tr -d ' ')"
 }
 
@@ -88,5 +100,17 @@ check "the phone is re-attached between attempts but not after the last one" \
 DRIVE_TIMEOUT_FOR_TEST=abc run_target first
 check "a bad PERF_DRIVE_TIMEOUT stops the script before any drive attempt" \
   "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"PERF_DRIVE_TIMEOUT must be"* ]] && echo yes || echo no)"
+
+run_target never first
+check "a hung startup launch is cut off, the phone re-attached, and the launch retried to success" \
+  "$([[ "$STATUS" -eq 0 && "$RUN_CALLS" -eq 4 && "$ATTACH_CALLS" -eq 1 ]] && echo yes || echo no)"
+
+run_target never always
+check "a startup launch that always hangs fails after 3 attempts and no drive leg starts" \
+  "$([[ "$STATUS" -ne 0 && "$RUN_CALLS" -eq 3 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"startup launch failed after 3 attempts"* ]] && echo yes || echo no)"
+
+STARTUP_TIMEOUT_FOR_TEST=abc run_target never
+check "a bad PERF_STARTUP_TIMEOUT stops the script before any launch" \
+  "$([[ "$STATUS" -ne 0 && "$RUN_CALLS" -eq 0 && "$OUTPUT" == *"PERF_STARTUP_TIMEOUT must be"* ]] && echo yes || echo no)"
 
 [[ "$FAILURES" -eq 0 ]] || { echo "$FAILURES case(s) failed"; echo "$OUTPUT" | tail -15; exit 1; }
