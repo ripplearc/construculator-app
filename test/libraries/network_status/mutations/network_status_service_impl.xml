@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- NETWORK STATUS SERVICE MUTATION TESTING (connectivity_plus mapping and change detection) -->
+
+    <files>
+        <file>lib/libraries/network_status/network_status_service_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="NetworkStatus _current = NetworkStatus\.online;" id="status.initial_offline">
+            <mutation text="NetworkStatus _current = NetworkStatus.offline;"/>
+        </regex>
+
+        <regex pattern="results\.every\(\(result\) =&gt; result == ConnectivityResult\.none\)" id="status.every_to_any">
+            <mutation text="results.any((result) =&gt; result == ConnectivityResult.none)"/>
+        </regex>
+
+        <regex pattern="result == ConnectivityResult\.none" id="status.none_negated">
+            <mutation text="result != ConnectivityResult.none"/>
+        </regex>
+
+        <regex pattern="\? NetworkStatus\.offline" id="status.swap_offline_branch">
+            <mutation text="? NetworkStatus.online"/>
+        </regex>
+
+        <regex pattern=": NetworkStatus\.online;" id="status.swap_online_branch">
+            <mutation text=": NetworkStatus.offline;"/>
+        </regex>
+
+        <regex pattern="if \(status == _current\) return;" id="change.emit_even_when_same">
+            <mutation text="if (status != _current) return;"/>
+        </regex>
+
+        <regex pattern="_current = status;" id="change.skip_store">
+            <mutation text="_current = _current;"/>
+        </regex>
+
+        <regex pattern="_changes\.add\(status\);" id="change.skip_emit">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(_isDisposed \|\| _hasHeardFromSystem\) return;" id="initial.skip_newer_event_guard">
+            <mutation text="if (_isDisposed) return;"/>
+        </regex>
+
+        <regex pattern="if \(_isDisposed \|\| _hasHeardFromSystem\) return;" id="initial.skip_disposed_guard">
+            <mutation text="if (_hasHeardFromSystem) return;"/>
+        </regex>
+
+        <regex pattern="_hasHeardFromSystem = true;" id="initial.never_mark_heard">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_isDisposed = true;" id="dispose.skip_flag">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="await _subscription\.cancel\(\);" id="dispose.skip_cancel">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="await _changes\.close\(\);" id="dispose.skip_close">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="network_status_service" expected-return="0">flutter test test/libraries/network_status/units/network_status_service_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="70"/>
+</mutations>
