@@ -2605,7 +2605,7 @@ abstract class AppLocalizations {
   /// Unit of measurement: pieces
   ///
   /// In en, this message translates to:
-  /// **'Pieces'**
+  /// **'Single units — fixtures'**
   String get unitPieces;
 
   /// Unit of measurement: meters
@@ -2629,7 +2629,7 @@ abstract class AppLocalizations {
   /// Unit of measurement: kilograms
   ///
   /// In en, this message translates to:
-  /// **'Kilograms'**
+  /// **'Kilogram'**
   String get unitKilograms;
 
   /// Unit of measurement: tons
@@ -2659,26 +2659,326 @@ abstract class AppLocalizations {
   /// Unit of measurement: boxes
   ///
   /// In en, this message translates to:
-  /// **'Boxes'**
+  /// **'Box'**
   String get unitBoxes;
 
   /// Unit of measurement: bags
   ///
   /// In en, this message translates to:
-  /// **'Bags'**
+  /// **'Bag'**
   String get unitBags;
 
   /// Unit of measurement: rolls
   ///
   /// In en, this message translates to:
-  /// **'Rolls'**
+  /// **'Roll'**
   String get unitRolls;
 
   /// Unit of measurement: sheets
   ///
   /// In en, this message translates to:
-  /// **'Sheets'**
+  /// **'Sheet — 4×8 panel goods'**
   String get unitSheets;
+
+  /// Unit of measurement name shown in the Select unit list: foot
+  ///
+  /// In en, this message translates to:
+  /// **'Foot'**
+  String get unitFeet;
+
+  /// Unit of measurement name shown in the Select unit list: inch
+  ///
+  /// In en, this message translates to:
+  /// **'Inch'**
+  String get unitInches;
+
+  /// Unit of measurement name shown in the Select unit list: yard
+  ///
+  /// In en, this message translates to:
+  /// **'Yard'**
+  String get unitYards;
+
+  /// Unit of measurement name shown in the Select unit list: linear foot
+  ///
+  /// In en, this message translates to:
+  /// **'Linear foot'**
+  String get unitLinearFeet;
+
+  /// Unit of measurement name shown in the Select unit list: square foot
+  ///
+  /// In en, this message translates to:
+  /// **'Square foot'**
+  String get unitSquareFeet;
+
+  /// Unit of measurement name shown in the Select unit list: square yard
+  ///
+  /// In en, this message translates to:
+  /// **'Square yard'**
+  String get unitSquareYards;
+
+  /// Unit of measurement name shown in the Select unit list: square
+  ///
+  /// In en, this message translates to:
+  /// **'Square — 100 sq ft'**
+  String get unitSquares;
+
+  /// Unit of measurement name shown in the Select unit list: cubic foot
+  ///
+  /// In en, this message translates to:
+  /// **'Cubic foot'**
+  String get unitCubicFeet;
+
+  /// Unit of measurement name shown in the Select unit list: cubic yard
+  ///
+  /// In en, this message translates to:
+  /// **'Cubic yard'**
+  String get unitCubicYards;
+
+  /// Unit of measurement name shown in the Select unit list: gallon
+  ///
+  /// In en, this message translates to:
+  /// **'Gallon — paint, adhesive'**
+  String get unitGallons;
+
+  /// Unit of measurement name shown in the Select unit list: pound
+  ///
+  /// In en, this message translates to:
+  /// **'Pound — fasteners, compound'**
+  String get unitPounds;
+
+  /// Unit of measurement name shown in the Select unit list: ton
+  ///
+  /// In en, this message translates to:
+  /// **'Ton — 2,000 lb'**
+  String get unitShortTons;
+
+  /// Unit of measurement name shown in the Select unit list: pair
+  ///
+  /// In en, this message translates to:
+  /// **'Pair'**
+  String get unitPairs;
+
+  /// Unit of measurement name shown in the Select unit list: dozen
+  ///
+  /// In en, this message translates to:
+  /// **'Dozen'**
+  String get unitDozens;
+
+  /// Unit of measurement name shown in the Select unit list: bundle
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle'**
+  String get unitBundles;
+
+  /// Unit of measurement name shown in the Select unit list: pallet
+  ///
+  /// In en, this message translates to:
+  /// **'Pallet'**
+  String get unitPallets;
+
+  /// Unit of measurement name shown in the Select unit list: tube
+  ///
+  /// In en, this message translates to:
+  /// **'Tube'**
+  String get unitTubes;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: ea
+  ///
+  /// In en, this message translates to:
+  /// **'ea'**
+  String get unitSymbolPieces;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: m
+  ///
+  /// In en, this message translates to:
+  /// **'m'**
+  String get unitSymbolMeters;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sqm
+  ///
+  /// In en, this message translates to:
+  /// **'sqm'**
+  String get unitSymbolSquareMeters;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cbm
+  ///
+  /// In en, this message translates to:
+  /// **'cbm'**
+  String get unitSymbolCubicMeters;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: kg
+  ///
+  /// In en, this message translates to:
+  /// **'kg'**
+  String get unitSymbolKilograms;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: t
+  ///
+  /// In en, this message translates to:
+  /// **'t'**
+  String get unitSymbolTons;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: l
+  ///
+  /// In en, this message translates to:
+  /// **'l'**
+  String get unitSymbolLiters;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: hr
+  ///
+  /// In en, this message translates to:
+  /// **'hr'**
+  String get unitSymbolHours;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: day
+  ///
+  /// In en, this message translates to:
+  /// **'day'**
+  String get unitSymbolDays;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bx
+  ///
+  /// In en, this message translates to:
+  /// **'bx'**
+  String get unitSymbolBoxes;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bag
+  ///
+  /// In en, this message translates to:
+  /// **'bag'**
+  String get unitSymbolBags;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: rl
+  ///
+  /// In en, this message translates to:
+  /// **'rl'**
+  String get unitSymbolRolls;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sht
+  ///
+  /// In en, this message translates to:
+  /// **'sht'**
+  String get unitSymbolSheets;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: ft
+  ///
+  /// In en, this message translates to:
+  /// **'ft'**
+  String get unitSymbolFeet;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: in
+  ///
+  /// In en, this message translates to:
+  /// **'in'**
+  String get unitSymbolInches;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: yd
+  ///
+  /// In en, this message translates to:
+  /// **'yd'**
+  String get unitSymbolYards;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: lf
+  ///
+  /// In en, this message translates to:
+  /// **'lf'**
+  String get unitSymbolLinearFeet;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sf
+  ///
+  /// In en, this message translates to:
+  /// **'sf'**
+  String get unitSymbolSquareFeet;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sy
+  ///
+  /// In en, this message translates to:
+  /// **'sy'**
+  String get unitSymbolSquareYards;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sq
+  ///
+  /// In en, this message translates to:
+  /// **'sq'**
+  String get unitSymbolSquares;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cf
+  ///
+  /// In en, this message translates to:
+  /// **'cf'**
+  String get unitSymbolCubicFeet;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cy
+  ///
+  /// In en, this message translates to:
+  /// **'cy'**
+  String get unitSymbolCubicYards;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: gal
+  ///
+  /// In en, this message translates to:
+  /// **'gal'**
+  String get unitSymbolGallons;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: lb
+  ///
+  /// In en, this message translates to:
+  /// **'lb'**
+  String get unitSymbolPounds;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: tn
+  ///
+  /// In en, this message translates to:
+  /// **'tn'**
+  String get unitSymbolShortTons;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: pr
+  ///
+  /// In en, this message translates to:
+  /// **'pr'**
+  String get unitSymbolPairs;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: dz
+  ///
+  /// In en, this message translates to:
+  /// **'dz'**
+  String get unitSymbolDozens;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bdl
+  ///
+  /// In en, this message translates to:
+  /// **'bdl'**
+  String get unitSymbolBundles;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: plt
+  ///
+  /// In en, this message translates to:
+  /// **'plt'**
+  String get unitSymbolPallets;
+
+  /// Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: tb
+  ///
+  /// In en, this message translates to:
+  /// **'tb'**
+  String get unitSymbolTubes;
+
+  /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Other material details'**
+  String get otherMaterialDetailsButton;
+
+  /// Hint label for the brand dropdown in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// Hint label for the product link text field in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Product link'**
+  String get productLinkLabel;
 
   /// Hint label for the labour type field on the labour cost form
   ///
@@ -4028,7 +4328,7 @@ abstract class AppLocalizations {
   /// **'Set your rate'**
   String get materialRatePlaceholder;
 
-  /// Shown after a typed material rate to say which unit it is the price of, for example '/Liters', with no space after the slash as in the Verify frame and in yourRatesDaySuffix
+  /// Shown after a typed material rate to say which unit it is the price of, for example '/gal', with no space after the slash as in the Verify frame and in yourRatesDaySuffix
   ///
   /// In en, this message translates to:
   /// **'/{unit}'**

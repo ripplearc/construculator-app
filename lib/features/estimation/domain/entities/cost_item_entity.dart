@@ -84,7 +84,58 @@ enum Unit {
   rolls,
 
   /// Sheet-based material counted as sheets.
-  sheets;
+  sheets,
+
+  /// Length measured in feet.
+  feet,
+
+  /// Length measured in inches.
+  inches,
+
+  /// Length measured in yards.
+  yards,
+
+  /// Run of material measured in linear feet.
+  linearFeet,
+
+  /// Area measured in square feet.
+  squareFeet,
+
+  /// Area measured in square yards.
+  squareYards,
+
+  /// Roofing area counted in squares of 100 square feet.
+  squares,
+
+  /// Volume measured in cubic feet.
+  cubicFeet,
+
+  /// Volume measured in cubic yards.
+  cubicYards,
+
+  /// Liquid volume measured in US gallons.
+  gallons,
+
+  /// Mass measured in pounds.
+  pounds,
+
+  /// Heavy mass measured in short tons of 2,000 pounds.
+  shortTons,
+
+  /// Items counted in pairs.
+  pairs,
+
+  /// Items counted in dozens.
+  dozens,
+
+  /// Bundled items counted as bundles.
+  bundles,
+
+  /// Stacked goods counted as pallets.
+  pallets,
+
+  /// Sealants and adhesives counted as tubes.
+  tubes;
 
   /// Deserializes a [Unit] from JSON string.
   ///
