@@ -41,7 +41,7 @@ This rule applies during PR creation and review. It is primarily used by review 
 
 ```bash
 # Count production code changes only
-git diff --stat $BASE_BRANCH..$PR_BRANCH -- 'lib/**/*.dart' \
+git diff --stat $BASE_BRANCH...$PR_BRANCH -- 'lib/**/*.dart' \
   ':(exclude)*.g.dart' \
   ':(exclude)*.freezed.dart' \
   ':(exclude)*.gr.dart' \

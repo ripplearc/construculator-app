@@ -96,8 +96,9 @@ An `InkWell` that draws no ink on purpose — `splashFactory: NoSplash.splashFac
 ### Detection Patterns
 
 ```bash
-# 1. Candidates: every ink widget in a changed file
-git grep -nE '\b(Ink|InkWell|InkResponse)\(|Ink\.image\(' "$PR_BRANCH" -- <changed files>
+# 1. Candidates: every ink widget in a changed file. No \b: Apple Git's
+#    `git grep -E` does not know it and returns no hits, with no error.
+git grep -nE '(^|[^A-Za-z0-9_])(Ink|InkWell|InkResponse)\(|Ink\.image\(' "$PR_BRANCH" -- <changed files>
 ```
 
 ```
