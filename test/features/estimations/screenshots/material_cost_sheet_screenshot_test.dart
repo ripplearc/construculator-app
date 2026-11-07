@@ -152,7 +152,7 @@ void main() {
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '3');
-      await pickUnit(tester, Unit.liters);
+      await pickUnit(tester, Unit.gallons);
       await expectSheetGolden(tester, 'rate_missing', suffix);
     });
 
@@ -160,7 +160,7 @@ void main() {
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '3');
-      await pickUnit(tester, Unit.liters);
+      await pickUnit(tester, Unit.gallons);
       await enter(tester, 'material_rate_field', '1000000');
       await expectSheetGolden(tester, 'rate_out_of_range', suffix);
     });
@@ -169,7 +169,7 @@ void main() {
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '3');
-      await pickUnit(tester, Unit.liters);
+      await pickUnit(tester, Unit.gallons);
       await enter(tester, 'material_rate_field', '52');
       await expectSheetGolden(tester, 'ready_to_add', suffix);
     });
@@ -179,7 +179,7 @@ void main() {
       await openSheet(tester, theme);
       await enter(tester, 'material_name_field', 'Interior paint');
       await enter(tester, 'material_quantity_field', '3');
-      await pickUnit(tester, Unit.liters);
+      await pickUnit(tester, Unit.gallons);
       await enter(tester, 'material_rate_field', '52');
       await tester.tap(find.byKey(const Key('add_to_estimate_button')));
       await tester.pumpAndSettle();
@@ -192,8 +192,11 @@ void main() {
       await expectSheetGolden(tester, 'long_name', suffix);
     });
 
-    testWidgets('unit list open', (tester) async {
+    testWidgets('unit list open on the picked unit, as in the storyboard', (
+      tester,
+    ) async {
       await openSheet(tester, theme);
+      await pickUnit(tester, Unit.gallons);
       await tester.tap(find.byKey(const Key('material_unit_pill')));
       await tester.pumpAndSettle();
       await expectSheetGolden(tester, 'unit_list', suffix);
