@@ -51,6 +51,24 @@ class MaterialFormBlocker extends Equatable {
   List<Object?> get props => [field, kind];
 }
 
+/// The units a saved price attached to the line can be counted in.
+class AttachedPrice extends Equatable {
+  const AttachedPrice({required this.buyUnit, this.measureUnit});
+
+  /// The unit the material is bought in, which the price is per.
+  final Unit buyUnit;
+
+  /// The unit the material is measured in, when it has one besides
+  /// [buyUnit], such as square feet for a panel bought by the sheet.
+  final Unit? measureUnit;
+
+  /// Whether the price still applies when the line is counted in [unit].
+  bool allows(Unit unit) => unit == buyUnit || unit == measureUnit;
+
+  @override
+  List<Object?> get props => [buyUnit, measureUnit];
+}
+
 /// Base sealed class for all material cost form states.
 sealed class MaterialCostFormState {
   const MaterialCostFormState();
@@ -85,6 +103,7 @@ class MaterialCostFormData extends Equatable {
     this.unit,
     this.rate,
     this.rateStatus = RateStatus.missing,
+    this.attachedPrice,
     this.isValid = false,
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
@@ -100,7 +119,8 @@ class MaterialCostFormData extends Equatable {
   ///
   /// While it is empty, or was filled from memory and no quantity or rate is
   /// filled in, it takes the unit last used for the typed material name, and
-  /// empties when that name has none. Once a unit is picked, or while a
+  /// empties when that name has none. An attached price sets it to the
+  /// price's unit. Once a unit is picked or a price is attached, or while a
   /// quantity or rate is filled in, a name change never replaces the unit
   /// shown.
   final Unit? unit;
@@ -110,6 +130,10 @@ class MaterialCostFormData extends Equatable {
 
   /// Confidence level of [rate].
   final RateStatus rateStatus;
+
+  /// The saved price [rate] came from, or null when the rate was typed or is
+  /// empty.
+  final AttachedPrice? attachedPrice;
 
   /// Whether name, quantity, unit and rate are all present and in range.
   final bool isValid;
@@ -162,6 +186,7 @@ class MaterialCostFormData extends Equatable {
     Object? unit = _unset,
     Object? rate = _unset,
     RateStatus? rateStatus,
+    Object? attachedPrice = _unset,
     bool? isValid,
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
@@ -172,6 +197,9 @@ class MaterialCostFormData extends Equatable {
       unit: unit == _unset ? this.unit : unit as Unit?,
       rate: rate == _unset ? this.rate : rate as double?,
       rateStatus: rateStatus ?? this.rateStatus,
+      attachedPrice: attachedPrice == _unset
+          ? this.attachedPrice
+          : attachedPrice as AttachedPrice?,
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
@@ -185,6 +213,7 @@ class MaterialCostFormData extends Equatable {
     unit,
     rate,
     rateStatus,
+    attachedPrice,
     isValid,
     fieldErrors,
     hasUnsavedChanges,
