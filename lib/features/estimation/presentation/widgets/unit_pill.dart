@@ -1,19 +1,18 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/material_unit_list.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
+import 'package:construculator/features/estimation/presentation/widgets/select_unit_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// The rounded unit button next to the quantity. Tapping it opens the unit
-/// list; the unit is never typed.
-///
-// TODO: [CA-1186] replace the interim unit list with the grouped 23-unit "Select unit" sheet, which has no time units and a 2,000 lb ton where Tons here is metric. https://ripplearc.youtrack.cloud/issue/CA-1186
+/// The rounded unit button next to the quantity, showing the unit's symbol.
+/// Tapping it opens the Select unit sheet; the unit is never typed.
 class UnitPill extends StatelessWidget {
   static const double _pillHeight = CoreSpacing.space8;
   static const double _tapHeight = CoreSpacing.space12;
-  static const _unlistedUnits = {Unit.hours, Unit.days};
 
   /// The picked unit, or null while none is picked.
   final Unit? unit;
@@ -74,7 +73,7 @@ class UnitPill extends StatelessWidget {
                     Text(
                       unit == null
                           ? l10n.unitPillEmptyLabel
-                          : unit.displayName(l10n),
+                          : unit.symbol(l10n),
                       style: textTheme.bodyLargeRegular.copyWith(
                         color: unit == null
                             ? colorTheme.textDisable
@@ -101,56 +100,8 @@ class UnitPill extends StatelessWidget {
     final picked = await CoreQuickSheet.show<Unit>(
       context: context,
       backgroundColor: sheetSurface(context),
-      child: _UnitList(selected: unit),
+      child: SelectUnitSheet(groups: imperialMaterialUnits, selected: unit),
     );
     if (picked != null) onUnitSelected(picked);
-  }
-}
-
-class _UnitList extends StatelessWidget {
-  final Unit? selected;
-
-  const _UnitList({required this.selected});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final textTheme = context.textTheme;
-    final colorTheme = context.colorTheme;
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(CoreSpacing.space4),
-            child: Text(
-              l10n.selectUnitTitle,
-              style: textTheme.titleMediumSemiBold.copyWith(
-                color: colorTheme.textHeadline,
-              ),
-            ),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  for (final unit in Unit.values.where(
-                    (unit) => !UnitPill._unlistedUnits.contains(unit),
-                  ))
-                    CoreCheckRowItem(
-                      key: Key('unit_option_${unit.name}'),
-                      leading: const SizedBox.shrink(),
-                      title: unit.displayName(l10n),
-                      selected: unit == selected,
-                      onChanged: (_) => Navigator.of(context).pop(unit),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
