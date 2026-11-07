@@ -99,8 +99,8 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('material_unit_pill')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
-    await tester.tap(find.byKey(const Key('unit_option_liters')));
+    await tester.ensureVisible(find.byKey(const Key('unit_option_gallons')));
+    await tester.tap(find.byKey(const Key('unit_option_gallons')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('material_rate_field')), '52');
     await tester.pumpAndSettle();
@@ -141,8 +141,8 @@ void main() {
 
     await tester.tap(find.byKey(const Key('material_unit_pill')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
-    await tester.tap(find.byKey(const Key('unit_option_liters')));
+    await tester.ensureVisible(find.byKey(const Key('unit_option_gallons')));
+    await tester.tap(find.byKey(const Key('unit_option_gallons')));
     await tester.pumpAndSettle();
     expect(find.text('Enter a rate to continue'), findsOneWidget);
     expect(find.text('Needs a rate before it can total'), findsOneWidget);
