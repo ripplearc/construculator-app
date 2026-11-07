@@ -38,8 +38,8 @@ extension UnitDisplayName on Unit {
     Unit.tubes => l10n.unitTubes,
   };
 
-  /// The short symbol of this unit, such as `gal`, as in `$52.00 /gal` after
-  /// a material rate.
+  /// The short symbol of this unit, such as `gal`, shown after a material
+  /// rate, on the unit button and beside each row of the unit list.
   String symbol(AppLocalizations l10n) => switch (this) {
     Unit.pieces => l10n.unitSymbolPieces,
     Unit.meters => l10n.unitSymbolMeters,
