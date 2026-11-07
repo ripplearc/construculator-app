@@ -452,6 +452,20 @@ void main() {
 
       expect(textOf(tester, rateField), '52.50');
     });
+
+    testWidgets('keeps a typed rate when the unit changes', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(rateField, '52.5');
+      await tester.pump();
+
+      await tester.tap(unitPill);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('unit_option_pounds')));
+      await tester.tap(find.byKey(const Key('unit_option_pounds')));
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, rateField), '52.5');
+    });
   });
 
   group('unit', () {
@@ -466,10 +480,21 @@ void main() {
       );
     });
 
-    testWidgets('starts on the unit this account used last', (tester) async {
-      await lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags);
+    testWidgets('shows the unit last used for the typed material', (
+      tester,
+    ) async {
+      await lastUsedUnits.saveLastUnit(
+        CostItemType.material,
+        'Cement',
+        Unit.bags,
+      );
       await pumpFields(tester);
       bloc.add(const MaterialCostFormStarted());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('material_name_field')),
+        'Cement',
+      );
       await tester.pumpAndSettle();
 
       expect(

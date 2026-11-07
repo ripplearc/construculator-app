@@ -82,17 +82,8 @@
         <regex pattern="draft\.itemName\.trim\(\)" dotAll="false" id="bloc.submit.trim_name">
             <mutation text="draft.itemName"/>
         </regex>
-        <regex pattern="CostItemType\.material, unit\)" dotAll="false" id="bloc.submit.remember_unit_category">
-            <mutation text="CostItemType.labor, unit)"/>
-        </regex>
         <regex pattern="'unit_price': rate" dotAll="false" id="bloc.submit.calculation_rate">
             <mutation text="'unit_price': 0.0"/>
-        </regex>
-        <regex pattern="d\.unit == null \? d\.copyWith\(unit: unit\) : d" dotAll="false" id="bloc.start.keep_picked_unit">
-            <mutation text="d.copyWith(unit: unit)"/>
-        </regex>
-        <regex pattern="if \(unit == null\) return;" dotAll="false" id="bloc.start.skip_null_unit">
-            <mutation text="if (false) return;"/>
         </regex>
         <regex pattern="quantity \* rate &lt; _lineTotalColumnLimit" dotAll="false" id="bloc.line_total.boundary">
             <mutation text="quantity * rate &lt;= _lineTotalColumnLimit"/>
@@ -106,20 +97,26 @@
         <regex pattern="MaterialCostFormFailure\(:final failure\) =&gt;\s*MaterialCostFormFailure\(\s*next,\s*failure,?\s*\)," dotAll="true" id="bloc.emit.failure_cleared_by_edit">
             <mutation text="MaterialCostFormFailure() =&gt; MaterialCostFormEditing(next),"/>
         </regex>
-        <regex pattern="data\.itemName != _opened\.itemName" dotAll="false" id="bloc.dirty.name">
+        <regex pattern="data\.itemName\.trim\(\) != _formValuesAtOpening\.itemName\.trim\(\)" dotAll="false" id="bloc.dirty.name">
             <mutation text="false"/>
         </regex>
-        <regex pattern="data\.quantity != _opened\.quantity" dotAll="false" id="bloc.dirty.quantity">
+        <regex pattern="data\.quantity != _formValuesAtOpening\.quantity" dotAll="false" id="bloc.dirty.quantity">
             <mutation text="false"/>
         </regex>
-        <regex pattern="data\.unit != _opened\.unit" dotAll="false" id="bloc.dirty.unit">
+        <regex pattern="data\.unit != _formValuesAtOpening\.unit" dotAll="false" id="bloc.dirty.unit">
             <mutation text="false"/>
         </regex>
-        <regex pattern="data\.rate != _opened\.rate" dotAll="false" id="bloc.dirty.rate">
+        <regex pattern="data\.rate != _formValuesAtOpening\.rate" dotAll="false" id="bloc.dirty.rate">
             <mutation text="false"/>
         </regex>
-        <regex pattern="_opened = MaterialCostFormData\(unit: rememberedUnit\);" dotAll="false" id="bloc.dirty.baseline_unit">
-            <mutation text="_opened = const MaterialCostFormData();"/>
+        <regex pattern="if \(data\.unit != null\) return data;" dotAll="false" id="bloc.preselect.fill_only_empty">
+            <mutation text="if (false) return data;"/>
+        </regex>
+        <regex pattern="if \(_withRememberedUnit\(current\)\.unit != current\.unit\)" dotAll="false" id="bloc.preselect.apply_after_load">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="CostItemType\.material,\s+draft\.itemName," dotAll="true" id="bloc.submit.remember_unit_per_material">
+            <mutation text="CostItemType.material, '',"/>
         </regex>
     </rules>
 
