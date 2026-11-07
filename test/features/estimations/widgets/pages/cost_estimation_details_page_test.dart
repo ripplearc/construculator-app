@@ -1346,8 +1346,8 @@ void main() {
         );
         await tester.tap(find.byKey(const Key('material_unit_pill')));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
-        await tester.tap(find.byKey(const Key('unit_option_liters')));
+        await tester.ensureVisible(find.byKey(const Key('unit_option_gallons')));
+        await tester.tap(find.byKey(const Key('unit_option_gallons')));
         await tester.pumpAndSettle();
         await tester.enterText(
           find.byKey(const Key('material_rate_field')),

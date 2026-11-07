@@ -473,7 +473,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.descendant(of: unitPill, matching: find.text('Bag')),
+        find.descendant(of: unitPill, matching: find.text('bag')),
         findsOneWidget,
       );
       expect(dataOf().unit, Unit.bags);
@@ -486,13 +486,13 @@ void main() {
 
       await tester.tap(unitPill);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
-      await tester.tap(find.byKey(const Key('unit_option_liters')));
+      await tester.ensureVisible(find.byKey(const Key('unit_option_gallons')));
+      await tester.tap(find.byKey(const Key('unit_option_gallons')));
       await tester.pumpAndSettle();
 
-      expect(dataOf().unit, Unit.liters);
+      expect(dataOf().unit, Unit.gallons);
       expect(
-        find.descendant(of: unitPill, matching: find.text('Liters')),
+        find.descendant(of: unitPill, matching: find.text('gal')),
         findsOneWidget,
       );
     });
