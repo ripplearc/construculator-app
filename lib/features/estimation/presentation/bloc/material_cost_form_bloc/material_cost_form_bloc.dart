@@ -44,9 +44,21 @@ class MaterialCostFormBloc
     );
     on<MaterialUnitSelected>((e, emit) {
       _unitPicked = true;
-      _emit(emit, (d) => d.copyWith(unit: e.unit));
+      _emit(emit, (d) => _withPickedUnit(d, e.unit));
     });
     on<MaterialRateUpdated>(_onRateUpdated);
+    on<MaterialPriceAttached>((e, emit) {
+      _unitPicked = true;
+      _emit(
+        emit,
+        (d) => d.copyWith(
+          rate: e.rate,
+          rateStatus: e.rateStatus,
+          attachedPrice: e.price,
+          unit: e.price.buyUnit,
+        ),
+      );
+    });
     on<MaterialCostFormSubmitted>(_onSubmitted);
   }
 
@@ -73,6 +85,17 @@ class MaterialCostFormBloc
       data.unit != null &&
       (_unitPicked || data.quantity != null || data.rate != null);
 
+  MaterialCostFormData _withPickedUnit(MaterialCostFormData data, Unit unit) {
+    final picked = data.copyWith(unit: unit);
+    final price = data.attachedPrice;
+    if (price == null || price.allows(unit)) return picked;
+    return picked.copyWith(
+      rate: null,
+      rateStatus: RateStatus.missing,
+      attachedPrice: null,
+    );
+  }
+
   void _onRateUpdated(
     MaterialRateUpdated event,
     Emitter<MaterialCostFormState> emit,
@@ -85,6 +108,7 @@ class MaterialCostFormBloc
         rateStatus: rate == null
             ? RateStatus.missing
             : RateStatus.ownRateUnconfirmed,
+        attachedPrice: null,
       ),
     );
   }
