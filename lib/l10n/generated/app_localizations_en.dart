@@ -1575,6 +1575,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitSymbolTubes => 'tb';
 
   @override
+  String get unitGroupLength => 'By length';
+
+  @override
+  String get unitGroupArea => 'By area';
+
+  @override
+  String get unitGroupVolume => 'By volume';
+
+  @override
+  String get unitGroupWeight => 'By weight';
+
+  @override
+  String get unitGroupCount => 'By count';
+
+  @override
+  String get unitGroupPackaging => 'By packaging';
+
+  @override
   String get labourTypeLabel => 'Labour type*';
 
   @override
