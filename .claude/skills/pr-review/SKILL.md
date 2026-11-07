@@ -7,7 +7,8 @@ description: |
 
   Use when a user asks to review a PR, review a branch, compare branches, or
   check naming, CoreUI, testing, streams, localization, accessibility, logging,
-  or UI/business separation.
+  UI/business separation, ink splashes, or whether the PR text matches the diff
+  (pass the PR number).
 
   Trigger phrases: "review this PR", "review my PR", "review feat/X to main",
   "check my branch", "code review", "analyze my changes".
@@ -42,6 +43,8 @@ rule only when it's routed to a changed file.
 | Mutation Testing | **Gated:** logic-heavy domain/data files |
 | Accessibility | **Gated:** user-facing UI + `*_a11y_test.dart` |
 | Sentry Logging | `lib/**` using `AppLogger` |
+| PR Text Matches Diff | **Gated:** PR text vs diff (PR-level, needs `pr_number`) |
+| Ink Needs Material | `**/presentation/`, `lib/app/` using `Ink`/`InkWell` |
 
 `Abstraction Naming`→`Naming & Abstraction` and `State Derivation`→`UI /
 Business Separation` are deprecated; if a user passes them, map transparently and
@@ -53,6 +56,7 @@ note it in `rules_skipped`.
 |-------|----------|---------|-------|
 | `pr_branch` | yes | — | branch with changes |
 | `base_branch` | no | `main` | target branch |
+| `pr_number` | no | — | GitHub PR number; turns on `PR Text Matches Diff` |
 | `rules` | no | all | force a subset by name, e.g. `["Naming & Abstraction","Stream Lifecycle"]` |
 | `output_format` | no | `markdown` | `markdown` \| `json` \| `both` |
 | `output_dir` | no | `reviews/` | directory (repo-root-relative) the `.md` review file is written to |
@@ -66,19 +70,24 @@ On missing/invalid input, return an error object (see [Errors](#errors)).
    `scripts/collect_changes.sh`. It already excludes generated (`*.g.dart`,
    `*.freezed.dart`, …) and binary files, so every returned file is relevant.
    No files → return empty issues with all rules in `rules_skipped`.
+   If `pr_number` is given, also pipe `{"pr_number"}` into
+   `scripts/collect_pr_text.sh` to get the PR title and body.
 
 2. **Route** each file to rules using the *Applies to* column above. Path-based
    buckets come from `scripts/filter_files.sh`; content-derived buckets
    (`stream_owning`, `logic_heavy`, `logger_using`) are confirmed by grepping the
-   file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`).
+   file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`,
+   `grep -lE "\b(Ink|InkWell|InkResponse)\(" …` for `ink_using`).
    `Digestible PR` always runs once over the production-code diff size.
 
-3. **Gate** `Mutation Testing` and `Accessibility`:
+3. **Gate** `Mutation Testing`, `Accessibility` and `PR Text Matches Diff`:
    - `Mutation Testing` only if a logic-heavy file (3+ branches / math / data
      transforms) changed — else skip: `"No logic-heavy code changed"`.
    - `Accessibility` only if an interactive presentation file changed; then require
      a matching `*_a11y_test.dart` update and flag if missing — else skip:
      `"No user-facing UI changed"`.
+   - `PR Text Matches Diff` only if `pr_number` was given — else skip:
+     `"No pr_number given"`. It runs once per PR, like `Digestible PR`.
    If the user passed `rules`, apply only those (after the `Abstraction Naming`→
    `Naming & Abstraction` / `State Derivation`→`UI / Business Separation` mapping);
    record the rest in `rules_skipped` with reason `"User specified rules: [...]"`.
@@ -145,7 +154,7 @@ JSON, then `---`, then the markdown. With `json`, skip the markdown.
 
 Sort rows by severity (critical→suggestion) then file; number the `#` column;
 collapse newlines and escape `|` as `\|` in cells; omit `:<line>` for PR-level
-issues (`Digestible PR`); build the blockquote from `statistics.by_severity`.
+issues (`Digestible PR`, `PR Text Matches Diff`); build the blockquote from `statistics.by_severity`.
 
 ### Saving the review file
 
@@ -174,14 +183,15 @@ Scripts and this skill return JSON on failure:
 `{ "error", "code", "details?", "suggestions" }`.
 
 Codes: `MISSING_REQUIRED_FIELD`, `INVALID_ENUM`, `INVALID_BRANCH`, `GIT_ERROR`,
-`PARSE_ERROR`, `FILE_NOT_FOUND`. On a git/branch failure, return the branch names
-to verify; oversized files are skipped and noted in `rules_skipped`; a missing
+`PARSE_ERROR`, `FILE_NOT_FOUND`, `INVALID_PR_NUMBER`, `PR_NOT_FOUND`. On a git/branch
+failure, return the branch names to verify; on `PR_NOT_FOUND`, check `gh auth status`
+and the PR number, or rerun without `pr_number`; oversized files are skipped and noted in `rules_skipped`; a missing
 rule module means the file was likely deleted.
 
 ## Notes
 
 - Scripts are idempotent. The legacy monolithic `scripts/review_pr.sh` is
   retired; keep it only as a historical reference for detection patterns.
-- Always record gate results (`Mutation Testing`/`Accessibility`) in
+- Always record gate results (`Mutation Testing`/`Accessibility`/`PR Text Matches Diff`) in
   `rules_applied` or `rules_skipped` so coverage is auditable.
 
