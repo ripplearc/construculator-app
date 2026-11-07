@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/material_unit_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 
 /// The localized name of a [Unit] as shown on cost forms.
@@ -70,5 +71,18 @@ extension UnitDisplayName on Unit {
     Unit.bundles => l10n.unitSymbolBundles,
     Unit.pallets => l10n.unitSymbolPallets,
     Unit.tubes => l10n.unitSymbolTubes,
+  };
+}
+
+/// The localized heading of a [UnitGroup] in the unit list.
+extension UnitGroupHeading on UnitGroup {
+  /// This group's heading in the language of [l10n], for example "By area".
+  String heading(AppLocalizations l10n) => switch (this) {
+    UnitGroup.length => l10n.unitGroupLength,
+    UnitGroup.area => l10n.unitGroupArea,
+    UnitGroup.volume => l10n.unitGroupVolume,
+    UnitGroup.weight => l10n.unitGroupWeight,
+    UnitGroup.count => l10n.unitGroupCount,
+    UnitGroup.packaging => l10n.unitGroupPackaging,
   };
 }

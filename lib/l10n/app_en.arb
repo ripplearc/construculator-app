@@ -2496,6 +2496,36 @@
     "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: tb",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
+  "unitGroupLength": "By length",
+  "@unitGroupLength": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
+  "unitGroupArea": "By area",
+  "@unitGroupArea": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
+  "unitGroupVolume": "By volume",
+  "@unitGroupVolume": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
+  "unitGroupWeight": "By weight",
+  "@unitGroupWeight": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
+  "unitGroupCount": "By count",
+  "@unitGroupCount": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
+  "unitGroupPackaging": "By packaging",
+  "@unitGroupPackaging": {
+    "description": "Heading of a group in the Select unit list; shown in capitals",
+    "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
+  },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
     "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
