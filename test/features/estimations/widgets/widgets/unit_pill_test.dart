@@ -47,22 +47,22 @@ void main() {
     expect(find.text('Unit'), findsOneWidget);
   });
 
-  testWidgets('shows the name of the picked unit', (tester) async {
-    await pumpPill(tester, unit: Unit.liters);
+  testWidgets('shows the symbol of the picked unit', (tester) async {
+    await pumpPill(tester, unit: Unit.gallons);
 
-    expect(find.text('Liters'), findsOneWidget);
+    expect(find.text('gal'), findsOneWidget);
     expect(find.text('Unit'), findsNothing);
   });
 
-  testWidgets('opens the unit list when tapped', (tester) async {
+  testWidgets('opens the imperial unit list when tapped', (tester) async {
     await pumpPill(tester);
 
     await tester.tap(find.byKey(const Key('unit_pill')));
     await tester.pumpAndSettle();
 
     expect(find.text('Select unit'), findsOneWidget);
-    expect(find.byKey(const Key('unit_option_pieces')), findsOneWidget);
-    expect(find.byKey(const Key('unit_option_liters')), findsOneWidget);
+    expect(find.byKey(const Key('unit_option_feet')), findsOneWidget);
+    expect(find.byKey(const Key('unit_option_liters')), findsNothing);
   });
 
   testWidgets('reports the unit chosen from the list and closes it', (
@@ -93,11 +93,11 @@ void main() {
   });
 
   testWidgets('describes itself to a screen reader', (tester) async {
-    await pumpPill(tester, unit: Unit.liters);
+    await pumpPill(tester, unit: Unit.gallons);
 
     expect(
       tester.getSemantics(pillSemantics()).label,
-      'Unit: Liters. Tap to change',
+      'Unit: Gallon — paint, adhesive. Tap to change',
     );
   });
 
@@ -123,22 +123,18 @@ void main() {
   });
 
   testWidgets('ticks only the unit that is picked', (tester) async {
-    await pumpPill(tester, unit: Unit.liters);
+    await pumpPill(tester, unit: Unit.gallons);
 
     await tester.tap(find.byKey(const Key('unit_pill')));
     await tester.pumpAndSettle();
 
     expect(
-      tester
-          .widget<CoreCheckRowItem>(find.byKey(const Key('unit_option_liters')))
-          .selected,
-      isTrue,
+      tester.getSemantics(find.byKey(const Key('unit_option_gallons'))),
+      isSemantics(isChecked: true),
     );
     expect(
-      tester
-          .widget<CoreCheckRowItem>(find.byKey(const Key('unit_option_bags')))
-          .selected,
-      isFalse,
+      tester.getSemantics(find.byKey(const Key('unit_option_bags'))),
+      isSemantics(isChecked: false),
     );
   });
 
