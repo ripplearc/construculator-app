@@ -22,7 +22,8 @@ class MaterialCostFormBloc
   final LastUsedUnitRepository _lastUsedUnitRepository;
   final Clock _clock;
 
-  MaterialCostFormData _formValuesAtOpening = const MaterialCostFormData();
+  static const _formValuesAtOpening = MaterialCostFormData();
+  RememberedUnits _rememberedUnits = RememberedUnits.none;
 
   MaterialCostFormBloc({
     required this._repository,
@@ -31,14 +32,18 @@ class MaterialCostFormBloc
   }) : super(const MaterialCostFormInitial()) {
     on<MaterialCostFormStarted>(_onStarted);
     on<MaterialCostItemTypeChanged>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(itemName: e.value)),
+      (e, emit) => _emit(
+        emit,
+        (d) => _withRememberedUnit(d.copyWith(itemName: e.value)),
+      ),
     );
     on<MaterialQuantityUpdated>(
       (e, emit) =>
           _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value))),
     );
     on<MaterialUnitSelected>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(unit: e.unit)),
+      (e, emit) =>
+          _emit(emit, (d) => d.copyWith(unit: e.unit, isUnitPicked: true)),
     );
     on<MaterialRateUpdated>(_onRateUpdated);
     on<MaterialCostFormSubmitted>(_onSubmitted);
@@ -48,13 +53,18 @@ class MaterialCostFormBloc
     MaterialCostFormStarted event,
     Emitter<MaterialCostFormState> emit,
   ) async {
-    final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
+    _rememberedUnits = await _lastUsedUnitRepository.getLastUnits(
       CostItemType.material,
     );
-    _formValuesAtOpening = MaterialCostFormData(unit: rememberedUnit);
-    if (rememberedUnit != null && _current().unit == null) {
-      _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
+    final current = _current();
+    if (_withRememberedUnit(current).unit != current.unit) {
+      _emit(emit, _withRememberedUnit);
     }
+  }
+
+  MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
+    if (data.isUnitPicked) return data;
+    return data.copyWith(unit: _rememberedUnits.forItem(data.itemName));
   }
 
   void _onRateUpdated(
@@ -123,7 +133,11 @@ class MaterialCostFormBloc
     await result.fold(
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
       (created) async {
-        await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
+        await _lastUsedUnitRepository.saveLastUnit(
+          CostItemType.material,
+          draft.itemName,
+          unit,
+        );
         emit(MaterialCostFormSuccess(draft, created));
       },
     );

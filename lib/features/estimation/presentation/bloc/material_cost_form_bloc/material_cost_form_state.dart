@@ -83,6 +83,7 @@ class MaterialCostFormData extends Equatable {
     this.itemName = '',
     this.quantity,
     this.unit,
+    this.isUnitPicked = false,
     this.rate,
     this.rateStatus = RateStatus.missing,
     this.isValid = false,
@@ -96,8 +97,14 @@ class MaterialCostFormData extends Equatable {
   /// The quantity entered by the user, or null while empty or unreadable.
   final double? quantity;
 
-  /// The unit picked from the unit list, or null when none is picked.
+  /// The unit the quantity is counted in, or null when there is none yet.
+  ///
+  /// Until the user picks one, it follows the unit last used for the typed
+  /// material name.
   final Unit? unit;
+
+  /// Whether the user picked [unit] from the unit list.
+  final bool isUnitPicked;
 
   /// The price of one unit, or null while empty or unreadable.
   final double? rate;
@@ -154,6 +161,7 @@ class MaterialCostFormData extends Equatable {
     String? itemName,
     Object? quantity = _unset,
     Object? unit = _unset,
+    bool? isUnitPicked,
     Object? rate = _unset,
     RateStatus? rateStatus,
     bool? isValid,
@@ -164,6 +172,7 @@ class MaterialCostFormData extends Equatable {
       itemName: itemName ?? this.itemName,
       quantity: quantity == _unset ? this.quantity : quantity as double?,
       unit: unit == _unset ? this.unit : unit as Unit?,
+      isUnitPicked: isUnitPicked ?? this.isUnitPicked,
       rate: rate == _unset ? this.rate : rate as double?,
       rateStatus: rateStatus ?? this.rateStatus,
       isValid: isValid ?? this.isValid,
@@ -177,6 +186,7 @@ class MaterialCostFormData extends Equatable {
     itemName,
     quantity,
     unit,
+    isUnitPicked,
     rate,
     rateStatus,
     isValid,

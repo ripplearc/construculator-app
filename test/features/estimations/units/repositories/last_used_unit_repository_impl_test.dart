@@ -50,36 +50,60 @@ void main() {
       auth.setCurrentCredentials(_credential('account-1'));
     });
 
+    Future<Unit?> lastUnit(CostItemType category, String itemName) async =>
+        (await repository.getLastUnits(category)).forItem(itemName);
+
+    Future<void> save(CostItemType category, String itemName, Unit unit) =>
+        repository.saveLastUnit(category, itemName, unit);
+
     test('returns nothing when no unit was saved', () async {
-      expect(await repository.getLastUnit(CostItemType.material), isNull);
+      expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
     });
 
-    test('returns the unit last saved for the category', () async {
-      await repository.saveLastUnit(CostItemType.material, Unit.liters);
-      await repository.saveLastUnit(CostItemType.material, Unit.bags);
+    test('returns the unit last saved for the material', () async {
+      await save(CostItemType.material, 'Paint', Unit.liters);
+      await save(CostItemType.material, 'Paint', Unit.gallons);
 
-      expect(await repository.getLastUnit(CostItemType.material), Unit.bags);
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.gallons);
+    });
+
+    test('remembers each material on its own', () async {
+      await save(CostItemType.material, 'Paint', Unit.gallons);
+      await save(CostItemType.material, 'Drywall', Unit.sheets);
+
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.gallons);
+      expect(await lastUnit(CostItemType.material, 'Drywall'), Unit.sheets);
+      expect(await lastUnit(CostItemType.material, 'Primer'), isNull);
+    });
+
+    test('matches names regardless of capitals and extra spaces', () async {
+      await save(CostItemType.material, '  Interior   paint ', Unit.gallons);
+
+      expect(
+        await lastUnit(CostItemType.material, 'INTERIOR PAINT'),
+        Unit.gallons,
+      );
     });
 
     test('remembers each category on its own', () async {
-      await repository.saveLastUnit(CostItemType.material, Unit.liters);
-      await repository.saveLastUnit(CostItemType.labor, Unit.hours);
+      await save(CostItemType.material, 'Crew', Unit.liters);
+      await save(CostItemType.labor, 'Crew', Unit.hours);
 
-      expect(await repository.getLastUnit(CostItemType.material), Unit.liters);
-      expect(await repository.getLastUnit(CostItemType.labor), Unit.hours);
-      expect(await repository.getLastUnit(CostItemType.equipment), isNull);
+      expect(await lastUnit(CostItemType.material, 'Crew'), Unit.liters);
+      expect(await lastUnit(CostItemType.labor, 'Crew'), Unit.hours);
+      expect(await lastUnit(CostItemType.equipment, 'Crew'), isNull);
     });
 
     test('remembers each account on its own', () async {
-      await repository.saveLastUnit(CostItemType.material, Unit.liters);
+      await save(CostItemType.material, 'Paint', Unit.liters);
       auth.setCurrentCredentials(_credential('account-2'));
 
-      expect(await repository.getLastUnit(CostItemType.material), isNull);
+      expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
 
-      await repository.saveLastUnit(CostItemType.material, Unit.rolls);
+      await save(CostItemType.material, 'Paint', Unit.rolls);
       auth.setCurrentCredentials(_credential('account-1'));
 
-      expect(await repository.getLastUnit(CostItemType.material), Unit.liters);
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.liters);
     });
 
     test(
@@ -87,41 +111,55 @@ void main() {
       () async {
         auth.reset();
 
-        await repository.saveLastUnit(CostItemType.material, Unit.liters);
+        await save(CostItemType.material, 'Paint', Unit.liters);
 
-        expect(await repository.getLastUnit(CostItemType.material), isNull);
+        expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
         auth.setCurrentCredentials(_credential('account-1'));
-        expect(await repository.getLastUnit(CostItemType.material), isNull);
+        expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
       },
     );
 
-    test('returns nothing when the saved unit cannot be read', () async {
-      await repository.saveLastUnit(CostItemType.material, Unit.liters);
+    test('returns nothing when the saved units cannot be read', () async {
+      await save(CostItemType.material, 'Paint', Unit.liters);
       storage.shouldThrowOnRead = true;
 
-      expect(await repository.getLastUnit(CostItemType.material), isNull);
+      expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
     });
 
-    test(
-      'returns nothing when the saved unit is no longer a known unit',
-      () async {
-        await storage.saveData<String>(
-          'last_used_unit.account-1.material',
-          'furlongs',
-        );
+    test('returns nothing for a material whose saved unit is no longer a '
+        'known unit, and keeps the others', () async {
+      const key = 'last_used_units.account-1.material';
+      await save(CostItemType.material, 'Paint', Unit.gallons);
+      await save(CostItemType.material, 'Drywall', Unit.sheets);
+      final saved = await storage.getData<String>(key);
+      await storage.saveData<String>(
+        key,
+        saved!.replaceFirst('"gallons"', '"furlongs"'),
+      );
 
-        expect(await repository.getLastUnit(CostItemType.material), isNull);
-      },
-    );
+      expect(await lastUnit(CostItemType.material, 'Paint'), isNull);
+      expect(await lastUnit(CostItemType.material, 'Drywall'), Unit.sheets);
+    });
 
     test('keeps the previous unit when a save fails', () async {
-      await repository.saveLastUnit(CostItemType.material, Unit.liters);
+      await save(CostItemType.material, 'Paint', Unit.liters);
       storage.shouldThrowOnWrite = true;
 
-      await repository.saveLastUnit(CostItemType.material, Unit.bags);
+      await save(CostItemType.material, 'Paint', Unit.bags);
       storage.shouldThrowOnWrite = false;
 
-      expect(await repository.getLastUnit(CostItemType.material), Unit.liters);
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.liters);
+    });
+
+    test('starts over when the saved units are damaged', () async {
+      await storage.saveData<String>(
+        'last_used_units.account-1.material',
+        'not json',
+      );
+
+      await save(CostItemType.material, 'Paint', Unit.gallons);
+
+      expect(await lastUnit(CostItemType.material, 'Paint'), Unit.gallons);
     });
   });
 }

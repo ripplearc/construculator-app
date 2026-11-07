@@ -66,64 +66,116 @@ void main() {
       expect(bloc.state, isA<MaterialCostFormInitial>());
     });
 
-    group('default unit', () {
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'selects the unit this account used last for materials',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
-        build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
-        verify: (b) => expect(_dataOf(b.state).unit, Unit.bags),
-      );
+    Future<void> remember(String itemName, Unit unit) =>
+        lastUsedUnits.saveLastUnit(CostItemType.material, itemName, unit);
 
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'ignores the unit remembered for another category',
-        setUp: () => lastUsedUnits.saveLastUnit(CostItemType.labor, Unit.hours),
-        build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
-        expect: () => <MaterialCostFormState>[],
-      );
+    // Types a remembered name before the form starts and waits for its unit,
+    // so the remembered units have loaded before the test goes on.
+    Future<void> startWithUnitsLoaded(MaterialCostFormBloc b) async {
+      await remember('Caulk', Unit.tubes);
+      b
+        ..add(const MaterialCostItemTypeChanged('Caulk'))
+        ..add(const MaterialCostFormStarted());
+      await b.stream.firstWhere((state) => _dataOf(state).unit == Unit.tubes);
+    }
 
+    group('unit preselection', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'leaves the unit empty when none is remembered',
+        'opens with no unit before a name is typed',
+        setUp: () => remember('Interior paint', Unit.gallons),
         build: () => bloc,
         act: (b) => b.add(const MaterialCostFormStarted()),
         expect: () => <MaterialCostFormState>[],
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'leaves the unit empty when the remembered unit cannot be read',
+        'selects the unit last used for the typed material',
+        setUp: () => remember('Interior paint', Unit.gallons),
+        build: () => bloc,
+        act: (b) async {
+          await startWithUnitsLoaded(b);
+          b.add(const MaterialCostItemTypeChanged(' interior  PAINT '));
+        },
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.gallons),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'selects the remembered unit for a name typed before it loaded',
+        setUp: () => remember('Interior paint', Unit.gallons),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialCostFormStarted()),
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.gallons),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'selects nothing for a material with no remembered unit',
+        setUp: () => remember('Interior paint', Unit.gallons),
+        build: () => bloc,
+        act: (b) async {
+          await startWithUnitsLoaded(b);
+          b
+            ..add(const MaterialCostItemTypeChanged('Interior paint'))
+            ..add(const MaterialCostItemTypeChanged('Drywall screws'));
+        },
+        verify: (b) => expect(_dataOf(b.state).unit, isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'ignores units remembered for another category',
+        setUp: () => lastUsedUnits.saveLastUnit(
+          CostItemType.labor,
+          'Interior paint',
+          Unit.hours,
+        ),
+        build: () => bloc,
+        act: (b) async {
+          await startWithUnitsLoaded(b);
+          b.add(const MaterialCostItemTypeChanged('Interior paint'));
+        },
+        verify: (b) => expect(_dataOf(b.state).unit, isNull),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'selects nothing when the remembered units cannot be read',
         setUp: () async {
-          await lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags);
+          await remember('Interior paint', Unit.gallons);
           storage.shouldThrowOnRead = true;
         },
         build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
-        expect: () => <MaterialCostFormState>[],
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialCostItemTypeChanged('Interior paint')),
+        verify: (b) => expect(_dataOf(b.state).unit, isNull),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'keeps a unit the user already picked',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        'keeps a unit the user picked when the name changes',
+        setUp: () => remember('Interior paint', Unit.gallons),
         build: () => bloc,
-        act: (b) => b
-          ..add(const MaterialUnitSelected(Unit.liters))
-          ..add(const MaterialCostFormStarted()),
-        verify: (b) => expect(_dataOf(b.state).unit, Unit.liters),
+        act: (b) async {
+          await startWithUnitsLoaded(b);
+          b
+            ..add(const MaterialUnitSelected(Unit.squareFeet))
+            ..add(const MaterialCostItemTypeChanged('Interior paint'));
+        },
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.squareFeet),
       );
 
+    });
+
+    group('changing the unit', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'keeps the name already typed',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        'never converts the typed quantity',
         build: () => bloc,
         act: (b) => b
-          ..add(const MaterialCostItemTypeChanged('Paint'))
-          ..add(const MaterialCostFormStarted()),
+          ..add(const MaterialQuantityUpdated('12'))
+          ..add(const MaterialUnitSelected(Unit.feet))
+          ..add(const MaterialUnitSelected(Unit.yards)),
         verify: (b) {
-          expect(_dataOf(b.state).itemName, 'Paint');
-          expect(_dataOf(b.state).unit, Unit.bags);
+          expect(_dataOf(b.state).quantity, 12);
+          expect(_dataOf(b.state).unit, Unit.yards);
         },
       );
     });
@@ -188,14 +240,16 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'remembers the unit as the last one used for materials',
+        'remembers the unit as the last one used for this material',
         build: () => bloc,
         act: (b) {
           filledEvents.forEach(b.add);
           b.add(const MaterialCostFormSubmitted(estimateId: estimateId));
         },
         verify: (_) async => expect(
-          await lastUsedUnits.getLastUnit(CostItemType.material),
+          (await lastUsedUnits.getLastUnits(
+            CostItemType.material,
+          )).forItem('interior paint'),
           Unit.liters,
         ),
       );
@@ -263,7 +317,9 @@ void main() {
           expect(failure.data.unit, Unit.liters);
           expect(failure.data.rate, 2.55);
           expect(
-            await lastUsedUnits.getLastUnit(CostItemType.material),
+            (await lastUsedUnits.getLastUnits(
+              CostItemType.material,
+            )).forItem('Interior paint'),
             isNull,
           );
         },
@@ -566,36 +622,6 @@ void main() {
       }
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'count a unit picked before the remembered unit finished loading',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
-        build: () => bloc,
-        act: (b) async {
-          b
-            ..add(const MaterialUnitSelected(Unit.liters))
-            ..add(const MaterialCostFormStarted());
-          await b.stream.firstWhere((s) => s.data.unit == Unit.liters);
-        },
-        verify: (b) {
-          expect(b.state.data.unit, Unit.liters);
-          expect(b.state.data.hasUnsavedChanges, isTrue);
-        },
-      );
-
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'count a name typed before the remembered unit finished loading',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
-        build: () => bloc,
-        act: (b) {
-          b
-            ..add(const MaterialCostItemTypeChanged('Paint'))
-            ..add(const MaterialCostFormStarted());
-        },
-        verify: (b) => expect(b.state.data.hasUnsavedChanges, isTrue),
-      );
-
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'disappear when a typed value is cleared again',
         build: () => bloc,
         act: (b) => b
@@ -606,31 +632,19 @@ void main() {
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'do not count the remembered unit the form opened with',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
-        build: () => bloc,
-        act: (b) => b.add(const MaterialCostFormStarted()),
-        verify: (b) {
-          expect(b.state.data.unit, Unit.bags);
-          expect(hasChanges(b), isFalse);
-        },
-      );
-
-      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
-        'count a different unit, and stop counting when it is put back',
-        setUp: () =>
-            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        'disappear when a typed name and its remembered unit are cleared',
+        setUp: () => remember('Paint', Unit.gallons),
         build: () => bloc,
         act: (b) async {
-          b.add(const MaterialCostFormStarted());
-          await b.stream.firstWhere((s) => s.data.unit == Unit.bags);
-          b.add(const MaterialUnitSelected(Unit.liters));
-          await b.stream.firstWhere((s) => s.data.unit == Unit.liters);
-          expect(b.state.data.hasUnsavedChanges, isTrue);
-          b.add(const MaterialUnitSelected(Unit.bags));
+          await startWithUnitsLoaded(b);
+          b
+            ..add(const MaterialCostItemTypeChanged('Paint'))
+            ..add(const MaterialCostItemTypeChanged(''));
         },
-        verify: (b) => expect(hasChanges(b), isFalse),
+        verify: (b) {
+          expect(b.state.data.unit, isNull);
+          expect(hasChanges(b), isFalse);
+        },
       );
     });
 
