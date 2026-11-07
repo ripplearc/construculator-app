@@ -195,9 +195,37 @@ void main() {
           expect(_dataOf(b.state).unit, Unit.squareFeet);
         });
       });
+
+      test('an attached price sets its unit over a remembered one, and a name '
+          'change keeps it', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Interior paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Interior paint'))
+            ..add(
+              const MaterialPriceAttached(
+                rate: 9.5,
+                rateStatus: RateStatus.ownRateConfirmed,
+                price: AttachedPrice(buyUnit: Unit.pieces),
+              ),
+            )
+            ..add(const MaterialCostItemTypeChanged('Drywall'));
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.pieces);
+        });
+      });
     });
 
     group('changing the unit', () {
+      const sheetPrice = MaterialPriceAttached(
+        rate: 14,
+        rateStatus: RateStatus.ownRateConfirmed,
+        price: AttachedPrice(buyUnit: Unit.sheets, measureUnit: Unit.squareFeet),
+      );
+
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'never converts the typed quantity',
         build: () => bloc,
@@ -208,6 +236,52 @@ void main() {
         verify: (b) {
           expect(_dataOf(b.state).quantity, 12);
           expect(_dataOf(b.state).unit, Unit.yards);
+        },
+      );
+
+      for (final unit in [Unit.sheets, Unit.squareFeet]) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'keeps the attached price when switching to ${unit.name}',
+          build: () => bloc,
+          act: (b) => b
+            ..add(sheetPrice)
+            ..add(MaterialUnitSelected(unit)),
+          verify: (b) {
+            final data = _dataOf(b.state);
+            expect(data.rate, 14);
+            expect(data.attachedPrice, sheetPrice.price);
+            expect(data.rateStatus, RateStatus.ownRateConfirmed);
+          },
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'clears the attached price for a unit it is not counted in',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialQuantityUpdated('30'))
+          ..add(sheetPrice)
+          ..add(const MaterialUnitSelected(Unit.pieces)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.rate, isNull);
+          expect(data.attachedPrice, isNull);
+          expect(data.rateStatus, RateStatus.missing);
+          expect(data.quantity, 30);
+          expect(data.unit, Unit.pieces);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps a typed rate whatever unit is picked',
+        build: () => bloc,
+        act: (b) => b
+          ..add(sheetPrice)
+          ..add(const MaterialRateUpdated('15'))
+          ..add(const MaterialUnitSelected(Unit.pieces)),
+        verify: (b) {
+          expect(_dataOf(b.state).rate, 15);
+          expect(_dataOf(b.state).attachedPrice, isNull);
         },
       );
     });

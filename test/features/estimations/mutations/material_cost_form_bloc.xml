@@ -115,6 +115,19 @@
         <regex pattern="if \(_withRememberedUnit\(current\)\.unit != current\.unit\)" dotAll="false" id="bloc.preselect.apply_after_load">
             <mutation text="if (false)"/>
         </regex>
+        <regex pattern="if \(price == null \|\| price\.allows\(unit\)\) return picked;" dotAll="false" id="bloc.pick.keep_allowed_price">
+            <mutation text="if (price == null) return picked;"/>
+            <mutation text="return picked;"/>
+        </regex>
+        <regex pattern="unit == buyUnit \|\| unit == measureUnit" dotAll="false" id="state.price.measure_unit">
+            <mutation text="unit == buyUnit"/>
+        </regex>
+        <regex pattern="RateStatus\.ownRateUnconfirmed,\s+attachedPrice: null," dotAll="true" id="bloc.rate.typed_detaches_price">
+            <mutation text="RateStatus.ownRateUnconfirmed,"/>
+        </regex>
+        <regex pattern="unit: e\.price\.buyUnit," dotAll="false" id="bloc.attach.price_unit">
+            <mutation text="unit: d.unit,"/>
+        </regex>
         <regex pattern="CostItemType\.material,\s+draft\.itemName," dotAll="true" id="bloc.submit.remember_unit_per_material">
             <mutation text="CostItemType.material, '',"/>
         </regex>
