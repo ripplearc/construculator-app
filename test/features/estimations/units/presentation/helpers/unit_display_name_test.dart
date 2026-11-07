@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/material_unit_list.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -49,6 +50,49 @@ void main() {
       expect(entry.key.displayName(l10n), entry.value);
     });
   }
+
+  group('imperialMaterialUnits', () {
+    test('lists the 23 storyboard units in six groups, in order', () {
+      final shown = {
+        for (final group in imperialMaterialUnits)
+          group.group.heading(l10n): [
+            for (final unit in group.units)
+              '${unit.symbol(l10n)} ${unit.displayName(l10n)}',
+          ],
+      };
+
+      expect(shown, {
+        'By length': ['ft Foot', 'in Inch', 'yd Yard', 'lf Linear foot'],
+        'By area': ['sf Square foot', 'sy Square yard', 'sq Square — 100 sq ft'],
+        'By volume': [
+          'cf Cubic foot',
+          'cy Cubic yard',
+          'gal Gallon — paint, adhesive',
+        ],
+        'By weight': [
+          'lb Pound — fasteners, compound',
+          'kg Kilogram',
+          'tn Ton — 2,000 lb',
+        ],
+        'By count': ['ea Single units — fixtures', 'pr Pair', 'dz Dozen'],
+        'By packaging': [
+          'bag Bag',
+          'bx Box',
+          'rl Roll',
+          'sht Sheet — 4×8 panel goods',
+          'bdl Bundle',
+          'plt Pallet',
+          'tb Tube',
+        ],
+      });
+    });
+
+    test('lists each unit once', () {
+      final units = [for (final group in imperialMaterialUnits) ...group.units];
+
+      expect(units.toSet(), hasLength(23));
+    });
+  });
 
   group('symbol', () {
     test('gives every unit a symbol of its own', () {

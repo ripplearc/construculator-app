@@ -2962,6 +2962,42 @@ abstract class AppLocalizations {
   /// **'tb'**
   String get unitSymbolTubes;
 
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By length'**
+  String get unitGroupLength;
+
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By area'**
+  String get unitGroupArea;
+
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By volume'**
+  String get unitGroupVolume;
+
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By weight'**
+  String get unitGroupWeight;
+
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By count'**
+  String get unitGroupCount;
+
+  /// Heading of a group in the Select unit list; shown in capitals
+  ///
+  /// In en, this message translates to:
+  /// **'By packaging'**
+  String get unitGroupPackaging;
+
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///
   /// In en, this message translates to:
