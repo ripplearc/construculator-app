@@ -137,12 +137,12 @@ void main() {
     ) async {
       await pumpFields(tester);
       await tester.enterText(rateField, '52');
-      bloc.add(const MaterialUnitSelected(Unit.liters));
+      bloc.add(const MaterialUnitSelected(Unit.gallons));
       await tester.pump();
 
       final field = tester.getRect(rateField);
       expect(field.width, lessThan(50));
-      expect(tester.getRect(find.text('/Liters')).left - field.right, 4);
+      expect(tester.getRect(find.text('/gal')).left - field.right, 4);
     });
 
     testWidgets('the name row leaves 4 dp between its label and value', (
@@ -240,20 +240,20 @@ void main() {
     testWidgets('shows the unit after a typed rate', (tester) async {
       await pumpFields(tester);
       await tester.enterText(rateField, '52');
-      bloc.add(const MaterialUnitSelected(Unit.liters));
+      bloc.add(const MaterialUnitSelected(Unit.gallons));
       await tester.pump();
 
-      expect(find.text('/Liters'), findsOneWidget);
+      expect(find.text('/gal'), findsOneWidget);
     });
 
     testWidgets('writes the unit with no space after the slash, in smaller '
         'text than the rate', (tester) async {
       await pumpFields(tester);
       await tester.enterText(rateField, '52');
-      bloc.add(const MaterialUnitSelected(Unit.liters));
+      bloc.add(const MaterialUnitSelected(Unit.gallons));
       await tester.pump();
 
-      final unit = tester.widget<Text>(find.text('/Liters'));
+      final unit = tester.widget<Text>(find.text('/gal'));
       final rate = tester.widget<TextField>(
         find.descendant(of: rateField, matching: find.byType(TextField)),
       );
@@ -262,10 +262,10 @@ void main() {
 
     testWidgets('shows the unit even before a rate is typed', (tester) async {
       await pumpFields(tester);
-      bloc.add(const MaterialUnitSelected(Unit.liters));
+      bloc.add(const MaterialUnitSelected(Unit.gallons));
       await tester.pump();
 
-      expect(find.text('/Liters'), findsOneWidget);
+      expect(find.text('/gal'), findsOneWidget);
     });
 
     testWidgets('shows no unit after the rate while none is picked', (
@@ -473,7 +473,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.descendant(of: unitPill, matching: find.text('Bags')),
+        find.descendant(of: unitPill, matching: find.text('Bag')),
         findsOneWidget,
       );
       expect(dataOf().unit, Unit.bags);
