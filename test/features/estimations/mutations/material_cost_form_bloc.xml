@@ -109,14 +109,28 @@
         <regex pattern="data\.rate != _formValuesAtOpening\.rate" dotAll="false" id="bloc.dirty.rate">
             <mutation text="false"/>
         </regex>
-        <regex pattern="if \(data\.isUnitPicked\) return data;" dotAll="false" id="bloc.preselect.keep_picked">
-            <mutation text="if (false) return data;"/>
+        <regex pattern="if \(data\.isUnitPicked \|\| data\.attachedPrice != null\) return data;" dotAll="false" id="bloc.preselect.ignore_price">
+            <mutation text="if (data.isUnitPicked) return data;"/>
+            <mutation text="if (data.attachedPrice != null) return data;"/>
         </regex>
         <regex pattern="if \(_withRememberedUnit\(current\)\.unit != current\.unit\)" dotAll="false" id="bloc.preselect.apply_after_load">
             <mutation text="if (false)"/>
         </regex>
-        <regex pattern="unit: e\.unit, isUnitPicked: true" dotAll="false" id="bloc.pick.mark_picked">
-            <mutation text="unit: e.unit, isUnitPicked: false"/>
+        <regex pattern="unit: unit, isUnitPicked: true" dotAll="false" id="bloc.pick.mark_picked">
+            <mutation text="unit: unit, isUnitPicked: false"/>
+        </regex>
+        <regex pattern="if \(price == null \|\| price\.allows\(unit\)\) return picked;" dotAll="false" id="bloc.pick.keep_allowed_price">
+            <mutation text="if (price == null) return picked;"/>
+            <mutation text="return picked;"/>
+        </regex>
+        <regex pattern="unit == buyUnit \|\| unit == measureUnit" dotAll="false" id="state.price.measure_unit">
+            <mutation text="unit == buyUnit"/>
+        </regex>
+        <regex pattern="RateStatus\.ownRateUnconfirmed,\s+attachedPrice: null," dotAll="true" id="bloc.rate.typed_detaches_price">
+            <mutation text="RateStatus.ownRateUnconfirmed,"/>
+        </regex>
+        <regex pattern="unit: e\.price\.buyUnit," dotAll="false" id="bloc.attach.price_unit">
+            <mutation text="unit: d.unit,"/>
         </regex>
         <regex pattern="CostItemType\.material,\s+draft\.itemName," dotAll="true" id="bloc.submit.remember_unit_per_material">
             <mutation text="CostItemType.material, '',"/>

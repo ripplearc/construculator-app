@@ -453,6 +453,49 @@ void main() {
       expect(textOf(tester, rateField), '52.50');
     });
 
+    testWidgets('shows the rate of an attached price', (tester) async {
+      await pumpFields(tester);
+
+      bloc.add(
+        const MaterialPriceAttached(
+          rate: 9.5,
+          rateStatus: RateStatus.ownRateConfirmed,
+          price: AttachedPrice(buyUnit: Unit.gallons),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, rateField), '9.50');
+    });
+
+    testWidgets(
+      'goes back to its placeholder when a new unit clears the price',
+      (tester) async {
+        await pumpFields(tester);
+        bloc.add(
+          const MaterialPriceAttached(
+            rate: 9.5,
+            rateStatus: RateStatus.ownRateConfirmed,
+            price: AttachedPrice(buyUnit: Unit.gallons),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(unitPill);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(const Key('unit_option_pounds')));
+        await tester.tap(find.byKey(const Key('unit_option_pounds')));
+        await tester.pumpAndSettle();
+
+        expect(textOf(tester, rateField), isEmpty);
+        expect(
+          find.descendant(of: rateField, matching: find.text('Set your rate')),
+          findsOneWidget,
+        );
+        expect(find.byType(Dialog), findsNothing);
+      },
+    );
+
     testWidgets('keeps a typed rate when the unit changes', (tester) async {
       await pumpFields(tester);
       await tester.enterText(rateField, '52.5');
