@@ -10,6 +10,7 @@ void main() {
   Widget Function(ThemeData) makeWidget({
     AddToEstimateBlock? block,
     double? changeInEstimateTotal,
+    VoidCallback? onDelete,
   }) =>
       (theme) => MaterialApp(
         theme: theme,
@@ -24,6 +25,7 @@ void main() {
             estimateTotal: 2993.62,
             block: block,
             changeInEstimateTotal: changeInEstimateTotal,
+            onDelete: onDelete,
             onAdd: () {},
           ),
         ),
@@ -69,5 +71,21 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'a11y: the delete button meets tap target and label guidelines in both '
+      'themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget(changeInEstimateTotal: 0, onDelete: () {}),
+          find.byKey(AddToEstimateFooter.deleteButtonKey),
+          // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card. https://ripplearc.youtrack.cloud/issue/CA-1257
+          checkTextContrast: false,
+        );
+      },
+    );
   });
 }

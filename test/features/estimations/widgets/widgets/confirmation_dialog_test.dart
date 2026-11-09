@@ -18,6 +18,7 @@ void main() {
     double textScale = 1.0,
     String primaryLabel = 'Keep editing',
     double phoneWidth = 412,
+    bool isSecondaryDestructive = false,
   }) async {
     tester.view.physicalSize = Size(phoneWidth, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -48,6 +49,7 @@ void main() {
                     ),
                     secondaryLabel: 'Discard',
                     primaryLabel: primaryLabel,
+                    isSecondaryDestructive: isSecondaryDestructive,
                   );
                   hasAnswered = true;
                 },
@@ -229,6 +231,38 @@ void main() {
           .style!;
       expect(style.fontSize, 16);
       expect(style.fontSize! * style.height!, 24);
+    });
+  });
+
+  group('a destructive secondary answer', () {
+    Color? secondaryLabelColor(WidgetTester tester) => tester
+        .widget<Text>(
+          find.descendant(
+            of: find.byKey(ConfirmationDialog.secondaryButtonKey),
+            matching: find.byType(Text),
+          ),
+        )
+        .style
+        ?.color;
+
+    testWidgets('is drawn in the error colour', (tester) async {
+      await openDialog(tester, isSecondaryDestructive: true);
+
+      expect(
+        secondaryLabelColor(tester),
+        CoreTheme.light().coreColors.textError,
+      );
+    });
+
+    testWidgets('keeps the usual colour when it is not destructive', (
+      tester,
+    ) async {
+      await openDialog(tester);
+
+      expect(
+        secondaryLabelColor(tester),
+        isNot(CoreTheme.light().coreColors.textError),
+      );
     });
   });
 }
