@@ -22,6 +22,17 @@ abstract class CostItemRepository {
   /// Creates a new cost item and returns the persisted entity.
   Future<Either<Failure, CostItem>> createCostItem(CostItem item);
 
+  /// Saves the changed fields of an existing cost item and returns it as
+  /// stored. The item is found by its id.
+  ///
+  /// This asks the server, so it fails while the device is offline.
+  Future<Either<Failure, CostItem>> updateCostItem(CostItem item);
+
+  /// Removes the cost item with [itemId] from its estimate.
+  ///
+  /// This asks the server, so it fails while the device is offline.
+  Future<Either<Failure, void>> deleteCostItem(String itemId);
+
   /// The name of the estimate of [companyId]'s projects holding the newest
   /// equipment line called [itemName] that is priced by [pricingMethod] at
   /// exactly [rateAmount] (the daily rate under day pricing, the job amount
