@@ -1835,6 +1835,38 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves the order alone when an existing line is saved with a picked '
+        'saved rate',
+        setUp: () => fakeSupabaseWrapper.addTableData(
+          DatabaseConstants.costItemsTable,
+          [
+            CostItemTestDataMapFactory.createEquipmentItemData(
+              id: 'item-1',
+              estimateId: testEstimateId,
+            ),
+          ],
+        ),
+        build: () => bloc,
+        act: (bloc) async {
+          final items = await Modular.get<CostItemRepository>()
+              .getCostItemsForEstimate(testEstimateId);
+          bloc.add(
+            EquipmentCostEditOpened(
+              items.getRightOrNull()!.single as EquipmentCostItem,
+            ),
+          );
+          recall(bloc, 'older');
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+        },
+        verify: (_) async {
+          expect(await recentsOrder(), ['newer', 'older']);
+          expect(database.updatedRowIds, isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'leaves the order alone when the line is added with a typed rate',
         build: () => bloc,
         act: (bloc) {

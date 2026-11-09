@@ -2282,6 +2282,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'This line has not been added to the estimate.';
 
   @override
+  String get discardChangesDialogTitle => 'Discard changes?';
+
+  @override
+  String discardChangesDialogBody(String item) {
+    return 'Your changes to $item will be lost. The line stays in the estimate.';
+  }
+
+  @override
+  String get discardChangesDialogBodyUnnamed =>
+      'Your changes to this line will be lost. The line stays in the estimate.';
+
+  @override
   String get discardLineDiscardButton => 'Discard';
 
   @override
