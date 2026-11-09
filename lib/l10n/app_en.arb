@@ -3727,5 +3727,15 @@
   "@addFirstCostButton": {
     "description": "Primary button shown while the whole estimate is empty; opens the category list",
     "context": "CUJ 3 screens 1 and 3: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costItemsLoadFailed": "Couldn't load the cost lines.",
+  "@costItemsLoadFailed": {
+    "description": "Shown on the estimate screen when its cost lines fail to load",
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate; wording to be confirmed with the owner."
+  },
+  "costItemsRetryButton": "Try again",
+  "@costItemsRetryButton": {
+    "description": "Button on the estimate screen that reloads the cost lines after a failed load",
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate; wording to be confirmed with the owner."
   }
 }
