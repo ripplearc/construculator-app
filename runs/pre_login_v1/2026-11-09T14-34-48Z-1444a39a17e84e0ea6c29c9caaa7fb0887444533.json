@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "journey": "pre_login_v1",
+  "captured_at": "2026-11-09T14:34:48Z",
+  "commit": "1444a39a17e84e0ea6c29c9caaa7fb0887444533",
+  "flutter_version": "Flutter 3.44.4 • channel stable • https://github.com/flutter/flutter.git",
+  "device": {
+    "id": "3A091FDJG005FU",
+    "model": null
+  },
+  "flavor": "fishfood",
+  "iterations": 5,
+  "metrics": {
+    "cold_start_ms": {
+      "median": 359.202,
+      "samples": [
+        403.82,
+        359.202,
+        354.509,
+        373.235,
+        344.591
+      ]
+    },
+    "warm_start_ms": {
+      "median": 341.826,
+      "samples": [
+        335.939,
+        339.676,
+        350.967,
+        373.827,
+        341.826
+      ]
+    },
+    "jank": {
+      "available": true,
+      "frame_count": 106,
+      "p90_frame_build_ms": 1.165,
+      "p90_frame_rasterizer_ms": 4.346,
+      "missed_frame_build_budget_count": 0,
+      "missed_frame_rasterizer_budget_count": 0
+    },
+    "memory": {
+      "available": true,
+      "peak_rss_kb": 327708.0,
+      "sample_count": 19
+    }
+  }
+}

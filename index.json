@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_count": 1,
+  "runs": [
+    {
+      "path": "runs/pre_login_v1/2026-11-09T14-34-48Z-1444a39a17e84e0ea6c29c9caaa7fb0887444533.json",
+      "journey": "pre_login_v1",
+      "captured_at": "2026-11-09T14:34:48Z",
+      "commit": "1444a39a17e84e0ea6c29c9caaa7fb0887444533",
+      "device_id": "3A091FDJG005FU",
+      "cold_start_median_ms": 359.202,
+      "warm_start_median_ms": 341.826
+    }
+  ]
+}
