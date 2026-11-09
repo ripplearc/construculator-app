@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Taps the package-owned success bottom sheet's button. Fails immediately
@@ -24,7 +23,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// hear it.
 ///
 /// [timeout] is this helper's own fail-fast budget, independent of the
-/// [PatrolTesterConfig.visibleTimeout] the CUJ files set. Changing one does
+/// `PatrolTesterConfig.visibleTimeout` the CUJ files set. Changing one does
 /// not change the other.
 Future<void> tapSuccessSheetOrFailFast(
   WidgetTester tester, {

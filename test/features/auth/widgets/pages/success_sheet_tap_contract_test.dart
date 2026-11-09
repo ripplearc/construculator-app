@@ -54,6 +54,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
   }
 
   testWidgets('taps the button of the real success modal', (tester) async {
