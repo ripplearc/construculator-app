@@ -4016,6 +4016,24 @@ abstract class AppLocalizations {
   /// **'This line has not been added to the estimate.'**
   String get discardLineDialogBodyUnnamed;
 
+  /// Title of the question asked when a cost line already on the estimate is closed with a field changed
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesDialogTitle;
+
+  /// Body of the discard-changes question, naming the line being edited
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes to {item} will be lost. The line stays in the estimate.'**
+  String discardChangesDialogBody(String item);
+
+  /// Body of the discard-changes question while the name of the line being edited is cleared
+  ///
+  /// In en, this message translates to:
+  /// **'Your changes to this line will be lost. The line stays in the estimate.'**
+  String get discardChangesDialogBodyUnnamed;
+
   /// Outlined button that closes the material sheet and drops what was typed
   ///
   /// In en, this message translates to:

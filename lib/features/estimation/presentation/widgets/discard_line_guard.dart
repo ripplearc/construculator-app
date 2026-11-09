@@ -27,12 +27,18 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// The name the dialog shows for [state], empty when nothing was named yet.
   final String Function(S state) itemNameOf;
 
+  /// Whether [state] edits a line already on the estimate. The question then
+  /// reads "Discard changes?" and says the line stays in the estimate. Left
+  /// out, the question is the one for a line that was never added.
+  final bool Function(S state)? isEditingExistingLine;
+
   final Widget child;
 
   const DiscardLineGuard({
     super.key,
     required this.hasUnsavedChanges,
     required this.itemNameOf,
+    this.isEditingExistingLine,
     required this.child,
   });
 
@@ -111,14 +117,21 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       return;
     }
     final l10n = context.l10n;
-    final name = widget.itemNameOf(context.read<B>().state).trim();
+    final state = context.read<B>().state;
+    final name = widget.itemNameOf(state).trim();
+    final isEditing = widget.isEditingExistingLine?.call(state) ?? false;
     final keepEditing = await ConfirmationDialog.show(
       context,
-      title: l10n.discardLineDialogTitle,
+      title: isEditing
+          ? l10n.discardChangesDialogTitle
+          : l10n.discardLineDialogTitle,
       body: TextSpan(
-        text: name.isEmpty
-            ? l10n.discardLineDialogBodyUnnamed
-            : l10n.discardLineDialogBody(name),
+        text: switch ((isEditing, name.isEmpty)) {
+          (true, true) => l10n.discardChangesDialogBodyUnnamed,
+          (true, false) => l10n.discardChangesDialogBody(name),
+          (false, true) => l10n.discardLineDialogBodyUnnamed,
+          (false, false) => l10n.discardLineDialogBody(name),
+        },
       ),
       secondaryLabel: l10n.discardLineDiscardButton,
       primaryLabel: l10n.discardLineKeepEditingButton,

@@ -155,6 +155,27 @@ void main() {
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'names the stored line while the name field is changed',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentCostItemTypeChanged('Boom lift'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.equipmentType, 'Boom lift');
+        expect(bloc.state.formData.lineName, 'Scissor lift');
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'names a new line by the name typed so far',
+      build: () => bloc,
+      act: (bloc) => bloc.add(const EquipmentCostItemTypeChanged('Boom lift')),
+      verify: (bloc) => expect(bloc.state.formData.lineName, 'Boom lift'),
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'a new line has no change to report',
       build: () => bloc,
       act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('4')),
@@ -184,6 +205,32 @@ void main() {
           false,
         ),
       ],
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'typing the stored rate again keeps the stored rate status',
+      setUp: () => seedLine(),
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentRateUpdatedEvent('200'));
+      },
+      verify: (bloc) => expect(
+        bloc.state.formData.rateStatus,
+        RateStatus.sampleRateUnverified,
+      ),
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'typing a different rate makes the rate status the typed own rate',
+      setUp: () => seedLine(),
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentRateUpdatedEvent('250'));
+      },
+      verify: (bloc) =>
+          expect(bloc.state.formData.rateStatus, RateStatus.ownRateUnconfirmed),
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(

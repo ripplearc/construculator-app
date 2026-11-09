@@ -58,6 +58,10 @@ class CostItemFormScreen extends StatefulWidget {
   /// and the sheet works without it.
   final CostEstimate? estimate;
 
+  /// The equipment line already on the estimate that this form edits, or
+  /// `null` when the form adds a new line.
+  final EquipmentCostItem? editedEquipmentItem;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -69,6 +73,7 @@ class CostItemFormScreen extends StatefulWidget {
     this.initialEquipmentName,
     required this.clock,
     this.estimate,
+    this.editedEquipmentItem,
   });
 
   @override
@@ -118,7 +123,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 (state is EquipmentCostFormEditing ||
                     state is EquipmentCostFormFailure) &&
                 state.formData.hasUnsavedChanges,
-            itemNameOf: (state) => state.formData.equipmentType,
+            itemNameOf: (state) => state.formData.lineName,
+            isEditingExistingLine: (state) =>
+                state.formData.isEditingExistingLine,
             child: sheet,
           ),
         CostItemType.labor => sheet,
@@ -301,6 +308,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
         showRecalledRateHeader: !widget.presentAsSheet,
         initialRateEntry: widget.initialRateEntry,
         initialEquipmentName: widget.initialEquipmentName,
+        editedItem: widget.editedEquipmentItem,
       ),
     };
   }

@@ -65,6 +65,11 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// here: the caller passes that saved row as [initialRateEntry] instead.
   final String? initialEquipmentName;
 
+  /// The line already on the estimate that this form edits, or `null` when
+  /// the form adds a new line. The form opens filled in with its values and
+  /// saving changes the line.
+  final EquipmentCostItem? editedItem;
+
   /// The estimate this item is being added to. Forwarded to
   /// [EquipmentOutsizedFeeAcceptedEvent] when the user accepts an outsized
   /// delivery fee. May be null wherever the caller doesn't have one yet.
@@ -92,6 +97,7 @@ class EquipmentCostFormFields extends StatefulWidget {
     this.showRecalledRateHeader = true,
     this.initialRateEntry,
     this.initialEquipmentName,
+    this.editedItem,
     this.estimateId,
     required this.yourRatesBlocFactory,
     required this.clock,
@@ -179,7 +185,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       shownFor: (method) => method == EquipmentPricingMethod.job,
     );
     final initialEntry = widget.initialRateEntry;
-    if (initialEntry != null) {
+    final edited = widget.editedItem;
+    if (edited != null) {
+      _fillFromEditedItem(edited);
+    } else if (initialEntry != null) {
       _applySavedRate(initialEntry, fromRecents: true);
     } else if (widget.initialEquipmentName case final name?) {
       _equipmentNameController.text = name;
@@ -860,6 +869,36 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         fromRecents: fromRecents,
       ),
     );
+  }
+
+  void _fillFromEditedItem(EquipmentCostItem item) {
+    context.read<EquipmentCostFormBloc>().add(EquipmentCostEditOpened(item));
+    _mirrorMethodIntoChips(item.pricingMethod);
+    _equipmentNameController.text = item.itemName;
+    final duration = item.duration;
+    if (duration != null) {
+      _durationController.text = _formatTrimmedNumber(duration);
+    }
+    final rate = item.pricingMethod == EquipmentPricingMethod.day
+        ? item.dailyRate
+        : item.jobAmount;
+    if (rate != null) {
+      (item.pricingMethod == EquipmentPricingMethod.day
+              ? _dailyRateController
+              : _jobAmountController)
+          .text = _formatTrimmedNumber(
+        rate.amount,
+      );
+    }
+    final fee = item.deliveryFee;
+    final note = item.description;
+    if (fee != null) {
+      _deliveryFeeController.text = _formatTrimmedNumber(fee.amount);
+    }
+    if (note != null) {
+      _noteController.text = note;
+    }
+    _deliveryExpanded = fee != null || note != null;
   }
 
   EquipmentPricingMethod _methodOfForm() => _daySelected.value
