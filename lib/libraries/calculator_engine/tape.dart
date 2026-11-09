@@ -733,7 +733,9 @@ class Tape extends Equatable {
   /// walkthrough 17.2): pressed while the tape holds a pitch the rules can
   /// read — a finished Rise and Run, a bare number under Slope, a pitch
   /// typed under Pitch itself — it seals the chip and lands the pitch as
-  /// inches of rise per 12in of run, 16in/12in; pressed on a pitch answer
+  /// inches of rise per 12in of run, 16in/12in, or the Too large error chip
+  /// when that rise is past [Quantity.largestShown] (Section 5.3); pressed
+  /// on a pitch answer
   /// it cycles the spelling, in/12in → degrees → % grade → in/12in, as
   /// [cyclePitchSpelling] does for the "Pitch written as" pill. Nothing is
   /// recomputed: one ratio is rendered three ways (rule 4.10).
@@ -764,9 +766,9 @@ class Tape extends Equatable {
       if (tape._pitchTheRulesRead case final pitch?) {
         return TapeChanged(
           tape.append(
-            ResultChip(
-              key: DeterministicRules.pitchRiseKey,
-              value: pitch.spelledAs(AngleSpelling.risePerFoot),
+            tape._landedAnswer(
+              DeterministicRules.pitchRiseKey,
+              pitch.spelledAs(AngleSpelling.risePerFoot),
             ),
           ),
         );
@@ -787,7 +789,11 @@ class Tape extends Equatable {
   /// three spellings; the Pitch written as pill does the same on the
   /// result"): the pitch answer the tape ends on is re-spelled in place,
   /// in/12in → degrees → % grade → in/12in, under the label of the new
-  /// spelling. Refused when the tape does not end on a pitch answer.
+  /// spelling. Refused when the tape does not end on a pitch answer. A
+  /// spelling the formatter cannot write, a grade or a rise per 12in past
+  /// [Quantity.largestShown] for a pitch a hair under 90°, lands the Too
+  /// large error chip in its place, as a trig answer past the limit does
+  /// (Section 5.3), so the screen never draws a number it cannot write.
   TapeOutcome cyclePitchSpelling() {
     if (chips.lastOrNull case ResultChip(
       :final key,
@@ -795,10 +801,14 @@ class Tape extends Equatable {
       :final operator,
     ) when DeterministicRules.isPitchKey(key)) {
       final spelling = pitch.spelling.nextPitchSpelling;
+      final spelled = pitch.spelledAs(spelling);
+      if (formatter.isTooLarge(spelled)) {
+        return _replaceLastChip(const ErrorChip(CalculationError.outOfRange));
+      }
       return _replaceLastChip(
         ResultChip(
           key: DeterministicRules.pitchKeyFor(spelling),
-          value: pitch.spelledAs(spelling),
+          value: spelled,
           operator: operator,
         ),
       );
@@ -1299,7 +1309,10 @@ class Tape extends Equatable {
   /// A unit key closes the number being typed, or converts and raises a
   /// finished value (rule 4.3). Straight after a result with a unit it
   /// converts the result in place, and keeps its dimension: Calc 10ft then
-  /// [Feet] is refused rather than raised. [holdsLengthOnly] is true under
+  /// [Feet] is refused rather than raised. A conversion that would carry the
+  /// result above [Quantity.largestShown] in the new unit is refused as Too
+  /// large and the result keeps its unit (Section 5.1): Calc 9,007,200m³
+  /// then [mm] stays in m³. [holdsLengthOnly] is true under
   /// a key that can only hold a length. [takesAGrade] is true under
   /// Slope, whose bare number is a % grade: a length unit there is refused
   /// (Section 5.4, "A slope is a % grade, not a length"), so [Slope] 6
@@ -1824,6 +1837,8 @@ class Tape extends Equatable {
       key: unit,
     );
     return switch (outcome) {
+      UnitKeyConverted(:final value) when formatter.isTooLarge(value) =>
+        const TapeEntryRefused(EntryRefusal.tooLarge),
       UnitKeyConverted(:final value) => TapeChanged(
         _with([
           ...chips.sublist(0, chips.length - 1),

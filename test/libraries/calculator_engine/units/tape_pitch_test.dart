@@ -357,4 +357,49 @@ void main() {
       });
     });
   });
+
+  group('a pitch spelling past the limit reads Too large (CA-1201 B2)', () {
+    const tooLarge = ErrorChip(CalculationError.outOfRange);
+
+    test('the Pitch key lands Too large when the rise per 12in of run is '
+        'past the limit, and every chip can still be written', () {
+      final steep = press(
+        const Tape(),
+        '[Pitch] 8 9 . 9 9 9 9 9 9 9 9 9 9 9 9 [Pitch]',
+      );
+      expect(steep.chips.last, tooLarge);
+      expect(texts(steep).last, CalculationError.outOfRange.name);
+      final fromSides = press(
+        const Tape(),
+        '[Rise] 1 9 9 9 9 9 9 9 ft [Run] 1 in [Pitch]',
+      );
+      expect(fromSides.chips.last, tooLarge);
+      expect(texts(fromSides).last, CalculationError.outOfRange.name);
+      expect(
+        lastResult(press(const Tape(), '[Pitch] 4 5 [Pitch]')),
+        'Pitch-rise per 12in run 12in/12in',
+        reason: 'a rise within the limit still lands',
+      );
+    });
+
+    test('the pill lands Too large in place of a spelling past the limit, '
+        'after the spellings within it have cycled', () {
+      final rise = press(const Tape(), '[Pitch] 8 9 . 9 9 9 8 [Pitch]');
+      expect(lastResult(rise), startsWith('Pitch-rise per 12in run '));
+      final degrees = press(rise, 'pill');
+      expect(lastResult(degrees), startsWith('Pitch-degrees '));
+      final grade = press(degrees, 'pill');
+      expect(grade.chips.last, tooLarge);
+      expect(texts(grade).last, CalculationError.outOfRange.name);
+      expect(
+        grade.cyclePitchSpelling(),
+        const TapeRefused(TapeRefusal.noPitchToCycle),
+      );
+      expect(
+        lastResult(press(const Tape(), '[Pitch] 4 5 [Pitch] pill pill')),
+        'Pitch-grade 100%',
+        reason: 'a grade within the limit still lands',
+      );
+    });
+  });
 }

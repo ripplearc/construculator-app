@@ -67,9 +67,12 @@ import 'package:equatable/equatable.dart';
 /// 92,233,720,368,547,760, the int a clamped floor lands on). Every writing
 /// path throws a [RangeError] carrying [tooLargeToDisplay] for one. Every
 /// place that makes an answer asks [isTooLarge] first and shows "Too large"
-/// instead — the chain ([ChainEvaluator]), a trig key ([Tape.pressTrigKey])
-/// and the rules' answers ([DeterministicRules.answersFor]) — so the error
-/// marks a caller that skipped the gate.
+/// instead — the chain ([ChainEvaluator]), a trig key ([Tape.pressTrigKey]),
+/// the Pitch key and the pill that re-spells its answer
+/// ([Tape.pressFunctionKey], [Tape.cyclePitchSpelling]), a unit key on a
+/// result ([Tape.pressUnit]) and the rules' answers
+/// ([DeterministicRules.answersFor]) — so the error marks a caller that
+/// skipped the gate.
 ///
 /// The formatter is a value over its preferences: a bloc keeps one per
 /// preference state and two formatters with equal preferences render every
