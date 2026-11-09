@@ -42,6 +42,7 @@ void main() {
         'yd' => current.pressUnit(Unit.yard),
         'm' => current.pressUnit(Unit.metre),
         'lbs' => current.pressUnit(Unit.pound),
+        'bf' => current.pressUnit(Unit.boardFoot),
         '/' => current.typeFraction(),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -911,6 +912,27 @@ void main() {
         expect(retyped.equalsKeyId, Tape.calcKey);
       });
 
+      test('the equals key names only an answer = lands: after a result or '
+          'with an operator waiting for its number it reads =, though the '
+          'strip still offers answers (term 2.15, Section 1.2)', () {
+        const sides = '[Length] 2 0 ft [Width] 1 0 ft';
+        final offered = CalculatorState(tape: pressed(sides));
+        final CalculatorSuggestion(:value) = offered.suggestions.first;
+        expect(offered.equalsLands, offered.suggestions.first);
+        expect(offered.equalsKeyId, DeterministicRules.areaKey);
+        final landed = pressed(
+          sides,
+        ).landAnswer(DeterministicRules.areaKey, value);
+        for (final state in [
+          CalculatorState(tape: (landed as TapeChanged).tape),
+          CalculatorState(tape: pressed('$sides +')),
+        ]) {
+          expect(state.suggestions, isNotEmpty);
+          expect(state.equalsLands, isNull);
+          expect(state.equalsKeyId, isNull);
+        }
+      });
+
       test('an error chip that ends the chain hides the rule answers the '
           'named values would earn, and a result after it starts a chain '
           'that is offered again', () {
@@ -1482,6 +1504,8 @@ void main() {
             'in' => const CalculatorUnitSelected(Unit.inch),
             'yd' => const CalculatorUnitSelected(Unit.yard),
             'm' => const CalculatorKeySelected('m'),
+            'bf' => const CalculatorKeySelected('bf'),
+            '/' => const CalculatorFractionPressed(),
             '×' => const CalculatorOperatorPressed(Operator.multiply),
             '÷' => const CalculatorOperatorPressed(Operator.divide),
             '+' => const CalculatorOperatorPressed(Operator.add),
@@ -1611,19 +1635,24 @@ void main() {
         },
       );
 
-      for (final (keys, chip) in const [
-        ('2 yd', '6ft 0in'),
-        ('2 6 4 in', '22ft 0in'),
-        ('1 2 ft × 5 ft =', '6.67yd²'),
+      for (final (keys, index, chip) in const [
+        ('2 yd', 0, '6ft 0in'),
+        ('2 6 4 in', 0, '22ft 0in'),
+        ('1 m', 0, '3ft 3-3/8in'),
+        ('1 m', 1, '39-3/8in'),
+        ('[Width] 7 / 1 6 in', 0, '0ft 0-7/16in'),
+        ('1 0 bf', 0, '0.83ft³'),
+        ('1 2 ft × 5 ft =', 0, '6.67yd²'),
       ]) {
         blocTest<CalculatorBloc, CalculatorState>(
           'accepting the conversion chip "$chip" lands the text the chip '
-          'shows: $keys (Section 1.2, walkthrough 14.2)',
+          'shows: $keys (Section 1.2, walkthrough 14.2; decision tree row '
+          '201)',
           build: () => bloc,
           act: (bloc) {
             type(bloc, keys);
             bloc.add(
-              CalculatorSuggestionAccepted(stateOf(keys).conversions.first),
+              CalculatorSuggestionAccepted(stateOf(keys).conversions[index]),
             );
           },
           skip: keys.split(' ').length,
@@ -1632,8 +1661,40 @@ void main() {
                 .having((s) => s.valueText, 'valueText', chip)
                 .having((s) => s.refusal, 'refusal', isNull),
           ],
+          verify: (bloc) => expect(stateOf(keys).conversions[index].text, chip),
         );
       }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a strip chip tapped while an operator waits for its number is '
+        'refused as = is, and the operator stays (walkthrough 21.3)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 1 2 ft [Width] 1 0 ft ×');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('[Length] 1 2 ft [Width] 1 0 ft').suggestions.first,
+            ),
+          );
+        },
+        skip: 9,
+        expect: () => [
+          tapeState(pressed('[Length] 1 2 ft [Width] 1 0 ft ×')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.operatorNeedsANumber),
+          ),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.value],
+            ['12ft', '10ft', '×'],
+          );
+          expect(
+            bloc.state.suggestions.first.key,
+            DeterministicRules.areaKey,
+            reason: 'the strip still offers Area for the next tap',
+          );
+        },
+      );
     });
 
     test(

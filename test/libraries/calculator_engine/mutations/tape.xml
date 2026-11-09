@@ -292,8 +292,20 @@
         <regex pattern="if \(endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.press_equals.on_trailing_operator">
             <mutation text=""/>
         </regex>
+
+        <!-- RULE CA-1088f (R3): a strip chip tapped while an operator waits
+             lands over the operator -->
+        <regex pattern="if \(tape\.endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.land_answer.on_trailing_operator">
+            <mutation text=""/>
+        </regex>
         <regex pattern="ValueChip\(operator: _\?, :final entry\) =&gt; entry\.isEmpty," dotAll="true" id="tape.ends_with_operator.any_operator_chip">
             <mutation text="ValueChip(operator: _?) =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 26 (X33, R3): an accepted conversion reads as the unit key
+             spells it, not as the strip chip wrote it -->
+        <regex pattern="tape\._respelled\(chip, value, tape\.formatter\.tokens\(shown\)\)," dotAll="true" id="tape.accept_conversion.speller_text">
+            <mutation text="tape._respelled(chip, value, tape.ladder.speller.spell(value)),"/>
         </regex>
     </rules>
 

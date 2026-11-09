@@ -153,15 +153,24 @@ void main() {
       test('= with a bracket open closes it first and lands the Calc', () {
         expect(lastResult(press(const Tape(), '2 + ( 3 × 4 =')), 'Calc 14');
       });
-
-      test('a dangling operator inside is dropped when the bracket closes', () {
-        final tape = press(const Tape(), '2 + ( 3 × (');
-        expect(bracketText(tape), '+(3)');
-        expect(lastResult(press(tape, '=')), 'Calc 5');
-      });
     });
 
     group('what a bracket refuses (12.9)', () {
+      test('an operator left without its number at the end of a bracket is '
+          'never dropped: [( )] and = are refused and the × stays (Section 7; '
+          'decision tree rows 108, 154, 158)', () {
+        const refused = TapeRefused(TapeRefusal.operatorNeedsANumber);
+        final alone = press(const Tape(), '( 1 2 ×');
+        expect(alone.pressBracket(), refused);
+        expect(alone.pressEquals(), refused);
+        expect(bracketText(alone), '(12×');
+        final chained = press(const Tape(), '2 + ( 3 ×');
+        expect(chained.pressBracket(), refused);
+        expect(chained.pressEquals(), refused);
+        expect(bracketText(chained), '+(3×');
+        expect(lastResult(press(chained, '4 ( =')), 'Calc 14');
+      });
+
       test('empty brackets are removed and the operator waits again', () {
         final outcome = press(const Tape(), '2 + (').pressBracket();
         expect(outcome, isA<TapeChanged>());

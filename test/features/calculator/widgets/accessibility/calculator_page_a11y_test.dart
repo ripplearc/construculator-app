@@ -89,10 +89,6 @@ void main() {
             checkTapTargetSize: false,
           );
 
-          // Text contrast is not checked on the conversions row: the
-          // guideline samples its mini chips' text at the page background
-          // (a 1.05 ratio) while the same chips pass CoreUI's own a11y
-          // tests. CA-1377 takes it up in CoreUI.
           await tester.pumpWidget(makeTestableWidget(theme: theme));
           await type(const [
             'calc_key_Length',
@@ -104,7 +100,6 @@ void main() {
             tester,
             find.byKey(CoreSuggestionArea.conversionChipTestKey(0)),
             checkTapTargetSize: false,
-            checkTextContrast: false,
           );
         }
       },

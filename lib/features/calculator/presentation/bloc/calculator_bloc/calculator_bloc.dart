@@ -28,9 +28,10 @@ part 'calculator_suggestion.dart';
 /// The strip is the state's reading of the same tape (CA-1088, S1b):
 /// accepting a chip lands the answer the engine had already computed, so
 /// nothing is recalculated on tap (Section 1.2). An answer lands through
-/// [Tape.landAnswer], the running total through =, a conversion through the
-/// unit key of its spelling (rule 4.3), so the strip and the key land the
-/// same chip, and an angle's other spelling through the D:M:S key (Section
+/// [Tape.landAnswer], the running total through =, a conversion through
+/// [Tape.acceptConversion], the unit key of its spelling (rule 4.3) with a
+/// ft-in chip read as the strip wrote it (3ft 3-3/8in; decision tree row
+/// 201), and an angle's other spelling through the D:M:S key (Section
 /// 3.5). A chip the strip no longer offers — tapped again before the strip
 /// redrew — changes nothing. = lands the leading suggestion when the strip
 /// has one (term 2.15: "= still lands that suggestion"), else the tape's
@@ -103,16 +104,21 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) => _pressUnit(tape, event.unit));
 
-  TapeOutcome _pressUnit(Tape tape, Unit unit) {
+  TapeOutcome _pressUnit(Tape tape, Unit unit) => tape.pressUnit(
+    unit,
+    holdsLengthOnly: _holdsLengthOnly(tape),
+    takesAGrade: _takesAGrade(tape),
+    takesACount: _takesACount(tape),
+  );
+
+  bool _holdsLengthOnly(Tape tape) {
     final key = tape.beingTyped?.key;
-    return tape.pressUnit(
-      unit,
-      holdsLengthOnly:
-          LengthOnlyKeys.all.contains(key) || key == PlainNumberKeys.pitch,
-      takesAGrade: key == PlainNumberKeys.slope,
-      takesACount: key == PlainNumberKeys.sides,
-    );
+    return LengthOnlyKeys.all.contains(key) || key == PlainNumberKeys.pitch;
   }
+
+  bool _takesAGrade(Tape tape) => tape.beingTyped?.key == PlainNumberKeys.slope;
+
+  bool _takesACount(Tape tape) => tape.beingTyped?.key == PlainNumberKeys.sides;
 
   void _onActiveValueCleared(
     CalculatorActiveValueCleared event,
@@ -128,11 +134,8 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorEqualsPressed event,
     Emitter<CalculatorState> emit,
   ) {
-    final tape = state.tape;
-    if (!tape.endsWithResult && !tape.endsWithOperator) {
-      if (state.suggestions.firstOrNull case final leading?) {
-        return _accept(emit, leading);
-      }
+    if (state.equalsLands case final leading?) {
+      return _accept(emit, leading);
     }
     _press(emit, (tape) => tape.pressEquals());
   }
@@ -161,10 +164,11 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   TapeOutcome _converted(Tape tape, Quantity spelling) => switch (spelling) {
     Angle() => tape.pressDmsKey(),
-    Length(:final unit) ||
-    Area(:final unit) ||
-    Volume(:final unit) ||
-    Weight(:final unit) => _pressUnit(tape, unit),
+    Length() || Area() || Volume() || Weight() => tape.acceptConversion(
+      spelling,
+      holdsLengthOnly: _holdsLengthOnly(tape),
+      takesAGrade: _takesAGrade(tape),
+    ),
     Scalar() => TapeChanged(tape),
   };
 

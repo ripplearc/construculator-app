@@ -12,6 +12,103 @@ void main() {
 
   group('QuantityFormatter', () {
     group('lengths, as Section 6 spells them', () {
+      test('footInchTokens writes a ft-in reading as the trade types it: '
+          'whole feet, whole inches, the fraction at the resolution', () {
+        expect(
+          formatter.footInchTokens(
+            Length.computed(1000 / 25.4 * 64, unit: Unit.footInch),
+          ),
+          const [
+            Token(digits: '3', unit: Unit.foot),
+            Token(digits: '3', unit: Unit.inch),
+            Token(digits: '3', denominator: '8', unit: Unit.inch),
+          ],
+        );
+        expect(
+          formatter.footInchTokens(const Length(24 * 64, unit: Unit.footInch)),
+          const [
+            Token(digits: '2', unit: Unit.foot),
+            Token(digits: '0', unit: Unit.inch),
+          ],
+        );
+        expect(
+          formatter.footInchTokens(
+            Length.computed(11.97 * 64, unit: Unit.footInch),
+          ),
+          const [
+            Token(digits: '1', unit: Unit.foot),
+            Token(digits: '0', unit: Unit.inch),
+          ],
+          reason: 'a fraction that rounds to a whole inch carries up',
+        );
+      });
+
+      test('tokens reads a conversion chip the way format writes it, '
+          'ungrouped: inches as whole and fraction, every other unit as its '
+          'number with its power (decision tree row 201)', () {
+        final metre = Length.computed(1000 / 25.4 * 64, unit: Unit.inch);
+        expect(formatter.format(metre), '39-3/8in');
+        expect(formatter.tokens(metre), const [
+          Token(digits: '39', unit: Unit.inch),
+          Token(digits: '3', denominator: '8', unit: Unit.inch),
+        ]);
+        const sevenSixteenths = Length(28, unit: Unit.inch);
+        expect(formatter.format(sevenSixteenths), '0-7/16in');
+        expect(formatter.tokens(sevenSixteenths), const [
+          Token(digits: '0', unit: Unit.inch),
+          Token(digits: '7', denominator: '16', unit: Unit.inch),
+        ]);
+        expect(formatter.tokens(const Length(24 * 64, unit: Unit.inch)), const [
+          Token(digits: '24', unit: Unit.inch),
+        ]);
+        expect(
+          formatter.tokens(const Length(22 * 64, unit: Unit.footInch)),
+          formatter.footInchTokens(const Length(22 * 64, unit: Unit.footInch)),
+        );
+        final metres = Length.computed(
+          twentyTwoFeet.toDouble(),
+          unit: Unit.metre,
+        );
+        expect(formatter.tokens(metres), const [
+          Token(digits: '6.71', unit: Unit.metre),
+        ]);
+        final millimetres = Length.computed(
+          twentyTwoFeet.toDouble(),
+          unit: Unit.millimetre,
+        );
+        expect(formatter.format(millimetres), '6,706mm');
+        expect(formatter.tokens(millimetres), const [
+          Token(digits: '6706', unit: Unit.millimetre),
+        ]);
+        final yards = Area(16000.0 * squareTicksPerSquareFoot, unit: Unit.yard);
+        expect(formatter.format(yards), '1,777.78yd²');
+        expect(formatter.tokens(yards), const [
+          Token(digits: '1777.78', unit: Unit.yard, power: 2),
+        ]);
+        final acres = Area(16000.0 * squareTicksPerSquareFoot, unit: Unit.acre);
+        expect(formatter.format(acres), '0.3673acre');
+        expect(formatter.tokens(acres), const [
+          Token(digits: '0.3673', unit: Unit.acre),
+        ]);
+        const tenBoardFeet = Volume(10 / 12, unit: Unit.foot);
+        expect(formatter.format(tenBoardFeet), '0.83ft³');
+        expect(formatter.tokens(tenBoardFeet), const [
+          Token(digits: '0.83', unit: Unit.foot, power: 3),
+        ]);
+        const asBoardFeet = Volume(10 / 12, unit: Unit.boardFoot);
+        expect(formatter.format(asBoardFeet), '10bf');
+        expect(formatter.tokens(asBoardFeet), const [
+          Token(digits: '10', unit: Unit.boardFoot),
+        ]);
+        const fivePounds = Weight(500, unit: Unit.ton);
+        expect(formatter.format(fivePounds), '0 ton');
+        expect(formatter.tokens(fivePounds), const [
+          Token(digits: '0', unit: Unit.ton),
+        ]);
+        expect(formatter.tokens(const Scalar(1.5)), isEmpty);
+        expect(formatter.tokens(const Angle(45)), isEmpty);
+      });
+
       test('22ft in feet, inches, yards and metres', () {
         expect(
           formatter.format(const Length(twentyTwoFeet, unit: Unit.foot)),

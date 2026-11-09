@@ -21,6 +21,7 @@ void main() {
         'm' => current.pressUnit(Unit.metre),
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
+        'bf' => current.pressUnit(Unit.boardFoot),
         '+' => current.pressOperator(Operator.add),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -448,6 +449,104 @@ void main() {
       test('reads and re-spells a ton by the tape\'s one definition', () {
         final tape = press(const Tape(preferences: longTon), '2 2 4 0 lbs');
         expect(changed(tape.pressUnit(Unit.ton)).active!.entry.text, '1ton');
+      });
+
+      test('a ft-in conversion accepted from the strip reads as the strip '
+          'chip wrote it and keeps the exact value (X33; rule 4.15)', () {
+        Length footInchOffer(Tape tape) => const UnitConverter()
+            .offersFor(tape.active!.value(tape.parser)!)
+            .whereType<Length>()
+            .firstWhere((length) => length.unit == Unit.footInch);
+        final metre = press(const Tape(), '1 m');
+        final shown = footInchOffer(metre);
+        expect(metre.formatter.format(shown), '3ft 3-3/8in');
+        final accepted = changed(metre.acceptConversion(shown));
+        expect(accepted.active!.entry.text, '3ft 3-3/8in');
+        expect(
+          (accepted.active!.value(accepted.parser)! as Length).inches,
+          (metre.active!.value(metre.parser)! as Length).inches,
+        );
+        expect(
+          changed(metre.pressUnit(Unit.footInch)).active!.entry.text,
+          '3ft 3.37in',
+          reason: 'the unit key alone keeps the speller\'s decimals',
+        );
+        final yards = press(const Tape(), '2 yd');
+        expect(
+          changed(
+            yards.acceptConversion(footInchOffer(yards)),
+          ).active!.entry.text,
+          '6ft 0in',
+        );
+        final inches = press(const Tape(), '3 0 in');
+        expect(
+          changed(
+            inches.acceptConversion(footInchOffer(inches)),
+          ).active!.entry.text,
+          '2ft 6in',
+        );
+      });
+
+      test('every conversion accepted from the strip reads as the strip chip '
+          'wrote it, a zero whole inch before a fraction included (decision '
+          'tree row 201; walkthrough 21.2 step 18)', () {
+        Quantity offerIn(Tape tape, Unit unit) => const UnitConverter()
+            .offersFor(tape.active!.value(tape.parser)!)
+            .firstWhere(
+              (offer) =>
+                  switch (offer) {
+                    Length(:final unit) ||
+                    Area(:final unit) ||
+                    Volume(:final unit) ||
+                    Weight(:final unit) => unit,
+                    Scalar() || Angle() => null,
+                  } ==
+                  unit,
+            );
+        Object amountOf(Quantity value) => switch (value) {
+          Length(:final inches) => inches,
+          Area(:final squareTicks) => squareTicks,
+          Volume(:final cubicFeet) => cubicFeet,
+          Weight(:final hundredthsOfPound) => hundredthsOfPound,
+          Scalar() || Angle() => value,
+        };
+        String accepted(String keys, Unit unit) {
+          final tape = press(const Tape(), keys);
+          final shown = offerIn(tape, unit);
+          final landed = changed(tape.acceptConversion(shown));
+          expect(
+            amountOf(landed.active!.value(landed.parser)!),
+            amountOf(tape.active!.value(tape.parser)!),
+            reason: 'the exact value stays beside the reading',
+          );
+          return '${tape.formatter.format(shown)} → '
+              '${landed.active!.entry.text}';
+        }
+
+        expect(accepted('1 m', Unit.inch), '39-3/8in → 39-3/8in');
+        expect(accepted('2 m', Unit.inch), '78-3/4in → 78-3/4in');
+        expect(
+          accepted('5 ft 7 in 1 / 2 in', Unit.inch),
+          '67-1/2in → 67-1/2in',
+        );
+        expect(
+          accepted('1 ft 1 1 in 6 3 / 6 4 in', Unit.inch),
+          '24in → 24in',
+          reason: 'a fraction that rounds to a whole inch carries up',
+        );
+        expect(
+          accepted('[Width] 7 / 1 6 in', Unit.footInch),
+          '0ft 0-7/16in → 0ft 0-7/16in',
+        );
+        expect(accepted('1 0 bf', Unit.foot), '0.83ft³ → 0.83ft³');
+        expect(accepted('5 lbs', Unit.ton), '0 ton → 0ton');
+        expect(
+          changed(
+            press(const Tape(), '1 m').pressUnit(Unit.inch),
+          ).active!.entry.text,
+          '39.37in',
+          reason: 'the unit key alone keeps the speller\'s decimals',
+        );
       });
     });
 
@@ -1134,6 +1233,18 @@ void main() {
       ),
       keys,
     );
+
+    test('a tap while an operator waits for its number is refused as = is, '
+        'and the operator stays (walkthrough 21.3; product decision of 13 '
+        'November 2026)', () {
+      final waiting = press(named('Length', '1 2 ft [Width] 1 0 ft'), '×');
+      expect(waiting.endsWithOperator, isTrue);
+      expect(
+        waiting.landAnswer('Area', area),
+        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+      );
+      expect(texts(waiting), ['Length12ft', 'Width10ft', '']);
+    });
 
     test('lands the answer after a finished chip, sealed', () {
       final tape = changed(named('Length', '2 2 ft').landAnswer('Area', area));

@@ -40,8 +40,8 @@
 
         <!-- RULE 5 (R2 of #820, review of 18 Nov, F1): Sides takes any unit,
              so Sides 6 [Feet] [Feet] reads 6ft² -->
-        <regex pattern="takesACount: key == PlainNumberKeys\.sides," dotAll="true" id="calculator_bloc.press_unit.sides_takes_a_unit">
-            <mutation text="takesACount: false,"/>
+        <regex pattern="bool _takesACount\(Tape tape\) =&gt; tape\.beingTyped\?\.key == PlainNumberKeys\.sides;" dotAll="true" id="calculator_bloc.press_unit.sides_takes_a_unit">
+            <mutation text="bool _takesACount(Tape tape) =&gt; false;"/>
         </regex>
 
         <!-- RULE 4 (S1b 2/6, CA-1088): the silence after an error chip reaches
