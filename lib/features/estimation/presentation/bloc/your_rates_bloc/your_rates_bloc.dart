@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,12 @@ part 'your_rates_state.dart';
 const int _recentsLimit = 4;
 
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
+
+const Duration _kSaveTimeLimit = Duration(seconds: 2);
+
+const _saveTimeoutFailure = EstimationFailure(
+  errorType: EstimationErrorType.timeoutError,
+);
 
 EventTransformer<E> _lookupSearchTransformer<E>(
   Duration debounce,
@@ -60,6 +67,11 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   final YourRatesRepository _repository;
   final CurrentCompanyResolver _companyResolver;
 
+  /// How long one save may take in all, from the company look-up to the write
+  /// on the phone, before it ends in [YourRatesSaveFailed]. Overridable so
+  /// tests do not wait out the real limit.
+  final Duration saveTimeLimit;
+
   /// Debounce applied to a [YourRatesSearched] with a non-empty query, and to a
   /// [YourRatesRecentsQueried] with a query that is not blank. An empty query
   /// (every saved rate), a blank one and [YourRatesRefreshRecents] run at once.
@@ -69,6 +81,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     required this._repository,
     required this._companyResolver,
     Duration queryDebounce = _kQueryDebounceDuration,
+    this.saveTimeLimit = _kSaveTimeLimit,
   }) : super(const YourRatesLoading()) {
     on<YourRatesSearched>(
       _onSearched,
@@ -189,13 +202,27 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     YourRatesSaveRequested event,
     Emitter<YourRatesState> emit,
   ) async {
-    final companyId = await _resolvedCompanyId(
-      onFailure: (failure) => emit(YourRatesSaveFailed(failure)),
-      onNoCompany: () => emit(const YourRatesSaveNoCompany()),
+    emit(const YourRatesSaving());
+    final stopwatch = Stopwatch()..start();
+    final resolved = await _companyResolver.resolve().timeout(
+      saveTimeLimit,
+      onTimeout: () => const Left<Failure, String?>(_saveTimeoutFailure),
     );
-    if (companyId == null) return;
+    final resolveFailure = resolved.getLeftOrNull();
+    if (resolveFailure != null) {
+      emit(YourRatesSaveFailed(resolveFailure));
+      return;
+    }
+    final companyId = resolved.getRightOrNull();
+    if (companyId == null) {
+      emit(const YourRatesSaveNoCompany());
+      return;
+    }
     final entry = event.entry.copyWith(companyId: companyId);
-    final result = await _repository.save(entry);
+    final result = await _repository.save(
+      entry,
+      within: saveTimeLimit - stopwatch.elapsed,
+    );
     result.fold((failure) {
       final errorType = failure is EstimationFailure ? failure.errorType : null;
       switch (errorType) {

@@ -54,10 +54,12 @@ class YourRatesRecentsQueried extends YourRatesRecentsEvent {
   final CostItemType category;
 }
 
-/// Fired to save [entry] via [YourRatesRepository.save]. Resolves to
-/// [YourRatesSaveSucceeded], [YourRatesSaveCollision] (a label is needed),
-/// [YourRatesSaveLabelTaken] (the label is already used), or
-/// [YourRatesSaveFailed]. See [YourRatesRepository.save] for the rule.
+/// Fired to save [entry] via [YourRatesRepository.save]. Emits
+/// [YourRatesSaving] first, then resolves to [YourRatesSaveSucceeded],
+/// [YourRatesSaveCollision] (a label is needed), [YourRatesSaveLabelTaken]
+/// (the label is already used), or [YourRatesSaveFailed]. The whole save,
+/// company look-up included, is limited by [YourRatesBloc.saveTimeLimit]. See
+/// [YourRatesRepository.save] for the rule.
 class YourRatesSaveRequested extends YourRatesEvent {
   const YourRatesSaveRequested(this.entry);
   final YourRateEntry entry;
