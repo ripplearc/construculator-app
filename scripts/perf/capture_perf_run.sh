@@ -121,11 +121,16 @@ done
 # the startup legs, then the integration_test journey for the drive legs.
 # flutter's build system does not rebuild when only the --target changes, so it
 # will run whichever program it compiled last unless the tree is cleaned between
-# the phases. A clean deletes build/, which is where --output-dir usually lives,
-# so the artifacts cannot be captured there directly.
-OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd "$OUTPUT_DIR" && pwd)"
-if [[ "$OUTPUT_DIR" == "$PWD/build" || "$OUTPUT_DIR" == "$PWD/build/"* ]]; then
-  echo "❌ --output-dir must not be under $PWD/build, because every drive leg runs 'flutter clean' and deletes it: $OUTPUT_DIR" >&2
+# the phases. A clean deletes build/, so the artifacts cannot be captured there
+# directly.
+OUTPUT_DIR="$(mkdir -p "$OUTPUT_DIR" && cd -P "$OUTPUT_DIR" && pwd -P)"
+REPO_ROOT="$(cd -P "$SCRIPT_DIR/../.." && pwd -P)"
+if [[ "$OUTPUT_DIR" == "$REPO_ROOT/build" || "$OUTPUT_DIR" == "$REPO_ROOT/build/"* ]]; then
+  echo "❌ --output-dir must not be under $REPO_ROOT/build, because every drive leg runs 'flutter clean' and deletes it: $OUTPUT_DIR" >&2
+  exit 1
+fi
+if [[ -n "$(ls -A "$OUTPUT_DIR")" ]]; then
+  echo "❌ --output-dir must be empty, or the old run mixes with this one: $OUTPUT_DIR" >&2
   exit 1
 fi
 WORK="$(mktemp -d)"

@@ -79,7 +79,7 @@ run_target() {
   rm -rf "$state" "${WORK_DIR}/out"; mkdir -p "$state"
   : >"$state/drive_calls"; : >"$state/run_calls"; : >"$state/attach_calls"
   : >"$state/run_args"; : >"$state/adb_calls"; : >"$state/timeout_calls"
-  OUTPUT="$(cd "$REPO_ROOT" && PATH="${WORK_DIR}/bin:$PATH" FAKE_DIR="$state" \
+  OUTPUT="$(cd "${RUN_DIR_FOR_TEST:-$REPO_ROOT}" && PATH="${WORK_DIR}/bin:$PATH" FAKE_DIR="$state" \
     FAKE_SERIAL="$SERIAL" HANG_MODE="$1" STARTUP_HANG_MODE="${2:-never}" \
     PERF_DRIVE_TIMEOUT="${DRIVE_TIMEOUT_FOR_TEST:-5}" PERF_STARTUP_TIMEOUT="${STARTUP_TIMEOUT_FOR_TEST:-5}" \
     ENSURE_ATTACH_SCRIPT="${WORK_DIR}/ensure_attached" \
@@ -153,5 +153,23 @@ OUT_DIR_FOR_TEST="${REPO_ROOT}/build/perf-test" run_target never
 check "an --output-dir under build/ stops the script before any drive attempt" \
   "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"must not be under"* ]] && echo yes || echo no)"
 rmdir "${REPO_ROOT}/build/perf-test" 2>/dev/null; rmdir "${REPO_ROOT}/build" 2>/dev/null || true
+
+mkdir -p "${REPO_ROOT}/build/perf-test"
+ln -s "${REPO_ROOT}/build/perf-test" "${WORK_DIR}/link-to-build"
+OUT_DIR_FOR_TEST="${WORK_DIR}/link-to-build" run_target never
+check "an --output-dir that is a symlink into build/ stops the script before any drive attempt" \
+  "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"must not be under"* ]] && echo yes || echo no)"
+rm -f "${WORK_DIR}/link-to-build"
+rmdir "${REPO_ROOT}/build/perf-test" 2>/dev/null; rmdir "${REPO_ROOT}/build" 2>/dev/null || true
+
+RUN_DIR_FOR_TEST="${REPO_ROOT}/scripts/perf" OUT_DIR_FOR_TEST="../../build/perf-test" run_target never
+check "a relative --output-dir into the repo's build/ from a subfolder stops the script before any drive attempt" \
+  "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"must not be under"* ]] && echo yes || echo no)"
+rmdir "${REPO_ROOT}/build/perf-test" 2>/dev/null; rmdir "${REPO_ROOT}/build" 2>/dev/null || true
+
+mkdir -p "${WORK_DIR}/leftover" && echo '{}' >"${WORK_DIR}/leftover/old-run.json"
+OUT_DIR_FOR_TEST="${WORK_DIR}/leftover" run_target never
+check "an --output-dir that already holds files stops the script before any drive attempt" \
+  "$([[ "$STATUS" -ne 0 && "$DRIVE_CALLS" -eq 0 && "$OUTPUT" == *"must be empty"* ]] && echo yes || echo no)"
 
 [[ "$FAILURES" -eq 0 ]] || { echo "$FAILURES case(s) failed"; echo "$OUTPUT" | tail -15; exit 1; }
