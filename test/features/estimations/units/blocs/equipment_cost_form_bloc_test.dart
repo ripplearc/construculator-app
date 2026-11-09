@@ -447,6 +447,26 @@ void main() {
         );
 
         blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'the saved amount becomes the saved price even when the field has '
+          'changed since',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(recalledJob)
+            ..add(const EquipmentRateUpdatedEvent('500'))
+            ..add(const EquipmentRecalledAmountSavedEvent(amount: 450)),
+          skip: 2,
+          expect: () => [
+            isA<EquipmentCostFormEditing>()
+                .having((s) => s.data.recalledRate, 'recalledRate', 450)
+                .having(
+                  (s) => s.data.isRecalledAmountEdited,
+                  'isRecalledAmountEdited',
+                  true,
+                ),
+          ],
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
           'saving the edited amount makes it the saved price, so a further '
           'edit is compared with it',
           build: () => bloc,
