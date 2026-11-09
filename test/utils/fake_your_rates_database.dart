@@ -12,7 +12,8 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// The base fake scripts each answer by SQL text. This one emulates only the
 /// statements `LocalYourRatesDataSource` and
 /// `PowerSyncLocalCurrentCompanyDataSource` issue: for `your_rates` the
-/// filtered `SELECT`, the `SELECT` by id, an `INSERT` and an `UPDATE` by id;
+/// filtered `SELECT`, the `SELECT` by id, an `INSERT`, an `UPDATE` by id and a
+/// `DELETE` by id;
 /// for `current_company` a `SELECT` by user id, an `INSERT` and a `DELETE`.
 /// Statements are still recorded in [executeCalls] and [getAllCalls].
 class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
@@ -23,6 +24,20 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
 
   /// The id of every row an `UPDATE` has changed since the last [reset].
   final List<Object?> updatedRowIds = [];
+
+  /// The id of every row a `DELETE` has removed since the last [reset].
+  final List<Object?> deletedRowIds = [];
+
+  /// While true, deleting a saved rate throws, so a test can fail an undo
+  /// without failing the save before it.
+  bool failRowDeletes = false;
+
+  var _rowDeleted = Completer<void>();
+
+  /// Completes once the next `DELETE` of a saved rate runs. Read it before the
+  /// action that causes the delete, then await it, so a test waits for the
+  /// delete itself instead of for a number of event loop turns.
+  Future<void> get nextRowDeleted => _rowDeleted.future;
 
   static final _statementTable = RegExp(
     r'(?:FROM|INTO|UPDATE)\s+(\w+)',
@@ -39,6 +54,10 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// While set, every read waits for it to complete, so a test can hold a
   /// read open and look at the loading state.
   Completer<void>? getAllGate;
+
+  /// While set, every `INSERT` into the saved rates waits for it to complete,
+  /// so a test can hold a save open past its time limit.
+  Completer<void>? insertGate;
 
   final List<Map<String, Object?>> _companyRows = [];
   final Map<String, Map<String, Object?>> _refusalRows = {};
@@ -260,6 +279,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     }
     _requireYourRatesTable(sql);
     if (sql.startsWith('INSERT')) {
+      await insertGate?.future;
       final columns = _insertColumns
           .firstMatch(sql)!
           .group(1)!
@@ -272,6 +292,18 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       };
       _rows.add(inserted);
       insertedRows.add(inserted);
+      _refusalChanges.add(null);
+    } else if (sql.startsWith('DELETE')) {
+      if (failRowDeletes) throw StateError('disk full');
+      _requireKnownColumns([
+        _singleFilterColumn.firstMatch(sql)!.group(1)!,
+      ], sql);
+      _rows.removeWhere(
+        (row) => row[DatabaseConstants.idColumn] == parameters.single,
+      );
+      deletedRowIds.add(parameters.single);
+      _rowDeleted.complete();
+      _rowDeleted = Completer<void>();
       _refusalChanges.add(null);
     } else if (sql.startsWith('UPDATE')) {
       final assigned = _assignedColumns
@@ -324,6 +356,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
 
     _openRefusalWatchCount = 0;
     getAllGate = null;
+    insertGate = null;
+    failRowDeletes = false;
+    deletedRowIds.clear();
     insertedRows.clear();
     updatedRowIds.clear();
   }
