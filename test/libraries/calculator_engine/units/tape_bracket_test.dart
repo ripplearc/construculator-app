@@ -220,9 +220,30 @@ void main() {
         },
       );
 
+      test('CA-1340: a trig key on a group whose value failed lands the '
+          "group's error and opens no trig chip (rule 4.12; decision tree "
+          'row 24)', () {
+        final divided = press(const Tape(), '5 ÷ ( 2 − 2 (');
+        expect(
+          changed(divided.pressTrigKey(TrigFunction.arctangent)).chips.last,
+          const ErrorChip(CalculationError.divisionByZero),
+        );
+        final mixed = press(const Tape(), '2 lbs + ( 3 ft (');
+        expect(
+          changed(mixed.pressTrigKey(TrigFunction.sine)).chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+        );
+        expect(
+          changed(mixed.pressTrigKey(TrigFunction.sine)).chips.length,
+          mixed.chips.length + 1,
+          reason: 'the group stays on the tape before its error',
+        );
+      });
+
       test('CA-1340: a trig key straight after a closed bracket works on the '
-          'value the tape has come to: the Calc lands, then the answer, and '
-          'the group is never dropped', () {
+          'value of the bracket: a bracket that opens the chain lands its '
+          'Calc and then the answer, a bracket further on answers on its own '
+          'inside with no Calc', () {
         final ratio = changed(
           press(
             const Tape(),
@@ -244,18 +265,24 @@ void main() {
         final chain = changed(
           press(const Tape(), '2 + ( 3 × 4 (').pressTrigKey(TrigFunction.sine),
         );
-        expect(lastResult(chain), 'Sine 0.241922');
-        expect(
-          (chain.chips[chain.chips.length - 2] as ResultChip).value,
-          const Scalar(14),
+        expect(lastResult(chain), 'Sine 0.207912');
+        expect(chain.chips[chain.chips.length - 2], isA<BracketChip>());
+        final walkthrough = changed(
+          press(
+            const Tape(),
+            '2 + ( 3 (',
+          ).pressTrigKey(TrigFunction.arctangent),
         );
+        expect(lastResult(walkthrough), 'Arctangent 71.57°');
+        expect(walkthrough.chips, hasLength(3));
         final nested = changed(
           press(
             const Tape(),
             '1 + ( 1 2 ÷ 2 3 (',
           ).pressTrigKey(TrigFunction.arctangent),
         );
-        expect(lastResult(nested), 'Arctangent 56.69°');
+        expect(lastResult(nested), 'Arctangent 27.55°');
+        expect(nested.chips, hasLength(3));
         expect(
           press(
             const Tape(),
@@ -264,8 +291,11 @@ void main() {
           const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
         );
         expect(
-          press(const Tape(), '1 ft + ( 2 (').pressTrigKey(TrigFunction.sine),
-          const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+          changed(
+            press(const Tape(), '1 ft + ( 2 (').pressTrigKey(TrigFunction.sine),
+          ).chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+          reason: 'a group the chain cannot take lands the chain\'s error',
         );
         final single = changed(
           press(const Tape(), '( 5 (').pressTrigKey(TrigFunction.sine),
