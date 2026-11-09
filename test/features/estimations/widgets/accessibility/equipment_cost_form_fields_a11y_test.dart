@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui' show Tristate;
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -471,6 +473,95 @@ void main() {
       await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
       await tester.pumpAndSettle();
     }
+
+    final heldSaves = <Completer<void>>[];
+
+    Future<void> startSavingRate(WidgetTester tester) async {
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+      FocusManager.instance.primaryFocus?.unfocus();
+      final gate = database.getAllGate = Completer();
+      heldSaves.add(gate);
+      final link = find.byKey(const Key('save_as_my_rate_link'));
+      await tester.tap(link);
+      await tester.pump();
+      expect(
+        tester.getSemantics(link).flagsCollection.isEnabled,
+        Tristate.isFalse,
+      );
+    }
+
+    testWidgets(
+      'a11y: the Save as my default link keeps its label and tap target '
+      'while the save runs, in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('save_as_my_rate_link')),
+          checkTapTargetSize: false,
+          setupAfterPump: startSavingRate,
+        );
+
+        for (final gate in heldSaves) {
+          gate.complete();
+        }
+        heldSaves.clear();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'a11y: the Save button of an edited amount keeps its label while the '
+      'save runs, in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final dumpster = YourRateEntry(
+          id: '',
+          companyId: 'company-1',
+          itemName: 'Dumpster',
+          category: CostItemType.equipment,
+          rate: const Money(amount: 400),
+          savedAt: DateTime(2026, 1, 1),
+          equipmentMethod: EquipmentPricingMethod.job,
+        );
+        final button = find.byKey(const Key('save_recalled_amount_button'));
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeWidget(theme, initialRateEntry: dumpster),
+          button,
+          setupAfterPump: (tester) async {
+            await tester.enterText(
+              find.byKey(const Key('amount_field')),
+              '450',
+            );
+            FocusManager.instance.primaryFocus!.unfocus();
+            await tester.pumpAndSettle();
+            heldSaves.add(database.getAllGate = Completer<void>());
+            await tester.tap(button);
+            await tester.pump();
+            expect(
+              tester.getSemantics(button).flagsCollection.isEnabled,
+              Tristate.isFalse,
+            );
+          },
+        );
+
+        for (final gate in heldSaves) {
+          gate.complete();
+        }
+        heldSaves.clear();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets(
       'a11y: entry-label field meets text contrast guidelines in both themes',

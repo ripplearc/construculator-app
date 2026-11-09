@@ -122,8 +122,9 @@ class EquipmentCostFormBloc
     on<EquipmentRecalledAmountSavedEvent>((e, emit) {
       _emit(
         emit,
-        (d) =>
-            d.recalledFromRecents ? d.copyWith(recalledRate: d.jobAmount) : d,
+        (d) => d.recalledFromRecents
+            ? d.copyWith(recalledRate: e.amount ?? d.jobAmount)
+            : d,
       );
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
