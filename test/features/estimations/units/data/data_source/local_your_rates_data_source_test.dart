@@ -213,6 +213,33 @@ void main() {
       });
     });
 
+    group('deleteRateById', () {
+      test('removes the row with that id and keeps the others', () async {
+        final removed = await dataSource.insertRate(newDto());
+        final kept = await dataSource.insertRate(newDto(itemName: 'Dozer'));
+
+        await dataSource.deleteRateById(removed.id);
+
+        final rates = await dataSource.loadRates();
+        expect(rates.map((rate) => rate.id), [kept.id]);
+      });
+
+      test('does nothing for an id the phone does not hold', () async {
+        final kept = await dataSource.insertRate(newDto());
+
+        await dataSource.deleteRateById('missing');
+
+        final rates = await dataSource.loadRates();
+        expect(rates.map((rate) => rate.id), [kept.id]);
+      });
+
+      test('reports a write the phone cannot do', () async {
+        database.executeError = StateError('disk full');
+
+        await expectLater(dataSource.deleteRateById('any'), throwsStateError);
+      });
+    });
+
     group('sync stream', () {
       test('is activated once however many reads and writes follow', () async {
         await dataSource.loadRates();

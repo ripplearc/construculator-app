@@ -68,6 +68,10 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
       '${DatabaseConstants.updatedAtColumn} = ? '
       'WHERE ${DatabaseConstants.idColumn} = ?';
 
+  static const _deleteSql =
+      'DELETE FROM ${DatabaseConstants.yourRatesTable} '
+      'WHERE ${DatabaseConstants.idColumn} = ?';
+
   SyncStreamHandle? _streamHandle;
   Future<void>? _ready;
 
@@ -160,6 +164,17 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
         e,
         stack,
       );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteRateById(String id) async {
+    try {
+      await _ensureSyncing();
+      await _database.execute(_deleteSql, [id]);
+    } catch (e, stack) {
+      _logger.error('Failed to delete your rate on the phone', e, stack);
       rethrow;
     }
   }
