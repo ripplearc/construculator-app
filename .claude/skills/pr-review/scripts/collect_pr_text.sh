@@ -17,7 +17,7 @@
 #       "number": 670,
 #       "title": "CA-1150: ...",
 #       "body": "## Summary\n...",
-#       "head": "CA-1150-feat/send-arrow",
+#       "head": "CA-1150-feat/send-row-arrow",
 #       "base": "main"
 #     }
 #
@@ -32,7 +32,10 @@
 #   - PARSE_ERROR: Invalid JSON input
 #   - MISSING_REQUIRED_FIELD: pr_number not provided
 #   - INVALID_PR_NUMBER: pr_number is not a positive integer
-#   - PR_NOT_FOUND: gh could not read the PR (wrong number, no auth, no network)
+#   - PR_NOT_FOUND: no PR with that number in this repo
+#   - AUTH_ERROR: gh is not logged in, or its token is bad
+#   - GH_ERROR: any other gh failure (no network, not inside a git repo)
+#   Each gh error keeps gh's own message in details.gh_error.
 #
 # Example Usage:
 #   echo '{"pr_number": 670}' | \
@@ -72,7 +75,16 @@ if ! [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
   error_exit "pr_number must be a positive integer" "INVALID_PR_NUMBER" "$(jq -nc --arg received "$PR_NUMBER" '{field: "pr_number", expected: "positive integer", received: $received}')"
 fi
 
-PR_JSON=$(gh pr view "$PR_NUMBER" --json number,title,body,headRefName,baseRefName 2>/dev/null) \
-  || error_exit "Could not read PR #$PR_NUMBER with gh" "PR_NOT_FOUND" "{\"field\":\"pr_number\",\"expected\":\"existing PR in this repo\",\"received\":\"$PR_NUMBER\"}"
+GH_STDERR_FILE=$(mktemp)
+trap 'rm -f "$GH_STDERR_FILE"' EXIT
+if ! PR_JSON=$(gh pr view "$PR_NUMBER" --json number,title,body,headRefName,baseRefName 2>"$GH_STDERR_FILE"); then
+  GH_STDERR=$(cat "$GH_STDERR_FILE")
+  case "$GH_STDERR" in
+    *"Could not resolve to a PullRequest"*) GH_CODE="PR_NOT_FOUND" ;;
+    *"HTTP 401"*|*"gh auth login"*) GH_CODE="AUTH_ERROR" ;;
+    *) GH_CODE="GH_ERROR" ;;
+  esac
+  error_exit "Could not read PR #$PR_NUMBER with gh" "$GH_CODE" "$(jq -nc --arg received "$PR_NUMBER" --arg gh_error "$GH_STDERR" '{field: "pr_number", received: $received, gh_error: $gh_error}')"
+fi
 
 echo "$PR_JSON" | jq '{number, title, body, head: .headRefName, base: .baseRefName}'

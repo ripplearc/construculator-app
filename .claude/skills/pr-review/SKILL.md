@@ -77,7 +77,7 @@ On missing/invalid input, return an error object (see [Errors](#errors)).
    buckets come from `scripts/filter_files.sh`; content-derived buckets
    (`stream_owning`, `logic_heavy`, `logger_using`) are confirmed by grepping the
    file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`,
-   `grep -lE "\b(Ink|InkWell|InkResponse)\(" …` for `ink_using`).
+   `grep -lE "\b(Ink|InkWell|InkResponse)\(|Ink\.image\(" …` for `ink_using`).
    `Digestible PR` always runs once over the production-code diff size.
 
 3. **Gate** `Mutation Testing`, `Accessibility` and `PR Text Matches Diff`:
@@ -183,9 +183,10 @@ Scripts and this skill return JSON on failure:
 `{ "error", "code", "details?", "suggestions" }`.
 
 Codes: `MISSING_REQUIRED_FIELD`, `INVALID_ENUM`, `INVALID_BRANCH`, `GIT_ERROR`,
-`PARSE_ERROR`, `FILE_NOT_FOUND`, `INVALID_PR_NUMBER`, `PR_NOT_FOUND`. On a git/branch
-failure, return the branch names to verify; on `PR_NOT_FOUND`, check `gh auth status`
-and the PR number, or rerun without `pr_number`; oversized files are skipped and noted in `rules_skipped`; a missing
+`PARSE_ERROR`, `FILE_NOT_FOUND`, `INVALID_PR_NUMBER`, `PR_NOT_FOUND`, `AUTH_ERROR`,
+`GH_ERROR`. On a git/branch failure, return the branch names to verify; on
+`PR_NOT_FOUND`, check the PR number; on `AUTH_ERROR`, run `gh auth status`; on
+`GH_ERROR`, show `details.gh_error`. Or rerun without `pr_number`; oversized files are skipped and noted in `rules_skipped`; a missing
 rule module means the file was likely deleted.
 
 ## Notes

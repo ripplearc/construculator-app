@@ -8,7 +8,7 @@ Code Review & PR Structure
 
 ## Severity Levels
 - **Major:** A sentence in the PR text is not true for the current diff (a file, line count, test or behavior it names is missing or different)
-- **Minor:** A count or name is close but out of date (e.g. "~120 lines" when the diff has 160)
+- **Minor:** A count or name is close but out of date (e.g. "~150 lines" when the diff has 160)
 - **Suggestion:** Something in the diff is worth naming but the PR text does not mention it
 
 ## Description
@@ -21,7 +21,7 @@ The PR text is read by the reviewer first and by anyone who finds the PR later. 
 
 **PR-level, runs once per review, and only when `pr_number` is given.** Without `pr_number` the skill cannot read the PR text, so the rule is skipped with reason `"No pr_number given"`.
 
-The PR text is the `title` and `body` returned by `scripts/collect_pr_text.sh`. The diff is `$BASE_BRANCH...$PR_BRANCH`: three dots, so only the PR's own commits count, even when the branch is behind main.
+The PR text is the `title` and `body` returned by `.claude/skills/pr-review/scripts/collect_pr_text.sh`. The diff is `$BASE_BRANCH...$PR_BRANCH`: three dots, so only the PR's own commits count, even when the branch is behind main.
 
 ---
 
@@ -41,8 +41,8 @@ After every push that changes the diff, re-read the PR text and fix any sentence
 
 ### Write claims that can be checked
 
-- Name files by path: `lib/src/components/chips/core_chip.dart`, not "the chip file".
-- Name tests by their exact `test(` / `testWidgets(` string.
+- Name files by path: `lib/features/dashboard/presentation/widgets/project_list_item.dart`, not "the list item file".
+- Name tests by their exact `test(` / `testWidgets(` / `blocTest(` string.
 - Give counts as numbers taken from git, not from memory.
 - State decisions, not open questions.
 
@@ -69,7 +69,7 @@ git diff --stat "$BASE_BRANCH"..."$PR_BRANCH"
 2. Drop the ones that state no fact about this change:
    template headings, unticked or ticked checklist boxes, links to tickets,
    "why" paragraphs about the problem (not the code), and the attribution footer.
-3. Sort each remaining claim into one of the four kinds below and check it.
+3. Sort each remaining claim into one of the five kinds below and check it.
 4. Each claim the diff does not support is ONE finding. Quote the sentence and
    say what the diff shows instead.
 ```
@@ -80,8 +80,18 @@ git diff --stat "$BASE_BRANCH"..."$PR_BRANCH"
 |---|---|---|---|
 | **File name** | "Adds `test/.../foo_test.dart`" | `git diff --name-status` — status letter must match the verb (A = adds, M = changes, D = removes, R = renames) | The file is not in the diff, or the status is different |
 | **Line count / size** | "Size: S (64 production lines)" | Rule 01's insertions count | The number is different. Off by ≤10% → Minor; more → Major |
-| **Test name** | "`shows the hint when empty` covers …" | `git grep -n "test(\|testWidgets(" "$PR_BRANCH" -- <test files in diff>` and look for the exact string | No test in the PR's files has that name |
-| **Behavior** | "Tapping × now clears the field and keeps focus" | Read the diff hunks of the file that owns the behavior (`scripts/generate_diff.sh`) and the test that proves it | The code does something else, or the behavior was reverted in a later commit |
+| **Test name** | "`shows the hint when empty` covers …" | Search for the exact name (first command below). Each hit must be on a test call (second command) or on the line after it, where the name often sits. A long name can be split into two strings (`'... the keyboard '` `'background'`): search for one part, then join the strings and compare | No test in the PR's files has that name |
+| **PR state** | "Stacked on #239", "Round 2 fixes", "27 checks pass" | `gh pr view <n> --json state,baseRefName` for the stack parent and merged or open; `git log --oneline "$PR_BRANCH" --not "$BASE_BRANCH"` for the rounds; run the tests for a test count | The text names a state the PR is not in |
+| **Behavior** | "Tapping × now clears the field and keeps focus" | Read the diff hunks of the file that owns the behavior (`.claude/skills/pr-review/scripts/generate_diff.sh`) and the test that proves it | The code does something else, or the behavior was reverted in a later commit |
+
+The test-name commands sit in a code block, not in the table, so each `|` is a plain regex "or":
+
+```bash
+# 1. The exact name, as plain text
+git grep -nF "<test name>" "$PR_BRANCH" -- <test files in diff>
+# 2. The test calls, blocTest included
+git grep -nE "(^|[^[:alnum:]_])(test|testWidgets)\(|blocTest[<(]" "$PR_BRANCH" -- <test files in diff>
+```
 
 For a stacked PR, the base is the parent branch, not `main`. Check claims against `parent...PR`, otherwise the parent's files look like they belong to this PR.
 
@@ -122,5 +132,5 @@ For a stacked PR, the base is the parent branch, not `main`. Check claims agains
 
 ## References
 
-- `scripts/collect_pr_text.sh` (reads the PR text)
+- `.claude/skills/pr-review/scripts/collect_pr_text.sh` (reads the PR text)
 - Related: Digestible PR (the production line count)
