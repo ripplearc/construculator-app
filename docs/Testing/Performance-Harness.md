@@ -16,6 +16,7 @@ assumes those definitions and describes the machinery.
 - Workflow: `.github/workflows/weekly_system_health.yml`
 - Phone attach: `scripts/perf/ensure_lab_device_attached.sh` (WSL lab host only)
 - Capture: `scripts/perf/capture_perf_run.sh` (raw artifacts)
+- No-streaming `adb`: `scripts/perf/make_no_streaming_adb_sdk.sh` (SDK folder whose `adb install` adds `--no-streaming`)
 - Report: `scripts/perf/build_perf_report.dart` (`perf-run.json`)
 - Publish: `scripts/perf/publish_perf_run.sh` (trend store)
 - Journey: `integration_test/perf/pre_login_journey_test.dart`
@@ -289,7 +290,11 @@ On the lab phone a streamed `adb install` stalls about half the time. A plain
 cannot pass `--no-streaming`, so the workflow's `Install APKs without streaming`
 step builds an SDK folder whose `adb` adds it (`make_no_streaming_adb_sdk.sh`)
 and points `ANDROID_HOME` at that folder. If an install still hangs, check that
-this step ran, then time `adb install --no-streaming` by hand on the lab machine.
+this step ran. Flutter reads `flutter config --android-sdk` before `ANDROID_HOME`,
+so if that setting is on the lab machine the step passes and Flutter still uses the
+real `adb`. Run `fvm flutter doctor -v` and check that the Android SDK path is the
+`no-streaming-sdk` folder. Then time `adb install --no-streaming` by hand on the
+lab machine.
 
 ### No `start_up_info.json` produced
 

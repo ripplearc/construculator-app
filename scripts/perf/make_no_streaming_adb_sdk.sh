@@ -9,7 +9,8 @@
 #
 # Every other file in the SDK is linked to the real one, so Gradle and Flutter
 # see a normal SDK. Only `platform-tools/adb` is replaced by a small wrapper
-# that puts `--no-streaming` after the first `install` it is given.
+# that puts `--no-streaming` after `install` when `install` is the adb command,
+# that is, the first word that is not an adb option or the value of one.
 #
 # Usage:
 #   scripts/perf/make_no_streaming_adb_sdk.sh <output-dir>
@@ -38,9 +39,11 @@ if [[ ! -x "$REAL_ADB" ]]; then
   echo "❌ $REAL_ADB is not an executable adb" >&2
   exit 1
 fi
+REAL_SDK="$(cd "$REAL_SDK" && pwd -P)"
+REAL_ADB="$REAL_SDK/platform-tools/adb"
 
 OUTPUT_DIR="$(mkdir -p "$1" && cd "$1" && pwd)"
-if [[ "$OUTPUT_DIR" == "$REAL_SDK" ]]; then
+if [[ "$(cd "$OUTPUT_DIR" && pwd -P)" == "$REAL_SDK" ]]; then
   echo "❌ The output folder must not be the real SDK: $REAL_SDK" >&2
   exit 1
 fi
@@ -62,18 +65,17 @@ done
 
 cat >"$OUTPUT_DIR/platform-tools/adb" <<EOF
 #!/bin/bash
-args=()
-inserted=false
-for arg in "\$@"; do
-  args+=("\$arg")
-  if [[ "\$inserted" == false && "\$arg" == install ]]; then
-    args+=(--no-streaming)
-    inserted=true
-  elif [[ "\$arg" == shell ]]; then
-    inserted=true
-  fi
+args=("\$@")
+i=0
+while (( i < \$# )); do
+  case "\${args[i]}" in
+    -s|-t|-H|-P|-L) i=\$((i + 2)) ;;
+    -*) i=\$((i + 1)) ;;
+    install) set -- "\${args[@]:0:i+1}" --no-streaming "\${args[@]:i+1}"; break ;;
+    *) break ;;
+  esac
 done
-exec "$REAL_ADB" "\${args[@]}"
+exec "$REAL_ADB" "\$@"
 EOF
 chmod +x "$OUTPUT_DIR/platform-tools/adb"
 
