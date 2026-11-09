@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- COST SECTIONS LIST MUTATION TESTING -->
-    <!-- Targets: empty-estimate versus empty-section placeholders, section order -->
+    <!-- Targets: scroll to the line just added, empty-estimate versus empty-section placeholders, section order -->
 
     <files>
         <file>lib/features/estimation/presentation/widgets/cost_sections_list.dart</file>
@@ -12,6 +12,33 @@
     </exclude>
 
     <rules>
+        <regex pattern="(if \(id == null\) \{)" dotAll="true" id="list.scroll.skip_null_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <regex pattern="(_scrolledToItemId = null;)" dotAll="true" id="list.scroll.keep_scrolled_id_when_cleared">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(id == _scrolledToItemId\) return;)" dotAll="true" id="list.scroll.always_rescroll">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(if \(id == _scrolledToItemId\) return;)" dotAll="true" id="list.scroll.never_scroll">
+            <mutation text="if (true) return;"/>
+        </regex>
+
+        <regex pattern="(if \(!mounted \|\| lineContext == null\) return;)" dotAll="true" id="list.scroll.ignore_missing_line">
+            <mutation text="if (!mounted) return;"/>
+        </regex>
+
+        <regex pattern="(_scrolledToItemId = id;)" dotAll="true" id="list.scroll.never_remember_scroll">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(Scrollable\.ensureVisible\(lineContext, duration: _scrollDuration\);)" dotAll="true" id="list.scroll.never_ensure_visible">
+            <mutation text=""/>
+        </regex>
 
         <regex pattern="(final isEmpty = costs\.items\.isEmpty;)" dotAll="true" id="list.empty.always_empty">
             <mutation text="final isEmpty = true;"/>

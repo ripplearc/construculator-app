@@ -260,4 +260,90 @@ void main() {
     expect(fillOf('m2'), colors.backgroundBlueLight);
     expect(fillOf('m1'), colors.buttonInverse);
   });
+
+  group('scrolling to the line just added', () {
+    List<CostItem> manyLines() => [
+      materialLine(id: 'm1'),
+      for (var i = 0; i < 30; i++) equipmentLine(id: 'q$i', name: 'Lift $i'),
+    ];
+
+    bool isOnScreen(WidgetTester tester, String key) {
+      final rect = tester.getRect(find.byKey(Key(key), skipOffstage: false));
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      return rect.bottom <= screen.height && rect.top >= 0;
+    }
+
+    testWidgets('brings a line below the fold into view', (tester) async {
+      await tester.pumpWidget(app(loaded(manyLines())));
+      expect(isOnScreen(tester, 'cost_line_q29'), isFalse);
+
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q29'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(isOnScreen(tester, 'cost_line_q29'), isTrue);
+    });
+
+    testWidgets('waits for the line to arrive when the list reloads', (
+      tester,
+    ) async {
+      final before = manyLines();
+      await tester.pumpWidget(app(loaded(before), highlightedItemId: 'q30'));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(
+        app(
+          loaded([...before, equipmentLine(id: 'q30', name: 'Lift 30')]),
+          highlightedItemId: 'q30',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(isOnScreen(tester, 'cost_line_q30'), isTrue);
+    });
+
+    testWidgets('scrolls again when the same line is marked after the mark '
+        'was cleared', (tester) async {
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q29'),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(app(loaded(manyLines())));
+      await tester.drag(
+        find.byKey(const Key('cost_sections_list')),
+        const Offset(0, 3000),
+      );
+      await tester.pumpAndSettle();
+      expect(isOnScreen(tester, 'cost_line_q29'), isFalse);
+
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q29'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(isOnScreen(tester, 'cost_line_q29'), isTrue);
+    });
+
+    testWidgets('does not pull the list back once the user scrolled away', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q29'),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byKey(const Key('cost_sections_list')),
+        const Offset(0, 3000),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q29'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(isOnScreen(tester, 'cost_line_q29'), isFalse);
+    });
+  });
 }
