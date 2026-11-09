@@ -4,14 +4,12 @@ import 'package:construculator/libraries/network_status/interfaces/internet_reac
 
 /// [InternetReachabilitySdk] that a test drives by hand.
 ///
-/// Starts able to reach the internet. Ticks are delivered synchronously.
+/// Answers that the internet can be reached until a test holds the checks and
+/// releases them with another answer. Ticks are delivered synchronously.
 class FakeInternetReachabilitySdk implements InternetReachabilitySdk {
   final _ticks = StreamController<void>.broadcast(sync: true);
   final _pendingChecks = <Completer<bool>>[];
   bool _isHolding = false;
-
-  /// What [checkReachable] answers.
-  bool isReachable = true;
 
   /// How many times [checkReachable] was called.
   int checkCount = 0;
@@ -25,7 +23,7 @@ class FakeInternetReachabilitySdk implements InternetReachabilitySdk {
     if (shouldThrowOnCheck) {
       return Future.error(StateError('reachability check failed'));
     }
-    if (!_isHolding) return Future.value(isReachable);
+    if (!_isHolding) return Future.value(true);
     final check = Completer<bool>();
     _pendingChecks.add(check);
     return check.future;

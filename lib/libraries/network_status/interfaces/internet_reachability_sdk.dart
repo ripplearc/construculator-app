@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Boundary over the `internet_connection_checker_plus` package.
 ///
 /// `NetworkStatusServiceImpl` talks to this interface instead of the package
