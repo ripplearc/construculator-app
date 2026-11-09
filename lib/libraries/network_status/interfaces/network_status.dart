@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Whether the phone can reach the internet.
 enum NetworkStatus {
   /// The phone can reach the internet.

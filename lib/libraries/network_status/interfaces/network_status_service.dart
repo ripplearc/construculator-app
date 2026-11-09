@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/network_status/interfaces/network_status.dart';
 
 /// Tells the app whether the phone is online, and when that changes.
@@ -9,5 +10,8 @@ abstract class NetworkStatusService {
   NetworkStatus get current;
 
   /// Emits the new value of [current] each time it changes, and only then.
+  ///
+  /// Several listeners are allowed. A listener that subscribes late does not
+  /// get the current value, so it reads [current] first.
   Stream<NetworkStatus> get changes;
 }

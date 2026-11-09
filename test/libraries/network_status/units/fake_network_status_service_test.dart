@@ -33,13 +33,23 @@ void main() {
       expect(fake.current, NetworkStatus.offline);
     });
 
-    test('does not emit when the status is set to its current value', () {
-      final emitted = <NetworkStatus>[];
-      fake.changes.listen(emitted.add);
+    test('does not emit when the status is set to its current value', () async {
+      final emissions = expectLater(fake.changes, emits(NetworkStatus.offline));
 
       fake.setStatus(NetworkStatus.online);
+      fake.setStatus(NetworkStatus.offline);
 
-      expect(emitted, isEmpty);
+      await emissions;
+    });
+
+    test('delivers a change before setStatus returns', () {
+      NetworkStatus? seen;
+      final subscription = fake.changes.listen((status) => seen = status);
+      addTearDown(subscription.cancel);
+
+      fake.setStatus(NetworkStatus.offline);
+
+      expect(seen, NetworkStatus.offline);
     });
 
     test('reset returns to online', () {
@@ -48,6 +58,23 @@ void main() {
       fake.reset();
 
       expect(fake.current, NetworkStatus.online);
+    });
+
+    test('reset tells listeners', () async {
+      fake.setStatus(NetworkStatus.offline);
+      final emissions = expectLater(fake.changes, emits(NetworkStatus.online));
+
+      fake.reset();
+
+      await emissions;
+    });
+
+    test('dispose closes changes', () async {
+      final done = expectLater(fake.changes, emitsDone);
+
+      fake.dispose();
+
+      await done;
     });
   });
 }
