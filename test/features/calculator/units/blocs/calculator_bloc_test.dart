@@ -1711,6 +1711,20 @@ void main() {
             const CalculatorDisplayLabel(),
           );
           expect(
+            stateOf('5 ÷ 0 =').displayLabel,
+            CalculatorDisplayLabel(keyId: CalculationError.divisionByZero.name),
+            reason:
+                'the reopened divisor is titled by its error, with no '
+                'dots, while the value reads Error (Section 5.3)',
+          );
+          expect(
+            stateOf('5 ÷ 0 = 2').displayLabel,
+            const CalculatorDisplayLabel(operator: Operator.divide),
+          );
+          expect(stateOf('5 ÷ 0 =').valueReadsError, isTrue);
+          expect(stateOf('5 ÷ 0 = 2').valueReadsError, isFalse);
+          expect(stateOf('7 8 lbs ÷ 1 2 ft =').valueReadsError, isTrue);
+          expect(
             stateOf('1 2').displayLabel,
             const CalculatorDisplayLabel(isTyping: true),
           );

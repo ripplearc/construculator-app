@@ -82,7 +82,7 @@ class BlocScenarioDriver implements ScenarioDriver {
           '${_labels.labelText(label)}${label.isTyping ? '…' : ''}',
         null => '',
       },
-      value: state.valueText,
+      value: _labels.valueText(state),
       tape: [
         for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',
       ],
