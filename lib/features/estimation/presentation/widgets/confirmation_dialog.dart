@@ -44,12 +44,17 @@ class ConfirmationDialog extends StatelessWidget {
   /// Label of the filled primary button.
   final String primaryLabel;
 
+  /// Whether the secondary answer destroys something, which draws it in the
+  /// error colour.
+  final bool isSecondaryDestructive;
+
   const ConfirmationDialog({
     super.key,
     required this.title,
     required this.body,
     required this.secondaryLabel,
     required this.primaryLabel,
+    this.isSecondaryDestructive = false,
   });
 
   /// Shows the dialog and returns true for the primary button, false for the
@@ -61,6 +66,7 @@ class ConfirmationDialog extends StatelessWidget {
     required InlineSpan body,
     required String secondaryLabel,
     required String primaryLabel,
+    bool isSecondaryDestructive = false,
   }) => showDialog<bool>(
     context: context,
     builder: (_) => ConfirmationDialog(
@@ -68,6 +74,7 @@ class ConfirmationDialog extends StatelessWidget {
       body: body,
       secondaryLabel: secondaryLabel,
       primaryLabel: primaryLabel,
+      isSecondaryDestructive: isSecondaryDestructive,
     ),
   );
 
@@ -129,6 +136,7 @@ class ConfirmationDialog extends StatelessWidget {
                     key: secondaryButtonKey,
                     label: secondaryLabel,
                     isPrimary: false,
+                    isDestructive: isSecondaryDestructive,
                     onTap: () => Navigator.of(context).pop(false),
                   ),
                 ],
@@ -151,12 +159,14 @@ class _AnswerButton extends StatefulWidget {
 
   final String label;
   final bool isPrimary;
+  final bool isDestructive;
   final VoidCallback onTap;
 
   const _AnswerButton({
     super.key,
     required this.label,
     required this.isPrimary,
+    this.isDestructive = false,
     required this.onTap,
   });
 
@@ -170,7 +180,9 @@ class _AnswerButtonState extends State<_AnswerButton> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final color = _isPressed
+    final color = widget.isDestructive
+        ? colorTheme.textError.withValues(alpha: _isPressed ? 0.7 : 1)
+        : _isPressed
         ? colorTheme.buttonPress
         : colorTheme.buttonSurface;
     final isPrimary = widget.isPrimary;
