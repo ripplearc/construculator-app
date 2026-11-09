@@ -4069,6 +4069,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep editing'**
   String get discardLineKeepEditingButton;
+
+  /// Name of the Materials section on the estimate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get costSectionMaterials;
+
+  /// Name of the Labor section on the estimate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Labor'**
+  String get costSectionLabor;
+
+  /// Name of the Equipment section on the estimate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get costSectionEquipment;
 }
 
 class _AppLocalizationsDelegate

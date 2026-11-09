@@ -3404,5 +3404,20 @@
   "@discardLineKeepEditingButton": {
     "description": "Filled button that closes the discard question and stays on the material sheet",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
+  },
+  "costSectionMaterials": "Materials",
+  "@costSectionMaterials": {
+    "description": "Name of the Materials section on the estimate screen",
+    "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionLabor": "Labor",
+  "@costSectionLabor": {
+    "description": "Name of the Labor section on the estimate screen",
+    "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionEquipment": "Equipment",
+  "@costSectionEquipment": {
+    "description": "Name of the Equipment section on the estimate screen",
+    "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
   }
 }
