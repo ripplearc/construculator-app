@@ -87,7 +87,9 @@ class CalculatorState extends Equatable {
   /// 7%, 8in/12in) and without the operator that leads it, which the label
   /// names ("Addition" over 12); else the last chip — a closed bracket is
   /// worth its inside's value (Section 7: "Addition · (3×4)" over 12); an
-  /// error chip has no value to show.
+  /// error chip has no value of its own: the row reads "Error" under its
+  /// title (Section 5, "Dimension Error", "Division by zero"), a word the
+  /// page supplies when [valueReadsError] is true.
   String get valueText => switch (_chipRead) {
     null || ErrorChip() || BracketChip(isOpen: true) => '',
     final ValueChip chip => _entryTextOf(chip),
@@ -124,6 +126,24 @@ class CalculatorState extends Equatable {
       operator: operator,
       bracketExpression: inner.map(_valueTextOf).join(),
     ),
+  };
+
+  /// Whether the value row reads "Error": the chip read is an error chip,
+  /// or the empty divisor that ÷ 0 reopened after its Division by zero
+  /// chip, so there is no number to write under the title until the next
+  /// digit (Section 5; decision tree rows 143, 144, 190).
+  bool get valueReadsError => switch (_chipRead) {
+    ErrorChip() => true,
+    ValueChip(
+      entry: EntryBuffer(isEmpty: true),
+      operator: Operator.divide,
+      key: null,
+    ) =>
+      tape.openBracket == null &&
+          tape.chips.length > 1 &&
+          tape.chips[tape.chips.length - 2] ==
+              const ErrorChip(CalculationError.divisionByZero),
+    _ => false,
   };
 
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;

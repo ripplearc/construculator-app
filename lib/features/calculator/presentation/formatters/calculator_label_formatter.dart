@@ -74,6 +74,11 @@ class CalculatorLabelFormatter {
     TrigFunction.arctangent => l10n.calculatorKeyAtanFullName,
   };
 
+  /// The text of the value row: the state's reading of the chip, or the
+  /// word "Error" under an error chip's title (Section 5).
+  String valueText(CalculatorState state) =>
+      state.valueReadsError ? l10n.calculatorValueError : state.valueText;
+
   /// The title of an error chip.
   String errorTitle(CalculationError error) => switch (error) {
     CalculationError.dimensionError => l10n.calculatorErrorDimension,

@@ -350,6 +350,11 @@ void main() {
     );
     expect(displayArea.label, equals(l10n.calculatorErrorDimension));
     expect(displayArea.chipsList.last.label, l10n.calculatorErrorDimension);
+    expect(
+      displayArea.value,
+      equals(l10n.calculatorValueError),
+      reason: 'the value row reads Error under the title (Section 5)',
+    );
   });
 
   testWidgets('a division by zero is titled from the localization layer', (
@@ -378,6 +383,11 @@ void main() {
     );
     final labels = displayArea.chipsList.map((chip) => chip.label);
     expect(labels, contains(l10n.calculatorErrorDivisionByZero));
+    expect(
+      displayArea.value,
+      equals(l10n.calculatorValueError),
+      reason: 'the value row reads Error while the divisor sits reopened',
+    );
     expect(labels, isNot(contains(CalculationError.divisionByZero.name)));
   });
 

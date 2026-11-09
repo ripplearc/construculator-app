@@ -191,7 +191,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           final label? => labels.labelText(label),
                           null => null,
                         },
-                        value: state.valueText,
+                        value: labels.valueText(state),
                         isTyping: state.displayLabel?.isTyping ?? false,
                         closeSemanticLabel: l10n.closeButton,
                         historyPlaceholder: l10n.calculatorHistoryPlaceholder,
