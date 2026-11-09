@@ -86,6 +86,18 @@ void main() {
         },
       );
 
+      test('a first reading that fails after dispose starts nothing', () async {
+        sdk.holdCheck();
+        final service = startService();
+        await service.dispose();
+
+        await sdk.failHeldCheck();
+        await service.ready;
+
+        expect(reachability.isPolling, isFalse);
+        expect(reachability.checkCount, 0);
+      });
+
       test(
         'keeps a change heard while the first reading was pending',
         () async {
@@ -272,9 +284,10 @@ void main() {
       );
 
       test('a failed check leaves the status as it was', () async {
-        reachability.shouldThrowOnCheck = true;
-
+        reachability.holdChecks();
         final service = await createService();
+
+        await reachability.failCheck();
 
         expect(service.current, NetworkStatus.online);
       });

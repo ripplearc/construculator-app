@@ -22,8 +22,9 @@ import 'package:flutter/foundation.dart';
 /// While the app is in the background nothing is checked. Losing the network
 /// still reads as offline at once, but a network that appears is left unchecked
 /// until the app comes back, so the status keeps its last value until then.
-/// Until the app has first been on screen with a network attached, [current] is
-/// the starting value, online, and has not been checked.
+/// [current] is the starting value, online, until the first check finishes or
+/// the system reports no network. The first check starts once the app is on
+/// screen with a network attached.
 ///
 /// Every check starts here, and only the newest one counts: a check that
 /// finishes after a newer one started, or after the network was lost, is
@@ -40,6 +41,8 @@ class NetworkStatusServiceImpl implements NetworkStatusService {
   late final StreamSubscription<List<ConnectivityResult>> _connectivitySub;
   late final StreamSubscription<bool> _lifecycleSub;
   StreamSubscription<void>? _ticksSub;
+  // TODO: [CA-1436] Tell "not checked yet" apart from online
+  // https://ripplearc.youtrack.cloud/issue/CA-1436
   NetworkStatus _current = NetworkStatus.online;
   bool _hasNetwork = true;
   bool _hasHeardFromSystem = false;
@@ -127,7 +130,7 @@ class NetworkStatusServiceImpl implements NetworkStatusService {
   }
 
   void _startChecking() {
-    if (!_appLifecycle.isInForeground) return;
+    if (_isDisposed || !_appLifecycle.isInForeground) return;
     _ticksSub ??= _reachabilitySdk.checkTicks.listen(
       (_) => unawaited(_checkNow()),
     );
