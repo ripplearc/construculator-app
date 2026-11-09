@@ -251,5 +251,98 @@ void main() {
       expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
       expect(find.byType(SheetHeader), findsNothing);
     });
+
+    group('deleting the line', () {
+      Future<void> tapDelete(WidgetTester tester) async {
+        await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('offers Delete this line under Save this line', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+
+        expect(
+          find.descendant(
+            of: find.byKey(AddToEstimateFooter.deleteButtonKey),
+            matching: find.text(l10n.deleteThisLineButton),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('asks first, naming the line and the estimate', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+
+        await tapDelete(tester);
+
+        expect(find.text(l10n.deleteLineDialogTitle), findsOneWidget);
+        expect(
+          find.text(l10n.deleteLineDialogBody('Scissor lift', 'Bedroom 2')),
+          findsOneWidget,
+        );
+        expect(fakeSupabase.getMethodCallsFor('delete'), isEmpty);
+      });
+
+      testWidgets('No, Keep leaves the line stored and the sheet open', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+        await tapDelete(tester);
+
+        await tester.tap(find.byKey(ConfirmationDialog.primaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect((await storedLine()).id, 'item-1');
+        expect(find.byType(SheetHeader), findsOneWidget);
+        expect(dialogTitle(), findsNothing);
+      });
+
+      testWidgets('Yes, Delete removes the stored line and closes the sheet', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+        await tapDelete(tester);
+
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        final items = await Modular.get<CostItemRepository>()
+            .getCostItemsForEstimate('estimate-1');
+        expect(items.getRightOrNull(), isEmpty);
+        expect(find.byType(SheetHeader), findsNothing);
+      });
+
+      testWidgets('a failed delete says so and keeps the sheet open', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+        fakeSupabase.shouldThrowOnDelete = true;
+        await tapDelete(tester);
+
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.deleteLineFailedError), findsOneWidget);
+        expect(find.byType(SheetHeader), findsOneWidget);
+      });
+
+      testWidgets('a failed save says the change was not saved', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+        await enter(tester, 'duration_field', '4');
+        fakeSupabase.shouldThrowOnUpdate = true;
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.saveLineFailedError), findsOneWidget);
+        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
+      });
+    });
   });
 }

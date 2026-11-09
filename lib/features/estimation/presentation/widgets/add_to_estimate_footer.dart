@@ -12,6 +12,8 @@ class AddToEstimateFooter extends StatelessWidget {
   static const buttonKey = Key('add_to_estimate_button');
   /// Key of the save-error line.
   static const errorKey = Key('add_to_estimate_error');
+  /// Key of the Delete this line button.
+  static const deleteButtonKey = Key('delete_line_button');
 
   /// The line's own total including delivery. Ignored while [block] is set.
   final double lineTotal;
@@ -43,6 +45,10 @@ class AddToEstimateFooter extends StatelessWidget {
   /// new line. Switches the panel and the button label to their edit wording.
   final double? changeInEstimateTotal;
 
+  /// Called when the user taps Delete this line. The button is drawn only
+  /// when this is set, which is for a line already on the estimate.
+  final VoidCallback? onDelete;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -54,6 +60,7 @@ class AddToEstimateFooter extends StatelessWidget {
     this.errorMessage,
     required this.onAdd,
     this.changeInEstimateTotal,
+    this.onDelete,
   });
 
   @override
@@ -94,6 +101,22 @@ class AddToEstimateFooter extends StatelessWidget {
               isDisabled: block != null || isSubmitting,
               onPressed: onAdd,
             ),
+            if (onDelete case final onDelete?) ...[
+              const SizedBox(height: CoreSpacing.space2),
+              CoreButton(
+                key: deleteButtonKey,
+                variant: CoreButtonVariant.secondary,
+                borderColor: context.colorTheme.textError,
+                isDisabled: isSubmitting,
+                onPressed: onDelete,
+                child: Text(
+                  l10n.deleteThisLineButton,
+                  style: context.textTheme.bodyLargeSemiBold.copyWith(
+                    color: context.colorTheme.textError,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

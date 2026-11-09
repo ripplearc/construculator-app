@@ -3184,6 +3184,39 @@
     "description": "Note in the summary card of the edit sheet before any field of the line has changed",
     "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
   },
+  "deleteThisLineButton": "Delete this line",
+  "@deleteThisLineButton": {
+    "description": "Red button under Save this line that deletes a cost line already on the estimate",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: editing a cost item)"
+  },
+  "deleteLineDialogTitle": "Delete this line?",
+  "@deleteLineDialogTitle": {
+    "description": "Title of the confirmation asked before a cost line is deleted from the estimate",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html. The storyboard gives no text for this dialog, so the wording follows its Delete this estimate? dialog."
+  },
+  "deleteLineDialogBody": "{item} will be removed from {estimate}.",
+  "@deleteLineDialogBody": {
+    "description": "Body of the delete-line confirmation, naming the line and the estimate it leaves",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html. The storyboard gives no text for this dialog, so the wording follows its Remove this attachment? dialog, which names the item and the estimate.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "saveLineFailedError": "This change was not saved. Try again.",
+  "@saveLineFailedError": {
+    "description": "Message above Save this line when saving the changes to a cost line fails",
+    "context": "Follows the wording of addToEstimateFailedError, CUJ 6, Line not added"
+  },
+  "deleteLineFailedError": "This line was not deleted. Try again.",
+  "@deleteLineFailedError": {
+    "description": "Message above Save this line when deleting a cost line fails",
+    "context": "Follows the wording of addToEstimateFailedError, CUJ 6, Line not added"
+  },
   "enterEquipmentNameToContinueButton": "Enter an equipment name to continue",
   "@enterEquipmentNameToContinueButton": {
     "description": "Disabled submit button label while the equipment name is empty",

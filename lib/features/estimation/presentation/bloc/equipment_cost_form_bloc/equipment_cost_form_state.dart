@@ -402,15 +402,30 @@ class EquipmentCostFormSuccess extends EquipmentCostFormState {
   final CostItem createdItem;
 }
 
-/// State when submitting the cost item failed.
+/// State when saving or deleting the cost item failed.
 class EquipmentCostFormFailure extends EquipmentCostFormState {
-  const EquipmentCostFormFailure(this.data, this.failure);
+  const EquipmentCostFormFailure(
+    this.data,
+    this.failure, {
+    this.whileDeleting = false,
+  });
 
   /// The form data as it was at submission time.
   final EquipmentCostFormData data;
 
-  /// The failure returned by [CostItemRepository.createCostItem].
+  /// The failure returned by the repository call that failed.
   final Failure failure;
+
+  /// Whether the failed action was deleting the line, not saving it.
+  final bool whileDeleting;
+}
+
+/// State once the line this form edited was deleted from the estimate.
+class EquipmentCostFormDeleted extends EquipmentCostFormState {
+  const EquipmentCostFormDeleted(this.data);
+
+  /// The form data as it was when the line was deleted.
+  final EquipmentCostFormData data;
 }
 
 int _toCents(double amount) => (amount * 100).round();
@@ -432,6 +447,7 @@ extension EquipmentCostFormStateData on EquipmentCostFormState {
     EquipmentCostFormSubmitting(:final data) => data,
     EquipmentCostFormSuccess(:final data) => data,
     EquipmentCostFormFailure(:final data) => data,
+    EquipmentCostFormDeleted(:final data) => data,
     EquipmentCostFormInitial() => const EquipmentCostFormData(),
   };
 }

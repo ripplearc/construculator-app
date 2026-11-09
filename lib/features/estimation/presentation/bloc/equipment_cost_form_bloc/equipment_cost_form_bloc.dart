@@ -149,6 +149,7 @@ class EquipmentCostFormBloc
       _emit(emit, (d) => d.copyWith(description: description));
     });
     on<EquipmentCostEditOpened>(_onEditOpened);
+    on<EquipmentCostDeleteRequested>(_onDeleteRequested);
     on<EquipmentCostSubmittedEvent>(_onSubmitted);
     on<EquipmentOutsizedFeeAcceptedEvent>(_onOutsizedFeeAccepted);
     on<EquipmentOutsizedFeeDeclinedEvent>(_onOutsizedFeeDeclined);
@@ -341,10 +342,9 @@ class EquipmentCostFormBloc
         data,
         createdItem,
       ),
-      EquipmentCostFormFailure(:final failure) => EquipmentCostFormFailure(
-        data,
-        failure,
-      ),
+      EquipmentCostFormFailure(:final failure, :final whileDeleting) =>
+        EquipmentCostFormFailure(data, failure, whileDeleting: whileDeleting),
+      EquipmentCostFormDeleted() => EquipmentCostFormDeleted(data),
     };
   }
 
@@ -363,10 +363,8 @@ class EquipmentCostFormBloc
       hasUnsavedChanges: _differsFromOpened(validated),
     );
     emit(switch (state) {
-      EquipmentCostFormFailure(:final failure) => EquipmentCostFormFailure(
-        next,
-        failure,
-      ),
+      EquipmentCostFormFailure(whileDeleting: false, :final failure) =>
+        EquipmentCostFormFailure(next, failure),
       _ => EquipmentCostFormEditing(next),
     });
   }
@@ -402,14 +400,39 @@ class EquipmentCostFormBloc
     emit(EquipmentCostFormEditing(opened));
   }
 
+  Future<void> _onDeleteRequested(
+    EquipmentCostDeleteRequested event,
+    Emitter<EquipmentCostFormState> emit,
+  ) async {
+    final draft = state.formData;
+    final edited = draft.editedItem;
+    if (edited == null ||
+        state is EquipmentCostFormSubmitting ||
+        state is EquipmentCostFormSuccess ||
+        state is EquipmentCostFormDeleted) {
+      return;
+    }
+    emit(EquipmentCostFormSubmitting(draft));
+    final result = await _repository.deleteCostItem(edited.id);
+    emit(
+      result.fold(
+        (failure) =>
+            EquipmentCostFormFailure(draft, failure, whileDeleting: true),
+        (_) => EquipmentCostFormDeleted(draft),
+      ),
+    );
+  }
+
   Future<void> _onSubmitted(
     EquipmentCostSubmittedEvent event,
     Emitter<EquipmentCostFormState> emit,
   ) async {
     // A second tap while the first submit is in flight (or has already
-    // succeeded) must not insert a duplicate cost line.
+    // succeeded) must not insert a duplicate cost line, and a save must not
+    // reach a line that has just been deleted.
     if (state is EquipmentCostFormSubmitting ||
-        state is EquipmentCostFormSuccess) {
+        state is EquipmentCostFormSuccess ||
+        state is EquipmentCostFormDeleted) {
       return;
     }
     final draft = _validated(state.formData);
