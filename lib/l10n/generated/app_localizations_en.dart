@@ -961,30 +961,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This name already has a saved rate. Add a label to save it as a new entry.';
 
   @override
-  String get materialsTab => 'Materials';
-
-  @override
-  String get laboursTab => 'Labours';
-
-  @override
-  String get equipmentsTab => 'Equipments';
-
-  @override
-  String get noMaterialCostMessage =>
-      'No material cost added. For adding cost please click on add button';
-
-  @override
-  String get noLabourCostMessage =>
-      'No labour cost added. For adding cost please click on add button';
-
-  @override
-  String get noEquipmentCostMessage =>
-      'No equipment cost added. For adding cost please click on add button';
-
-  @override
-  String get addMaterialCostButton => 'Add material cost';
-
-  @override
   String get previewButton => 'Preview';
 
   @override
@@ -998,9 +974,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moreOptionsLabel => 'More options';
-
-  @override
-  String get commentLabel => 'Comment';
 
   @override
   String get addMaterialCostsScreenTitle => 'Material cost entry';
@@ -1378,12 +1351,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createProjectScreenTitle => 'Create a project';
-
-  @override
-  String get addLabourCostButton => 'Add labour cost';
-
-  @override
-  String get addEquipmentCostButton => 'Add equipment cost';
 
   @override
   String get costFilePlaceholder => 'Select cost file';
