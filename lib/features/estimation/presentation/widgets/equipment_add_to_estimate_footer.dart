@@ -12,7 +12,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// The button only sends [EquipmentCostSubmittedEvent]; the bloc validates and
 /// decides whether the outsized-fee question comes first. A successful add
 /// closes the sheet. A failed save keeps the sheet open and says so in a line
-/// above the button, which goes away while the next save runs.
+/// above the button, which goes away while the next save runs. The button is
+/// also off while a save to Your rates runs.
 class EquipmentAddToEstimateFooter extends StatelessWidget {
   /// The estimate the line is added to.
   final String estimateId;
@@ -57,7 +58,8 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
           block: blocker == null ? null : _blockFor(blocker, l10n),
           isSubmitting:
               state is EquipmentCostFormSubmitting ||
-              state is EquipmentCostFormSuccess,
+              state is EquipmentCostFormSuccess ||
+              data.isRateSaveRunning,
           errorMessage: state is EquipmentCostFormFailure
               ? l10n.addToEstimateFailedError
               : null,
