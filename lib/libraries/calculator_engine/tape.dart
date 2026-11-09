@@ -132,6 +132,13 @@ enum TapeRefusal {
   /// the caller when to.
   nothingToCompute,
 
+  /// = closing a bracket on an operator still waiting for its number
+  /// (( 12 × then =): "Type a number first" / "Type the number after ×,
+  /// then press =" (Section 5.1; decision tree row 108). The bracket stays
+  /// open with its operator, and no Calc lands. The caller names the
+  /// operator from the tape.
+  operatorNeedsANumber,
+
   /// A digit straight after a closed bracket ("Add an operator first"): it
   /// would join the group's value and the bracket would vanish (Section 5.1).
   /// A trig key there works on the group when the bracket starts the tape,
@@ -224,11 +231,6 @@ enum TapeNotice {
   /// was cancelled"). = brings the group back the same way, and then lands
   /// the Calc.
   bracketEditCancelled,
-
-  /// = closed the open bracket, as it always does first (Section 7), but
-  /// then found nothing to compute: the tape holds the closed bracket and
-  /// the toast is the one for [TapeRefusal.nothingToCompute].
-  bracketClosedNothingToCompute,
 
   /// = closed what the active chip had left open, as every leaving key
   /// does — a fraction typed right after whole inches, read as inches
@@ -880,6 +882,16 @@ class Tape extends Equatable {
     return null;
   }
 
+  Tape _withInchPartClosed() {
+    final chip = active;
+    if (chip == null || !chip.entry.endsWithOpenInchPart) return this;
+    return switch (chip.entry.closeWith(Unit.inch)) {
+      EntryChanged(:final buffer) || EntryCarried(:final buffer) =>
+        _replaceActive(chip.copyWith(entry: buffer)),
+      EntryOutcome() => this,
+    };
+  }
+
   Tape _withFractionClosedAsInches() {
     final chip = active;
     if (chip == null) return this;
@@ -908,6 +920,9 @@ class Tape extends Equatable {
   /// An angle recalled from the drawer is a finished value, never a typed
   /// start that later digits join (rule 4.16): the digit seals it and
   /// starts a chip of its own, as a digit after any finished value does.
+  /// So does a digit after a fraction the Inch key closed (3/4in then 5 is
+  /// two chips; rule 4.5, decision tree row 84), where a digit after whole
+  /// feet or whole inches goes on with the compound (12ft 5, 7in 1/2).
   TapeOutcome typeDigit(String digit) {
     if (openBracket case final bracket?) {
       return _inside(bracket, (inner) => inner.typeDigit(digit));
@@ -916,6 +931,9 @@ class Tape extends Equatable {
       return const TapeRefused(TapeRefusal.addAnOperatorFirst);
     }
     if (active case ValueChip(exactValue: Angle())) {
+      return _sealed().typeDigit(digit);
+    }
+    if (active case final chip? when chip.entry.endsWithClosedInchFraction) {
       return _sealed().typeDigit(digit);
     }
     final chip = active ?? const ValueChip();
@@ -1449,10 +1467,21 @@ class Tape extends Equatable {
   }
 
   /// = lands the running total as a Calc result chip, or a Dimension Error
-  /// (or Division by zero) chip when a step is refused. With no operator
-  /// applied, or an operator still waiting for its number, it says what it
-  /// needs; a number with no unit cannot be left. With a bracket open it
-  /// closes the bracket first (Section 7) and then lands the Calc: a
+  /// (or Division by zero) chip when a step is refused. A closed bracket on
+  /// its own is a calculation, so ( 12 ) = and ( 1/3cm = land Calc 12 and
+  /// Calc 0.33cm (Section 7; decision tree rows 66 and 107), while a bare
+  /// value keeps its "Nothing to compute yet". The inch part of a compound
+  /// still being typed is closed as inches first, and only a lone unnamed
+  /// compound then lands as Calc: 12 [Feet] 5 = is Calc 12ft 5in, and
+  /// ( 12 [Feet] 5 = closes the bracket on 12ft 5in (Section 6; decision
+  /// tree row 79), while [Width] 10 [Feet] 8 = closes the 8 as inches and
+  /// then acts as on the closed tape, "Nothing to compute yet" with named
+  /// values. With no operator applied, or an operator still waiting for its
+  /// number, it says what it needs, and = closing a bracket on such an
+  /// operator is refused with the operator kept
+  /// ([TapeRefusal.operatorNeedsANumber]; decision tree row 108); a number
+  /// with no unit cannot be left. With a bracket open it closes the bracket
+  /// first (Section 7) and then lands the Calc: a
   /// reopened bracket the edit emptied is brought back as it was and the
   /// Calc lands on the restored group, with the notice kept. What the
   /// active chip left open is closed before anything is refused, as every
@@ -1475,8 +1504,21 @@ class Tape extends Equatable {
   /// chain lands the chain, with the ratio sealed into its angle (rule
   /// 4.6): 5 + [ATAN] 16 ÷ 12 = is Calc 58.13°.
   TapeOutcome pressEquals() {
-    if (openBracket != null) {
-      return switch (closeBracket()) {
+    if (openBracket case final bracket?) {
+      if (_with(bracket.inner).active case ValueChip(
+        operator: _?,
+        :final entry,
+      ) when entry.isEmpty) {
+        return const TapeRefused(TapeRefusal.operatorNeedsANumber);
+      }
+      final inchPartClosed = switch (_inside(
+        bracket,
+        (inner) => TapeChanged(inner._withInchPartClosed()),
+      )) {
+        TapeChanged(:final tape) => tape,
+        TapeOutcome() => this,
+      };
+      return switch (inchPartClosed.closeBracket()) {
         TapeChanged(:final tape, notice: null) => _landedAfterClose(tape),
         TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =>
           _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
@@ -1484,7 +1526,10 @@ class Tape extends Equatable {
         final TapeOutcome refused => refused,
       };
     }
-    final tape = _withFractionClosedAsInches()._withFieldClosed();
+    final closedInchPart = active?.entry.endsWithOpenInchPart ?? false;
+    final tape = _withFractionClosedAsInches()
+        ._withInchPartClosed()
+        ._withFieldClosed();
     if (tape.active case final chip? when !chip.entry.isEmpty) {
       if (tape._unfinished case final refusal?) return refusal;
     }
@@ -1502,6 +1547,10 @@ class Tape extends Equatable {
       ChainValue(:final value, isCalculation: true) => TapeChanged(
         tape.append(ResultChip(key: calcKey, value: value)),
       ),
+      ChainValue(:final value)
+          when tape._endsWithClosedBracket ||
+              closedInchPart && tape._isALoneUnnamedValue =>
+        TapeChanged(tape.append(ResultChip(key: calcKey, value: value))),
       ChainFailed(error: CalculationError.divisionByZero)
           when tape._endsOnTheFailedDivisor =>
         TapeChanged(tape._withDivisorReopened()),
@@ -1514,6 +1563,11 @@ class Tape extends Equatable {
       ChainEmpty() => const TapeRefused(TapeRefusal.nothingToCompute),
     };
   }
+
+  bool get _isALoneUnnamedValue => switch (chips) {
+    [ValueChip(key: null, operator: null)] => true,
+    _ => false,
+  };
 
   bool get _endsOnTheFailedDivisor {
     if (chips.last case ValueChip(operator: Operator.divide)) {
@@ -1550,10 +1604,7 @@ class Tape extends Equatable {
   TapeOutcome _landedAfterClose(Tape closed, {TapeNotice? notice}) =>
       switch (closed.pressEquals()) {
         TapeChanged(:final tape) => TapeChanged(tape, notice: notice),
-        TapeOutcome() => TapeChanged(
-          closed,
-          notice: notice ?? TapeNotice.bracketClosedNothingToCompute,
-        ),
+        final TapeOutcome refused => refused,
       };
 
   /// ⌫ removes one token step from the active chip; with nothing left to

@@ -144,21 +144,43 @@ void main() {
         );
       });
 
-      test('a unit that cannot continue the compound starts a new value', () {
+      test('a part typed after whole feet or metres belongs to the compound: '
+          'any key but the one that steps down is refused (Section 6; '
+          'decision tree row 101)', () {
+        const refused = EntryRefused(EntryRefusal.compoundPartNeedsItsUnit);
         final feet = changed(type('18').closeWith(Unit.foot));
+        expect(type('8', feet).closeWith(Unit.centimetre), refused);
+        expect(type('8', feet).closeWith(Unit.yard), refused);
+        expect(type('8', feet).closeWith(Unit.foot), refused);
+        expect(type('8', feet).closeWith(Unit.pound), refused);
+        expect(type('8', feet).closeWith(Unit.millimetre), refused);
+        expect(changed(type('8', feet).closeWith(Unit.inch)).text, '18ft 8in');
+        final metres = changed(type('1').closeWith(Unit.metre));
+        expect(type('20', metres).closeWith(Unit.inch), refused);
+        expect(type('20', metres).closeWith(Unit.metre), refused);
         expect(
-          type('8', feet).closeWith(Unit.centimetre),
+          changed(type('20', metres).closeWith(Unit.centimetre)).text,
+          '1m 20cm',
+        );
+        final inches = changed(type('7').closeWith(Unit.inch));
+        expect(type('8', inches).closeWith(Unit.foot), isA<EntrySplit>());
+      });
+
+      test('a unit that cannot continue a value that takes no part starts a '
+          'new value', () {
+        final pounds = changed(type('5').closeWith(Unit.pound));
+        expect(
+          type('8', pounds).closeWith(Unit.centimetre),
           EntrySplit(
-            finished: feet,
+            finished: pounds,
             started: const EntryBuffer([
               Token(digits: '8', unit: Unit.centimetre),
             ]),
           ),
         );
-        expect(type('8', feet).closeWith(Unit.yard), isA<EntrySplit>());
-        expect(type('8', feet).closeWith(Unit.foot), isA<EntrySplit>());
-        expect(type('8', feet).closeWith(Unit.pound), isA<EntrySplit>());
-        final split = type('8', feet).closeWith(Unit.pound) as EntrySplit;
+        expect(type('8', pounds).closeWith(Unit.yard), isA<EntrySplit>());
+        expect(type('8', pounds).closeWith(Unit.foot), isA<EntrySplit>());
+        final split = type('8', pounds).closeWith(Unit.kilogram) as EntrySplit;
         expect(
           () => split.finished.tokens.add(const Token(digits: '9')),
           throwsUnsupportedError,
@@ -312,10 +334,54 @@ void main() {
       );
 
       test('a compound never crosses systems, even stepping down', () {
+        const refused = EntryRefused(EntryRefusal.compoundPartNeedsItsUnit);
         final feet = changed(type('18').closeWith(Unit.foot));
-        expect(type('8', feet).closeWith(Unit.millimetre), isA<EntrySplit>());
+        expect(type('8', feet).closeWith(Unit.millimetre), refused);
         final metres = changed(type('1').closeWith(Unit.metre));
-        expect(type('20', metres).closeWith(Unit.inch), isA<EntrySplit>());
+        expect(type('20', metres).closeWith(Unit.inch), refused);
+      });
+
+      test('endsWithOpenInchPart names a plain number typed after feet and '
+          'nothing else', () {
+        final feet = changed(type('12').closeWith(Unit.foot));
+        expect(type('5', feet).endsWithOpenInchPart, isTrue);
+        expect(type('5.5', feet).endsWithOpenInchPart, isTrue);
+        expect(feet.endsWithOpenInchPart, isFalse);
+        expect(
+          changed(type('5', feet).closeWith(Unit.inch)).endsWithOpenInchPart,
+          isFalse,
+        );
+        expect(type('5/', feet).endsWithOpenInchPart, isFalse);
+        expect(type('5').endsWithOpenInchPart, isFalse);
+        final metres = changed(type('1').closeWith(Unit.metre));
+        expect(type('20', metres).endsWithOpenInchPart, isFalse);
+        final inches = changed(type('7').closeWith(Unit.inch));
+        expect(type('1', inches).endsWithOpenInchPart, isFalse);
+      });
+
+      test('endsWithClosedInchFraction names a fraction the Inch key closed '
+          'and not one the tape closed by itself', () {
+        expect(
+          changed(type('3/4').closeWith(Unit.inch)).endsWithClosedInchFraction,
+          isTrue,
+        );
+        expect(
+          changed(type('3').closeWith(Unit.inch)).endsWithClosedInchFraction,
+          isFalse,
+        );
+        expect(type('3/4').endsWithClosedInchFraction, isFalse);
+        final inches = changed(type('7').closeWith(Unit.inch));
+        final mixed = changed(type('1/2', inches).closeWith(Unit.inch));
+        expect(mixed.endsWithClosedInchFraction, isTrue);
+        const closedByItself = EntryBuffer([
+          Token(digits: '7', unit: Unit.inch),
+          Token(digits: '1', denominator: '2', unit: Unit.inch, typedAs: '1/2'),
+        ]);
+        expect(
+          closedByItself.endsWithClosedInchFraction,
+          isFalse,
+          reason: 'a fraction the tape closed by itself still takes digits',
+        );
       });
 
       test('a cubic value never becomes a ft-in compound', () {
@@ -376,7 +442,7 @@ void main() {
           );
           expect(
             tail.closeWith(Unit.foot, holdsLengthOnly: true),
-            isA<EntrySplit>(),
+            const EntryRefused(EntryRefusal.compoundPartNeedsItsUnit),
           );
         },
       );
