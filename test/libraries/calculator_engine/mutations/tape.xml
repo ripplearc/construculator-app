@@ -241,6 +241,12 @@
         <regex pattern="if \(formatter\.isTooLarge\(value\)\) \{\s*return \(\s*total: null," dotAll="true" id="chain_evaluator.joined.first_value_by_written_number">
             <mutation text="if (false) { return (total: null,"/>
         </regex>
+
+        <!-- RULE CA-1201c (X01): a result converted past the limit is taken -->
+        <regex pattern="UnitKeyConverted\(:final value\) when formatter\.isTooLarge\(value\) =&gt;\s*const TapeEntryRefused\(EntryRefusal\.tooLarge\),\s*UnitKeyConverted\(:final value\) =&gt; TapeChanged\(" dotAll="true" id="tape.convert_result.past_limit">
+            <mutation text="UnitKeyConverted(:final value) =&gt; TapeChanged("/>
+            <mutation text="UnitKeyConverted(:final value) when !formatter.isTooLarge(value) =&gt; const TapeEntryRefused(EntryRefusal.tooLarge), UnitKeyConverted(:final value) =&gt; TapeChanged("/>
+        </regex>
     </rules>
 
     <commands>
