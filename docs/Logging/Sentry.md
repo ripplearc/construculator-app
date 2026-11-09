@@ -296,11 +296,12 @@ ERROR: Failed to save estimation
 Sentry provides performance monitoring capabilities to track app performance metrics.
 
 **Automatic Metrics:**
-Enable in `main.dart` Sentry initialization:
+Enable in `SentryWrapperImpl.initialize`:
 ```dart
-options.tracesSampleRate = 0.2; // Sample 20% of sessions
-options.enableAutoPerformanceTracking = true;
-options.enableTimeToFullDisplayTracing = true;
+options.tracesSampleRate = _config.isProd
+    ? _prodTracesSampleRate
+    : _nonProdTracesSampleRate;
+options.enableAutoPerformanceTracing = true;
 ```
 
 This tracks:
