@@ -5,9 +5,11 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/added_line_highlight_cubit/added_line_highlight_cubit.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_cost_bottom_bar.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_cost_category_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_sections_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -39,6 +41,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../helpers/cost_item_test_data_map_factory.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -114,16 +117,38 @@ void main() {
     );
   }
 
+  Future<void> pumpFrames(WidgetTester tester, {required bool settle}) async {
+    if (settle) {
+      await tester.pumpAndSettle();
+      return;
+    }
+    for (var frame = 0; frame < 5; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  Future<void> tapAddCost(
+    WidgetTester tester,
+    CostItemType type, {
+    bool settle = true,
+  }) async {
+    await tester.tap(find.byKey(AddCostBottomBar.addCostButtonKey));
+    await pumpFrames(tester, settle: settle);
+    await tester.tap(find.byKey(AddCostCategorySheet.rowKey(type)));
+    await pumpFrames(tester, settle: settle);
+  }
+
   Future<void> pumpAppAtRoute(
     WidgetTester tester,
     String route, {
     void Function()? beforePump,
+    bool settle = true,
   }) async {
     beforePump?.call();
     await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
+    await pumpFrames(tester, settle: settle);
     Modular.to.navigate(route);
-    await tester.pumpAndSettle();
+    await pumpFrames(tester, settle: settle);
   }
 
   void setUpAuthenticatedUser({
@@ -167,8 +192,16 @@ void main() {
       ),
     ]);
     fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
-      {'estimate_id': testEstimationId, 'item_total_cost': 2000},
-      {'estimate_id': testEstimationId, 'item_total_cost': 993.62},
+      CostItemTestDataMapFactory.createMaterialItemData(
+        id: 'seed-1',
+        estimateId: testEstimationId,
+        itemTotalCost: 2000,
+      ),
+      CostItemTestDataMapFactory.createMaterialItemData(
+        id: 'seed-2',
+        estimateId: testEstimationId,
+        itemTotalCost: 993.62,
+      ),
     ]);
   }
 
@@ -187,7 +220,7 @@ void main() {
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
-      expect(find.byType(CostEstimationDetailsTabView), findsOneWidget);
+      expect(find.byType(CostSectionsList), findsOneWidget);
     });
 
     testWidgets('app bar is a CoreAppBar on the Figma Action Bar geometry', (
@@ -243,7 +276,7 @@ void main() {
       expect(find.byKey(const Key('more_options_icon')), findsOneWidget);
     });
 
-    testWidgets('displays add material cost floating action button', (
+    testWidgets('displays the + Add cost button in the bottom bar', (
       WidgetTester tester,
     ) async {
       setUpAuthenticatedUser(
@@ -253,8 +286,224 @@ void main() {
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
-      expect(find.byKey(const Key('add_material_cost_button')), findsOneWidget);
-      expect(find.text(l10n.addMaterialCostButton), findsOneWidget);
+      expect(find.byKey(AddCostBottomBar.addCostButtonKey), findsOneWidget);
+      expect(find.text(l10n.addCostButton), findsOneWidget);
+    });
+
+    group('cost lines', () {
+      void seedLines(List<Map<String, dynamic>> rows) {
+        fakeSupabase.addTableData(DatabaseConstants.costItemsTable, rows);
+      }
+
+      testWidgets('shows each line in its section with the section subtotal', (
+        WidgetTester tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedLines([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'm1',
+            estimateId: testEstimationId,
+            itemName: 'Drywall sheets',
+            itemTotalCost: 100,
+          ),
+          CostItemTestDataMapFactory.createEquipmentItemData(
+            id: 'q1',
+            estimateId: testEstimationId,
+            itemName: 'Scissor lift',
+            itemTotalCost: 300,
+          ),
+        ]);
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        expect(find.text('Drywall sheets'), findsOneWidget);
+        expect(find.text('Scissor lift'), findsOneWidget);
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const Key('cost_section_subtotal_material')),
+              )
+              .data,
+          r'$100.00',
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const Key('cost_section_subtotal_labor')),
+              )
+              .data,
+          r'$0.00',
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const Key('cost_section_subtotal_equipment')),
+              )
+              .data,
+          r'$300.00',
+        );
+        expect(find.text(l10n.costSectionEmptyLabor), findsOneWidget);
+      });
+
+      testWidgets(
+        'shows examples, a first-cost button and a greyed-out Preview '
+        'for an empty estimate',
+        (WidgetTester tester) async {
+          setUpAuthenticatedUser(
+            credentialId: 'test-credential-id',
+            email: 'test@example.com',
+          );
+
+          await pumpAppAtRoute(tester, testEstimationRoute);
+
+          expect(find.text(l10n.costSectionExamplesEquipment), findsOneWidget);
+          expect(
+            find.byKey(CostSectionsList.addFirstCostButtonKey),
+            findsOneWidget,
+          );
+          expect(find.byKey(AddCostBottomBar.previewButtonKey), findsOneWidget);
+          expect(
+            tester
+                .widget<CoreButton>(
+                  find.byKey(AddCostBottomBar.previewButtonKey),
+                )
+                .onPressed,
+            isNull,
+          );
+        },
+      );
+
+      testWidgets('the first-cost button opens the same category list as '
+          '+ Add cost', (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await tester.tap(find.byKey(CostSectionsList.addFirstCostButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AddCostCategorySheet), findsOneWidget);
+      });
+
+      testWidgets('shows the estimate total in the bar', (
+        WidgetTester tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        expect(
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
+          r'$2,993.62',
+        );
+      });
+
+      testWidgets('shows a dash, not zero dollars, while the estimate has not '
+          'loaded', (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: () {
+            fakeSupabase.shouldDelayOperations = true;
+            fakeSupabase.completer = Completer();
+          },
+          settle: false,
+        );
+
+        expect(
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
+          '-',
+        );
+        fakeSupabase.shouldDelayOperations = false;
+      });
+
+      testWidgets('reloads the list after the Labor form is closed', (
+        WidgetTester tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        seedLines([
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'l1',
+            estimateId: testEstimationId,
+            itemName: 'Framing crew',
+          ),
+        ]);
+
+        await tapAddCost(tester, CostItemType.labor);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Framing crew'), findsOneWidget);
+      });
+
+      testWidgets('a failed load shows a retry, not an empty estimate', (
+        WidgetTester tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: () {
+            fakeSupabase.shouldThrowOnSelectMatch = true;
+            fakeSupabase.selectMatchExceptionType =
+                SupabaseExceptionType.socket;
+          },
+        );
+
+        expect(find.byKey(const Key('cost_items_load_failed')), findsOneWidget);
+        expect(find.byType(CostSectionsList), findsNothing);
+        expect(
+          find.byKey(CostSectionsList.addFirstCostButtonKey),
+          findsNothing,
+        );
+
+        fakeSupabase.shouldThrowOnSelectMatch = false;
+        seedLines([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'm1',
+            estimateId: testEstimationId,
+            itemName: 'Drywall sheets',
+          ),
+        ]);
+        await tester.tap(find.byKey(const Key('cost_items_retry_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Drywall sheets'), findsOneWidget);
+      });
+    });
+
+    testWidgets('shows no per-tab add buttons any more', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.byKey(const Key('add_material_cost_button')), findsNothing);
+      expect(find.byKey(const Key('add_equipment_cost_button')), findsNothing);
+      expect(find.byKey(const Key('add_labour_cost_button')), findsNothing);
     });
 
     testWidgets('displays preview button in bottom bar', (
@@ -271,79 +520,6 @@ void main() {
       expect(find.text(l10n.previewButton), findsOneWidget);
     });
 
-    testWidgets('displays lock icon in bottom bar', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      expect(find.byKey(const Key('lock_icon')), findsOneWidget);
-    });
-
-    testWidgets('FAB shows add labour cost after switching to labours tab', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, testEstimationRoute);
-
-      await tester.tap(find.text(l10n.laboursTab));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const Key('add_labour_cost_button')), findsOneWidget);
-      expect(find.text(l10n.addLabourCostButton), findsOneWidget);
-    });
-
-    testWidgets(
-      'FAB shows add equipment cost after switching to equipments tab',
-      (WidgetTester tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.byKey(const Key('add_equipment_cost_button')),
-          findsOneWidget,
-        );
-        expect(find.text(l10n.addEquipmentCostButton), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'FAB returns to material after switching back to materials tab',
-      (WidgetTester tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        await tester.tap(find.text(l10n.laboursTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.materialsTab));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.byKey(const Key('add_material_cost_button')),
-          findsOneWidget,
-        );
-      },
-    );
-
     testWidgets(
       'tapping add labour cost button navigates to labour cost form',
       (WidgetTester tester) async {
@@ -354,9 +530,7 @@ void main() {
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.text(l10n.laboursTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_labour_cost_button')));
+        await tapAddCost(tester, CostItemType.labor);
         await tester.pump();
 
         final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
@@ -381,9 +555,7 @@ void main() {
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
 
         expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
@@ -403,9 +575,7 @@ void main() {
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('your_rates_disclaimer')), findsNothing);
@@ -423,9 +593,7 @@ void main() {
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -445,9 +613,7 @@ void main() {
 
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.enterText(
           find.descendant(
@@ -475,9 +641,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.fling(
         find.byKey(const Key('new_equipment_cost_row')),
@@ -500,9 +664,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
@@ -523,9 +685,7 @@ void main() {
         fakeSupabase.shouldThrowOnSelectMatch = true;
 
         await pumpAppAtRoute(tester, testEstimationRoute);
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
 
         expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
@@ -547,9 +707,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(SheetHeader.backButtonKey));
       await tester.pumpAndSettle();
@@ -568,9 +726,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
@@ -606,9 +762,7 @@ void main() {
 
     Future<void> openRecents(WidgetTester tester) async {
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
     }
 
@@ -681,9 +835,7 @@ void main() {
         );
 
         await pumpAppAtRoute(tester, testEstimationRoute);
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -716,9 +868,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
@@ -742,9 +892,7 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
@@ -775,9 +923,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
-      await tester.tap(find.text(l10n.equipmentsTab));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
       await tester.pumpAndSettle();
@@ -798,9 +944,7 @@ void main() {
         );
         seedEstimate();
         await pumpAppAtRoute(tester, testEstimationRoute);
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -901,7 +1045,7 @@ void main() {
         final first = highlightedLine(tester);
         expect(first, isNotNull);
 
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -1086,7 +1230,7 @@ void main() {
 
         await tester.tap(addButton());
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -1210,12 +1354,14 @@ void main() {
           ),
         ]);
         fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
-          {'estimate_id': testEstimationId, 'item_total_cost': 100},
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'seed-1',
+            estimateId: testEstimationId,
+            itemTotalCost: 100,
+          ),
         ]);
         await pumpAppAtRoute(tester, testEstimationRoute);
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+        await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
         await tester.pumpAndSettle();
@@ -1271,13 +1417,13 @@ void main() {
     });
 
     group('estimate summary load', () {
-      Future<void> openNewEquipmentSheet(WidgetTester tester) async {
-        await tester.tap(find.text(l10n.equipmentsTab));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
-        await tester.pumpAndSettle();
+      Future<void> openNewEquipmentSheet(
+        WidgetTester tester, {
+        bool settle = true,
+      }) async {
+        await tapAddCost(tester, CostItemType.equipment, settle: settle);
         await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
-        await tester.pumpAndSettle();
+        await pumpFrames(tester, settle: settle);
       }
 
       testWidgets('opens the sheet when the estimate load failed', (
@@ -1316,10 +1462,11 @@ void main() {
             fakeSupabase.shouldDelayOperations = true;
             fakeSupabase.completer = Completer();
           },
+          settle: false,
         );
         fakeSupabase.shouldDelayOperations = false;
 
-        await openNewEquipmentSheet(tester);
+        await openNewEquipmentSheet(tester, settle: false);
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
       });
@@ -1333,7 +1480,7 @@ void main() {
         );
         seedEstimate();
         await pumpAppAtRoute(tester, testEstimationRoute);
-        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tapAddCost(tester, CostItemType.material);
         await tester.pumpAndSettle();
       }
 
@@ -1379,7 +1526,7 @@ void main() {
         );
         await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tapAddCost(tester, CostItemType.material);
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
@@ -1567,6 +1714,49 @@ void main() {
         expect(highlightedLine(tester), isNotNull);
       });
 
+      testWidgets('shows the new line in the Materials section and moves its '
+          'subtotal', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        final subtotalBefore = tester
+            .widget<Text>(
+              find.byKey(const Key('cost_section_subtotal_material')),
+            )
+            .data;
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        final line = highlightedLine(tester)!;
+        expect(find.byKey(Key('cost_line_$line')), findsOneWidget);
+        expect(find.text('Interior paint'), findsOneWidget);
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const Key('cost_section_subtotal_material')),
+              )
+              .data,
+          isNot(subtotalBefore),
+        );
+        expect(
+          find.byKey(CostSectionsList.placeholderKey(CostItemType.material)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('tapping the new line clears its highlight', (tester) async {
+        await openMaterialSheet(tester);
+        await fillValidMaterialForm(tester);
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+        final line = highlightedLine(tester)!;
+
+        await tester.tap(find.byKey(Key('cost_line_$line')));
+        await tester.pumpAndSettle();
+
+        expect(highlightedLine(tester), isNull);
+      });
+
       testWidgets('moves the mark to the next line added, even for the same '
           'material', (tester) async {
         await openMaterialSheet(tester);
@@ -1575,7 +1765,7 @@ void main() {
         await tester.pumpAndSettle();
         final first = highlightedLine(tester);
 
-        await tester.tap(find.byKey(const Key('add_material_cost_button')));
+        await tapAddCost(tester, CostItemType.material);
         await tester.pumpAndSettle();
         await fillValidMaterialForm(tester);
         await tester.tap(addButton());
