@@ -127,6 +127,14 @@ class EquipmentCostFormBloc
             : d,
       );
     });
+    on<EquipmentRateSaveRunningChangedEvent>((e, emit) {
+      final isSubmittingOrAsking =
+          state is EquipmentCostFormSubmitting ||
+          state is EquipmentCostFormSuccess ||
+          state is EquipmentCostFormOutsizedFeeConfirm;
+      if (isSubmittingOrAsking) return;
+      _emit(emit, (d) => d.copyWith(isRateSaveRunning: e.isRunning));
+    });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
       final usable =
@@ -381,7 +389,8 @@ class EquipmentCostFormBloc
     // A second tap while the first submit is in flight (or has already
     // succeeded) must not insert a duplicate cost line.
     if (state is EquipmentCostFormSubmitting ||
-        state is EquipmentCostFormSuccess) {
+        state is EquipmentCostFormSuccess ||
+        state.formData.isRateSaveRunning) {
       return;
     }
     final draft = _validated(state.formData);

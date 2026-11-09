@@ -97,6 +97,14 @@ class EquipmentRecalledAmountSavedEvent extends EquipmentCostFormEvent {
   final double? amount;
 }
 
+/// Fired when a save of the line's rate to Your rates starts or ends.
+class EquipmentRateSaveRunningChangedEvent extends EquipmentCostFormEvent {
+  const EquipmentRateSaveRunningChangedEvent({required this.isRunning});
+
+  /// True when the save starts, false when it ends, however it ends.
+  final bool isRunning;
+}
+
 /// Fired when the user submits the equipment cost form.
 class EquipmentCostSubmittedEvent extends EquipmentCostFormEvent {
   const EquipmentCostSubmittedEvent({required this.estimateId});

@@ -126,6 +126,7 @@ class EquipmentCostFormData extends Equatable {
     this.isValid = false,
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
+    this.isRateSaveRunning = false,
   });
 
   /// Pricing strategy currently selected: by the day or by the job.
@@ -191,6 +192,10 @@ class EquipmentCostFormData extends Equatable {
   /// the Your recents row it was opened from. Closing the form asks first
   /// while this is true.
   final bool hasUnsavedChanges;
+
+  /// Whether a save of this line's rate to Your rates is running. Add to
+  /// estimate stays off, and closing the sheet waits for the save to end.
+  final bool isRateSaveRunning;
 
   /// Validation error key for the item type field, or null when valid.
   EquipmentFieldError? get itemTypeError =>
@@ -269,6 +274,7 @@ class EquipmentCostFormData extends Equatable {
     bool? isValid,
     Map<EquipmentFormField, EquipmentFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
+    bool? isRateSaveRunning,
   }) {
     return EquipmentCostFormData(
       method: method ?? this.method,
@@ -301,6 +307,7 @@ class EquipmentCostFormData extends Equatable {
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
+      isRateSaveRunning: isRateSaveRunning ?? this.isRateSaveRunning,
     );
   }
 
@@ -323,6 +330,7 @@ class EquipmentCostFormData extends Equatable {
     isValid,
     fieldErrors,
     hasUnsavedChanges,
+    isRateSaveRunning,
   ];
 }
 
