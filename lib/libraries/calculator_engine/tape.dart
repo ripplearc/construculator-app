@@ -113,9 +113,20 @@ enum TapeRefusal {
 
   /// A digit straight after a closed bracket ("Add an operator first"): it
   /// would join the group's value and the bracket would vanish (Section 5.1).
-  /// A trig key there is not refused: it works on the value the tape has
-  /// come to ([Tape.pressTrigKey]).
+  /// A trig key there works on the group when the bracket starts the tape,
+  /// and is refused with [pressEqualsFirst] when the bracket follows an
+  /// operator ([Tape.pressTrigKey]).
   addAnOperatorFirst,
+
+  /// A trig key straight after a closed bracket that follows an operator
+  /// (2 + (3) [ATAN]): "Press = first" / "Then press ATAN for the angle of
+  /// the whole tape." for an inverse key, "Then press SIN on the whole
+  /// tape." for a forward key, the body naming the key pressed (Section 7,
+  /// "After a closed bracket"; product manager, 15 November 2026). Nothing
+  /// is added and the tape stays as it was: an answer on the group alone
+  /// would drop the 2 + from the total with no message, and a wrong angle
+  /// that looks right is worse than one more press of =.
+  pressEqualsFirst,
 
   /// A unit key straight after a closed bracket ("A group cannot take a
   /// unit yet").
@@ -562,22 +573,32 @@ class Tape extends Equatable {
   /// such as Pitch 30° still being typed ([TapeRefusal.ratioOutOfRange]).
   ///
   /// A forward key takes an angle the tape has answered (0.5 [ASIN] [SIN]
-  /// is Sine 0.5, scenario S106). A trig key never takes the wrong kind of
+  /// is Sine 0.5, scenario S106), and a Calc that is a plain number, read
+  /// as degrees: 12 + 18 = [SIN] is Sine 0.5 (rule 4.9, "a trig key after a
+  /// result uses the result"). A trig key never takes the wrong kind of
   /// answer, nor the ratio a forward key answered: 38 [SIN] [COS] and 1800
   /// [COS] [ACOS] open a fresh chip instead (scenarios S96, S106), which
   /// the caller banks the tape for, as for any fresh chip after a result.
-  /// When the key takes the answer the tape goes on.
+  /// When the key takes the answer the tape goes on. On the divisor ÷ 0
+  /// reopened the key drops the Division by zero chip, as an operator does,
+  /// since the division that failed is gone: 2 ÷ 0 = [SIN] reads 2 ÷ Sine…
+  /// (Section 5, "Division by zero").
   ///
-  /// Straight after a closed bracket the key works on the value the tape has
-  /// come to, as it does on a finished value (Section 7, "After a closed
-  /// bracket"; owner decision of 28 October 2026): (12 ÷ 23) [ATAN] lands
-  /// Calc 0.52 and then Arctangent 27.55°, the same as 12 ÷ 23 [ATAN], and
-  /// 2 + (3 × 4) [SIN] lands Calc 14 and then Sine 0.241922, so the group
-  /// is never dropped from the chain the way a fresh prefix chip would drop
-  /// it ((5 + 3) [ATAN] 16 ÷ 12 answered 53.13° with no trace of the 8). A
-  /// group worth a value with a unit is refused as any such value is
-  /// ([TapeRefusal.trigNeedsAPlainAngle]), and a digit or a unit key in the
-  /// same place is still refused ([TapeRefusal.addAnOperatorFirst],
+  /// Straight after a closed bracket that starts the tape the key works on
+  /// the value of the bracket, as it does on a finished value (Section 7,
+  /// "After a closed bracket", and walkthrough 12.9; owner decision of
+  /// 28 October 2026): (12 ÷ 23) [ATAN] lands Calc 0.52 and then Arctangent
+  /// 27.55°, the same as 12 ÷ 23 [ATAN], and (5) [SIN] answers with no Calc
+  /// before it. A bracket that follows an operator is refused
+  /// ([TapeRefusal.pressEqualsFirst]; product manager, 15 November 2026):
+  /// 2 + (3) [ATAN] adds nothing and the tape stays 2 + (3), since an
+  /// answer on the group alone would leave the 2 + out of the total with
+  /// no message, and = first makes Calc 5 then Arctangent 78.69°. A group
+  /// worth a value with a unit is refused as any such value is
+  /// ([TapeRefusal.trigNeedsAPlainAngle]), a chain that failed lands its
+  /// error chip and opens no trig chip, 5 ÷ (2 − 2) [ATAN] is Division by
+  /// zero (rule 4.12), and a digit or a unit key in the same place is still
+  /// refused ([TapeRefusal.addAnOperatorFirst],
   /// [TapeRefusal.groupCannotTakeUnit]).
   TapeOutcome pressTrigKey(TrigFunction function) {
     if (openBracket != null) {
@@ -586,7 +607,9 @@ class Tape extends Equatable {
     if (_endsWithClosedBracket) return _answeredOnClosedBracket(function);
     final chip = active;
     if (chip != null && chip.entry.isEmpty) {
-      return _replaceLast(_asTrigChip(chip, function));
+      return (_withDivisorRepaired ?? this)._replaceLast(
+        _asTrigChip(chip, function),
+      );
     }
     if (chip == null) {
       if (_answerTheKeyTakes(function) case final operand?) {
@@ -611,17 +634,26 @@ class Tape extends Equatable {
     );
   }
 
-  TapeOutcome _answeredOnClosedBracket(TrigFunction function) =>
-      switch (runningTotal) {
-        ChainValue(:final value, isCalculation: true) => _answeredOn(
-          append(ResultChip(key: calcKey, value: value)),
-          function,
-          value,
-        ),
-        ChainValue(:final value) => _answeredOn(this, function, value),
-        ChainFailed() ||
-        ChainEmpty() => const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
-      };
+  TapeOutcome _answeredOnClosedBracket(TrigFunction function) {
+    final total = runningTotal;
+    if (total case ChainFailed(:final error)) {
+      return TapeChanged(append(ErrorChip(error)));
+    }
+    final bracket = chips.last as BracketChip;
+    if (bracket.operator != null) {
+      return const TapeRefused(TapeRefusal.pressEqualsFirst);
+    }
+    return switch (evaluator.fold(bracket.inner)) {
+      ChainValue(:final value, isCalculation: true) => _answeredOn(
+        append(ResultChip(key: calcKey, value: value)),
+        function,
+        value,
+      ),
+      ChainValue(:final value) => _answeredOn(this, function, value),
+      ChainFailed() ||
+      ChainEmpty() => const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+    };
+  }
 
   ValueChip _asTrigChip(ValueChip chip, TrigFunction function) => chip.copyWith(
     key: () => function.key,
@@ -633,8 +665,7 @@ class Tape extends Equatable {
     if (chips.isEmpty || chips.last is! ResultChip) return null;
     final ResultChip(:key, :value) = chips.last as ResultChip;
     return switch (value) {
-      Scalar() when function.isInverse && TrigFunction.named(key) == null =>
-        value,
+      Scalar() when TrigFunction.named(key) == null => value,
       Angle() when !function.isInverse => value,
       _ => null,
     };
