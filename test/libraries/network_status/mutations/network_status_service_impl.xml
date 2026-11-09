@@ -64,8 +64,8 @@
             <mutation text="} else {"/>
         </regex>
 
-        <regex pattern="if \(!_appLifecycle\.isInForeground\) return;" id="checking.skip_background_guard">
-            <mutation text=""/>
+        <regex pattern="if \(_isDisposed \|\| !_appLifecycle\.isInForeground\) return;" id="checking.skip_background_guard">
+            <mutation text="if (_isDisposed) return;"/>
         </regex>
 
         <regex pattern="_ticksSub \?\?= _reachabilitySdk\.checkTicks\.listen\(\s*\(_\) =&gt; unawaited\(_checkNow\(\)\),\s*\);" id="checking.skip_polling">
@@ -171,6 +171,13 @@
             <mutation text=""/>
         </regex>
 
+        <regex pattern="_apply\(isReachable \? NetworkStatus\.online : NetworkStatus\.offline\);\s*\} catch \(error, stackTrace\) \{" id="check.failed_check_goes_offline">
+            <mutation text="_apply(isReachable ? NetworkStatus.online : NetworkStatus.offline);&#10;    } catch (error, stackTrace) {&#10;      _apply(NetworkStatus.offline);"/>
+        </regex>
+
+        <regex pattern="if \(_isDisposed \|\| !_appLifecycle\.isInForeground\) return;" id="check.start_ignores_dispose">
+            <mutation text="if (!_appLifecycle.isInForeground) return;"/>
+        </regex>
     </rules>
 
     <commands>
