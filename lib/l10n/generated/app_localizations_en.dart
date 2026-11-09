@@ -2166,6 +2166,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addToEstimateButton => 'Add to estimate';
 
   @override
+  String get saveThisLineButton => 'Save this line';
+
+  @override
+  String get changesThisEstimateLabel => 'Changes this estimate';
+
+  @override
+  String get noChangeYetNote => 'No change yet';
+
+  @override
   String get enterEquipmentNameToContinueButton =>
       'Enter an equipment name to continue';
 
