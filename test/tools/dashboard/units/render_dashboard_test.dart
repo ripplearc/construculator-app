@@ -90,7 +90,9 @@ void main() {
     test('ships no script and fetches nothing', () {
       final String html = render(
         systemHealth: <SystemHealthGroup>[healthGroup()],
-        e2e: <E2eGroup>[e2eGroup(cujs: <CujSummary>[cuj()])],
+        e2e: <E2eGroup>[
+          e2eGroup(cujs: <CujSummary>[cuj()]),
+        ],
       );
 
       expect(html, isNot(contains('<script')));
@@ -107,13 +109,15 @@ void main() {
       expect(html, contains('href="#e2e"'));
     });
 
-    test('defines a dark palette for both the OS setting and a theme stamp',
-        () {
-      final String html = render();
+    test(
+      'defines a dark palette for both the OS setting and a theme stamp',
+      () {
+        final String html = render();
 
-      expect(html, contains('@media (prefers-color-scheme: dark)'));
-      expect(html, contains(':root[data-theme="dark"]'));
-    });
+        expect(html, contains('@media (prefers-color-scheme: dark)'));
+        expect(html, contains(':root[data-theme="dark"]'));
+      },
+    );
 
     test('stamps when it was generated', () {
       expect(render(), contains('2026-08-26T09:00:00Z'));
@@ -141,8 +145,13 @@ void main() {
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, contains('TTID (cold) and TTID (warm) are one measurement'));
-      expect(html, contains('under two'));
+      expect(
+        html,
+        contains(
+          'TTID (cold) and TTID (warm) are one measurement under two conditions.',
+        ),
+      );
+      expect(html, isNot(contains('no producer')));
     });
 
     test('marks a metric with no recorded value as not recorded', () {
@@ -207,7 +216,9 @@ void main() {
 
     test('keeps a wide table scrollable inside its own container', () {
       final String html = render(
-        e2e: <E2eGroup>[e2eGroup(cujs: <CujSummary>[cuj()])],
+        e2e: <E2eGroup>[
+          e2eGroup(cujs: <CujSummary>[cuj()]),
+        ],
       );
 
       expect(html, contains('class="scroll"'));
@@ -232,9 +243,7 @@ void main() {
     });
 
     test('escapes a suite name that contains markup', () {
-      final String html = render(
-        e2e: <E2eGroup>[e2eGroup(suite: '<b>v2</b>')],
-      );
+      final String html = render(e2e: <E2eGroup>[e2eGroup(suite: '<b>v2</b>')]);
 
       expect(html, contains('&lt;b&gt;v2&lt;/b&gt;'));
     });
