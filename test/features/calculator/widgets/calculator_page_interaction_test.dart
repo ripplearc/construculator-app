@@ -288,7 +288,8 @@ void main() {
   });
 
   testWidgets('tapping a strip chip lands its answer on the tape, and the '
-      'equals key follows the next leading suggestion', (tester) async {
+      'equals key reads = while the strip still offers the next answer, '
+      'since = after a result lands nothing', (tester) async {
     await pumpPage(tester);
     final bloc = blocOf(tester);
     final l10n = l10nOf(tester);
@@ -300,7 +301,9 @@ void main() {
     expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
     expect(bloc.state.valueText, '410.67ft²');
     expect(find.text(l10n.calculatorAnswerArea), findsWidgets);
-    expect(equalsFace(tester), l10n.calculatorAnswerDiagonal);
+    expect(bloc.state.suggestions.first.key, DeterministicRules.diagonalKey);
+    expect(bloc.state.equalsKeyId, isNull);
+    expect(equalsFace(tester), CalculatorLabelFormatter.equalsSign);
 
     await tester.tap(find.byKey(CoreSuggestionArea.conversionChipTestKey(0)));
     await tester.pump();

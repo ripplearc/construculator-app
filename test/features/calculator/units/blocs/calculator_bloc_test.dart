@@ -744,6 +744,27 @@ void main() {
         expect(retyped.equalsKeyId, Tape.calcKey);
       });
 
+      test('the equals key names only an answer = lands: after a result or '
+          'with an operator waiting for its number it reads =, though the '
+          'strip still offers answers (term 2.15, Section 1.2)', () {
+        const sides = '[Length] 2 0 ft [Width] 1 0 ft';
+        final offered = CalculatorState(tape: pressed(sides));
+        final CalculatorSuggestion(:value) = offered.suggestions.first;
+        expect(offered.equalsLands, offered.suggestions.first);
+        expect(offered.equalsKeyId, DeterministicRules.areaKey);
+        final landed = pressed(
+          sides,
+        ).landAnswer(DeterministicRules.areaKey, value);
+        for (final state in [
+          CalculatorState(tape: (landed as TapeChanged).tape),
+          CalculatorState(tape: pressed('$sides +')),
+        ]) {
+          expect(state.suggestions, isNotEmpty);
+          expect(state.equalsLands, isNull);
+          expect(state.equalsKeyId, isNull);
+        }
+      });
+
       test('an error chip that ends the chain hides the rule answers the '
           'named values would earn, and a result after it starts a chain '
           'that is offered again', () {
@@ -1415,6 +1436,7 @@ void main() {
       for (final (keys, chip) in const [
         ('2 yd', '6ft 0in'),
         ('2 6 4 in', '22ft 0in'),
+        ('1 m', '3ft 3-3/8in'),
         ('1 2 ft × 5 ft =', '6.67yd²'),
       ]) {
         blocTest<CalculatorBloc, CalculatorState>(

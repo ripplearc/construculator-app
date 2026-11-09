@@ -12,6 +12,37 @@ void main() {
 
   group('QuantityFormatter', () {
     group('lengths, as Section 6 spells them', () {
+      test('footInchTokens writes a ft-in reading as the trade types it: '
+          'whole feet, whole inches, the fraction at the resolution', () {
+        expect(
+          formatter.footInchTokens(
+            Length.computed(1000 / 25.4 * 64, unit: Unit.footInch),
+          ),
+          const [
+            Token(digits: '3', unit: Unit.foot),
+            Token(digits: '3', unit: Unit.inch),
+            Token(digits: '3', denominator: '8', unit: Unit.inch),
+          ],
+        );
+        expect(
+          formatter.footInchTokens(const Length(24 * 64, unit: Unit.footInch)),
+          const [
+            Token(digits: '2', unit: Unit.foot),
+            Token(digits: '0', unit: Unit.inch),
+          ],
+        );
+        expect(
+          formatter.footInchTokens(
+            Length.computed(11.97 * 64, unit: Unit.footInch),
+          ),
+          const [
+            Token(digits: '1', unit: Unit.foot),
+            Token(digits: '0', unit: Unit.inch),
+          ],
+          reason: 'a fraction that rounds to a whole inch carries up',
+        );
+      });
+
       test('22ft in feet, inches, yards and metres', () {
         expect(
           formatter.format(const Length(twentyTwoFeet, unit: Unit.foot)),

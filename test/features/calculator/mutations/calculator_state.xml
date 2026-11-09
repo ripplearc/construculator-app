@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR STATE MUTATION TESTING -->
+    <!-- Targets: what the equals key is named by. Critical path: a key that
+         names an answer = would refuse is a dead key with a name on it. -->
+
+    <files>
+        <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_state.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: = is said to land the leading answer after a result, or
+             with an operator still waiting for its number -->
+        <regex pattern="tape\.endsWithResult \|\| tape\.endsWithOperator\s*\? null\s*: suggestions\.firstOrNull;" dotAll="true" id="calculator_state.equals_lands.after_result_or_operator">
+            <mutation text="suggestions.firstOrNull;"/>
+            <mutation text="tape.endsWithResult ? null : suggestions.firstOrNull;"/>
+            <mutation text="tape.endsWithOperator ? null : suggestions.firstOrNull;"/>
+        </regex>
+
+        <!-- RULE 2: the equals key is named by the leading suggestion whether
+             or not = lands it -->
+        <regex pattern="String\? get equalsKeyId =&gt; switch \(equalsLands\) \{" dotAll="true" id="calculator_state.equals_key.names_what_is_not_landed">
+            <mutation text="String? get equalsKeyId =&gt; switch (suggestions.firstOrNull) {"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="calculator_state" expected-return="0">flutter test test/features/calculator/units/blocs/calculator_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

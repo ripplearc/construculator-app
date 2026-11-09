@@ -31,8 +31,8 @@
 
         <!-- RULE 4: a dangling operator inside is kept, so the close is
              refused -->
-        <regex pattern="if \(inner\.active case final chip\? when chip\.entry\.isEmpty\) \{\s*inner = _with" dotAll="true" id="tape.close_bracket.keep_dangling_operator">
-            <mutation text="if (false) { inner = _with"/>
+        <regex pattern="if \(inner\.active case final chip\? when chip\.entry\.isEmpty\) \{\s*if \(chip\.operator != null\) \{" dotAll="true" id="tape.close_bracket.keep_dangling_operator">
+            <mutation text="if (inner.active case final chip? when false) { if (chip.operator != null) {"/>
         </regex>
 
         <!-- RULE 5: an empty bracket closes to nothing instead of being
@@ -132,6 +132,12 @@
              not told the edit was cancelled -->
         <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(tape, notice: notice\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
             <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
+        </regex>
+
+        <!-- RULE 19 (X33 round, Section 7): an operator left at the end of a
+             bracket is dropped when the bracket closes -->
+        <regex pattern="if \(chip\.operator != null\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}\s*inner = _with\(inner\.chips\.sublist\(0, inner\.chips\.length - 1\)\);" dotAll="true" id="tape.close_bracket.drops_operator">
+            <mutation text="inner = _with(inner.chips.sublist(0, inner.chips.length - 1));"/>
         </regex>
     </rules>
 

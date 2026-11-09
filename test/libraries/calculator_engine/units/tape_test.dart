@@ -412,6 +412,42 @@ void main() {
         final tape = press(const Tape(preferences: longTon), '2 2 4 0 lbs');
         expect(changed(tape.pressUnit(Unit.ton)).active!.entry.text, '1ton');
       });
+
+      test('a ft-in conversion accepted from the strip reads as the strip '
+          'chip wrote it and keeps the exact value (X33; rule 4.15)', () {
+        Length footInchOffer(Tape tape) => const UnitConverter()
+            .offersFor(tape.active!.value(tape.parser)!)
+            .whereType<Length>()
+            .firstWhere((length) => length.unit == Unit.footInch);
+        final metre = press(const Tape(), '1 m');
+        final shown = footInchOffer(metre);
+        expect(metre.formatter.format(shown), '3ft 3-3/8in');
+        final accepted = changed(metre.acceptConversion(shown));
+        expect(accepted.active!.entry.text, '3ft 3-3/8in');
+        expect(
+          (accepted.active!.value(accepted.parser)! as Length).inches,
+          (metre.active!.value(metre.parser)! as Length).inches,
+        );
+        expect(
+          changed(metre.pressUnit(Unit.footInch)).active!.entry.text,
+          '3ft 3.37in',
+          reason: 'the unit key alone keeps the speller\'s decimals',
+        );
+        final yards = press(const Tape(), '2 yd');
+        expect(
+          changed(
+            yards.acceptConversion(footInchOffer(yards)),
+          ).active!.entry.text,
+          '6ft 0in',
+        );
+        final inches = press(const Tape(), '3 0 in');
+        expect(
+          changed(
+            inches.acceptConversion(footInchOffer(inches)),
+          ).active!.entry.text,
+          '2ft 6in',
+        );
+      });
     });
 
     group('digits and fractions', () {

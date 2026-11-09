@@ -276,6 +276,12 @@
         <regex pattern="ValueChip\(operator: _\?, :final entry\) =&gt; entry\.isEmpty," dotAll="true" id="tape.ends_with_operator.any_operator_chip">
             <mutation text="ValueChip(operator: _?) =&gt; true,"/>
         </regex>
+
+        <!-- RULE 26 (X33): an accepted ft-in conversion reads as the unit key
+             spells it, not as the strip chip wrote it -->
+        <regex pattern="tape\._respelled\(\s*chip,\s*value,\s*tape\.formatter\.footInchTokens\(value\),\s*\)," dotAll="true" id="tape.accept_conversion.speller_text">
+            <mutation text="tape._respelled(chip, value, tape.ladder.speller.spell(value)),"/>
+        </regex>
     </rules>
 
     <commands>

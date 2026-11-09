@@ -133,9 +133,10 @@ enum TapeRefusal {
 
   /// = on an operator still waiting for its number (20ft + =): "Type a
   /// number first", "Type the number after +, then press =" (team decision
-  /// of 1 November 2026; rule 4.12, a key is never silently dead). The
-  /// operator stays, and no strip answer lands over it. The caller names
-  /// the operator from the tape.
+  /// of 1 November 2026; rule 4.12, a key is never silently dead), and
+  /// [( )] or = closing a bracket on such an operator (2 + (3 × then
+  /// [( )]; Section 7). The operator stays, and no strip answer lands over
+  /// it. The caller names the operator from the tape.
   operatorNeedsANumber,
 
   /// = straight after a result chip (Area = =): "Result already shown",
@@ -1420,6 +1421,53 @@ class Tape extends Equatable {
     };
   }
 
+  /// A conversion accepted from the strip (term 2.14; walkthrough 14.2)
+  /// presses [shown]'s unit key and then reads the chip the way the strip
+  /// chip was written: a ft-in reading keeps the trade's fraction at the
+  /// Fractional resolution setting, so 1m accepted as 3ft 3-3/8in reads
+  /// 3ft 3-3/8in on the tape, where the unit key alone would read it as
+  /// 3ft 3.37in ([QuantitySpeller]; decision tree row 201). The exact
+  /// value stays beside the reading (rule 4.15). Every other conversion
+  /// reads as the key spells it, which is what the strip chip showed.
+  TapeOutcome acceptConversion(
+    Quantity shown, {
+    bool holdsLengthOnly = false,
+    bool takesAGrade = false,
+  }) {
+    final unit = switch (shown) {
+      Length(:final unit) ||
+      Area(:final unit) ||
+      Volume(:final unit) ||
+      Weight(:final unit) => unit,
+      Scalar() || Angle() => null,
+    };
+    if (unit == null) return TapeChanged(this);
+    final outcome = pressUnit(
+      unit,
+      holdsLengthOnly: holdsLengthOnly,
+      takesAGrade: takesAGrade,
+    );
+    if (shown case Length(unit: Unit.footInch)) {
+      if (outcome case TapeChanged(:final tape, :final notice)) {
+        if (tape.active
+            case ValueChip(exact: (value: final Length value, spelled: _)) &&
+                final chip) {
+          return TapeChanged(
+            tape._replaceActive(
+              tape._respelled(
+                chip,
+                value,
+                tape.formatter.footInchTokens(value),
+              ),
+            ),
+            notice: notice,
+          );
+        }
+      }
+    }
+    return outcome;
+  }
+
   /// The running total of the tape as far as it can be computed: the Calc
   /// the strip offers when it is a calculation, the error the strip goes
   /// silent for, or nothing.
@@ -1697,9 +1745,11 @@ class Tape extends Equatable {
     return TapeChanged(tape._sealed().append(const BracketChip()));
   }
 
-  /// Closes the open bracket: an operator left without a value at the end
-  /// is dropped, the inside is folded to one value of whatever dimension
-  /// it comes to, and the chip turns solid. Nothing between ( and ) removes
+  /// Closes the open bracket: the inside is folded to one value of whatever
+  /// dimension it comes to, and the chip turns solid. An operator left
+  /// without its number at the end is never dropped: the close is refused
+  /// with "Type a number first" and the × stays, whether [( )] or = asked
+  /// for it (Section 7; team decision of 1 November 2026). Nothing between ( and ) removes
   /// the bracket with a notice, and the tape is what it was before ( was
   /// pressed: the operator before it waits again as an empty operator
   /// chip, and a value before it is active again, so a digit continues it.
@@ -1711,6 +1761,9 @@ class Tape extends Equatable {
     if (bracket == null) return const TapeRefused(TapeRefusal.noBracketToClose);
     var inner = _with(bracket.inner)._withFractionClosedAsInches();
     if (inner.active case final chip? when chip.entry.isEmpty) {
+      if (chip.operator != null) {
+        return const TapeRefused(TapeRefusal.operatorNeedsANumber);
+      }
       inner = _with(inner.chips.sublist(0, inner.chips.length - 1));
     }
     if (inner.isEmpty) {
