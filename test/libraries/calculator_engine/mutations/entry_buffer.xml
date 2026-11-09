@@ -178,6 +178,32 @@
         <regex pattern="return const EntryRefused\(EntryRefusal\.secondDecimalPoint\);" dotAll="true" id="entry_buffer.digit.wrong_point_reason">
             <mutation text="return const EntryRefused(EntryRefusal.decimalInDenominator);"/>
         </regex>
+
+        <!-- RULE R101 (decision tree row 101): a wrong unit on the part of a
+             compound splits off a new value instead of being refused -->
+        <regex pattern="if \(_takesACompoundPart\(previous\)\) \{\s*return const EntryRefused\(EntryRefusal\.compoundPartNeedsItsUnit\);\s*\}" dotAll="true" id="entry.close_with.part_splits">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="previous\.power == 1 &amp;&amp; \(previous\.unit\?\.compoundRank \?\? 0\) &gt; 1;" dotAll="true" id="entry.takes_part.any_unit">
+            <mutation text="(previous.unit?.compoundRank ?? 0) &gt; 1;"/>
+            <mutation text="previous.power == 1 &amp;&amp; (previous.unit?.compoundRank ?? 0) &gt; 0;"/>
+        </regex>
+
+        <!-- RULE R79 (decision tree row 79): the inch part is read under any
+             unit, or a fraction counts as one -->
+        <regex pattern="previous\.unit == Unit\.foot &amp;&amp;\s*previous\.power == 1;" dotAll="true" id="entry.open_inch_part.any_unit">
+            <mutation text="previous.unit != null &amp;&amp; previous.power == 1;"/>
+        </regex>
+        <regex pattern="last\.denominator == null &amp;&amp;\s*!last\.isDegreesMinutesSeconds &amp;&amp;\s*previous\.unit == Unit\.foot" dotAll="true" id="entry.open_inch_part.fraction">
+            <mutation text="!last.isDegreesMinutesSeconds &amp;&amp; previous.unit == Unit.foot"/>
+        </regex>
+
+        <!-- RULE R84 (decision tree row 84): a fraction the tape closed by
+             itself counts as closed, or a whole inch does -->
+        <regex pattern="tokens\.last\.typedAs == null &amp;&amp;\s*\(tokens\.last\.denominator\?\.isNotEmpty \?\? false\);" dotAll="true" id="entry.closed_fraction.typed_as">
+            <mutation text="(tokens.last.denominator?.isNotEmpty ?? false);"/>
+            <mutation text="tokens.last.typedAs == null;"/>
+        </regex>
     </rules>
 
     <commands>

@@ -129,8 +129,8 @@
         <regex pattern="final entry = chip\.entry\.sealed;" dotAll="true" id="tape.sealed.field_left_open">
             <mutation text="final entry = chip.entry;"/>
         </regex>
-        <regex pattern="final tape = _withFractionClosedAsInches\(\)\._withFieldClosed\(\);" dotAll="true" id="tape.press_equals.field_left_open">
-            <mutation text="final tape = _withFractionClosedAsInches();"/>
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\s*\._withInchPartClosed\(\)\s*\._withFieldClosed\(\);" dotAll="true" id="tape.press_equals.field_left_open">
+            <mutation text="final tape = _withFractionClosedAsInches()._withInchPartClosed();"/>
         </regex>
         <regex pattern="if \(identical\(entry, chip\.entry\)\) return this;\s*return _replaceActive\(_withEntry\(chip, entry\)\);" dotAll="true" id="tape.with_field_closed.always_changed">
             <mutation text="return _replaceActive(_withEntry(chip, entry));"/>
