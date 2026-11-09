@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- EQUIPMENT FORM BLOC, EDIT MODE: open, save and rate handling -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="(id: existing\?\.id \?\? '')" id="edit_save.id_blank">
+            <mutation text="id: ''"/>
+        </regex>
+
+        <regex pattern="(createdAt: existing\?\.createdAt \?\? now)" id="edit_save.created_at_now">
+            <mutation text="createdAt: now"/>
+        </regex>
+
+        <regex pattern="(final result = edited == null)" id="edit_save.update_when_new">
+            <mutation text="final result = edited != null"/>
+        </regex>
+
+        <regex pattern="(if \(edited == null &amp;&amp;)" id="edit_save.record_use_on_edit">
+            <mutation text="if (edited != null &amp;&amp;"/>
+        </regex>
+
+        <regex pattern="(d\.isEditingExistingLine &amp;&amp;)" id="edit_rate.guard_off">
+            <mutation text="false &amp;&amp;"/>
+        </regex>
+
+        <regex pattern="(rate == \(isDay \? d\.dailyRate : d\.jobAmount\))" id="edit_rate.guard_inverted">
+            <mutation text="rate != (isDay ? d.dailyRate : d.jobAmount)"/>
+        </regex>
+
+        <regex pattern="(_formValuesAtOpening = opened;)" id="edit_open.no_baseline">
+            <mutation text="// baseline removed"/>
+        </regex>
+
+        <regex pattern="(dailyRate: item\.dailyRate\?\.amount,)" id="edit_open.no_daily_rate">
+            <mutation text="dailyRate: null,"/>
+        </regex>
+
+        <regex pattern="(jobAmount: item\.jobAmount\?\.amount,)" id="edit_open.no_job_amount">
+            <mutation text="jobAmount: null,"/>
+        </regex>
+
+        <regex pattern="(deliveryFee: item\.deliveryFee\?\.amount,)" id="edit_open.no_delivery_fee">
+            <mutation text="deliveryFee: null,"/>
+        </regex>
+
+        <regex pattern="(duration: item\.duration,)" id="edit_open.no_duration">
+            <mutation text="duration: null,"/>
+        </regex>
+
+        <regex pattern="(rateStatus: item\.rateStatus,)" id="edit_open.status_missing">
+            <mutation text="rateStatus: RateStatus.missing,"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="equipment_cost_form_bloc_edit" expected-return="0">fvm flutter test test/features/estimations/units/blocs/equipment_cost_form_bloc_edit_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
