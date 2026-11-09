@@ -17,16 +17,18 @@
 #   PERF_STARTUP_TIMEOUT     time limit for one `flutter run --trace-startup`
 #                            launch, same format (default: 5m)
 #   ENSURE_ATTACH_SCRIPT     script that re-attaches the phone between failed
-#                            drive attempts (default: ensure_lab_device_attached.sh)
+#                            attempts (default: ensure_lab_device_attached.sh)
 #
 # The capture step runs the startup phases (about 5 minutes), then two drive
-# legs. A startup launch that passes its time limit is retried up to 3 times,
-# with a re-attach between attempts. One leg makes up to 3 attempts of PERF_DRIVE_TIMEOUT, with a re-attach
-# of up to 5 minutes after each of the first two: 40 minutes at the default.
+# legs. A startup launch that fails makes up to 3 attempts of
+# PERF_STARTUP_TIMEOUT, with a re-attach between attempts. One launch that fails
+# every attempt takes up to 26.5 minutes at the default. One leg makes up to 3
+# attempts of PERF_DRIVE_TIMEOUT, with a re-attach of up to 5 minutes after each
+# of the first two: 40 minutes at the default.
 # One leg that fails all 3 attempts fits in the 60 minute step limit in
-# .github/workflows/weekly_system_health.yml. A run where both legs need
-# retries can pass 60 minutes. The step limit then stops it, and the upload
-# keeps the phases already copied. Change these numbers together.
+# .github/workflows/weekly_system_health.yml. A run where startup launches or
+# both legs need retries can pass 60 minutes. The step limit then stops it, and
+# the upload keeps the phases already copied. Change these numbers together.
 #
 # Needs GNU `timeout` (`gtimeout` on a Mac with coreutils from Homebrew).
 #
@@ -134,6 +136,30 @@ publish_phase() {
   cp -a "$WORK/$name/." "$OUTPUT_DIR/$name/"
 }
 
+# Runs "$@" with a time limit, up to 3 attempts. $1 names the step in the log and
+# $2 is the time limit. A failed attempt that is not the last re-attaches the
+# phone and clears the adb forwards, both under their own time limit, because a
+# stuck usbipd or adb call there would otherwise hold the run until the step limit.
+run_with_retries() {
+  local label="$1" limit="$2" attempt status
+  shift 2
+  for attempt in 1 2 3; do
+    status=0
+    "$TIMEOUT_BIN" --kill-after=30 "$limit" "$@" || status=$?
+    [[ "$status" -eq 0 ]] && return 0
+    if [[ "$attempt" -lt 3 ]]; then
+      echo "⚠️  $label attempt $attempt/3 failed (exit $status, 124 or 137 means the time limit); re-attaching the phone and retrying..." >&2
+      "$TIMEOUT_BIN" --kill-after=30 6m bash "$ENSURE_ATTACH_SCRIPT" --device-id "$DEVICE_ID" \
+        || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
+      # A stale forward only matters if the next attempt cannot start, and that
+      # attempt reports its own failure.
+      "$TIMEOUT_BIN" 30 adb -s "$DEVICE_ID" forward --remove-all || true
+    fi
+  done
+  echo "❌ $label failed after 3 attempts" >&2
+  return 1
+}
+
 # Runs the app once with startup tracing, writing start_up_info.json into $1.
 #
 # The remaining arguments are passed through to `flutter run`, which is how the
@@ -147,27 +173,15 @@ publish_phase() {
 capture_startup() {
   local destination="$1"
   shift
-  local attempt
-  for attempt in 1 2 3; do
-    mkdir -p "$destination"
-    if FLUTTER_TEST_OUTPUTS_DIR="$destination" "$TIMEOUT_BIN" --kill-after=30 "$STARTUP_TIMEOUT" fvm flutter run \
-      --profile \
-      --trace-startup \
-      --flavor "$FLAVOR" \
-      --dart-define=ENVIRONMENT=dev \
-      -d "$DEVICE_ID" \
-      "$@"; then
-      return 0
-    fi
-    if [[ "$attempt" -lt 3 ]]; then
-      echo "⚠️  startup launch attempt $attempt/3 failed; re-attaching the phone and retrying..." >&2
-      bash "$ENSURE_ATTACH_SCRIPT" --device-id "$DEVICE_ID" \
-        || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
-      adb -s "$DEVICE_ID" forward --remove-all || true
-    fi
-  done
-  echo "❌ startup launch failed after 3 attempts" >&2
-  return 1
+  mkdir -p "$destination"
+  FLUTTER_TEST_OUTPUTS_DIR="$destination" run_with_retries "startup launch" "$STARTUP_TIMEOUT" \
+    fvm flutter run \
+    --profile \
+    --trace-startup \
+    --flavor "$FLAVOR" \
+    --dart-define=ENVIRONMENT=dev \
+    -d "$DEVICE_ID" \
+    "$@"
 }
 
 # Runs one `flutter drive` leg of the journey, with $1 as PERF_OUTPUT_DIR and the
@@ -176,7 +190,7 @@ capture_startup() {
 #
 # Each attempt has a time limit. The USB link to the lab phone can freeze
 # `adb install` partway through the APK upload, and `flutter drive` then waits
-# forever instead of failing, so the retry below would never run. A timed-out
+# forever instead of failing, so the retry below would never run. A failed
 # attempt re-attaches the phone before the next one.
 #
 # The jank leg passes --no-dds: the integration_test binding's traceAction opens
@@ -194,27 +208,15 @@ drive_journey() {
   shift
   fvm flutter clean
   adb -s "$DEVICE_ID" forward --remove-all || true
-  local attempt
-  for attempt in 1 2 3; do
-    if PERF_OUTPUT_DIR="$perf_out" "$TIMEOUT_BIN" --kill-after=30 "$DRIVE_TIMEOUT" fvm flutter drive \
-      --profile \
-      --flavor "$FLAVOR" \
-      --dart-define=ENVIRONMENT=dev \
-      --driver="$DRIVER" \
-      --target="$JOURNEY_TARGET" \
-      -d "$DEVICE_ID" \
-      "$@"; then
-      return 0
-    fi
-    if [[ "$attempt" -lt 3 ]]; then
-      echo "⚠️  drive leg attempt $attempt/3 failed; re-attaching the phone and retrying..." >&2
-      bash "$ENSURE_ATTACH_SCRIPT" --device-id "$DEVICE_ID" \
-        || echo "⚠️  re-attach failed; the next attempt will fail if the phone is still gone." >&2
-      adb -s "$DEVICE_ID" forward --remove-all || true
-    fi
-  done
-  echo "❌ drive leg failed after 3 attempts" >&2
-  return 1
+  PERF_OUTPUT_DIR="$perf_out" run_with_retries "drive leg" "$DRIVE_TIMEOUT" \
+    fvm flutter drive \
+    --profile \
+    --flavor "$FLAVOR" \
+    --dart-define=ENVIRONMENT=dev \
+    --driver="$DRIVER" \
+    --target="$JOURNEY_TARGET" \
+    -d "$DEVICE_ID" \
+    "$@"
 }
 
 echo "🧽 Cleaning the build tree for the startup phase (lib/main.dart)..."
