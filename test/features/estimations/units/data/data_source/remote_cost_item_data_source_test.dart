@@ -378,6 +378,156 @@ void main() {
       });
     });
 
+    group('updateCostItem', () {
+      test(
+        'stores the changed price fields of the item with that id',
+        () async {
+          seedItemTable([
+            CostItemTestDataMapFactory.createEquipmentItemData(
+              id: 'item-1',
+              estimateId: testEstimateId,
+              pricingMethod: 'day',
+              duration: 3.0,
+              dailyRate: 200.0,
+            ),
+          ]);
+          final changed = CostItemDto.fromJson(
+            CostItemTestDataMapFactory.createEquipmentItemData(
+              id: 'item-1',
+              estimateId: testEstimateId,
+              pricingMethod: 'job',
+              jobAmount: 400.0,
+              deliveryFee: 85.0,
+            ),
+          );
+
+          final result = await dataSource.updateCostItem(changed);
+
+          final stored = await dataSource.fetchCostItemsByEstimateId(
+            estimateId: testEstimateId,
+          );
+          expect(stored.single.pricingMethod, 'job');
+          expect(stored.single.jobAmount, 400.0);
+          expect(stored.single.deliveryFee, 85.0);
+          expect(result.jobAmount, 400.0);
+        },
+      );
+
+      test('leaves the other items of the estimate as they were', () async {
+        seedItemTable([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+            itemName: 'Concrete',
+          ),
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-2',
+            estimateId: testEstimateId,
+            itemName: 'Steel',
+          ),
+        ]);
+
+        await dataSource.updateCostItem(
+          CostItemDto.fromJson(
+            CostItemTestDataMapFactory.createMaterialItemData(
+              id: 'item-1',
+              estimateId: testEstimateId,
+              itemName: 'Concrete mix',
+            ),
+          ),
+        );
+
+        final stored = await dataSource.fetchCostItemsByEstimateId(
+          estimateId: testEstimateId,
+        );
+        expect(stored.map((item) => item.itemName), ['Concrete mix', 'Steel']);
+      });
+
+      test('filters the update by the item id', () async {
+        final row = CostItemTestDataMapFactory.createLaborItemData(
+          id: 'item-1',
+          estimateId: testEstimateId,
+        );
+        seedItemTable([row]);
+
+        await dataSource.updateCostItem(CostItemDto.fromJson(row));
+
+        final call = fakeSupabaseWrapper.getMethodCallsFor('update').single;
+        expect(call['table'], DatabaseConstants.costItemsTable);
+        expect(call['filterColumn'], DatabaseConstants.idColumn);
+        expect(call['filterValue'], 'item-1');
+      });
+
+      test('throws when no item has that id', () async {
+        final unknown = CostItemDto.fromJson(
+          CostItemTestDataMapFactory.createMaterialItemData(id: 'missing'),
+        );
+
+        await expectLater(dataSource.updateCostItem(unknown), throwsException);
+      });
+
+      test('propagates exceptions from supabase wrapper', () async {
+        final row = CostItemTestDataMapFactory.createMaterialItemData(
+          id: 'item-1',
+          estimateId: testEstimateId,
+        );
+        seedItemTable([row]);
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+
+        await expectLater(
+          dataSource.updateCostItem(CostItemDto.fromJson(row)),
+          throwsException,
+        );
+      });
+    });
+
+    group('deleteCostItemById', () {
+      test('removes only the item with that id', () async {
+        seedItemTable([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+          ),
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'item-2',
+            estimateId: testEstimateId,
+          ),
+        ]);
+
+        await dataSource.deleteCostItemById('item-1');
+
+        final stored = await dataSource.fetchCostItemsByEstimateId(
+          estimateId: testEstimateId,
+        );
+        expect(stored.map((item) => item.id), ['item-2']);
+      });
+
+      test('filters the delete by the item id', () async {
+        seedItemTable([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+          ),
+        ]);
+
+        await dataSource.deleteCostItemById('item-1');
+
+        final call = fakeSupabaseWrapper.getMethodCallsFor('delete').single;
+        expect(call['table'], DatabaseConstants.costItemsTable);
+        expect(call['filterColumn'], DatabaseConstants.idColumn);
+        expect(call['filterValue'], 'item-1');
+      });
+
+      test('propagates exceptions from supabase wrapper', () async {
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+
+        await expectLater(
+          dataSource.deleteCostItemById('item-1'),
+          throwsException,
+        );
+      });
+    });
+
     group('fetchItemTotalCostsByEstimateId', () {
       test('returns the totals of that estimate only', () async {
         seedItemTable([
