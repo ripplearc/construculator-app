@@ -35,6 +35,13 @@ class AddToEstimatePanel extends StatelessWidget {
   /// Why the line cannot be totalled, or null when it can.
   final AddToEstimateBlock? block;
 
+  /// How much saving moves the estimate total, in dollars, when the panel is
+  /// above a line that is already on the estimate; `null` when a new line is
+  /// being added. The panel then shows that difference and the new total,
+  /// and leaves out the delivery charge row, which is already inside the
+  /// difference.
+  final double? changeInEstimateTotal;
+
   const AddToEstimatePanel({
     super.key,
     required this.lineTotal,
@@ -42,6 +49,7 @@ class AddToEstimatePanel extends StatelessWidget {
     required this.estimateName,
     required this.estimateTotal,
     required this.block,
+    this.changeInEstimateTotal,
   });
 
   @override
@@ -50,19 +58,29 @@ class AddToEstimatePanel extends StatelessWidget {
     final money = DisplayFormatter.currency;
     final block = this.block;
     final fee = deliveryFee;
+    final change = changeInEstimateTotal;
+    final title = change == null
+        ? l10n.addsToEstimateLabel
+        : l10n.changesThisEstimateLabel;
     if (block != null) {
+      return CoreEstimateSummaryCard.empty(title: title, note: block.note);
+    }
+    if (change == 0) {
       return CoreEstimateSummaryCard.empty(
-        title: l10n.addsToEstimateLabel,
-        note: block.note,
+        title: title,
+        note: l10n.noChangeYetNote,
       );
     }
-    final hasDeliveryFee = fee != null && fee > 0;
-    final newTotal = money.format(estimateTotal + lineTotal);
+    final shownAmount = change == null
+        ? money.format(lineTotal)
+        : '${change < 0 ? '-' : '+'}${money.format(change.abs())}';
+    final hasDeliveryFee = change == null && fee != null && fee > 0;
+    final newTotal = money.format(estimateTotal + (change ?? lineTotal));
     return Semantics(
       excludeSemantics: true,
       label: [
-        l10n.addsToEstimateLabel,
-        money.format(lineTotal),
+        title,
+        shownAmount,
         if (hasDeliveryFee)
           '${l10n.addsToEstimateIncludesDelivery} +${money.format(fee)}',
         l10n.addsToEstimateTotalSemantics(
@@ -74,8 +92,8 @@ class AddToEstimatePanel extends StatelessWidget {
       // TODO: [CA-1379] the charge row is 6 dp taller than the storyboard until CoreUI drops its 24 dp minimum height
       // https://ripplearc.youtrack.cloud/issue/CA-1379
       child: CoreEstimateSummaryCard(
-        title: l10n.addsToEstimateLabel,
-        lineTotal: money.format(lineTotal),
+        title: title,
+        lineTotal: shownAmount,
         extraCharge: hasDeliveryFee
             ? CoreEstimateSummaryCharge(
                 label: l10n.addsToEstimateIncludesDelivery,

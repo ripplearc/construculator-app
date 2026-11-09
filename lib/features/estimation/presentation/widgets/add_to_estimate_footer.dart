@@ -38,6 +38,11 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Called when the enabled button is tapped.
   final VoidCallback onAdd;
 
+  /// How much saving moves the estimate total, in dollars, when the footer
+  /// saves changes to a line already on the estimate; `null` when it adds a
+  /// new line. Switches the panel and the button label to their edit wording.
+  final double? changeInEstimateTotal;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -48,6 +53,7 @@ class AddToEstimateFooter extends StatelessWidget {
     this.isSubmitting = false,
     this.errorMessage,
     required this.onAdd,
+    this.changeInEstimateTotal,
   });
 
   @override
@@ -70,6 +76,7 @@ class AddToEstimateFooter extends StatelessWidget {
               estimateName: estimateName,
               estimateTotal: estimateTotal,
               block: block,
+              changeInEstimateTotal: changeInEstimateTotal,
             ),
             if (errorMessage case final message?) ...[
               const SizedBox(height: CoreSpacing.space4),
@@ -79,7 +86,11 @@ class AddToEstimateFooter extends StatelessWidget {
               const SizedBox(height: CoreSpacing.space4),
             CoreButton(
               key: buttonKey,
-              label: block?.buttonLabel ?? l10n.addToEstimateButton,
+              label:
+                  block?.buttonLabel ??
+                  (changeInEstimateTotal == null
+                      ? l10n.addToEstimateButton
+                      : l10n.saveThisLineButton),
               isDisabled: block != null || isSubmitting,
               onPressed: onAdd,
             ),

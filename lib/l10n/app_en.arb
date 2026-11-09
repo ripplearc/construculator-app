@@ -3169,6 +3169,21 @@
     "description": "Label of the full-width submit button on the equipment cost sheet",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=66337-156135"
   },
+  "saveThisLineButton": "Save this line",
+  "@saveThisLineButton": {
+    "description": "Label of the full-width button that saves the changes to a cost line already on the estimate",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
+  },
+  "changesThisEstimateLabel": "Changes this estimate",
+  "@changesThisEstimateLabel": {
+    "description": "Title of the summary card above the Save this line button, replacing the Adds to this estimate title when a line is edited",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
+  },
+  "noChangeYetNote": "No change yet",
+  "@noChangeYetNote": {
+    "description": "Note in the summary card of the edit sheet before any field of the line has changed",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
+  },
   "enterEquipmentNameToContinueButton": "Enter an equipment name to continue",
   "@enterEquipmentNameToContinueButton": {
     "description": "Disabled submit button label while the equipment name is empty",
