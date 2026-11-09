@@ -5,6 +5,7 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/network_status/interfaces/connectivity_sdk.dart';
 import 'package:construculator/libraries/network_status/interfaces/network_status.dart';
 import 'package:construculator/libraries/network_status/interfaces/network_status_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// [NetworkStatusService] that follows the operating system's network changes.
 ///
@@ -27,6 +28,7 @@ class NetworkStatusServiceImpl implements NetworkStatusService {
   /// applied, skipped or failed.
   ///
   /// Meant for tests.
+  @visibleForTesting
   late final Future<void> ready;
 
   /// Creates the service and starts listening to [connectivitySdk].

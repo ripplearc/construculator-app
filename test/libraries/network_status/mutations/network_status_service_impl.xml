@@ -73,5 +73,5 @@
         <command group="network_status_service" expected-return="0">flutter test test/libraries/network_status/units/network_status_service_impl_test.dart</command>
     </commands>
 
-    <threshold failure="70"/>
+    <threshold failure="85"/>
 </mutations>

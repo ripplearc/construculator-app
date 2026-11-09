@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 /// Boundary over the `connectivity_plus` plugin.

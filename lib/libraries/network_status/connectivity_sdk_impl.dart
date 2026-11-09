@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:construculator/libraries/network_status/interfaces/connectivity_sdk.dart';
 
