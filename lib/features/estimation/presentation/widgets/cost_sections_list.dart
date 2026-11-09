@@ -11,9 +11,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// An empty section is never hidden or moved. It shows a placeholder, or
 /// examples while the whole estimate is empty, with a centred message and a
-/// button that adds the first cost. Headers scroll with the list and are never pinned.
-/// The line named by [highlightedItemId] is drawn as the one just added.
-class CostSectionsList extends StatelessWidget {
+/// button that adds the first cost. Headers scroll with the list and are never
+/// pinned.
+/// When [highlightedItemId] names a line, the list scrolls it into view once.
+///
+/// Every line is built at once, because scrolling to a line needs it built.
+/// That suits an estimate of a few hundred lines.
+class CostSectionsList extends StatefulWidget {
   /// Key of the title of the message shown while the whole estimate is empty.
   static const emptyEstimateTitleKey = Key('empty_estimate_title');
 
@@ -52,7 +56,45 @@ class CostSectionsList extends StatelessWidget {
   });
 
   @override
+  State<CostSectionsList> createState() => _CostSectionsListState();
+}
+
+class _CostSectionsListState extends State<CostSectionsList> {
+  static const _scrollDuration = Duration(milliseconds: 200);
+
+  final _lineKeys = <String, GlobalKey>{};
+  String? _scrolledToItemId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleScrollToHighlighted();
+  }
+
+  @override
+  void didUpdateWidget(CostSectionsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scheduleScrollToHighlighted();
+  }
+
+  void _scheduleScrollToHighlighted() {
+    final id = widget.highlightedItemId;
+    if (id == null) {
+      _scrolledToItemId = null;
+      return;
+    }
+    if (id == _scrolledToItemId) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final lineContext = _lineKeys[id]?.currentContext;
+      if (!mounted || lineContext == null) return;
+      _scrolledToItemId = id;
+      Scrollable.ensureVisible(lineContext, duration: _scrollDuration);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final costs = widget.costs;
     final isEmpty = costs.items.isEmpty;
     return CustomScrollView(
       key: const Key('cost_sections_list'),
@@ -119,10 +161,13 @@ class CostSectionsList extends StatelessWidget {
             spacing: CoreSpacing.space3,
             children: [
               for (final line in lines)
-                CostLineRow(
-                  item: line,
-                  isHighlighted: line.id == highlightedItemId,
-                  onTap: () => onLineTap(line),
+                KeyedSubtree(
+                  key: _lineKeys.putIfAbsent(line.id, GlobalKey.new),
+                  child: CostLineRow(
+                    item: line,
+                    isHighlighted: line.id == widget.highlightedItemId,
+                    onTap: () => widget.onLineTap(line),
+                  ),
                 ),
             ],
           ),
@@ -198,7 +243,7 @@ class CostSectionsList extends StatelessWidget {
               icon: CoreIcons.add,
               color: colorTheme.textInverse,
             ),
-            onPressed: onAddFirstCost,
+            onPressed: widget.onAddFirstCost,
           ),
         ],
       ),
