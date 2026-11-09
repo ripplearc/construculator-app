@@ -64,7 +64,7 @@
             <mutation text="keyWantsUnit: false, readsDegrees: false, );"/>
             <mutation text="keyWantsUnit: false, readsDegrees: true, );"/>
         </regex>
-        <regex pattern="return _replaceLast\(_asTrigChip\(chip, function\)\);" dotAll="true" id="trig.key.no_rename">
+        <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(\s*_asTrigChip\(chip, function\),\s*\);" dotAll="true" id="trig.key.no_rename">
             <mutation text="return _replaceLast(chip);"/>
         </regex>
 
@@ -182,8 +182,8 @@
 
         <!-- RULE 17 (F1b): a trig key takes the wrong answer, or a wrong
              value, after its number -->
-        <regex pattern="Scalar\(\) when function\.isInverse &amp;&amp; TrigFunction\.named\(key\) == null =&gt;" dotAll="true" id="trig.key.inverse_eats_trig_answer">
-            <mutation text="Scalar() when function.isInverse =&gt;"/>
+        <regex pattern="Scalar\(\) when TrigFunction\.named\(key\) == null =&gt;" dotAll="true" id="trig.key.inverse_eats_trig_answer">
+            <mutation text="Scalar() =&gt;"/>
         </regex>
         <regex pattern="Angle\(\) when !function\.isInverse =&gt; value," dotAll="true" id="trig.key.forward_skips_angle">
             <mutation text="Angle() when false =&gt; value,"/>
@@ -302,6 +302,19 @@
         <regex pattern="\) when key != function\.key &amp;&amp; _isAnswerOf\(answer, function\)\) \{" dotAll="true" id="trig.rebuilt.reach_lost">
             <mutation text=") when false) {"/>
             <mutation text=") when key != function.key) {"/>
+        </regex>
+
+        <!-- RULE CA-1340d: a Calc that is a plain number is not taken by a
+             forward key, or only by an inverse key as before -->
+        <regex pattern="Scalar\(\) when TrigFunction\.named\(key\) == null =&gt; value,\s*Angle\(\) when !function\.isInverse =&gt; value," dotAll="true" id="trig.answer_taken.calc_as_degrees">
+            <mutation text="Angle() when !function.isInverse =&gt; value,"/>
+            <mutation text="Scalar() when function.isInverse &amp;&amp; TrigFunction.named(key) == null =&gt; value, Angle() when !function.isInverse =&gt; value,"/>
+        </regex>
+
+        <!-- RULE CA-1340e: a trig key on the reopened divisor keeps the
+             Division by zero chip -->
+        <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(\s*_asTrigChip\(chip, function\),\s*\);" dotAll="true" id="trig.key.divisor_keeps_error">
+            <mutation text="return _replaceLast(_asTrigChip(chip, function));"/>
         </regex>
     </rules>
 

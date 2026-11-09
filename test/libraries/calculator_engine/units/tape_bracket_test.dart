@@ -220,9 +220,30 @@ void main() {
         },
       );
 
-      test('CA-1340: a trig key straight after a closed bracket works on the '
-          'value the tape has come to: the Calc lands, then the answer, and '
-          'the group is never dropped', () {
+      test('CA-1340: a trig key on a group whose value failed lands the '
+          "group's error and opens no trig chip (rule 4.12; decision tree "
+          'row 24)', () {
+        final divided = press(const Tape(), '5 ÷ ( 2 − 2 (');
+        expect(
+          changed(divided.pressTrigKey(TrigFunction.arctangent)).chips.last,
+          const ErrorChip(CalculationError.divisionByZero),
+        );
+        final mixed = press(const Tape(), '2 lbs + ( 3 ft (');
+        expect(
+          changed(mixed.pressTrigKey(TrigFunction.sine)).chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+        );
+        expect(
+          changed(mixed.pressTrigKey(TrigFunction.sine)).chips.length,
+          mixed.chips.length + 1,
+          reason: 'the group stays on the tape before its error',
+        );
+      });
+
+      test('CA-1340: a trig key straight after a closed bracket that starts '
+          'the tape works on the value of the bracket: a group worth a Calc '
+          'lands it and then the answer, a group worth one value answers '
+          'with no Calc', () {
         final ratio = changed(
           press(
             const Tape(),
@@ -241,21 +262,6 @@ void main() {
           press(const Tape(), '( 5 + 3 (').pressTrigKey(TrigFunction.sine),
         );
         expect(lastResult(sum), 'Sine 0.139173');
-        final chain = changed(
-          press(const Tape(), '2 + ( 3 × 4 (').pressTrigKey(TrigFunction.sine),
-        );
-        expect(lastResult(chain), 'Sine 0.241922');
-        expect(
-          (chain.chips[chain.chips.length - 2] as ResultChip).value,
-          const Scalar(14),
-        );
-        final nested = changed(
-          press(
-            const Tape(),
-            '1 + ( 1 2 ÷ 2 3 (',
-          ).pressTrigKey(TrigFunction.arctangent),
-        );
-        expect(lastResult(nested), 'Arctangent 56.69°');
         expect(
           press(
             const Tape(),
@@ -264,8 +270,11 @@ void main() {
           const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
         );
         expect(
-          press(const Tape(), '1 ft + ( 2 (').pressTrigKey(TrigFunction.sine),
-          const TapeRefused(TapeRefusal.trigNeedsAPlainAngle),
+          changed(
+            press(const Tape(), '1 ft + ( 2 (').pressTrigKey(TrigFunction.sine),
+          ).chips.last,
+          const ErrorChip(CalculationError.dimensionError),
+          reason: 'a group the chain cannot take lands the chain\'s error',
         );
         final single = changed(
           press(const Tape(), '( 5 (').pressTrigKey(TrigFunction.sine),
@@ -275,6 +284,32 @@ void main() {
           single.chips,
           hasLength(2),
           reason: 'a group worth one value answers with no Calc before it',
+        );
+      });
+
+      test('CA-1340: a trig key on a bracket that follows an operator is '
+          'refused with "Press = first" and the tape stays as it was; = first '
+          'lands the Calc the key then works on (walkthrough 12.9; product '
+          'manager, 15 November 2026)', () {
+        for (final (keys, function) in [
+          ('2 + ( 3 (', TrigFunction.arctangent),
+          ('2 + ( 3 × 4 (', TrigFunction.sine),
+          ('1 + ( 1 2 ÷ 2 3 (', TrigFunction.arctangent),
+          ('5 − ( 3 (', TrigFunction.arccosine),
+        ]) {
+          final tape = press(const Tape(), keys);
+          expect(
+            tape.pressTrigKey(function),
+            const TapeRefused(TapeRefusal.pressEqualsFirst),
+            reason: keys,
+          );
+          expect(bracketText(tape), isNotEmpty, reason: '$keys stays');
+        }
+        final landed = press(const Tape(), '2 + ( 3 ( =');
+        expect(lastResult(landed), 'Calc 5');
+        expect(
+          lastResult(changed(landed.pressTrigKey(TrigFunction.arctangent))),
+          'Arctangent 78.69°',
         );
       });
 
