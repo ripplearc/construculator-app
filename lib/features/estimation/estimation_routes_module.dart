@@ -1,6 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_items_bloc/cost_items_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
@@ -56,6 +57,7 @@ class EstimationRoutesModule extends Module {
                 ..add(const MaterialCostFormStarted()),
           estimateSummaryBlocFactory: () => Modular.get<EstimateSummaryBloc>(),
           yourRatesBlocFactory: () => Modular.get<YourRatesBloc>(),
+          costItemsBlocFactory: () => Modular.get<CostItemsBloc>(),
           clock: Modular.get<Clock>(),
         );
       },

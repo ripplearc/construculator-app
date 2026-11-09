@@ -2657,4 +2657,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addFirstCostButton => 'Add the first cost';
+
+  @override
+  String get costItemsLoadFailed => 'Couldn\'t load the cost lines.';
+
+  @override
+  String get costItemsRetryButton => 'Try again';
 }
