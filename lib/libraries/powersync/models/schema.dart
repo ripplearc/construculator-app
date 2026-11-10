@@ -6,6 +6,8 @@ import 'package:powersync/powersync.dart';
 ///
 /// Columns must match the SELECTs in sync-streams.yaml — mismatches cause
 /// silent data loss. The `id` column is added automatically by PowerSync.
+///
+/// Every `Table.localOnly` is also listed in `LocalOnlyTableRegistry`.
 const Schema schema = Schema([
   Table('professional_roles', [
     Column.text('role_name'),
@@ -119,8 +121,6 @@ const Schema schema = Schema([
   // `refused_row_id` is the id of the your_rates row the server refused.
   // `accepted_amount` is null when the server never accepted a price;
   // `shown_at` is null until shown.
-  // TODO: [CA-1399] register this table as "clear when the user changes", so a user's old rows do not pile up on a shared phone.
-  // https://ripplearc.youtrack.cloud/issue/CA-1399
   Table.localOnly('your_rate_refusals', [
     Column.text('user_id'),
     Column.text('company_id'),
