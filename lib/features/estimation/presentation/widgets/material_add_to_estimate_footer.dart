@@ -37,6 +37,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
       listener: (context, state) {
         switch (state) {
           case MaterialCostFormSuccess():
+          case MaterialCostFormDeleted():
             Navigator.of(context).pop();
           case MaterialCostFormInitial():
           case MaterialCostFormEditing():
@@ -55,7 +56,8 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isSubmitting:
               state is MaterialCostFormSubmitting ||
-              state is MaterialCostFormSuccess,
+              state is MaterialCostFormSuccess ||
+              state is MaterialCostFormDeleted,
           errorMessage: state is MaterialCostFormFailure
               ? l10n.addToEstimateFailedError
               : null,
