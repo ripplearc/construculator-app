@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/number_pad_put_back_label.dart';
+import 'package:construculator/features/estimation/presentation/helpers/trimmed_number_format.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
@@ -36,7 +38,16 @@ class MaterialCostFormFields extends StatefulWidget {
   /// the fields: the summary card on a phone too short to pin it.
   final Widget? trailing;
 
-  const MaterialCostFormFields({super.key, this.numberPad, this.trailing});
+  /// The line already on the estimate that this form edits and fills its
+  /// fields from, or `null` when the form adds a new line.
+  final MaterialCostItem? editedItem;
+
+  const MaterialCostFormFields({
+    super.key,
+    this.numberPad,
+    this.trailing,
+    this.editedItem,
+  });
 
   @override
   State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
@@ -72,6 +83,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         shown: context.l10n.numberPadRateValue,
       ),
     );
+    if (widget.editedItem case final item?) _fillFromEditedItem(item);
   }
 
   @override
@@ -244,13 +256,20 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     }
   }
 
+  void _fillFromEditedItem(MaterialCostItem item) {
+    context.read<MaterialCostFormBloc>().add(MaterialCostEditOpened(item));
+    _nameController.text = item.itemName;
+    _quantityController.text = formatTrimmedNumber(item.quantity.value);
+    _rateController.text = formatTrimmedNumber(item.unitPrice.amount);
+  }
+
   bool _isSaving(MaterialCostFormState state) =>
-      state is MaterialCostFormSubmitting || state is MaterialCostFormSuccess;
+      state is MaterialCostFormSubmitting ||
+      state is MaterialCostFormSuccess ||
+      state is MaterialCostFormDeleted;
 
   TextInputFormatter _decimalLimitFormatter({required int decimals}) {
-    final allowed = RegExp(
-      '^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$',
-    );
+    final allowed = RegExp('^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$');
     return TextInputFormatter.withFunction((previous, next) {
       // A phone set to a comma-decimal language shows a comma key.
       final text = next.text.replaceAll(',', '.');
