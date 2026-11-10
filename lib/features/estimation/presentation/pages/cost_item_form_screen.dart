@@ -62,6 +62,10 @@ class CostItemFormScreen extends StatefulWidget {
   /// `null` when the form adds a new line.
   final EquipmentCostItem? editedEquipmentItem;
 
+  /// The material line already on the estimate that this form edits, or
+  /// `null` when the form adds a new line.
+  final MaterialCostItem? editedMaterialItem;
+
   const CostItemFormScreen({
     super.key,
     required this.type,
@@ -74,6 +78,7 @@ class CostItemFormScreen extends StatefulWidget {
     required this.clock,
     this.estimate,
     this.editedEquipmentItem,
+    this.editedMaterialItem,
   });
 
   @override
@@ -114,7 +119,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 (state is MaterialCostFormEditing ||
                     state is MaterialCostFormFailure) &&
                 state.data.hasUnsavedChanges,
-            itemNameOf: (state) => state.data.itemName,
+            itemNameOf: (state) => state.data.lineName,
+            isEditingExistingLine: (state) => state.data.isEditingExistingLine,
             child: sheet,
           ),
         CostItemType.equipment =>
@@ -204,6 +210,13 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
 
   Widget _buildSheetHeader(BuildContext context) {
     final title = _screenTitle(context);
+    if (widget.type == CostItemType.material) {
+      return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+        builder: (context, state) => SheetHeader(
+          title: state.data.isEditingExistingLine ? state.data.lineName : title,
+        ),
+      );
+    }
     if (widget.type != CostItemType.equipment) return SheetHeader(title: title);
     final entry = widget.initialRateEntry;
     return BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
@@ -292,7 +305,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => const MaterialCostFormFields(),
+      CostItemType.material => MaterialCostFormFields(
+        editedItem: widget.editedMaterialItem,
+      ),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,
         onTotalChanged: onTotalChanged,

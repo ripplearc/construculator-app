@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_panel.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// successful add closes the sheet. A failed save keeps the sheet open and
 /// says so in a line above the button, which goes away while the next save
 /// runs.
+///
+/// For a line already on the estimate the button reads "Save this line", the
+/// card shows the change to the estimate total, and a red "Delete this line"
+/// button asks first, then deletes the line.
 class MaterialAddToEstimateFooter extends StatelessWidget {
   /// The estimate the line is added to.
   final String estimateId;
@@ -53,20 +58,43 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           lineTotal: data.lineTotal,
           estimateName: estimateName,
           estimateTotal: estimateTotal,
+          changeInEstimateTotal: data.changeInEstimateTotal,
+          onDelete: data.isEditingExistingLine
+              ? () => _confirmDelete(context, data.lineName)
+              : null,
           block: blocker == null ? null : _blockFor(data, blocker, l10n),
           isSubmitting:
               state is MaterialCostFormSubmitting ||
               state is MaterialCostFormSuccess ||
               state is MaterialCostFormDeleted,
-          errorMessage: state is MaterialCostFormFailure
-              ? l10n.addToEstimateFailedError
-              : null,
+          errorMessage: switch (state) {
+            MaterialCostFormFailure(whileDeleting: true) =>
+              l10n.deleteLineFailedError,
+            MaterialCostFormFailure() when data.isEditingExistingLine =>
+              l10n.saveLineFailedError,
+            MaterialCostFormFailure() => l10n.addToEstimateFailedError,
+            _ => null,
+          },
           onAdd: () => context.read<MaterialCostFormBloc>().add(
             MaterialCostFormSubmitted(estimateId: estimateId),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, String itemName) async {
+    final l10n = context.l10n;
+    final bloc = context.read<MaterialCostFormBloc>();
+    final keepLine = await ConfirmationDialog.show(
+      context,
+      title: l10n.deleteLineDialogTitle,
+      body: TextSpan(text: l10n.deleteLineDialogBody(itemName, estimateName)),
+      secondaryLabel: l10n.yesDeleteButton,
+      primaryLabel: l10n.noKeepButton,
+      isSecondaryDestructive: true,
+    );
+    if (keepLine == false) bloc.add(const MaterialCostDeleteRequested());
   }
 
   AddToEstimateBlock _blockFor(
