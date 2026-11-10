@@ -88,6 +88,7 @@ class MaterialCostFormData extends Equatable {
     this.isValid = false,
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
+    this.editedItem,
   });
 
   /// The material name entered by the user.
@@ -116,6 +117,27 @@ class MaterialCostFormData extends Equatable {
   /// Whether any of name, quantity, unit or rate differs from how the form
   /// opened. Typing a value and then restoring the original clears it.
   final bool hasUnsavedChanges;
+
+  /// The line already on the estimate that this form edits, or `null` when
+  /// the form adds a new line.
+  final MaterialCostItem? editedItem;
+
+  /// Whether Save changes a line already on the estimate.
+  bool get isEditingExistingLine => editedItem != null;
+
+  /// The name that titles the form and its questions: the stored name of the
+  /// line being edited, which stays put while the name field is changed, or
+  /// else the name typed so far.
+  String get lineName => editedItem?.itemName ?? itemName;
+
+  /// How much the estimate total moves if the form is saved now, in dollars.
+  ///
+  /// `null` when the form adds a new line, so there is nothing to compare.
+  double? get changeInEstimateTotal {
+    final edited = editedItem;
+    if (edited == null) return null;
+    return (_toCents(lineTotal) - _toCents(edited.itemTotalCost)) / 100;
+  }
 
   /// Quantity times rate rounded to the cent, or 0 while either is missing or
   /// unusable.
@@ -159,6 +181,7 @@ class MaterialCostFormData extends Equatable {
     bool? isValid,
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
+    Object? editedItem = _unset,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -169,6 +192,9 @@ class MaterialCostFormData extends Equatable {
       isValid: isValid ?? this.isValid,
       fieldErrors: fieldErrors ?? this.fieldErrors,
       hasUnsavedChanges: hasUnsavedChanges ?? this.hasUnsavedChanges,
+      editedItem: editedItem == _unset
+          ? this.editedItem
+          : editedItem as MaterialCostItem?,
     );
   }
 
@@ -182,6 +208,7 @@ class MaterialCostFormData extends Equatable {
     isValid,
     fieldErrors,
     hasUnsavedChanges,
+    editedItem,
   ];
 }
 
@@ -202,21 +229,40 @@ class MaterialCostFormSuccess extends MaterialCostFormState {
   @override
   final MaterialCostFormData data;
 
-  /// The cost item as saved by [CostItemRepository.createCostItem].
+  /// The cost item as saved by [CostItemRepository.createCostItem], or by
+  /// [CostItemRepository.updateCostItem] when the form edited a line.
   final CostItem createdItem;
 }
 
-/// State when saving the cost item failed. The form keeps every value so the
-/// user can try again.
+/// State when saving or deleting the cost item failed. The form keeps every
+/// value so the user can try again.
 class MaterialCostFormFailure extends MaterialCostFormState {
-  const MaterialCostFormFailure(this.data, this.failure);
+  const MaterialCostFormFailure(
+    this.data,
+    this.failure, {
+    this.whileDeleting = false,
+  });
 
   /// The form data as it was when saving failed.
   @override
   final MaterialCostFormData data;
 
-  /// The failure returned by [CostItemRepository.createCostItem].
+  /// The failure returned by the repository.
   final Failure failure;
+
+  /// Whether the failed action was deleting the line, not saving it.
+  final bool whileDeleting;
 }
+
+/// State once the line this form edited was deleted from the estimate.
+class MaterialCostFormDeleted extends MaterialCostFormState {
+  const MaterialCostFormDeleted(this.data);
+
+  /// The form data as it was when the line was deleted.
+  @override
+  final MaterialCostFormData data;
+}
+
+int _toCents(double amount) => (amount * 100).round();
 
 const Object _unset = Object();

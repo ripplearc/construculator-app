@@ -42,6 +42,50 @@ class MaterialCostFormBloc
     );
     on<MaterialRateUpdated>(_onRateUpdated);
     on<MaterialCostFormSubmitted>(_onSubmitted);
+    on<MaterialCostEditOpened>(_onEditOpened);
+    on<MaterialCostDeleteRequested>(_onDeleteRequested);
+  }
+
+  void _onEditOpened(
+    MaterialCostEditOpened event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final item = event.item;
+    final opened = _validated(
+      MaterialCostFormData(
+        itemName: item.itemName,
+        quantity: item.quantity.value,
+        unit: item.quantity.unit,
+        rate: item.unitPrice.amount,
+        rateStatus: item.rateStatus,
+        editedItem: item,
+      ),
+    );
+    _formValuesAtOpening = opened;
+    emit(MaterialCostFormEditing(opened));
+  }
+
+  Future<void> _onDeleteRequested(
+    MaterialCostDeleteRequested event,
+    Emitter<MaterialCostFormState> emit,
+  ) async {
+    final draft = state.data;
+    final edited = draft.editedItem;
+    if (edited == null ||
+        state is MaterialCostFormSubmitting ||
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
+      return;
+    }
+    emit(MaterialCostFormSubmitting(draft));
+    final result = await _repository.deleteCostItem(edited.id);
+    emit(
+      result.fold(
+        (failure) =>
+            MaterialCostFormFailure(draft, failure, whileDeleting: true),
+        (_) => MaterialCostFormDeleted(draft),
+      ),
+    );
   }
 
   Future<void> _onStarted(
@@ -51,6 +95,7 @@ class MaterialCostFormBloc
     final rememberedUnit = await _lastUsedUnitRepository.getLastUnit(
       CostItemType.material,
     );
+    if (_current().isEditingExistingLine) return;
     _formValuesAtOpening = MaterialCostFormData(unit: rememberedUnit);
     if (rememberedUnit != null && _current().unit == null) {
       _emit(emit, (d) => d.copyWith(unit: rememberedUnit));
@@ -66,9 +111,11 @@ class MaterialCostFormBloc
       emit,
       (d) => d.copyWith(
         rate: rate,
-        rateStatus: rate == null
-            ? RateStatus.missing
-            : RateStatus.ownRateUnconfirmed,
+        rateStatus: switch (rate) {
+          null => RateStatus.missing,
+          _ when d.isEditingExistingLine && rate == d.rate => d.rateStatus,
+          _ => RateStatus.ownRateUnconfirmed,
+        },
       ),
     );
   }
@@ -78,7 +125,8 @@ class MaterialCostFormBloc
     MaterialCostFormData Function(MaterialCostFormData) update,
   ) {
     if (state is MaterialCostFormSubmitting ||
-        state is MaterialCostFormSuccess) {
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
       return;
     }
     final updated = _validated(update(_current()));
@@ -86,10 +134,8 @@ class MaterialCostFormBloc
       hasUnsavedChanges: _differsFromOpened(updated),
     );
     emit(switch (state) {
-      MaterialCostFormFailure(:final failure) => MaterialCostFormFailure(
-        next,
-        failure,
-      ),
+      MaterialCostFormFailure(whileDeleting: false, :final failure) =>
+        MaterialCostFormFailure(next, failure),
       _ => MaterialCostFormEditing(next),
     });
   }
@@ -99,7 +145,8 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) async {
     if (state is MaterialCostFormSubmitting ||
-        state is MaterialCostFormSuccess) {
+        state is MaterialCostFormSuccess ||
+        state is MaterialCostFormDeleted) {
       return;
     }
     final draft = _validated(_current());
@@ -111,20 +158,28 @@ class MaterialCostFormBloc
       return;
     }
     emit(MaterialCostFormSubmitting(draft));
-    final result = await _repository.createCostItem(
-      _buildCostItem(
-        draft,
-        event.estimateId,
-        quantity: quantity,
-        rate: rate,
-        unit: unit,
-      ),
+    final edited = draft.editedItem;
+    final line = _buildCostItem(
+      draft,
+      event.estimateId,
+      quantity: quantity,
+      rate: rate,
+      unit: unit,
+      existing: edited,
     );
+    final result = edited == null
+        ? await _repository.createCostItem(line)
+        : await _repository.updateCostItem(line);
     await result.fold(
       (failure) async => emit(MaterialCostFormFailure(draft, failure)),
-      (created) async {
-        await _lastUsedUnitRepository.saveLastUnit(CostItemType.material, unit);
-        emit(MaterialCostFormSuccess(draft, created));
+      (saved) async {
+        if (edited == null) {
+          await _lastUsedUnitRepository.saveLastUnit(
+            CostItemType.material,
+            unit,
+          );
+        }
+        emit(MaterialCostFormSuccess(draft, saved));
       },
     );
   }
@@ -135,16 +190,17 @@ class MaterialCostFormBloc
     required double quantity,
     required double rate,
     required Unit unit,
+    MaterialCostItem? existing,
   }) {
     final now = _clock.now();
     return MaterialCostItem(
       // TODO: [CA-643] send one id per form so a retry after a lost answer updates the same line instead of adding a second one. https://ripplearc.youtrack.cloud/issue/CA-643
-      id: '',
+      id: existing?.id ?? '',
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
       calculation: {'unit_price': rate, 'quantity': quantity},
       itemTotalCost: draft.lineTotal,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
       // TODO: [CA-1223] no multi-currency support yet. https://ripplearc.youtrack.cloud/issue/CA-1223
       currency: 'USD',
@@ -167,6 +223,7 @@ class MaterialCostFormBloc
       MaterialCostFormSubmitting(:final data) => data,
       MaterialCostFormSuccess(:final data) => data,
       MaterialCostFormFailure(:final data) => data,
+      MaterialCostFormDeleted(:final data) => data,
       MaterialCostFormInitial() => const MaterialCostFormData(),
     };
   }
