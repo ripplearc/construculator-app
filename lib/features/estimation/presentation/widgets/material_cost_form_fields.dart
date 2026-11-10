@@ -248,9 +248,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       state is MaterialCostFormSubmitting || state is MaterialCostFormSuccess;
 
   TextInputFormatter _decimalLimitFormatter({required int decimals}) {
-    final allowed = RegExp(
-      '^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$',
-    );
+    final allowed = RegExp('^\\d{0,$_maxWholeDigits}(\\.\\d{0,$decimals})?\$');
     return TextInputFormatter.withFunction((previous, next) {
       // A phone set to a comma-decimal language shows a comma key.
       final text = next.text.replaceAll(',', '.');

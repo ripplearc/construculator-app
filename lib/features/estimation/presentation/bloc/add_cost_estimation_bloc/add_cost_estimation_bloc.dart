@@ -16,9 +16,8 @@ class AddCostEstimationBloc
     extends Bloc<AddCostEstimationEvent, AddCostEstimationState> {
   final AddCostEstimationUseCase _addCostEstimationUseCase;
 
-  AddCostEstimationBloc({
-    required this._addCostEstimationUseCase,
-  }) : super(const AddCostEstimationInitial()) {
+  AddCostEstimationBloc({required this._addCostEstimationUseCase})
+    : super(const AddCostEstimationInitial()) {
     on<AddCostEstimationSubmitted>(_onSubmitted);
   }
 

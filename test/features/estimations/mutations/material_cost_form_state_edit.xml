@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- MATERIAL FORM STATE, EDIT MODE: changeInEstimateTotal, isEditingExistingLine, lineName -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_state.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="(edit_change.stored_total_zero)" id="_toCents\(edited\.itemTotalCost\)">
+            <mutation text="0"/>
+        </regex>
+
+        <regex pattern="(edit_change.total_added)" id="_toCents\(lineTotal\) -">
+            <mutation text="_toCents(lineTotal) +"/>
+        </regex>
+
+        <regex pattern="(edit_change.cents_off)" id="\) / 100;\n  \}\n\n  /// Quantity times">
+            <mutation text=") * 100;\n  }\n\n  /// Quantity times"/>
+        </regex>
+
+        <regex pattern="(edit_name.typed_name_wins)" id="editedItem\?\.itemName \?\? itemName">
+            <mutation text="itemName"/>
+        </regex>
+
+        <regex pattern="(edit_flag.inverted)" id="bool get isEditingExistingLine =&gt; editedItem != null;">
+            <mutation text="bool get isEditingExistingLine =&gt; editedItem == null;"/>
+        </regex>
+
+        <regex pattern="(edit_change.new_line_reports_change)" id="if \(edited == null\) return null;">
+            <mutation text="if (edited == null) return 0;"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="material_cost_form_state_edit" expected-return="0">fvm flutter test test/features/estimations/units/blocs/material_cost_form_bloc_edit_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

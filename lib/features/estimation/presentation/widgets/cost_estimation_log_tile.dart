@@ -227,7 +227,10 @@ class CostEstimationLogTile extends StatelessWidget {
     return Text.rich(
       TextSpan(
         style: emphasis,
-        children: [TextSpan(text: label), TextSpan(text: value)],
+        children: [
+          TextSpan(text: label),
+          TextSpan(text: value),
+        ],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
