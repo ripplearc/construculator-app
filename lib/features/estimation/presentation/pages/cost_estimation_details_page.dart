@@ -141,32 +141,54 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   void _openLine(CostItem line) {
     _addedLineHighlight.clear();
-    if (line is EquipmentCostItem && !_isLineSheetOpen) {
-      unawaited(_editEquipmentLine(line));
+    if (_isLineSheetOpen) return;
+    switch (line) {
+      case EquipmentCostItem():
+        unawaited(_editLine(() => _openEquipmentSheet(null, editedItem: line)));
+      case MaterialCostItem():
+        unawaited(_editLine(() => _openMaterialSheet(editedItem: line)));
+      case _:
+        break;
     }
   }
 
-  Future<void> _editEquipmentLine(EquipmentCostItem line) async {
+  Future<void> _editLine(Future<void> Function() openSheet) async {
     _isLineSheetOpen = true;
     try {
-      await _openEquipmentSheet(null, editedItem: line);
+      await openSheet();
     } finally {
       _isLineSheetOpen = false;
     }
   }
 
-  Future<void> _openMaterialSheet() =>
+  Future<void> _openMaterialSheet({MaterialCostItem? editedItem}) =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
         asksBeforeClosing: true,
+        editedMaterialItem: editedItem,
         blocFactory: widget.materialCostFormBlocFactory,
         addedItemIdOf: (state) =>
-            state is MaterialCostFormSuccess ? state.createdItem.id : null,
+            state is MaterialCostFormSuccess &&
+                !state.data.isEditingExistingLine
+            ? state.createdItem.id
+            : null,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
+          MaterialCostFormSuccess(:final data)
+              when data.isEditingExistingLine =>
+            _SheetOutcome.changed,
           MaterialCostFormSuccess() => _SheetOutcome.added,
+          MaterialCostFormDeleted() => _SheetOutcome.changed,
           MaterialCostFormFailure() => _SheetOutcome.failed,
           _ => _SheetOutcome.editing,
+        },
+        failedMessageOf: (state) => switch (state) {
+          MaterialCostFormFailure(whileDeleting: true) =>
+            context.l10n.deleteLineFailedError,
+          MaterialCostFormFailure(:final data)
+              when data.isEditingExistingLine =>
+            context.l10n.saveLineFailedError,
+          _ => context.l10n.addToEstimateFailedError,
         },
       );
 
@@ -178,6 +200,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     required _SheetOutcome Function(S state) outcomeOf,
     String Function(S state)? failedMessageOf,
     EquipmentCostItem? editedEquipmentItem,
+    MaterialCostItem? editedMaterialItem,
     YourRateEntry? entry,
     String? name,
   }) async {
@@ -203,6 +226,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             initialRateEntry: entry,
             initialEquipmentName: name,
             editedEquipmentItem: editedEquipmentItem,
+            editedMaterialItem: editedMaterialItem,
           ),
         ),
       );
