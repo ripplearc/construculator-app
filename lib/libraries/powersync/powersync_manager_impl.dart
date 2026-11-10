@@ -118,6 +118,23 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
   @override
   Future<void> disconnectAndClear() => _serialize(_disconnectAndClear);
 
+  @override
+  Future<void> disconnectAndClearOrThrow() => _serialize(() async {
+    _logger.info('Disconnecting PowerSync and deleting synced data');
+    try {
+      await _database.disconnectAndClear(clearLocal: false);
+      _state = _SyncState.disconnected;
+    } catch (error, stackTrace) {
+      _state = _SyncState.clearPending;
+      _logger.error(
+        'Failed to disconnect and clear PowerSync',
+        error,
+        stackTrace,
+      );
+      rethrow;
+    }
+  });
+
   Future<void> _connect() async {
     if (_state == _SyncState.clearPending) {
       await _disconnectAndClear();
