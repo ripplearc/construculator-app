@@ -343,11 +343,11 @@ behavior.
 **Local-only tables:** every `Table.localOnly` in `schema.dart` is listed in
 `LocalOnlyTableRegistry` as "clear when the user changes" or "keep as a device setting",
 and a test fails when one is not registered. Add the entry in the same change as a new
-local-only table. No code reads the registrations yet. Today only `current_company` is
-deleted on sign-out, by `CurrentCompanyResolver.clearCache()`, and a failed delete is
-only logged. Nothing empties `your_rate_refusals` on sign-out. The shared delete routine
-will call `clearForUserChange` on every registration. It is built in the owner record
-ticket of the sign-out design (CA-1429).
+local-only table. `LocalDataDeleteService` runs `clearForUserChange` of every
+registration (a device setting is kept), but nothing calls the service yet: the sign-in
+check and the sign-out handler of the sign-out design will. Today only `current_company`
+is deleted on sign-out, by `CurrentCompanyResolver.clearCache()`, and a failed delete is
+only logged. Nothing empties `your_rate_refusals` on sign-out.
 
 `FakeSupabaseWrapper._authStateController` was changed from `.broadcast()` to
 `.broadcast(sync: true)` (PR #364) specifically so tests can assert on both listeners'
