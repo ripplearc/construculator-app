@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- OWNER RECORD STORAGE MUTATION TESTING -->
+    <!-- Targets: the owner record rules and the atomic file write -->
+
+    <files>
+        <file>lib/libraries/storage/models/owner_record.dart</file>
+        <file>lib/libraries/storage/file_owner_record_storage_service.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="userId == null &amp;&amp; pendingDelete == null" dotAll="true" id="record.allow_no_user_and_no_flag">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="userId == null &amp;&amp; pendingDelete == null" dotAll="true" id="record.refuse_with_user_or_flag">
+            <mutation text="userId == null || pendingDelete == null"/>
+        </regex>
+        <regex pattern="if \(userId != null &amp;&amp; userId is! String\)" dotAll="true" id="record.accept_user_id_not_string">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="if \(signOutDate != null &amp;&amp; signOutDate is! String\)" dotAll="true" id="record.accept_date_not_string">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="if \(pending is! Map&lt;String, Object\?&gt;\)" dotAll="true" id="record.accept_flag_not_object">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="case 'arrivalOfNewUser' when arrivingUserId is String:" dotAll="true" id="record.arrival_without_user">
+            <mutation text="case 'arrivalOfNewUser':"/>
+        </regex>
+        <regex pattern="when arrivingUserId == null:" dotAll="true" id="record.logout_with_user">
+            <mutation text=":"/>
+        </regex>
+        <regex pattern="userId == '' \|\| pendingDelete\?\.arrivingUserId == ''" dotAll="true" id="record.allow_empty_ids">
+            <mutation text="false"/>
+        </regex>
+        <regex pattern="userId == '' \|\| pendingDelete\?\.arrivingUserId == ''" dotAll="true" id="record.check_only_user_id_for_empty">
+            <mutation text="userId == ''"/>
+        </regex>
+        <regex pattern="pendingDelete: pending == null\s*\? null" dotAll="true" id="record.invert_missing_flag_read">
+            <mutation text="pendingDelete: pending != null ? null"/>
+        </regex>
+        <regex pattern="pending == null\s*\? null\s*: \{" dotAll="true" id="record.invert_missing_flag_write">
+            <mutation text="pending != null ? null : {"/>
+        </regex>
+        <regex pattern="signOutDate == null\s*\? null" dotAll="true" id="record.invert_missing_date_read">
+            <mutation text="signOutDate != null ? null"/>
+        </regex>
+        <regex pattern="DateTime\.parse\(signOutDate as String\)" dotAll="true" id="record.ignore_stored_date">
+            <mutation text="DateTime.utc(2000)"/>
+        </regex>
+        <regex pattern="_lastChange\.then\(\(_\) =&gt; change\(\)\)" dotAll="true" id="storage.do_not_wait_for_earlier_changes">
+            <mutation text="Future&lt;void&gt;.value().then((_) =&gt; change())"/>
+        </regex>
+        <regex pattern="onError: \(_\) \{\}" dotAll="true" id="storage.queue_stops_after_failure">
+            <mutation text="onError: (error) { throw error; }"/>
+        </regex>
+        <regex pattern=": signOutDate = signOutDate\?\.toUtc\(\)" dotAll="true" id="record.local_date_kept">
+            <mutation text=": signOutDate = signOutDate"/>
+        </regex>
+        <regex pattern="await handle\.flush\(\);" dotAll="true" id="storage.skip_flush">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await temporary\.rename\(p\.join\(directory\.path, _recordFileName\)\);" dotAll="true" id="storage.skip_rename">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await directory\.create\(recursive: true\);" dotAll="true" id="storage.skip_create_folder">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(json is! Map&lt;String, Object\?&gt;\)" dotAll="true" id="storage.accept_non_object">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="on PathNotFoundException \{\s*return const OwnerRecordAbsent\(\);" dotAll="true" id="storage.missing_reads_unknown">
+            <mutation text="on PathNotFoundException { return const OwnerRecordUnknown();"/>
+        </regex>
+        <regex pattern="on Exception catch \(error, stackTrace\) \{\s*_logger\.error\('Could not read the owner record', error, stackTrace\);\s*return const OwnerRecordUnknown\(\);" dotAll="true" id="storage.failed_read_reads_absent">
+            <mutation text="on Exception catch (error, stackTrace) { return const OwnerRecordAbsent();"/>
+        </regex>
+        <regex pattern="for \(final name in \[_recordFileName, _temporaryFileName\]\)" dotAll="true" id="storage.leave_temporary_file">
+            <mutation text="for (final name in [_recordFileName])"/>
+        </regex>
+        <regex pattern="on PathNotFoundException \{\s*continue;" dotAll="true" id="storage.remove_throws_when_missing">
+            <mutation text="on PathNotFoundException { rethrow;"/>
+        </regex>
+        <regex pattern="FileMode\.write" dotAll="true" id="storage.append_instead_of_write">
+            <mutation text="FileMode.append"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="owner_record_storage" expected-return="0">flutter test test/libraries/storage/units</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
