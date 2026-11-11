@@ -357,11 +357,16 @@ final class Scalar extends Quantity {
   /// for a trig ratio (Sine 0.615661). `null` renders it as any result.
   final int? decimals;
 
-  const Scalar(this.value, {this.decimals});
+  /// Whether every one of [decimals] is shown, zeros included: a sheet
+  /// count always reads two decimals (0.00, 12.50; Section 9), where a trig
+  /// ratio drops the zeros after its last digit (Sine 0.5).
+  final bool padsDecimals;
+
+  const Scalar(this.value, {this.decimals, this.padsDecimals = false});
 
   @override
   Dimension get dimension => Dimension.scalar;
 
   @override
-  List<Object?> get props => [value, decimals];
+  List<Object?> get props => [value, decimals, padsDecimals];
 }
