@@ -67,8 +67,10 @@ import 'package:equatable/equatable.dart';
 /// 92,233,720,368,547,760, the int a clamped floor lands on). Every writing
 /// path throws a [RangeError] carrying [tooLargeToDisplay] for one. Every
 /// place that makes an answer asks [isTooLarge] first and shows "Too large"
-/// instead — the chain ([ChainEvaluator]), a trig key ([Tape.pressTrigKey]),
-/// the Pitch key and the pill that re-spells its answer
+/// instead — the chain ([ChainEvaluator], its first value included), a trig
+/// key ([Tape.pressTrigKey]) and the operator that would seal a trig chip's
+/// answer into a chain ([Tape.pressOperator]; = reaches the chain's first
+/// value check), the Pitch key and the pill that re-spells its answer
 /// ([Tape.pressFunctionKey], [Tape.cyclePitchSpelling]), a unit key on a
 /// result ([Tape.pressUnit]) and the rules' answers
 /// ([DeterministicRules.answersFor]) — so the error marks a caller that

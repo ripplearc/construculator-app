@@ -475,6 +475,13 @@ void main() {
             (cubic.chips.last as ResultChip).value,
             isA<Volume>().having((v) => v.unit, 'unit', Unit.metre),
           );
+          final edge = press(const Tape(), '1666666 ft × 1 =');
+          expect(edge.pressUnit(Unit.inch), isA<TapeChanged>());
+          expect(
+            press(const Tape(), '1666667 ft × 1 =').pressUnit(Unit.inch),
+            tooLarge,
+            reason: '1,666,667ft is 20,000,004in, one step past the limit',
+          );
           final small = press(const Tape(), '100 m × 1 = mm');
           expect(
             (small.chips.last as ResultChip).value,

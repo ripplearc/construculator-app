@@ -764,6 +764,10 @@ class Tape extends Equatable {
     if (tape._unfinished case final refusal?) return refusal;
     if (key == PlainNumberKeys.pitch) {
       if (tape._pitchTheRulesRead case final pitch?) {
+        if (tape.chips.lastOrNull ==
+            const ErrorChip(CalculationError.outOfRange)) {
+          return const TapeRefused(TapeRefusal.noPitchToCycle);
+        }
         return TapeChanged(
           tape.append(
             tape._landedAnswer(

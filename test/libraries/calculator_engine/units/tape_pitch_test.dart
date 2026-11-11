@@ -369,6 +369,15 @@ void main() {
       );
       expect(steep.chips.last, tooLarge);
       expect(texts(steep).last, CalculationError.outOfRange.name);
+      expect(
+        steep.pressFunctionKey(
+          PlainNumberKeys.pitch,
+          keyWantsUnit: false,
+          readsDegrees: true,
+        ),
+        const TapeRefused(TapeRefusal.noPitchToCycle),
+        reason: 'Pitch again stacks no second Too large chip; ⌫ is the way out',
+      );
       final fromSides = press(
         const Tape(),
         '[Rise] 1 9 9 9 9 9 9 9 ft [Run] 1 in [Pitch]',
