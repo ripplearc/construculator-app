@@ -4,12 +4,14 @@ import 'package:construculator/libraries/powersync/testing/fake_synced_data_serv
 import 'package:construculator/libraries/storage/local_data_delete_service.dart';
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:construculator/libraries/storage/testing/fake_owner_record_storage_service.dart';
+import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 LocalDataDeleteService buildService({
   required FakeOwnerRecordStorageService ownerRecords,
   required FakePowerSyncDatabaseWrapper database,
   required FakeSyncedDataService syncedData,
+  required FakeStorageService userSpace,
   List<LocalOnlyTableRegistration>? registrations,
 }) =>
     // ignore: no_direct_instantiation, reason: the service under test is built from its fakes
@@ -17,6 +19,7 @@ LocalDataDeleteService buildService({
       ownerRecords: ownerRecords,
       database: database,
       syncedData: syncedData,
+      userSpace: userSpace,
       registrations: registrations ?? LocalOnlyTableRegistry.registrations,
     );
 
@@ -38,6 +41,7 @@ void main() {
     late FakeOwnerRecordStorageService ownerRecords;
     late FakePowerSyncDatabaseWrapper database;
     late FakeSyncedDataService syncedData;
+    late FakeStorageService userSpace;
     late LocalDataDeleteService service;
 
     final signedOutAt = DateTime.utc(2026, 11, 1);
@@ -50,10 +54,12 @@ void main() {
       ownerRecords = FakeOwnerRecordStorageService();
       database = FakePowerSyncDatabaseWrapper();
       syncedData = FakeSyncedDataService();
+      userSpace = FakeStorageService();
       service = buildService(
         ownerRecords: ownerRecords,
         database: database,
         syncedData: syncedData,
+        userSpace: userSpace,
         registrations: [clearedNotes, keptSetting, clearedDrafts],
       );
     });
@@ -69,6 +75,17 @@ void main() {
           expect(executedSql(), ['DELETE FROM notes', 'DELETE FROM drafts']);
         },
       );
+
+      test('empties the user space of the storage library', () async {
+        await userSpace.saveData<String>(
+          'last_used_unit.user-1.material',
+          'kg',
+        );
+
+        await service.deleteLocalData();
+
+        expect(userSpace.valueOf('last_used_unit.user-1.material'), isNull);
+      });
 
       test('deletes the synced data and the unsent edits once', () async {
         await service.deleteLocalData();
@@ -185,6 +202,19 @@ void main() {
           await expectLater(service.deleteLocalData(), throwsStateError);
 
           expect(executedSql(), ['DELETE FROM notes', 'DELETE FROM drafts']);
+          expect(ownerRecords.record, flagged);
+        },
+      );
+
+      test(
+        'the user space cannot be cleared, after the table clear steps ran',
+        () async {
+          userSpace.shouldThrowOnClear = true;
+
+          await expectLater(service.deleteLocalData(), throwsStateError);
+
+          expect(executedSql(), ['DELETE FROM notes', 'DELETE FROM drafts']);
+          expect(syncedData.deleteCallCount, 0);
           expect(ownerRecords.record, flagged);
         },
       );
@@ -316,6 +346,7 @@ void main() {
         ownerRecords: ownerRecords,
         database: database,
         syncedData: syncedData,
+        userSpace: userSpace,
       );
 
       await production.deleteLocalData();

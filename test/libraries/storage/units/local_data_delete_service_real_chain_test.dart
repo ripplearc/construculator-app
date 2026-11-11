@@ -14,11 +14,14 @@ import 'package:construculator/libraries/storage/file_owner_record_storage_servi
 import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/local_data_delete_service.dart';
 import 'package:construculator/libraries/storage/models/owner_record.dart';
+import 'package:construculator/libraries/storage/prefixed_preferences.dart';
+import 'package:construculator/libraries/storage/shared_pref_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -30,6 +33,13 @@ PowerSyncSyncedDataService buildSyncedData(PowerSyncManager manager) =>
     // ignore: no_direct_instantiation, reason: the real service over the real manager is under test
     PowerSyncSyncedDataService(manager: manager);
 
+SharedPrefService buildUserSpace() =>
+    // ignore: no_direct_instantiation, reason: the real user space over the platform preferences is under test
+    SharedPrefService(
+      // ignore: no_direct_instantiation, reason: the real preferences wrapper is under test
+      preferences: PrefixedPreferences(prefix: SharedPrefService.keyPrefix),
+    );
+
 LocalDataDeleteService buildRoutine({
   required OwnerRecordStorageService ownerRecords,
   required FakePowerSyncDatabaseWrapper database,
@@ -40,6 +50,7 @@ LocalDataDeleteService buildRoutine({
       ownerRecords: ownerRecords,
       database: database,
       syncedData: syncedData,
+      userSpace: buildUserSpace(),
     );
 
 void main() {
@@ -67,6 +78,7 @@ void main() {
       Modular.dispose<PowerSyncManager>();
       fakeSupabase.reset();
       fakeDatabase.reset();
+      SharedPreferences.setMockInitialValues({});
       directory = await Directory.systemTemp.createTemp('delete_routine_test');
       ownerRecords = buildFileStorage(directory);
       tables = FakePowerSyncDatabaseWrapper();
@@ -110,6 +122,27 @@ void main() {
               'DELETE FROM ${entry.tableName}',
         ],
       );
+    });
+
+    test('empties the user space on disk and keeps every other key', () async {
+      SharedPreferences.setMockInitialValues({
+        'user.last_used_unit.user-1.material': 'kg',
+        'device.onboardingSeen': true,
+        'sb-project-auth-token': 'session',
+      });
+      await ownerRecords.write(OwnerRecord(userId: 'user-1'));
+      final routine = buildRoutine(
+        ownerRecords: ownerRecords,
+        database: tables,
+        syncedData: FakeSyncedDataService(),
+      );
+
+      await routine.deleteLocalData();
+
+      expect((await SharedPreferences.getInstance()).getKeys(), {
+        'device.onboardingSeen',
+        'sb-project-auth-token',
+      });
     });
 
     test('removes the file after a logout delete', () async {
