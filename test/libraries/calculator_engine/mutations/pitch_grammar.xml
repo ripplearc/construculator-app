@@ -119,6 +119,12 @@
             <mutation text=""/>
             <mutation text="if (!formatter.isTooLarge(spelled)) { return _replaceLastChip(const ErrorChip(CalculationError.outOfRange)); }"/>
         </regex>
+
+        <!-- RULE CA-1201 (X02): Pitch pressed again on the Too large chip it
+             landed stacks a second Too large chip -->
+        <regex pattern="if \(tape\.chips\.lastOrNull ==\s*const ErrorChip\(CalculationError\.outOfRange\)\) \{\s*return const TapeRefused\(TapeRefusal\.noPitchToCycle\);\s*\}" dotAll="true" id="tape.pitch_key.too_large_stacked">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>
