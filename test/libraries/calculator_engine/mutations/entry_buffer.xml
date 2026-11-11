@@ -207,6 +207,20 @@
             <mutation text="digits.length - (startedWithPoint ? 1 : 0);"/>
         </regex>
 
+        <!-- RULE CA-1236 (R8, B11): a carry that pushes the part above the
+             limit goes through, or the check reads the wrong part -->
+        <regex pattern="if \(carried\.any\(\(part\) =&gt; _isTooLarge\(part\.digits\)\)\) \{\s*return const EntryRefused\(EntryRefusal\.tooLarge\);\s*\}" dotAll="true" id="entry_buffer.carried_up.past_the_limit">
+            <mutation text=""/>
+            <mutation text="if (_isTooLarge(carried.last.digits)) { return const EntryRefused(EntryRefusal.tooLarge); }"/>
+            <mutation text="if (carried.any((part) =&gt; _isTooLarge(part.digits))) { return _replaceLast(closed); }"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R8, N2): the digit typed after the pill forgets that
+             the number started with a point -->
+        <regex pattern="Token\(digits: last\.digits, startedWithPoint: last\.startedWithPoint\)," dotAll="true" id="entry_buffer.type_digit.pill_forgets_point">
+            <mutation text="Token(digits: last.digits),"/>
+        </regex>
+
         <!-- RULE CA-1236 (R7): a leading point forgets that its 0 was written,
              not typed -->
         <regex pattern="const Token\(digits: '0\.', startedWithPoint: true\)" dotAll="true" id="entry_buffer.type_digit.leading_point_counts">

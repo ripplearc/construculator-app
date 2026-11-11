@@ -87,8 +87,9 @@
 
         <!-- RULE 11: a failed chain keeps folding, so the failure is lost
              to the next step -->
-        <regex pattern="if \(running\.failure != null\) return running;" dotAll="true" id="chain_evaluator.fold.refold_failed_chain">
+        <regex pattern="if \(operator != null &amp;&amp; running\.failure != null\) return running;" dotAll="true" id="chain_evaluator.fold.refold_failed_chain">
             <mutation text="if (false) return running;"/>
+            <mutation text="if (running.failure != null) return running;"/>
         </regex>
 
         <!-- RULE 12: a result chip's operator is ignored -->
