@@ -148,7 +148,7 @@
             <mutation text="currentGroupIndex, notice,"/>
         </regex>
 
-        <!-- RULE 23 (S1c 3/3, CA-1089): a tapped chip never reaches the tape -->
+        <!-- RULE 23 (S1c 3/5, CA-1089): a tapped chip never reaches the tape -->
         <regex pattern="on&lt;CalculatorChipTapped&gt;\(_onChipTapped\);" dotAll="true" id="calculator_bloc.chip_tapped.unwired">
             <mutation text=""/>
         </regex>

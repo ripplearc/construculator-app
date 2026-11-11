@@ -787,7 +787,7 @@ void main() {
       );
     });
 
-    group('S1c 3/3: a tap on a chip of the tape (rule 4.8)', () {
+    group('S1c 3/5: a tap on a chip of the tape (rule 4.8)', () {
       Tape lengthWidthArea() {
         final typed = pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in');
         final area = const DeterministicRules()
