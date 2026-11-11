@@ -109,6 +109,10 @@ abstract class CostEstimationRepository {
 
   /// Deletes a cost estimation by its ID.
   ///
+  /// Writes the delete to the phone, which uploads it later, so the call does
+  /// not wait for the server. An estimation the phone no longer has is already
+  /// gone, so that counts as success.
+  ///
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] if the deletion fails, or [void] if successful.
   Future<Either<Failure, void>> deleteEstimation(
