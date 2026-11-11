@@ -24,8 +24,13 @@ abstract class StorageService {
   /// Remove data from the storage service.
   ///
   /// [key] is the key of the data to remove.
+  ///
+  /// Throws a [StateError] when the platform refuses the removal.
   Future<void> removeData(String key);
 
   /// Remove all data of the user space, and nothing of the device space.
+  ///
+  /// Throws a [StateError] when the platform refuses a removal; calling it
+  /// again removes the rest.
   Future<void> clearAll();
 }

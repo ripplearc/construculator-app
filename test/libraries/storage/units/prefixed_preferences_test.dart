@@ -99,6 +99,31 @@ void main() {
     });
 
     test(
+      'clear removes the rest when it is called again after a refusal',
+      () async {
+        final space = buildSpace();
+        await space.save<String>('one', '1');
+        await space.save<String>('two', '2');
+        store.refusesRemovals = true;
+        await expectLater(space.clear(), throwsStateError);
+
+        store.refusesRemovals = false;
+        await space.clear();
+
+        expect(
+          store.data.keys.where((key) => key.startsWith('flutter.user.')),
+          isEmpty,
+        );
+      },
+    );
+
+    test('reads an empty list that the platform returns untyped', () async {
+      store.data['flutter.user.texts'] = <Object?>[];
+
+      expect(await buildSpace().get<List<String>>('texts'), isEmpty);
+    });
+
+    test(
       'clear throws when the platform refuses a removal, so the delete is retried',
       () async {
         final space = buildSpace();

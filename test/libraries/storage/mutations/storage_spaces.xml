@@ -43,6 +43,9 @@
         <regex pattern="await _removeStored\(preferences, '\$prefix\$key'\);" dotAll="true" id="prefs.remove_drops_prefix">
             <mutation text="await _removeStored(preferences, key);"/>
         </regex>
+        <regex pattern="await preferences\.reload\(\);" dotAll="true" id="prefs.clear_skips_reload">
+            <mutation text=""/>
+        </regex>
         <regex pattern="if \(storedKey\.startsWith\(prefix\)\)" dotAll="true" id="prefs.clear_every_key">
             <mutation text="if (true)"/>
         </regex>
@@ -63,6 +66,9 @@
         </regex>
         <regex pattern="value\.every\(\(item\) =&gt; item is String\)" dotAll="true" id="prefs.accept_list_with_non_string">
             <mutation text="true"/>
+        </regex>
+        <regex pattern=": assert\(_preferences\.prefix == keyPrefix\)" dotAll="true" id="user_space.accept_other_prefix">
+            <mutation text=": assert(true)"/>
         </regex>
         <regex pattern="static const keyPrefix = 'user\.'" dotAll="true" id="user_space.prefix_blank">
             <mutation text="static const keyPrefix = ''"/>
