@@ -63,7 +63,11 @@ void main() {
 
       expect(shown, {
         'By length': ['ft Foot', 'in Inch', 'yd Yard', 'lf Linear foot'],
-        'By area': ['sf Square foot', 'sy Square yard', 'sq Square — 100 sq ft'],
+        'By area': [
+          'sf Square foot',
+          'sy Square yard',
+          'sq Square — 100 sq ft',
+        ],
         'By volume': [
           'cf Cubic foot',
           'cy Cubic yard',
@@ -85,12 +89,20 @@ void main() {
           'tb Tube',
         ],
       });
+      expect(shown.keys, [
+        'By length',
+        'By area',
+        'By volume',
+        'By weight',
+        'By count',
+        'By packaging',
+      ]);
     });
 
     test('lists each unit once', () {
       final units = [for (final group in imperialMaterialUnits) ...group.units];
 
-      expect(units.toSet(), hasLength(23));
+      expect(units.toSet(), hasLength(units.length));
     });
   });
 
