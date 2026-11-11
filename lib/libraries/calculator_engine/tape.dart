@@ -60,8 +60,9 @@ abstract final class LengthOnlyKeys {
 /// of the number being typed are [EntryRefusal]s and of a finished value
 /// [UnitKeyRefusal]s; these are the ones only the tape can see.
 enum TapeRefusal {
-  /// A unit key with nothing typed on an empty or sealed tape ("Type a
-  /// number first").
+  /// A unit key with nothing typed: on an empty or sealed tape, or on a
+  /// chip ✕ emptied, whether typed fresh or reopened by a tap ("Type a
+  /// number first"; Section 5.1; decision tree row 162).
   typeANumberFirst,
 
   /// A unit key with nothing typed while a result with no unit (Calc 156)
@@ -80,6 +81,12 @@ enum TapeRefusal {
 
   /// ⌫ on an empty tape.
   nothingToDelete,
+
+  /// ⌫ on the first chip of a chain after it was emptied, while chips
+  /// follow it (rule 4.8, "Deleting the first value of a chain"): the empty
+  /// chip "…" stays, since a tape never starts with an operator, and the
+  /// red Alert says "Type a new first value, or press C to start again."
+  typeANewFirstValue,
 
   /// An operator with no value before it ("Type a value first").
   typeAValueFirst,
@@ -427,17 +434,20 @@ class Tape extends Equatable {
     return null;
   }
 
-  /// The chip a tap reopened in place, with the chips after it still on the
-  /// tape (rule 4.8), or `null`: a chip being typed at the end of the tape
-  /// is entry, not an edit. While an edit is open the display draws the
-  /// results after it dashed, and a key that would leave the edit with the
-  /// value broken is refused ([TapeRefusal.finishThisValueFirst], Section
-  /// 5.5). What the results after the chip do as its value changes is the
-  /// next PR's.
+  /// The chip a tap reopened in place (rule 4.8), wherever it sits, or
+  /// `null`: a chip being typed at the end of the tape is entry, not an
+  /// edit, and so is one ⌫ reopened there. The record is the chip's own
+  /// ([ValueChip.isEditing]), never its place, so the last chip of the tape
+  /// is an edit when a tap reopened it. While an edit is open the display
+  /// draws the results after it dashed, and a key that would leave the edit
+  /// with the value broken is refused ([TapeRefusal.finishThisValueFirst],
+  /// Section 5.5).
   ({int index, ValueChip chip})? get editing {
     final index = _activeIndex;
-    if (index == null || index == chips.length - 1) return null;
-    return (index: index, chip: chips[index] as ValueChip);
+    if (index == null) return null;
+    final chip = chips[index] as ValueChip;
+    if (!chip.isEditing) return null;
+    return (index: index, chip: chip);
   }
 
   /// The chip being typed wherever it is: the one inside the open bracket
@@ -908,7 +918,7 @@ class Tape extends Equatable {
 
   TapeOutcome? get _unfinished {
     final chip = active;
-    if (chip != null && chip.asksAnUndefinedTrig) {
+    if (chip != null && chip.asksAnUndefinedTrig && !chip.isEditing) {
       return const TapeRefused(TapeRefusal.trigCannotAnswer);
     }
     if (chip == null || chip.isReadable) return null;
@@ -1448,9 +1458,12 @@ class Tape extends Equatable {
       return const TapeRefused(TapeRefusal.groupCannotTakeUnit);
     }
     final chip = active;
-    if (chip == null || chip.entry.isEmpty) {
+    if (chip != null && chip.entry.isEmpty) {
+      return const TapeRefused(TapeRefusal.typeANumberFirst);
+    }
+    if (chip == null) {
       final last = chips.isEmpty ? null : chips.last;
-      if (chip == null && last is ResultChip && last.value is! Scalar) {
+      if (last is ResultChip && last.value is! Scalar) {
         return _convertResult(last, unit);
       }
       return TapeRefused(
@@ -1627,7 +1640,14 @@ class Tape extends Equatable {
   /// chain lands the chain, with the ratio sealed into its angle (rule
   /// 4.6): 5 + [ATAN] 16 ÷ 12 = is Calc 58.13°.
   TapeOutcome pressEquals() {
-    if (editing != null) return _leavingEdit(TapeChanged.new);
+    if (editing != null) {
+      return _leavingEdit(
+        (sealed) => switch (sealed.pressEquals()) {
+          final TapeChanged landed => landed,
+          TapeOutcome() => TapeChanged(sealed),
+        },
+      );
+    }
     if (openBracket != null) {
       return switch (closeBracket()) {
         TapeChanged(:final tape, notice: null) => _landedAfterClose(tape),
@@ -1774,6 +1794,9 @@ class Tape extends Equatable {
       :final index,
       chip: ValueChip(entry: EntryBuffer(isEmpty: true)),
     )) {
+      if (index == 0 && chips.length > 1) {
+        return const TapeRefused(TapeRefusal.typeANewFirstValue);
+      }
       return _withChipRemoved(index);
     }
     if (editing == null && chips.isNotEmpty) {
@@ -1906,10 +1929,13 @@ class Tape extends Equatable {
   /// ([TapeRefusal.finishThisValueFirst], Section 5.5: "another chip is
   /// tapped while an edited chip holds a dangling number"). A chip a key
   /// opened and nothing was typed into is dropped by the tap, as the strip's
-  /// answer drops it ([landAnswer]). A result or an error chip is read, not
-  /// edited ([TapeRefusal.chipCannotBeEdited]); so is a bracket chip until
-  /// a later PR reopens it by a tap. While a bracket is open every other
-  /// chip waits (Section 7), so a tap is refused until it closes.
+  /// answer drops it ([landAnswer]). A result, an error chip or a bracket
+  /// chip is read, not edited ([TapeRefusal.chipCannotBeEdited]). While a
+  /// bracket is open every other chip waits (Section 7), so a tap is
+  /// refused until it closes. The reopened chip is an edit wherever it sits
+  /// ([ValueChip.isEditing]), the last chip of the tape included, so a
+  /// wrong unit is refused in place rather than split into a new chip and
+  /// ✕ twice cannot abandon it.
   TapeOutcome tapChip(int index) {
     if (index < 0 || index >= chips.length) {
       return const TapeRefused(TapeRefusal.chipCannotBeEdited);
@@ -1926,6 +1952,7 @@ class Tape extends Equatable {
     if (activeIndex != null) {
       final current = chips[activeIndex] as ValueChip;
       if (activeIndex == chips.length - 1 &&
+          !current.isEditing &&
           current.entry.isEmpty &&
           current.operator == null) {
         tape = _with(chips.sublist(0, activeIndex));
@@ -1936,7 +1963,12 @@ class Tape extends Equatable {
       }
     }
     final tapped = tape.chips[index] as ValueChip;
-    return TapeChanged(tape._replaceChipAt(index, tape._reactivated(tapped)));
+    return TapeChanged(
+      tape._replaceChipAt(
+        index,
+        tape._reactivated(tapped).copyWith(isEditing: true),
+      ),
+    );
   }
 
   TapeOutcome _leavingEdit(TapeOutcome Function(Tape sealed) key) {
@@ -2078,7 +2110,9 @@ class Tape extends Equatable {
     final closed = _withFieldClosed();
     final chip = closed.active;
     if (chip == null) return this;
-    return closed._replaceActive(chip.copyWith(isActive: false));
+    return closed._replaceActive(
+      chip.copyWith(isActive: false, isEditing: false),
+    );
   }
 
   Tape _withFieldClosed() {

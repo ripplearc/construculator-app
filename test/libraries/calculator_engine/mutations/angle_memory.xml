@@ -116,7 +116,7 @@
         <regex pattern="if \(key == PlainNumberKeys\.pitch\) \{\s*if \(angle\.value\.degrees &lt;= 0\)" dotAll="true" id="tape.recall.every_key_refuses">
             <mutation text="if (true) { if (angle.value.degrees &lt;= 0)"/>
         </regex>
-        <regex pattern="if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.joins_recalled">
+        <regex pattern="if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{\s*if \(editing != null\) \{\s*return const TapeEntryRefused\(EntryRefusal\.alreadyAnAngle\);\s*\}\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.joins_recalled">
             <mutation text=""/>
         </regex>
 

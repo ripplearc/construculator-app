@@ -94,6 +94,149 @@ void main() {
       expect(tape.active, isNotNull);
     });
 
+    test('the reopened last chip of the tape is an edit too: a unit that '
+        'cannot continue it is refused in place and never split into a new '
+        'chip, and neither ✕ twice nor a tap on another chip abandons it '
+        '(rule 4.8; doc lines 726 and 3552)', () {
+      final width = press(
+        const Tape(),
+        '[Length] 2 2 ft [Width] 1 8 ft 8 in tap:1 tap:1',
+      );
+      expect(
+        width.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 1),
+      );
+      expect(width.active, isNotNull);
+      final seven = press(width, '7');
+      expect(
+        unit(seven, Unit.yard),
+        const TapeEntryRefused(EntryRefusal.cannotAppendUnit),
+      );
+      expect(texts(seven), ['Length22ft', 'Width18ft 8in 7']);
+      final emptied = press(width, '✕');
+      expect(texts(emptied), ['Length22ft', 'Width']);
+      expect(
+        emptied.clearActive(),
+        const TapeRefused(TapeRefusal.finishThisValueFirst),
+      );
+      expect(
+        emptied.tapChip(0),
+        const TapeRefused(TapeRefusal.finishThisValueFirst),
+        reason: 'the emptied Width is an edit, not a chip a key just opened',
+      );
+      final middle = press(
+        const Tape(),
+        '[Length] 2 2 ft [Width] 1 8 ft [Height] 8 ft tap:1 ✕',
+      );
+      expect(
+        middle.tapChip(0),
+        const TapeRefused(TapeRefusal.finishThisValueFirst),
+        reason: 'mid-tape the same tap is refused the same way',
+      );
+      expect(texts(press(emptied, '2 0 ft tap:1')), [
+        'Length22ft',
+        'Width20ft',
+      ]);
+    });
+
+    test('✕ twice on a reopened chip, mid-tape or the last, refuses the '
+        'second time with "Finish this value first" and keeps the edit '
+        'open (Section 5.5)', () {
+      for (final keys in [
+        '2 ft + 3 ft + 4 ft = tap:1 ✕',
+        '2 ft + 3 ft + 4 ft tap:2 tap:2 ✕',
+      ]) {
+        final emptied = press(const Tape(), keys);
+        expect(emptied.editing, isNotNull, reason: keys);
+        expect(
+          emptied.clearActive(),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+          reason: keys,
+        );
+      }
+    });
+
+    test('a chip ⌫ reopens at the end of the tape is entry again, once an '
+        'edit of it has sealed', () {
+      final tape = press(const Tape(), '1 8 ft × 4 ft tap:0 tap:0 ⌫');
+      expect(texts(tape), ['18ft']);
+      expect(tape.active, isNotNull);
+      expect(tape.editing, isNull);
+      expect(
+        changed(tape.clearActive()).clearActive(),
+        const TapeRefused(TapeRefusal.nothingBeingTyped),
+      );
+    });
+
+    test('an edit that leaves a trig chip with a value it cannot answer '
+        'seals all the same, so the result after it can be removed and '
+        'named (B2; Section 5.5 "Arcsine removed"; decision tree row 274)', () {
+      final edited = press(const Tape(), '0 . 5 [ASIN] × 2 = tap:0 ⌫ ⌫ ⌫ 2');
+      expect(
+        edited.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 0),
+      );
+      final sealed = changed(edited.tapChip(0));
+      expect(sealed.editing, isNull);
+      expect(sealed.active, isNull);
+      expect(texts(sealed)[0], 'Arcsine2');
+      expect(
+        press(const Tape(), '[ASIN] 0 . 5 × 2 = tap:0 ⌫ ⌫ ⌫ 2').pressEquals(),
+        isA<TapeChanged>(),
+      );
+      expect(
+        press(const Tape(), '[ASIN] 2').pressOperator(Operator.multiply),
+        const TapeRefused(TapeRefusal.trigCannotAnswer),
+        reason: 'on fresh entry the chip still says why it cannot answer',
+      );
+    });
+
+    test('⌫ on the emptied first chip of a chain is refused and the empty '
+        'chip stays, since a tape never starts with an operator; a value '
+        'typed into it fills it (N1; rule 4.8 "Deleting the first value of '
+        'a chain")', () {
+      const refused = TapeRefused(TapeRefusal.typeANewFirstValue);
+      final emptied = press(const Tape(), '1 2 ft + 5 ft = tap:0 ✕');
+      expect(texts(emptied), ['', '+5ft', 'Calc17ft 0in']);
+      expect(emptied.backspace(), refused);
+      expect(emptied.backspace(), refused, reason: 'and again');
+      expect(texts(press(emptied, '1 2 ft')), ['12ft', '+5ft', 'Calc17ft 0in']);
+      final named = press(lengthWidthArea(), 'tap:0 ✕');
+      expect(named.backspace(), refused);
+      expect(texts(press(named, '3 0 ft tap:0'))[0], 'Length30ft');
+      final alone = press(const Tape(), '1 2 ft tap:0 tap:0 ✕ ⌫');
+      expect(alone.isEmpty, isTrue, reason: 'nothing follows, so it goes');
+    });
+
+    test('= during an edit finishes the edit and lands the Calc when the '
+        'tape has no result yet (N3; rule 4.8)', () {
+      final tape = press(const Tape(), '1 8 ft × 4 ft tap:0');
+      expect(
+        tape.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 0),
+      );
+      final landed = changed(tape.pressEquals());
+      expect(texts(landed), ['18ft', '×4ft', 'Calc72ft²']);
+      expect(landed.active, isNull);
+      final named = press(const Tape(), '[Length] 1 2 ft [Width] 5 ft tap:0');
+      final sealed = changed(named.pressEquals());
+      expect(texts(sealed), ['Length12ft', 'Width5ft']);
+      expect(
+        sealed.active,
+        isNull,
+        reason: 'nothing to compute, so = only seals',
+      );
+    });
+
+    test('a unit key on an emptied edit says type a number first, not units '
+        'apply while typing (N4; Section 5.1; decision tree row 162)', () {
+      final emptied = press(const Tape(), '1 2 ft + 5 ft = tap:0 ✕');
+      expect(
+        unit(emptied, Unit.foot),
+        const TapeRefused(TapeRefusal.typeANumberFirst),
+      );
+    });
+
     test('digits typed into a reopened compound append to it, and the '
         'result after it stands as it was until the value reads (S65)', () {
       final tape = press(changed(lengthWidthArea().tapChip(1)), '7 8');

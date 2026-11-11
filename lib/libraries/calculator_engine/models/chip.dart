@@ -102,6 +102,12 @@ final class ValueChip extends TapeChip {
   /// Whether the keyboard writes into this chip.
   final bool isActive;
 
+  /// Whether a tap reopened the chip in place to change it (rule 4.8), so
+  /// that the keys edit a finished value rather than type a fresh one,
+  /// wherever the chip sits. A chip ⌫ reopened at the end of the tape is
+  /// entry again. Cleared when the chip seals.
+  final bool isEditing;
+
   /// Whether a second decimal point, or the D:M:S key, may read the chip's
   /// number as degrees, minutes and seconds (Section 5.4, "A second decimal
   /// point makes an angle"): a bare number, which the trig keys read as
@@ -119,6 +125,7 @@ final class ValueChip extends TapeChip {
     this.keyWantsUnit = true,
     this.readsDegrees = false,
     this.isActive = true,
+    this.isEditing = false,
   });
 
   /// The value the chip stands for: the exact quantity a conversion kept,
@@ -272,6 +279,7 @@ final class ValueChip extends TapeChip {
     bool? keyWantsUnit,
     bool? readsDegrees,
     bool? isActive,
+    bool? isEditing,
   }) {
     return ValueChip(
       key: key != null ? key() : this.key,
@@ -282,6 +290,7 @@ final class ValueChip extends TapeChip {
       keyWantsUnit: keyWantsUnit ?? this.keyWantsUnit,
       readsDegrees: readsDegrees ?? this.readsDegrees,
       isActive: isActive ?? this.isActive,
+      isEditing: isEditing ?? this.isEditing,
     );
   }
 
@@ -295,6 +304,7 @@ final class ValueChip extends TapeChip {
     keyWantsUnit,
     readsDegrees,
     isActive,
+    isEditing,
   ];
 }
 

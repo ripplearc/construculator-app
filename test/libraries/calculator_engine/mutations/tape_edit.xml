@@ -11,9 +11,30 @@
     </files>
 
     <rules>
-        <!-- RULE 1: a chip being typed at the end counts as an edit -->
-        <regex pattern="if \(index == null \|\| index == chips\.length - 1\) return null;" dotAll="true" id="tape_edit.editing.entry_counts_as_edit">
-            <mutation text="if (index == null) return null;"/>
+        <!-- RULE 1: a chip being typed at the end counts as an edit, or the
+             reopened last chip of the tape does not (R1, B1) -->
+        <regex pattern="if \(!chip\.isEditing\) return null;" dotAll="true" id="tape_edit.editing.entry_counts_as_edit">
+            <mutation text=""/>
+            <mutation text="if (!chip.isEditing || index == chips.length - 1) return null;"/>
+        </regex>
+
+        <!-- RULE 1a: a tap reopens a chip without marking it as an edit
+             (R1, B1) -->
+        <regex pattern="tape\._reactivated\(tapped\)\.copyWith\(isEditing: true\)," dotAll="true" id="tape_edit.tap.not_marked">
+            <mutation text="tape._reactivated(tapped),"/>
+        </regex>
+
+        <!-- RULE 1b: the seal leaves the edit mark on the chip, so ⌫ that
+             reopens it later counts as an edit (R1, B1) -->
+        <regex pattern="chip\.copyWith\(isActive: false, isEditing: false\)," dotAll="true" id="tape_edit.seal.keeps_mark">
+            <mutation text="chip.copyWith(isActive: false),"/>
+        </regex>
+
+        <!-- RULE 1c: the seal of an edit is refused when the trig chip
+             cannot answer the new value, so "Arcsine removed" never runs
+             (R1, B2) -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.asksAnUndefinedTrig &amp;&amp; !chip\.isEditing\) \{" dotAll="true" id="tape_edit.unfinished.trig_refuses_edit">
+            <mutation text="if (chip != null &amp;&amp; chip.asksAnUndefinedTrig) {"/>
         </regex>
 
         <!-- RULE 2: a tap on a result or an error chip reopens it -->
@@ -32,6 +53,12 @@
             <mutation text=""/>
         </regex>
 
+        <!-- RULE 5b: a tap on another chip drops an emptied edit at the end
+             of the tape, as if a key had just opened it -->
+        <regex pattern="activeIndex == chips\.length - 1 &amp;&amp;\s*!current\.isEditing &amp;&amp;" dotAll="true" id="tape_edit.tap.emptied_edit_dropped">
+            <mutation text="activeIndex == chips.length - 1 &amp;&amp;"/>
+        </regex>
+
         <!-- RULE 5: an empty operator chip is dropped by a tap too -->
         <regex pattern="current\.entry\.isEmpty &amp;&amp;\s*current\.operator == null\) \{" dotAll="true" id="tape_edit.tap.operator_chip_dropped">
             <mutation text="current.entry.isEmpty) {"/>
@@ -47,14 +74,24 @@
             <mutation text="return key(_withFractionClosedAsInches()._sealed());"/>
         </regex>
 
-        <!-- RULE 8: = on an edit lands a second result instead of sealing -->
-        <regex pattern="if \(editing != null\) return _leavingEdit\(TapeChanged\.new\);" dotAll="true" id="tape_edit.equals.not_a_seal">
+        <!-- RULE 8: = on an edit only seals, and never lands the Calc, or
+             lands a second result over the one shown (R1, N3) -->
+        <regex pattern="if \(editing != null\) \{\s*return _leavingEdit\(\s*\(sealed\) => switch \(sealed\.pressEquals\(\)\) \{\s*final TapeChanged landed => landed,\s*TapeOutcome\(\) => TapeChanged\(sealed\),\s*\},\s*\);\s*\}" dotAll="true" id="tape_edit.equals.not_a_seal">
+            <mutation text="if (editing != null) return _leavingEdit(TapeChanged.new);"/>
             <mutation text=""/>
         </regex>
 
-        <!-- RULE 9: ✕ on an emptied edit closes the calculator -->
-        <regex pattern="if \(editing != null\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);" dotAll="true" id="tape_edit.clear.empty_edit_closes_calculator">
-            <mutation text="return const TapeRefused(TapeRefusal.nothingBeingTyped);"/>
+        <!-- RULE 8a: a unit key on an emptied chip says units apply while
+             typing when a result sits on the tape (R1, N4) -->
+        <regex pattern="if \(chip != null &amp;&amp; chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.typeANumberFirst\);\s*\}" dotAll="true" id="tape_edit.unit.emptied_chip_units_apply">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 9: ✕ on an emptied edit closes the calculator (the
+             editing check under `chip == null` is unreachable: no active
+             chip means no edit, so the rule targets the emptied chip) -->
+        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*if \(editing != null\) \{\s*return const TapeRefused\(TapeRefusal\.finishThisValueFirst\);\s*\}" dotAll="true" id="tape_edit.clear.empty_edit_closes_calculator">
+            <mutation text="if (chip.entry.isEmpty) {"/>
         </regex>
 
         <!-- RULE 10: a unit that cannot continue the compound splits a new
@@ -68,9 +105,13 @@
             <mutation text="if (chips.isNotEmpty) {"/>
         </regex>
 
-        <!-- RULE 12: ⌫ on an emptied edit keeps the chip -->
-        <regex pattern="if \(editing case \(\s*:final index,\s*chip: ValueChip\(entry: EntryBuffer\(isEmpty: true\)\),\s*\)\) \{\s*return _withChipRemoved\(index\);\s*\}" dotAll="true" id="tape_edit.backspace.empty_edit_kept">
-            <mutation text=""/>
+        <!-- RULE 12: ⌫ on an emptied edit keeps the chip, removes the
+             emptied first chip of a chain, or keeps an emptied first chip
+             that nothing follows (R1, N1) -->
+        <regex pattern="if \(index == 0 &amp;&amp; chips\.length &gt; 1\) \{\s*return const TapeRefused\(TapeRefusal\.typeANewFirstValue\);\s*\}\s*return _withChipRemoved\(index\);" dotAll="true" id="tape_edit.backspace.empty_edit_kept">
+            <mutation text="return TapeChanged(this);"/>
+            <mutation text="return _withChipRemoved(index);"/>
+            <mutation text="if (index == 0) { return const TapeRefused(TapeRefusal.typeANewFirstValue); } return _withChipRemoved(index);"/>
         </regex>
 
         <!-- RULE 13: the Read-as pill is offered during an edit -->

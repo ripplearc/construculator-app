@@ -47,13 +47,13 @@
         </regex>
 
         <!-- RULE 7: a digit after a closed bracket is appended to its value -->
-        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
+        <regex pattern="if \(editing == null &amp;&amp; _endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
             <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->
-        <regex pattern="bool readsDegrees = false,\s*\}\) \{\s*if \(openBracket != null\) \{" dotAll="true" id="tape.function_key.inside_bracket">
-            <mutation text="bool readsDegrees = false, }) { if (false) {"/>
+        <regex pattern="readsDegrees: readsDegrees,\s*\),\s*\);\s*\}\s*if \(openBracket != null\) \{" dotAll="true" id="tape.function_key.inside_bracket">
+            <mutation text="readsDegrees: readsDegrees, ), ); } if (false) {"/>
         </regex>
 
         <!-- RULE 9: ⌫ after ) deletes the bracket instead of reopening it -->

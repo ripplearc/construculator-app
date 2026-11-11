@@ -279,18 +279,27 @@ void main() {
         );
       });
 
-      test(
-        'a unit with a result on the tape says units apply while typing',
-        () {
-          final tape = const Tape()
-              .append(const ResultChip(key: 'Calc', value: Scalar(1)))
-              .append(const ValueChip(key: 'Width'));
-          expect(
-            tape.pressUnit(Unit.foot),
-            const TapeRefused(TapeRefusal.unitsApplyWhileTyping),
-          );
-        },
-      );
+      test('a unit on an empty chip says type a number first even with a '
+          'result on the tape: the chip is open, so nothing is typed yet '
+          '(Section 5.1; decision tree row 162)', () {
+        final tape = const Tape()
+            .append(const ResultChip(key: 'Calc', value: Scalar(1)))
+            .append(const ValueChip(key: 'Width'));
+        expect(
+          tape.pressUnit(Unit.foot),
+          const TapeRefused(TapeRefusal.typeANumberFirst),
+        );
+        expect(
+          press(const Tape(), '1 2 ft 5').clearActive(),
+          isA<TapeChanged>(),
+        );
+        expect(
+          changed(
+            press(const Tape(), '1 2 ft 5').clearActive(),
+          ).pressUnit(Unit.inch),
+          const TapeRefused(TapeRefusal.typeANumberFirst),
+        );
+      });
 
       test('a unit straight after a result says units apply while typing', () {
         final tape = const Tape().append(
