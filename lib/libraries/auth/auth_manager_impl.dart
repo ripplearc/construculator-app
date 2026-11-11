@@ -114,7 +114,10 @@ class AuthManagerImpl implements AuthManager {
       final errorType = code.toAuthErrorType();
 
       if (_isExpectedAuthError(errorType)) {
-        _logger.warning('$operation failed with expected error', error);
+        _logger.warning(
+          '$operation failed with expected error',
+          error.runtimeType,
+        );
       } else {
         _logger.error('$operation failed with error', error);
       }
@@ -132,7 +135,10 @@ class AuthManagerImpl implements AuthManager {
       final errorType = code.toAuthErrorType();
 
       if (errorType == AuthErrorType.uniqueViolation) {
-        _logger.warning('$operation failed with expected error', error);
+        _logger.warning(
+          '$operation failed with expected error',
+          error.runtimeType,
+        );
       } else {
         _logger.error('$operation failed with error', error);
       }
