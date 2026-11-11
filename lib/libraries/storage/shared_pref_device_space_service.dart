@@ -11,8 +11,9 @@ class SharedPrefDeviceSpaceService implements DeviceSpaceStorageService {
 
   final PrefixedPreferences _preferences;
 
-  /// A device space over [preferences], which must use [keyPrefix].
-  SharedPrefDeviceSpaceService({required this._preferences});
+  /// A device space over [preferences], whose prefix must be [keyPrefix].
+  SharedPrefDeviceSpaceService({required this._preferences})
+    : assert(_preferences.prefix == keyPrefix);
 
   @override
   Future<T?> getSetting<T>(DeviceSetting setting) =>

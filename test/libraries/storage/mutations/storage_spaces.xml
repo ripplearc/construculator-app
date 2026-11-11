@@ -80,6 +80,9 @@
         <regex pattern="static const keyPrefix = 'user\.'" dotAll="true" id="user_space.prefix_is_device">
             <mutation text="static const keyPrefix = 'device.'"/>
         </regex>
+        <regex pattern=": assert\(_preferences\.prefix == keyPrefix\)" dotAll="true" id="device_space.accept_other_prefix">
+            <mutation text=": assert(true)"/>
+        </regex>
         <regex pattern="static const keyPrefix = 'device\.'" dotAll="true" id="device_space.prefix_is_user">
             <mutation text="static const keyPrefix = 'user.'"/>
         </regex>

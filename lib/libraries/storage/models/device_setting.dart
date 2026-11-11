@@ -4,6 +4,9 @@
 /// Sign-out and a change of user never delete these. The list is short on
 /// purpose: a value that is tied to an account belongs in the user space of
 /// `StorageService`, and a reviewer checks every new entry here.
+///
+/// The name of an entry is the key it is stored under, so renaming an entry
+/// loses the value saved on phones under the old name.
 enum DeviceSetting {
   /// The user has seen the onboarding screens on this phone.
   onboardingSeen,
