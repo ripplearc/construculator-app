@@ -24,24 +24,15 @@
             <mutation text="_ => null,"/>
         </regex>
 
-        <!-- RULE 3a: a bracket after + is read as after − -->
-        <regex pattern="if \(factor == CoreIcons\.addOperator\) return Operator\.add\.symbol;" dotAll="true" id="calculator_label_formatter.lead.add_as_subtract">
-            <mutation text="if (factor == CoreIcons.addOperator) return Operator.subtract.symbol;"/>
+        <!-- RULE 3a: a bracket is read after the first operator its factor
+             is not -->
+        <regex pattern="if \(value == factor\) return key\.symbol;" dotAll="true" id="calculator_label_formatter.lead.wrong_operator">
+            <mutation text="if (value != factor) return key.symbol;"/>
         </regex>
 
-        <!-- RULE 3b: a bracket after − is read as after + -->
-        <regex pattern="if \(factor == CoreIcons\.subtractOperator\) return Operator\.subtract\.symbol;" dotAll="true" id="calculator_label_formatter.lead.subtract_as_add">
-            <mutation text="if (factor == CoreIcons.subtractOperator) return Operator.add.symbol;"/>
-        </regex>
-
-        <!-- RULE 3c: a bracket after × is read as after ÷ -->
-        <regex pattern="if \(factor == CoreIcons\.multiplyOperator\) return Operator\.multiply\.symbol;" dotAll="true" id="calculator_label_formatter.lead.multiply_as_divide">
-            <mutation text="if (factor == CoreIcons.multiplyOperator) return Operator.divide.symbol;"/>
-        </regex>
-
-        <!-- RULE 3d: a bracket after ÷ is read as after nothing -->
-        <regex pattern="if \(factor == CoreIcons\.divide\) return Operator\.divide\.symbol;" dotAll="true" id="calculator_label_formatter.lead.divide_silent">
-            <mutation text="if (factor == CoreIcons.divide) return '';"/>
+        <!-- RULE 3b: a bracket that starts the chain is read after + -->
+        <regex pattern="if \(value == factor\) return key\.symbol;\s*\}\s*return '';" dotAll="true" id="calculator_label_formatter.lead.silent_as_add">
+            <mutation text="if (value == factor) return key.symbol; } return Operator.add.symbol;"/>
         </regex>
 
     </rules>
