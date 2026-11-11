@@ -58,7 +58,7 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
   @override
   Future<User?> createUserProfile(User user) async {
-    _logger.info('Creating user profile for: ${user.email}');
+    _logger.info('Creating user profile');
     try {
       final response = await supabaseWrapper.insert(
         table: 'users',
@@ -78,7 +78,7 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
   @override
   Future<User?> updateUserProfile(User user) async {
-    _logger.info('Updating user profile for: ${user.email}');
+    _logger.info('Updating user profile');
     try {
       final response = await supabaseWrapper.update(
         table: 'users',
@@ -98,14 +98,14 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
   @override
   Future<UserCredential?> updateUserEmail(String email) async {
-    _logger.info('Updating user email to: $email');
+    _logger.info('Updating user email');
     try {
       final response = await supabaseWrapper.updateUser(
         supabase.UserAttributes(email: email),
       );
       final user = response.user;
       if (user == null) {
-        _logger.warning('No user found for email update: $email');
+        _logger.warning('No user found for email update');
         return null;
       }
       return _mapSupabaseUserToCredential(user);

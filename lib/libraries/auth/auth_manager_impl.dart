@@ -158,7 +158,7 @@ class AuthManagerImpl implements AuthManager {
     String email,
     String password,
   ) async {
-    _logger.info('Attempting login for user: $email');
+    _logger.info('Attempting login');
 
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
@@ -177,7 +177,7 @@ class AuthManagerImpl implements AuthManager {
       );
       final user = response.user;
       if (user == null) {
-        _logger.warning('Login failed for user: $email - No user returned');
+        _logger.warning('Login failed, no user returned');
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
@@ -190,7 +190,7 @@ class AuthManagerImpl implements AuthManager {
         properties: const AnalyticsUserProperties(),
       );
 
-      _logger.info('Login successful for user: $email');
+      _logger.info('Login successful');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'Login');
@@ -202,7 +202,7 @@ class AuthManagerImpl implements AuthManager {
     String email,
     String password,
   ) async {
-    _logger.info('Attempting registration for user: $email');
+    _logger.info('Attempting registration');
 
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
@@ -218,9 +218,7 @@ class AuthManagerImpl implements AuthManager {
       final response = await _wrapper.signUp(email: email, password: password);
       final user = response.user;
       if (user == null) {
-        _logger.warning(
-          'Registration failed for user: $email - No user returned',
-        );
+        _logger.warning('Registration failed, no user returned');
         return AuthResult.failure(AuthErrorType.registrationFailure);
       }
 
@@ -233,7 +231,7 @@ class AuthManagerImpl implements AuthManager {
         properties: const AnalyticsUserProperties(),
       );
 
-      _logger.info('Registration successful for user: $email');
+      _logger.info('Registration successful');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'Registration');
@@ -242,7 +240,7 @@ class AuthManagerImpl implements AuthManager {
 
   @override
   Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
-    _logger.info('Sending OTP to: $address');
+    _logger.info('Sending OTP');
 
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
@@ -258,7 +256,7 @@ class AuthManagerImpl implements AuthManager {
         shouldCreateUser: true,
       );
 
-      _logger.info('OTP sent successfully to: $address');
+      _logger.info('OTP sent successfully');
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Send OTP');
@@ -271,7 +269,7 @@ class AuthManagerImpl implements AuthManager {
     String otp,
     OtpReceiver receiver,
   ) async {
-    _logger.info('Verifying OTP for: $address');
+    _logger.info('Verifying OTP');
 
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
@@ -297,9 +295,7 @@ class AuthManagerImpl implements AuthManager {
       );
       final user = response.user;
       if (user == null) {
-        _logger.warning(
-          'OTP verification failed for: $address - No user returned',
-        );
+        _logger.warning('OTP verification failed, no user returned');
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
@@ -312,7 +308,7 @@ class AuthManagerImpl implements AuthManager {
         properties: const AnalyticsUserProperties(),
       );
 
-      _logger.info('OTP verification successful for: $address');
+      _logger.info('OTP verification successful');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'OTP verification');
@@ -321,7 +317,7 @@ class AuthManagerImpl implements AuthManager {
 
   @override
   Future<AuthResult<bool>> resetPassword(String email) async {
-    _logger.info('Initiating password reset for: $email');
+    _logger.info('Initiating password reset');
 
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
@@ -331,7 +327,7 @@ class AuthManagerImpl implements AuthManager {
     try {
       await _wrapper.resetPasswordForEmail(email, redirectTo: null);
 
-      _logger.info('Password reset email sent successfully to: $email');
+      _logger.info('Password reset email sent successfully');
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Password reset');
@@ -340,7 +336,7 @@ class AuthManagerImpl implements AuthManager {
 
   @override
   Future<AuthResult<bool>> isEmailRegistered(String email) async {
-    _logger.info('Checking if email is registered: $email');
+    _logger.info('Checking if email is registered');
 
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
@@ -353,7 +349,7 @@ class AuthManagerImpl implements AuthManager {
         params: {'email_input': email},
       );
 
-      _logger.info('Email check complete for: $email - Registered: $response');
+      _logger.info('Email check complete, registered: $response');
       return AuthResult.success(response);
     } catch (e) {
       return _handleException(e, 'Email registration check');
