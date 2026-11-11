@@ -4,7 +4,8 @@ import 'package:construculator/libraries/storage/models/device_setting.dart';
 
 /// In-memory [DeviceSpaceStorageService] for tests, with switches to make a
 /// read or a write fail. A value of another type than the one asked for reads
-/// as null, like the real service.
+/// as null, like the real service. Unlike the real service it accepts any
+/// value, so a test cannot rely on it to refuse an unstorable one.
 class FakeDeviceSpaceStorageService implements DeviceSpaceStorageService {
   final Map<DeviceSetting, Object?> _settings = {};
 

@@ -27,6 +27,18 @@ void main() {
       );
     });
 
+    test('refuses preferences that use another prefix', () {
+      expect(
+        () =>
+            // ignore: no_direct_instantiation, reason: the constructor guard is under test
+            SharedPrefDeviceSpaceService(
+              // ignore: no_direct_instantiation, reason: the real preferences wrapper is under test
+              preferences: PrefixedPreferences(prefix: 'user.'),
+            ),
+        throwsAssertionError,
+      );
+    });
+
     test('reads back a saved setting', () async {
       await deviceSpace.saveSetting<bool>(DeviceSetting.onboardingSeen, true);
 
