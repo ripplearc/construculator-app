@@ -362,12 +362,8 @@ void main() {
       'the tap target and contrast guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
-        CoreToast.disableTimers();
-        addTearDown(CoreToast.enableTimers);
-        addTearDown(CoreToast.cleanup);
-        // Each theme gets a tree of its own, keyed by its brightness, and the
-        // toast is cleaned up between them: it is an overlay entry, and an
-        // overlay entry survives a rebuild of the same app.
+        // Each theme gets a tree of its own, keyed by its brightness, so the
+        // bloc and its Alert start afresh with it.
         for (final theme in kA11yTestThemes) {
           await tester.pumpWidget(
             KeyedSubtree(
@@ -392,8 +388,6 @@ void main() {
             find.byKey(const Key('toast_close_button')),
             checkTapTargetSize: false,
           );
-          CoreToast.cleanup();
-          await tester.pump();
         }
       },
     );

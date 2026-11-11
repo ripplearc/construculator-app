@@ -5,6 +5,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -758,13 +759,9 @@ void main() {
     expect(faceOf(2), CoreCalculatorChipType.result);
   });
 
-  testWidgets('a key that would leave a reopened chip incomplete shows the '
-      '"Finish this value first" toast with the number (Section 5.5)', (
-    tester,
-  ) async {
-    CoreToast.disableTimers();
-    addTearDown(CoreToast.enableTimers);
-    addTearDown(CoreToast.cleanup);
+  testWidgets('a key that would leave the chip being typed or edited '
+      'incomplete shows the "Finish this value first" Alert with the number '
+      '(Section 5.5)', (tester) async {
     await pumpPage(tester);
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(
@@ -788,13 +785,98 @@ void main() {
     );
   });
 
+  testWidgets('the red Alert sits above the key sheet, so the key it asks '
+      'for still works and closes it, and no timer closes it (term 2.21; '
+      'Section 5)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_Width',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsOneWidget);
+    final alert = tester.getRect(
+      find.byKey(const ValueKey('calculator_alert')),
+    );
+    final keyboard = tester.getRect(find.byType(CoreKeyboard));
+    expect(alert.bottom, lessThanOrEqualTo(keyboard.top));
+
+    await tester.pump(const Duration(seconds: 10));
+    expect(
+      find.text(l10n.calculatorToastFinishValueTitle),
+      findsOneWidget,
+      reason: 'only its ✕ or the next key closes it',
+    );
+
+    await press(tester, 'calc_key_feet');
+    await settle(tester);
+    expect(bloc.state.valueText, '18ft');
+    expect(bloc.state.toast, isNull);
+    expect(find.text(l10n.calculatorToastFinishValueTitle), findsNothing);
+  });
+
+  testWidgets('a refused key is announced to a screen reader every time it '
+      'is raised, and a state that merely still holds it, a group swipe, '
+      'announces nothing (rule 4.12)', (tester) async {
+    final announced = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+      SystemChannels.accessibility,
+      (message) async {
+        if (message case {
+          'type': 'announce',
+          'data': {'message': final String text},
+        }) {
+          announced.add(text);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
+    await pumpPage(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_Length',
+      'calc_key_one',
+      'calc_key_eight',
+      'calc_key_Width',
+      'calc_key_Width',
+    ]) {
+      await press(tester, key);
+    }
+    await settle(tester);
+
+    expect(announced, [
+      l10n.calculatorToastFinishValueBody('18'),
+      l10n.calculatorToastFinishValueBody('18'),
+    ]);
+
+    blocOf(tester).add(const CalculatorGroupSelected(2));
+    await settle(tester);
+
+    expect(blocOf(tester).state.toast, isNotNull);
+    expect(announced, hasLength(2));
+  });
+
   testWidgets('the same guard raised twice shows its toast twice: a key '
       'refused the same way is never silently dead (rule 4.12)', (
     tester,
   ) async {
-    CoreToast.disableTimers();
-    addTearDown(CoreToast.enableTimers);
-    addTearDown(CoreToast.cleanup);
     await pumpPage(tester);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(CoreKeyboard)),
@@ -824,9 +906,6 @@ void main() {
       'again: swiping to another group after the guard shows nothing', (
     tester,
   ) async {
-    CoreToast.disableTimers();
-    addTearDown(CoreToast.enableTimers);
-    addTearDown(CoreToast.cleanup);
     await pumpPage(tester);
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(

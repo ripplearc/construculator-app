@@ -373,8 +373,16 @@ class CalculatorLabelFormatter {
     CalculatorFinishValueToast(value: '') => l10n.calculatorToastValueEmptyBody,
     CalculatorFinishValueToast(:final value) =>
       l10n.calculatorToastFinishValueBody(value),
-    CalculatorResultRemovedToast(:final key) =>
+    CalculatorResultRemovedToast(keys: [final key]) =>
       l10n.calculatorToastResultRemoved(displayLabel(key)),
+    CalculatorResultRemovedToast(keys: [final first, final second]) =>
+      l10n.calculatorToastResultsRemovedBoth(
+        displayLabel(first),
+        displayLabel(second),
+      ),
+    CalculatorResultRemovedToast(keys: [final first, ...final more]) =>
+      l10n.calculatorToastResultsRemovedMore(displayLabel(first), more.length),
+    CalculatorResultRemovedToast(keys: []) => '',
   };
 
   String _untranslated(String id) {

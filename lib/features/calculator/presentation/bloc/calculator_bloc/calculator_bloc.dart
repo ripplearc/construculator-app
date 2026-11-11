@@ -57,6 +57,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupsReordered>(_onGroupsReordered);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
+    on<CalculatorToastClosed>(_onToastClosed);
   }
 
   static const Map<String, Unit> _unitKeys = {
@@ -147,7 +148,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         state.copyWith(
           notice: () => null,
           refusal: () => null,
-          removedResult: () => null,
+          removedResults: const [],
           closesCalculator: true,
         ),
       );
@@ -276,38 +277,46 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome) {
     switch (outcome) {
       case TapeChanged(:final tape, :final notice, :final removed):
-        _emitCounted(
+        _emitCountingToast(
           emit,
           state.copyWith(
             tape: tape,
             notice: () => notice,
             refusal: () => null,
             closesCalculator: false,
-            removedResult: () => removed,
+            removedResults: removed,
+            toastClosed: false,
           ),
         );
       case final TapeOutcome refusal:
-        _emitCounted(
+        _emitCountingToast(
           emit,
           state.copyWith(
             notice: () => null,
             refusal: () => refusal,
             closesCalculator: false,
-            removedResult: () => null,
+            removedResults: const [],
+            toastClosed: false,
           ),
         );
     }
   }
 
-  // Emits [next], counting the toast it raises, so that the same guard
-  // raised twice over is a new state twice over and the page shows it
-  // again (rule 4.12).
-  void _emitCounted(Emitter<CalculatorState> emit, CalculatorState next) =>
-      emit(
-        next.toast == null
-            ? next
-            : next.copyWith(toastsRaised: next.toastsRaised + 1),
-      );
+  void _emitCountingToast(
+    Emitter<CalculatorState> emit,
+    CalculatorState next,
+  ) => emit(
+    // the same guard raised twice over is a new state twice over, so the
+    // page announces it again (rule 4.12)
+    next.toast == null
+        ? next
+        : next.copyWith(toastsRaised: next.toastsRaised + 1),
+  );
+
+  void _onToastClosed(
+    CalculatorToastClosed event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(toastClosed: true));
 
   CalculatorState _cleared() => CalculatorState(
     tape: Tape(preferences: state.tape.preferences),

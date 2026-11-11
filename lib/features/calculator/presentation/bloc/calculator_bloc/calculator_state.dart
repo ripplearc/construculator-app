@@ -65,16 +65,21 @@ class CalculatorState extends Equatable {
   /// and [refusal].
   final bool closesCalculator;
 
-  /// The id of the result chip the last key's edit removed, for the toast
-  /// of Section 5.5 ("Arcsine removed"); `null` otherwise, and cleared by
-  /// the next key like [notice].
-  final String? removedResult;
+  /// The ids of the result chips the last key's edit removed, in tape
+  /// order, for the message of Section 5.5 ("Arcsine removed"); empty
+  /// otherwise, and cleared by the next key like [notice].
+  final List<String> removedResults;
 
-  /// How many times a key has raised a toast ([toast]) since the screen
+  /// How many times a key has raised a message ([toast]) since the screen
   /// opened. The same guard raised twice leaves the same [toast] in the
-  /// state twice over, so the page watches this count to show it again
+  /// state twice over, so the page watches this count to announce it again
   /// (rule 4.12: no key is ever silently dead).
   final int toastsRaised;
+
+  /// Whether the message's own ✕ closed it. The next keypad key clears it
+  /// with [toast] (Section 5: a red Alert closes on its ✕ or the next key,
+  /// never by a timer), so the page draws [toast] while this is false.
+  final bool toastClosed;
 
   /// Creates a [CalculatorState].
   const CalculatorState({
@@ -84,16 +89,17 @@ class CalculatorState extends Equatable {
     this.notice,
     this.refusal,
     this.closesCalculator = false,
-    this.removedResult,
+    this.removedResults = const [],
     this.toastsRaised = 0,
+    this.toastClosed = false,
   });
 
   /// An empty tape, the first group up, nothing said.
   factory CalculatorState.initial() => const CalculatorState();
 
-  /// A copy with the given fields replaced. [notice], [refusal] and
-  /// [removedResult] take a `Function()?` so that `null` (clear it) and
-  /// absent (keep it) are told apart.
+  /// A copy with the given fields replaced. [notice] and [refusal] take a
+  /// `Function()?` so that `null` (clear it) and absent (keep it) are told
+  /// apart.
   CalculatorState copyWith({
     Tape? tape,
     int? currentGroupIndex,
@@ -101,8 +107,9 @@ class CalculatorState extends Equatable {
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
     bool? closesCalculator,
-    String? Function()? removedResult,
+    List<String>? removedResults,
     int? toastsRaised,
+    bool? toastClosed,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -110,8 +117,9 @@ class CalculatorState extends Equatable {
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
     closesCalculator: closesCalculator ?? this.closesCalculator,
-    removedResult: removedResult != null ? removedResult() : this.removedResult,
+    removedResults: removedResults ?? this.removedResults,
     toastsRaised: toastsRaised ?? this.toastsRaised,
+    toastClosed: toastClosed ?? this.toastClosed,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -540,8 +548,9 @@ class CalculatorState extends Equatable {
     notice,
     refusal,
     closesCalculator,
-    removedResult,
+    removedResults,
     toastsRaised,
+    toastClosed,
   ];
 
   /// What the last key left to say in a toast (Section 5), or `null`: the
@@ -551,8 +560,8 @@ class CalculatorState extends Equatable {
   /// chip take no tap on the page, so the tape's refusal of one never
   /// reaches a toast.
   CalculatorToast? get toast {
-    if (removedResult case final key?) {
-      return CalculatorResultRemovedToast(key: key);
+    if (removedResults.isNotEmpty) {
+      return CalculatorResultRemovedToast(keys: removedResults);
     }
     return switch (refusal) {
       TapeRefused(reason: TapeRefusal.finishThisValueFirst) =>

@@ -2519,4 +2519,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String calculatorToastResultRemoved(String key) {
     return '$key removed — can\'t recompute from the new value.';
   }
+
+  @override
+  String calculatorToastResultsRemovedBoth(String first, String second) {
+    return '$first and $second removed — can\'t recompute from the new value.';
+  }
+
+  @override
+  String calculatorToastResultsRemovedMore(String first, int count) {
+    return '$first and $count more removed — can\'t recompute from the new value.';
+  }
 }

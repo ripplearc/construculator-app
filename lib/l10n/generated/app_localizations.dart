@@ -4406,7 +4406,7 @@ abstract class AppLocalizations {
   /// **'Finish editing'**
   String get calculatorChipTapToFinish;
 
-  /// Title of the toast when a key would leave a reopened chip incomplete (UX Design Doc Section 5, 'Finish this value first')
+  /// Title of the red Alert when a key would leave the chip being typed or edited incomplete (UX Design Doc Section 5, 'Finish this value first'; the guard applies on fresh entry as well)
   ///
   /// In en, this message translates to:
   /// **'Finish this value first'**
@@ -4418,17 +4418,29 @@ abstract class AppLocalizations {
   /// **'{value} isn\'t complete — close the number with a unit, backspace, or ✕ to retype.'**
   String calculatorToastFinishValueBody(String value);
 
-  /// Body of the 'Finish this value first' toast when the reopened chip holds nothing (UX Design Doc Section 5)
+  /// Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing (UX Design Doc Section 5)
   ///
   /// In en, this message translates to:
   /// **'The value is empty — type a new value, or backspace to delete the chip.'**
   String get calculatorToastValueEmptyBody;
 
-  /// Toast when an edit leaves a result with no valid answer and that one chip is removed (UX Design Doc Section 5.5)
+  /// Message when an edit leaves a result with no valid answer and that one chip is removed (UX Design Doc Section 5.5)
   ///
   /// In en, this message translates to:
   /// **'{key} removed — can\'t recompute from the new value.'**
   String calculatorToastResultRemoved(String key);
+
+  /// Message when one edit removes two results: both are named (UX Design Doc Section 5.5)
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {second} removed — can\'t recompute from the new value.'**
+  String calculatorToastResultsRemovedBoth(String first, String second);
+
+  /// Message when one edit removes three or more results: the first is named and the rest counted (UX Design Doc Section 5.5)
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {count} more removed — can\'t recompute from the new value.'**
+  String calculatorToastResultsRemovedMore(String first, int count);
 }
 
 class _AppLocalizationsDelegate

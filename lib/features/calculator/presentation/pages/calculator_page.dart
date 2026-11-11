@@ -4,6 +4,7 @@ import 'package:construculator/libraries/calculator_engine/calculator_engine.dar
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -219,12 +220,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
                 widget.router.pop();
                 return;
               }
+              // The red Alert is drawn in the page (below), where no key is
+              // under it; coreui's error toast is no live region, so a
+              // screen reader hears it from here.
               if (state.toast case final toast?) {
-                CoreToast.showError(
-                  context,
+                SemanticsService.sendAnnouncement(
+                  View.of(context),
                   labels.toastBody(toast),
-                  l10n.closeButton,
-                  title: labels.toastTitle(toast),
+                  Directionality.of(context),
                 );
               }
             },
@@ -300,6 +303,23 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         l10n.calculatorStripConversionsSemantics,
                     secondRowHidden: dependentKeys.isNotEmpty,
                   ),
+                  if (state.toast case final toast? when !state.toastClosed)
+                    Padding(
+                      key: const ValueKey('calculator_alert'),
+                      // 8 px above the first row of keys (term 2.21)
+                      padding: const EdgeInsets.fromLTRB(
+                        CoreSpacing.space4,
+                        0,
+                        CoreSpacing.space4,
+                        CoreSpacing.space2,
+                      ),
+                      child: Toast.error(
+                        description: labels.toastBody(toast),
+                        closeLabel: l10n.closeButton,
+                        title: labels.toastTitle(toast),
+                        onClose: () => bloc.add(const CalculatorToastClosed()),
+                      ),
+                    ),
                   TweenAnimationBuilder<double>(
                     tween: Tween<double>(
                       begin: 1.0,

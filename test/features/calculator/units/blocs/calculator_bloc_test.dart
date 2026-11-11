@@ -889,7 +889,7 @@ void main() {
       });
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'a result an edit removes is named in the state for its toast, and '
+        'a result an edit removes is named in the state for its message, and '
         'the next key clears it',
         build: () => bloc,
         seed: () => CalculatorState(
@@ -899,28 +899,81 @@ void main() {
           ..add(const CalculatorControlActioned(ControlAction.delete))
           ..add(const CalculatorControlActioned(ControlAction.delete))
           ..add(const CalculatorControlActioned(ControlAction.delete))
-          ..add(const CalculatorControlActioned(ControlAction.delete))
-          ..add(const CalculatorDigitPressed('2')),
-        skip: 3,
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorChipTapped(0))
+          ..add(const CalculatorDigitPressed('3')),
+        skip: 4,
         verify: (bloc) {
-          expect(bloc.state.removedResult, isNull);
+          expect(bloc.state.removedResults, isEmpty);
           expect(bloc.state.toast, isNull);
-          expect(bloc.state.valueText, '2');
+          expect(bloc.state.valueText, '3');
         },
         expect: () {
-          final emptied = pressed('0 . 5 [ASIN] tap:0 ⌫ ⌫ ⌫');
-          final removed = emptied.backspace() as TapeChanged;
-          expect(removed.removed, 'Arcsine');
+          final retyped =
+              (pressed('0 . 5 [ASIN]').tapChip(0) as TapeChanged).tape;
+          final edited = pressed('⌫ ⌫ ⌫ 2', tape: retyped);
+          final sealed = edited.tapChip(0) as TapeChanged;
+          expect(sealed.removed, ['Arcsine']);
           return [
             CalculatorState(
-              tape: removed.tape,
+              tape: sealed.tape,
               notice: TapeNotice.resultRemoved,
-              removedResult: 'Arcsine',
+              removedResults: const ['Arcsine'],
               toastsRaised: 1,
             ),
-            tapeState(pressed('2')).copyWith(toastsRaised: 1),
+            tapeState(
+              pressed('3', tape: sealed.tape),
+            ).copyWith(toastsRaised: 1),
           ];
         },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the Alert\'s ✕ marks the message closed, and the next key taken or '
+        'refused opens the way for the next one (Section 5: ✕ or the next '
+        'key closes it)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Length'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorToastClosed())
+          ..add(const CalculatorGroupSelected(2))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorToastClosed())
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 2,
+        expect: () => [
+          tapeState(pressed('[Length] 1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
+          ),
+          tapeState(pressed('[Length] 1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
+            toastClosed: true,
+          ),
+          tapeState(pressed('[Length] 1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 1,
+            toastClosed: true,
+            currentGroupIndex: 2,
+          ),
+          tapeState(pressed('[Length] 1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 2,
+            currentGroupIndex: 2,
+          ),
+          tapeState(pressed('[Length] 1')).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+            toastsRaised: 2,
+            toastClosed: true,
+            currentGroupIndex: 2,
+          ),
+          tapeState(
+            pressed('[Length] 1 ft'),
+          ).copyWith(toastsRaised: 2, currentGroupIndex: 2),
+        ],
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
@@ -929,7 +982,7 @@ void main() {
         build: () => bloc,
         seed: () => CalculatorState(
           tape: pressed('[Length] 1 8'),
-          removedResult: 'Arcsine',
+          removedResults: const ['Arcsine'],
         ),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Width')),
         expect: () => [
@@ -966,10 +1019,14 @@ void main() {
         ],
       );
 
-      test('a removed result reads as its toast', () {
+      test('removed results read as their message, all of them named', () {
         expect(
-          const CalculatorState(removedResult: 'Arcsine').toast,
-          const CalculatorResultRemovedToast(key: 'Arcsine'),
+          const CalculatorState(removedResults: ['Arcsine']).toast,
+          const CalculatorResultRemovedToast(keys: ['Arcsine']),
+        );
+        expect(
+          const CalculatorState(removedResults: ['Diagonal', 'Calc']).toast,
+          const CalculatorResultRemovedToast(keys: ['Diagonal', 'Calc']),
         );
       });
 

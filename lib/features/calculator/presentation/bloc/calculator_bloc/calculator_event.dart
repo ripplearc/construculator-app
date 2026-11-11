@@ -157,3 +157,9 @@ class CalculatorUnitSystemChanged extends CalculatorEvent {
 class CalculatorResetRequested extends CalculatorEvent {
   const CalculatorResetRequested();
 }
+
+/// The ✕ of the red Alert was tapped (Section 5: the message closes on its
+/// ✕ or the next keypad key).
+class CalculatorToastClosed extends CalculatorEvent {
+  const CalculatorToastClosed();
+}
