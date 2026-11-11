@@ -86,7 +86,10 @@
         <regex pattern="refusal: \(\) => null,\s*removedResults: const \[\],\s*refusedUnit: \(\) => null,\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
             <mutation text="refusal: () => null, removedResults: const [], refusedUnit: () => null, closesCalculator: false,"/>
 
+        </regex>
+
         <!-- RULE 4: a taken key keeps the close -->
+
         <regex pattern="notice: \(\) => notice,\s*refusal: \(\) => null,\s*closesCalculator: false," dotAll="true" id="calculator_bloc.fold.taken_key_keeps_close">
             <mutation text="notice: () => notice, refusal: () => null, closesCalculator: true,"/>
         </regex>
@@ -100,7 +103,10 @@
         <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
             <mutation text="removedResults, refusedUnit, toastsRaised, toastClosed, ];"/>
 
+        </regex>
+
         <!-- RULE 7: no chip is ever inert -->
+
         <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.never_inert">
             <mutation text="inert: false,"/>
         </regex>
@@ -273,9 +279,16 @@
             <mutation text="return _press(emit, (tape) =&gt; _pressUnit(tape, unit));"/>
         </regex>
 
-        <!-- RULE 35: a tail is never named -->
-        <regex pattern="tail: tape\.beingTyped\?\.entry\.tokens\.lastOrNull\?\.digits," dotAll="true" id="calculator_state.toast.tail_unnamed">
-            <mutation text=""/>
+        <!-- RULE 35 (R2, B2): the second key order, a unit after a finished
+             length, raises no message -->
+        <regex pattern="TapeEntryRefused\(reason: EntryRefusal\.tailNeedsLength\),\s*final unit\?,\s*final key\?,\s*\) =&gt;\s*CalculatorNeedsLengthToast\(key: key, unit: unit\)," dotAll="true" id="calculator_state.toast.tail_order_silent">
+            <mutation text="TapeEntryRefused(reason: EntryRefusal.tailNeedsLength), final unit?, final key?,) =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 36 (R1, B1): a unit key on a result builds a key-named
+             message for no key -->
+        <regex pattern="final key = tape\.beingTyped\?\.key;\s*return switch \(\(refusal, refusedUnit, key\)\) \{" dotAll="true" id="calculator_state.toast.empty_key_named">
+            <mutation text="final key = tape.beingTyped?.key ?? ''; return switch ((refusal, refusedUnit, key)) {"/>
         </regex>
     </rules>
 

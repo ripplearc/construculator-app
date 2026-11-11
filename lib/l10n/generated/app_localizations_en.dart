@@ -2574,22 +2574,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String calculatorToastNeedsLengthTitle(String key) {
-    return '$key needs a length, not a weight.';
+  String calculatorToastNeedsLengthTitle(String key, String kind) {
+    return '$key takes a length, not $kind.';
+  }
+
+  @override
+  String calculatorUnitKind(String kind) {
+    String _temp0 = intl.Intl.selectLogic(kind, {
+      'weight': 'weight',
+      'area': 'area',
+      'volume': 'volume',
+      'boardFeet': 'board feet',
+      'other': '$kind',
+    });
+    return '$_temp0';
   }
 
   @override
   String calculatorToastNeedsLengthBody(String unit) {
     return 'Press ⌫ to remove $unit, then press Feet or Inch.';
-  }
-
-  @override
-  String calculatorToastTailNeedsLengthBody(
-    String key,
-    String unit,
-    String tail,
-  ) {
-    return '$key takes lengths and not $unit. Press a length unit for the $tail, or backspace to remove it.';
   }
 
   @override

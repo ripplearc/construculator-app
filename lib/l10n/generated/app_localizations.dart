@@ -4484,27 +4484,23 @@ abstract class AppLocalizations {
   /// **'A compound value steps down within one system — 18ft 8in, 1m 20cm. {value} can\'t continue with {unit}. Use a smaller unit, backspace, or ✕ to retype.'**
   String calculatorToastCannotAppendBody(String value, String unit);
 
-  /// Title of the toast when a weight unit is pressed under a dimension key (UX Design Doc Section 5.2, '<Key> needs a length')
+  /// Title of the red Alert when a unit that is not a length is pressed under a dimension key, in either key order (UX Design Doc Section 5.2; product decision of 13 November 2026: the title names the kind of the unit pressed — weight, area, volume or board feet)
   ///
   /// In en, this message translates to:
-  /// **'{key} needs a length, not a weight.'**
-  String calculatorToastNeedsLengthTitle(String key);
+  /// **'{key} takes a length, not {kind}.'**
+  String calculatorToastNeedsLengthTitle(String key, String kind);
 
-  /// Body of the '<Key> needs a length' toast (UX Design Doc Section 5.2: 'Press ⌫ to remove Lbs, then press Feet or Inch.'); unit is the face of the key that was pressed
+  /// The kind of a calculator unit named in the '<Key> takes a length, not <kind>' Alert: weight, area, volume or board feet
+  ///
+  /// In en, this message translates to:
+  /// **'{kind, select, weight{weight} area{area} volume{volume} boardFeet{board feet} other{{kind}}}'**
+  String calculatorUnitKind(String kind);
+
+  /// Body of the '<Key> takes a length' Alert, one text for both key orders (UX Design Doc Section 5.2; product decision of 13 November 2026); unit is the face of the key that was pressed
   ///
   /// In en, this message translates to:
   /// **'Press ⌫ to remove {unit}, then press Feet or Inch.'**
   String calculatorToastNeedsLengthBody(String unit);
-
-  /// Body of the '<Key> needs a length' toast after a number typed behind a finished length (UX Design Doc Section 5.2)
-  ///
-  /// In en, this message translates to:
-  /// **'{key} takes lengths and not {unit}. Press a length unit for the {tail}, or backspace to remove it.'**
-  String calculatorToastTailNeedsLengthBody(
-    String key,
-    String unit,
-    String tail,
-  );
 
   /// Title of the toast when a unit is pressed again under a dimension key that holds lengths only (UX Design Doc Section 5.2, '<Key> keeps <value>')
   ///

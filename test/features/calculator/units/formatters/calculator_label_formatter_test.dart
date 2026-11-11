@@ -164,32 +164,39 @@ void main() {
       expect(labels.toastBody(toast), contains('steps down'));
     });
 
-    test('"<Key> needs a length" names the key, and its body the unit to '
-        'remove, or the tail a length unit would finish', () {
-      const plain = CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound);
+    test('"<Key> takes a length, not <kind>" names the key and the kind of '
+        'the unit pressed, and its body the key to remove, then Feet or Inch '
+        '(B2; product decision of 13 November 2026)', () {
+      const pounds = CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound);
       expect(
-        labels.toastTitle(plain),
-        l10n.calculatorToastNeedsLengthTitle(l10n.calculatorKeyWidth),
-      );
-      expect(
-        labels.toastBody(plain),
-        l10n.calculatorToastNeedsLengthBody(l10n.calculatorKeyLbs),
-      );
-      expect(labels.toastBody(plain), contains('remove Lbs'));
-
-      const tail = CalculatorNeedsLengthToast(
-        key: 'Width',
-        unit: Unit.kilogram,
-        tail: '8',
-      );
-      expect(
-        labels.toastBody(tail),
-        l10n.calculatorToastTailNeedsLengthBody(
+        labels.toastTitle(pounds),
+        l10n.calculatorToastNeedsLengthTitle(
           l10n.calculatorKeyWidth,
-          'kilograms',
-          '8',
+          l10n.calculatorUnitKind('weight'),
         ),
       );
+      expect(labels.toastTitle(pounds), 'Width takes a length, not weight.');
+      expect(
+        labels.toastBody(pounds),
+        l10n.calculatorToastNeedsLengthBody(l10n.calculatorKeyLbs),
+      );
+      expect(labels.toastBody(pounds), contains('remove Lbs'));
+
+      const boardFeet = CalculatorNeedsLengthToast(
+        key: 'Width',
+        unit: Unit.boardFoot,
+      );
+      expect(
+        labels.toastTitle(boardFeet),
+        'Width takes a length, not board feet.',
+      );
+      expect(
+        labels.toastBody(boardFeet),
+        'Press ⌫ to remove Bd Ft, then press Feet or Inch.',
+      );
+      expect(labels.unitKind(Unit.kilogram), 'weight');
+      expect(labels.unitKind(Unit.acre), 'area');
+      expect(labels.unitKind(Unit.boardFoot), 'board feet');
     });
 
     test('"<Key> keeps <value>" says what the unit would make the value', () {

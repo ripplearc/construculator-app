@@ -1259,8 +1259,9 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
-        'a weight key under a dimension key names the key and the unit, with '
-        'the typed tail when there is one (S69)',
+        'a weight key under a dimension key names the key and the unit, the '
+        'same message after a finished length (S69; B2, product decision of '
+        '13 November 2026)',
         build: () => bloc,
         seed: () => CalculatorState(tape: widthReopened('✕ 5')),
         act: (bloc) => bloc
@@ -1270,11 +1271,7 @@ void main() {
           ..add(const CalculatorKeySelected('kg')),
         verify: (bloc) => expect(
           bloc.state.toast,
-          const CalculatorNeedsLengthToast(
-            key: 'Width',
-            unit: Unit.kilogram,
-            tail: '8',
-          ),
+          const CalculatorNeedsLengthToast(key: 'Width', unit: Unit.kilogram),
         ),
         expect: () => [
           CalculatorState(
@@ -1334,6 +1331,70 @@ void main() {
           ),
         ),
       );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit key on a result that would raise it is refused with no '
+        'message: the "keeps" message speaks only under a dimension key '
+        '(B1; Section 5.2)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 8,
+        expect: () => [
+          tapeState(pressed('1 2 ft × 1 0 ft =')).copyWith(
+            refusal: () => const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+            refusedUnit: () => Unit.foot,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, isNull);
+          expect(bloc.state.toastsRaised, 0);
+        },
+      );
+
+      test('a unit that is not a length under a dimension key raises one '
+          'message in both key orders, named for the unit pressed: Width 8 '
+          '[Bd Ft] and Width 18 [Feet] 8 [Bd Ft] alike (B2; product decision '
+          'of 13 November 2026)', () {
+        const toast = CalculatorNeedsLengthToast(
+          key: 'Width',
+          unit: Unit.boardFoot,
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Width] 8'),
+            refusal: const TapeEntryRefused(EntryRefusal.needsLength),
+            refusedUnit: Unit.boardFoot,
+          ).toast,
+          toast,
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Width] 1 8 ft 8'),
+            refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+            refusedUnit: Unit.boardFoot,
+          ).toast,
+          toast,
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Width] 1 8 ft 7 / 1 6'),
+            refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+            refusedUnit: Unit.pound,
+          ).toast,
+          const CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound),
+        );
+      });
 
       test(
         'a refusal that is not a unit\'s, or a unit refusal the bloc did not '
