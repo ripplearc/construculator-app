@@ -397,9 +397,6 @@ void main() {
       'meets the tap target and contrast guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
-        CoreToast.disableTimers();
-        addTearDown(CoreToast.enableTimers);
-        addTearDown(CoreToast.cleanup);
         for (final theme in kA11yTestThemes) {
           await tester.pumpWidget(
             KeyedSubtree(
@@ -423,14 +420,12 @@ void main() {
           await tester.pump(const Duration(seconds: 1));
 
           // Tap target size is disabled as in the close-button test: the
-          // receipt's action is CoreUI's 40×40 button (tracked in CoreUI).
+          // receipt's action is CoreUI's 40×40 button (CA-1447).
           await expectMeetsTapTargetAndLabelGuidelines(
             tester,
             find.byKey(const Key('toast_action_button')),
             checkTapTargetSize: false,
           );
-          CoreToast.cleanup();
-          await tester.pump();
         }
       },
     );
@@ -441,9 +436,6 @@ void main() {
       (tester) async {
         await setupA11yTest(tester);
         final l10n = AppLocalizationsEn();
-        CoreToast.disableTimers();
-        addTearDown(CoreToast.enableTimers);
-        addTearDown(CoreToast.cleanup);
         await tester.pumpWidget(makeTestableWidget());
 
         for (final key in const [

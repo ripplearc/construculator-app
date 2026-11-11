@@ -934,9 +934,6 @@ void main() {
   testWidgets('a tap on a closed bracket reopens it with the "Editing this '
       'group" message, the other chips wait, and the answer reads a dash '
       '(Section 7, walkthrough 12.8)', (tester) async {
-    CoreToast.disableTimers();
-    addTearDown(CoreToast.enableTimers);
-    addTearDown(CoreToast.cleanup);
     await pumpPage(tester);
     final bloc = blocOf(tester);
     final l10n = AppLocalizations.of(
@@ -980,11 +977,49 @@ void main() {
     expect(chipAt(3).value, '70');
   });
 
+  testWidgets('"Editing this group" has no timer: it stays until its Close '
+      'action or the next key, and it closes with the bracket (Section 5.6; '
+      'nit 2)', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(CoreKeyboard)),
+    )!;
+    for (final key in const [
+      'calc_key_two',
+      'calc_key_add',
+      'calc_key_paren',
+      'calc_key_three',
+      'calc_key_paren',
+    ]) {
+      await press(tester, key);
+    }
+    final bracket = find.byKey(const ValueKey('calc_chip_1'));
+    await tester.tap(bracket);
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastEditingGroup), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 6));
+    expect(find.text(l10n.calculatorToastEditingGroup), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('toast_action_button')));
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastEditingGroup), findsNothing);
+    expect(bloc.state.tape.openBracketIndex, 1);
+
+    await tester.tap(bracket);
+    await settle(tester);
+    expect(bloc.state.tape.openBracket, isNull);
+    await tester.tap(bracket);
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastEditingGroup), findsOneWidget);
+    await press(tester, 'calc_key_paren');
+    await settle(tester);
+    expect(find.text(l10n.calculatorToastEditingGroup), findsNothing);
+  });
+
   testWidgets('a tap on the reopened bracket itself closes it, as the '
       'bracket key does, and the answer after it comes back', (tester) async {
-    CoreToast.disableTimers();
-    addTearDown(CoreToast.enableTimers);
-    addTearDown(CoreToast.cleanup);
     await pumpPage(tester);
     final bloc = blocOf(tester);
     for (final key in const [
