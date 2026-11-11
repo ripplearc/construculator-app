@@ -91,7 +91,7 @@ void main() {
     test('clearAll removes the user space only', () async {
       SharedPreferences.setMockInitialValues({
         'sb-project-auth-token': 'session',
-        'device.kept': true,
+        'device.onboardingSeen': true,
         'user.one': '1',
       });
       await userSpace.saveData<String>('two', '2');
@@ -99,7 +99,10 @@ void main() {
       await userSpace.clearAll();
 
       final preferences = await SharedPreferences.getInstance();
-      expect(preferences.getKeys(), {'sb-project-auth-token', 'device.kept'});
+      expect(preferences.getKeys(), {
+        'sb-project-auth-token',
+        'device.onboardingSeen',
+      });
     });
 
     test('clearAll leaves a key that only resembles the prefix', () async {

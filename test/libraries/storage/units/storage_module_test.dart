@@ -1,6 +1,8 @@
 import 'package:construculator/libraries/storage/file_owner_record_storage_service.dart';
+import 'package:construculator/libraries/storage/interfaces/device_space_storage_service.dart';
 import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
+import 'package:construculator/libraries/storage/shared_pref_device_space_service.dart';
 import 'package:construculator/libraries/storage/shared_pref_service.dart';
 import 'package:construculator/libraries/storage/storage_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -27,6 +29,13 @@ void main() {
 
     test('resolves the user space to the shared preferences service', () {
       expect(Modular.get<StorageService>(), isA<SharedPrefService>());
+    });
+
+    test('resolves the device space to its own service', () {
+      expect(
+        Modular.get<DeviceSpaceStorageService>(),
+        isA<SharedPrefDeviceSpaceService>(),
+      );
     });
   });
 }
