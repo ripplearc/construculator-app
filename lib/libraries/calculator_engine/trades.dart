@@ -38,6 +38,12 @@ final class PieceSize extends Equatable {
   /// nothing is rounded until it is displayed).
   double get squareTicks => width.preciseTicks * height.preciseTicks;
 
+  /// Whether both sides are longer than zero, so the piece has a face to
+  /// divide by. Each side is checked on its own: two negative sides make a
+  /// positive face, and a size of −6in × −6in is no size at all ("Size must
+  /// be more than zero"; product owner, 5 November 2026).
+  bool get hasFace => width.preciseTicks > 0 && height.preciseTicks > 0;
+
   @override
   List<Object?> get props => [width, height];
 }
@@ -46,7 +52,9 @@ final class PieceSize extends Equatable {
 /// and, once accepted, the result that carries its size as the Sheet size
 /// or Piece size pill (requirement R8). The count is `area ÷ (w × h)` with
 /// no rounding up (Section 9), kept exact here and rounded to two decimals
-/// at display; a recount after the pill is edited goes through [recount],
+/// at display for every size of count (0.031 reads 0.03, never the two
+/// significant digits of a ratio); a recount after the pill is edited goes
+/// through [recount],
 /// which keeps the area the count was made from.
 final class TradeCount extends Equatable {
   /// The trade the count belongs to.
@@ -67,15 +75,22 @@ final class TradeCount extends Equatable {
   /// Pieces of [size] that cover [area], fractional pieces included.
   double get count => area.squareTicks / size.squareTicks;
 
-  /// The count as the bare number the result chip holds.
-  Scalar get value => Scalar(count);
+  /// The count as the bare number the result chip holds, written to two
+  /// decimals with the zeros kept, so a count under 0.005 reads 0.00
+  /// (Section 9; product owner, 5 November 2026).
+  Scalar get value =>
+      Scalar(count, decimals: countDecimals, padsDecimals: true);
+
+  /// The decimals a count is written with.
+  static const countDecimals = 2;
 
   /// The same area counted in another size, as the pill recomputes it, or
-  /// `null` for a size with no face — a side of zero or less — which is
-  /// refused so that the caller keeps the last good size ("Size must be
-  /// more than zero"; product owner, 5 November 2026).
+  /// `null` for a size with no face — a side of zero or less, see
+  /// [PieceSize.hasFace] — which is refused so that the caller keeps the
+  /// last good size ("Size must be more than zero"; product owner,
+  /// 5 November 2026).
   TradeCount? recount(PieceSize size) {
-    if (size.squareTicks <= 0) return null;
+    if (!size.hasFace) return null;
     return TradeCount(trade: trade, area: area, size: size);
   }
 
@@ -95,14 +110,14 @@ class Trades extends Equatable {
   /// A count of [area] for each of [sizes], in their order. An area of
   /// zero or less has no count at all, so that the screen can refuse the
   /// key ("Area must be more than zero"; product owner, 5 November 2026).
-  /// A size with no face — a width or a height of nothing — counts nothing
-  /// and is left out, because nothing divides by it.
+  /// A size with no face — a width or a height of zero or less, see
+  /// [PieceSize.hasFace] — counts nothing and is left out, because nothing
+  /// divides by it.
   List<TradeCount> countsFor(Trade trade, Area area, List<PieceSize> sizes) {
     if (area.squareTicks <= 0) return const [];
     return [
       for (final size in sizes)
-        if (size.squareTicks > 0)
-          TradeCount(trade: trade, area: area, size: size),
+        if (size.hasFace) TradeCount(trade: trade, area: area, size: size),
     ];
   }
 

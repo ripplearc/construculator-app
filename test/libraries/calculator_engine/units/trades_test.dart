@@ -56,17 +56,17 @@ void main() {
       final counts = trades.countsFor(Trade.drywall, area180, appendixSheets);
       expect(texts(counts), [
         'Drywall: 5.63 (48in x 96in)',
-        'Drywall: 5 (48in x 108in)',
-        'Drywall: 4.5 (48in x 120in)',
+        'Drywall: 5.00 (48in x 108in)',
+        'Drywall: 4.50 (48in x 120in)',
       ]);
     });
 
-    test('S43: 143ft² of masonry is 160.88 blocks or 643.5 bricks', () {
+    test('S43: 143ft² of masonry is 160.88 blocks or 643.50 bricks', () {
       const area = Area(143.0 * squareTicksPerSquareFoot);
       final counts = trades.countsFor(Trade.masonry, area, masonry);
       expect(texts(counts), [
         'Masonry: 160.88 (8in x 16in)',
-        'Masonry: 643.5 (4in x 8in)',
+        'Masonry: 643.50 (4in x 8in)',
       ]);
       expect(counts.first.trade.resultKey, 'Number of pieces');
     });
@@ -75,7 +75,7 @@ void main() {
       const area = Area(143.0 * squareTicksPerSquareFoot);
       final block = trades.countsFor(Trade.masonry, area, masonry).first;
       final tile = block.recount(inches(6, 6))!;
-      expect(formatter.format(tile.value), '572');
+      expect(formatter.format(tile.value), '572.00');
       expect(tile.area, area);
       expect(tile.trade, Trade.masonry);
       expect(tile.size, inches(6, 6));
@@ -84,7 +84,7 @@ void main() {
     test('a count is kept exact and rounded only at display', () {
       final count = trades.countsFor(Trade.drywall, area180, appendixSheets)[0];
       expect(count.count, 180 / 32);
-      expect(count.value, const Scalar(5.625));
+      expect(count.value, const Scalar(5.625, decimals: 2, padsDecimals: true));
     });
 
     test('a size with no face counts nothing and is left out', () {
@@ -94,6 +94,41 @@ void main() {
         inches(48, 0),
       ]);
       expect(counts.map((count) => count.size), [inches(48, 96)]);
+    });
+
+    test('a stored size with one or two negative sides is left out: a face '
+        'of (−48in) × (−96in) is positive, but the size is no size', () {
+      expect(
+        trades.countsFor(Trade.drywall, area180, [inches(-48, -96)]),
+        isEmpty,
+      );
+      expect(
+        trades.countsFor(Trade.drywall, area180, [inches(-48, 96)]),
+        isEmpty,
+      );
+      expect(
+        trades.countsFor(Trade.drywall, area180, [inches(48, -96)]),
+        isEmpty,
+      );
+      const area = Area(143.0 * squareTicksPerSquareFoot);
+      expect(trades.countsFor(Trade.masonry, area, [inches(-8, -16)]), isEmpty);
+    });
+
+    test('a count is always written to two decimals, zeros kept, never to '
+        'two significant digits', () {
+      Area squareFeet(double value) => Area(value * squareTicksPerSquareFoot);
+      final sheet = [inches(48, 96)];
+      String count(double area) => formatter.format(
+        trades.countsFor(Trade.drywall, squareFeet(area), sheet).single.value,
+      );
+      expect(count(1), '0.03');
+      expect(count(0.1), '0.00');
+      expect(count(1.44), '0.05');
+      expect(count(0.16), '0.01');
+      expect(count(0.15), '0.00');
+      expect(count(16), '0.50');
+      expect(count(32), '1.00');
+      expect(count(1000000), '31,250.00');
     });
 
     test('no sizes is no count', () {
@@ -128,6 +163,25 @@ void main() {
       expect(block.recount(inches(6, 6)), isNotNull);
     });
 
+    test('a recount to a size with two negative sides is refused too: '
+        '(−6in) × (−6in) has a positive face but no side above zero', () {
+      const area = Area(143.0 * squareTicksPerSquareFoot);
+      final block = trades.countsFor(Trade.masonry, area, masonry).first;
+      expect(block.recount(inches(-6, -6)), isNull);
+      expect(block.recount(inches(-0.5, -0.5)), isNull);
+    });
+
+    test('a piece has a face only when both sides are above zero', () {
+      expect(inches(6, 6).hasFace, isTrue);
+      expect(inches(0.015625, 0.015625).hasFace, isTrue);
+      expect(inches(0, 6).hasFace, isFalse);
+      expect(inches(6, 0).hasFace, isFalse);
+      expect(inches(-6, 6).hasFace, isFalse);
+      expect(inches(6, -6).hasFace, isFalse);
+      expect(inches(-6, -6).hasFace, isFalse);
+      expect(inches(-6, -6).squareTicks, greaterThan(0));
+    });
+
     test('a metric sheet counts a metric area the same way', () {
       final sheet = PieceSize(
         width: const Length(3024, unit: Unit.millimetre),
@@ -139,7 +193,7 @@ void main() {
     });
 
     test('an exact metric size counts an exact metric area exactly: the face '
-        'is taken from the precise sides, not from whole ticks (B1)', () {
+        'is taken from the precise sides, not from whole ticks', () {
       const ticksPerMillimetre = Length.ticksPerInch / 25.4;
       Length millimetres(double value) =>
           Length.computed(value * ticksPerMillimetre, unit: Unit.millimetre);
@@ -157,11 +211,11 @@ void main() {
       // A computed length is kept to parts of a tick (Length.partsPerTick),
       // so the exact 60 is reached within what the display rounds away.
       expect(sheets.single.count, closeTo(60, 1e-4));
-      expect(formatter.format(sheets.single.value), '60');
+      expect(formatter.format(sheets.single.value), '60.00');
 
       final tile = PieceSize(width: millimetres(100), height: millimetres(100));
       final tiles = trades.countsFor(Trade.masonry, squareMetres(1), [tile]);
-      expect(formatter.format(tiles.single.value), '100');
+      expect(formatter.format(tiles.single.value), '100.00');
 
       final big = PieceSize(width: millimetres(300), height: millimetres(300));
       final bigs = trades.countsFor(Trade.masonry, squareMetres(10), [big]);
