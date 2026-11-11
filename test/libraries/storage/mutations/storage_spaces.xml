@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- STORAGE SPACES MUTATION TESTING -->
+    <!-- Targets: the prefix rules that keep the user space apart from every other key -->
+
+    <files>
+        <file>lib/libraries/storage/prefixed_preferences.dart</file>
+        <file>lib/libraries/storage/shared_pref_service.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="return stored is T \? stored : null;" dotAll="true" id="prefs.get_ignores_value">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="preferences\.get\(storedKey\)" dotAll="true" id="prefs.get_drops_prefix">
+            <mutation text="preferences.get(key)"/>
+        </regex>
+        <regex pattern="final storedKey = '\$prefix\$key';" dotAll="true" id="prefs.save_drops_prefix">
+            <mutation text="final storedKey = key;"/>
+        </regex>
+        <regex pattern="preferences\.setString\(storedKey, text\)" dotAll="true" id="prefs.save_string_blank">
+            <mutation text="preferences.setString(storedKey, '')"/>
+        </regex>
+        <regex pattern="preferences\.setInt\(storedKey, number\)" dotAll="true" id="prefs.save_int_zero">
+            <mutation text="preferences.setInt(storedKey, 0)"/>
+        </regex>
+        <regex pattern="preferences\.setDouble\(storedKey, number\)" dotAll="true" id="prefs.save_double_zero">
+            <mutation text="preferences.setDouble(storedKey, 0)"/>
+        </regex>
+        <regex pattern="preferences\.setBool\(storedKey, flag\)" dotAll="true" id="prefs.save_bool_false">
+            <mutation text="preferences.setBool(storedKey, false)"/>
+        </regex>
+        <regex pattern="preferences\.setStringList\(storedKey, texts\)" dotAll="true" id="prefs.save_list_empty">
+            <mutation text="preferences.setStringList(storedKey, const [])"/>
+        </regex>
+        <regex pattern="_ =&gt; throw ArgumentError\.value\(value, 'value', 'is not storable'\)" dotAll="true" id="prefs.accept_unstorable">
+            <mutation text="_ =&gt; Future.value(true)"/>
+        </regex>
+        <regex pattern="await _removeStored\(preferences, '\$prefix\$key'\);" dotAll="true" id="prefs.remove_drops_prefix">
+            <mutation text="await _removeStored(preferences, key);"/>
+        </regex>
+        <regex pattern="if \(storedKey\.startsWith\(prefix\)\)" dotAll="true" id="prefs.clear_every_key">
+            <mutation text="if (true)"/>
+        </regex>
+        <regex pattern="if \(storedKey\.startsWith\(prefix\)\)" dotAll="true" id="prefs.clear_no_key">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="await _removeStored\(preferences, storedKey\);" dotAll="true" id="prefs.clear_skips_remove">
+            <mutation text="continue;"/>
+        </regex>
+        <regex pattern="if \(!await written\)" dotAll="true" id="prefs.ignore_refused_write">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="if \(!await preferences\.remove\(storedKey\)\)" dotAll="true" id="prefs.ignore_refused_removal">
+            <mutation text="if (false)"/>
+        </regex>
+        <regex pattern="List&lt;Object\?&gt;\(\) when value\.every\(\(item\) =&gt; item is String\)" dotAll="true" id="prefs.skip_untyped_list">
+            <mutation text="List&lt;Object?&gt;() when false"/>
+        </regex>
+        <regex pattern="value\.every\(\(item\) =&gt; item is String\)" dotAll="true" id="prefs.accept_list_with_non_string">
+            <mutation text="true"/>
+        </regex>
+        <regex pattern="static const keyPrefix = 'user\.'" dotAll="true" id="user_space.prefix_blank">
+            <mutation text="static const keyPrefix = ''"/>
+        </regex>
+        <regex pattern="static const keyPrefix = 'user\.'" dotAll="true" id="user_space.prefix_is_device">
+            <mutation text="static const keyPrefix = 'device.'"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="storage_spaces" expected-return="0">flutter test test/libraries/storage/units/shared_pref_service_test.dart test/libraries/storage/units/prefixed_preferences_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
