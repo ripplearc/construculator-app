@@ -120,13 +120,37 @@ void main() {
     });
 
     test('a removed result is one sentence naming the result by its label', () {
-      const toast = CalculatorResultRemovedToast(key: 'Arcsine');
+      const toast = CalculatorResultRemovedToast(keys: ['Arcsine']);
       expect(labels.toastTitle(toast), isNull);
       expect(
         labels.toastBody(toast),
         l10n.calculatorToastResultRemoved(labels.displayLabel('Arcsine')),
       );
       expect(labels.toastBody(toast), contains('removed'));
+    });
+
+    test('two removed results are both named, and more than two the first '
+        'and how many more (Section 5.5)', () {
+      const two = CalculatorResultRemovedToast(keys: ['Diagonal', 'Calc']);
+      expect(
+        labels.toastBody(two),
+        l10n.calculatorToastResultsRemovedBoth(
+          labels.displayLabel('Diagonal'),
+          labels.displayLabel('Calc'),
+        ),
+      );
+      expect(labels.toastBody(two), contains('Diagonal and Calc removed'));
+      const three = CalculatorResultRemovedToast(
+        keys: ['Diagonal', 'Calc', 'Calc'],
+      );
+      expect(
+        labels.toastBody(three),
+        l10n.calculatorToastResultsRemovedMore(
+          labels.displayLabel('Diagonal'),
+          2,
+        ),
+      );
+      expect(labels.toastBody(three), contains('and 2 more removed'));
     });
   });
 
