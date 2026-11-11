@@ -5,7 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../utils/screenshot/font_loader.dart';
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async => loadAppFontsAll());
+
   Future<void> pumpHeader(
     WidgetTester tester, {
     required CostItemType type,
@@ -26,15 +32,13 @@ void main() {
 
   final l10n = lookupAppLocalizations(const Locale('en'));
   final names = {
-    CostItemType.material: l10n.costSectionMaterials.toUpperCase(),
-    CostItemType.labor: l10n.costSectionLabor.toUpperCase(),
-    CostItemType.equipment: l10n.costSectionEquipment.toUpperCase(),
+    CostItemType.material: l10n.costSectionMaterials,
+    CostItemType.labor: l10n.costSectionLabor,
+    CostItemType.equipment: l10n.costSectionEquipment,
   };
 
   for (final entry in names.entries) {
-    testWidgets('names the ${entry.key.name} section in capitals', (
-      tester,
-    ) async {
+    testWidgets('names the ${entry.key.name} section', (tester) async {
       await pumpHeader(tester, type: entry.key, subtotal: 0);
 
       expect(
@@ -94,7 +98,9 @@ void main() {
     expect(subtotal.dx, band.right - CoreSpacing.space4);
   });
 
-  testWidgets('draws a grey band the full width of the screen', (tester) async {
+  testWidgets('draws a grey band with a light line above and below it', (
+    tester,
+  ) async {
     await pumpHeader(tester, type: CostItemType.material, subtotal: 10);
     final band = find.byKey(const Key('cost_section_header_material'));
     final colors = AppColorsExtension.of(tester.element(band));
@@ -103,7 +109,22 @@ void main() {
       tester.getSize(band).width,
       tester.view.physicalSize.width / tester.view.devicePixelRatio,
     );
-    expect(tester.widget<Container>(band).color, colors.backgroundGrayLight);
+    final decoration =
+        tester.widget<DecoratedBox>(band).decoration as BoxDecoration;
+    final border = BorderSide(color: colors.lineLight);
+    expect(decoration.color, colors.backgroundGrayLight);
+    expect(decoration.border, Border(top: border, bottom: border));
+  });
+
+  testWidgets('is 44 dp high at the normal text size', (tester) async {
+    await pumpHeader(tester, type: CostItemType.material, subtotal: 10);
+
+    expect(
+      tester
+          .getSize(find.byKey(const Key('cost_section_header_material')))
+          .height,
+      44,
+    );
   });
 
   testWidgets('is announced to a screen reader as one heading', (tester) async {
@@ -113,7 +134,7 @@ void main() {
     final node = tester.getSemantics(
       find.byKey(const Key('cost_section_header_material')),
     );
-    expect(node.label, contains(l10n.costSectionMaterials.toUpperCase()));
+    expect(node.label, contains(l10n.costSectionMaterials));
     expect(node.label, contains(r'$1,265.02'));
     expect(node.getSemanticsData().flagsCollection.isHeader, isTrue);
     handle.dispose();
