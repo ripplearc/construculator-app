@@ -23,6 +23,16 @@ final class CalculatorFinishValueToast extends CalculatorToast {
   List<Object?> get props => [value];
 }
 
+/// "Type a new first value, or press C to start again": ⌫ again on the
+/// emptied first chip of a chain, which nothing before it can stand in for
+/// (rule 4.8).
+final class CalculatorTypeNewFirstValueToast extends CalculatorToast {
+  const CalculatorTypeNewFirstValueToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
 /// "`<Key>` removed — can't recompute from the new value" (Section 5.5);
 /// two results are both named, and more than two the first and how many
 /// more.

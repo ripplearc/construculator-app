@@ -2546,7 +2546,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorToastValueEmptyBody =>
-      'The value is empty — type a new value, or backspace to delete the chip.';
+      'The value is empty. Type a new value, or press ⌫ to delete the chip.';
+
+  @override
+  String get calculatorToastTypeNewFirstValue =>
+      'Type a new first value, or press C to start again.';
 
   @override
   String calculatorToastResultRemoved(String key) {

@@ -84,12 +84,12 @@
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->
-        <regex pattern="readsDegrees: readsDegrees,\s*\),\s*\);\s*\}\s*if \(openBracket != null\) \{" dotAll="true" id="tape.function_key.inside_bracket">
-            <mutation text="readsDegrees: readsDegrees, ), ); } if (false) {"/>
+        <regex pattern="readsDegrees: readsDegrees,\s*\),\s*\);\s*\}\s*if \(openBracket != null\) \{\s*return const TapeRefused\(TapeRefusal\.bracketsHoldPlainArithmetic\);" dotAll="true" id="tape.function_key.inside_bracket">
+            <mutation text="readsDegrees: readsDegrees, ), ); } if (false) { return const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic);"/>
         </regex>
 
         <!-- RULE 9: ⌫ after ) deletes the bracket instead of reopening it -->
-        <regex pattern="return _replaceLastChip\(_reopened\(closed\)\);" dotAll="true" id="tape.backspace.delete_closed_bracket">
+        <regex pattern="return _reopenedAt\(chips\.length - 1, closed\);" dotAll="true" id="tape.backspace.delete_closed_bracket">
             <mutation text="return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
         </regex>
 
@@ -116,20 +116,20 @@
         </regex>
 
         <!-- RULE 15: = drops the closed tape when nothing lands -->
-        <regex pattern="TapeOutcome\(\) =&gt; TapeChanged\(\s*closed,\s*notice: notice \?\? TapeNotice\.bracketClosedNothingToCompute,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
+        <regex pattern="TapeOutcome\(\) =&gt; TapeChanged\(\s*closed,\s*notice: notice \?\? TapeNotice\.bracketClosedNothingToCompute,\s*removed: removed,\s*\)," dotAll="true" id="tape.press_equals.drop_closed_tape">
             <mutation text="final TapeOutcome refused =&gt; refused,"/>
         </regex>
 
         <!-- RULE 16: closing a reopened bracket empty throws the group
              away -->
-        <regex pattern="if \(bracket\.original != null\) return _restored\(bracket\);\s*return TapeChanged\(\s*_removeBracket\(bracket\),\s*notice: TapeNotice\.emptyBracketsRemoved," dotAll="true" id="tape.close_bracket.forget_original">
+        <regex pattern="if \(bracket\.original != null\) return _restored\(index, bracket\);\s*return TapeChanged\(\s*_removeBracket\(bracket\),\s*notice: TapeNotice\.emptyBracketsRemoved," dotAll="true" id="tape.close_bracket.forget_original">
             <mutation text="return TapeChanged( _removeBracket(bracket), notice: TapeNotice.emptyBracketsRemoved,"/>
         </regex>
 
         <!-- RULE 17: ⌫ on a reopened bracket emptied by the edit does not
              remove it -->
-        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return TapeChanged\(_removeBracket\(bracket\)\);\s*\}" dotAll="true" id="tape.backspace.keep_reopened_empty">
-            <mutation text="if (bracket.inner.every(_holdsNothingTyped) &amp;&amp; bracket.original == null) { return TapeChanged(_removeBracket(bracket)); }"/>
+        <regex pattern="if \(bracket\.inner\.every\(_holdsNothingTyped\)\) \{\s*return _bracketRemoved\(index, bracket\);\s*\}" dotAll="true" id="tape.backspace.keep_reopened_empty">
+            <mutation text="if (bracket.inner.every(_holdsNothingTyped) &amp;&amp; bracket.original == null) { return _bracketRemoved(index, bracket); }"/>
         </regex>
 
         <!-- RULE 18: [( )] under a name replaces the named chip silently -->
@@ -139,8 +139,8 @@
 
         <!-- RULE 19: ⌫ on an error chip leaves the bracket before it
              closed -->
-        <regex pattern="final BracketChip closed =&gt; _with\(\[\.\.\.before, _reopened\(closed\)\]\)," dotAll="true" id="tape.backspace.error_keeps_bracket_closed">
-            <mutation text="final BracketChip closed =&gt; _with([...before, closed]),"/>
+        <regex pattern="final BracketChip closed =&gt; _with\(\s*remaining,\s*\)\._reopenedAt\(remaining\.length - 1, closed\)," dotAll="true" id="tape.backspace.error_keeps_bracket_closed">
+            <mutation text="final BracketChip closed =&gt; TapeChanged(_with(remaining)),"/>
         </regex>
 
         <!-- RULE 20: [( )] under a name answers with the function-key
@@ -157,8 +157,8 @@
 
         <!-- RULE 22: the Calc lands on the restored group but the user is
              not told the edit was cancelled -->
-        <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(tape, notice: notice\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
-            <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
+        <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(\s*tape,\s*notice: notice,\s*removed: removed,\s*\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
+            <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape, removed: removed),"/>
         </regex>
 
         <!-- RULE 19 (X33 round, Section 7): an operator left at the end of a
