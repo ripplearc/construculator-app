@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/storage/models/device_setting.dart';
 
 /// The device space of the storage library: settings of the phone that hold
