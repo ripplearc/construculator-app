@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// The settings the phone keeps for itself, with no user's data in them.
 ///
 /// Sign-out and a change of user never delete these. The list is short on
