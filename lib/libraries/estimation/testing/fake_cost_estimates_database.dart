@@ -33,6 +33,10 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// When set, every new [watch] subscription fails with it.
   Object? watchError;
 
+  /// When set, a write is recorded in [executeCalls] at once but waits for this
+  /// completer before it fails with [executeError] or changes the rows.
+  Completer<void>? executeGate;
+
   /// Puts [rows] on the phone as though sync had delivered them.
   void seedRows(List<Map<String, dynamic>> rows) {
     _rows.addAll(rows.map(_asStoredRow));
@@ -70,7 +74,10 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    await super.execute(sql, parameters);
+    executeCalls.add((sql: sql, parameters: parameters));
+    await executeGate?.future;
+    final error = executeError;
+    if (error != null) throw error;
     final insert = _insert.firstMatch(sql);
     final update = _update.firstMatch(sql);
     if (insert != null) {
@@ -117,6 +124,7 @@ class FakeCostEstimatesDatabase extends FakePowerSyncDatabaseWrapper {
     super.reset();
     _rows.clear();
     watchError = null;
+    executeGate = null;
   }
 
   @override

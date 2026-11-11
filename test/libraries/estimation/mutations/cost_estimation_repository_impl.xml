@@ -96,18 +96,12 @@
         <regex pattern="estimates\.where\(\(e\) =&gt; e\.id != estimationId\)\.toList\(\)" dotAll="true" id="repo.edits.delete_keeps_estimate">
             <mutation text="estimates"/>
         </regex>
-        <regex pattern="e\.id == estimationId \? replace\(e\) : e" dotAll="true" id="repo.edits.replace_all">
-            <mutation text="replace(e)"/>
-        </regex>
 
         <regex pattern="if \(!_streamControllers\.containsKey\(streamKey\)\) \{\s*_localSubscriptions" dotAll="true" id="repo.local.keep_unwatched_subscription">
             <mutation text="if (_streamControllers.containsKey(streamKey)) { _localSubscriptions"/>
         </regex>
         <regex pattern="waiting\.complete\(Right\(_cachedEstimations\[streamKey\] \?\? \[\]\)\);" dotAll="true" id="repo.local.leave_caller_waiting">
             <mutation text="// waiting.complete(Right(_cachedEstimations[streamKey] ?? []));"/>
-        </regex>
-        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(lockStatus: updatedEstimation\.lockStatus\)," dotAll="true" id="repo.edits.lock_patch_replaces_all">
-            <mutation text="patch: (e) =&gt; updatedEstimation,"/>
         </regex>
         <regex pattern="_emitToStream\(\s*key,\s*Right\(_applyPendingEdits\(key, projectId, copy\.estimates, copy\.view\)\),\s*\);" dotAll="true" id="repo.republish.skip_emit">
             <mutation text="// republish skipped"/>
@@ -142,23 +136,8 @@
         <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
             <mutation text="// edit not remembered"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(lockEdit\);" dotAll="true" id="repo.edits.keep_failed_lock">
-            <mutation text="// _forgetPendingEdit(lockEdit);"/>
-        </regex>
         <regex pattern="_forgetPendingEdit\(deleteEdit\);" dotAll="true" id="repo.edits.keep_failed_delete">
             <mutation text="// _forgetPendingEdit(deleteEdit);"/>
-        </regex>
-        <regex pattern="showsWrite\(e\) \|\|" dotAll="true" id="repo.edits.reflected_ignores_write">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="e\.id != estimationId \|\|" dotAll="true" id="repo.edits.reflected_for_other_rows">
-            <mutation text="e.id == estimationId ||"/>
-        </regex>
-        <regex pattern="e\.updatedAt\.isAfter\(writtenAt\)" dotAll="true" id="repo.edits.newer_phone_row_older">
-            <mutation text="e.updatedAt.isBefore(writtenAt)"/>
-        </regex>
-        <regex pattern="bool showsWrite\(CostEstimate e\) =&gt; e\.lockStatus\.isLocked == isLocked;" dotAll="true" id="repo.edits.lock_reflected_negated">
-            <mutation text="bool showsWrite(CostEstimate e) =&gt; e.lockStatus.isLocked != isLocked;"/>
         </regex>
         <regex pattern="position == -1 \? estimates\.length : position" dotAll="true" id="repo.create.ignore_sort_position">
             <mutation text="0"/>
@@ -212,6 +191,20 @@
         <!-- renameEstimation: the name written is the name asked for -->
         <regex pattern="newName: newName,\n      \);\n      if \(renamedDto" dotAll="true" id="repo.rename.writes_wrong_name">
             <mutation text="newName: estimationId,\n      );\n      if (renamedDto"/>
+        </regex>
+        <!-- changeLockStatus: the phone not having the row is a not-found failure -->
+        <regex pattern="if \(lockedDto == null\) \{" dotAll="true" id="repo.lock.skip_not_found">
+            <mutation text="if (lockedDto != null) {"/>
+        </regex>
+
+        <!-- changeLockStatus: a successful change answers with the stored row -->
+        <regex pattern="return Right\(lockedDto\.toDomain\(\)\);" dotAll="true" id="repo.lock.success_as_failure">
+            <mutation text="return Left(UnexpectedFailure());"/>
+        </regex>
+
+        <!-- changeLockStatus: the value written is the value asked for -->
+        <regex pattern="isLocked: isLocked,\n      \);\n      if \(lockedDto" dotAll="true" id="repo.lock.writes_inverse_value">
+            <mutation text="isLocked: !isLocked,\n      );\n      if (lockedDto"/>
         </regex>
     </rules>
 

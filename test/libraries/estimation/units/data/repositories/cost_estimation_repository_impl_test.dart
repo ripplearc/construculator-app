@@ -1636,31 +1636,23 @@ void main() {
     });
 
     group('changeLockStatus', () {
-      test(
-        'should return updated estimation and update stream when locking succeeds',
-        () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            isLocked: false,
-          );
-          seedEstimationTable([initialMap]);
+      Map<String, dynamic> seedOneEstimate({bool isLocked = false}) {
+        final map = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: isLocked,
+        );
+        fakePhoneDatabase.seedRows([map]);
+        return map;
+      }
 
+      test(
+        'should return the locked estimation and show it in the watched list',
+        () async {
+          seedOneEstimate();
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked == false,
-                ),
-              ),
-            ),
-          );
+          await queue.next;
 
           final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
@@ -1668,66 +1660,23 @@ void main() {
             projectId: testProjectId,
           );
 
-          expect(result.isRight(), isTrue);
-          expectResult(result, (updatedEstimation) {
-            expect(updatedEstimation.lockStatus.isLocked, isTrue);
-          });
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked,
-                ),
-              ),
-            ),
+          expectResult(
+            result,
+            (locked) => expect(locked.lockStatus.isLocked, isTrue),
           );
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked,
-                ),
-              ),
-            ),
-          );
-
+          final shown = (await queue.next).getRightOrNull()!;
+          expect(shown.single.lockStatus.isLocked, isTrue);
           await queue.cancel();
         },
       );
 
       test(
-        'should return updated estimation and update stream when unlocking succeeds',
+        'should return the unlocked estimation and show it in the watched list',
         () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            isLocked: true,
-            lockedByUserId: userIdDefault,
-            lockedAt: timestampDefault,
-          );
-          seedEstimationTable([initialMap]);
-
+          seedOneEstimate(isLocked: true);
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked,
-                ),
-              ),
-            ),
-          );
+          await queue.next;
 
           final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
@@ -1735,305 +1684,75 @@ void main() {
             projectId: testProjectId,
           );
 
-          expect(result.isRight(), isTrue);
-          result.fold((_) => fail('Unlocking failed'), (updatedEstimation) {
-            expect(updatedEstimation.lockStatus.isLocked, isFalse);
-          });
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked == false,
-                ),
-              ),
-            ),
+          expectResult(
+            result,
+            (unlocked) => expect(unlocked.lockStatus.isLocked, isFalse),
           );
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked == false,
-                ),
-              ),
-            ),
-          );
-
+          final shown = (await queue.next).getRightOrNull()!;
+          expect(shown.single.lockStatus.isLocked, isFalse);
           await queue.cancel();
         },
       );
 
-      test(
-        'should return timeout failure when data source throws timeout',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+      test('should write only is_locked to the phone', () async {
+        seedOneEstimate();
 
+        await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        final write = fakePhoneDatabase.executeCalls.single;
+        expect(
+          write.sql,
+          'UPDATE cost_estimates SET is_locked = ? WHERE id = ?',
+        );
+        expect(write.parameters, [1, estimateIdDefault]);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+      });
+
+      test(
+        'should return notFoundError and write nothing when the phone has no such estimation',
+        () async {
           final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
             isLocked: true,
             projectId: testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
-          result.fold(
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
-            ),
-            (_) => fail('Expected failure but got success'),
-          );
-        },
-      );
-
-      test(
-        'should return notFoundError when data source throws PGRST116',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.noDataFound;
-          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
-
-          final result = await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.notFoundError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
+          expect(fakePhoneDatabase.executeCalls, isEmpty);
         },
       );
 
       test(
-        'should emit optimistic update to stream before API call completes',
+        'should return an unexpected failure and keep the lock as it was when the phone write fails',
         () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            isLocked: false,
-          );
-          seedEstimationTable([initialMap]);
+          seedOneEstimate();
+          fakePhoneDatabase.executeError = Exception('disk full');
 
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked == false,
-                ),
-              ),
-            ),
-          );
-
-          final resultFuture = repository.changeLockStatus(
+          final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
             isLocked: true,
             projectId: testProjectId,
           );
 
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked,
-                ),
-              ),
-            ),
+          expectFailure(
+            result,
+            (failure) => expect(failure, UnexpectedFailure()),
           );
-
-          await resultFuture;
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                predicate<List<CostEstimate>>(
-                  (estimations) =>
-                      estimations.length == 1 &&
-                      estimations.first.lockStatus.isLocked,
-                ),
-              ),
-            ),
-          );
-
-          await queue.cancel();
-        },
-      );
-
-      test('should revert optimistic update when data source throws', () async {
-        final initialMap = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          isLocked: false,
-        );
-        seedEstimationTable([initialMap]);
-
-        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-        final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-        await expectLater(
-          queue.next,
-          completion(
-            rightEstimations(
-              predicate<List<CostEstimate>>(
-                (estimations) =>
-                    estimations.length == 1 &&
-                    estimations.first.lockStatus.isLocked == false,
-              ),
-            ),
-          ),
-        );
-
-        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
-        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
-
-        final result = await repository.changeLockStatus(
-          estimationId: estimateIdDefault,
-          isLocked: true,
-          projectId: testProjectId,
-        );
-
-        expect(result.isLeft(), isTrue);
-
-        await expectLater(
-          queue.next,
-          completion(
-            rightEstimations(
-              predicate<List<CostEstimate>>(
-                (estimations) =>
-                    estimations.length == 1 &&
-                    estimations.first.lockStatus.isLocked,
-              ),
-            ),
-          ),
-        );
-        await expectLater(
-          queue.next,
-          completion(
-            rightEstimations(
-              predicate<List<CostEstimate>>(
-                (estimations) =>
-                    estimations.length == 1 &&
-                    estimations.first.lockStatus.isLocked == false,
-              ),
-            ),
-          ),
-        );
-
-        await queue.cancel();
-      });
-
-      test('should succeed without active stream listeners', () async {
-        final initialMap = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          isLocked: false,
-        );
-        seedEstimationTable([initialMap]);
-
-        final result = await repository.changeLockStatus(
-          estimationId: estimateIdDefault,
-          isLocked: true,
-          projectId: testProjectId,
-        );
-
-        expect(result.isRight(), isTrue);
-        result.fold((_) => fail('Expected success'), (updated) {
-          expect(updated.lockStatus.isLocked, isTrue);
-        });
-      });
-
-      test(
-        'should call supabaseWrapper with correct parameters when locking',
-        () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            isLocked: false,
-          );
-          seedEstimationTable([initialMap]);
-
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(methodCalls, hasLength(1));
-
-          final call = methodCalls.first;
-          expect(
-            call,
-            equals({
-              'method': 'update',
-              'table': DatabaseConstants.costEstimatesTable,
-              'data': {DatabaseConstants.isLockedColumn: true},
-              'filterColumn': DatabaseConstants.idColumn,
-              'filterValue': estimateIdDefault,
-            }),
-          );
-        },
-      );
-
-      test(
-        'should call supabaseWrapper with correct parameters when unlocking',
-        () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            isLocked: true,
-            lockedByUserId: userIdDefault,
-            lockedAt: timestampDefault,
-          );
-          seedEstimationTable([initialMap]);
-
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: false,
-            projectId: testProjectId,
-          );
-
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(methodCalls, hasLength(1));
-
-          final call = methodCalls.first;
-          expect(
-            call,
-            equals({
-              'method': 'update',
-              'table': DatabaseConstants.costEstimatesTable,
-              'data': {DatabaseConstants.isLockedColumn: false},
-              'filterColumn': DatabaseConstants.idColumn,
-              'filterValue': estimateIdDefault,
-            }),
-          );
+          fakePhoneDatabase.executeError = null;
+          final shown = (await repository.fetchInitialEstimations(
+            testProjectId,
+          )).getRightOrNull()!;
+          expect(shown.single.lockStatus.isLocked, isFalse);
         },
       );
     });
@@ -2423,18 +2142,6 @@ void main() {
       List<String> idsIn(Either<Failure, List<CostEstimate>> result) =>
           result.getRightOrNull()!.map((estimate) => estimate.id).toList();
 
-      void expectNeighbourUntouched(
-        List<Either<Failure, List<CostEstimate>>> emissions,
-      ) {
-        for (final emission in emissions) {
-          expect(estimateIn(emission, estimateId3).estimateName, estimateName3);
-          expect(
-            estimateIn(emission, estimateId3).lockStatus.isLocked,
-            isFalse,
-          );
-        }
-      }
-
       Future<StreamQueue<Either<Failure, List<CostEstimate>>>> watchProject(
         String projectId,
         int expectedCount,
@@ -2454,116 +2161,6 @@ void main() {
         seedEstimationTable(maps);
         return watchProject(testProjectId, maps.length);
       }
-
-      group('a lock', () {
-        test('does not flip back when the phone copy re-emits', () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            neighbourEstimate(),
-          ]);
-
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(3);
-          expect(estimateIn(emissions.last).lockStatus.isLocked, isTrue);
-          expectNeighbourUntouched(emissions);
-          await queue.cancel();
-        });
-
-        test('stops being re-applied once the phone copy shows it', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          fakePhoneDatabase.replaceRow(projectEstimate(isLocked: true));
-          await queue.next;
-
-          fakePhoneDatabase.replaceRow(projectEstimate(isLocked: false));
-
-          expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
-          await queue.cancel();
-        });
-
-        test(
-          'keeps a name the phone copy received while the lock was pending',
-          () async {
-            final queue = await watchSeeded([projectEstimate()]);
-            await repository.changeLockStatus(
-              estimationId: estimateIdDefault,
-              isLocked: true,
-              projectId: testProjectId,
-            );
-            await queue.take(2);
-
-            const nameChangedElsewhere = 'Renamed on another phone';
-            fakePhoneDatabase.replaceRow(
-              projectEstimate(estimateName: nameChangedElsewhere),
-            );
-
-            final emission = await queue.next;
-            expect(estimateIn(emission).estimateName, nameChangedElsewhere);
-            expect(estimateIn(emission).lockStatus.isLocked, isTrue);
-            await queue.cancel();
-          },
-        );
-
-        test('that fails online shows it unlocked again', () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            neighbourEstimate(),
-          ]);
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(3);
-          expect(estimateIn(emissions.last).lockStatus.isLocked, isFalse);
-          expectNeighbourUntouched(emissions);
-          await queue.cancel();
-        });
-
-        test(
-          'is shown when the phone copy re-emits before the server answers',
-          () async {
-            final queue = await watchSeeded([
-              projectEstimate(),
-              neighbourEstimate(),
-            ]);
-            fakeSupabaseWrapper.shouldDelayOperations = true;
-            fakeSupabaseWrapper.completer = Completer();
-
-            final locking = repository.changeLockStatus(
-              estimationId: estimateIdDefault,
-              isLocked: true,
-              projectId: testProjectId,
-            );
-            await queue.next;
-            syncUnrelatedEstimate();
-            final emission = await queue.next;
-
-            expect(estimateIn(emission).lockStatus.isLocked, isTrue);
-            expectNeighbourUntouched([emission]);
-            fakeSupabaseWrapper.completer!.complete();
-            await locking;
-            await queue.cancel();
-          },
-        );
-      });
 
       test(
         'a delete made online does not bring the estimate back when the phone copy re-emits',
@@ -2902,25 +2499,6 @@ void main() {
           return created;
         }
 
-        test('shows a lock made before the phone has the row', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final created = await createUnsyncedEstimate(queue);
-
-          await repository.changeLockStatus(
-            estimationId: created.id,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          await queue.next;
-          syncUnrelatedEstimate();
-
-          expect(
-            estimateIn(await queue.next, created.id).lockStatus.isLocked,
-            isTrue,
-          );
-          await queue.cancel();
-        });
-
         test(
           'stays gone after a delete made before the phone has the row',
           () async {
@@ -2935,37 +2513,6 @@ void main() {
               estimateIdDefault,
               unrelatedEstimateId,
             ]);
-            await queue.cancel();
-          },
-        );
-      });
-
-      group('when someone else changes the same estimate', () {
-        const teammateChangeAt = '2026-06-02T00:00:00.000Z';
-
-        test(
-          'a teammate\'s unlock replaces my lock once the phone copy has it',
-          () async {
-            final queue = await watchSeeded([projectEstimate()]);
-            await repository.changeLockStatus(
-              estimationId: estimateIdDefault,
-              isLocked: true,
-              projectId: testProjectId,
-            );
-            await queue.take(2);
-
-            fakePhoneDatabase.replaceRow(
-              buildEstimationMap(
-                id: estimateIdDefault,
-                projectId: testProjectId,
-                isLocked: false,
-                updatedAt: teammateChangeAt,
-              ),
-            );
-            expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
-            syncUnrelatedEstimate();
-
-            expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
             await queue.cancel();
           },
         );
@@ -2995,42 +2542,6 @@ void main() {
       );
 
       test(
-        'a failed lock does not remove the edit of a second lock on the same estimate',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final firstRequest = Completer<void>();
-          final secondRequest = Completer<void>();
-          fakeSupabaseWrapper.shouldDelayOperations = true;
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-
-          fakeSupabaseWrapper.completer = firstRequest;
-          final firstLock = repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          fakeSupabaseWrapper.completer = secondRequest;
-          final secondLock = repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-
-          firstRequest.complete();
-          expect((await firstLock).isLeft(), isTrue);
-
-          expect(estimateIn(await queue.next).lockStatus.isLocked, isTrue);
-          fakeSupabaseWrapper.shouldThrowOnUpdate = false;
-          secondRequest.complete();
-          expect((await secondLock).isRight(), isTrue);
-          await queue.cancel();
-        },
-      );
-
-      test(
         'a fetch with nobody watching releases the phone watch once it has answered',
         () async {
           final released = Completer<void>();
@@ -3051,58 +2562,6 @@ void main() {
             projectId: testProjectId,
             createdAt: createdAt,
           );
-
-      Map<String, dynamic> neighbourEstimate() => buildEstimationMap(
-        id: estimateId3,
-        projectId: testProjectId,
-        estimateName: estimateName3,
-        createdAt: '2023-06-01T00:00:00.000Z',
-      );
-
-      CostEstimate estimateIn(
-        Either<Failure, List<CostEstimate>> result,
-        String id,
-      ) => result.getRightOrNull()!.firstWhere((e) => e.id == id);
-
-      void expectNeighbourUntouched(
-        Either<Failure, List<CostEstimate>> emission,
-      ) {
-        final neighbour = estimateIn(emission, estimateId3);
-        expect(neighbour.estimateName, estimateName3);
-        expect(neighbour.lockStatus.isLocked, isFalse);
-      }
-
-      Future<StreamQueue<Either<Failure, List<CostEstimate>>>>
-      watchTwoEstimates() async {
-        seedEstimationTable([projectEstimate(), neighbourEstimate()]);
-        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-        final queue = StreamQueue(repository.watchEstimations(testProjectId));
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(hasLength(2))),
-        );
-        return queue;
-      }
-
-      test('a lock leaves the other estimates as they were', () async {
-        final queue = await watchTwoEstimates();
-
-        await repository.changeLockStatus(
-          estimationId: estimateIdDefault,
-          isLocked: true,
-          projectId: testProjectId,
-        );
-
-        final emissions = await queue.take(2);
-        for (final emission in emissions) {
-          expect(
-            estimateIn(emission, estimateIdDefault).lockStatus.isLocked,
-            isTrue,
-          );
-          expectNeighbourUntouched(emission);
-        }
-        await queue.cancel();
-      });
 
       test(
         'a created estimate is not shown twice when the phone copy has it before the server answers',
