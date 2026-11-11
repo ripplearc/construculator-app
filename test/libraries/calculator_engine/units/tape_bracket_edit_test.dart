@@ -140,30 +140,129 @@ void main() {
       expect(changed(outcome), tape);
     });
 
+    test('= on an emptied reopened bracket cancels the edit too, then lands '
+        'the step still pending after it', () {
+      final tape = press(const Tape(), '2 + ( 3 ( = × 4');
+      final emptied = press(tape, 'tap:1 ⌫');
+      expect(texts(emptied), ['2', '+(', 'Calc5', '×4']);
+
+      final outcome = emptied.pressEquals();
+      expect(
+        outcome,
+        isA<TapeChanged>().having(
+          (change) => change.notice,
+          'notice',
+          TapeNotice.bracketEditCancelled,
+        ),
+      );
+      expect(texts(changed(outcome)), ['2', '+(3)', 'Calc5', '×4', 'Calc20']);
+    });
+
     test('⌫ on an emptied reopened bracket removes it, the operator before '
-        'it waits again, and the answer that has nothing left to compute goes '
-        '(Section 7; S127 as the design decides it)', () {
+        'it waits again as the chip being edited, and the answer stands '
+        'until the number typed recomputes it (Section 7; S127 as the '
+        'design decides it)', () {
       final emptied = press(const Tape(), '2 + ( 3 × 4 ( = tap:1 ⌫ ⌫ ⌫');
 
       final tape = press(emptied, '⌫');
-      expect(texts(tape), ['2', '+']);
+      expect(texts(tape), ['2', '+', 'Calc14']);
       expect(tape.active!.operator, Operator.add);
+      expect(
+        tape.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 1),
+      );
       expect(tape.openBracket, isNull);
+      expect(texts(press(tape, '5')), ['2', '+5', 'Calc7']);
       expect(texts(press(tape, '5 =')), ['2', '+5', 'Calc7']);
     });
 
-    test('a bracket that led the chain, emptied and removed, leaves the chips '
-        'after it and takes the answer that was a calculation no more', () {
+    test('a bracket that led the chain, emptied and removed, leaves the empty '
+        'first chip "…" in its place with the answer standing until a value '
+        'is typed, and a second ⌫ is refused: a tape never starts with an '
+        'operator (N3; rule 4.8 "Deleting the first value of a chain")', () {
       final tape = press(const Tape(), '( 3 × 4 ( × 5 =');
       expect(texts(tape), ['(3×4)', '×5', 'Calc60']);
 
       final outcome = press(tape, 'tap:0 ⌫ ⌫ ⌫').backspace();
       expect(outcome, isA<TapeChanged>());
-      final TapeChanged(tape: removed, :notice, removed: key) =
+      final TapeChanged(tape: emptied, :notice, :removed) =
           outcome as TapeChanged;
-      expect(texts(removed), ['×5']);
-      expect(notice, TapeNotice.resultRemoved);
-      expect(key, 'Calc');
+      expect(texts(emptied), ['', '×5', 'Calc60']);
+      expect(notice, isNull);
+      expect(removed, isEmpty);
+      expect(
+        emptied.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 0),
+      );
+      expect(
+        emptied.backspace(),
+        const TapeRefused(TapeRefusal.typeANewFirstValue),
+      );
+      expect(texts(press(emptied, '2')), ['2', '×5', 'Calc10']);
+      expect(texts(press(emptied, '2 =')), ['2', '×5', 'Calc10']);
+    });
+
+    test('removing an emptied bracket in the middle keeps the answers after '
+        'it: the operator before it waits for its number as the chip being '
+        'edited, and the number typed recomputes them (B1; Section 7 '
+        '"Editing a bracket", rule 4.8)', () {
+      final tape = press(const Tape(), '2 + ( 3 × 4 ( × 5 =');
+      expect(texts(tape), ['2', '+(3×4)', '×5', 'Calc70']);
+      final removed = press(tape, 'tap:1 ⌫ ⌫ ⌫ ⌫');
+      expect(texts(removed), ['2', '+', '×5', 'Calc70']);
+      expect(
+        removed.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 1),
+      );
+      expect(
+        removed.active,
+        isA<ValueChip>().having((c) => c.operator, 'operator', Operator.add),
+      );
+      expect(texts(press(removed, '6')), ['2', '+6', '×5', 'Calc40']);
+      expect(texts(press(removed, '6 =')), ['2', '+6', '×5', 'Calc40']);
+      final twice = press(const Tape(), '2 + ( 3 ( × 4 = + 1 =');
+      expect(texts(twice), ['2', '+(3)', '×4', 'Calc20', '+1', 'Calc21']);
+      expect(
+        texts(press(twice, 'tap:1 ⌫ ⌫ 3 =')),
+        ['2', '+3', '×4', 'Calc20', '+1', 'Calc21'],
+        reason: 'both answers after the removed bracket are kept and rebuilt',
+      );
+      expect(texts(press(twice, 'tap:1 ⌫ ⌫ 4 =')), [
+        '2',
+        '+4',
+        '×4',
+        'Calc24',
+        '+1',
+        'Calc25',
+      ]);
+    });
+
+    test('= on a reopened bracket lands the step still pending after an '
+        'older answer, and says nothing when the close recomputed an answer '
+        'or left an error standing (B2 and N2; Section 7)', () {
+      final pending = press(const Tape(), '2 + ( 3 ( = × 4');
+      expect(texts(pending), ['2', '+(3)', 'Calc5', '×4']);
+      final landed = press(pending, 'tap:1 =');
+      expect(texts(landed), ['2', '+(3)', 'Calc5', '×4', 'Calc20']);
+      expect(texts(press(pending, 'tap:1 ⌫ 6 =')), [
+        '2',
+        '+(6)',
+        'Calc8',
+        '×4',
+        'Calc32',
+      ]);
+      final weighed = press(const Tape(), '( 5 ft ( + 3 lbs =');
+      expect(texts(weighed), ['(5ft)', '+3lbs', 'dimensionError']);
+      final repaired = press(weighed, 'tap:0 ⌫ lbs').pressEquals();
+      expect(repaired, isA<TapeChanged>());
+      final TapeChanged(tape: summed, notice: said) = repaired as TapeChanged;
+      expect(texts(summed), ['(5lbs)', '+3lbs', 'Calc8lbs']);
+      expect(said, isNull);
+      final failing = press(weighed, 'tap:0 ⌫ 6 ft').pressEquals();
+      expect(failing, isA<TapeChanged>());
+      final TapeChanged(tape: broken, notice: word) = failing as TapeChanged;
+      expect(texts(broken), ['(56ft)', '+3lbs', 'dimensionError']);
+      expect(word, isNull);
     });
 
     test('⌫ straight after ) reopens the bracket with the same notice as a '

@@ -77,8 +77,8 @@
 
         <!-- RULE 7: backspace drops the last chip without reopening the value
              before it -->
-        <regex pattern="final ValueChip previous =&gt; _with\(\[\.\.\.before, _reactivated\(previous\)\]\)," dotAll="true" id="tape.backspace.no_reopen">
-            <mutation text="final ValueChip previous =&gt; _with([...before, previous]),"/>
+        <regex pattern="final ValueChip previous =&gt; TapeChanged\(\s*_with\(\[\.\.\.before, _reactivated\(previous\)\]\),\s*\)," dotAll="true" id="tape.backspace.no_reopen">
+            <mutation text="final ValueChip previous =&gt; TapeChanged(_with([...before, previous])),"/>
         </regex>
 
         <!-- RULE 8: backspace unwinds the tape even while the active chip has
@@ -240,9 +240,9 @@
             <mutation text="return _with(before);"/>
             <mutation text="return _with([...before, ValueChip(operator: chip.operator)]);"/>
         </regex>
-        <regex pattern="if \(openBracket case final bracket\?\) \{\s*return switch \(_inside\(bracket, \(inner\) =&gt; inner\.clearActive\(\)\)\) \{\s*TapeRefused\(reason: TapeRefusal\.nothingBeingTyped\) =&gt;\s*const TapeRefused\(\s*TapeRefusal\.nothingTypedInGroup,\s*\),\s*final outcome =&gt; outcome,\s*\};\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
+        <regex pattern="if \(openBracketIndex case final index\?\) \{\s*return switch \(_inside\(index, \(inner\) =&gt; inner\.clearActive\(\)\)\) \{\s*TapeRefused\(reason: TapeRefusal\.nothingBeingTyped\) =&gt;\s*const TapeRefused\(\s*TapeRefusal\.nothingTypedInGroup,\s*\),\s*final outcome =&gt; outcome,\s*\};\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
             <mutation text=""/>
-            <mutation text="if (openBracket case final bracket?) { return _inside(bracket, (inner) =&gt; inner.clearActive()); }"/>
+            <mutation text="if (openBracketIndex case final index?) { return _inside(index, (inner) =&gt; inner.clearActive()); }"/>
         </regex>
 
 

@@ -1677,12 +1677,14 @@ class Tape extends Equatable {
       };
     }
     if (openBracketIndex case final index? when index < chips.length - 1) {
-      final answered = chips.skip(index + 1).any((chip) => chip is ResultChip);
+      // the close recomputed the answers after the bracket; a step still
+      // pending at the end is landed as well, an answer there stands
       return switch (closeBracket()) {
-        TapeChanged(:final tape, notice: null) when !answered =>
+        TapeChanged(:final tape, notice: null)
+            when !tape.endsWithResult && !tape.endsWithError =>
           _landedAfterClose(tape),
         TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled)
-            when !answered =>
+            when !tape.endsWithResult && !tape.endsWithError =>
           _landedAfterClose(tape, notice: TapeNotice.bracketEditCancelled),
         final outcome => outcome,
       };
@@ -1944,7 +1946,7 @@ class Tape extends Equatable {
     if (total is ChainEmpty) {
       return const TapeRefused(TapeRefusal.finishThisValueFirst);
     }
-    return _closedAt(
+    return _closedAndRecomputedAt(
       index,
       bracket.copyWith(
         inner: inner._sealed().chips,
@@ -1954,19 +1956,22 @@ class Tape extends Equatable {
     );
   }
 
-  TapeOutcome _restored(int index, BracketChip bracket) => _closedAt(
-    index,
-    bracket.copyWith(
-      inner: bracket.original,
-      isOpen: false,
-      original: () => null,
-    ),
-    notice: TapeNotice.bracketEditCancelled,
-  );
+  TapeOutcome _restored(int index, BracketChip bracket) =>
+      _closedAndRecomputedAt(
+        index,
+        bracket.copyWith(
+          inner: bracket.original,
+          isOpen: false,
+          original: () => null,
+        ),
+        notice: TapeNotice.bracketEditCancelled,
+      );
 
-  // The bracket at [index] replaced by [closed], its closed self, and every
-  // answer after it rebuilt: the bracket is final, so a stale one goes.
-  TapeOutcome _closedAt(int index, BracketChip closed, {TapeNotice? notice}) {
+  TapeOutcome _closedAndRecomputedAt(
+    int index,
+    BracketChip closed, {
+    TapeNotice? notice,
+  }) {
     final (:tape, :removed) = _replaceChipAt(
       index,
       closed,
@@ -2278,11 +2283,15 @@ class Tape extends Equatable {
 
   TapeOutcome _bracketRemoved(int index, BracketChip bracket) {
     if (index == chips.length - 1) return TapeChanged(_removeBracket(bracket));
+    // in the middle the bracket's place stays open as the chip being
+    // edited — the operator before it waiting for its number again, or the
+    // empty first chip "…" of the chain (rule 4.8) — and the answers after
+    // it stand until a value is typed, as they do through any edit
     final (:tape, :removed) = _with([
       ...chips.sublist(0, index),
-      if (bracket.operator case final operator?) ValueChip(operator: operator),
+      ValueChip(operator: bracket.operator, isEditing: true),
       ...chips.sublist(index + 1),
-    ])._recomputedFrom(index, removesStale: true);
+    ])._recomputedFrom(index + 1, removesStale: false);
     return _changed(tape, removed: removed);
   }
 

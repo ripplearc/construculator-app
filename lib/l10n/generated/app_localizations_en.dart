@@ -2537,6 +2537,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The value is empty — type a new value, or backspace to delete the chip.';
 
   @override
+  String get calculatorToastTypeNewFirstValue =>
+      'Type a new first value, or press C to start again.';
+
+  @override
   String calculatorToastResultRemoved(String key) {
     return '$key removed — can\'t recompute from the new value.';
   }

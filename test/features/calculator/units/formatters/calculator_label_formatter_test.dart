@@ -119,6 +119,15 @@ void main() {
       expect(labels.toastBody(empty), contains('empty'));
     });
 
+    test('⌫ on the emptied first chip reads as one sentence, the doc\'s', () {
+      const toast = CalculatorTypeNewFirstValueToast();
+      expect(labels.toastTitle(toast), isNull);
+      expect(
+        labels.toastBody(toast),
+        'Type a new first value, or press C to start again.',
+      );
+    });
+
     test('a unit is spelled out by its engine id', () {
       expect(labels.unitName(Unit.yard), 'yards');
       expect(labels.unitName(Unit.pound), 'pounds');
