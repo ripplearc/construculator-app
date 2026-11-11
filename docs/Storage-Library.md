@@ -1,6 +1,6 @@
 # Storage library
 
-The storage library (`lib/libraries/storage/`) is the one place where the app keeps preferences, small files and the database path. A feature that stores data on the phone goes through it, so that sign-out can find and delete that data.
+The storage library (`lib/libraries/storage/`) is where the app keeps preferences, small files and the database path. Three files keep their own secure storage flags on purpose (see The lint rule). A feature that stores data on the phone goes through it, so that sign-out can find and delete that data.
 
 ## Two spaces
 
@@ -19,4 +19,6 @@ The library knows no feature. It offers `getData`, `saveData` and `removeData`, 
 
 ## The lint rule
 
-`forbid_direct_storage_access` (package `ripplearc_linter`) fails the build when code imports `shared_preferences`, `path_provider` or `flutter_secure_storage` outside `lib/libraries/storage/`, `test/libraries/storage/` and the exact files listed under `forbid_direct_storage_access: allowed_files` in `analysis_options.yaml`. The listed files are the secure session storage and the stale secure storage check, which keep their own flags on purpose. Do not add a file to the list without a reason that a reviewer accepts.
+`forbid_direct_storage_access` (package `ripplearc_linter`) fails the check when code imports `shared_preferences`, `path_provider` or `flutter_secure_storage` outside `lib/libraries/storage/`, `test/libraries/storage/` and the exact files listed under `forbid_direct_storage_access: allowed_files` in `analysis_options.yaml`. It runs in `scripts/run_check.sh`, in the CI code analysis step and in `fvm dart run custom_lint`.
+
+The listed files are the secure session storage (`secure_session_local_storage.dart`), the stale secure storage check (`stale_secure_storage_service.dart`), the secure storage wrapper (`secure_storage_wrapper_impl.dart`) and the tests of those three and of the Supabase session. They keep their own flags on purpose, because deleting the user space must not trigger the secure storage delete again. Do not add a file to the list without a reason that a reviewer accepts.

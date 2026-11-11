@@ -39,7 +39,7 @@ custom_lint:
     - avoid_static_colors
     - avoid_static_typography
     - forbid_direct_storage_access
-    - forbid_feature_import_outside_provider: false # TODO: [CA-936] Forbid importing an optional feature outside its own provider file https://ripplearc.youtrack.cloud/issue/CA-936
+    - forbid_feature_import_outside_provider: false # TODO: [CA-936] Turn on once features are imported only through their provider files https://ripplearc.youtrack.cloud/issue/CA-936
     - document_enum: false # TODO: [CA-641] [Infra] Enable & Resolve document_enum Linter Violations https://ripplearc.youtrack.cloud/issue/CA-641/Infra-Enable-Resolve-documentenum-Linter-Violations
     - restrict_core_icon_data: false # TODO: [CA-633] [Lint] Scope restrict_core_icon_data rule in ripplearc-flutter-lint to fire only outside coreui https://ripplearc.youtrack.cloud/issue/CA-633/Lint-Scope-restrictcoreicondata-rule-in-ripplearc-flutter-lint-to-fire-only-outside-coreui
 
