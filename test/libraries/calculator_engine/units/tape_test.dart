@@ -18,6 +18,7 @@ void main() {
         'in' => current.pressUnit(Unit.inch),
         'yd' => current.pressUnit(Unit.yard),
         'cm' => current.pressUnit(Unit.centimetre),
+        'mm' => current.pressUnit(Unit.millimetre),
         'm' => current.pressUnit(Unit.metre),
         'lbs' => current.pressUnit(Unit.pound),
         'ton' => current.pressUnit(Unit.ton),
@@ -363,6 +364,54 @@ void main() {
           tail.pressUnit(Unit.inch, holdsLengthOnly: true),
         );
         expect(texts(finished), ['Width18ft 8in']);
+      });
+
+      test('a unit key whose carry would push the '
+          'number above the limit is refused, and the tape stays as typed', () {
+        final typed = press(const Tape(), '1 9 9 9 9 9 9 9 ft 1 2');
+        expect(
+          typed.pressUnit(Unit.inch),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
+        );
+        expect(texts(typed), ['19999999ft 12']);
+        expect(
+          press(const Tape(), '1 9 9 9 9 9 9 9 ft 2 4').pressUnit(Unit.inch),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
+        );
+        expect(texts(press(const Tape(), '1 9 9 9 9 9 9 9 ft 1 1 in')), [
+          '19999999ft 11in',
+        ]);
+        expect(texts(press(const Tape(), '1 9 9 9 9 9 9 8 ft 1 2 in')), [
+          '19999999ft 0in',
+        ]);
+      });
+
+      test('a first value that writes above the limit stays Too large '
+          'through every step after it, and = lands the error chip', () {
+        const tooLarge = ErrorChip(CalculationError.outOfRange);
+        for (final keys in [
+          '1 9 9 9 9 9 9 9 . 6 mm + 1 mm + 1 mm',
+          '1 9 9 9 9 9 9 9 ft 1 1 . 9 9 in + 1 in + 1 in',
+          '1 9 9 9 9 9 9 9 . 5 ft 1 2 in + 1 in',
+        ]) {
+          final chain = press(const Tape(), keys);
+          expect(chain.runningTotal, isA<ChainFailed>(), reason: keys);
+          expect(press(chain, '=').chips.last, tooLarge, reason: keys);
+        }
+      });
+
+      test('a number typed at the limit is a value, not Too large, until a '
+          'step writes above it', () {
+        for (final unit in ['mm', 'in', 'ft']) {
+          final typed = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 $unit');
+          expect(typed.runningTotal, isA<ChainValue>(), reason: unit);
+          expect(typed.pressEquals(), isA<TapeRefused>(), reason: unit);
+        }
+        final stepUp = press(const Tape(), '1 9 9 9 9 9 9 9 . 9 9 mm + 1 mm');
+        expect(
+          press(stepUp, '=').chips.last,
+          const ErrorChip(CalculationError.outOfRange),
+        );
       });
 
       test('a carried compound part comes with a notice (CA-1234)', () {

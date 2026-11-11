@@ -80,9 +80,9 @@
         <regex pattern="minutes: '\$\{carried % Token\.minutesPerDegree\}'," dotAll="true" id="entry_buffer.carry.minutes">
             <mutation text="minutes: '${carried % 100}',"/>
         </regex>
-        <regex pattern="if \(totalMinutes &gt; _largestWholeNumberADoubleHolds\) \{\s*return Token\(\s*digits: degrees,\s*minutes: minutes,\s*seconds: '',\s*typedAs: typedAs,\s*\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
+        <regex pattern="if \(totalMinutes &gt; _largestWholeNumberADoubleHolds\) \{\s*return Token\(\s*digits: degrees,\s*minutes: minutes,\s*seconds: '',\s*typedAs: typedAs,\s*startedWithPoint: startedWithPoint,\s*\);\s*\}" dotAll="true" id="entry_buffer.carry.no_limit">
             <mutation text=""/>
-            <mutation text="if (totalMinutes &gt;= _largestWholeNumberADoubleHolds) { return Token(digits: degrees, minutes: minutes, seconds: '', typedAs: typedAs); }"/>
+            <mutation text="if (totalMinutes &gt;= _largestWholeNumberADoubleHolds) { return Token(digits: degrees, minutes: minutes, seconds: '', typedAs: typedAs, startedWithPoint: startedWithPoint); }"/>
         </regex>
 
         <!-- RULE 9 (CA-1070 2/2): the three fields — whole degrees alone

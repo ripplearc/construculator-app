@@ -180,6 +180,72 @@ void main() {
         expect(compound.text, '18ft 8in');
       });
 
+      test(
+        'a carry that would push the part above '
+        'the limit is refused as Too large, and the buffer stays as typed',
+        () {
+          const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+          final atTheLimit = changed(type('19999999').closeWith(Unit.foot));
+          expect(type('12', atTheLimit).closeWith(Unit.inch), tooLarge);
+          expect(type('24', atTheLimit).closeWith(Unit.inch), tooLarge);
+          expect(
+            type('11', atTheLimit).closeWith(Unit.inch),
+            isA<EntryChanged>(),
+          );
+          expect(
+            changed(type('11', atTheLimit).closeWith(Unit.inch)).text,
+            '19999999ft 11in',
+          );
+          final oneBelow = changed(type('19999998').closeWith(Unit.foot));
+          expect(
+            type('12', oneBelow).closeWith(Unit.inch),
+            isA<EntryCarried>().having(
+              (c) => c.buffer.text,
+              'text',
+              '19999999ft 0in',
+            ),
+          );
+          expect(
+            type('23', oneBelow).closeWith(Unit.inch),
+            isA<EntryCarried>(),
+          );
+          expect(type('24', oneBelow).closeWith(Unit.inch), tooLarge);
+          final metres = changed(type('19999999').closeWith(Unit.metre));
+          expect(type('100', metres).closeWith(Unit.centimetre), tooLarge);
+          expect(
+            type('99', metres).closeWith(Unit.centimetre),
+            isA<EntryChanged>(),
+          );
+          final twoLevels = changed(
+            type(
+              '99',
+              changed(type('19999999').closeWith(Unit.metre)),
+            ).closeWith(Unit.centimetre),
+          );
+          expect(type('10', twoLevels).closeWith(Unit.millimetre), tooLarge);
+        },
+      );
+
+      test('the Read-as pill keeps the mark of a '
+          'number that started with a point, so its 0 stays uncounted', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        const pilled = EntryBuffer([
+          Token(
+            digits: '0.5',
+            unit: Unit.inch,
+            typedAs: '0.5',
+            startedWithPoint: true,
+          ),
+        ]);
+        final fourteenMore = type('1' * 14, pilled);
+        expect(fourteenMore.text, '0.5${'1' * 14}');
+        expect(fourteenMore.typeDigit('1'), tooMany);
+        const typedZero = EntryBuffer([
+          Token(digits: '0.5', unit: Unit.inch, typedAs: '0.5'),
+        ]);
+        expect(type('1' * 13, typedZero).typeDigit('1'), tooMany);
+      });
+
       test('centimetres after metres make a compound, 1m 20cm', () {
         final metres = changed(type('1').closeWith(Unit.metre));
         expect(

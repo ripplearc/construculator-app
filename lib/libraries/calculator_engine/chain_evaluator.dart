@@ -35,11 +35,14 @@ final class ChainFailed extends ChainOutcome {
   /// Why.
   final CalculationError error;
 
-  /// The running total the step started from, named in the toast.
-  final Quantity left;
+  /// The running total the step started from, named in the toast; `null`
+  /// when the chain's first value is itself above the limit (a trig answer
+  /// such as Tangent 89.999999995°), so no step was joined.
+  final Quantity? left;
 
-  /// The operator that failed.
-  final Operator operator;
+  /// The operator that failed; `null` when the first value failed on its
+  /// own.
+  final Operator? operator;
 
   /// The value the step tried to join, named in the toast.
   final Quantity right;
@@ -50,6 +53,14 @@ final class ChainFailed extends ChainOutcome {
     required this.operator,
     required this.right,
   });
+
+  /// A chain whose first value is already above the limit (Section 5.3,
+  /// "any step of a chain on the way to it"): no step was joined, so there
+  /// is no left-hand side and no operator.
+  const ChainFailed.firstValueTooLarge(this.right)
+    : error = CalculationError.outOfRange,
+      left = null,
+      operator = null;
 
   @override
   List<Object?> get props => [error, left, operator, right];
@@ -236,7 +247,9 @@ class ChainEvaluator extends Equatable {
   /// Says when an answer shows a number too large to show (Section 5, "Too
   /// large"): that step fails with [CalculationError.outOfRange], so the
   /// strip goes silent and = lands the error chip, which ⌫ removes to
-  /// reopen the number before it.
+  /// reopen the number before it. The first value of a chain is asked too
+  /// ("any step of a chain on the way to it"): a Tangent answer above the
+  /// limit never becomes a running total.
   final QuantityFormatter formatter;
 
   const ChainEvaluator({
@@ -302,11 +315,18 @@ class ChainEvaluator extends Equatable {
     Quantity value, {
     int stepsInside = 0,
   }) {
+    if (operator != null && running.failure != null) return running;
     final total = running.total;
     if (total == null || operator == null) {
+      if (formatter.isAboveTheLimit(value)) {
+        return (
+          total: null,
+          steps: stepsInside,
+          failure: ChainFailed.firstValueTooLarge(value),
+        );
+      }
       return (total: value, steps: stepsInside, failure: null);
     }
-    if (running.failure != null) return running;
     final step = switch (arithmetic.combine(total, operator, value)) {
       ArithmeticValue(value: final next) when formatter.isTooLarge(next) =>
         const ArithmeticFailed(CalculationError.outOfRange),

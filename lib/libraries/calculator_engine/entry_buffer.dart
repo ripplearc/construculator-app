@@ -373,7 +373,7 @@ class EntryBuffer extends Equatable {
       return EntryBuffer(
         List.unmodifiable([
           ...tokens.sublist(0, tokens.length - 1),
-          Token(digits: last.digits),
+          Token(digits: last.digits, startedWithPoint: last.startedWithPoint),
         ]),
       ).typeDigit(digit, readsAngles: readsAngles);
     }
@@ -431,7 +431,12 @@ class EntryBuffer extends Equatable {
     if (last.seconds != null) return EntryChanged(this);
     if (last.minutes case final minutes?) {
       return _replaceLast(
-        _withMinutesClosed(last.digits, minutes, typedAs: last.typedAs),
+        _withMinutesClosed(
+          last.digits,
+          minutes,
+          typedAs: last.typedAs,
+          startedWithPoint: last.startedWithPoint,
+        ),
       );
     }
     final closingMinutes =
@@ -447,15 +452,26 @@ class EntryBuffer extends Equatable {
     final typedAs =
         plain.typedAs ?? (plain.digits.contains('.') ? plain.digits : null);
     if (!closingMinutes) {
-      return Token(digits: degrees, minutes: minutes, typedAs: typedAs);
+      return Token(
+        digits: degrees,
+        minutes: minutes,
+        typedAs: typedAs,
+        startedWithPoint: plain.startedWithPoint,
+      );
     }
-    return _withMinutesClosed(degrees, minutes, typedAs: typedAs);
+    return _withMinutesClosed(
+      degrees,
+      minutes,
+      typedAs: typedAs,
+      startedWithPoint: plain.startedWithPoint,
+    );
   }
 
   Token _withMinutesClosed(
     String degrees,
     String minutes, {
     required String? typedAs,
+    required bool startedWithPoint,
   }) {
     final totalMinutes =
         double.parse(degrees) * Token.minutesPerDegree +
@@ -466,6 +482,7 @@ class EntryBuffer extends Equatable {
         minutes: minutes,
         seconds: '',
         typedAs: typedAs,
+        startedWithPoint: startedWithPoint,
       );
     }
     final carried = totalMinutes.round();
@@ -474,6 +491,7 @@ class EntryBuffer extends Equatable {
       minutes: '${carried % Token.minutesPerDegree}',
       seconds: '',
       typedAs: typedAs,
+      startedWithPoint: startedWithPoint,
     );
   }
 
@@ -541,7 +559,10 @@ class EntryBuffer extends Equatable {
   /// runs on up the ladder while the part above is as large as its own unit
   /// (1m 95cm 100mm reads 2m 5cm 0mm). A fraction (13/2 is a numerator over
   /// a line, not whole inches), a fraction above it (3/4ft 13in) or a
-  /// decimal above it (18.5ft 13in) is left as typed.
+  /// decimal above it (18.5ft 13in) is left as typed. A carry that would
+  /// push the part above the limit is refused like a digit that would
+  /// ([EntryRefusal.tooLarge]; Section 5.1, "Too large"): 19999999ft 12
+  /// then [In] stays as typed, where 19999999ft 11 [In] closes.
   EntryOutcome closeWith(
     Unit unit, {
     bool editing = false,
@@ -589,6 +610,9 @@ class EntryBuffer extends Equatable {
     final replaced = [...tokens.take(tokens.length - 1), closed];
     final carried = _carryInto(replaced, replaced.length - 1, above, unit);
     if (carried == null) return _replaceLast(closed);
+    if (carried.any((part) => _isTooLarge(part.digits))) {
+      return const EntryRefused(EntryRefusal.tooLarge);
+    }
     return EntryCarried(EntryBuffer(List.unmodifiable(carried)));
   }
 

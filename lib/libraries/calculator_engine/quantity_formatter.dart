@@ -136,6 +136,13 @@ class QuantityFormatter extends Equatable {
     return _leadingNumber(format(value)) > Quantity.largestShown;
   }
 
+  /// Whether [value]'s amount in the unit it is written in is above
+  /// [Quantity.largestShown] before any rounding: the test a typed number
+  /// meets (Section 5, "Too large"), so 19,999,999.99mm, which writes
+  /// 20,000,000mm, is not, and a Tangent answer of 1,145,915,590 is.
+  bool isAboveTheLimit(Quantity value) =>
+      !(_amountShown(value).abs() <= Quantity.largestShown);
+
   static const double _firstWholeNumberPastTheLimit = 20000000;
 
   static final RegExp _shownNumber = RegExp(r'^[−-]?([\d,]+(?:\.\d+)?)');

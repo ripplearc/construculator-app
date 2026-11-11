@@ -323,8 +323,8 @@ void main() {
       });
 
       test('B8: a step above the limit inside a bracket lands the Too large '
-          'chip inside it, the strip goes silent, = and ) say there is '
-          'nothing to compute, and ⌫ reopens the number, as outside', () {
+          'chip inside it, the strip goes silent, = and ) say the bracket '
+          'holds Too large, and ⌫ reopens the number, as outside', () {
         const tooLarge = ErrorChip(CalculationError.outOfRange);
         final typed = press(const Tape(), '( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9');
         final landed = press(typed, '(');
@@ -334,11 +334,11 @@ void main() {
         expect(landed.runningTotal, const ChainEmpty());
         expect(
           landed.pressEquals(),
-          const TapeRefused(TapeRefusal.nothingToCompute),
+          const TapeRefused(TapeRefusal.bracketHoldsTooLarge),
         );
         expect(
           landed.pressBracket(),
-          const TapeRefused(TapeRefusal.nothingToCompute),
+          const TapeRefused(TapeRefusal.bracketHoldsTooLarge),
         );
         final repaired = press(landed, '⌫');
         expect(repaired.chips, typed.chips);
@@ -357,6 +357,68 @@ void main() {
           lastResult(press(inChain, '⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ 1 ( =')),
           'Calc 10,000,000',
         );
+      });
+    });
+
+    group('Too large inside an open bracket', () {
+      const holdsTooLarge = TapeRefused(TapeRefusal.bracketHoldsTooLarge);
+
+      test(
+        'a digit, a fraction, a unit, an operator, = and ( ) are refused '
+        'while the inside ends with the Too large chip, and ⌫ repairs it',
+        () {
+          final landed = press(
+            const Tape(),
+            '( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9 (',
+          );
+          expect(landed.typeDigit('5'), holdsTooLarge);
+          expect(landed.typeDigit('.'), holdsTooLarge);
+          expect(landed.typeFraction(), holdsTooLarge);
+          expect(landed.pressUnit(Unit.foot), holdsTooLarge);
+          expect(landed.pressOperator(Operator.add), holdsTooLarge);
+          expect(landed.pressOperator(Operator.multiply), holdsTooLarge);
+          expect(landed.pressEquals(), holdsTooLarge);
+          expect(landed.pressBracket(), holdsTooLarge);
+          expect(landed.closeBracket(), holdsTooLarge);
+          expect(bracketText(landed), '(9999999×9999999');
+          final repaired = press(landed, '⌫');
+          expect(repaired.openBracket!.inner.last, isA<ValueChip>());
+          expect(bracketText(press(repaired, '+ 1')), '(9999999×9999999+1');
+          expect(
+            lastResult(press(repaired, '⌫ ⌫ ⌫ ⌫ ⌫ ⌫ ⌫ 2 ( =')),
+            'Calc 19,999,998',
+          );
+        },
+      );
+
+      test('the failed part is never folded away: 2 + ( 9999999 × 9999999 ) '
+          'then 5 + 1 = never lands a Calc', () {
+        final landed = press(
+          const Tape(),
+          '2 + ( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9 (',
+        );
+        expect((landed.chips.last as BracketChip).inner.last, isA<ErrorChip>());
+        expect(landed.typeDigit('5'), holdsTooLarge);
+        expect(landed.pressOperator(Operator.add), holdsTooLarge);
+        expect(landed.pressEquals(), holdsTooLarge);
+        expect(landed.pressBracket(), holdsTooLarge);
+        expect(landed.runningTotal, const ChainEmpty());
+        final chained = press(
+          const Tape(),
+          '5 + ( 9 9 9 9 9 9 9 × 9 9 9 9 9 9 9 (',
+        );
+        expect(chained.typeDigit('4'), holdsTooLarge);
+        expect(chained.pressOperator(Operator.add), holdsTooLarge);
+      });
+
+      test('a bracket whose inside ends on a value, or on nothing, still takes '
+          'every key', () {
+        final open = press(const Tape(), '2 + ( 3 × 4');
+        expect(open.typeDigit('5'), isA<TapeChanged>());
+        expect(open.pressOperator(Operator.add), isA<TapeChanged>());
+        expect(open.pressUnit(Unit.foot), isA<TapeChanged>());
+        expect(open.pressBracket(), isA<TapeChanged>());
+        expect(press(const Tape(), '2 + (').typeDigit('3'), isA<TapeChanged>());
       });
     });
 
