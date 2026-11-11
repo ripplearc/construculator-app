@@ -1129,6 +1129,65 @@ void main() {
         ),
       );
 
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit key on a result that would raise it is refused with no '
+        'message: the "keeps" message speaks only under a dimension key '
+        '(B1; Section 5.2)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 8,
+        expect: () => [
+          tapeState(pressed('1 2 ft × 1 0 ft =')).copyWith(
+            refusal: () => const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+            refusedUnit: () => Unit.foot,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, isNull);
+          expect(bloc.state.toastsRaised, 0);
+        },
+      );
+
+      test('a fraction typed after a finished length is named whole in the '
+          '"needs a length" message (N1)', () {
+        final state = CalculatorState(
+          tape: pressed('[Width] 1 8 ft 7 / 1 6'),
+          refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+          refusedUnit: Unit.pound,
+        );
+        expect(
+          state.toast,
+          const CalculatorNeedsLengthToast(
+            key: 'Width',
+            unit: Unit.pound,
+            tail: '7/16',
+          ),
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Width] 1 8 ft 8 . 5'),
+            refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+            refusedUnit: Unit.pound,
+          ).toast,
+          const CalculatorNeedsLengthToast(
+            key: 'Width',
+            unit: Unit.pound,
+            tail: '8.5',
+          ),
+        );
+      });
+
       test(
         'a refusal that is not a unit\'s, or a unit refusal the bloc did not '
         'name, has no unit toast',

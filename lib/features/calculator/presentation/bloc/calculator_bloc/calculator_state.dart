@@ -562,39 +562,62 @@ class CalculatorState extends Equatable {
     toastClosed,
   ];
 
-  /// What the last key left to say in a toast (Section 5), or `null`: the
-  /// result an edit removed; the editing guard, with the incomplete number
-  /// as the value row shows it, which is nothing for an empty chip; and the
-  /// unit guards of a reopened chip, named for the unit the key stood for.
-  /// Any other refusal has no toast here yet; a result, an error and a
-  /// bracket chip take no tap on the page, so the tape's refusal of one
-  /// never reaches a toast.
+  /// What the last key left to say in a red Alert (Section 5), or `null`:
+  /// the results an edit removed; the editing guard, with the incomplete
+  /// number as the value row shows it, which is nothing for an empty chip;
+  /// and the unit guards, named for the unit the key stood for — "needs a
+  /// length" and "keeps" under a dimension key on fresh entry and on a
+  /// reopened chip alike, "Can't append" on a reopened compound. The
+  /// key-named guards speak only while a chip under a key is being typed:
+  /// the tape refuses a unit key on a result the same way (Section 5.2 has
+  /// no message for that), and that refusal stays silent here. Any other
+  /// refusal has no message here yet; a result, an error and a bracket chip
+  /// take no tap on the page, so the tape's refusal of one never reaches a
+  /// message.
   CalculatorToast? get toast {
     if (removedResults.isNotEmpty) {
       return CalculatorResultRemovedToast(keys: removedResults);
     }
-    final key = tape.beingTyped?.key ?? '';
-    return switch ((refusal, refusedUnit)) {
-      (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _) =>
+    final key = tape.beingTyped?.key;
+    return switch ((refusal, refusedUnit, key)) {
+      (TapeRefused(reason: TapeRefusal.finishThisValueFirst), _, _) =>
         CalculatorFinishValueToast(value: valueText),
-      (TapeEntryRefused(reason: EntryRefusal.cannotAppendUnit), final unit?) =>
+      (
+        TapeEntryRefused(reason: EntryRefusal.cannotAppendUnit),
+        final unit?,
+        _,
+      ) =>
         CalculatorCannotAppendUnitToast(value: valueText, unit: unit),
-      (TapeEntryRefused(reason: EntryRefusal.needsLength), final unit?) =>
+      (
+        TapeEntryRefused(reason: EntryRefusal.needsLength),
+        final unit?,
+        final key?,
+      ) =>
         CalculatorNeedsLengthToast(key: key, unit: unit),
-      (TapeEntryRefused(reason: EntryRefusal.tailNeedsLength), final unit?) =>
-        CalculatorNeedsLengthToast(
-          key: key,
-          unit: unit,
-          tail: tape.beingTyped?.entry.tokens.lastOrNull?.digits,
-        ),
+      (
+        TapeEntryRefused(reason: EntryRefusal.tailNeedsLength),
+        final unit?,
+        final key?,
+      ) =>
+        CalculatorNeedsLengthToast(key: key, unit: unit, tail: _typedTail),
       (
         TapeUnitRefused(
           refusal: UnitKeyRefused(reason: UnitKeyRefusal.keepsLength),
         ),
         final unit?,
+        final key?,
       ) =>
         CalculatorKeepsLengthToast(key: key, unit: unit, value: valueText),
       _ => null,
     };
   }
+
+  /// The number typed after a finished length, whole with its fraction
+  /// ("7/16", not "7"), for "Press a length unit for the 7/16"; `null`
+  /// when nothing is typed.
+  String? get _typedTail => switch (tape.beingTyped?.entry.tokens.lastOrNull) {
+    Token(:final digits, denominator: null) => digits,
+    Token(:final digits, :final denominator?) => '$digits/$denominator',
+    null => null,
+  };
 }

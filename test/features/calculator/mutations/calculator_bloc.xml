@@ -36,6 +36,8 @@
             <mutation text="refusal: () => null, removedResults: const [], refusedUnit: () => null, closesCalculator: false,"/>
 
         <!-- RULE 4: a taken key keeps the close -->
+        </regex>
+
         <regex pattern="notice: \(\) => notice,\s*refusal: \(\) => null,\s*closesCalculator: false," dotAll="true" id="calculator_bloc.fold.taken_key_keeps_close">
             <mutation text="notice: () => notice, refusal: () => null, closesCalculator: true,"/>
         </regex>
@@ -50,6 +52,8 @@
             <mutation text="removedResults, refusedUnit, toastsRaised, toastClosed, ];"/>
 
         <!-- RULE 7: no chip is ever inert -->
+        </regex>
+
         <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.never_inert">
             <mutation text="inert: false,"/>
         </regex>
@@ -222,9 +226,17 @@
             <mutation text="return _press(emit, (tape) =&gt; _pressUnit(tape, unit));"/>
         </regex>
 
-        <!-- RULE 35: a tail is never named -->
-        <regex pattern="tail: tape\.beingTyped\?\.entry\.tokens\.lastOrNull\?\.digits," dotAll="true" id="calculator_state.toast.tail_unnamed">
-            <mutation text=""/>
+        <!-- RULE 35: a tail is never named, or named by its top number
+             only (R1, N1) -->
+        <regex pattern="tail: _typedTail\)," dotAll="true" id="calculator_state.toast.tail_unnamed">
+            <mutation text="),"/>
+            <mutation text="tail: tape.beingTyped?.entry.tokens.lastOrNull?.digits),"/>
+        </regex>
+
+        <!-- RULE 36 (R1, B1): a unit key on a result builds a key-named
+             message for no key -->
+        <regex pattern="final key = tape\.beingTyped\?\.key;" dotAll="true" id="calculator_state.toast.empty_key_named">
+            <mutation text="final key = tape.beingTyped?.key ?? '';"/>
         </regex>
     </rules>
 
