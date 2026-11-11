@@ -237,6 +237,8 @@ const Schema schema = Schema([
   // square ticks, cubic feet, hundredths of a pound, degrees or a bare
   // number) and the unit it was spelled in, empty for an angle or a bare
   // number.
+  // TODO: [CA-1399] register this table as "clear when the user changes", so a second account on the same phone is never offered the first account's recents.
+  // https://ripplearc.youtrack.cloud/issue/CA-1399
   Table.localOnly('calculator_recents', [
     Column.text('drawer'),
     Column.integer('position'),
