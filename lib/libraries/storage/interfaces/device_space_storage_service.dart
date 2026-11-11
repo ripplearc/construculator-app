@@ -13,9 +13,12 @@ abstract class DeviceSpaceStorageService {
   /// Saves [value] for [setting].
   ///
   /// Throws an [ArgumentError] when [value] is not a string, int, double,
-  /// bool or list of strings.
+  /// bool or list of strings, and a [StateError] when the platform refuses the
+  /// write.
   Future<void> saveSetting<T>(DeviceSetting setting, T value);
 
   /// Forgets the value saved for [setting].
+  ///
+  /// Throws a [StateError] when the platform refuses the removal.
   Future<void> removeSetting(DeviceSetting setting);
 }
