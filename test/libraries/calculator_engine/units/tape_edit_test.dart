@@ -489,7 +489,7 @@ void main() {
     test('digits and a unit typed into a chip edited before a closed bracket '
         'go into the chip; the bracket at the end refuses them only with no '
         'edit open', () {
-      final closed = press(const Tape(), '2 + ( 3 × 4 (');
+      final closed = press(const Tape(), '2 × ( 3 + 4 (');
       expect(
         closed.typeDigit('5'),
         const TapeRefused(TapeRefusal.addAnOperatorFirst),
@@ -501,7 +501,7 @@ void main() {
 
       final edited = press(closed, 'tap:0 5 ft');
 
-      expect(texts(edited), ['25ft', '+(3×4)']);
+      expect(texts(edited), ['25ft', '×(3+4)']);
       expect(edited.editing!.index, 0);
     });
 
