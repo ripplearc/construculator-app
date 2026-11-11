@@ -1155,6 +1155,15 @@ void main() {
     group('Sentry breadcrumbs', () {
       const testPhone = '+1234567890';
       const testOtp = '123456';
+      const logTag = '[AuthManagerImpl]';
+
+      setUp(() {
+        AppLogger.setSentryWrapper(sentryWrapper);
+      });
+
+      tearDown(() {
+        AppLogger.setSentryWrapper(null);
+      });
 
       final cases = <_BreadcrumbCase>[
         _breadcrumbCase(
@@ -1216,6 +1225,11 @@ void main() {
           'Password reset email sent successfully',
         ]),
         _breadcrumbCase(
+          'logout',
+          (m, _) => m.logout(),
+          ['Logging out user', 'Logout successful'],
+        ),
+        _breadcrumbCase(
           'isEmailRegistered',
           (m, s) {
             s.setRpcResponse('check_email_exists', true);
@@ -1232,9 +1246,6 @@ void main() {
         test(
           '${breadcrumbCase.operation} names the operation and outcome without the email or phone number',
           () async {
-            AppLogger.setSentryWrapper(sentryWrapper);
-            addTearDown(() => AppLogger.setSentryWrapper(null));
-
             await breadcrumbCase.run(authManager, supabaseWrapper);
 
             final messages = sentryWrapper.breadcrumbs
@@ -1242,7 +1253,7 @@ void main() {
                 .toList();
             expect(messages, [
               for (final message in breadcrumbCase.expectedMessages)
-                '[AuthManagerImpl] $message',
+                '$logTag $message',
             ]);
             for (final message in messages) {
               expect(message, isNot(contains(testEmail)));
@@ -1251,6 +1262,44 @@ void main() {
           },
         );
       }
+
+      test(
+        'an expected auth error adds the error type to the breadcrumb, not the error text',
+        () async {
+          supabaseWrapper.shouldThrowOnSignIn = true;
+          supabaseWrapper.signInErrorMessage = 'Invalid login for $testEmail';
+          supabaseWrapper.authErrorCode =
+              SupabaseAuthErrorCode.invalidCredentials;
+
+          await authManager.loginWithEmail(testEmail, testPassword);
+
+          final failure = sentryWrapper.breadcrumbs.singleWhere(
+            (breadcrumb) =>
+                breadcrumb.message == '$logTag Login failed with expected error',
+          );
+          expect(failure.data, {'error': 'AuthException'});
+        },
+      );
+
+      test(
+        'an expected database error adds the error type to the breadcrumb, not the error text',
+        () async {
+          supabaseWrapper.shouldThrowOnRpc = true;
+          supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+          supabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.uniqueViolation;
+          supabaseWrapper.rpcErrorMessage = 'Key (email)=($testEmail) exists';
+
+          await authManager.isEmailRegistered(testEmail);
+
+          final failure = sentryWrapper.breadcrumbs.singleWhere(
+            (breadcrumb) =>
+                breadcrumb.message ==
+                '$logTag Email registration check failed with expected error',
+          );
+          expect(failure.data, {'error': 'PostgrestException'});
+        },
+      );
     });
 
     group('Analytics Integration', () {

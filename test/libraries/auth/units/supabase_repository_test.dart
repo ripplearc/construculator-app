@@ -510,6 +510,7 @@ void main() {
 
     group('Sentry breadcrumbs', () {
       const personalEmail = 'new.engineer@construction.com';
+      const logTag = '[SupabaseRepositoryImpl]';
       late FakeSentryWrapper sentryWrapper;
 
       setUp(() {
@@ -549,8 +550,8 @@ void main() {
         await authRepository.createUserProfile(profileFor(personalEmail));
 
         expect(breadcrumbMessages(), [
-          '[SupabaseRepositoryImpl] Creating user profile',
-          '[SupabaseRepositoryImpl] User profile created successfully',
+          '$logTag Creating user profile',
+          '$logTag User profile created successfully',
         ]);
         expectNoPersonalValues();
       });
@@ -570,8 +571,8 @@ void main() {
         await authRepository.updateUserProfile(profileFor(personalEmail));
 
         expect(breadcrumbMessages(), [
-          '[SupabaseRepositoryImpl] Updating user profile',
-          '[SupabaseRepositoryImpl] User profile updated successfully',
+          '$logTag Updating user profile',
+          '$logTag User profile updated successfully',
         ]);
         expectNoPersonalValues();
       });
@@ -590,9 +591,36 @@ void main() {
         await authRepository.updateUserEmail(personalEmail);
 
         expect(breadcrumbMessages(), [
-          '[SupabaseRepositoryImpl] Updating user email',
+          '$logTag Updating user email',
         ]);
         expectNoPersonalValues();
+      });
+
+      test('updateUserPassword names the operation and outcome', () async {
+        fakeSupabaseWrapper.setCurrentUser(
+          FakeUser(
+            id: 'user-1',
+            email: 'old@example.com',
+            appMetadata: {},
+            userMetadata: {},
+            createdAt: clock.now().toIso8601String(),
+          ),
+        );
+
+        await authRepository.updateUserPassword('newpass123');
+
+        expect(breadcrumbMessages(), ['$logTag Updating user password']);
+      });
+
+      test('updateUserPassword warns that no user was found', () async {
+        fakeSupabaseWrapper.shouldReturnNullUser = true;
+
+        await authRepository.updateUserPassword('newpass123');
+
+        expect(breadcrumbMessages(), [
+          '$logTag Updating user password',
+          '$logTag No user found for password update',
+        ]);
       });
 
       test(
@@ -603,8 +631,8 @@ void main() {
           await authRepository.updateUserEmail(personalEmail);
 
           expect(breadcrumbMessages(), [
-            '[SupabaseRepositoryImpl] Updating user email',
-            '[SupabaseRepositoryImpl] No user found for email update',
+            '$logTag Updating user email',
+            '$logTag No user found for email update',
           ]);
           expectNoPersonalValues();
         },
