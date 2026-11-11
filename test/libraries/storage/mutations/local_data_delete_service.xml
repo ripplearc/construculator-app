@@ -18,6 +18,12 @@
         <regex pattern="await registration\.clearForUserChange\(_database\);" dotAll="true" id="delete.skip_clear_steps">
             <mutation text=""/>
         </regex>
+        <regex pattern="await _userSpace\.clearAll\(\);" dotAll="true" id="delete.skip_user_space_clear">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _userSpace\.clearAll\(\);\s*await _syncedData\.deleteSyncedDataAndUnsentEdits\(\);" dotAll="true" id="delete.clear_user_space_after_synced_data">
+            <mutation text="await _syncedData.deleteSyncedDataAndUnsentEdits(); await _userSpace.clearAll();"/>
+        </regex>
         <regex pattern="await _syncedData\.deleteSyncedDataAndUnsentEdits\(\);" dotAll="true" id="delete.skip_synced_data">
             <mutation text=""/>
         </regex>

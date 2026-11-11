@@ -2,6 +2,7 @@ import 'package:construculator/libraries/powersync/interfaces/powersync_database
 import 'package:construculator/libraries/powersync/interfaces/synced_data_service.dart';
 import 'package:construculator/libraries/powersync/models/local_only_table_registry.dart';
 import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
+import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 
 /// Thrown when the owner record cannot be read, so nothing is deleted.
@@ -17,8 +18,9 @@ class OwnerRecordUnreadableException implements Exception {
 /// The one routine every delete of local-only data uses.
 ///
 /// It sets the pending-delete flag, runs the clear step of every registered
-/// local-only table (a device setting is kept), deletes the synced data and the
-/// unsent edits, then removes the owner record (or replaces it with the
+/// local-only table (a device setting is kept) and the clear step of the whole
+/// user space of the storage library, deletes the synced data and the unsent
+/// edits, then removes the owner record (or replaces it with the
 /// arriving user) in one write. A failure after the flag is written leaves the
 /// flag set, so the next run finishes the delete.
 ///
@@ -30,6 +32,7 @@ class LocalDataDeleteService {
   final OwnerRecordStorageService _ownerRecords;
   final PowerSyncDatabaseWrapper _database;
   final SyncedDataService _syncedData;
+  final StorageService _userSpace;
   final Iterable<LocalOnlyTableRegistration> _registrations;
 
   /// [registrations] are the tables whose clear step runs; production uses
@@ -38,6 +41,7 @@ class LocalDataDeleteService {
     required this._ownerRecords,
     required this._database,
     required this._syncedData,
+    required this._userSpace,
     this._registrations = LocalOnlyTableRegistry.registrations,
   });
 
@@ -58,6 +62,7 @@ class LocalDataDeleteService {
     for (final registration in _registrations) {
       await registration.clearForUserChange(_database);
     }
+    await _userSpace.clearAll();
     await _syncedData.deleteSyncedDataAndUnsentEdits();
     await _finishRecord(arrivingUserId);
   }
