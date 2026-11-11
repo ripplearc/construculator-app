@@ -3779,41 +3779,37 @@
       }
     }
   },
-  "calculatorToastNeedsLengthTitle": "{key} needs a length, not a weight.",
+  "calculatorToastNeedsLengthTitle": "{key} takes a length, not {kind}.",
   "@calculatorToastNeedsLengthTitle": {
-    "description": "Title of the toast when a weight unit is pressed under a dimension key (UX Design Doc Section 5.2, '<Key> needs a length')",
+    "description": "Title of the red Alert when a unit that is not a length is pressed under a dimension key, in either key order (UX Design Doc Section 5.2; product decision of 13 November 2026: the title names the kind of the unit pressed — weight, area, volume or board feet)",
     "placeholders": {
       "key": {
         "type": "String",
         "example": "Width"
+      },
+      "kind": {
+        "type": "String",
+        "example": "board feet"
+      }
+    }
+  },
+  "calculatorUnitKind": "{kind, select, weight{weight} area{area} volume{volume} boardFeet{board feet} other{{kind}}}",
+  "@calculatorUnitKind": {
+    "description": "The kind of a calculator unit named in the '<Key> takes a length, not <kind>' Alert: weight, area, volume or board feet",
+    "placeholders": {
+      "kind": {
+        "type": "String",
+        "example": "weight"
       }
     }
   },
   "calculatorToastNeedsLengthBody": "Press ⌫ to remove {unit}, then press Feet or Inch.",
   "@calculatorToastNeedsLengthBody": {
-    "description": "Body of the '<Key> needs a length' toast (UX Design Doc Section 5.2: 'Press ⌫ to remove Lbs, then press Feet or Inch.'); unit is the face of the key that was pressed",
+    "description": "Body of the '<Key> takes a length' Alert, one text for both key orders (UX Design Doc Section 5.2; product decision of 13 November 2026); unit is the face of the key that was pressed",
     "placeholders": {
       "unit": {
         "type": "String",
-        "example": "Lbs"
-      }
-    }
-  },
-  "calculatorToastTailNeedsLengthBody": "{key} takes lengths and not {unit}. Press a length unit for the {tail}, or backspace to remove it.",
-  "@calculatorToastTailNeedsLengthBody": {
-    "description": "Body of the '<Key> needs a length' toast after a number typed behind a finished length (UX Design Doc Section 5.2)",
-    "placeholders": {
-      "key": {
-        "type": "String",
-        "example": "Width"
-      },
-      "unit": {
-        "type": "String",
-        "example": "pounds"
-      },
-      "tail": {
-        "type": "String",
-        "example": "8"
+        "example": "Bd Ft"
       }
     }
   },

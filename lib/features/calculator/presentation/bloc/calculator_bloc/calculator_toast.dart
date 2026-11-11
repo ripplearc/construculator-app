@@ -57,31 +57,28 @@ final class CalculatorCannotAppendUnitToast extends CalculatorToast {
   List<Object?> get props => [value, unit];
 }
 
-/// "`<Key>` needs a length": the weight [unit] under the dimension [key]
-/// (Section 5.2); [tail] is the number typed after a finished length, which
-/// a length unit would finish, or `null`.
+/// "`<Key>` takes a length, not `<kind>`": the [unit] that is not a length
+/// under the dimension [key] (Section 5.2), on fresh entry as on a reopened
+/// chip, and after a finished length (Width 18 [Feet] 8 [Lbs]) alike: one
+/// message for both key orders, whose title names the kind of the unit
+/// pressed, weight, area, volume or board feet (product decision of 13
+/// November 2026).
 final class CalculatorNeedsLengthToast extends CalculatorToast {
   /// The id of the dimension key.
   final String key;
 
-  /// The weight unit that was refused.
+  /// The unit that was refused.
   final Unit unit;
 
-  /// The digits typed after the finished length, or `null`.
-  final String? tail;
-
-  const CalculatorNeedsLengthToast({
-    required this.key,
-    required this.unit,
-    this.tail,
-  });
+  const CalculatorNeedsLengthToast({required this.key, required this.unit});
 
   @override
-  List<Object?> get props => [key, unit, tail];
+  List<Object?> get props => [key, unit];
 }
 
 /// "`<Key>` keeps `<value>`": [unit] pressed again under the dimension
-/// [key], which cannot hold an area or a volume (Section 5.2).
+/// [key], which cannot hold an area or a volume (Section 5.2), on fresh
+/// entry as on a reopened chip.
 final class CalculatorKeepsLengthToast extends CalculatorToast {
   /// The id of the dimension key.
   final String key;

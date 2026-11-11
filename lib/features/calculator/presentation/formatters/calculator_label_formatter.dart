@@ -366,6 +366,13 @@ class CalculatorLabelFormatter {
   /// The unit spelled out for a toast ("yards", "pounds"; Section 5.2).
   String unitName(Unit unit) => l10n.calculatorUnitName(unit.name);
 
+  /// The kind of [unit] for "`<Key>` takes a length, not `<kind>`": weight,
+  /// area, volume, or board feet for the lumber unit (Section 5.2; product
+  /// decision of 13 November 2026).
+  String unitKind(Unit unit) => l10n.calculatorUnitKind(
+    unit == Unit.boardFoot ? 'boardFeet' : unit.dimension.name,
+  );
+
   /// The face of the key that presses [unit], for a toast that points at
   /// the key ("Press ⌫ to remove Lbs"; Section 5.2): the Unit group's keys
   /// by their localized labels, and a unit column key by its spelled-out
@@ -388,8 +395,8 @@ class CalculatorLabelFormatter {
     CalculatorResultRemovedToast() => null,
     CalculatorCannotAppendUnitToast(:final unit) =>
       l10n.calculatorToastCannotAppendTitle(unitName(unit)),
-    CalculatorNeedsLengthToast(:final key) =>
-      l10n.calculatorToastNeedsLengthTitle(displayLabel(key)),
+    CalculatorNeedsLengthToast(:final key, :final unit) =>
+      l10n.calculatorToastNeedsLengthTitle(displayLabel(key), unitKind(unit)),
     CalculatorKeepsLengthToast(:final key, :final value) =>
       l10n.calculatorToastKeepsLengthTitle(displayLabel(key), value),
   };
@@ -411,14 +418,8 @@ class CalculatorLabelFormatter {
     CalculatorResultRemovedToast(keys: []) => '',
     CalculatorCannotAppendUnitToast(:final value, :final unit) =>
       l10n.calculatorToastCannotAppendBody(value, unitName(unit)),
-    CalculatorNeedsLengthToast(:final unit, tail: null) =>
+    CalculatorNeedsLengthToast(:final unit) =>
       l10n.calculatorToastNeedsLengthBody(unitKeyFace(unit)),
-    CalculatorNeedsLengthToast(:final key, :final unit, :final tail?) =>
-      l10n.calculatorToastTailNeedsLengthBody(
-        displayLabel(key),
-        unitName(unit),
-        tail,
-      ),
     CalculatorKeepsLengthToast(:final key, :final unit, :final value) =>
       l10n.calculatorToastKeepsLengthBody(
         unitName(unit),
