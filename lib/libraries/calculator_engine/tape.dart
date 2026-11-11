@@ -275,11 +275,13 @@ final class TapeChanged extends TapeOutcome {
   /// usually does.
   final TapeNotice? notice;
 
-  /// The key of the result chip an edit removed, with
-  /// [TapeNotice.resultRemoved]; `null` otherwise.
-  final String? removed;
+  /// The keys of the result chips an edit removed, in tape order, with
+  /// [TapeNotice.resultRemoved]; empty otherwise. One edit can remove more
+  /// than one result (Section 5.5: the message names both, or the first
+  /// and how many more).
+  final List<String> removed;
 
-  const TapeChanged(this.tape, {this.notice, this.removed});
+  const TapeChanged(this.tape, {this.notice, this.removed = const []});
 
   @override
   List<Object?> get props => [tape, notice, removed];
@@ -1650,12 +1652,16 @@ class Tape extends Equatable {
   /// 4.6): 5 + [ATAN] 16 ÷ 12 = is Calc 58.13°.
   TapeOutcome pressEquals() {
     if (editing != null) {
-      return _leavingEdit(
-        (sealed) => switch (sealed.pressEquals()) {
-          final TapeChanged landed => landed,
-          TapeOutcome() => TapeChanged(sealed),
-        },
-      );
+      final closed = _withFractionClosedAsInches();
+      if (closed._unfinished case final refusal?) return refusal;
+      final (:tape, :removed) = closed._sealedReporting();
+      if (removed.isNotEmpty) {
+        return _changed(tape, removed: removed);
+      }
+      return switch (tape.pressEquals()) {
+        final TapeChanged landed => landed,
+        TapeOutcome() => TapeChanged(tape),
+      };
     }
     if (openBracket != null) {
       return switch (closeBracket()) {
@@ -1959,7 +1965,7 @@ class Tape extends Equatable {
     final activeIndex = _activeIndex;
     if (activeIndex == index) return _leavingEdit(TapeChanged.new);
     var tape = this;
-    String? removed;
+    var removed = const <String>[];
     if (activeIndex != null) {
       final current = chips[activeIndex] as ValueChip;
       if (activeIndex == chips.length - 1 &&
@@ -1973,11 +1979,14 @@ class Tape extends Equatable {
         (tape: tape, removed: removed) = closed._sealedReporting();
       }
     }
-    final tapped = tape.chips[index] as ValueChip;
+    // The seal may have removed results before the tapped chip, so it is
+    // found again by identity, never by the index the tap carried.
+    final tapped = chips[index];
+    final found = tape.chips.indexWhere((chip) => identical(chip, tapped));
     return _changed(
       tape._replaceChipAt(
-        index,
-        tape._reactivated(tapped).copyWith(isEditing: true),
+        found,
+        tape._reactivated(tapped as ValueChip).copyWith(isEditing: true),
       ),
       removed: removed,
     );
@@ -1988,7 +1997,7 @@ class Tape extends Equatable {
     if (closed._unfinished case final refusal?) return refusal;
     final (:tape, :removed) = closed._sealedReporting();
     return switch (key(tape)) {
-      TapeChanged(tape: final after, :final notice) when removed != null =>
+      TapeChanged(tape: final after, :final notice) when removed.isNotEmpty =>
         _changed(after, notice: notice, removed: removed),
       final outcome => outcome,
     };
@@ -2009,44 +2018,46 @@ class Tape extends Equatable {
   static TapeOutcome _changed(
     Tape tape, {
     TapeNotice? notice,
-    String? removed,
+    List<String> removed = const [],
   }) => TapeChanged(
     tape,
-    notice: removed != null ? TapeNotice.resultRemoved : notice,
+    notice: removed.isNotEmpty ? TapeNotice.resultRemoved : notice,
     removed: removed,
   );
 
-  // The results after the chip at [index] rebuilt from the chips before
-  // each; a chip that does not read yet (emptied, a fraction half typed)
-  // gives them no answer, so they stand. A result the chips give no answer
-  // for is kept as it stands while
-  // the edit is still open — the display draws it dashed, and the next key
-  // may give it an answer again — and once the edit is sealed
-  // ([removesStale]) a Calc whose chain fails lands the error chip = would,
-  // and any other is removed, by name: the first one removed is the one
-  // named. An error chip is rebuilt from its chain the same way: the chain
-  // repaired lands its Calc in its place, still failing it keeps its error.
-  // The error chip ÷ 0 lands before its reopened divisor stands as it is.
-  ({Tape tape, String? removed}) _recomputedAfter(
+  ({Tape tape, List<String> removed}) _recomputedAfter(
     int index, {
     required bool removesStale,
   }) {
-    if (index >= chips.length - 1) return (tape: this, removed: null);
+    if (index >= chips.length - 1) return (tape: this, removed: const []);
     return _recomputedFrom(index + 1, removesStale: removesStale);
   }
 
-  ({Tape tape, String? removed}) _recomputedFrom(
+  ({Tape tape, List<String> removed}) _recomputedFrom(
     int first, {
     required bool removesStale,
   }) {
     final kept = <TapeChip>[...chips.sublist(0, first)];
-    String? removed;
+    final removed = <String>[];
+    final broken = <int>{};
     for (final (offset, chip) in chips.sublist(first).indexed) {
+      final index = first + offset;
       final TapeChip? rebuilt;
       switch (chip) {
+        case ResultChip(key: calcKey)
+            when removesStale && _chainOf(index).any(broken.contains):
+          rebuilt = null;
+        case final ResultChip result
+            when removesStale &&
+                broken.contains(index - 1) &&
+                TrigFunction.values.any(
+                  (function) => _isAnswerOf(result, function),
+                ):
+          rebuilt = null;
         case final ResultChip result:
           rebuilt = _with(kept)._rebuilt(result, failsAsError: removesStale);
-        case final ErrorChip error when !_leadsIntoAnOperator(first + offset):
+        case final ErrorChip error
+            when !_isDivisionByZeroBeforeItsDivisor(index):
           rebuilt = _with(kept)._rebuiltError(error);
         default:
           kept.add(chip);
@@ -2057,19 +2068,35 @@ class Tape extends Equatable {
       } else if (!removesStale) {
         kept.add(chip);
       } else if (chip case ResultChip(:final key)) {
-        removed ??= key;
+        broken.add(index);
+        removed.add(key);
       }
     }
     return (tape: _with(kept), removed: removed);
   }
 
-  bool _leadsIntoAnOperator(int index) =>
+  Iterable<int> _chainOf(int index) sync* {
+    for (var at = index - 1; at >= 0; at--) {
+      yield at;
+      final chip = chips[at];
+      final leadsOn = switch (chip) {
+        ValueChip(:final operator) => operator != null,
+        BracketChip(:final operator) => operator != null,
+        ResultChip(:final operator) => operator != null,
+        ErrorChip() => false,
+      };
+      if (!leadsOn) return;
+    }
+  }
+
+  bool _isDivisionByZeroBeforeItsDivisor(int index) =>
+      chips[index] == const ErrorChip(CalculationError.divisionByZero) &&
       index + 1 < chips.length &&
       chips[index + 1] is ValueChip &&
-      (chips[index + 1] as ValueChip).operator != null;
+      (chips[index + 1] as ValueChip).operator == Operator.divide;
 
   TapeChip? _rebuiltError(ErrorChip error) => switch (runningTotal) {
-    ChainFailed(:final error) => ErrorChip(error),
+    ChainFailed(:final error) => ErrorChip(error, replacesAResult: true),
     ChainValue(:final value, isCalculation: true) => ResultChip(
       key: calcKey,
       value: value,
@@ -2085,10 +2112,14 @@ class Tape extends Equatable {
       return switch (runningTotal) {
         ChainValue(:final value, isCalculation: true) => ResultChip(
           key: calcKey,
-          value: value,
+          value: _inTheReadingOf(result, value),
           operator: result.operator,
+          readIn: result.readIn,
         ),
-        ChainFailed(:final error) when failsAsError => ErrorChip(error),
+        ChainFailed(:final error) when failsAsError => ErrorChip(
+          error,
+          replacesAResult: true,
+        ),
         _ => null,
       };
     }
@@ -2098,8 +2129,9 @@ class Tape extends Equatable {
       if (answer.key == result.key) {
         return ResultChip(
           key: result.key,
-          value: answer.value,
+          value: _inTheReadingOf(result, answer.value),
           operator: result.operator,
+          readIn: result.readIn,
         );
       }
     }
@@ -2121,6 +2153,33 @@ class Tape extends Equatable {
     }
     return null;
   }
+
+  Quantity _inTheReadingOf(ResultChip result, Quantity value) {
+    if ((value, result.value) case (
+      final Angle angle,
+      Angle(:final spelling),
+    )) {
+      return angle.spelledAs(spelling);
+    }
+    final unit = result.readIn;
+    if (unit == null || unit == _unitOf(value)) return value;
+    return switch (ladder.press(
+      tokens: ladder.speller.spell(value),
+      value: value,
+      key: unit,
+    )) {
+      UnitKeyConverted(value: final converted) => converted,
+      UnitKeyOutcome() => value,
+    };
+  }
+
+  static Unit? _unitOf(Quantity value) => switch (value) {
+    Length(:final unit) ||
+    Area(:final unit) ||
+    Volume(:final unit) ||
+    Weight(:final unit) => unit,
+    Angle() || Scalar() => null,
+  };
 
   Tape _replaceChipAt(int index, TapeChip chip) =>
       _with([...chips.sublist(0, index), chip, ...chips.sublist(index + 1)]);
@@ -2237,7 +2296,12 @@ class Tape extends Equatable {
       UnitKeyConverted(:final value) => TapeChanged(
         _with([
           ...chips.sublist(0, chips.length - 1),
-          ResultChip(key: result.key, value: value, operator: result.operator),
+          ResultChip(
+            key: result.key,
+            value: value,
+            operator: result.operator,
+            readIn: unit,
+          ),
         ]),
       ),
       UnitKeyRaised() => const TapeUnitRefused(
@@ -2249,10 +2313,10 @@ class Tape extends Equatable {
 
   Tape _sealed() => _sealedReporting().tape;
 
-  ({Tape tape, String? removed}) _sealedReporting() {
+  ({Tape tape, List<String> removed}) _sealedReporting() {
     final closed = _withFieldClosed();
     final chip = closed.active;
-    if (chip == null) return (tape: this, removed: null);
+    if (chip == null) return (tape: this, removed: const []);
     return closed._replacedActive(
       chip.copyWith(isActive: false, isEditing: false),
     );
@@ -2286,11 +2350,9 @@ class Tape extends Equatable {
 
   Tape _replaceActive(ValueChip chip) => _replacedActive(chip).tape;
 
-  // The active chip replaced by [chip]; the results after it follow, and a
-  // stale one goes only once the chip is sealed.
-  ({Tape tape, String? removed}) _replacedActive(ValueChip chip) {
+  ({Tape tape, List<String> removed}) _replacedActive(ValueChip chip) {
     final index = _activeIndex;
-    if (index == null) return (tape: append(chip), removed: null);
+    if (index == null) return (tape: append(chip), removed: const []);
     return _replaceChipAt(
       index,
       chip,

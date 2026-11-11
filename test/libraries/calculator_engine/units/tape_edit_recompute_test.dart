@@ -22,6 +22,7 @@ void main() {
     'ft' => unit(tape, Unit.foot),
     'in' => unit(tape, Unit.inch),
     'yd' => unit(tape, Unit.yard),
+    'm' => unit(tape, Unit.metre),
     'lbs' => unit(tape, Unit.pound),
     '+' => tape.pressOperator(Operator.add),
     '×' => tape.pressOperator(Operator.multiply),
@@ -33,6 +34,7 @@ void main() {
     '(' => tape.pressBracket(),
     '[SIN]' => tape.pressTrigKey(TrigFunction.sine),
     '[ASIN]' => tape.pressTrigKey(TrigFunction.arcsine),
+    '[DMS]' => tape.pressDmsKey(),
     _ when key.startsWith('tap:') => tape.tapChip(int.parse(key.substring(4))),
     _ when key.startsWith('[') => tape.pressFunctionKey(
       key.substring(1, key.length - 1),
@@ -241,12 +243,29 @@ void main() {
             'while the chip is empty',
       );
 
-      final deleted = emptied.backspace();
-      expect(deleted, isA<TapeChanged>());
-      final TapeChanged(:tape, :notice, :removed) = deleted as TapeChanged;
-      expect(texts(tape), isEmpty);
+      final retyped = press(emptied, '2');
+      expect(
+        texts(retyped),
+        ['Arcsine2', 'Arcsine0°'],
+        reason: 'no answer for 2, so the old one stands while the edit is open',
+      );
+      final sealed = retyped.tapChip(0);
+      expect(sealed, isA<TapeChanged>());
+      final TapeChanged(:tape, :notice, :removed) = sealed as TapeChanged;
+      expect(texts(tape), ['Arcsine2']);
       expect(notice, TapeNotice.resultRemoved);
-      expect(removed, 'Arcsine');
+      expect(removed, ['Arcsine']);
+      final chained = press(const Tape(), '0 . 5 [ASIN] × 2 = tap:0 ⌫ ⌫ ⌫ 2');
+      final TapeChanged(tape: after, removed: gone) =
+          chained.tapChip(0) as TapeChanged;
+      expect(
+        texts(after),
+        ['Arcsine2', '×2'],
+        reason:
+            'the Calc computed from the removed Arcsine goes with it, never '
+            'rebuilt from the 2 alone (decision tree row 274)',
+      );
+      expect(gone, ['Arcsine', 'Calc']);
     });
 
     test('a named answer the new value gives none for stands while the edit '
@@ -276,7 +295,7 @@ void main() {
       final TapeChanged(:tape, :notice, :removed) = sealed as TapeChanged;
       expect(texts(tape), ['Rise6in', 'Run0in']);
       expect(notice, TapeNotice.resultRemoved);
-      expect(removed, pitchKey);
+      expect(removed, [pitchKey]);
     });
 
     test('a bare number in a + chain with units fails the chain for a '
@@ -327,7 +346,7 @@ void main() {
         final TapeChanged(:tape, :notice, :removed) = seal as TapeChanged;
         expect(texts(tape), ['3', '+2ft', 'dimensionError']);
         expect(notice, isNull);
-        expect(removed, isNull);
+        expect(removed, isEmpty);
       }
     });
 
@@ -343,7 +362,7 @@ void main() {
       expect(outcome, isA<TapeChanged>());
       final TapeChanged(:tape, :removed) = outcome as TapeChanged;
       expect(texts(tape), ['Rise6in', 'Run0in']);
-      expect(removed, DeterministicRules.pitchRiseKey);
+      expect(removed, [DeterministicRules.pitchRiseKey]);
       expect(tape.editing!.index, 0);
     });
 
@@ -370,12 +389,187 @@ void main() {
 
     test('a Calc left with a lone operand after a chip is removed is no '
         'calculation, so it goes and is named', () {
-      final outcome = press(const Tape(), '5 + 3 = tap:0 ✕').backspace();
+      final outcome = press(const Tape(), '5 + 3 = tap:1 ✕').backspace();
 
       expect(outcome, isA<TapeChanged>());
       final TapeChanged(:tape, :removed) = outcome as TapeChanged;
-      expect(texts(tape), ['+3']);
-      expect(removed, 'Calc');
+      expect(texts(tape), ['5']);
+      expect(removed, ['Calc']);
+    });
+
+    test('a Calc that fails in the middle of a chain at the seal takes every '
+        'later result of the chain with it, by name: nothing is computed '
+        'from part of a broken chain (B1; rule 4.8, Section 5.5)', () {
+      final edited = press(
+        const Tape(),
+        '1 0 ft + 2 ft = + 3 ft = + 4 ft = tap:1 ⌫',
+      );
+      expect(texts(edited), [
+        '10ft',
+        '+2',
+        'Calc12ft 0in',
+        '+3ft',
+        'Calc15ft 0in',
+        '+4ft',
+        'Calc19ft 0in',
+      ], reason: 'while the edit is open every result stands');
+      final sealed = edited.pressEquals();
+      expect(sealed, isA<TapeChanged>());
+      final TapeChanged(:tape, :notice, :removed) = sealed as TapeChanged;
+      expect(texts(tape), ['10ft', '+2', 'dimensionError', '+3ft', '+4ft']);
+      expect(notice, TapeNotice.resultRemoved);
+      expect(removed, [
+        'Calc',
+        'Calc',
+      ], reason: 'both removed results are named');
+    });
+
+    test('an error chip a seal left in the middle of a chain is rebuilt once '
+        'the value is repaired, as one at the end is; only the error ÷ 0 '
+        'lands before its reopened divisor stands (B2; rule 4.12)', () {
+      final broken = press(
+        const Tape(),
+        '1 0 ft + 2 ft = + 3 ft = tap:1 ⌫ tap:1',
+      );
+      expect(texts(broken), ['10ft', '+2', 'dimensionError', '+3ft']);
+      final repaired = press(broken, 'tap:1 ft tap:1');
+      expect(texts(repaired), ['10ft', '+2ft', 'Calc12ft 0in', '+3ft']);
+      expect(texts(press(repaired, '=')), [
+        '10ft',
+        '+2ft',
+        'Calc12ft 0in',
+        '+3ft',
+        'Calc15ft 0in',
+      ]);
+      final divided = press(const Tape(), '5 ÷ 0 = 2 tap:0 ⌫ 6 tap:0');
+      expect(texts(divided), ['6', 'divisionByZero', '÷2']);
+    });
+
+    test('a tap finds its chip again after the seal removed a result before '
+        'it, so the tapped chip opens and nothing throws (B3)', () {
+      final pitched = land(
+        press(const Tape(), '[Rise] 6 in [Run] 1 2 in'),
+        DeterministicRules.pitchRiseKey,
+      );
+      final stacked = press(
+        pitched,
+        '[Length] 1 0 ft [Width] 2 ft tap:1 ✕ 0 in',
+      );
+      expect(stacked.chips, hasLength(5));
+      final width = press(stacked, 'tap:4');
+      expect(texts(width), ['Rise6in', 'Run0in', 'Length10ft', 'Width2ft']);
+      expect(
+        width.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 3),
+      );
+      final length = press(stacked, 'tap:3');
+      expect(texts(length), ['Rise6in', 'Run0in', 'Length10ft', 'Width2ft']);
+      expect(
+        length.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 2),
+      );
+      final chained = press(
+        const Tape(),
+        '1 0 ft + 2 ft = + 3 ft = + 4 ft = tap:1 ⌫ tap:5',
+      );
+      expect(texts(chained), ['10ft', '+2', 'dimensionError', '+3ft', '+4ft']);
+      expect(
+        chained.editing,
+        isA<({int index, ValueChip chip})>().having((e) => e.index, 'index', 4),
+      );
+    });
+
+    test('a Calc whose chain ran through a named result goes with it when '
+        'that result is removed, never rebuilt with a new number from the '
+        'chips left (B4; Section 5.5)', () {
+      final diagonal = land(
+        press(const Tape(), '[Length] 3 ft [Width] 4 ft'),
+        'Diagonal',
+      );
+      final summed = press(diagonal, '+ 1 ft =');
+      expect(texts(summed), [
+        'Length3ft',
+        'Width4ft',
+        'Diagonal5ft',
+        '+1ft',
+        'Calc6ft 0in',
+      ]);
+      final outcome = press(summed, 'tap:1 ✕').backspace();
+      expect(outcome, isA<TapeChanged>());
+      final TapeChanged(:tape, :removed) = outcome as TapeChanged;
+      expect(texts(tape), ['Length3ft', '+1ft']);
+      expect(removed, ['Diagonal', 'Calc']);
+    });
+
+    test('a rebuilt result keeps the unit a unit key gave it and the spelling '
+        'an angle was given, so a chip opened and closed unchanged leaves the '
+        'tape as it was (B5; Section 7, rules 4.3 and 4.8)', () {
+      final converted = press(const Tape(), '1 2 ft × 5 ft = in');
+      expect(texts(converted), ['12ft', '×5ft', 'Calc8,640in²']);
+      expect(texts(press(converted, 'tap:0 tap:0')), texts(converted));
+      expect(texts(press(converted, 'tap:0 ⌫ ⌫ ⌫ 2 4 ft tap:0')), [
+        '24ft',
+        '×5ft',
+        'Calc17,280in²',
+      ]);
+      final area = press(
+        land(press(const Tape(), '[Length] 2 2 ft [Width] 1 8 ft'), 'Area'),
+        'in',
+      );
+      expect(texts(area).last, 'Area57,024in²');
+      expect(texts(press(area, 'tap:0 tap:0')), texts(area));
+      final spelled = press(const Tape(), '1 2 ÷ 2 3 = [ASIN] [DMS]');
+      expect(texts(spelled).last, 'Arcsine31°26\'56"');
+      expect(texts(press(spelled, 'tap:0 tap:0')), texts(spelled));
+    });
+
+    test('a Calc that fails at the seal breaks the chain for a later Calc '
+        'that would add up the chips after it: that Calc is removed and '
+        'named, never computed from part of the chain (B1)', () {
+      final outcome = press(
+        const Tape(),
+        '1 0 ft + 2 ft = + 3 ft + 4 ft = tap:1 ⌫',
+      ).pressEquals();
+
+      expect(outcome, isA<TapeChanged>());
+      final TapeChanged(:tape, :removed) = outcome as TapeChanged;
+      expect(texts(tape), ['10ft', '+2', 'dimensionError', '+3ft', '+4ft']);
+      expect(texts(tape), isNot(contains('Calc7ft 0in')));
+      expect(removed, ['Calc']);
+    });
+
+    test('a ÷ 0 error a seal left before a + chip is rebuilt once the '
+        'divisor is repaired, unlike the ÷ 0 error that lands before its '
+        'reopened divisor (B2; rule 4.12)', () {
+      final broken = press(const Tape(), '1 0 ÷ 2 = + 3 = tap:1 ⌫ 0 =');
+      expect(texts(broken), ['10', '÷0', 'divisionByZero', '+3']);
+
+      expect(texts(press(broken, 'tap:1 ⌫ 2 tap:1')), [
+        '10',
+        '÷2',
+        'Calc5',
+        '+3',
+      ]);
+      expect(texts(press(broken, 'tap:1 ⌫ 2 =')), [
+        '10',
+        '÷2',
+        'Calc5',
+        '+3',
+        'Calc8',
+      ]);
+      expect(texts(press(const Tape(), '5 ÷ 0 = 2 tap:0 ⌫ 6 tap:0')), [
+        '6',
+        'divisionByZero',
+        '÷2',
+      ]);
+    });
+
+    test('a Calc read as degrees, minutes and seconds keeps that spelling '
+        'when a chip before it is opened and closed unchanged (B5)', () {
+      final spelled = press(const Tape(), '1 2 ÷ 2 3 = [ASIN] × 2 = [DMS]');
+      expect(texts(spelled).last, 'Calc62°53\'53"');
+
+      expect(texts(press(spelled, 'tap:0 tap:0')), texts(spelled));
     });
 
     test('⌫ on an emptied edit deletes the chip, and a result that cannot '
@@ -386,7 +580,7 @@ void main() {
       final TapeChanged(:tape, :notice, :removed) = outcome as TapeChanged;
       expect(texts(tape), ['Length22ft']);
       expect(notice, TapeNotice.resultRemoved);
-      expect(removed, 'Area');
+      expect(removed, ['Area']);
       expect(tape.active, isNull);
     });
 
@@ -397,6 +591,105 @@ void main() {
       expect(texts(tape), ['Length22ft', 'Width20ft', 'Area440ft²']);
       expect(tape.editing!.index, 0);
       expect((tape.chips[1] as ValueChip).isActive, isFalse);
+    });
+  });
+  group('Tape — what an edit leaves behind it (rule 4.8, Section 5)', () {
+    test('a chain an edit broke stays broken: the steps after its error chip '
+        'compute nothing, on the sealing = and on every = after it', () {
+      final broken = press(
+        const Tape(),
+        '1 0 ft + 2 ft = + 3 ft = + 4 ft = tap:1 ⌫ =',
+      );
+      expect(texts(broken), ['10ft', '+2', 'dimensionError', '+3ft', '+4ft']);
+      expect(broken.runningTotal, const ChainEmpty());
+      expect(broken.pressEquals(), isA<TapeRefused>());
+    });
+
+    test('the = that seals an edit which removed results lands nothing in '
+        'the same press, and names what went', () {
+      final edited = press(
+        const Tape(),
+        '[Rise] 6 in [Run] 1 2 in [Pitch] × 2 = tap:1 ✕ 0 in',
+      );
+      final sealed = edited.pressEquals();
+      expect(
+        sealed,
+        isA<TapeChanged>()
+            .having((c) => c.notice, 'notice', TapeNotice.resultRemoved)
+            .having((c) => c.removed, 'removed', hasLength(2)),
+      );
+      expect((sealed as TapeChanged).tape.chips.last, isNot(isA<ResultChip>()));
+    });
+
+    test('a rebuilt result reads in the unit its chain answers in, unless a '
+        'unit key converted it, which the rebuild keeps', () {
+      final metres = press(const Tape(), '1 0 m × 2 ft = tap:1 ✕ 2 m tap:1');
+      expect(texts(metres).last, 'Calc20m²');
+      final mixed = press(const Tape(), '1 0 ft + 2 ft = tap:0 ✕ 1 0 m tap:0');
+      expect(
+        texts(mixed).last,
+        texts(press(const Tape(), '1 0 m + 2 ft =')).last,
+      );
+      final converted = press(
+        const Tape(),
+        '1 0 ft + 2 ft = m tap:0 ✕ 2 0 ft tap:0',
+      );
+      expect((converted.chips.last as ResultChip).readIn, Unit.metre);
+      expect(texts(converted).last, startsWith('Calc6.7'));
+      expect(texts(converted).last, endsWith('m'));
+    });
+
+    test('a trig answer whose operand went goes with it: 0.5 [ASIN] [SIN] '
+        'with the 0.5 edited to 2 removes both answers', () {
+      final edited = press(const Tape(), '0 . 5 [ASIN] [SIN] tap:0 ✕ 2');
+      final sealed = edited.tapChip(0);
+      expect(
+        sealed,
+        isA<TapeChanged>().having((c) => c.removed, 'removed', hasLength(2)),
+      );
+      expect((sealed as TapeChanged).tape.chips, hasLength(1));
+    });
+
+    test('an error an edit left where a result stood keeps its mark through '
+        'a later edit elsewhere, so the result still comes back once the '
+        'divisor is repaired', () {
+      final twice = press(
+        const Tape(),
+        '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 tap:1 tap:0 ✕ 2 0 tap:0 tap:1 ✕ 5 tap:1',
+      );
+      expect(texts(twice), ['20', '÷5', 'Calc4', '÷5']);
+    });
+
+    test('a trig answer taken on a Calc that an edit made fail goes with it: '
+        '1 ÷ 2 = [ASIN] with the ÷ 2 edited to ÷ 0', () {
+      final edited = press(const Tape(), '1 ÷ 2 = [ASIN] tap:1 ✕ 0');
+      final sealed = edited.tapChip(1);
+      expect(
+        sealed,
+        isA<TapeChanged>().having((c) => c.removed, 'removed', ['Arcsine']),
+      );
+      expect(texts((sealed as TapeChanged).tape), [
+        '1',
+        '÷0',
+        'divisionByZero',
+      ]);
+    });
+
+    test('an error an edit left where a result stood reopens no divisor: '
+        'the ÷ after it stays the user\'s step, and the result comes back '
+        'once the value is repaired', () {
+      final broken = press(const Tape(), '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 tap:1');
+      expect(
+        broken.chips[2],
+        const ErrorChip(CalculationError.divisionByZero, replacesAResult: true),
+      );
+      final repaired = press(broken, 'tap:1 ✕ 5 tap:1');
+      expect(texts(repaired), ['10', '÷5', 'Calc2', '÷5']);
+      final byEquals = press(
+        const Tape(),
+        '1 0 ÷ 2 = ÷ 5 = tap:1 ✕ 0 = tap:1 ✕ 5 =',
+      );
+      expect(texts(byEquals), ['10', '÷5', 'Calc2', '÷5', 'Calc0.4']);
     });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/calculator_engine/entry_buffer.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
@@ -320,10 +321,19 @@ final class ResultChip extends TapeChip {
   /// The operator that leads into this chip when it continues a chain.
   final Operator? operator;
 
-  const ResultChip({required this.key, required this.value, this.operator});
+  /// The unit a unit key converted this answer to, kept when an edit
+  /// rebuilds it (rule 4.8); `null` for the unit the chain answered in.
+  final Unit? readIn;
+
+  const ResultChip({
+    required this.key,
+    required this.value,
+    this.operator,
+    this.readIn,
+  });
 
   @override
-  List<Object?> get props => [key, value, operator];
+  List<Object?> get props => [key, value, operator, readIn];
 }
 
 /// One chip that holds a whole bracket (term 2.22): the operator before it
@@ -396,8 +406,13 @@ final class ErrorChip extends TapeChip {
   /// What went wrong.
   final CalculationError error;
 
-  const ErrorChip(this.error);
+  /// Whether the chip stands where an edit's recompute found a result
+  /// failing (rule 4.8), so that a ÷ after it is a step of its own and never
+  /// read as a divisor ÷ 0 reopened (Section 5, "Division by zero").
+  final bool replacesAResult;
+
+  const ErrorChip(this.error, {this.replacesAResult = false});
 
   @override
-  List<Object?> get props => [error];
+  List<Object?> get props => [error, replacesAResult];
 }
