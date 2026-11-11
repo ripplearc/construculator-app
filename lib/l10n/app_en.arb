@@ -2348,165 +2348,153 @@
   },
   "unitSymbolPieces": "ea",
   "@unitSymbolPieces": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: ea",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: ea",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolMeters": "m",
   "@unitSymbolMeters": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: m",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: m",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolSquareMeters": "sqm",
   "@unitSymbolSquareMeters": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sqm",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: sqm",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolCubicMeters": "cbm",
   "@unitSymbolCubicMeters": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cbm",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: cbm",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolKilograms": "kg",
   "@unitSymbolKilograms": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: kg",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: kg",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolTons": "t",
   "@unitSymbolTons": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: t",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: t",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolLiters": "l",
   "@unitSymbolLiters": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: l",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: l",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolHours": "hr",
   "@unitSymbolHours": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: hr",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: hr",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolDays": "day",
   "@unitSymbolDays": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: day",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: day",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolBoxes": "bx",
   "@unitSymbolBoxes": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bx",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: bx",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolBags": "bag",
   "@unitSymbolBags": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bag",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: bag",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolRolls": "rl",
   "@unitSymbolRolls": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: rl",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: rl",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolSheets": "sht",
   "@unitSymbolSheets": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sht",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: sht",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolFeet": "ft",
   "@unitSymbolFeet": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: ft",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: ft",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolInches": "in",
   "@unitSymbolInches": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: in",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: in",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolYards": "yd",
   "@unitSymbolYards": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: yd",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: yd",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolLinearFeet": "lf",
   "@unitSymbolLinearFeet": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: lf",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: lf",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolSquareFeet": "sf",
   "@unitSymbolSquareFeet": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sf",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: sf",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolSquareYards": "sy",
   "@unitSymbolSquareYards": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sy",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: sy",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolSquares": "sq",
   "@unitSymbolSquares": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: sq",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: sq",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolCubicFeet": "cf",
   "@unitSymbolCubicFeet": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cf",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: cf",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolCubicYards": "cy",
   "@unitSymbolCubicYards": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: cy",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: cy",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolGallons": "gal",
   "@unitSymbolGallons": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: gal",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: gal",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolPounds": "lb",
   "@unitSymbolPounds": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: lb",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: lb",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolShortTons": "tn",
   "@unitSymbolShortTons": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: tn",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: tn",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolPairs": "pr",
   "@unitSymbolPairs": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: pr",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: pr",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolDozens": "dz",
   "@unitSymbolDozens": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: dz",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: dz",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolBundles": "bdl",
   "@unitSymbolBundles": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: bdl",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: bdl",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolPallets": "plt",
   "@unitSymbolPallets": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: plt",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: plt",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
   },
   "unitSymbolTubes": "tb",
   "@unitSymbolTubes": {
-    "description": "Short symbol of a unit of measurement, shown on the unit button and in the Select unit list: tb",
+    "description": "Short symbol of a unit of measurement, shown on the unit button and after a material rate: tb",
     "context": "https://www.figma.com/design/S9ZWgzqNNtZE9DeR5v97zh/Construculator-Visual-Design--Copy---Copy-?node-id=65687-157701"
-  },
-  "otherMaterialDetailsButton": "Other material details",
-  "@otherMaterialDetailsButton": {
-    "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
-  },
-  "brandLabel": "Brand",
-  "@brandLabel": {
-    "description": "Hint label for the brand dropdown in the other material details section"
-  },
-  "productLinkLabel": "Product link",
-  "@productLinkLabel": {
-    "description": "Hint label for the product link text field in the other material details section"
   },
   "labourTypeLabel": "Labour type*",
   "@labourTypeLabel": {
