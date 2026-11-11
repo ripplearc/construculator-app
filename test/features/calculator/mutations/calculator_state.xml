@@ -19,8 +19,8 @@
 
         <!-- RULE 2: the equals key is named by the leading suggestion whether
              or not = lands it -->
-        <regex pattern="String\? get equalsKeyId =&gt; switch \(equalsLands\) \{" dotAll="true" id="calculator_state.equals_key.names_what_is_not_landed">
-            <mutation text="String? get equalsKeyId =&gt; switch (suggestions.firstOrNull) {"/>
+        <regex pattern="return switch \(equalsLands\) \{" dotAll="true" id="calculator_state.equals_key.names_what_is_not_landed">
+            <mutation text="return switch (suggestions.firstOrNull) {"/>
         </regex>
 
         <!-- RULE (S1b 4/6, R3): the reopened divisor after ÷ 0 = keeps the
@@ -32,6 +32,13 @@
         <!-- RULE: the value row no longer reads Error on the reopened divisor -->
         <regex pattern="ValueChip\(\) =&gt; _readsTheReopenedDivisor,\s*_ =&gt; false,\s*\};" dotAll="true" id="calculator_state.value_reads_error.divisor_has_a_value">
             <mutation text="_ =&gt; false, };"/>
+        </regex>
+
+        <!-- RULE (S1c 3/5, R2): the equals key ignores an open edit, or reads
+             Update over a tape with no result and = over one with -->
+        <regex pattern="if \(tape\.editing != null\) return _hasAResult \? updateKey : null;" dotAll="true" id="calculator_state.equals_key.edit_ignored">
+            <mutation text=""/>
+            <mutation text="if (tape.editing != null) return _hasAResult ? null : updateKey;"/>
         </regex>
     </rules>
 

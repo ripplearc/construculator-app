@@ -3658,6 +3658,12 @@ abstract class AppLocalizations {
   /// **'Ans'**
   String get calculatorEqualsAns;
 
+  /// Face of the calculator equals key while a tape chip is reopened for edit and the tape has a result: the press finishes the edit and recomputes the result
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get calculatorEqualsUpdate;
+
   /// Text of the calculator suggestion strip when nothing applies yet
   ///
   /// In en, this message translates to:

@@ -152,6 +152,7 @@ class CalculatorLabelFormatter {
     'DMS' => l10n.calculatorKeyDms,
     Tape.calcKey => l10n.calculatorResultCalc,
     CalculatorState.ansKey => l10n.calculatorEqualsAns,
+    CalculatorState.updateKey => l10n.calculatorEqualsUpdate,
     DeterministicRules.areaKey => l10n.calculatorAnswerArea,
     DeterministicRules.diagonalKey => l10n.calculatorAnswerDiagonal,
     DeterministicRules.perimeterKey => l10n.calculatorAnswerPerimeter,

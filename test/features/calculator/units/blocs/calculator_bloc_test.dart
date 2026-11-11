@@ -955,7 +955,7 @@ void main() {
       );
     });
 
-    group('S1c 3/3: a tap on a chip of the tape (rule 4.8)', () {
+    group('S1c 3/5: a tap on a chip of the tape (rule 4.8)', () {
       Tape lengthWidthArea() {
         final typed = pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in');
         final area = const DeterministicRules()
@@ -963,6 +963,33 @@ void main() {
             .firstWhere((answer) => answer.key == 'Area');
         return (typed.landAnswer('Area', area.value) as TapeChanged).tape;
       }
+
+      test('the equals key reads Update while a chip is edited and the tape '
+          'has a result, and the = sign while it has none, where the press '
+          'still lands what the strip offers (B1; product decision of 13 '
+          'November 2026)', () {
+        final landed = lengthWidthArea();
+        expect(CalculatorState(tape: landed).equalsKeyId, isNull);
+        final edited = (landed.tapChip(1) as TapeChanged).tape;
+        expect(
+          CalculatorState(tape: edited).equalsKeyId,
+          CalculatorState.updateKey,
+        );
+        final typed = pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in');
+        expect(
+          CalculatorState(tape: typed).equalsKeyId,
+          DeterministicRules.areaKey,
+        );
+        final editedFirst = (typed.tapChip(0) as TapeChanged).tape;
+        final state = CalculatorState(tape: editedFirst);
+        expect(state.equalsKeyId, isNull);
+        expect(state.equalsLands, isNotNull);
+        expect(
+          state.equalsLands!.key,
+          DeterministicRules.areaKey,
+          reason: '= still lands Area while the key shows the = sign',
+        );
+      });
 
       blocTest<CalculatorBloc, CalculatorState>(
         'a tapped chip reaches the tape as tapChip, and nothing else',
