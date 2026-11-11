@@ -11,8 +11,9 @@ class SharedPrefService implements StorageService {
 
   final PrefixedPreferences _preferences;
 
-  /// A user space over [preferences], which must use [keyPrefix].
-  SharedPrefService({required this._preferences});
+  /// A user space over [preferences], whose prefix must be [keyPrefix].
+  SharedPrefService({required this._preferences})
+    : assert(_preferences.prefix == keyPrefix);
 
   @override
   Future<void> initialize() async {}

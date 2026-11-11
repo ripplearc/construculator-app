@@ -17,6 +17,18 @@ void main() {
       );
     });
 
+    test('refuses preferences that use another prefix', () {
+      expect(
+        () =>
+            // ignore: no_direct_instantiation, reason: the constructor guard is under test
+            SharedPrefService(
+              // ignore: no_direct_instantiation, reason: the real preferences wrapper is under test
+              preferences: PrefixedPreferences(prefix: 'device.'),
+            ),
+        throwsAssertionError,
+      );
+    });
+
     test('reads nothing before anything is saved', () async {
       expect(await userSpace.getData<String>('last_used_unit.a'), isNull);
     });

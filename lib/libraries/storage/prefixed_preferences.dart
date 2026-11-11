@@ -47,14 +47,22 @@ class PrefixedPreferences {
   }
 
   /// Removes the value stored under [key].
+  ///
+  /// Throws a [StateError] when the platform refuses the removal.
   Future<void> remove(String key) async {
     final preferences = await SharedPreferences.getInstance();
     await _removeStored(preferences, '$prefix$key');
   }
 
   /// Removes every value of this space and nothing else.
+  ///
+  /// Reads the stored keys again first, because a refused removal still drops
+  /// the key from the in-memory copy. Throws a [StateError] when the platform
+  /// refuses a removal, after which some values may be left; calling it again
+  /// removes the rest.
   Future<void> clear() async {
     final preferences = await SharedPreferences.getInstance();
+    await preferences.reload();
     for (final storedKey in preferences.getKeys().toList()) {
       if (storedKey.startsWith(prefix)) {
         await _removeStored(preferences, storedKey);
