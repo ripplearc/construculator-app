@@ -22,13 +22,25 @@
             <mutation text="current.closesCalculator"/>
         </regex>
 
-        <!-- RULE 3 (S1c 4/5, CA-1089): no toast is ever shown -->
-        <regex pattern="current\.toastsRaised != previous\.toastsRaised," dotAll="true" id="calculator_page.toast.never_shown">
-            <mutation text="false,"/>
+        <!-- RULE 3 (S1c 4/5, CA-1089): the red Alert is never drawn -->
+        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.never_shown">
+            <mutation text="if (state.toast case final toast? when false)"/>
         </regex>
 
-        <!-- RULE 4: every state that still holds the toast shows it again -->
-        <regex pattern="current\.toastsRaised != previous\.toastsRaised," dotAll="true" id="calculator_page.toast.shown_on_every_state">
+        <!-- RULE 4: the Alert stays drawn after its ✕ closed it -->
+        <regex pattern="if \(state\.toast case final toast\? when !state\.toastClosed\)" dotAll="true" id="calculator_page.toast.shown_after_close">
+            <mutation text="if (state.toast case final toast?)"/>
+        </regex>
+
+        <!-- RULE 4a: the Alert's ✕ tells the bloc nothing -->
+        <regex pattern="onClose: \(\) => bloc\.add\(const CalculatorToastClosed\(\)\)," dotAll="true" id="calculator_page.toast.close_unheard">
+            <mutation text="onClose: () {},"/>
+        </regex>
+
+        <!-- RULE 4b: a screen reader never hears the message, or hears it
+             again for a state that merely still holds it -->
+        <regex pattern="current\.toastsRaised != previous\.toastsRaised," dotAll="true" id="calculator_page.toast.never_announced">
+            <mutation text="false,"/>
             <mutation text="current.toast != null,"/>
         </regex>
 
@@ -36,6 +48,7 @@
         <regex pattern="when identical\(_orderedFor, order\) &amp;&amp;\s*identical\(_orderedFrom, groupsById\)\) \{" dotAll="true" id="calculator_page.groups.stale_after_locale">
             <mutation text="when identical(_orderedFor, order)) {"/>
         </regex>
+
 
     </rules>
 
