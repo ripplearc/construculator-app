@@ -1,12 +1,8 @@
 // coverage:ignore-file
 
 import 'package:construculator/libraries/powersync/models/schema.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:construculator/libraries/storage/database_file_path.dart';
 import 'package:powersync/powersync.dart';
-
-// File name for the on-device PowerSync SQLite database.
-const _databaseFileName = 'construculator.db';
 
 /// Opens (and migrates) the local PowerSync database.
 ///
@@ -19,10 +15,10 @@ const _databaseFileName = 'construculator.db';
 /// touches the platform, so this must run during app bootstrap (before the
 /// module graph is built) rather than inside a Modular `binds` callback.
 Future<PowerSyncDatabase> openPowerSyncDatabase() async {
-  final directory = await getApplicationSupportDirectory();
-  final databasePath = p.join(directory.path, _databaseFileName);
-
-  final database = PowerSyncDatabase(schema: schema, path: databasePath);
+  final database = PowerSyncDatabase(
+    schema: schema,
+    path: await resolveDatabaseFilePath(),
+  );
   await database.initialize();
 
   return database;
