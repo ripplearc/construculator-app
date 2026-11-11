@@ -664,6 +664,26 @@ void main() {
         );
 
         blocTest<CalculatorBloc, CalculatorState>(
+          'a waiting chip "…" is a value in progress: the first ✕ clears it '
+          'and the tape stays open with the operator waiting again, and only '
+          'a second ✕ closes the calculator (Section 1.1)',
+          build: () => bloc,
+          act: (bloc) => bloc
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorOperatorPressed(Operator.add))
+            ..add(const CalculatorKeySelected('Length'))
+            ..add(const CalculatorActiveValueCleared())
+            ..add(const CalculatorActiveValueCleared()),
+          skip: 5,
+          expect: () => [
+            tapeState(pressed('2 2 ft +')),
+            tapeState(pressed('2 2 ft +')).copyWith(closesCalculator: true),
+          ],
+        );
+
+        blocTest<CalculatorBloc, CalculatorState>(
           'the next key taken or refused clears the close, as it clears a '
           'notice or a refusal',
           build: () => bloc,

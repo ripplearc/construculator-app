@@ -73,28 +73,28 @@
         </regex>
 
         <!-- RULE 12: a bracket has no factor -->
-        <regex pattern="BracketChip\(:final operator\?\) => _factorOf\(operator\)," dotAll="true" id="calculator_state.chips.bracket_without_factor">
+        <regex pattern="BracketChip\(:final operator\?\) => operatorIcons\[operator\]," dotAll="true" id="calculator_state.chips.bracket_without_factor">
             <mutation text="BracketChip() => null,"/>
         </regex>
 
         <!-- RULE 13: + is drawn as − -->
-        <regex pattern="Operator\.add => CoreIcons\.addOperator," dotAll="true" id="calculator_state.factor.add_as_subtract">
-            <mutation text="Operator.add => CoreIcons.subtractOperator,"/>
+        <regex pattern="Operator\.add: CoreIcons\.addOperator," dotAll="true" id="calculator_state.factor.add_as_subtract">
+            <mutation text="Operator.add: CoreIcons.subtractOperator,"/>
         </regex>
 
         <!-- RULE 14: − is drawn as + -->
-        <regex pattern="Operator\.subtract => CoreIcons\.subtractOperator," dotAll="true" id="calculator_state.factor.subtract_as_add">
-            <mutation text="Operator.subtract => CoreIcons.addOperator,"/>
+        <regex pattern="Operator\.subtract: CoreIcons\.subtractOperator," dotAll="true" id="calculator_state.factor.subtract_as_add">
+            <mutation text="Operator.subtract: CoreIcons.addOperator,"/>
         </regex>
 
         <!-- RULE 15: × is drawn as ÷ -->
-        <regex pattern="Operator\.multiply => CoreIcons\.multiplyOperator," dotAll="true" id="calculator_state.factor.multiply_as_divide">
-            <mutation text="Operator.multiply => CoreIcons.divide,"/>
+        <regex pattern="Operator\.multiply: CoreIcons\.multiplyOperator," dotAll="true" id="calculator_state.factor.multiply_as_divide">
+            <mutation text="Operator.multiply: CoreIcons.divide,"/>
         </regex>
 
         <!-- RULE 16: ÷ is drawn as × -->
-        <regex pattern="Operator\.divide => CoreIcons\.divide," dotAll="true" id="calculator_state.factor.divide_as_multiply">
-            <mutation text="Operator.divide => CoreIcons.multiplyOperator,"/>
+        <regex pattern="Operator\.divide: CoreIcons\.divide," dotAll="true" id="calculator_state.factor.divide_as_multiply">
+            <mutation text="Operator.divide: CoreIcons.multiplyOperator,"/>
         </regex>
 
     </rules>

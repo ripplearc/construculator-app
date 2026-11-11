@@ -200,8 +200,8 @@ void main() {
   });
 
   testWidgets('the display area close control empties the value being typed '
-      'and keeps its key, and with nothing typed it leaves the calculator '
-      'for Home (Section 1.1)', (tester) async {
+      'and keeps its key, then clears the waiting chip, and with nothing in '
+      'progress it leaves the calculator (Section 1.1)', (tester) async {
     final router = FakeAppRouter();
     await pumpPage(tester, router: router);
     final bloc = blocOf(tester);
@@ -218,6 +218,14 @@ void main() {
     expect(bloc.state.labelKeyId, 'Length');
     expect(bloc.state.valueText, '');
     expect(bloc.state.refusal, isNull);
+    expect(router.popCalls, 0);
+
+    await tester.tap(find.bySemanticsLabel(l10n.closeButton));
+    await tester.pump();
+    expect(bloc.state.labelKeyId, isNull);
+    expect(bloc.state.tape.isEmpty, isTrue);
+    expect(bloc.state.refusal, isNull);
+    expect(bloc.state.closesCalculator, isFalse);
     expect(router.popCalls, 0);
 
     await tester.tap(find.bySemanticsLabel(l10n.closeButton));

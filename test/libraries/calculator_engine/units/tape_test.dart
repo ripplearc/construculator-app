@@ -576,6 +576,37 @@ void main() {
         expect(landed(press(closed, '=')), '17');
       });
 
+      test('a waiting chip "…" is a value in progress: the first ✕ clears it '
+          'and the operator before it waits again, or the tape is as it was '
+          'before the key; a second ✕ is refused (Section 1.1; Section 5, '
+          '"Closes the calculator"; CA-1092 R1)', () {
+        const refused = TapeRefused(TapeRefusal.nothingBeingTyped);
+        final waiting = press(const Tape(), '2 2 ft + [Length]');
+        expect(texts(waiting), ['22ft', 'Length']);
+        final cleared = changed(waiting.clearActive());
+        expect(texts(cleared), ['22ft', '']);
+        expect(
+          cleared.active,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.key, 'key', isNull)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue),
+        );
+        expect(cleared.clearActive(), refused);
+        expect(texts(press(cleared, '3 ft')), ['22ft', '3ft']);
+        expect(
+          changed(press(const Tape(), '[Length]').clearActive()),
+          const Tape(),
+        );
+        final named = changed(
+          press(const Tape(), '[Length] 2 2 ft [Width]').clearActive(),
+        );
+        expect(texts(named), ['Length22ft']);
+        expect(named.active, isNull);
+        expect(named.clearActive(), refused);
+        expect(texts(press(named, '5 ft')), ['Length22ft', '5ft']);
+      });
+
       test('✕ with nothing being typed is refused and changes nothing: an '
           'empty tape, a finished tape, the empty chip an operator opened, '
           'the divisor ÷ 0 reopened', () {

@@ -72,16 +72,15 @@ class BlocScenarioDriver implements ScenarioDriver {
   static String _rowOneText(CalculatorSuggestion suggestion) =>
       '${_labels.suggestionLabel(suggestion)}: ${suggestion.text}';
 
-  // A chip's text as the display draws it. A bracket chip holds only what
-  // was typed inside — the chip draws its parentheses and its operator is
-  // the factor icon — so the prototype's "+(3×4)" is spelt back from the
-  // tape's own bracket.
-  static String _tapeTextOf(CoreCalculatorChip chip, TapeChip tapeChip) =>
-      switch (tapeChip) {
-        BracketChip(:final operator, :final isOpen) =>
-          '${operator?.symbol ?? ''}(${chip.value}${isOpen ? '' : ')'}',
-        _ => '${chip.value}',
-      };
+  static String _bracketTextAsThePrototypeSpellsIt(
+    CoreCalculatorChip chip,
+    TapeChip tapeChip,
+  ) => switch (tapeChip) {
+    // the chip draws its parentheses and its operator is the factor icon
+    BracketChip(:final operator, :final isOpen) =>
+      '${operator?.symbol ?? ''}(${chip.value}${isOpen ? '' : ')'}',
+    _ => '${chip.value}',
+  };
 
   /// A pill as the prototype's DOM reads it: an offer is a sentence, a
   /// toggle its label, a colon and its value.
@@ -117,7 +116,8 @@ class BlocScenarioDriver implements ScenarioDriver {
           : [for (final key in state.dependentKeys) _pillText(key)].join(' | '),
       tape: [
         for (final (index, chip) in state.chipsList.indexed)
-          '${chip.label ?? ''}${_tapeTextOf(chip, state.tape.chips[index])}'
+          '${chip.label ?? ''}'
+              '${_bracketTextAsThePrototypeSpellsIt(chip, state.tape.chips[index])}'
               '${chip.type == CoreCalculatorChipType.active && (label?.isTyping ?? false) ? '…' : ''}',
       ],
       tapeBracket: [

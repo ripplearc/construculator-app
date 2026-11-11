@@ -1,5 +1,16 @@
 part of 'calculator_bloc.dart';
 
+/// The icon the display draws for each operator: a bracket chip carries the
+/// operator that leads into it as its factor, and the label formatter reads
+/// the operator back from the icon through the same map, so the two can
+/// never disagree.
+const Map<Operator, CoreIconData> operatorIcons = {
+  Operator.add: CoreIcons.addOperator,
+  Operator.subtract: CoreIcons.subtractOperator,
+  Operator.multiply: CoreIcons.multiplyOperator,
+  Operator.divide: CoreIcons.divide,
+};
+
 /// The calculator as the display area reads it: the engine's tape, which
 /// group of function keys is up, and what the last key press said.
 ///
@@ -460,7 +471,7 @@ class CalculatorState extends Equatable {
             _ => _valueTextOf(chip),
           },
           factor: switch (chip) {
-            BracketChip(:final operator?) => _factorOf(operator),
+            BracketChip(:final operator?) => operatorIcons[operator],
             _ => null,
           },
           type: switch (chip) {
@@ -475,13 +486,6 @@ class CalculatorState extends Equatable {
         ),
     ];
   }
-
-  static CoreIconData _factorOf(Operator operator) => switch (operator) {
-    Operator.add => CoreIcons.addOperator,
-    Operator.subtract => CoreIcons.subtractOperator,
-    Operator.multiply => CoreIcons.multiplyOperator,
-    Operator.divide => CoreIcons.divide,
-  };
 
   String _valueTextOf(TapeChip chip) => switch (chip) {
     final ValueChip chip => '${_lead(chip.operator)}${_entryTextOf(chip)}',

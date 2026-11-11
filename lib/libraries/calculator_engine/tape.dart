@@ -1298,12 +1298,16 @@ class Tape extends Equatable {
   /// with the group's own reason ([TapeRefusal.nothingTypedInGroup];
   /// Section 7, "Nothing typed in this group yet"; decision tree row 166),
   /// so 2 + (3 ✕ ✕ never reads as nothing being typed and 2 + (3 + ✕ 4) =
-  /// is 9. With nothing being typed outside a bracket — the empty chip an
-  /// operator just opened, the divisor ÷ 0 reopened, or a finished tape —
-  /// it is refused ([TapeRefusal.nothingBeingTyped]): ✕ "clears the value
-  /// in progress when something is typed" (Section 5, "Closes the
-  /// calculator"), and the caller closes the calculator in its place, as
-  /// the prototype's ✕ does with nothing typed.
+  /// is 9. A waiting chip — a named chip with no value yet, "…" — counts
+  /// as a value in progress (Section 1.1; Section 5, "Closes the
+  /// calculator"): the first ✕ clears it and the tape stays, so 22 [Feet] +
+  /// [Length] ✕ leaves the + waiting for its number again and [Length] ✕
+  /// leaves the tape as it was before the key. With nothing being typed
+  /// outside a bracket — the empty chip an operator just opened, the
+  /// divisor ÷ 0 reopened, or a finished tape — it is refused
+  /// ([TapeRefusal.nothingBeingTyped]): ✕ "clears the value in progress
+  /// when something is typed", and the caller closes the calculator in its
+  /// place, as the prototype's ✕ does with nothing typed.
   TapeOutcome clearActive() {
     if (openBracket case final bracket?) {
       return switch (_inside(bracket, (inner) => inner.clearActive())) {
@@ -1314,8 +1318,12 @@ class Tape extends Equatable {
       };
     }
     final chip = active;
-    if (chip == null || chip.entry.isEmpty) {
-      return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    if (chip == null) return const TapeRefused(TapeRefusal.nothingBeingTyped);
+    if (chip.entry.isEmpty) {
+      if (chip.key == null) {
+        return const TapeRefused(TapeRefusal.nothingBeingTyped);
+      }
+      return TapeChanged(_withWaitingChipCleared(chip));
     }
     return _replaceLast(
       chip.copyWith(
@@ -1324,6 +1332,14 @@ class Tape extends Equatable {
         poundsPerTon: () => null,
       ),
     );
+  }
+
+  Tape _withWaitingChipCleared(ValueChip chip) {
+    final before = chips.sublist(0, chips.length - 1);
+    if (chip.operator case final operator?) {
+      return _with([...before, ValueChip(operator: operator)]);
+    }
+    return _with(before);
   }
 
   /// [/] goes into the active chip. A recalled angle is a finished value

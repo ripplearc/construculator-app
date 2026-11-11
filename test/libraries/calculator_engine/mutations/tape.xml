@@ -222,13 +222,24 @@
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
         </regex>
 
-        <!-- RULE CA-1087: ✕ keeps the value, clears an empty chip as if it
-             held a value, or removes the whole chip with its key and
-             operator (R1) -->
-        <regex pattern="final chip = active;\s*if \(chip == null \|\| chip\.entry\.isEmpty\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return _replaceLast\(\s*chip\.copyWith\(\s*entry: const EntryBuffer\(\),\s*exact: \(\) =&gt; null,\s*poundsPerTon: \(\) =&gt; null,\s*\),\s*\);" dotAll="true" id="tape.clear_active.wrong_chip">
-            <mutation text="final chip = active; if (chip == null || chip.entry.isEmpty) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(this);"/>
-            <mutation text="final chip = active; if (chip == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return _replaceLast(chip.copyWith(entry: const EntryBuffer(), exact: () =&gt; null, poundsPerTon: () =&gt; null));"/>
-            <mutation text="final chip = active; if (chip == null || chip.entry.isEmpty) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
+        <!-- RULE CA-1087: ✕ keeps the value, or clears an empty bare chip
+             as if it held a value (R1) -->
+        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*if \(chip\.key == null\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return TapeChanged\(_withWaitingChipCleared\(chip\)\);\s*\}\s*return _replaceLast\(\s*chip\.copyWith\(\s*entry: const EntryBuffer\(\),\s*exact: \(\) =&gt; null,\s*poundsPerTon: \(\) =&gt; null,\s*\),\s*\);" dotAll="true" id="tape.clear_active.wrong_chip">
+            <mutation text="if (chip.entry.isEmpty) { if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(this);"/>
+            <mutation text="if (chip.entry.isEmpty &amp;&amp; chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return _replaceLast(chip.copyWith(entry: const EntryBuffer(), exact: () =&gt; null, poundsPerTon: () =&gt; null));"/>
+            <mutation text="if (chip.entry.isEmpty) { if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
+        </regex>
+
+        <!-- RULE CA-1092 R1: ✕ on a waiting chip "…" closes instead of
+             clearing it, clears a bare empty chip too, or drops the
+             operator the chip was waiting under -->
+        <regex pattern="if \(chip\.key == null\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return TapeChanged\(_withWaitingChipCleared\(chip\)\);" dotAll="true" id="tape.clear_active.waiting_chip">
+            <mutation text="return const TapeRefused(TapeRefusal.nothingBeingTyped);"/>
+            <mutation text="return TapeChanged(_withWaitingChipCleared(chip));"/>
+        </regex>
+        <regex pattern="if \(chip\.operator case final operator\?\) \{\s*return _with\(\[\.\.\.before, ValueChip\(operator: operator\)\]\);\s*\}\s*return _with\(before\);" dotAll="true" id="tape.clear_active.waiting_chip_operator">
+            <mutation text="return _with(before);"/>
+            <mutation text="return _with([...before, ValueChip(operator: chip.operator)]);"/>
         </regex>
         <regex pattern="if \(openBracket case final bracket\?\) \{\s*return switch \(_inside\(bracket, \(inner\) =&gt; inner\.clearActive\(\)\)\) \{\s*TapeRefused\(reason: TapeRefusal\.nothingBeingTyped\) =&gt;\s*const TapeRefused\(\s*TapeRefusal\.nothingTypedInGroup,\s*\),\s*final outcome =&gt; outcome,\s*\};\s*\}" dotAll="true" id="tape.clear_active.outside_bracket">
             <mutation text=""/>

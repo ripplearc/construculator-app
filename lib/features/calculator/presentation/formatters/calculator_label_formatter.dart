@@ -338,10 +338,9 @@ class CalculatorLabelFormatter {
   ];
 
   static String _leadOf(CoreIconData? factor) {
-    if (factor == CoreIcons.addOperator) return Operator.add.symbol;
-    if (factor == CoreIcons.subtractOperator) return Operator.subtract.symbol;
-    if (factor == CoreIcons.multiplyOperator) return Operator.multiply.symbol;
-    if (factor == CoreIcons.divide) return Operator.divide.symbol;
+    for (final MapEntry(:key, :value) in operatorIcons.entries) {
+      if (value == factor) return key.symbol;
+    }
     return '';
   }
 
