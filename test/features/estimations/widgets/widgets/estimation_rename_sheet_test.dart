@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -43,6 +45,7 @@ class _EstimationRenameSheetTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  final fakePhoneDatabase = FakeCostEstimatesDatabase();
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
@@ -63,6 +66,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_EstimationRenameSheetTestModule(appBootstrap));
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
     final projectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
@@ -77,15 +81,17 @@ void main() {
 
   tearDownAll(() {
     Modular.destroy();
+    fakePhoneDatabase.dispose();
     CoreToast.enableTimers();
   });
 
   setUp(() {
     fakeSupabase.reset();
+    fakePhoneDatabase.reset();
     fakeAppRouter.reset();
     fakeCurrentProjectNotifier.reset(projectId: testProjectId);
 
-    fakeSupabase.addTableData('cost_estimates', [
+    fakePhoneDatabase.seedRows([
       EstimationTestDataMapFactory.createFakeEstimationData(
         id: testEstimationId,
         projectId: testProjectId,
@@ -173,10 +179,8 @@ void main() {
 
           expect(fakeAppRouter.popCalls, 1);
 
-          final updateCalls = fakeSupabase.getMethodCallsFor('update');
-          expect(updateCalls.length, 1);
-          expect(updateCalls.first['data']['estimate_name'], newName);
-          expect(updateCalls.first['filterValue'], testEstimationId);
+          final write = fakePhoneDatabase.executeCalls.single;
+          expect(write.parameters, [newName, testEstimationId]);
         },
       );
 
@@ -191,9 +195,10 @@ void main() {
         await tester.tap(find.text(l10n().saveCostNameButton));
         await tester.pumpAndSettle();
 
-        final updateCalls = fakeSupabase.getMethodCallsFor('update');
-        expect(updateCalls.length, 1);
-        expect(updateCalls.first['data']['estimate_name'], 'New Name');
+        expect(
+          fakePhoneDatabase.executeCalls.single.parameters.first,
+          'New Name',
+        );
       });
 
       testWidgets('should allow editing the text field', (
