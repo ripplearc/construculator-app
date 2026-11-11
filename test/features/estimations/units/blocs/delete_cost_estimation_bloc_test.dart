@@ -3,10 +3,10 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -20,6 +20,7 @@ void main() {
   group('DeleteCostEstimationBloc', () {
     late DeleteCostEstimationBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
@@ -33,6 +34,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
       );
       Modular.init(EstimationModule(bootstrap));
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
@@ -47,10 +49,12 @@ void main() {
 
     tearDownAll(() {
       Modular.dispose();
+      fakePhoneDatabase.dispose();
     });
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       bloc = Modular.get<DeleteCostEstimationBloc>();
     });
@@ -76,10 +80,7 @@ void main() {
     }
 
     void seedEstimationTable(List<Map<String, dynamic>> rows) {
-      fakeSupabaseWrapper.addTableData(
-        DatabaseConstants.costEstimatesTable,
-        rows,
-      );
+      fakePhoneDatabase.seedRows(rows);
     }
 
     group('Initialization', () {
@@ -136,11 +137,16 @@ void main() {
       );
 
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
-        'should emit in progress then failure when repository returns failure',
+        'should emit in progress then failure when the phone cannot save the delete',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.socket;
+          seedEstimationTable([
+            buildEstimationMap(
+              id: testEstimationId,
+              projectId: testProjectId,
+              estimateName: testEstimationName,
+            ),
+          ]);
+          fakePhoneDatabase.executeError = Exception('disk full');
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -151,60 +157,7 @@ void main() {
           isA<DeleteCostEstimationFailure>().having(
             (s) => s.failure,
             'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.connectionError,
-            ),
-          ),
-        ],
-      );
-
-      blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
-        'should emit failure with timeout error when repository returns timeout error',
-        build: () {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.timeout;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(estimationId: testEstimationId),
-        ),
-        expect: () => [
-          isA<DeleteCostEstimationInProgress>(),
-          isA<DeleteCostEstimationFailure>().having(
-            (s) => s.failure,
-            'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.timeoutError,
-            ),
-          ),
-        ],
-      );
-
-      blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
-        'should emit failure with parsing error when repository returns parsing error',
-        build: () {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.type;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(estimationId: testEstimationId),
-        ),
-        expect: () => [
-          isA<DeleteCostEstimationInProgress>(),
-          isA<DeleteCostEstimationFailure>().having(
-            (s) => s.failure,
-            'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.parsingError,
-            ),
+            isA<UnexpectedFailure>(),
           ),
         ],
       );

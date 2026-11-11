@@ -716,7 +716,9 @@ void main() {
       expect(fakeAppRouter.popCalls, 2);
     });
 
-    testWidgets('refreshes optimistically when delete', (tester) async {
+    testWidgets('removes the estimate from the list when it is deleted', (
+      tester,
+    ) async {
       await setupAndNavigateToEstimation(
         tester,
         multipleEstimations: [
@@ -767,7 +769,7 @@ void main() {
       expect(find.text(l10n().estimationDeletedSuccess), findsOneWidget);
     });
 
-    testWidgets('shows error toast when deletion fails with connection error', (
+    testWidgets('shows error toast when the phone cannot save the delete', (
       tester,
     ) async {
       await setupAndNavigateToEstimation(
@@ -781,37 +783,12 @@ void main() {
 
       await openDeleteConfirmationSheet(tester);
 
-      fakeSupabase.shouldThrowOnDelete = true;
-      fakeSupabase.deleteExceptionType = SupabaseExceptionType.socket;
+      fakePhoneDatabase.executeError = Exception('disk full');
 
       await tester.tap(find.text(l10n().yesDeleteButton));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().connectionError), findsOneWidget);
-      expect(find.byType(CostEstimationTile), findsOneWidget);
-    });
-
-    testWidgets('shows error toast when deletion fails with timeout error', (
-      tester,
-    ) async {
-      await setupAndNavigateToEstimation(
-        tester,
-        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
-
-      await openDeleteConfirmationSheet(tester);
-
-      fakeSupabase.shouldThrowOnDelete = true;
-      fakeSupabase.deleteExceptionType = SupabaseExceptionType.timeout;
-
-      await tester.tap(find.text(l10n().yesDeleteButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n().timeoutError), findsOneWidget);
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
       expect(find.byType(CostEstimationTile), findsOneWidget);
     });
 

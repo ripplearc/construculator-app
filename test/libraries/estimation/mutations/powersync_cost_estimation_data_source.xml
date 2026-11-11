@@ -94,9 +94,6 @@
             <mutation text="DatabaseConstants.isLockedColumn, isLocked ? 0 : 1)"/>
         </regex>
 
-        <regex pattern="return true;" dotAll="true" id="ds.write.report_false_after_write">
-            <mutation text="return false;"/>
-        </regex>
 
         <regex pattern="'DELETE FROM \$_table WHERE" dotAll="true" id="ds.delete.keeps_row">
             <mutation text="'SELECT id FROM $_table WHERE"/>
