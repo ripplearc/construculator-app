@@ -3,13 +3,13 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -23,6 +23,7 @@ void main() {
   group('ChangeLockStatusBloc', () {
     late ChangeLockStatusBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeProjectRepository fakeProjectRepository;
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
@@ -37,6 +38,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
       );
       Modular.init(EstimationModule(bootstrap));
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
@@ -53,10 +55,12 @@ void main() {
 
     tearDownAll(() {
       Modular.dispose();
+      fakePhoneDatabase.dispose();
     });
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       fakeProjectRepository.setProjectPermissions(testProjectId, [
         PermissionConstants.lockCostEstimation,
@@ -91,10 +95,7 @@ void main() {
     }
 
     void seedEstimationTable(List<Map<String, dynamic>> rows) {
-      fakeSupabaseWrapper.addTableData(
-        DatabaseConstants.costEstimatesTable,
-        rows,
-      );
+      fakePhoneDatabase.seedRows(rows);
     }
 
     group('Initialization', () {
@@ -217,11 +218,17 @@ void main() {
       );
 
       blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
-        'should emit failure when repository returns connection error',
+        'should emit failure when the phone cannot save the lock',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.socket;
+          seedEstimationTable([
+            buildEstimationMap(
+              id: testEstimationId,
+              projectId: testProjectId,
+              estimateName: testEstimationName,
+              isLocked: false,
+            ),
+          ]);
+          fakePhoneDatabase.executeError = Exception('disk full');
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -235,53 +242,14 @@ void main() {
           isA<ChangeLockStatusFailure>().having(
             (s) => s.failure,
             'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.connectionError,
-            ),
-          ),
-        ],
-      );
-
-      blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
-        'should emit failure when repository returns timeout error',
-        build: () {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(
-          const ChangeLockStatusRequested(
-            estimationId: testEstimationId,
-            isLocked: true,
-          ),
-        ),
-        expect: () => [
-          isA<ChangeLockStatusInProgress>(),
-          isA<ChangeLockStatusFailure>().having(
-            (s) => s.failure,
-            'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.timeoutError,
-            ),
+            isA<UnexpectedFailure>(),
           ),
         ],
       );
 
       blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
         'should emit failure when repository returns not found error',
-        build: () {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.noDataFound;
-          return bloc;
-        },
+        build: () => bloc,
         act: (bloc) => bloc.add(
           const ChangeLockStatusRequested(
             estimationId: testEstimationId,
@@ -305,7 +273,7 @@ void main() {
 
     group('Repository integration', () {
       blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
-        'should call data source with correct parameters',
+        'should write the new lock value to the phone',
         build: () {
           final estimationMap = buildEstimationMap(
             id: testEstimationId,
@@ -323,15 +291,10 @@ void main() {
           ),
         ),
         verify: (bloc) {
-          final calls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(calls, hasLength(1));
-          expect(
-            calls.first['table'],
-            equals(DatabaseConstants.costEstimatesTable),
-          );
-          expect(calls.first['filterColumn'], equals('id'));
-          expect(calls.first['filterValue'], testEstimationId);
-          expect(calls.first['data'], containsPair('is_locked', true));
+          expect(fakePhoneDatabase.executeCalls.single.parameters, [
+            1,
+            testEstimationId,
+          ]);
         },
       );
     });
@@ -422,8 +385,7 @@ void main() {
           ),
         ),
         verify: (_) {
-          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-          expect(updateCalls, isEmpty);
+          expect(fakePhoneDatabase.executeCalls, isEmpty);
         },
       );
     });
