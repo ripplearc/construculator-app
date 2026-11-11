@@ -93,7 +93,7 @@
         </regex>
 
         <!-- RULE 9: an undefined trig chip's digits are used in its place -->
-        <regex pattern="if \(chip != null &amp;&amp; chip\.asksAnUndefinedTrig\) \{" dotAll="true" id="trig.undefined.left">
+        <regex pattern="if \(chip != null &amp;&amp; chip\.asksAnUndefinedTrig &amp;&amp; !chip\.isEditing\) \{" dotAll="true" id="trig.undefined.left">
             <mutation text="if (false) {"/>
         </regex>
         <regex pattern="\(final function\?, final operand\?\) =&gt; function\.answerTo\(operand\) == null," dotAll="true" id="trig.undefined.never">
@@ -111,8 +111,8 @@
         </regex>
 
         <!-- RULE 10b: a trig key is accepted inside a bracket -->
-        <regex pattern="pressTrigKey\(TrigFunction function\) \{\s*if \(openBracket != null\) \{" dotAll="true" id="trig.key.inside_bracket">
-            <mutation text="pressTrigKey(TrigFunction function) { if (false) {"/>
+        <regex pattern="return _leavingEdit\(\(tape\) =&gt; tape\.pressTrigKey\(function\)\);\s*\}\s*if \(openBracket != null\) \{" dotAll="true" id="trig.key.inside_bracket">
+            <mutation text="return _leavingEdit((tape) =&gt; tape.pressTrigKey(function)); } if (false) {"/>
         </regex>
 
         <!-- RULE 10c: the tangent's tolerance widens, so 89.9999° is refused,
