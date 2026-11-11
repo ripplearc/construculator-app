@@ -640,6 +640,50 @@ void main() {
     },
   );
 
+  testWidgets('a new locale hands the keyboard a new list of groups, so the '
+      'words follow the language even while the order stands (T1b F1)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    Future<void> pumpIn(Locale locale) => tester.pumpWidget(
+      MaterialApp(
+        theme: CoreTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Localizations.override(
+            context: context,
+            locale: locale,
+            child: CalculatorPage(router: FakeAppRouter()),
+          ),
+        ),
+      ),
+    );
+    List<FunctionGroup> groups() =>
+        tester.widget<CoreKeyboard>(find.byType(CoreKeyboard)).allGroups;
+
+    await pumpIn(const Locale('en'));
+    final before = groups();
+    await pumpIn(const Locale('en'));
+    expect(
+      identical(groups(), before),
+      isTrue,
+      reason: 'the same locale keeps the list the sheet was handed',
+    );
+    await pumpIn(const Locale('en', 'US'));
+    expect(
+      identical(groups(), before),
+      isFalse,
+      reason: 'a new locale rebuilds the groups, so the list is new',
+    );
+    expect(
+      [for (final group in groups()) group.name.id],
+      [for (final group in before) group.name.id],
+    );
+  });
+
   testWidgets('every function key of the five groups sends its id to the tape '
       '(Section 3)', (tester) async {
     // Wider than a phone: CoreUI's label row overflows at 390 px under a

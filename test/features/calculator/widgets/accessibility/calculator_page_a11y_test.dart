@@ -61,7 +61,7 @@ void main() {
         // Each theme gets a tree of its own, keyed by its brightness: the
         // sheet is a route, and a route survives a rebuild of the same app.
         // Tap target size is disabled as in the close-button test: CoreUI's
-        // drag handle is 12px tall by design (tracked in CoreUI).
+        // drag handle is 12px tall by design (CA-1446).
         for (final theme in kA11yTestThemes) {
           await tester.pumpWidget(
             KeyedSubtree(
@@ -92,7 +92,7 @@ void main() {
         final bracketKey = find.byKey(const ValueKey('calc_key_paren'));
         // Tap target size is disabled as in the close-button test: the
         // guideline reads the whole page, where CoreUI's close button and
-        // drag handle sit below 48dp by design (tracked in CoreUI).
+        // drag handle sit below 48dp by design (CA-1446).
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => makeTestableWidget(theme: theme),
@@ -125,7 +125,7 @@ void main() {
         // page to settle, and a strip chip animates while it is on screen.
         // Tap target size is disabled as in the close-button test: the
         // guideline reads the whole page, where CoreUI's close button and
-        // drag handle sit below 48dp by design (tracked in CoreUI).
+        // drag handle sit below 48dp by design (CA-1446).
         for (final theme in kA11yTestThemes) {
           // A Slope answer fills row 1 and leaves row 2 empty, so the
           // contrast guideline, which also reads the whole page, judges the

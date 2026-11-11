@@ -19,6 +19,11 @@
             <mutation text="current.closesCalculator,"/>
         </regex>
 
+        <!-- RULE 3 (T1b F1): a new group map keeps the old ordered list -->
+        <regex pattern="when identical\(_orderedFor, order\) &amp;&amp;\s*identical\(_orderedFrom, groupsById\)\) \{" dotAll="true" id="calculator_page.groups.stale_after_locale">
+            <mutation text="when identical(_orderedFor, order)) {"/>
+        </regex>
+
     </rules>
 
     <commands>

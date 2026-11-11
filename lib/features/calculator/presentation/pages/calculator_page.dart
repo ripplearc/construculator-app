@@ -28,6 +28,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   Locale? _groupsLocale;
   Map<String, FunctionGroup>? _groupsById;
   List<String>? _orderedFor;
+  Map<String, FunctionGroup>? _orderedFrom;
   List<FunctionGroup>? _orderedGroups;
 
   Map<String, FunctionGroup> _groupsFor(
@@ -44,17 +45,21 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return groups;
   }
 
-  // The groups in the order the state gives them, built once per order: the
-  // keyboard refreshes its "View all" sheet whenever it is handed a new list
-  // object, so a list rebuilt on every state would refresh it on every key.
   List<FunctionGroup> _groupsInOrder(
     Map<String, FunctionGroup> groupsById,
     List<String> order,
   ) {
-    if (_orderedGroups case final groups? when identical(_orderedFor, order)) {
+    // Built once per order and per group map: the keyboard refreshes its
+    // "View all" sheet whenever it is handed a new list object, so a list
+    // rebuilt on every state would refresh it on every key, and a list kept
+    // across a new group map would keep the old language's words.
+    if (_orderedGroups case final groups?
+        when identical(_orderedFor, order) &&
+            identical(_orderedFrom, groupsById)) {
       return groups;
     }
     _orderedFor = order;
+    _orderedFrom = groupsById;
     return _orderedGroups = [
       for (final id in order)
         groupsById[id] ?? (throw StateError('No function group "$id"')),
