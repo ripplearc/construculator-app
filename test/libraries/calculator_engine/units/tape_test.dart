@@ -377,6 +377,22 @@ void main() {
           ]);
         });
 
+        test('a named value and a cubed value converted up past the limit '
+            'are refused the same way, and one within it converts', () {
+          final named = press(const Tape(), '[Length] 15000000 ft');
+          expect(named.pressUnit(Unit.inch), tooLarge);
+          expect(texts(named), ['Length15000000ft']);
+          final cubed = press(const Tape(), '12000 ft ft ft');
+          expect(cubed.pressUnit(Unit.inch), tooLarge);
+          expect(texts(cubed), ['12000ft³']);
+          expect(texts(press(const Tape(), '11574 ft ft ft in')), [
+            '19999872in³',
+          ]);
+          final justOver = press(const Tape(), '11575 ft ft ft');
+          expect(justOver.pressUnit(Unit.inch), tooLarge);
+          expect(texts(justOver), ['11575ft³']);
+        });
+
         test('a carry on the unit key that would pass the limit is refused '
             'and the compound stays as typed', () {
           final open = press(const Tape(), '19999999 ft 13');

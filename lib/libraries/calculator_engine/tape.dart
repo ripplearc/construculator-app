@@ -1329,8 +1329,9 @@ class Tape extends Equatable {
   /// key that would carry the number above [Quantity.largestShown] in the
   /// new unit is refused as Too large, like a typed digit, and the value
   /// stays as it was (Section 5.1; CA-1365): 15000000 [Ft] then [In] keeps
-  /// 15000000ft, 19999999 [Ft] 13 then [In] keeps 19999999ft 13, since the
-  /// carry would read 20000000ft 1in.
+  /// 15000000ft, and 19999999 [Ft] 13 then [In] keeps 19999999ft 13, since
+  /// the carry would read 20000000ft 1in ([EntryBuffer.closeWith] refuses
+  /// the carry itself).
   TapeOutcome pressUnit(
     Unit unit, {
     bool holdsLengthOnly = false,
@@ -1374,11 +1375,9 @@ class Tape extends Equatable {
       return const TapeRefused(TapeRefusal.slopeTakesAGrade);
     }
     if (chip.entry.isOpen) {
-      return _unlessTooLarge(
-        _entry(
-          chip,
-          chip.entry.closeWith(unit, holdsLengthOnly: holdsLengthOnly),
-        ),
+      return _entry(
+        chip,
+        chip.entry.closeWith(unit, holdsLengthOnly: holdsLengthOnly),
       );
     }
     final value = chip.value(parser);
@@ -1403,16 +1402,6 @@ class Tape extends Equatable {
       ) => _replaceLast(_respelled(chip, value, tokens)),
       UnitKeyRefused() => TapeUnitRefused(outcome),
     };
-  }
-
-  TapeOutcome _unlessTooLarge(TapeOutcome outcome) {
-    if (outcome case TapeChanged(:final tape)) {
-      final value = tape.active?.value(parser);
-      if (value != null && formatter.isTooLarge(value)) {
-        return const TapeEntryRefused(EntryRefusal.tooLarge);
-      }
-    }
-    return outcome;
   }
 
   /// The running total of the tape as far as it can be computed: the Calc
