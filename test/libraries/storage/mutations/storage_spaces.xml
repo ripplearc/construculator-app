@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- STORAGE SPACES MUTATION TESTING -->
-    <!-- Targets: the prefix rules that keep the user space apart from every other key -->
+    <!-- Targets: the prefix rules that keep the user space and the device space apart -->
 
     <files>
         <file>lib/libraries/storage/prefixed_preferences.dart</file>
         <file>lib/libraries/storage/shared_pref_service.dart</file>
+        <file>lib/libraries/storage/shared_pref_device_space_service.dart</file>
     </files>
 
     <exclude>
@@ -79,10 +80,16 @@
         <regex pattern="static const keyPrefix = 'user\.'" dotAll="true" id="user_space.prefix_is_device">
             <mutation text="static const keyPrefix = 'device.'"/>
         </regex>
+        <regex pattern="static const keyPrefix = 'device\.'" dotAll="true" id="device_space.prefix_is_user">
+            <mutation text="static const keyPrefix = 'user.'"/>
+        </regex>
+        <regex pattern="setting\.name" dotAll="true" id="device_space.key_is_constant">
+            <mutation text="'setting'"/>
+        </regex>
     </rules>
 
     <commands>
-        <command group="storage_spaces" expected-return="0">flutter test test/libraries/storage/units/shared_pref_service_test.dart test/libraries/storage/units/prefixed_preferences_test.dart</command>
+        <command group="storage_spaces" expected-return="0">flutter test test/libraries/storage/units/shared_pref_service_test.dart test/libraries/storage/units/shared_pref_device_space_service_test.dart test/libraries/storage/units/prefixed_preferences_test.dart</command>
     </commands>
 
     <threshold failure="85"/>
