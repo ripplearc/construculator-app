@@ -7,8 +7,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// The grey band that opens one section of the estimate's cost list: the
 /// category name on the left and the section's subtotal on the right.
 ///
-/// The band runs the full width of the screen. It scrolls with the list and
-/// is never pinned. The subtotal comes from the caller, since the screen does
+/// The band has a light line above and below it, so it still shows on a page
+/// that is the same grey. It runs the full width of the screen, scrolls with
+/// the list and is never pinned. The subtotal comes from the caller, since the screen does
 /// not add up lines.
 class CostSectionHeader extends StatelessWidget {
   /// The category this section holds.
@@ -16,6 +17,8 @@ class CostSectionHeader extends StatelessWidget {
 
   /// The sum of the section's lines, in dollars.
   final double subtotal;
+
+  static const _minHeight = 44.0;
 
   const CostSectionHeader({
     super.key,
@@ -26,36 +29,54 @@ class CostSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final textStyle = context.textTheme.bodyMediumSemiBold.copyWith(
-      color: colorTheme.textHeadline,
-    );
+    final border = BorderSide(color: colorTheme.lineLight);
     return MergeSemantics(
       child: Semantics(
         header: true,
-        child: Container(
+        child: DecoratedBox(
           key: Key('cost_section_header_${type.name}'),
-          width: double.infinity,
-          color: colorTheme.backgroundGrayLight,
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
+          decoration: BoxDecoration(
+            color: colorTheme.backgroundGrayLight,
+            border: Border(top: border, bottom: border),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _name(context).toUpperCase(),
-                  key: Key('cost_section_name_${type.name}'),
-                  style: textStyle,
-                ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: double.infinity,
+              minHeight: _minHeight,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space2,
               ),
-              Text(
-                DisplayFormatter.formatCurrency(subtotal),
-                key: Key('cost_section_subtotal_${type.name}'),
-                style: textStyle,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _name(context),
+                      key: Key('cost_section_name_${type.name}'),
+                      style: context.textTheme.bodySmallSemiBold.copyWith(
+                        color: colorTheme.textBody,
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        DisplayFormatter.formatCurrency(subtotal),
+                        key: Key('cost_section_subtotal_${type.name}'),
+                        style: context.textTheme.bodyLargeSemiBold.copyWith(
+                          color: colorTheme.textHeadline,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
