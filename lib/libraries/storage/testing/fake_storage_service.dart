@@ -3,7 +3,8 @@ import 'package:construculator/libraries/storage/interfaces/storage_service.dart
 
 /// In-memory [StorageService] for tests, with switches to make reads, writes
 /// or the clear fail. A value of another type than the one asked for reads as
-/// null, like the real service.
+/// null, like the real service. Unlike the real service it accepts any value,
+/// so a test cannot rely on it to refuse an unstorable one.
 class FakeStorageService implements StorageService {
   final Map<String, Object?> _data = {};
 
