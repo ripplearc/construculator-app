@@ -394,5 +394,266 @@ void main() {
         );
       });
     });
+    group('writes', () {
+      const selectByIdSql = 'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1';
+
+      CostEstimateDto newEstimate({String id = '', bool locked = false}) =>
+          CostEstimateDto.fromJson(
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: id,
+              isLocked: locked,
+            ),
+          );
+
+      final uuidV4 = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      );
+
+      void phoneHasRow(String id, {bool locked = false}) => fakeWrapper
+          .stubGetAll(selectByIdSql, [sqliteRow(id: id, locked: locked)]);
+
+      group('insertEstimationRow', () {
+        test('writes one INSERT carrying every column of the row', () async {
+          final stored = await dataSource.insertEstimationRow(
+            newEstimate(id: 'new-1'),
+          );
+
+          final call = fakeWrapper.executeCalls.single;
+          expect(fakeWrapper.writeTransactionCallCount, 1);
+          expect(call.sql, startsWith('INSERT INTO cost_estimates (id, '));
+          expect(call.parameters.first, 'new-1');
+          expect(
+            call.sql.split('VALUES')[1].split('?').length - 1,
+            call.parameters.length,
+          );
+          expect(stored.id, 'new-1');
+          expect(stored.estimateName, estimateNameDefault);
+        });
+
+        test('writes every column of the row with its value', () async {
+          final estimate = newEstimate(id: 'new-1', locked: true);
+
+          await dataSource.insertEstimationRow(estimate);
+
+          final call = fakeWrapper.executeCalls.single;
+          final columns = RegExp(
+            r'\((.+)\) VALUES',
+          ).firstMatch(call.sql)!.group(1)!.split(', ');
+          final written = {
+            for (var i = 0; i < columns.length; i++)
+              columns[i]: call.parameters[i],
+          };
+          expect(written, {
+            'id': 'new-1',
+            ...estimate.toJson(),
+            'is_locked': 1,
+          });
+        });
+
+        test('mints an id when the row has none', () async {
+          final first = await dataSource.insertEstimationRow(newEstimate());
+          final second = await dataSource.insertEstimationRow(newEstimate());
+
+          expect(first.id, matches(uuidV4));
+          expect(second.id, matches(uuidV4));
+          expect(second.id, isNot(first.id));
+          expect(fakeWrapper.executeCalls.first.parameters.first, first.id);
+        });
+
+        test(
+          'stores is_locked as 1 for a locked row and 0 otherwise',
+          () async {
+            await dataSource.insertEstimationRow(newEstimate(locked: true));
+            await dataSource.insertEstimationRow(newEstimate());
+
+            final lockedIndex = fakeWrapper.executeCalls.first.sql
+                .replaceFirst(RegExp(r'\) VALUES.*'), '')
+                .split(', ')
+                .indexOf('is_locked');
+            expect(fakeWrapper.executeCalls[0].parameters[lockedIndex], 1);
+            expect(fakeWrapper.executeCalls[1].parameters[lockedIndex], 0);
+          },
+        );
+
+        test('rethrows a write error', () async {
+          final error = Exception('disk full');
+          fakeWrapper.executeError = error;
+
+          await expectLater(
+            dataSource.insertEstimationRow(newEstimate()),
+            throwsA(same(error)),
+          );
+        });
+      });
+
+      group('updateEstimationNameById', () {
+        test('changes only the name of a row the phone has', () async {
+          fakeWrapper.stubGetAllSequence(selectByIdSql, [
+            [sqliteRow(id: 'est-1')],
+            [
+              {...sqliteRow(id: 'est-1'), 'estimate_name': 'Renamed'},
+            ],
+          ]);
+
+          final updated = await dataSource.updateEstimationNameById(
+            id: 'est-1',
+            newName: 'Renamed',
+          );
+
+          expect(updated?.id, 'est-1');
+          expect(updated?.estimateName, 'Renamed');
+          final call = fakeWrapper.executeCalls.single;
+          expect(
+            call.sql,
+            'UPDATE cost_estimates SET estimate_name = ? WHERE id = ?',
+          );
+          expect(call.parameters, ['Renamed', 'est-1']);
+        });
+
+        test('returns null when the row is gone after the write', () async {
+          fakeWrapper.stubGetAllSequence(selectByIdSql, [
+            [sqliteRow(id: 'est-1')],
+            const [],
+          ]);
+
+          final updated = await dataSource.updateEstimationNameById(
+            id: 'est-1',
+            newName: 'Renamed',
+          );
+
+          expect(updated, isNull);
+          expect(fakeWrapper.executeCalls, hasLength(1));
+        });
+
+        test('writes nothing for a name the row already has', () async {
+          phoneHasRow('est-1');
+
+          final updated = await dataSource.updateEstimationNameById(
+            id: 'est-1',
+            newName: estimateNameDefault,
+          );
+
+          expect(updated?.estimateName, estimateNameDefault);
+          expect(fakeWrapper.executeCalls, isEmpty);
+        });
+
+        test(
+          'returns null and writes nothing when the phone lacks the row',
+          () async {
+            final updated = await dataSource.updateEstimationNameById(
+              id: 'missing',
+              newName: 'Renamed',
+            );
+
+            expect(updated, isNull);
+            expect(fakeWrapper.executeCalls, isEmpty);
+            expect(fakeWrapper.writeTransactionCallCount, 0);
+          },
+        );
+
+        test('rethrows a read error before writing', () async {
+          final error = Exception('read failed');
+          fakeWrapper.getAllError = error;
+
+          await expectLater(
+            dataSource.updateEstimationNameById(id: 'est-1', newName: 'X'),
+            throwsA(same(error)),
+          );
+          expect(fakeWrapper.executeCalls, isEmpty);
+        });
+      });
+
+      group('updateEstimationLockById', () {
+        test('locks an unlocked row by writing only is_locked', () async {
+          fakeWrapper.stubGetAllSequence(selectByIdSql, [
+            [sqliteRow(id: 'est-1')],
+            [sqliteRow(id: 'est-1', locked: true)],
+          ]);
+
+          final updated = await dataSource.updateEstimationLockById(
+            id: 'est-1',
+            isLocked: true,
+          );
+
+          expect(updated?.isLocked, isTrue);
+          final call = fakeWrapper.executeCalls.single;
+          expect(
+            call.sql,
+            'UPDATE cost_estimates SET is_locked = ? WHERE id = ?',
+          );
+          expect(call.parameters, [1, 'est-1']);
+        });
+
+        test('unlocks a locked row by writing only is_locked', () async {
+          phoneHasRow('est-1', locked: true);
+
+          await dataSource.updateEstimationLockById(
+            id: 'est-1',
+            isLocked: false,
+          );
+
+          expect(fakeWrapper.executeCalls.single.parameters, [0, 'est-1']);
+        });
+
+        test('writes nothing for a lock state the row already has', () async {
+          phoneHasRow('est-1', locked: true);
+
+          final updated = await dataSource.updateEstimationLockById(
+            id: 'est-1',
+            isLocked: true,
+          );
+
+          expect(updated?.isLocked, isTrue);
+          expect(fakeWrapper.executeCalls, isEmpty);
+        });
+
+        test(
+          'returns null and writes nothing when the phone lacks the row',
+          () async {
+            final updated = await dataSource.updateEstimationLockById(
+              id: 'missing',
+              isLocked: true,
+            );
+
+            expect(updated, isNull);
+            expect(fakeWrapper.executeCalls, isEmpty);
+          },
+        );
+      });
+
+      group('deleteEstimationRowById', () {
+        test('deletes a row the phone has', () async {
+          phoneHasRow('est-1');
+
+          final deleted = await dataSource.deleteEstimationRowById('est-1');
+
+          expect(deleted, isTrue);
+          final call = fakeWrapper.executeCalls.single;
+          expect(call.sql, 'DELETE FROM cost_estimates WHERE id = ?');
+          expect(call.parameters, ['est-1']);
+        });
+
+        test(
+          'writes nothing and returns false when the phone lacks the row',
+          () async {
+            final deleted = await dataSource.deleteEstimationRowById('missing');
+
+            expect(deleted, isFalse);
+            expect(fakeWrapper.executeCalls, isEmpty);
+          },
+        );
+
+        test('rethrows a write error', () async {
+          phoneHasRow('est-1');
+          final error = Exception('disk full');
+          fakeWrapper.executeError = error;
+
+          await expectLater(
+            dataSource.deleteEstimationRowById('est-1'),
+            throwsA(same(error)),
+          );
+        });
+      });
+    });
   });
 }

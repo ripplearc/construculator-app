@@ -7,8 +7,9 @@ import 'package:construculator/libraries/estimation/domain/enums/estimation_sort
 /// Reads go through `watch()` so the UI stays live as sync arrives. Unlike the
 /// request/response [CostEstimationDataSource], this seam owns activation of the
 /// on-demand `user_cost_estimates` sync stream. It returns DTOs (no `Either`)
-/// and always rethrows; the repository is the error boundary. Write operations
-/// (create/delete/rename/lock) are added in later PRs.
+/// and always rethrows; the repository is the error boundary. A write lands in
+/// the phone's database at once and PowerSync uploads it later, so none of the
+/// write methods waits for the server.
 abstract class PowerSyncCostEstimationDataSource {
   /// Watches the cost estimates for [projectId] from local SQLite, ordered by
   /// [sortBy] in the given [ascending] direction and optionally capped to
@@ -57,4 +58,35 @@ abstract class PowerSyncCostEstimationDataSource {
     bool ascending = false,
     int? limit,
   });
+
+  /// Writes [estimation] as a new row on the phone and queues it for upload.
+  ///
+  /// A row with an empty id gets a new one minted here; a row that already has
+  /// an id keeps it. Returns the row as stored.
+  Future<CostEstimateDto> insertEstimationRow(CostEstimateDto estimation);
+
+  /// Changes only the name of the row with [id]; `updated_at` stays as it is.
+  ///
+  /// Returns the row as it now is on the phone, or null, writing nothing, when
+  /// the phone has no row with [id]. A name the row already has writes nothing.
+  Future<CostEstimateDto?> updateEstimationNameById({
+    required String id,
+    required String newName,
+  });
+
+  /// Changes only `is_locked` of the row with [id]; the server fills in who
+  /// locked it and when.
+  ///
+  /// Returns the row as it now is on the phone, or null, writing nothing, when
+  /// the phone has no row with [id]. A lock state the row already has writes
+  /// nothing.
+  Future<CostEstimateDto?> updateEstimationLockById({
+    required String id,
+    required bool isLocked,
+  });
+
+  /// Deletes the row with [id] from the phone and queues the delete for upload.
+  ///
+  /// Returns false, and writes nothing, when the phone has no row with [id].
+  Future<bool> deleteEstimationRowById(String id);
 }
