@@ -1277,8 +1277,7 @@ void main() {
 
       await openRenameSheet(tester);
 
-      fakeSupabase.shouldThrowOnUpdate = true;
-      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+      fakePhoneDatabase.executeError = Exception('disk full');
 
       await tester.enterText(find.byType(CoreTextField), 'New Name');
       await tester.pumpAndSettle();
@@ -1286,13 +1285,13 @@ void main() {
       await tester.tap(find.text(l10n().saveCostNameButton));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
       expect(find.byType(EstimationRenameSheet), findsOneWidget);
       expect(fakeAppRouter.popCalls, initialPopCalls + 1);
     });
 
     testWidgets(
-      'updates estimation name in list after successful rename (optimistic update)',
+      'shows the new name in the list after a successful rename',
       (tester) async {
         const originalName = 'Kitchen Remodel';
         const newName = 'Bathroom Renovation';
@@ -1334,7 +1333,7 @@ void main() {
     );
 
     testWidgets(
-      'rolls back to original name in list when rename fails (optimistic rollback)',
+      'keeps the original name in the list when the rename fails',
       (tester) async {
         const originalName = 'Kitchen Remodel';
         const attemptedNewName = 'Bathroom Renovation';
@@ -1357,8 +1356,7 @@ void main() {
 
         await openRenameSheet(tester);
 
-        fakeSupabase.shouldThrowOnUpdate = true;
-        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+        fakePhoneDatabase.executeError = Exception('disk full');
 
         await tester.enterText(find.byType(CoreTextField), attemptedNewName);
         await tester.pumpAndSettle();
@@ -1376,7 +1374,7 @@ void main() {
         );
         expect(attemptedTextFinder, findsNothing);
 
-        expect(find.text(l10n().connectionError), findsOneWidget);
+        expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
       },
     );
   });

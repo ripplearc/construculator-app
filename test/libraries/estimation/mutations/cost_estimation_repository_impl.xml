@@ -40,17 +40,9 @@
 
 
 
-        <!-- RULE 24: In _getOriginalEstimation, never find a match -->
-        <regex pattern="final matchIndex = cached\.indexWhere\(\(e\) =&gt; e\.id == estimationId\);" dotAll="true" id="repo.get_original.never_match">
-            <mutation text="final matchIndex = -1;"/>
-        </regex>
 
 
 
-        <!-- RULE 28: In renameEstimation, use wrong field in optimistic update -->
-        <regex pattern="e\.copyWith\(estimateName: newName\)" dotAll="true" id="repo.rename.wrong_field">
-            <mutation text="e.copyWith(estimateDescription: newName)"/>
-        </regex>
 
         <!-- RULE 29: In _buildStreamKey, collapse key (breaks sort/limit isolation) -->
         <regex pattern="return '\$projectId:\$\{sortBy\.name\}:\$\{ascending \? 'asc' : 'desc'\}:\$\{limit \?\? 'all'\}';" dotAll="true" id="repo.streamkey.collapse_to_projectid">
@@ -109,9 +101,6 @@
         <regex pattern="patch: \(e\) =&gt; e\.copyWith\(lockStatus: updatedEstimation\.lockStatus\)," dotAll="true" id="repo.edits.lock_patch_replaces_all">
             <mutation text="patch: (e) =&gt; updatedEstimation,"/>
         </regex>
-        <regex pattern="patch: \(e\) =&gt; e\.copyWith\(\s*estimateName: updatedEstimation\.estimateName," dotAll="true" id="repo.edits.rename_patch_replaces_all">
-            <mutation text="patch: (e) =&gt; updatedEstimation, // "/>
-        </regex>
         <regex pattern="_emitToStream\(\s*key,\s*Right\(_applyPendingEdits\(key, projectId, copy\.estimates, copy\.view\)\),\s*\);" dotAll="true" id="repo.republish.skip_emit">
             <mutation text="// republish skipped"/>
         </regex>
@@ -145,9 +134,6 @@
         <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
             <mutation text="// edit not remembered"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(renameEdit\);" dotAll="true" id="repo.edits.keep_failed_rename">
-            <mutation text="// _forgetPendingEdit(renameEdit);"/>
-        </regex>
         <regex pattern="_forgetPendingEdit\(lockEdit\);" dotAll="true" id="repo.edits.keep_failed_lock">
             <mutation text="// _forgetPendingEdit(lockEdit);"/>
         </regex>
@@ -162,9 +148,6 @@
         </regex>
         <regex pattern="e\.updatedAt\.isAfter\(writtenAt\)" dotAll="true" id="repo.edits.newer_phone_row_older">
             <mutation text="e.updatedAt.isBefore(writtenAt)"/>
-        </regex>
-        <regex pattern="bool showsWrite\(CostEstimate e\) =&gt; e\.estimateName == newName;" dotAll="true" id="repo.edits.rename_reflected_negated">
-            <mutation text="bool showsWrite(CostEstimate e) =&gt; e.estimateName != newName;"/>
         </regex>
         <regex pattern="bool showsWrite\(CostEstimate e\) =&gt; e\.lockStatus\.isLocked == isLocked;" dotAll="true" id="repo.edits.lock_reflected_negated">
             <mutation text="bool showsWrite(CostEstimate e) =&gt; e.lockStatus.isLocked != isLocked;"/>
@@ -187,9 +170,6 @@
         <regex pattern="!_withCreated\(\s*estimates,\s*createdEstimation,\s*view,\s*\)\.any\(\(e\) =&gt; e\.id == createdEstimation\.id\)" dotAll="true" id="repo.create.hidden_when_not_fit_never_reflected">
             <mutation text="false"/>
         </regex>
-        <regex pattern="writtenAt: updatedEstimationFromRemote\.updatedAt," dotAll="true" id="repo.rename.written_at_is_shown_date">
-            <mutation text="writtenAt: updatedEstimation.updatedAt,"/>
-        </regex>
         <regex pattern="_localSubscriptions\.remove\(streamKey\)\?\.cancel\(\);\s*_forgetStream\(streamKey\);" dotAll="true" id="repo.local.keep_copy_of_unwatched_list">
             <mutation text="_localSubscriptions.remove(streamKey)?.cancel();"/>
         </regex>
@@ -210,6 +190,20 @@
         <regex pattern="_phoneCopies\.remove\(streamKey\);\n\s*publish\(\n\s*Left\(\n\s*_handleError\(\n\s*e,\n\s*.reading estimations from the phone." dotAll="true" id="repo.local.unreadable_row_keeps_old_copy">
             <mutation text="publish(Left(_handleError(e,
  'reading estimations from the phone'"/>
+        </regex>
+        <!-- renameEstimation: the phone not having the row is a not-found failure -->
+        <regex pattern="if \(renamedDto == null\) \{" dotAll="true" id="repo.rename.skip_not_found">
+            <mutation text="if (renamedDto != null) {"/>
+        </regex>
+
+        <!-- renameEstimation: a successful rename answers with the stored row -->
+        <regex pattern="return Right\(renamedDto\.toDomain\(\)\);" dotAll="true" id="repo.rename.success_as_failure">
+            <mutation text="return Left(UnexpectedFailure());"/>
+        </regex>
+
+        <!-- renameEstimation: the name written is the name asked for -->
+        <regex pattern="newName: newName,\n      \);\n      if \(renamedDto" dotAll="true" id="repo.rename.writes_wrong_name">
+            <mutation text="newName: estimationId,\n      );\n      if (renamedDto"/>
         </regex>
     </rules>
 

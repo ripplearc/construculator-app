@@ -18,16 +18,18 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Implementation of [CostEstimationRepository] that reads the list from the
-/// phone's PowerSync copy and writes through Supabase.
+/// phone's PowerSync copy, writes a rename there, and writes the other changes
+/// through Supabase.
 ///
 /// Isolates reactive estimation streams, pagination state, and cache
 /// by a composite key of `projectId + sortBy + limit`, so multiple
 /// query contexts for the same project do not share state. Paging raises the
 /// limit of the local watch instead of fetching offsets.
 ///
-/// A write reaches the phone's copy only after the next sync, so a local
-/// re-emission in between would show the old value. Until saves go through the
-/// phone, each write is remembered as a pending edit and re-applied to every
+/// A rename is written to the phone's copy and the list watch shows it at once.
+/// The other writes reach the phone's copy only after the next sync, so a local
+/// re-emission in between would show the old value. Until they go through the
+/// phone too, each of them is remembered as a pending edit and re-applied to every
 /// list that arrives from the local watch. An edit is dropped once each list
 /// that held the row shows the change, so it survives a screen being closed
 /// and reopened before the sync.
@@ -512,21 +514,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
-  CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
-    final projectKeys = _cachedEstimations.keys.where(
-      (k) => k.startsWith('$projectId:'),
-    );
-    for (final key in projectKeys) {
-      final cached = _cachedEstimations[key] ?? [];
-      final matchIndex = cached.indexWhere((e) => e.id == estimationId);
-      if (matchIndex != -1) {
-        return cached[matchIndex];
-      }
-    }
-
-    return null;
-  }
-
   @override
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
@@ -718,59 +705,30 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
+  // TODO: [CA-1452] A rename moves the last edited date on the server, but the storyboard says it changes only the name.
+  // https://ripplearc.youtrack.cloud/issue/CA-1452
   @override
   Future<Either<Failure, CostEstimate>> renameEstimation({
     required String estimationId,
     required String newName,
     required String projectId,
   }) async {
-    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
-    final renameEdit = _newEditKey('rename', estimationId);
-    bool showsWrite(CostEstimate e) => e.estimateName == newName;
-    final edit = _rememberPendingEdit(
-      renameEdit,
-      projectId,
-      estimationId: estimationId,
-      apply: (estimates, _) => _replaceEstimation(
-        estimates,
-        estimationId,
-        (e) => e.copyWith(estimateName: newName),
-      ),
-      isReflected: _rowReflects(estimationId, showsWrite),
-    );
-    _republishProject(projectId);
-
     try {
       _logger.debug('Renaming estimation: $estimationId to $newName');
 
-      final updatedDto = await _dataSource.renameEstimation(
-        estimationId: estimationId,
+      final renamedDto = await _localDataSource.updateEstimationNameById(
+        id: estimationId,
         newName: newName,
       );
+      if (renamedDto == null) {
+        _logger.warning('Estimation to rename not on the phone: $estimationId');
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        );
+      }
 
-      final updatedEstimationFromRemote = updatedDto.toDomain();
-      final updatedEstimation = updatedEstimationFromRemote.copyWith(
-        updatedAt:
-            originalEstimation?.updatedAt ??
-            updatedEstimationFromRemote.updatedAt,
-      );
-
-      _rememberServerVersion(
-        edit,
-        estimationId: estimationId,
-        writtenAt: updatedEstimationFromRemote.updatedAt,
-        patch: (e) => e.copyWith(
-          estimateName: updatedEstimation.estimateName,
-          updatedAt: updatedEstimation.updatedAt,
-        ),
-        showsWrite: showsWrite,
-      );
-      _republishProject(projectId);
-
-      return Right(updatedEstimation);
+      return Right(renamedDto.toDomain());
     } catch (e) {
-      _forgetPendingEdit(renameEdit);
-      _republishProject(projectId);
       return Left(
         _handleError(
           e,
