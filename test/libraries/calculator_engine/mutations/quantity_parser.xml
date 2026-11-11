@@ -35,8 +35,8 @@
 
         <!-- RULE 1d: the exact-value guard runs for a weight too, so a
              17-digit weight reads as no value -->
-        <regex pattern="if \(unit\.dimension == Dimension\.length\) \{\s*final tokenInches = _keptInchesOf\(token, tokenUnit\);\s*if \(tokenInches == null\) return null;" dotAll="true" id="quantity_parser.parse.exact_guard_on_weights">
-            <mutation text="if (exactValueOf(token) == null) return null; if (unit.dimension == Dimension.length) { final tokenInches = _keptInchesOf(token, tokenUnit); if (tokenInches == null) return null;"/>
+        <regex pattern="if \(unit\.dimension == Dimension\.length\) \{\s*final tokenInches = _exactInchesOf\(token, tokenUnit\);\s*if \(tokenInches == null\) return null;" dotAll="true" id="quantity_parser.parse.exact_guard_on_weights">
+            <mutation text="if (exactValueOf(token) == null) return null; if (unit.dimension == Dimension.length) { final tokenInches = _exactInchesOf(token, tokenUnit); if (tokenInches == null) return null;"/>
         </regex>
 
         <!-- RULE 2: an open token is read as if it were complete; the exact

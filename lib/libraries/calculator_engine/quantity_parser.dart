@@ -30,11 +30,11 @@ class QuantityParser extends Equatable {
 
   /// The exact inches one length token stands for. A token whose number
   /// cannot be kept exactly — a fraction over zero, or more digits than a
-  /// [Rational] holds — is a programming error here; [parse] answers `null`
-  /// for the first, as it does for an open token, and keeps the second to
-  /// 1/512 of a tick. A number whose inches outgrow a [Rational]
-  /// (1,844,674,407,370,955 ft) is a [RationalOverflow], which [parse]
-  /// answers `null` for too.
+  /// [Rational] holds, which a typed number never has
+  /// ([EntryBuffer.maxDigits]) — is a programming error here; [parse]
+  /// answers `null` for both, as it does for an open token. A number whose
+  /// inches outgrow a [Rational] (1,844,674,407,370,955 ft) is a
+  /// [RationalOverflow], which [parse] answers `null` for too.
   Rational inchesOf(Token token) {
     final exact = exactValueOf(token);
     if (exact == null) {
@@ -49,12 +49,10 @@ class QuantityParser extends Equatable {
   /// The quantity the tokens spell, or `null` while any token is still open
   /// or the tokens cannot be one value (a length beside a weight, a raised
   /// unit inside a compound, a fraction over zero, a length past the tick
-  /// limit or below the 1/512 of a tick a kept length holds), so that the
-  /// caller shows the error it already has. Only a length is kept exactly,
-  /// and only while its number fits a [Rational]: a decimal or a fraction
-  /// with more digits than that (1.123456789012345678 ft) is kept to 1/512
-  /// of a tick, as a computed length is, so that it is still a value; a
-  /// weight, an area and a volume stay in double math.
+  /// limit), so that the caller shows the error it already has. A length is
+  /// kept exactly as typed, which a [Rational] always holds since a typed
+  /// number has at most fifteen digits ([EntryBuffer.maxDigits]); a weight,
+  /// an area and a volume stay in double math.
   ///
   /// A single token pressed twice or three times is an area or a volume in
   /// that unit; a single board-foot token is a volume; weight tokens add up
@@ -92,7 +90,7 @@ class QuantityParser extends Equatable {
           return null;
         }
         if (unit.dimension == Dimension.length) {
-          final tokenInches = _keptInchesOf(token, tokenUnit);
+          final tokenInches = _exactInchesOf(token, tokenUnit);
           if (tokenInches == null) return null;
           inches += tokenInches;
         } else {
@@ -113,7 +111,7 @@ class QuantityParser extends Equatable {
     );
   }
 
-  Rational? _keptInchesOf(Token token, Unit unit) {
+  Rational? _exactInchesOf(Token token, Unit unit) {
     final exact = exactValueOf(token);
     if (exact == null) return null;
     return exact * unit.inchesPer;

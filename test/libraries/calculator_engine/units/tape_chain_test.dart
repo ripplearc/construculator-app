@@ -288,6 +288,36 @@ void main() {
         expect(tape.chips.last, const ErrorChip(CalculationError.tooSmall));
       });
 
+      test('19999999 ft + 1/9999973 in − 19999999 ft = reads Too small, never '
+          '0ft 0in, and a tiny typed length is Too small at the first step '
+          'that uses it', () {
+        const tooSmall = ErrorChip(CalculationError.tooSmall);
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        final walked = press(
+          const Tape(),
+          '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in − 1 9 9 9 9 9 9 9 ft =',
+        );
+        expect(walked.chips.last, tooSmall);
+        final summed = press(
+          const Tape(),
+          '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in =',
+        );
+        expect(landed(summed), '19999999ft 0in');
+        expect(
+          press(const Tape(), '1 / 9 9 9 9 9 7 3 in × 1 =').chips.last,
+          tooSmall,
+        );
+        expect(
+          press(
+            const Tape(),
+            '1 in ÷ 9 9 9 9 9 7 3 + 1 9 9 9 9 9 9 9 ft − 1 9 9 9 9 9 9 9 ft =',
+          ).chips.last,
+          tooSmall,
+        );
+        expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      });
+
       test('a length typed with fifteen digits computes exactly, as the trade '
           'compound a scaled length is written in, and a sixteenth digit is '
           'refused as it is typed', () {
