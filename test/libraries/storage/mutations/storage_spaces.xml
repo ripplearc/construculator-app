@@ -13,6 +13,9 @@
     </exclude>
 
     <rules>
+        <regex pattern="prefix\.endsWith\('\.'\)\)" dotAll="true" id="prefs.accept_prefix_without_dot">
+            <mutation text="true)"/>
+        </regex>
         <regex pattern="return stored is T \? stored : null;" dotAll="true" id="prefs.get_ignores_value">
             <mutation text="return null;"/>
         </regex>

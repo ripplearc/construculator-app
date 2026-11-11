@@ -8,10 +8,9 @@ class PrefixedPreferences {
   /// The text put in front of every key of this space.
   final String prefix;
 
-  /// A space whose keys all start with [prefix], which must not be empty and
-  /// must end in a dot, so that no space can match another space's keys.
-  PrefixedPreferences({required this.prefix})
-    : assert(prefix.isNotEmpty && prefix.endsWith('.'));
+  /// A space whose keys all start with [prefix], which must end in a dot
+  /// (so it is not empty), so that no space can match another space's keys.
+  PrefixedPreferences({required this.prefix}) : assert(prefix.endsWith('.'));
 
   /// The value stored under [key], or null when nothing is stored or the
   /// stored value is not a [T].

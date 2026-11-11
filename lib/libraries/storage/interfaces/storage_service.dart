@@ -2,9 +2,9 @@
 /// signed-in user.
 ///
 /// The library knows no feature. A feature keeps its keys in one named group of
-/// its own, such as `last_used_unit.`. The user space is deleted when the user
-/// changes or logs out; a setting that holds no user data goes to
-/// `DeviceSpaceStorageService` instead.
+/// its own, such as `last_used_unit.`. The shared delete routine of the
+/// sign-out design empties the whole user space when the user changes or logs
+/// out, so only data that belongs to the signed-in user goes here.
 abstract class StorageService {
   /// Initialize the storage service, Some storage services may need to be initialized before use.
   Future<void> initialize();
