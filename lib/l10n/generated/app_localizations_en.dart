@@ -1575,15 +1575,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitSymbolTubes => 'tb';
 
   @override
-  String get otherMaterialDetailsButton => 'Other material details';
-
-  @override
-  String get brandLabel => 'Brand';
-
-  @override
-  String get productLinkLabel => 'Product link';
-
-  @override
   String get labourTypeLabel => 'Labour type*';
 
   @override

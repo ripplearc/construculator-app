@@ -47,10 +47,10 @@ void main() {
     expect(find.text('Unit'), findsOneWidget);
   });
 
-  testWidgets('shows the name of the picked unit', (tester) async {
-    await pumpPill(tester, unit: Unit.liters);
+  testWidgets('shows the symbol of the picked unit', (tester) async {
+    await pumpPill(tester, unit: Unit.gallons);
 
-    expect(find.text('Liters'), findsOneWidget);
+    expect(find.text('gal'), findsOneWidget);
     expect(find.text('Unit'), findsNothing);
   });
 

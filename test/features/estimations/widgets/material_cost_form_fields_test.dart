@@ -473,10 +473,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.descendant(of: unitPill, matching: find.text('Bag')),
+        find.descendant(of: unitPill, matching: find.text('bag')),
         findsOneWidget,
       );
       expect(dataOf().unit, Unit.bags);
+    });
+
+    testWidgets('keeps the unit button on a 360 dp screen for the longest '
+        'unit name', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await pumpFields(tester);
+      bloc.add(const MaterialUnitSelected(Unit.pounds));
+      await tester.pump();
+
+      expect(
+        find.descendant(of: unitPill, matching: find.text('lb')),
+        findsOneWidget,
+      );
+      expect(tester.getRect(unitPill).right, lessThanOrEqualTo(360));
     });
 
     testWidgets('changes when another unit is picked from the list', (
@@ -486,13 +501,13 @@ void main() {
 
       await tester.tap(unitPill);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('unit_option_liters')));
-      await tester.tap(find.byKey(const Key('unit_option_liters')));
+      await tester.ensureVisible(find.byKey(const Key('unit_option_gallons')));
+      await tester.tap(find.byKey(const Key('unit_option_gallons')));
       await tester.pumpAndSettle();
 
-      expect(dataOf().unit, Unit.liters);
+      expect(dataOf().unit, Unit.gallons);
       expect(
-        find.descendant(of: unitPill, matching: find.text('Liters')),
+        find.descendant(of: unitPill, matching: find.text('gal')),
         findsOneWidget,
       );
     });

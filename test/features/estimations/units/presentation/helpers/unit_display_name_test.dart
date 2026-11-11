@@ -51,10 +51,47 @@ void main() {
   }
 
   group('symbol', () {
-    test('gives every unit a symbol of its own', () {
-      final symbols = {for (final unit in Unit.values) unit.symbol(l10n)};
+    const expectedSymbols = {
+      Unit.pieces: 'ea',
+      Unit.meters: 'm',
+      Unit.squareMeters: 'sqm',
+      Unit.cubicMeters: 'cbm',
+      Unit.kilograms: 'kg',
+      Unit.tons: 't',
+      Unit.liters: 'l',
+      Unit.hours: 'hr',
+      Unit.days: 'day',
+      Unit.boxes: 'bx',
+      Unit.bags: 'bag',
+      Unit.rolls: 'rl',
+      Unit.sheets: 'sht',
+      Unit.feet: 'ft',
+      Unit.inches: 'in',
+      Unit.yards: 'yd',
+      Unit.linearFeet: 'lf',
+      Unit.squareFeet: 'sf',
+      Unit.squareYards: 'sy',
+      Unit.squares: 'sq',
+      Unit.cubicFeet: 'cf',
+      Unit.cubicYards: 'cy',
+      Unit.gallons: 'gal',
+      Unit.pounds: 'lb',
+      Unit.shortTons: 'tn',
+      Unit.pairs: 'pr',
+      Unit.dozens: 'dz',
+      Unit.bundles: 'bdl',
+      Unit.pallets: 'plt',
+      Unit.tubes: 'tb',
+    };
 
-      expect(symbols, hasLength(Unit.values.length));
+    test('gives every unit a symbol', () {
+      expect(expectedSymbols.keys, unorderedEquals(Unit.values));
     });
+
+    for (final entry in expectedSymbols.entries) {
+      test('writes ${entry.key.name} as ${entry.value}', () {
+        expect(entry.key.symbol(l10n), entry.value);
+      });
+    }
   });
 }
