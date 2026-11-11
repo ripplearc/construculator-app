@@ -3,6 +3,8 @@ import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -502,6 +504,109 @@ void main() {
           expect(calls, isNotEmpty);
           final attrs = calls.last['userAttributes'];
           expect(attrs.email, equals('new@example.com'));
+        },
+      );
+    });
+
+    group('Sentry breadcrumbs', () {
+      const personalEmail = 'new.engineer@construction.com';
+      late FakeSentryWrapper sentryWrapper;
+
+      setUp(() {
+        sentryWrapper = FakeSentryWrapper();
+        AppLogger.setSentryWrapper(sentryWrapper);
+      });
+
+      tearDown(() {
+        AppLogger.setSentryWrapper(null);
+      });
+
+      User profileFor(String email) => User(
+        id: '789',
+        credentialId: 'cred-breadcrumb-user',
+        email: email,
+        firstName: 'Alex',
+        lastName: 'Rodriguez',
+        professionalRole: 'Site Engineer',
+        createdAt: clock.now(),
+        updatedAt: clock.now(),
+        userStatus: UserProfileStatus.active,
+        userPreferences: {},
+      );
+
+      List<String> breadcrumbMessages() =>
+          sentryWrapper.breadcrumbs.map((b) => b.message).toList();
+
+      void expectNoPersonalValues() {
+        for (final message in breadcrumbMessages()) {
+          expect(message, isNot(contains(personalEmail)));
+          expect(message, isNot(contains('Alex')));
+          expect(message, isNot(contains('Rodriguez')));
+        }
+      }
+
+      test('createUserProfile names the operation and outcome only', () async {
+        await authRepository.createUserProfile(profileFor(personalEmail));
+
+        expect(breadcrumbMessages(), [
+          '[SupabaseRepositoryImpl] Creating user profile',
+          '[SupabaseRepositoryImpl] User profile created successfully',
+        ]);
+        expectNoPersonalValues();
+      });
+
+      test('updateUserProfile names the operation and outcome only', () async {
+        fakeSupabaseWrapper.addTableData('users', [
+          {
+            'id': '789',
+            'credential_id': 'cred-breadcrumb-user',
+            'email': 'old.email@construction.com',
+            'user_status': 'inactive',
+            'created_at': '2023-01-01T00:00:00Z',
+            'updated_at': '2023-01-01T00:00:00Z',
+          },
+        ]);
+
+        await authRepository.updateUserProfile(profileFor(personalEmail));
+
+        expect(breadcrumbMessages(), [
+          '[SupabaseRepositoryImpl] Updating user profile',
+          '[SupabaseRepositoryImpl] User profile updated successfully',
+        ]);
+        expectNoPersonalValues();
+      });
+
+      test('updateUserEmail names the operation without the new email', () async {
+        fakeSupabaseWrapper.setCurrentUser(
+          FakeUser(
+            id: 'user-1',
+            email: 'old@example.com',
+            appMetadata: {},
+            userMetadata: {},
+            createdAt: clock.now().toIso8601String(),
+          ),
+        );
+
+        await authRepository.updateUserEmail(personalEmail);
+
+        expect(breadcrumbMessages(), [
+          '[SupabaseRepositoryImpl] Updating user email',
+        ]);
+        expectNoPersonalValues();
+      });
+
+      test(
+        'updateUserEmail warns that no user was found without the new email',
+        () async {
+          fakeSupabaseWrapper.shouldReturnNullUser = true;
+
+          await authRepository.updateUserEmail(personalEmail);
+
+          expect(breadcrumbMessages(), [
+            '[SupabaseRepositoryImpl] Updating user email',
+            '[SupabaseRepositoryImpl] No user found for email update',
+          ]);
+          expectNoPersonalValues();
         },
       );
     });
