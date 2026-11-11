@@ -35,6 +35,48 @@ void main() {
         expect(rows.single['id'], 'p1');
       });
 
+      test(
+        'returns each scripted result in turn, then repeats the last',
+        () async {
+          const sql = 'SELECT * FROM projects WHERE id = ?';
+          fakeWrapper.stubGetAllSequence(sql, [
+            [
+              {'id': 'p1', 'project_name': 'Before'},
+            ],
+            const [],
+          ]);
+
+          final first = await fakeWrapper.getAll(sql, ['p1']);
+          final second = await fakeWrapper.getAll(sql, ['p1']);
+          final third = await fakeWrapper.getAll(sql, ['p1']);
+
+          expect(first.single['project_name'], 'Before');
+          expect(second, isEmpty);
+          expect(third, isEmpty);
+        },
+      );
+
+      test(
+        'a scripted sequence wins over a stubbed result and reset clears it',
+        () async {
+          const sql = 'SELECT 1';
+          fakeWrapper.stubGetAll(sql, [
+            {'id': 'stubbed'},
+          ]);
+          fakeWrapper.stubGetAllSequence(sql, [
+            [
+              {'id': 'sequence'},
+            ],
+          ]);
+
+          expect((await fakeWrapper.getAll(sql)).single['id'], 'sequence');
+
+          fakeWrapper.reset();
+
+          expect(await fakeWrapper.getAll(sql), isEmpty);
+        },
+      );
+
       test('records the sql and parameters of each call', () async {
         await fakeWrapper.getAll('SELECT 1', ['a', 2]);
 
