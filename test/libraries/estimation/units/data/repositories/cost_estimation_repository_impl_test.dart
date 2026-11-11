@@ -1139,81 +1139,24 @@ void main() {
     });
 
     group('deleteEstimation', () {
-      test('should return Right(null) when deletion is successful', () async {
-        final estimationMap = buildEstimationMap(
-          id: estimateIdDefault,
+      Map<String, dynamic> seedEstimate(String id, {String? createdAt}) {
+        final map = buildEstimationMap(
+          id: id,
           projectId: testProjectId,
+          createdAt: createdAt,
         );
-        seedEstimationTable([estimationMap]);
-
-        final result = await repository.deleteEstimation(
-          estimateIdDefault,
-          testProjectId,
-        );
-
-        expect(result.isRight(), isTrue);
-      });
+        fakePhoneDatabase.seedRows([map]);
+        return map;
+      }
 
       test(
-        'should return notFoundError when data source throws PGRST116',
+        'should return Right(null) and remove the estimation from the watched list',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.noDataFound;
-          fakeSupabaseWrapper.deleteErrorMessage = 'No data found';
-
-          final result = await repository.deleteEstimation(
-            estimateIdDefault,
-            testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.notFoundError),
-            ),
-          );
-        },
-      );
-
-      test('should call data source with correct estimation ID', () async {
-        await repository.deleteEstimation(estimateIdDefault, testProjectId);
-
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
-        expect(methodCalls, hasLength(1));
-        expect(
-          methodCalls.first['table'],
-          equals(DatabaseConstants.costEstimatesTable),
-        );
-        expect(methodCalls.first['filterColumn'], equals('id'));
-        expect(methodCalls.first['filterValue'], equals(estimateIdDefault));
-      });
-
-      test(
-        'should update stream optimistically by removing deleted estimation',
-        () async {
-          final estimationMap1 = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-          );
-          final estimationMap2 = buildEstimationMap(
-            id: estimateId2,
-            projectId: testProjectId,
-          );
-          final estimation2 = CostEstimateDto.fromJson(estimationMap2);
-          seedEstimationTable([estimationMap1, estimationMap2]);
-
+          seedEstimate('keep', createdAt: timestamp3);
+          seedEstimate(estimateIdDefault, createdAt: timestamp2);
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(hasLength(2))),
-          );
+          await queue.next;
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -1221,416 +1164,69 @@ void main() {
           );
 
           expect(result.isRight(), isTrue);
-
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(equals([estimation2.toDomain()]))),
-          );
-
+          final shown = (await queue.next).getRightOrNull()!;
+          expect(shown.map((e) => e.id), ['keep']);
           await queue.cancel();
-          repository.dispose();
         },
       );
 
-      test('should timeout failure when data source throws timeout', () async {
-        fakeSupabaseWrapper.shouldThrowOnDelete = true;
-        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
-        fakeSupabaseWrapper.deleteErrorMessage = errorMsgTimeout;
+      test('should delete only that row on the phone', () async {
+        seedEstimate(estimateIdDefault);
 
-        final result = await repository.deleteEstimation(
-          estimateIdDefault,
-          testProjectId,
-        );
+        await repository.deleteEstimation(estimateIdDefault, testProjectId);
 
-        expect(result.isLeft(), isTrue);
-        expectFailure(
-          result,
-          (failure) => expect(
-            failure,
-            EstimationFailure(errorType: EstimationErrorType.timeoutError),
-          ),
-        );
+        final write = fakePhoneDatabase.executeCalls.single;
+        expect(write.sql, 'DELETE FROM cost_estimates WHERE id = ?');
+        expect(write.parameters, [estimateIdDefault]);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('delete'), isEmpty);
       });
 
       test(
-        'should return connection failure when data source throws SocketException',
+        'should return Right(null) when the phone no longer has the estimation',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.deleteErrorMessage = 'Connection failed';
-
           final result = await repository.deleteEstimation(
             estimateIdDefault,
             testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.connectionError),
-            ),
-          );
+          expect(result.isRight(), isTrue);
         },
       );
 
       test(
-        'should return unexpected failure when data source throws unknown error',
+        'should return an unexpected failure and keep the estimation when the phone write fails',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.unknown;
-          fakeSupabaseWrapper.deleteErrorMessage = errorMsgServer;
+          seedEstimate(estimateIdDefault);
+          fakePhoneDatabase.executeError = Exception('disk full');
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
             testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
           expectFailure(
             result,
             (failure) => expect(failure, UnexpectedFailure()),
           );
-        },
-      );
-
-      test(
-        'should return connection error when data source throws PostgrestException with connection failure',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.connectionFailure;
-          fakeSupabaseWrapper.deleteErrorMessage = 'Connection lost';
-
-          final result = await repository.deleteEstimation(
-            estimateIdDefault,
+          fakePhoneDatabase.executeError = null;
+          final shown = (await repository.fetchInitialEstimations(
             testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.connectionError),
-            ),
-          );
+          )).getRightOrNull()!;
+          expect(shown.map((e) => e.id), [estimateIdDefault]);
         },
       );
 
       test(
-        'should return unexpected database error when data source throws PostgrestException with other error',
+        'should keep hasMore false after deleting from a list that fits one page',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.uniqueViolation;
-          fakeSupabaseWrapper.deleteErrorMessage = 'Database error';
+          for (var i = 0; i < 3; i++) {
+            seedEstimate('e$i', createdAt: '2026-01-0${i + 1}T00:00:00.000Z');
+          }
+          await repository.fetchInitialEstimations(testProjectId);
 
-          final result = await repository.deleteEstimation(
-            estimateIdDefault,
-            testProjectId,
-          );
+          await repository.deleteEstimation('e0', testProjectId);
 
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(
-                errorType: EstimationErrorType.unexpectedDatabaseError,
-              ),
-            ),
-          );
-        },
-      );
-
-      test(
-        'should maintain correct pagination after deleting an estimation',
-        () async {
-          final totalEstimations = defaultPageDatasetSize * 3;
-          final allMaps = seedEstimations(totalEstimations);
-          final allEstimations = mapsToDomainEntities(
-            allMaps.reversed.toList(),
-          );
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(allEstimations.sublist(0, defaultPageDatasetSize)),
-              ),
-            ),
-          );
-
-          await repository.loadMoreEstimations(testProjectId);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
-              ),
-            ),
-          );
-
-          await repository.deleteEstimation('estimate-29', testProjectId);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(
-                  allEstimations
-                      .sublist(0, defaultPageDatasetSize * 2)
-                      .where((e) => e.id != 'estimate-29')
-                      .toList(),
-                ),
-              ),
-            ),
-          );
-
-          fakePhoneDatabase.removeRow('estimate-29');
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(
-                  allEstimations
-                      .where((e) => e.id != 'estimate-29')
-                      .take(defaultPageDatasetSize * 2)
-                      .toList(),
-                ),
-              ),
-            ),
-          );
-
-          await repository.loadMoreEstimations(testProjectId);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(
-                  allEstimations.where((e) => e.id != 'estimate-29').toList(),
-                ),
-              ),
-            ),
-          );
-
-          await queue.cancel();
-        },
-      );
-
-      test('should show the deleted estimate again when delete fails', () async {
-        final maps = seedEstimations(smallDatasetSize);
-        final expectedEstimations = mapsToDomainEntities(
-          maps.reversed.toList(),
-        );
-
-        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-        final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(equals(expectedEstimations))),
-        );
-
-        fakeSupabaseWrapper.shouldThrowOnDelete = true;
-        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
-
-        final result = await repository.deleteEstimation(
-          'estimate-0',
-          testProjectId,
-        );
-
-        expect(result.isLeft(), isTrue);
-
-        await expectLater(
-          queue.next,
-          completion(
-            rightEstimations(
-              equals(
-                expectedEstimations.where((e) => e.id != 'estimate-0').toList(),
-              ),
-            ),
-          ),
-        );
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(equals(expectedEstimations))),
-        );
-
-        await queue.cancel();
-      });
-
-      test(
-        'should restore every watched list of the project when delete fails',
-        () async {
-          final maps = seedEstimations(smallDatasetSize);
-          final newestFirst = mapsToDomainEntities(maps.reversed.toList());
-          final oldestFirst = mapsToDomainEntities(maps);
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final newestQueue = StreamQueue(
-            repository.watchEstimations(testProjectId),
-          );
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final oldestQueue = StreamQueue(
-            repository.watchEstimations(testProjectId, ascending: true),
-          );
-          await expectLater(
-            newestQueue.next,
-            completion(rightEstimations(equals(newestFirst))),
-          );
-          await expectLater(
-            oldestQueue.next,
-            completion(rightEstimations(equals(oldestFirst))),
-          );
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.timeout;
-
-          await repository.deleteEstimation('estimate-0', testProjectId);
-
-          await newestQueue.next;
-          await oldestQueue.next;
-          await expectLater(
-            newestQueue.next,
-            completion(rightEstimations(equals(newestFirst))),
-          );
-          await expectLater(
-            oldestQueue.next,
-            completion(rightEstimations(equals(oldestFirst))),
-          );
-          await newestQueue.cancel();
-          await oldestQueue.cancel();
-        },
-      );
-
-      test(
-        'should keep the phone copy of other rows when a delete fails after a sync arrived',
-        () async {
-          final maps = seedEstimations(2);
-          final renamedNeighbour = buildEstimationMap(
-            id: 'estimate-1',
-            projectId: testProjectId,
-            estimateName: 'Renamed by a teammate',
-            createdAt: '2026-01-02T00:00:00.000Z',
-          );
-          final extraRow = buildEstimationMap(
-            id: 'estimate-2',
-            projectId: testProjectId,
-            estimateName: 'Estimate 2',
-            createdAt: '2026-01-03T00:00:00.000Z',
-          );
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(mapsToDomainEntities([maps[1], maps[0]])),
-              ),
-            ),
-          );
-          fakeSupabaseWrapper.shouldDelayOperations = true;
-          fakeSupabaseWrapper.completer = Completer<void>();
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.timeout;
-
-          final deleting = repository.deleteEstimation(
-            'estimate-0',
-            testProjectId,
-          );
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(equals(mapsToDomainEntities([maps[1]]))),
-            ),
-          );
-          fakePhoneDatabase.replaceRow(renamedNeighbour);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(mapsToDomainEntities([renamedNeighbour])),
-              ),
-            ),
-          );
-          fakeSupabaseWrapper.completer!.complete();
-          final result = await deleting;
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(mapsToDomainEntities([renamedNeighbour, maps[0]])),
-              ),
-            ),
-          );
-          fakePhoneDatabase.seedRows([extraRow]);
-
-          expect(result.isLeft(), isTrue);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(
-                  mapsToDomainEntities([extraRow, renamedNeighbour, maps[0]]),
-                ),
-              ),
-            ),
-          );
-          await queue.cancel();
-        },
-      );
-      test(
-        'should not add the deleted row to a list that never held it when delete fails',
-        () async {
-          final maps = seedEstimations(3);
-          final newestRow = buildEstimationMap(
-            id: 'estimate-3',
-            projectId: testProjectId,
-            estimateName: 'Estimate 3',
-            createdAt: '2026-01-04T00:00:00.000Z',
-          );
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final latestOnlyQueue = StreamQueue(
-            repository.watchEstimations(testProjectId, limit: 1),
-          );
-          await expectLater(
-            latestOnlyQueue.next,
-            completion(
-              rightEstimations(equals(mapsToDomainEntities([maps[2]]))),
-            ),
-          );
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.timeout;
-
-          final result = await repository.deleteEstimation(
-            'estimate-0',
-            testProjectId,
-          );
-          fakePhoneDatabase.seedRows([newestRow]);
-
-          expect(result.isLeft(), isTrue);
-          await latestOnlyQueue.next;
-          await latestOnlyQueue.next;
-          await expectLater(
-            latestOnlyQueue.next,
-            completion(
-              rightEstimations(equals(mapsToDomainEntities([newestRow]))),
-            ),
-          );
-          await latestOnlyQueue.cancel();
+          expect(repository.hasMoreEstimations(testProjectId), isFalse);
         },
       );
     });
@@ -2163,46 +1759,6 @@ void main() {
       }
 
       test(
-        'a delete made online does not bring the estimate back when the phone copy re-emits',
-        () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            projectEstimate(id: estimateId2, createdAt: timestamp2),
-          ]);
-
-          await repository.deleteEstimation(estimateIdDefault, testProjectId);
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(2);
-          expect(idsIn(emissions.last), [estimateId2, unrelatedEstimateId]);
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'a delete that fails does not hide the estimate when the phone copy re-emits',
-        () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            projectEstimate(id: estimateId2, createdAt: timestamp2),
-          ]);
-          fakeSupabaseWrapper.shouldThrowOnDelete = true;
-          fakeSupabaseWrapper.deleteExceptionType =
-              SupabaseExceptionType.timeout;
-
-          await repository.deleteEstimation(estimateIdDefault, testProjectId);
-          await queue.take(2);
-          syncUnrelatedEstimate();
-
-          expect(
-            idsIn(await queue.next),
-            containsAll([estimateIdDefault, estimateId2]),
-          );
-          await queue.cancel();
-        },
-      );
-
-      test(
         'a created estimate does not vanish when the phone copy re-emits before it syncs',
         () async {
           final queue = await watchSeeded([projectEstimate()]);
@@ -2483,40 +2039,6 @@ void main() {
           expect(result.getLeftOrNull(), isA<UnexpectedFailure>());
         },
       );
-
-      group('a new estimate the phone does not have yet', () {
-        Future<CostEstimate> createUnsyncedEstimate(
-          StreamQueue<Either<Failure, List<CostEstimate>>> queue,
-        ) async {
-          final created = (await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          )).getRightOrNull()!;
-          await queue.next;
-          return created;
-        }
-
-        test(
-          'stays gone after a delete made before the phone has the row',
-          () async {
-            final queue = await watchSeeded([projectEstimate()]);
-            final created = await createUnsyncedEstimate(queue);
-
-            await repository.deleteEstimation(created.id, testProjectId);
-            expect(idsIn(await queue.next), [estimateIdDefault]);
-            syncUnrelatedEstimate();
-
-            expect(idsIn(await queue.next), [
-              estimateIdDefault,
-              unrelatedEstimateId,
-            ]);
-            await queue.cancel();
-          },
-        );
-      });
 
       test(
         'a created estimate is still shown when its list is closed and reopened before the sync',

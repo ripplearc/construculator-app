@@ -93,6 +93,6 @@ abstract class PowerSyncCostEstimationDataSource {
 
   /// Deletes the row with [id] from the phone and queues the delete for upload.
   ///
-  /// Returns false, and writes nothing, when the phone has no row with [id].
-  Future<bool> deleteEstimationRowById(String id);
+  /// A row the phone does not have is already gone, so that is not an error.
+  Future<void> deleteEstimationRowById(String id);
 }

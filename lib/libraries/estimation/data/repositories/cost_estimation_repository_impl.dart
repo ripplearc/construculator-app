@@ -17,21 +17,21 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Implementation of [CostEstimationRepository] that reads the list from the
-/// phone's PowerSync copy, writes a rename and a lock change there, and writes
-/// the other changes through Supabase.
+/// phone's PowerSync copy, writes a rename, a lock change and a delete there, and
+/// writes a create through Supabase.
 ///
 /// Isolates reactive estimation streams, pagination state, and cache
 /// by a composite key of `projectId + sortBy + limit`, so multiple
 /// query contexts for the same project do not share state. Paging raises the
 /// limit of the local watch instead of fetching offsets.
 ///
-/// A rename and a lock change are written to the phone's copy and the list
-/// watch shows them at once. The other writes reach the phone's copy only after
+/// A rename, a lock change and a delete are written to the phone's copy and the
+/// list watch shows them at once. A create reaches the phone's copy only after
 /// the next sync, so a local re-emission in between would show the old value.
-/// Until they go through the phone too, each of them is remembered as a pending
-/// edit and re-applied to every list that arrives from the local watch. An edit
-/// is dropped once each list that held the row shows the change, so it survives
-/// a screen being closed and reopened before the sync.
+/// Until it goes through the phone too, it is remembered as a pending edit and
+/// re-applied to every list that arrives from the local watch. An edit is
+/// dropped once each list that held the row shows the change, so it survives a
+/// screen being closed and reopened before the sync.
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   final PowerSyncCostEstimationDataSource _localDataSource;
@@ -43,7 +43,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final Map<String, PaginationState> _paginationStates = {};
   final Map<String, int> _visibleLimits = {};
   final Map<String, _PhoneCopy> _phoneCopies = {};
-  int _editCount = 0;
   final Map<String, StreamSubscription<List<CostEstimateDto>>>
   _localSubscriptions = {};
   final Map<String, Completer<Either<Failure, List<CostEstimate>>>>
@@ -379,11 +378,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     return !rowIsStillBeingCreated && edit.isReflected(estimates, view);
   }
 
-  String _newEditKey(String kind, String estimationId) =>
-      '$kind:$estimationId:${_editCount++}';
-
-  void _forgetPendingEdit(String editKey) => _pendingEdits.remove(editKey);
-
   void _republishProject(String projectId) {
     for (final key in _watchedKeysOf(projectId).toList()) {
       final copy = _phoneCopies[key];
@@ -553,41 +547,26 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
     String projectId,
   ) async {
-    final deleteEdit = _newEditKey('delete', estimationId);
-    _rememberPendingEdit(
-      deleteEdit,
-      projectId,
-      estimationId: estimationId,
-      apply: (estimates, _) =>
-          estimates.where((e) => e.id != estimationId).toList(),
-      isReflected: (estimates, _) =>
-          estimates.every((e) => e.id != estimationId),
-    );
-    _republishProject(projectId);
-
     try {
       _logger.debug(
         'Deleting cost estimation: Estimation id: $estimationId, Project id: $projectId',
       );
 
-      await _dataSource.deleteEstimation(estimationId);
+      await _localDataSource.deleteEstimationRowById(estimationId);
 
       _logger.debug(
         'Successfully deleted cost estimation: Estimation id: $estimationId, Project id: $projectId',
       );
       return const Right(null);
     } catch (e) {
-      final failure = _handleError(
-        e,
-        'deleting cost estimation',
-        estimationId: estimationId,
-        projectId: projectId,
+      return Left(
+        _handleError(
+          e,
+          'deleting cost estimation',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
       );
-
-      _forgetPendingEdit(deleteEdit);
-      _republishProject(projectId);
-
-      return Left(failure);
     }
   }
 

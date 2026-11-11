@@ -219,16 +219,12 @@ class PowerSyncCostEstimationDataSourceImpl
       _updateColumnById(id, DatabaseConstants.isLockedColumn, isLocked ? 1 : 0);
 
   @override
-  Future<bool> deleteEstimationRowById(String id) async {
-    if (!await _phoneHasRow(id)) return false;
-    await _wrapper.writeTransaction(
-      (tx) => tx.execute(
-        'DELETE FROM $_table WHERE ${DatabaseConstants.idColumn} = ?',
-        [id],
-      ),
-    );
-    return true;
-  }
+  Future<void> deleteEstimationRowById(String id) => _wrapper.writeTransaction(
+    (tx) => tx.execute(
+      'DELETE FROM $_table WHERE ${DatabaseConstants.idColumn} = ?',
+      [id],
+    ),
+  );
 
   // TODO: [CA-1451] Let the upload skip an update the server no longer finds, so one refused write does not block the queue.
   // https://ripplearc.youtrack.cloud/issue/CA-1451
@@ -252,7 +248,4 @@ class PowerSyncCostEstimationDataSourceImpl
         ? null
         : CostEstimateDto.fromRow(updatedRows.first);
   }
-
-  Future<bool> _phoneHasRow(String id) async =>
-      (await _wrapper.getAll(_buildSelectByIdSql(), [id])).isNotEmpty;
 }
