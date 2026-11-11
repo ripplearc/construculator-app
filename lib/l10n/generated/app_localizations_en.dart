@@ -2079,6 +2079,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorEqualsAns => 'Ans';
 
   @override
+  String get calculatorEqualsUpdate => 'Update';
+
+  @override
   String get calculatorStripPlaceholder =>
       'Here you can see smart suggestions from us';
 

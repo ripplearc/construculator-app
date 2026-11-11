@@ -33,7 +33,7 @@ class BlocScenarioDriver implements ScenarioDriver {
     AppLocalizationsEn(),
   );
 
-  // The bloc under test, for the test to close.
+  /// The bloc under test, for the test to close.
   CalculatorBloc get bloc => _bloc;
 
   @override

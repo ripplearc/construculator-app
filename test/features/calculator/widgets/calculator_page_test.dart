@@ -597,6 +597,7 @@ void main() {
     expect(labels.equalsLabel(DeterministicRules.areaKey), 'Area');
     expect(labels.equalsLabel(Tape.calcKey), 'Calc');
     expect(labels.equalsLabel(CalculatorState.ansKey), 'Ans');
+    expect(labels.equalsLabel(CalculatorState.updateKey), 'Update');
     expect(labels.equalsLabel(DeterministicRules.diagonalKey), 'Diagonal');
     expect(labels.equalsLabel(TrigFunction.sine.key), 'Sine');
     expect(
