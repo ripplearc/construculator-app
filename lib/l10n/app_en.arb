@@ -3777,11 +3777,21 @@
   "costItemsLoadFailed": "Couldn't load the cost lines.",
   "@costItemsLoadFailed": {
     "description": "Shown on the estimate screen when its cost lines fail to load",
-    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate; wording to be confirmed with the owner."
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate. The wording is the product decision given in the review of PR 901."
+  },
+  "costItemsLoadFailedAgain": "Still couldn't load the cost lines.",
+  "@costItemsLoadFailedAgain": {
+    "description": "Shown on the estimate screen instead of the first line when a second load in a row fails",
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate. The wording is the product decision given in the review of PR 901."
+  },
+  "costItemsLoadFailedHint": "Nothing was deleted or changed. Try again, or close and reopen the estimate.",
+  "@costItemsLoadFailedHint": {
+    "description": "Second line under the failed load message on the estimate screen",
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate. The wording is the product decision given in the review of PR 901."
   },
   "costItemsRetryButton": "Try again",
   "@costItemsRetryButton": {
     "description": "Button on the estimate screen that reloads the cost lines after a failed load",
-    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate; wording to be confirmed with the owner."
+    "context": "No storyboard frame shows a failed load. This keeps a failed load from looking like an empty estimate. The wording is the product decision given in the review of PR 901."
   }
 }
