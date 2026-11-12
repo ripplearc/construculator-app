@@ -326,6 +326,7 @@ void main() {
         expect: () => [
           const CalculatorState(
             refusal: TapeRefused(TapeRefusal.typeANumberFirst),
+            refusedUnit: Unit.foot,
           ),
           tapeState(pressed('1')),
           tapeState(pressed('1 /')),
@@ -512,12 +513,16 @@ void main() {
         expect: () => [
           tapeState(pressed('[Width] 5')).copyWith(
             refusal: () => const TapeEntryRefused(EntryRefusal.needsLength),
+            refusedUnit: () => Unit.pound,
+            toastsRaised: 1,
           ),
-          CalculatorState.initial(),
-          tapeState(pressed('[Slope]')),
-          tapeState(pressed('[Slope] 6')),
+          const CalculatorState(toastsRaised: 1),
+          tapeState(pressed('[Slope]')).copyWith(toastsRaised: 1),
+          tapeState(pressed('[Slope] 6')).copyWith(toastsRaised: 1),
           tapeState(pressed('[Slope] 6')).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.slopeTakesAGrade),
+            refusedUnit: () => Unit.foot,
+            toastsRaised: 1,
           ),
         ],
       );
@@ -1017,6 +1022,194 @@ void main() {
           ),
           tapeState(pressed('[Length] 1 8 ft')).copyWith(toastsRaised: 2),
         ],
+      );
+
+      Tape widthReopened(String keys) => pressed(
+        keys,
+        tape: (lengthWidthArea().tapChip(1) as TapeChanged).tape,
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit the reopened compound cannot take is kept with the refusal, '
+        'and the toast names it (S65: "Can\'t append yards here")',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: widthReopened('7 8')),
+        act: (bloc) => bloc.add(const CalculatorUnitSelected(Unit.yard)),
+        expect: () => [
+          CalculatorState(
+            tape: widthReopened('7 8'),
+            refusal: const TapeEntryRefused(EntryRefusal.cannotAppendUnit),
+            refusedUnit: Unit.yard,
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorCannotAppendUnitToast(
+            value: '18ft 8in 78',
+            unit: Unit.yard,
+          ),
+        ),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a weight key under a dimension key names the key and the unit, with '
+        'the typed tail when there is one (S69)',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: widthReopened('✕ 5')),
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('lbs'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorKeySelected('kg')),
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorNeedsLengthToast(
+            key: 'Width',
+            unit: Unit.kilogram,
+            tail: '8',
+          ),
+        ),
+        expect: () => [
+          CalculatorState(
+            tape: widthReopened('✕ 5'),
+            refusal: const TapeEntryRefused(EntryRefusal.needsLength),
+            refusedUnit: Unit.pound,
+            toastsRaised: 1,
+          ),
+          CalculatorState(tape: widthReopened('✕ 5 ft'), toastsRaised: 1),
+          CalculatorState(tape: widthReopened('✕ 5 ft 8'), toastsRaised: 1),
+          CalculatorState(
+            tape: widthReopened('✕ 5 ft 8'),
+            refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+            refusedUnit: Unit.kilogram,
+            toastsRaised: 2,
+          ),
+        ],
+      );
+
+      test(
+        'the first refusal reads as "Width needs a length" with no tail',
+        () {
+          final state = CalculatorState(
+            tape: widthReopened('✕ 5'),
+            refusal: const TapeEntryRefused(EntryRefusal.needsLength),
+            refusedUnit: Unit.pound,
+          );
+          expect(
+            state.toast,
+            const CalculatorNeedsLengthToast(key: 'Width', unit: Unit.pound),
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit pressed again under a dimension key is kept with the refusal, '
+        'and the toast says what it would make (S65: "would make this 4in²")',
+        build: () => bloc,
+        seed: () => CalculatorState(tape: widthReopened('✕ 4 in')),
+        act: (bloc) => bloc.add(const CalculatorUnitSelected(Unit.inch)),
+        expect: () => [
+          CalculatorState(
+            tape: widthReopened('✕ 4 in'),
+            refusal: const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+            refusedUnit: Unit.inch,
+            toastsRaised: 1,
+          ),
+        ],
+        verify: (bloc) => expect(
+          bloc.state.toast,
+          const CalculatorKeepsLengthToast(
+            key: 'Width',
+            unit: Unit.inch,
+            value: '4in',
+          ),
+        ),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a unit key on a result that would raise it is refused with no '
+        'message: the "keeps" message speaks only under a dimension key '
+        '(B1; Section 5.2)',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorOperatorPressed(Operator.multiply))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('0'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorEqualsPressed())
+          ..add(const CalculatorUnitSelected(Unit.foot)),
+        skip: 8,
+        expect: () => [
+          tapeState(pressed('1 2 ft × 1 0 ft =')).copyWith(
+            refusal: () => const TapeUnitRefused(
+              UnitKeyRefused(UnitKeyRefusal.keepsLength),
+            ),
+            refusedUnit: () => Unit.foot,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.toast, isNull);
+          expect(bloc.state.toastsRaised, 0);
+        },
+      );
+
+      test('a fraction typed after a finished length is named whole in the '
+          '"needs a length" message (N1)', () {
+        final state = CalculatorState(
+          tape: pressed('[Width] 1 8 ft 7 / 1 6'),
+          refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+          refusedUnit: Unit.pound,
+        );
+        expect(
+          state.toast,
+          const CalculatorNeedsLengthToast(
+            key: 'Width',
+            unit: Unit.pound,
+            tail: '7/16',
+          ),
+        );
+        expect(
+          CalculatorState(
+            tape: pressed('[Width] 1 8 ft 8 . 5'),
+            refusal: const TapeEntryRefused(EntryRefusal.tailNeedsLength),
+            refusedUnit: Unit.pound,
+          ).toast,
+          const CalculatorNeedsLengthToast(
+            key: 'Width',
+            unit: Unit.pound,
+            tail: '8.5',
+          ),
+        );
+      });
+
+      test(
+        'a refusal that is not a unit\'s, or a unit refusal the bloc did not '
+        'name, has no unit toast',
+        () {
+          expect(
+            CalculatorState(
+              tape: widthReopened('✕ 4 in'),
+              refusal: const TapeUnitRefused(
+                UnitKeyRefused(UnitKeyRefusal.keepsLength),
+              ),
+            ).toast,
+            isNull,
+          );
+          expect(
+            CalculatorState(
+              tape: widthReopened('7 8'),
+              refusal: const TapeEntryRefused(EntryRefusal.secondDecimalPoint),
+              refusedUnit: Unit.yard,
+            ).toast,
+            isNull,
+          );
+        },
       );
 
       test('removed results read as their message, all of them named', () {

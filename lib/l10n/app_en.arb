@@ -3670,6 +3670,16 @@
   "@calculatorChipTapToFinish": {
     "description": "Screen reader hint of a tap on the chip being typed or edited on the calculator tape: the tap seals the chip, as = does (UX Design Doc rule 4.8)"
   },
+  "calculatorUnitName": "{unit, select, inch{inches} foot{feet} footInch{feet and inches} yard{yards} metre{meters} centimetre{centimeters} millimetre{millimeters} acre{acres} pound{pounds} kilogram{kilograms} ton{tons} metricTon{metric tons} boardFoot{board feet} other{{unit}}}",
+  "@calculatorUnitName": {
+    "description": "A calculator unit spelled out in a toast, by the engine's unit id (UX Design Doc Section 5.2: 'titled with the unit spelled out')",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "yard"
+      }
+    }
+  },
   "calculatorToastFinishValueTitle": "Finish this value first",
   "@calculatorToastFinishValueTitle": {
     "description": "Title of the red Alert when a key would leave the chip being typed or edited incomplete (UX Design Doc Section 5, 'Finish this value first'; the guard applies on fresh entry as well)"
@@ -3723,6 +3733,100 @@
       "count": {
         "type": "int",
         "example": "2"
+      }
+    }
+  },
+  "calculatorToastCannotAppendTitle": "Can't append {unit} here",
+  "@calculatorToastCannotAppendTitle": {
+    "description": "Title of the toast when a unit cannot continue a reopened compound value (UX Design Doc Section 5.2)",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "centimeters"
+      }
+    }
+  },
+  "calculatorToastCannotAppendBody": "A compound value steps down within one system — 18ft 8in, 1m 20cm. {value} can't continue with {unit}. Use a smaller unit, backspace, or ✕ to retype.",
+  "@calculatorToastCannotAppendBody": {
+    "description": "Body of the 'Can't append <unit> here' toast (UX Design Doc Section 5.2)",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "18ft 8"
+      },
+      "unit": {
+        "type": "String",
+        "example": "centimeters"
+      }
+    }
+  },
+  "calculatorToastNeedsLengthTitle": "{key} needs a length, not a weight.",
+  "@calculatorToastNeedsLengthTitle": {
+    "description": "Title of the toast when a weight unit is pressed under a dimension key (UX Design Doc Section 5.2, '<Key> needs a length')",
+    "placeholders": {
+      "key": {
+        "type": "String",
+        "example": "Width"
+      }
+    }
+  },
+  "calculatorToastNeedsLengthBody": "Press ⌫ to remove {unit}, then press Feet or Inch.",
+  "@calculatorToastNeedsLengthBody": {
+    "description": "Body of the '<Key> needs a length' toast (UX Design Doc Section 5.2: 'Press ⌫ to remove Lbs, then press Feet or Inch.'); unit is the face of the key that was pressed",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "Lbs"
+      }
+    }
+  },
+  "calculatorToastTailNeedsLengthBody": "{key} takes lengths and not {unit}. Press a length unit for the {tail}, or backspace to remove it.",
+  "@calculatorToastTailNeedsLengthBody": {
+    "description": "Body of the '<Key> needs a length' toast after a number typed behind a finished length (UX Design Doc Section 5.2)",
+    "placeholders": {
+      "key": {
+        "type": "String",
+        "example": "Width"
+      },
+      "unit": {
+        "type": "String",
+        "example": "pounds"
+      },
+      "tail": {
+        "type": "String",
+        "example": "8"
+      }
+    }
+  },
+  "calculatorToastKeepsLengthTitle": "{key} keeps {value}",
+  "@calculatorToastKeepsLengthTitle": {
+    "description": "Title of the toast when a unit is pressed again under a dimension key that holds lengths only (UX Design Doc Section 5.2, '<Key> keeps <value>')",
+    "placeholders": {
+      "key": {
+        "type": "String",
+        "example": "Width"
+      },
+      "value": {
+        "type": "String",
+        "example": "22ft"
+      }
+    }
+  },
+  "calculatorToastKeepsLengthBody": "Pressing {unit} again would make this {value}² — {key} can't hold an area or volume.",
+  "@calculatorToastKeepsLengthBody": {
+    "description": "Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "feet"
+      },
+      "value": {
+        "type": "String",
+        "example": "22ft"
+      },
+      "key": {
+        "type": "String",
+        "example": "Width"
       }
     }
   }
