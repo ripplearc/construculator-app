@@ -42,8 +42,9 @@ void main() {
     return SystemHealthGroup(
       journey: journey,
       metrics: <MetricSeries>[
-        seriesOf('cold_start_ms', 'Cold start', <double?>[800, 820]),
-        seriesOf('ttid_ms', 'TTID', <double?>[null, null]),
+        seriesOf('cold_start_ms', 'TTID (cold)', <double?>[800, 820]),
+        seriesOf('warm_start_ms', 'TTID (warm)', <double?>[700, 710]),
+        seriesOf('memory', 'Peak memory', <double?>[null, null], unit: 'KB'),
       ],
     );
   }
@@ -89,7 +90,9 @@ void main() {
     test('ships no script and fetches nothing', () {
       final String html = render(
         systemHealth: <SystemHealthGroup>[healthGroup()],
-        e2e: <E2eGroup>[e2eGroup(cujs: <CujSummary>[cuj()])],
+        e2e: <E2eGroup>[
+          e2eGroup(cujs: <CujSummary>[cuj()]),
+        ],
       );
 
       expect(html, isNot(contains('<script')));
@@ -106,13 +109,15 @@ void main() {
       expect(html, contains('href="#e2e"'));
     });
 
-    test('defines a dark palette for both the OS setting and a theme stamp',
-        () {
-      final String html = render();
+    test(
+      'defines a dark palette for both the OS setting and a theme stamp',
+      () {
+        final String html = render();
 
-      expect(html, contains('@media (prefers-color-scheme: dark)'));
-      expect(html, contains(':root[data-theme="dark"]'));
-    });
+        expect(html, contains('@media (prefers-color-scheme: dark)'));
+        expect(html, contains(':root[data-theme="dark"]'));
+      },
+    );
 
     test('stamps when it was generated', () {
       expect(render(), contains('2026-08-26T09:00:00Z'));
@@ -129,17 +134,33 @@ void main() {
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, contains('Cold start'));
+      expect(html, contains('TTID (cold)'));
       expect(html, contains('820 <span class="unit-inline">ms</span>'));
+      expect(html, contains('TTID (warm)'));
+      expect(html, contains('710 <span class="unit-inline">ms</span>'));
     });
 
-    test('marks a metric with no producer as not recorded', () {
+    test('explains that both TTID series are one measurement', () {
       final String html = render(
         systemHealth: <SystemHealthGroup>[healthGroup()],
       );
 
-      expect(html, contains('TTID'));
-      expect(html, contains('not recorded'));
+      expect(
+        html,
+        contains(
+          'TTID (cold) and TTID (warm) are one measurement under two conditions.',
+        ),
+      );
+      expect(html, isNot(contains('no producer')));
+    });
+
+    test('marks a metric with no recorded value as not recorded', () {
+      final String html = render(
+        systemHealth: <SystemHealthGroup>[healthGroup()],
+      );
+
+      expect(html, contains('Peak memory'));
+      expect(html, contains('<span class="muted">not recorded</span>'));
     });
 
     test('gives each journey its own heading', () {
@@ -195,7 +216,9 @@ void main() {
 
     test('keeps a wide table scrollable inside its own container', () {
       final String html = render(
-        e2e: <E2eGroup>[e2eGroup(cujs: <CujSummary>[cuj()])],
+        e2e: <E2eGroup>[
+          e2eGroup(cujs: <CujSummary>[cuj()]),
+        ],
       );
 
       expect(html, contains('class="scroll"'));
@@ -220,9 +243,7 @@ void main() {
     });
 
     test('escapes a suite name that contains markup', () {
-      final String html = render(
-        e2e: <E2eGroup>[e2eGroup(suite: '<b>v2</b>')],
-      );
+      final String html = render(e2e: <E2eGroup>[e2eGroup(suite: '<b>v2</b>')]);
 
       expect(html, contains('&lt;b&gt;v2&lt;/b&gt;'));
     });
