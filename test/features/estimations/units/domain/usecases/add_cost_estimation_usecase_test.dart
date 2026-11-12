@@ -7,23 +7,25 @@ import 'package:construculator/libraries/estimation/domain/entities/enums.dart';
 import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/libraries/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   group('AddCostEstimationUseCase', () {
     late AddCostEstimationUseCase useCase;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
@@ -64,15 +66,6 @@ void main() {
       );
     }
 
-    void createEstimation() {
-      final data = EstimationTestDataMapFactory.createFakeEstimationData(
-        estimateName: testEstimationName,
-        projectId: testProjectId,
-        creatorUserId: testUserId,
-      );
-      fakeSupabaseWrapper.addTableData('cost_estimates', [data]);
-    }
-
     void expectAuthenticationError(Either<Failure, CostEstimate> result) {
       expect(result.isLeft(), true);
       result.fold((failure) {
@@ -105,6 +98,8 @@ void main() {
           ),
         ),
       );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
+      Modular.replaceInstance<Clock>(fakeClock);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
 
@@ -120,10 +115,12 @@ void main() {
 
     tearDownAll(() {
       Modular.dispose();
+      fakePhoneDatabase.dispose();
     });
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
     });
 
@@ -132,7 +129,6 @@ void main() {
       () async {
         setCurrentUser();
         seedUserProfile();
-        createEstimation();
 
         final result = await useCase(estimationName: testEstimationName);
 
@@ -234,24 +230,17 @@ void main() {
       expectAuthenticationError(result);
     });
 
-    test('returns estimation error when create fails', () async {
-      setCurrentUser();
-      seedUserProfile();
-      createEstimation();
+    test(
+      'returns the failure when the phone cannot save the estimation',
+      () async {
+        setCurrentUser();
+        seedUserProfile();
+        fakePhoneDatabase.executeError = Exception('disk full');
 
-      fakeSupabaseWrapper.shouldThrowOnInsert = true;
-      fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.socket;
+        final result = await useCase(estimationName: testEstimationName);
 
-      final result = await useCase(estimationName: testEstimationName);
-
-      expect(result.isLeft(), true);
-      result.fold((failure) {
-        expect(failure, isA<EstimationFailure>());
-        expect(
-          (failure as EstimationFailure).errorType,
-          EstimationErrorType.connectionError,
-        );
-      }, (estimation) => fail('Expected failure but got success'));
-    });
+        expect(result.getLeftOrNull(), isA<UnexpectedFailure>());
+      },
+    );
   });
 }
