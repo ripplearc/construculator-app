@@ -23,6 +23,7 @@ void main() {
       controller: controller,
       formatter: _rateFormatter,
       onChanged: reported.add,
+      putBackLabelOf: (openedWith) => 'Back to $openedWith',
     );
   }
 
@@ -89,12 +90,34 @@ void main() {
       expect(controller.selection, const TextSelection.collapsed(offset: 2));
     });
 
+    test(
+      'labels the put-back button for the value held when the pad opened',
+      () {
+        final session = open('10');
+
+        session.typeDigit(2);
+
+        expect(session.openedWith, '10');
+        expect(session.putBackLabel, 'Back to 10');
+      },
+    );
+
+    test('a pad opened again names the value held at that opening', () {
+      open('10').typeDigit(2);
+
+      final reopened = open(controller.text);
+
+      expect(reopened.openedWith, '102');
+      expect(reopened.putBackLabel, 'Back to 102');
+    });
+
     test('types at the end of a field whose selection was never set', () {
       controller.text = '4';
       final session = NumberPadSession(
         controller: controller,
         formatter: _rateFormatter,
         onChanged: reported.add,
+        putBackLabelOf: (openedWith) => 'Back to $openedWith',
       );
 
       session.typeDigit(0);
@@ -177,6 +200,7 @@ void main() {
             controller: controller,
             formatter: _rateFormatter,
             onChanged: reported.add,
+            putBackLabelOf: (openedWith) => 'Back to $openedWith',
           );
 
           session.backspace();

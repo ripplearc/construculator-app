@@ -2867,4 +2867,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get addCostCategoryEquipmentSubtitle =>
       'Rentals, lifts, dumpsters — day or job rate, with delivery';
+
+  @override
+  String get numberPadClearButton => 'Clear';
+
+  @override
+  String numberPadPutBackButton(String value) {
+    return 'Back to $value';
+  }
+
+  @override
+  String numberPadRateValue(String value) {
+    return '\$$value';
+  }
 }
