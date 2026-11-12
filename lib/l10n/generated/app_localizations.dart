@@ -4237,6 +4237,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' + {fee} delivery'**
   String costLineDeliveryFee(String fee);
+
+  /// Label of the estimate total in the bar at the bottom of the estimate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get estimateTotalLabel;
+
+  /// Label of the outlined button in the bottom bar that opens the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Add cost'**
+  String get addCostButton;
 }
 
 class _AppLocalizationsDelegate
