@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- COST SECTIONS LIST MUTATION TESTING -->
-    <!-- Targets: empty-section placeholders, section order -->
+    <!-- Targets: empty-estimate versus empty-section placeholders, section order -->
 
     <files>
         <file>lib/features/estimation/presentation/widgets/cost_sections_list.dart</file>
@@ -13,6 +13,18 @@
 
     <rules>
 
+        <regex pattern="(final isEmpty = costs\.items\.isEmpty;)" dotAll="true" id="list.empty.always_empty">
+            <mutation text="final isEmpty = true;"/>
+        </regex>
+
+        <regex pattern="(final isEmpty = costs\.items\.isEmpty;)" dotAll="true" id="list.empty.never_empty">
+            <mutation text="final isEmpty = false;"/>
+        </regex>
+
+        <regex pattern="(if \(isEmpty\) _addFirstCost\(context\),)" dotAll="true" id="list.empty.never_show_first_cost">
+            <mutation text=""/>
+        </regex>
+
         <regex pattern="(if \(lines\.isEmpty\))" dotAll="true" id="list.section.negate_empty_check">
             <mutation text="if (lines.isNotEmpty)"/>
         </regex>
@@ -23,6 +35,14 @@
 
         <regex pattern="(onTap: \(\) =&gt; widget\.onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
             <mutation text="onTap: null,"/>
+        </regex>
+
+        <regex pattern="(CostItemType\.material =&gt; l10n\.costSectionExamplesMaterial)" dotAll="true" id="list.examples.material_uses_labor">
+            <mutation text="CostItemType.material =&gt; l10n.costSectionExamplesLabor"/>
+        </regex>
+
+        <regex pattern="(if \(isEstimateEmpty\))" dotAll="true" id="list.examples.always_shown">
+            <mutation text="if (true)"/>
         </regex>
 
         <regex pattern="(CostItemType\.labor =&gt; l10n\.costSectionEmptyLabor)" dotAll="true" id="list.placeholder.labor_uses_material">
@@ -51,6 +71,10 @@
 
         <regex pattern="(costs\.laborLines,)" dotAll="true" id="list.order.labor_uses_equipment_lines">
             <mutation text="costs.equipmentLines,"/>
+        </regex>
+
+        <regex pattern="(onPressed: widget\.onAddFirstCost,)" dotAll="true" id="list.first_cost.drop_handler">
+            <mutation text="onPressed: null,"/>
         </regex>
 
     </rules>
