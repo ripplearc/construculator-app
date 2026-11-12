@@ -3,8 +3,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
-import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
