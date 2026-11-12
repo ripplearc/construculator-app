@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_su
 import 'package:construculator/features/estimation/presentation/widgets/unit_radio_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
@@ -70,9 +71,7 @@ void main() {
 
     testWidgets('focused from the keyboard', (tester) async {
       await pumpRow(tester);
-      Focus.of(
-        tester.element(find.byKey(const Key('unit_focus_ring_gallons'))),
-      ).requestFocus();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pumpAndSettle();
       await expectRowGolden(tester, 'focused');
     });
