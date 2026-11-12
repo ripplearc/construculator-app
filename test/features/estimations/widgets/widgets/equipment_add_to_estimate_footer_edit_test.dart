@@ -95,8 +95,11 @@ void main() {
     ) async {
       await pumpFooter(tester, [openScissorLift]);
 
-      expect(find.text(l10n.changesThisEstimateLabel), findsOneWidget);
       expect(find.text(l10n.noChangeYetNote), findsOneWidget);
+      expect(find.text(l10n.changesThisEstimateLabel), findsNothing);
+      expect(find.text('+\$0.00'), findsOneWidget);
+      expect(find.text(' total  \$2,993.62 →'), findsOneWidget);
+      expect(find.text('\$2,993.62'), findsOneWidget);
     });
 
     testWidgets('shows a rise in the line as a plus amount and the new total', (
