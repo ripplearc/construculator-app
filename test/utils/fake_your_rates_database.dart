@@ -17,6 +17,7 @@ import 'fake_cost_items_database.dart';
 /// filtered `SELECT`, the `SELECT` by id, an `INSERT`, an `UPDATE` by id and a
 /// `DELETE` by id;
 /// for `current_company` a `SELECT` by user id, an `INSERT` and a `DELETE`.
+/// A read of `cost_estimates` finds no rows, as on a phone with no estimates.
 /// Statements are still recorded in [executeCalls] and [getAllCalls].
 class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// The `cost_items` table of the same database, which answers every
@@ -239,6 +240,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
             },
       ];
     }
+    if (sql.contains(DatabaseConstants.costEstimatesTable)) return const [];
     _requireYourRatesTable(sql);
     await getAllGate?.future;
 
