@@ -29,35 +29,22 @@
         </regex>
 
 
-        <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
+        <!-- In hasMoreEstimations, return wrong default value -->
         <regex pattern="return _paginationStates\[streamKey\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
             <mutation text="return _paginationStates[streamKey]?.hasMore ?? false;"/>
         </regex>
 
-        <!-- RULE 8: In _emitToStream, skip emitting to stream -->
+        <!-- In _emitToStream, skip emitting to stream -->
         <regex pattern="_streamControllers\[streamKey\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
             <mutation text="// _streamControllers[streamKey]?.add(result);"/>
         </regex>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        <!-- RULE 29: In _buildStreamKey, collapse key (breaks sort/limit isolation) -->
+        <!-- In _buildStreamKey, collapse key (breaks sort/limit isolation) -->
         <regex pattern="return '\$projectId:\$\{sortBy\.name\}:\$\{ascending \? 'asc' : 'desc'\}:\$\{limit \?\? 'all'\}';" dotAll="true" id="repo.streamkey.collapse_to_projectid">
             <mutation text="return projectId;"/>
         </regex>
 
-        <!-- RULE 30: In _emitToStream, skip syncing cache from successful emission -->
+        <!-- In _emitToStream, skip syncing cache from successful emission -->
         <regex pattern="\(estimations\) =&gt; _cachedEstimations\[streamKey\] = estimations" dotAll="true" id="repo.stream.skip_cache_sync">
             <mutation text="(estimations) { }"/>
         </regex>
@@ -87,87 +74,11 @@
             <mutation text="// firstResult.complete(result);"/>
         </regex>
 
-        <regex pattern="\.where\(\(edit\) =&gt; edit\.projectId == projectId\)" dotAll="true" id="repo.edits.apply_other_projects">
-            <mutation text=".where((edit) =&gt; true)"/>
-        </regex>
-        <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)" dotAll="true" id="repo.edits.delete_reflected_any">
-            <mutation text="estimates.any((e) =&gt; e.id != estimationId)"/>
-        </regex>
-
         <regex pattern="if \(!_streamControllers\.containsKey\(streamKey\)\) \{\s*_localSubscriptions" dotAll="true" id="repo.local.keep_unwatched_subscription">
             <mutation text="if (_streamControllers.containsKey(streamKey)) { _localSubscriptions"/>
         </regex>
         <regex pattern="waiting\.complete\(Right\(_cachedEstimations\[streamKey\] \?\? \[\]\)\);" dotAll="true" id="repo.local.leave_caller_waiting">
             <mutation text="// waiting.complete(Right(_cachedEstimations[streamKey] ?? []));"/>
-        </regex>
-        <regex pattern="_emitToStream\(\s*key,\s*Right\(_applyPendingEdits\(key, projectId, copy\.estimates, copy\.view\)\),\s*\);" dotAll="true" id="repo.republish.skip_emit">
-            <mutation text="// republish skipped"/>
-        </regex>
-        <regex pattern="if \(copy == null\) continue;" dotAll="true" id="repo.republish.skip_lists_without_copy">
-            <mutation text="if (copy != null) continue;"/>
-        </regex>
-        <regex pattern="_republishProject\(estimation\.projectId\);" dotAll="true" id="repo.create.skip_republish">
-            <mutation text="// _republishProject(estimation.projectId);"/>
-        </regex>
-        <regex pattern="if \(_isReflectedOn\(edit, estimates, view\)\) \{" dotAll="true" id="repo.edits.apply_before_reflected_check">
-            <mutation text="if (!_isReflectedOn(edit, estimates, view)) {"/>
-        </regex>
-        <regex pattern="if \(edit\.awaitingKeys\.remove\(streamKey\)\) edit\.wasReflected = true;" dotAll="true" id="repo.edits.never_mark_reflected">
-            <mutation text="edit.awaitingKeys.remove(streamKey);"/>
-        </regex>
-        <regex pattern="shown = edit\.apply\(shown, view\);" dotAll="true" id="repo.edits.skip_apply">
-            <mutation text="shown = shown;"/>
-        </regex>
-        <regex pattern="_phoneCopies\[streamKey\] = \(estimates: estimates, view: view\);" dotAll="true" id="repo.edits.skip_phone_copy">
-            <mutation text="// phone copy not kept"/>
-        </regex>
-        <regex pattern="edit\.wasReflected &amp;&amp; edit\.awaitingKeys\.isEmpty" dotAll="true" id="repo.edits.drop_without_reflection">
-            <mutation text="edit.awaitingKeys.isEmpty"/>
-        </regex>
-        <regex pattern="for \(final edit in _pendingEditsOf\(projectId\)\) \{\s*edit\.awaitingKeys\.add\(streamKey\);\s*\}" dotAll="true" id="repo.edits.skip_join_new_list">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="for \(final edit in _pendingEdits\.values\) \{\s*edit\.awaitingKeys\.remove\(streamKey\);\s*\}" dotAll="true" id="repo.edits.keep_closed_list_awaited">
-            <mutation text=""/>
-        </regex>
-        <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
-            <mutation text="// edit not remembered"/>
-        </regex>
-        <regex pattern="position == -1 \? estimates\.length : position" dotAll="true" id="repo.create.ignore_sort_position">
-            <mutation text="0"/>
-        </regex>
-        <regex pattern="return merged\.take\(view\.limit\)\.toList\(\);" dotAll="true" id="repo.create.ignore_limit">
-            <mutation text="return merged;"/>
-        </regex>
-        <regex pattern="view\.sortBy == EstimationSortOption\.updatedAt" dotAll="true" id="repo.create.sort_column_swapped">
-            <mutation text="view.sortBy != EstimationSortOption.updatedAt"/>
-        </regex>
-        <regex pattern="view\.ascending \? aTime\.isBefore\(bTime\)" dotAll="true" id="repo.create.ascending_reversed">
-            <mutation text="view.ascending ? aTime.isAfter(bTime)"/>
-        </regex>
-        <regex pattern=": !aTime\.isBefore\(bTime\)" dotAll="true" id="repo.create.tie_goes_after">
-            <mutation text=": aTime.isAfter(bTime)"/>
-        </regex>
-        <regex pattern="!_withCreated\(\s*estimates,\s*createdEstimation,\s*view,\s*\)\.any\(\(e\) =&gt; e\.id == createdEstimation\.id\)" dotAll="true" id="repo.create.hidden_when_not_fit_never_reflected">
-            <mutation text="false"/>
-        </regex>
-        <regex pattern="_localSubscriptions\.remove\(streamKey\)\?\.cancel\(\);\s*_forgetStream\(streamKey\);" dotAll="true" id="repo.local.keep_copy_of_unwatched_list">
-            <mutation text="_localSubscriptions.remove(streamKey)?.cancel();"/>
-        </regex>
-        <regex pattern="edit\.wasReflected = true;\n    \}\n    _pendingEdits\[editKey\]" dotAll="true" id="repo.edits.skip_settle_when_reflected_everywhere">
-            <mutation text="edit.wasReflected = false;
-    }
-    _pendingEdits[editKey]"/>
-        </regex>
-        <regex pattern="return !rowIsStillBeingCreated &amp;&amp; edit\.isReflected\(estimates, view\);" dotAll="true" id="repo.edits.ignore_row_still_being_created">
-            <mutation text="return edit.isReflected(estimates, view);"/>
-        </regex>
-        <regex pattern="_pendingEdits\.containsKey\('create:\$estimationId'\) &amp;&amp;" dotAll="true" id="repo.edits.created_check_ignores_pending_create">
-            <mutation text="false &amp;&amp;"/>
-        </regex>
-        <regex pattern="_phoneCopies\.remove\(streamKey\);\n\s*publish\(\n\s*Left\(\n\s*_handleError\(\n\s*e,\n\s*.reading estimations from the phone." dotAll="true" id="repo.local.unreadable_row_keeps_old_copy">
-            <mutation text="publish(Left(_handleError(e,
- 'reading estimations from the phone'"/>
         </regex>
         <!-- renameEstimation: the phone not having the row is a not-found failure -->
         <regex pattern="if \(renamedDto == null\) \{" dotAll="true" id="repo.rename.skip_not_found">
@@ -196,6 +107,20 @@
         <!-- changeLockStatus: the value written is the value asked for -->
         <regex pattern="isLocked: isLocked,\n      \);\n      if \(lockedDto" dotAll="true" id="repo.lock.writes_inverse_value">
             <mutation text="isLocked: !isLocked,\n      );\n      if (lockedDto"/>
+        </regex>
+        <!-- createEstimation: the phone's stored row is the answer -->
+        <regex pattern="final createdEstimation = storedDto\.toDomain\(\);" dotAll="true" id="repo.create.answer_with_input">
+            <mutation text="final createdEstimation = estimation;"/>
+        </regex>
+
+        <!-- createEstimation: the estimation written is the one given -->
+        <regex pattern="insertEstimationRow\(\s*CostEstimateDto\.fromDomain\(estimation\),\s*\)" dotAll="true" id="repo.create.writes_nothing_useful">
+            <mutation text="insertEstimationRow(CostEstimateDto.fromDomain(estimation.copyWith(estimateName: '')))"/>
+        </regex>
+
+        <!-- deleteEstimation: the delete is written to the phone -->
+        <regex pattern="await _localDataSource\.deleteEstimationRowById\(estimationId\);" dotAll="true" id="repo.delete.skip_write">
+            <mutation text=""/>
         </regex>
     </rules>
 

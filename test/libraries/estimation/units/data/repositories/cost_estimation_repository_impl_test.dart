@@ -38,7 +38,6 @@ void main() {
   const String estimateDescDefault = 'Initial cost estimate';
   const String estimateDesc2 = 'Updated cost estimate with changes';
   const String estimateDesc3 = 'Final cost estimate';
-  const String errorMsgServer = 'Server error occurred';
   const String errorMsgTimeout = 'Request timeout';
   const double totalCostDefault = 100000.0;
   const double totalCost2 = 150000.0;
@@ -821,278 +820,113 @@ void main() {
     });
 
     group('createEstimation', () {
-      test('should return created estimation on success', () async {
-        final estimationDto = buildEstimationDto(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-          estimateDescription: estimateDescDefault,
-          creatorUserId: userIdDefault,
-          totalCost: totalCostDefault,
-          createdAt: timestampDefault,
-          updatedAt: timestampDefault,
-        );
-        final estimation = estimationDto.toDomain();
+      CostEstimate newEstimate({
+        String id = '',
+        String projectId = testProjectId,
+        String createdAt = timestamp2,
+      }) => buildEstimationDto(
+        id: id,
+        projectId: projectId,
+        estimateName: estimateName2,
+        createdAt: createdAt,
+        updatedAt: createdAt,
+      ).toDomain();
 
-        final result = await repository.createEstimation(estimation);
+      test('should give an estimation with no id one on the phone', () async {
+        final result = await repository.createEstimation(newEstimate());
 
-        expect(result.isRight(), isTrue);
-        result.fold((_) => fail('Expected success but got failure'), (created) {
-          final insertTimestamp = fakeClock.now().toIso8601String();
-          final createdDto = CostEstimateDto.fromJson({
-            ...estimationDto.toJson(),
-            'id': '1',
-            'created_at': insertTimestamp,
-            'updated_at': insertTimestamp,
-          });
-          expect(created, equals(createdDto.toDomain()));
+        expectResult(result, (created) {
+          expect(
+            created.id,
+            matches(
+              RegExp(
+                r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+              ),
+            ),
+          );
+          expect(created.estimateName, estimateName2);
+          expect(created.projectId, testProjectId);
         });
       });
 
-      test('should call data source with correct estimation', () async {
-        final estimationDto = buildEstimationDto(
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-          createdAt: timestampDefault,
-          updatedAt: timestampDefault,
+      test('should keep the id an estimation already has', () async {
+        final result = await repository.createEstimation(
+          newEstimate(id: estimateId2),
         );
-        final estimation = estimationDto.toDomain();
 
-        await repository.createEstimation(estimation);
-
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
-        expect(methodCalls, hasLength(1));
-        expect(
-          methodCalls.first['table'],
-          equals(DatabaseConstants.costEstimatesTable),
-        );
-        Map<String, dynamic> estimationJson = methodCalls.first['data'];
-
-        expect(estimationJson, estimationDto.toJson());
+        expect(result.getRightOrNull()!.id, estimateId2);
       });
 
       test(
-        'should return timeout failure when data source throws timeout',
+        'should write the estimation to the phone, not the server',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.insertErrorMessage = errorMsgTimeout;
+          await repository.createEstimation(newEstimate(id: estimateId2));
 
-          final estimationDto = buildEstimationDto(
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
-          );
-          final estimation = estimationDto.toDomain();
-
-          final result = await repository.createEstimation(estimation);
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
-            ),
-          );
+          final write = fakePhoneDatabase.executeCalls.single;
+          expect(write.sql, startsWith('INSERT INTO cost_estimates'));
+          expect(write.parameters, contains(estimateName2));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
         },
       );
 
       test(
-        'should return connection failure when data source throws SocketException',
+        'should show the new estimation first in the watched list at once',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.insertErrorMessage = 'Connection failed';
-
-          final estimationDto = buildEstimationDto(
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
-          );
-          final estimation = estimationDto.toDomain();
-
-          final result = await repository.createEstimation(estimation);
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.connectionError),
+          seedEstimationTable([
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              createdAt: timestampDefault,
+              updatedAt: timestampDefault,
             ),
-          );
+          ]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await queue.next;
+
+          final created = (await repository.createEstimation(
+            newEstimate(id: estimateId2),
+          )).getRightOrNull()!;
+
+          final shown = (await queue.next).getRightOrNull()!;
+          expect(shown.map((e) => e.id), [created.id, estimateIdDefault]);
+          await queue.cancel();
         },
       );
 
+      test('should not show the new estimation in another project', () async {
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final otherQueue = StreamQueue(
+          repository.watchEstimations('other-project'),
+        );
+        await otherQueue.next;
+
+        await repository.createEstimation(newEstimate(id: estimateId2));
+        fakePhoneDatabase.seedRows([
+          buildEstimationMap(id: 'theirs', projectId: 'other-project'),
+        ]);
+
+        final shown = (await otherQueue.next).getRightOrNull()!;
+        expect(shown.map((e) => e.id), ['theirs']);
+        await otherQueue.cancel();
+      });
+
       test(
-        'should return unexpected failure when data source throws unknown error',
+        'should return an unexpected failure and show nothing new when the phone write fails',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnInsert = true;
-          fakeSupabaseWrapper.insertExceptionType =
-              SupabaseExceptionType.unknown;
-          fakeSupabaseWrapper.insertErrorMessage = errorMsgServer;
+          fakePhoneDatabase.executeError = Exception('disk full');
 
-          final estimationDto = buildEstimationDto(
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
-          );
-          final estimation = estimationDto.toDomain();
+          final result = await repository.createEstimation(newEstimate());
 
-          final result = await repository.createEstimation(estimation);
-
-          expect(result.isLeft(), isTrue);
           expectFailure(
             result,
             (failure) => expect(failure, UnexpectedFailure()),
           );
-        },
-      );
-
-      test(
-        'should emit new list with the new estimation prepended when create is succesfull',
-        () async {
-          final existingMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            estimateName: estimateNameDefault,
-          );
-          seedEstimationTable([existingMap]);
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([CostEstimateDto.fromJson(existingMap).toDomain()]),
-              ),
-            ),
-          );
-
-          final newEstimationDto = buildEstimationDto(
-            id: estimateId2,
-            projectId: testProjectId,
-            estimateName: estimateName2,
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
-          );
-          final newEstimateResult = await repository.createEstimation(
-            newEstimationDto.toDomain(),
-          );
-          final createdEstimation = newEstimateResult.getRightOrNull()!;
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  createdEstimation,
-                  CostEstimateDto.fromJson(existingMap).toDomain(),
-                ]),
-              ),
-            ),
-          );
-
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'should maintain correct pagination after creating a new estimation',
-        () async {
-          final allMaps = seedEstimations(defaultPageDatasetSize * 3);
-          final allEstimations = mapsToDomainEntities(
-            allMaps.reversed.toList(),
-          );
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(allEstimations.sublist(0, defaultPageDatasetSize)),
-              ),
-            ),
-          );
-
-          await repository.loadMoreEstimations(testProjectId);
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
-              ),
-            ),
-          );
-
-          final newEstimationDto = buildEstimationDto(
-            id: 'new-estimate',
-            projectId: testProjectId,
-            estimateName: 'New Estimate',
-          );
-
-          fakeClock.set(DateTime.parse('2026-02-01T00:00:00.000Z'));
-
-          final createResult = await repository.createEstimation(
-            newEstimationDto.toDomain(),
-          );
-          final createdEstimation = createResult.getRightOrNull()!;
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  createdEstimation,
-                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2 - 1),
-                ]),
-              ),
-            ),
-          );
-
-          final syncedRow = buildEstimationMap(
-            id: createdEstimation.id,
-            projectId: testProjectId,
-            estimateName: createdEstimation.estimateName,
-            createdAt: '2026-02-01T00:00:00.000Z',
-            updatedAt: '2026-02-01T00:00:00.000Z',
-          );
-          final syncedEstimation = CostEstimateDto.fromJson(
-            syncedRow,
-          ).toDomain();
-          fakePhoneDatabase.seedRows([syncedRow]);
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  syncedEstimation,
-                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2 - 1),
-                ]),
-              ),
-            ),
-          );
-
-          await repository.loadMoreEstimations(testProjectId);
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  syncedEstimation,
-                  ...allEstimations.sublist(0, defaultPageDatasetSize * 3 - 1),
-                ]),
-              ),
-            ),
-          );
-
-          await queue.cancel();
+          fakePhoneDatabase.executeError = null;
+          final shown = (await repository.fetchInitialEstimations(
+            testProjectId,
+          )).getRightOrNull()!;
+          expect(shown, isEmpty);
         },
       );
     });
@@ -1689,338 +1523,7 @@ void main() {
       );
     });
 
-    group('writes before the phone copy catches up', () {
-      const newEstimateName = 'Renamed Estimate';
-      const unrelatedEstimateId = 'estimate-unrelated';
-      const otherProjectEstimateId = 'estimate-other-project';
-
-      Map<String, dynamic> projectEstimate({
-        String? id,
-        String? estimateName,
-        String? createdAt,
-        bool? isLocked,
-      }) => buildEstimationMap(
-        id: id,
-        projectId: testProjectId,
-        estimateName: estimateName,
-        createdAt: createdAt,
-        isLocked: isLocked,
-        lockedByUserId: isLocked == true ? userIdDefault : null,
-        lockedAt: isLocked == true ? timestampDefault : null,
-      );
-
-      Map<String, dynamic> neighbourEstimate() => projectEstimate(
-        id: estimateId3,
-        estimateName: estimateName3,
-        createdAt: '2023-06-01T00:00:00.000Z',
-      );
-
-      void syncUnrelatedEstimate() => fakePhoneDatabase.seedRows([
-        projectEstimate(
-          id: unrelatedEstimateId,
-          createdAt: '2023-01-01T00:00:00.000Z',
-        ),
-      ]);
-
-      void syncOtherProjectEstimate() => fakePhoneDatabase.seedRows([
-        buildEstimationMap(
-          id: otherProjectEstimateId,
-          projectId: otherProjectId,
-        ),
-      ]);
-
-      CostEstimate estimateIn(
-        Either<Failure, List<CostEstimate>> result, [
-        String id = estimateIdDefault,
-      ]) =>
-          result.getRightOrNull()!.firstWhere((estimate) => estimate.id == id);
-
-      List<String> idsIn(Either<Failure, List<CostEstimate>> result) =>
-          result.getRightOrNull()!.map((estimate) => estimate.id).toList();
-
-      Future<StreamQueue<Either<Failure, List<CostEstimate>>>> watchProject(
-        String projectId,
-        int expectedCount,
-      ) async {
-        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-        final queue = StreamQueue(repository.watchEstimations(projectId));
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(hasLength(expectedCount))),
-        );
-        return queue;
-      }
-
-      Future<StreamQueue<Either<Failure, List<CostEstimate>>>> watchSeeded(
-        List<Map<String, dynamic>> maps,
-      ) {
-        seedEstimationTable(maps);
-        return watchProject(testProjectId, maps.length);
-      }
-
-      test(
-        'a created estimate does not vanish when the phone copy re-emits before it syncs',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final created = buildEstimationDto(
-            id: estimateId2,
-            projectId: testProjectId,
-            estimateName: estimateName2,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          ).toDomain();
-
-          final createdId = (await repository.createEstimation(
-            created,
-          )).getRightOrNull()!.id;
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(2);
-          expect(idsIn(emissions.last), [
-            createdId,
-            estimateIdDefault,
-            unrelatedEstimateId,
-          ]);
-          await queue.cancel();
-        },
-      );
-
-      group('with two projects watched', () {
-        test(
-          'a delete is not cleared by the other project re-emitting',
-          () async {
-            final queue = await watchSeeded([
-              projectEstimate(),
-              neighbourEstimate(),
-            ]);
-            final otherQueue = await watchProject(otherProjectId, 0);
-            await repository.deleteEstimation(estimateIdDefault, testProjectId);
-            await queue.next;
-
-            syncOtherProjectEstimate();
-            await otherQueue.next;
-            syncUnrelatedEstimate();
-
-            expect(idsIn(await queue.next), [estimateId3, unrelatedEstimateId]);
-            await queue.cancel();
-            await otherQueue.cancel();
-          },
-        );
-
-        test('a created estimate is not shown in the other project', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final otherQueue = await watchProject(otherProjectId, 0);
-          final created = buildEstimationDto(
-            id: estimateId2,
-            projectId: testProjectId,
-            estimateName: estimateName2,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          ).toDomain();
-          await repository.createEstimation(created);
-          await queue.next;
-
-          syncOtherProjectEstimate();
-
-          expect(idsIn(await otherQueue.next), [otherProjectEstimateId]);
-          await queue.cancel();
-          await otherQueue.cancel();
-        });
-      });
-
-      group('when nobody watches the project', () {
-        test('a pending rename is kept for a list opened later', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.cancel();
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final reopened = StreamQueue(
-            repository.watchEstimations(testProjectId),
-          );
-
-          expect(estimateIn(await reopened.next).estimateName, newEstimateName);
-          await reopened.cancel();
-        });
-
-        test(
-          'a write made with no list open is applied to a list opened later',
-          () async {
-            seedEstimationTable([projectEstimate()]);
-            await repository.renameEstimation(
-              estimationId: estimateIdDefault,
-              newName: newEstimateName,
-              projectId: testProjectId,
-            );
-
-            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-            final queue = StreamQueue(
-              repository.watchEstimations(testProjectId),
-            );
-
-            expect(estimateIn(await queue.next).estimateName, newEstimateName);
-            await queue.cancel();
-          },
-        );
-      });
-
-      group('with more than one list of the project watched', () {
-        const staleId = 'estimate-stale';
-
-        Map<String, dynamic> row(
-          String id, {
-          required String createdAt,
-          required String updatedAt,
-        }) => buildEstimationMap(
-          id: id,
-          projectId: testProjectId,
-          estimateName: id,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-        );
-
-        test(
-          'a created estimate is shown by the sort and limit of each list',
-          () async {
-            final queue = await watchSeeded([
-              row(
-                staleId,
-                createdAt: '2023-04-01T00:00:00.000Z',
-                updatedAt: '2027-01-01T00:00:00.000Z',
-              ),
-            ]);
-            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-            final recentQueue = StreamQueue(
-              repository.watchEstimations(
-                testProjectId,
-                sortBy: EstimationSortOption.updatedAt,
-                limit: 1,
-              ),
-            );
-            await recentQueue.next;
-            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-            final oldestFirstQueue = StreamQueue(
-              repository.watchEstimations(testProjectId, ascending: true),
-            );
-            await oldestFirstQueue.next;
-
-            final created = (await repository.createEstimation(
-              buildEstimationDto(
-                id: estimateId2,
-                projectId: testProjectId,
-                estimateName: estimateName2,
-              ).toDomain(),
-            )).getRightOrNull()!;
-
-            expect(idsIn(await queue.next), [created.id, staleId]);
-            expect(idsIn(await recentQueue.next), [staleId]);
-            expect(idsIn(await oldestFirstQueue.next), [staleId, created.id]);
-            await queue.cancel();
-            await recentQueue.cancel();
-            await oldestFirstQueue.cancel();
-          },
-        );
-      });
-
-      test(
-        'a created estimate with the same time as an existing one is shown first',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          fakeClock.set(DateTime.parse(timestampDefault));
-
-          final created = (await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          )).getRightOrNull()!;
-
-          expect(idsIn(await queue.next), [created.id, estimateIdDefault]);
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'a created estimate is not brought back after a teammate deletes it, even when a limited list never showed it',
-        () async {
-          final queue = await watchSeeded([
-            buildEstimationMap(
-              id: estimateIdDefault,
-              projectId: testProjectId,
-              createdAt: '2023-04-01T00:00:00.000Z',
-              updatedAt: '2027-01-01T00:00:00.000Z',
-            ),
-          ]);
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final recentQueue = StreamQueue(
-            repository.watchEstimations(
-              testProjectId,
-              sortBy: EstimationSortOption.updatedAt,
-              limit: 1,
-            ),
-          );
-          await recentQueue.next;
-          final created = (await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          )).getRightOrNull()!;
-          await queue.next;
-          await recentQueue.next;
-
-          final syncedRow = buildEstimationMap(
-            id: created.id,
-            projectId: testProjectId,
-            estimateName: created.estimateName,
-            createdAt: created.createdAt.toIso8601String(),
-            updatedAt: created.updatedAt.toIso8601String(),
-          );
-          fakePhoneDatabase.seedRows([syncedRow]);
-          await queue.next;
-          fakePhoneDatabase.removeRow(created.id);
-
-          expect(idsIn(await queue.next), [estimateIdDefault]);
-          await queue.cancel();
-          await recentQueue.cancel();
-        },
-      );
-
-      test(
-        'a created estimate that the phone already had is not brought back after a teammate deletes it',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          fakePhoneDatabase.seedRows([
-            buildEstimationMap(
-              id: '1',
-              projectId: testProjectId,
-              estimateName: estimateName2,
-              createdAt: '2026-07-01T00:00:00.000Z',
-            ),
-          ]);
-          await queue.next;
-          await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          );
-          await queue.next;
-
-          fakePhoneDatabase.removeRow('1');
-
-          expect(idsIn(await queue.next), [estimateIdDefault]);
-          await queue.cancel();
-        },
-      );
-
+    group('the phone watch', () {
       test(
         'a row the phone holds in a form that cannot be read fails the list instead of hanging',
         () async {
@@ -2041,29 +1544,6 @@ void main() {
       );
 
       test(
-        'a created estimate is still shown when its list is closed and reopened before the sync',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final created = (await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          )).getRightOrNull()!;
-          await queue.cancel();
-
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final reopened = StreamQueue(
-            repository.watchEstimations(testProjectId),
-          );
-
-          expect(idsIn(await reopened.next), [created.id, estimateIdDefault]);
-          await reopened.cancel();
-        },
-      );
-
-      test(
         'a fetch with nobody watching releases the phone watch once it has answered',
         () async {
           final released = Completer<void>();
@@ -2073,53 +1553,6 @@ void main() {
 
           await released.future;
           expect(fakePhoneDatabase.syncStreamUnsubscribes, isNotEmpty);
-        },
-      );
-    });
-
-    group('writes with other estimates in the list', () {
-      Map<String, dynamic> projectEstimate({String? id, String? createdAt}) =>
-          buildEstimationMap(
-            id: id,
-            projectId: testProjectId,
-            createdAt: createdAt,
-          );
-
-      test(
-        'a created estimate is not shown twice when the phone copy has it before the server answers',
-        () async {
-          seedEstimationTable([projectEstimate()]);
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(hasLength(1))),
-          );
-          fakeSupabaseWrapper.shouldDelayOperations = true;
-          fakeSupabaseWrapper.completer = Completer();
-          final created = buildEstimationDto(
-            id: estimateId2,
-            projectId: testProjectId,
-            estimateName: estimateName2,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          ).toDomain();
-
-          final creating = repository.createEstimation(created);
-          fakePhoneDatabase.seedRows([
-            projectEstimate(id: '1', createdAt: timestamp2),
-          ]);
-          await queue.next;
-          fakeSupabaseWrapper.completer!.complete();
-          final createdId = (await creating).getRightOrNull()!.id;
-          final emission = await queue.next;
-
-          expect(createdId, '1');
-          expect(
-            emission.getRightOrNull()!.where((e) => e.id == createdId),
-            hasLength(1),
-          );
-          await queue.cancel();
         },
       );
 

@@ -17,21 +17,17 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Implementation of [CostEstimationRepository] that reads the list from the
-/// phone's PowerSync copy, writes a rename, a lock change and a delete there, and
-/// writes a create through Supabase.
+/// phone's PowerSync copy and writes a create, rename, lock change and delete
+/// there too.
 ///
 /// Isolates reactive estimation streams, pagination state, and cache
 /// by a composite key of `projectId + sortBy + limit`, so multiple
 /// query contexts for the same project do not share state. Paging raises the
 /// limit of the local watch instead of fetching offsets.
 ///
-/// A rename, a lock change and a delete are written to the phone's copy and the
-/// list watch shows them at once. A create reaches the phone's copy only after
-/// the next sync, so a local re-emission in between would show the old value.
-/// Until it goes through the phone too, it is remembered as a pending edit and
-/// re-applied to every list that arrives from the local watch. An edit is
-/// dropped once each list that held the row shows the change, so it survives a
-/// screen being closed and reopened before the sync.
+/// A write lands in the phone's database at once, so the list watch shows it
+/// without waiting for a sync, and PowerSync uploads it later. A write never
+/// waits for the server.
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   final PowerSyncCostEstimationDataSource _localDataSource;
@@ -42,15 +38,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final Map<String, List<CostEstimate>> _cachedEstimations = {};
   final Map<String, PaginationState> _paginationStates = {};
   final Map<String, int> _visibleLimits = {};
-  final Map<String, _PhoneCopy> _phoneCopies = {};
   final Map<String, StreamSubscription<List<CostEstimateDto>>>
   _localSubscriptions = {};
   final Map<String, Completer<Either<Failure, List<CostEstimate>>>>
   _firstResults = {};
-
-  // TODO: [CA-1423] [Estimation] Remove pending edits once saves go through the phone.
-  // https://ripplearc.youtrack.cloud/issue/CA-1423
-  final Map<String, _PendingEdit> _pendingEdits = {};
 
   static const int defaultPageSize = 10;
 
@@ -220,17 +211,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _releaseWaitingCaller(streamKey);
     final firstResult = Completer<Either<Failure, List<CostEstimate>>>();
     _firstResults[streamKey] = firstResult;
-    final view = (sortBy: sortBy, ascending: ascending, limit: visibleLimit);
-    for (final edit in _pendingEditsOf(projectId)) {
-      edit.awaitingKeys.add(streamKey);
-    }
 
     void publish(Either<Failure, List<CostEstimate>> result) {
       _emitToStream(streamKey, result);
       if (!firstResult.isCompleted) firstResult.complete(result);
       if (!_streamControllers.containsKey(streamKey)) {
         _localSubscriptions.remove(streamKey)?.cancel();
-        _forgetStream(streamKey);
       }
     }
 
@@ -248,7 +234,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
             try {
               localEstimates = dtos.map((dto) => dto.toDomain()).toList();
             } catch (e) {
-              _phoneCopies.remove(streamKey);
               publish(
                 Left(
                   _handleError(
@@ -267,14 +252,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               pageSize: _paginationStates[streamKey]?.pageSize ?? visibleLimit,
               hasMore: hasMore,
             );
-            publish(
-              Right(
-                _applyPendingEdits(streamKey, projectId, localEstimates, view),
-              ),
-            );
+            publish(Right(localEstimates));
           },
           onError: (Object error) {
-            _phoneCopies.remove(streamKey);
             publish(
               Left(
                 _handleError(
@@ -294,119 +274,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     if (waiting != null && !waiting.isCompleted) {
       waiting.complete(Right(_cachedEstimations[streamKey] ?? []));
     }
-  }
-
-  List<CostEstimate> _applyPendingEdits(
-    String streamKey,
-    String projectId,
-    List<CostEstimate> estimates,
-    _ListView view,
-  ) {
-    _phoneCopies[streamKey] = (estimates: estimates, view: view);
-    var shown = estimates;
-    for (final edit in _pendingEditsOf(projectId)) {
-      if (_isReflectedOn(edit, estimates, view)) {
-        if (edit.awaitingKeys.remove(streamKey)) edit.wasReflected = true;
-      } else {
-        shown = edit.apply(shown, view);
-      }
-    }
-    _dropSettledEdits();
-    return shown;
-  }
-
-  Iterable<_PendingEdit> _pendingEditsOf(String projectId) => _pendingEdits
-      .values
-      .where((edit) => edit.projectId == projectId)
-      .toList();
-
-  Iterable<String> _watchedKeysOf(String projectId) =>
-      _streamControllers.keys.where((key) => key.startsWith('$projectId:'));
-
-  void _dropSettledEdits() => _pendingEdits.removeWhere(
-    (_, edit) => edit.wasReflected && edit.awaitingKeys.isEmpty,
-  );
-
-  void _forgetStream(String streamKey) {
-    _phoneCopies.remove(streamKey);
-    for (final edit in _pendingEdits.values) {
-      edit.awaitingKeys.remove(streamKey);
-    }
-    _dropSettledEdits();
-  }
-
-  bool _isSettledOnEveryWatchedList(String projectId, _PendingEdit edit) =>
-      edit.awaitingKeys.isEmpty && _watchedKeysOf(projectId).isNotEmpty;
-
-  _PendingEdit _rememberPendingEdit(
-    String editKey,
-    String projectId, {
-    required _Apply apply,
-    required _IsReflected isReflected,
-    String? estimationId,
-  }) {
-    // ignore: no_direct_instantiation, reason: file-private value holder, not a service
-    final edit = _PendingEdit(
-      projectId: projectId,
-      apply: apply,
-      isReflected: isReflected,
-      estimationId: estimationId,
-    );
-    for (final key in _watchedKeysOf(projectId)) {
-      final copy = _phoneCopies[key];
-      if (copy == null || !_isReflectedOn(edit, copy.estimates, copy.view)) {
-        edit.awaitingKeys.add(key);
-      }
-    }
-    if (_isSettledOnEveryWatchedList(projectId, edit)) {
-      edit.wasReflected = true;
-    }
-    _pendingEdits[editKey] = edit;
-    return edit;
-  }
-
-  bool _isReflectedOn(
-    _PendingEdit edit,
-    List<CostEstimate> estimates,
-    _ListView view,
-  ) {
-    final estimationId = edit.estimationId;
-    final rowIsStillBeingCreated =
-        estimationId != null &&
-        _pendingEdits.containsKey('create:$estimationId') &&
-        estimates.every((e) => e.id != estimationId);
-    return !rowIsStillBeingCreated && edit.isReflected(estimates, view);
-  }
-
-  void _republishProject(String projectId) {
-    for (final key in _watchedKeysOf(projectId).toList()) {
-      final copy = _phoneCopies[key];
-      if (copy == null) continue;
-      _emitToStream(
-        key,
-        Right(_applyPendingEdits(key, projectId, copy.estimates, copy.view)),
-      );
-    }
-  }
-
-  List<CostEstimate> _withCreated(
-    List<CostEstimate> estimates,
-    CostEstimate created,
-    _ListView view,
-  ) {
-    final position = estimates.indexWhere(
-      (e) => _sortsBefore(created, e, view),
-    );
-    final merged = [...estimates]
-      ..insert(position == -1 ? estimates.length : position, created);
-    return merged.take(view.limit).toList();
-  }
-
-  bool _sortsBefore(CostEstimate a, CostEstimate b, _ListView view) {
-    final byUpdatedAt = view.sortBy == EstimationSortOption.updatedAt;
-    final aTime = byUpdatedAt ? a.updatedAt : a.createdAt;
-    final bTime = byUpdatedAt ? b.updatedAt : b.createdAt;
-    return view.ascending ? aTime.isBefore(bTime) : !aTime.isBefore(bTime);
   }
 
   @override
@@ -444,7 +311,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _visibleLimits.remove(streamKey);
               _localSubscriptions.remove(streamKey)?.cancel();
               _releaseWaitingCaller(streamKey);
-              _forgetStream(streamKey);
             },
           );
       fetchInitialEstimations(
@@ -481,29 +347,15 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     try {
       _logger.debug('Creating cost estimation: ${estimation.id}');
 
-      final costEstimateDto = CostEstimateDto.fromDomain(estimation);
-      final createdDto = await _dataSource.createEstimation(costEstimateDto);
+      final storedDto = await _localDataSource.insertEstimationRow(
+        CostEstimateDto.fromDomain(estimation),
+      );
 
-      final createdEstimation = createdDto.toDomain();
+      final createdEstimation = storedDto.toDomain();
 
       _logger.debug(
         'Successfully created cost estimation: ${createdEstimation.id}',
       );
-
-      _rememberPendingEdit(
-        'create:${createdEstimation.id}',
-        estimation.projectId,
-        apply: (estimates, view) =>
-            _withCreated(estimates, createdEstimation, view),
-        isReflected: (estimates, view) =>
-            estimates.any((e) => e.id == createdEstimation.id) ||
-            !_withCreated(
-              estimates,
-              createdEstimation,
-              view,
-            ).any((e) => e.id == createdEstimation.id),
-      );
-      _republishProject(estimation.projectId);
 
       return Right(createdEstimation);
     } catch (e) {
@@ -538,8 +390,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _paginationStates.clear();
     _visibleLimits.clear();
     _localSubscriptions.clear();
-    _phoneCopies.clear();
-    _pendingEdits.clear();
   }
 
   @override
@@ -660,28 +510,4 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       );
     }
   }
-}
-
-typedef _ListView = ({EstimationSortOption sortBy, bool ascending, int limit});
-
-typedef _PhoneCopy = ({List<CostEstimate> estimates, _ListView view});
-
-typedef _Apply = List<CostEstimate> Function(List<CostEstimate>, _ListView);
-
-typedef _IsReflected = bool Function(List<CostEstimate>, _ListView);
-
-class _PendingEdit {
-  _PendingEdit({
-    required this.projectId,
-    required this.apply,
-    required this.isReflected,
-    this.estimationId,
-  });
-
-  final String projectId;
-  final String? estimationId;
-  final Set<String> awaitingKeys = {};
-  _Apply apply;
-  _IsReflected isReflected;
-  bool wasReflected = false;
 }
