@@ -120,7 +120,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     state is MaterialCostFormFailure) &&
                 state.data.hasUnsavedChanges,
             itemNameOf: (state) => state.data.lineName,
-            isEditingExistingLine: (state) => state.data.isEditingExistingLine,
+            savedLineTotalOf: (state) => state.data.editedItem?.itemTotalCost,
             child: sheet,
           ),
         CostItemType.equipment =>
