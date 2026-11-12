@@ -690,7 +690,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
   ) async {
     try {
-      final dto = await _dataSource.getEstimationById(estimationId);
+      final phoneDto = await _localDataSource.loadEstimationById(estimationId);
+      final dto = phoneDto ?? await _dataSource.getEstimationById(estimationId);
       if (dto == null) {
         _logger.warning('Estimation not found: $estimationId');
         return Left(

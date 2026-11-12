@@ -179,6 +179,12 @@ class PowerSyncCostEstimationDataSourceImpl
   ];
 
   @override
+  Future<CostEstimateDto?> loadEstimationById(String id) async {
+    final rows = await _wrapper.getAll(_buildSelectByIdSql(), [id]);
+    return rows.isEmpty ? null : CostEstimateDto.fromRow(rows.first);
+  }
+
+  @override
   Future<CostEstimateDto> insertEstimationRow(
     CostEstimateDto estimation,
   ) async {
