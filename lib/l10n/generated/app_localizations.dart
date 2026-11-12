@@ -4291,6 +4291,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No equipment costs yet'**
   String get costSectionEmptyEquipment;
+
+  /// Examples under the Materials section while the whole estimate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets, lumber, fixtures, fasteners'**
+  String get costSectionExamplesMaterial;
+
+  /// Examples under the Labor section while the whole estimate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Crew hours, day rates, subcontract'**
+  String get costSectionExamplesLabor;
+
+  /// Examples under the Equipment section while the whole estimate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Rentals, delivery, fuel'**
+  String get costSectionExamplesEquipment;
+
+  /// Bold title of the message shown while the whole estimate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No costs yet'**
+  String get emptyEstimateTitle;
+
+  /// Line under the title of the message shown while the whole estimate is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Every estimate starts with one cost. Pick a category and the form works out the total.'**
+  String get emptyEstimateBody;
+
+  /// Primary button shown while the whole estimate is empty; opens the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Add the first cost'**
+  String get addFirstCostButton;
 }
 
 class _AppLocalizationsDelegate

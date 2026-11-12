@@ -19,6 +19,7 @@ void main() {
             costs: costs,
             highlightedItemId: null,
             onLineTap: (_) {},
+            onAddFirstCost: () {},
           ),
         ),
       );
@@ -39,6 +40,24 @@ void main() {
           ),
         ),
         find.byKey(const Key('cost_line_q1')),
+      );
+    });
+
+    testWidgets('a11y: the first-cost button of an empty estimate meets tap '
+        'target and label guidelines in both themes', (tester) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        makeWidget(
+          const CostItemsLoaded(
+            items: [],
+            materialsSubtotal: 0,
+            laborSubtotal: 0,
+            equipmentSubtotal: 0,
+          ),
+        ),
+        find.byKey(CostSectionsList.addFirstCostButtonKey),
       );
     });
   });

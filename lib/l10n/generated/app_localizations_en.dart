@@ -2617,4 +2617,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get costSectionEmptyEquipment => 'No equipment costs yet';
+
+  @override
+  String get costSectionExamplesMaterial =>
+      'Sheets, lumber, fixtures, fasteners';
+
+  @override
+  String get costSectionExamplesLabor => 'Crew hours, day rates, subcontract';
+
+  @override
+  String get costSectionExamplesEquipment => 'Rentals, delivery, fuel';
+
+  @override
+  String get emptyEstimateTitle => 'No costs yet';
+
+  @override
+  String get emptyEstimateBody =>
+      'Every estimate starts with one cost. Pick a category and the form works out the total.';
+
+  @override
+  String get addFirstCostButton => 'Add the first cost';
 }
