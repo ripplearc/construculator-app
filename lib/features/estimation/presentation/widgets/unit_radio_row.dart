@@ -10,7 +10,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// coreui has no radio row, so the row draws the library's list-control
 /// looks itself: a Grey Mid fill while pressed and a 2 dp `outlineFocus` ring
 /// while it has keyboard focus. Tab reaches it, and Enter or Space selects it.
-class UnitRadioRow extends StatelessWidget {
+class UnitRadioRow extends StatefulWidget {
   /// The unit the row shows.
   final Unit unit;
 
@@ -28,7 +28,16 @@ class UnitRadioRow extends StatelessWidget {
   });
 
   @override
+  State<UnitRadioRow> createState() => _UnitRadioRowState();
+}
+
+class _UnitRadioRowState extends State<UnitRadioRow> {
+  bool _showsFocusRing = false;
+
+  @override
   Widget build(BuildContext context) {
+    final unit = widget.unit;
+    final isSelected = widget.isSelected;
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
@@ -49,21 +58,31 @@ class UnitRadioRow extends StatelessWidget {
       // The label already reads the symbol and the name, so the texts inside
       // would be read a second time.
       excludeSemantics: true,
-      onTap: onSelected,
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onSelected,
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: colorTheme.backgroundGrayMid,
-          focusColor: colorTheme.transparent,
-          hoverColor: colorTheme.transparent,
-          child: Builder(
-            builder: (context) => DecoratedBox(
+      onTap: widget.onSelected,
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (showsFocusRing) =>
+            setState(() => _showsFocusRing = showsFocusRing),
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onSelected();
+              return null;
+            },
+          ),
+        },
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: widget.onSelected,
+            canRequestFocus: false,
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: colorTheme.backgroundGrayMid,
+            hoverColor: colorTheme.transparent,
+            child: DecoratedBox(
               key: Key('unit_focus_ring_${unit.name}'),
               position: DecorationPosition.foreground,
               decoration: BoxDecoration(
-                border: Focus.of(context).hasFocus ? focusRing : null,
+                border: _showsFocusRing ? focusRing : null,
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
