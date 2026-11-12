@@ -4358,6 +4358,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load the cost lines.'**
   String get costItemsLoadFailed;
 
+  /// Shown on the estimate screen instead of the first line when a second load in a row fails
+  ///
+  /// In en, this message translates to:
+  /// **'Still couldn\'t load the cost lines.'**
+  String get costItemsLoadFailedAgain;
+
+  /// Second line under the failed load message on the estimate screen
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was deleted or changed. Try again, or close and reopen the estimate.'**
+  String get costItemsLoadFailedHint;
+
   /// Button on the estimate screen that reloads the cost lines after a failed load
   ///
   /// In en, this message translates to:
