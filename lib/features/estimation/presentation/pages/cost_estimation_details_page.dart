@@ -299,7 +299,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
               onAddFirstCost: () => unawaited(_openAddCost(context)),
             ),
           ),
-          CostItemsFailure() => _buildLoadFailure(context),
+          CostItemsFailure() => _buildLoadFailure(context, state),
           CostItemsInitial() ||
           CostItemsLoading() => const Center(child: CoreLoadingIndicator()),
         },
@@ -309,7 +309,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         builder: (context, costs) =>
             BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
               bloc: _summaryBloc,
-              buildWhen: (_, current) => current is EstimateSummaryLoaded,
+              buildWhen: (_, current) =>
+                  current is EstimateSummaryLoaded ||
+                  current is EstimateSummaryFailure,
               builder: (context, summary) => AddCostBottomBar(
                 total: summary is EstimateSummaryLoaded
                     ? summary.estimate.totalCost
@@ -324,28 +326,42 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     );
   }
 
-  Widget _buildLoadFailure(BuildContext context) {
+  Widget _buildLoadFailure(BuildContext context, CostItemsFailure failure) {
     final l10n = context.l10n;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        spacing: CoreSpacing.space4,
-        children: [
-          Text(
-            l10n.costItemsLoadFailed,
-            key: const Key('cost_items_load_failed'),
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: CoreSpacing.space4,
+          children: [
+            Text(
+              failure.failedLoads > 1
+                  ? l10n.costItemsLoadFailedAgain
+                  : l10n.costItemsLoadFailed,
+              key: const Key('cost_items_load_failed'),
+              textAlign: TextAlign.center,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
             ),
-          ),
-          CoreButton(
-            key: const Key('cost_items_retry_button'),
-            label: l10n.costItemsRetryButton,
-            variant: CoreButtonVariant.secondary,
-            fullWidth: false,
-            onPressed: () => _costItemsBloc.add(const CostItemsRefreshed()),
-          ),
-        ],
+            Text(
+              l10n.costItemsLoadFailedHint,
+              key: const Key('cost_items_load_failed_hint'),
+              textAlign: TextAlign.center,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+            ),
+            CoreButton(
+              key: const Key('cost_items_retry_button'),
+              label: l10n.costItemsRetryButton,
+              variant: CoreButtonVariant.secondary,
+              fullWidth: false,
+              onPressed: () => _costItemsBloc.add(const CostItemsRefreshed()),
+            ),
+          ],
+        ),
       ),
     );
   }
