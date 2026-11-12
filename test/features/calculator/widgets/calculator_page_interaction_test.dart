@@ -409,6 +409,58 @@ void main() {
     expect(find.text(l10n.calculatorLabelValue), findsOneWidget);
   });
 
+  testWidgets('the label row names the reading of a bare number and the '
+      'Read-as pill offers the other one; a tap re-reads the number and the '
+      'conversions row folds while the pill shows', (tester) async {
+    await pumpPage(tester);
+    final bloc = blocOf(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_eight',
+      'calc_key_decimal',
+      'calc_key_four',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+
+    final display = tester.widget<CoreDisplayArea>(
+      find.byType(CoreDisplayArea),
+    );
+    expect(
+      display.label,
+      '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingDegrees}',
+    );
+    expect(display.isTyping, isTrue);
+    expect(display.value, '8.45°');
+    expect(
+      display.dependentKeys.single.label,
+      l10n.calculatorPillInputAs('8.45°'),
+    );
+    expect(display.dependentKeys.single.value, '8.45in/12in');
+    expect(display.dependentKeys.single.kind, CoreDependentKeyKind.offer);
+    expect(
+      display.dependentKeys.single.semanticsHint,
+      l10n.calculatorPillReadAsHint,
+    );
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .secondRowHidden,
+      isTrue,
+    );
+
+    await tester.tap(find.byKey(CoreDisplayArea.dependentKeyTestKey(0)));
+    await tester.pump();
+
+    expect(bloc.state.valueText, '8.45in/12in');
+    expect(
+      tester.widget<CoreDisplayArea>(find.byType(CoreDisplayArea)).label,
+      '${l10n.calculatorKeyPitch} · ${l10n.calculatorReadingRisePerFoot}',
+    );
+  });
+
   testWidgets('a chip with no key is named by its operator, and a closed '
       'bracket by its inside over its value', (tester) async {
     await pumpPage(tester);

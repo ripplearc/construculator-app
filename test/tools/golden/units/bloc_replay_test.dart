@@ -72,6 +72,17 @@ class BlocScenarioDriver implements ScenarioDriver {
   static String _rowOneText(CalculatorSuggestion suggestion) =>
       '${_labels.suggestionLabel(suggestion)}: ${suggestion.text}';
 
+  /// A pill as the prototype's DOM reads it: an offer is a sentence, a
+  /// toggle its label, a colon and its value.
+  static String _pillText(CalculatorDependentKey key) {
+    final pill = _labels.dependentKey(key, onPressed: () {});
+    return switch (pill.kind) {
+      CoreDependentKeyKind.offer => '${pill.label} ${pill.value}',
+      CoreDependentKeyKind.editable ||
+      CoreDependentKeyKind.toggle => '${pill.label}: ${pill.value}',
+    };
+  }
+
   @override
   Snapshot snapshot() {
     final state = _bloc.state;
@@ -83,6 +94,9 @@ class BlocScenarioDriver implements ScenarioDriver {
         null => '',
       },
       value: state.valueText,
+      depKey: state.dependentKeys.isEmpty
+          ? null
+          : [for (final key in state.dependentKeys) _pillText(key)].join(' | '),
       tape: [
         for (final chip in state.chipsList) '${chip.label ?? ''}${chip.value}',
       ],
@@ -337,6 +351,7 @@ void main() {
       expect(typing.tapeKinds, ['t-input', 't-active']);
       expect(typing.label, 'Run…');
       expect(typing.value, '1');
+      expect(typing.depKey, isNull);
       for (final key in const ['d:2', 'unit:ft', 'op:×', 'd:2', 'equals']) {
         await driver.perform(KeyStep(key));
       }
@@ -354,14 +369,15 @@ void main() {
       expect(driver.snapshot().unitToggleLabel, 'Imperial');
     });
 
-    test('the driver reads the label with its reading and a closed bracket '
-        'by its inside', () async {
+    test('the driver reads the label with its reading, the pills as the '
+        'prototype spells them, and a closed bracket by its inside', () async {
       for (final key in const ['fk:Pitch', 'd:8', 'd:.', 'd:4', 'd:5']) {
         await driver.perform(KeyStep(key));
       }
       final pitch = driver.snapshot();
       expect(pitch.label, 'Pitch · degrees…');
       expect(pitch.value, '8.45°');
+      expect(pitch.depKey, 'Input 8.45° as 8.45in/12in');
 
       await driver.perform(const KeyStep('clear'));
       for (final key in const [
