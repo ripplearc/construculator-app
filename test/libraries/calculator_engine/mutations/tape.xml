@@ -236,6 +236,12 @@
         <regex pattern="!\(_amountShown\(value\)\.abs\(\) &lt;= Quantity\.largestShown\);" dotAll="true" id="quantity_formatter.above_the_limit.edge">
             <mutation text="!(_amountShown(value).abs() &lt; Quantity.largestShown);"/>
         </regex>
+
+        <!-- RULE CA-1201c (X01): a result converted past the limit is taken -->
+        <regex pattern="UnitKeyConverted\(:final value\) when formatter\.isTooLarge\(value\) =&gt;\s*const TapeEntryRefused\(EntryRefusal\.tooLarge\),\s*UnitKeyConverted\(:final value\) =&gt; TapeChanged\(" dotAll="true" id="tape.convert_result.past_limit">
+            <mutation text="UnitKeyConverted(:final value) =&gt; TapeChanged("/>
+            <mutation text="UnitKeyConverted(:final value) when !formatter.isTooLarge(value) =&gt; const TapeEntryRefused(EntryRefusal.tooLarge), UnitKeyConverted(:final value) =&gt; TapeChanged("/>
+        </regex>
     </rules>
 
     <commands>

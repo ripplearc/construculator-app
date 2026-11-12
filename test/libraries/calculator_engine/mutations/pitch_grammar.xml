@@ -28,8 +28,13 @@
 
         <!-- RULE 2: [Pitch] lands the pitch in the wrong spelling, or never
              lands it, or lands a non-pitch answer -->
-        <regex pattern="value: pitch\.spelledAs\(AngleSpelling\.risePerFoot\)," dotAll="true" id="pitch.key.lands_degrees">
-            <mutation text="value: pitch,"/>
+        <regex pattern="pitchRiseKey,\s*pitch\.spelledAs\(AngleSpelling\.risePerFoot\)," dotAll="true" id="pitch.key.lands_degrees">
+            <mutation text="pitchRiseKey, pitch,"/>
+        </regex>
+        <!-- RULE 2b (CA-1201 B2): [Pitch] lands a rise per 12in the formatter
+             cannot write -->
+        <regex pattern="tape\._landedAnswer\(\s*DeterministicRules\.pitchRiseKey,\s*pitch\.spelledAs\(AngleSpelling\.risePerFoot\),\s*\)" dotAll="true" id="pitch.key.lands_past_limit">
+            <mutation text="ResultChip(key: DeterministicRules.pitchRiseKey, value: pitch.spelledAs(AngleSpelling.risePerFoot))"/>
         </regex>
         <regex pattern="if \(tape\._pitchTheRulesRead case final pitch\?\) \{" dotAll="true" id="pitch.key.never_asks">
             <mutation text="if (null case final Angle pitch?) {"/>
@@ -106,6 +111,19 @@
         <regex pattern="Angle\(math\.atan\(riseOverRun\) \* 180 / math\.pi\);" dotAll="true" id="angle.of_ratio.radians">
             <mutation text="Angle(math.atan(riseOverRun));"/>
             <mutation text="Angle(math.tan(riseOverRun) * 180 / math.pi);"/>
+        </regex>
+
+        <!-- RULE B2b (CA-1201): the pill lands a grade or a rise the formatter
+             cannot write -->
+        <regex pattern="if \(formatter\.isTooLarge\(spelled\)\) \{\s*return _replaceLastChip\(const ErrorChip\(CalculationError\.outOfRange\)\);\s*\}" dotAll="true" id="pitch.pill.lands_past_limit">
+            <mutation text=""/>
+            <mutation text="if (!formatter.isTooLarge(spelled)) { return _replaceLastChip(const ErrorChip(CalculationError.outOfRange)); }"/>
+        </regex>
+
+        <!-- RULE CA-1201 (X02): Pitch pressed again on the Too large chip it
+             landed stacks a second Too large chip -->
+        <regex pattern="if \(tape\.chips\.lastOrNull ==\s*const ErrorChip\(CalculationError\.outOfRange\)\) \{\s*return const TapeRefused\(TapeRefusal\.noPitchToCycle\);\s*\}" dotAll="true" id="tape.pitch_key.too_large_stacked">
+            <mutation text=""/>
         </regex>
     </rules>
 

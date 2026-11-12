@@ -287,20 +287,30 @@ class DeterministicRules extends Equatable {
 
   /// The answers [namedValues] earn, in the order the strip offers them;
   /// empty when no rule matches. [namedValues] maps a chip key to the
-  /// value under it, as [Tape.namedValues] collects them.
-  List<Answer> answersFor(Map<String, Quantity> namedValues) {
+  /// value under it, as [Tape.namedValues] collects them. An answer above
+  /// 19,999,999.99 in the unit [formatter] writes it in is left out, as the
+  /// chain leaves such a step out (Section 5.3, "Too large"): Length and
+  /// Width of 19,999,999m earn no Area, and a Pitch a hair under 90° earns
+  /// no rise in 12in and no grade, which the formatter could not write.
+  List<Answer> answersFor(
+    Map<String, Quantity> namedValues, {
+    QuantityFormatter formatter = const QuantityFormatter(),
+  }) {
     final lengths = <DimensionKey, Length>{};
     for (final key in DimensionKey.values) {
       final value = namedValues[key.id];
       if (value is Length) lengths[key] = value;
     }
     return [
-      ..._columnAndCone(lengths),
-      ..._box(lengths),
-      ..._rectangle(lengths),
-      ..._triangle(lengths, _pitchOf(namedValues)),
-      ..._arc(lengths),
-      ..._shape(lengths, _sidesOf(namedValues)),
+      for (final answer in [
+        ..._columnAndCone(lengths),
+        ..._box(lengths),
+        ..._rectangle(lengths),
+        ..._triangle(lengths, _pitchOf(namedValues)),
+        ..._arc(lengths),
+        ..._shape(lengths, _sidesOf(namedValues)),
+      ])
+        if (!formatter.isTooLarge(answer.value)) answer,
     ];
   }
 

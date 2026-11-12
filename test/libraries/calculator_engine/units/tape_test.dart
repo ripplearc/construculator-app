@@ -460,6 +460,35 @@ void main() {
         final tape = press(const Tape(preferences: longTon), '2 2 4 0 lbs');
         expect(changed(tape.pressUnit(Unit.ton)).active!.entry.text, '1ton');
       });
+
+      test(
+        'a result converted past the limit in the new unit is refused as '
+        'Too large and stays in the unit it had (Section 5.1; CA-1201 X01)',
+        () {
+          const tooLarge = TapeEntryRefused(EntryRefusal.tooLarge);
+          final feet = press(const Tape(), '2000000 ft × 1 =');
+          expect(feet.pressUnit(Unit.inch), tooLarge);
+          expect(feet.chips.last, isA<ResultChip>());
+          final cubic = press(const Tape(), '9007200 m m m × 1 =');
+          expect(cubic.pressUnit(Unit.millimetre), tooLarge);
+          expect(
+            (cubic.chips.last as ResultChip).value,
+            isA<Volume>().having((v) => v.unit, 'unit', Unit.metre),
+          );
+          final edge = press(const Tape(), '1666666 ft × 1 =');
+          expect(edge.pressUnit(Unit.inch), isA<TapeChanged>());
+          expect(
+            press(const Tape(), '1666667 ft × 1 =').pressUnit(Unit.inch),
+            tooLarge,
+            reason: '1,666,667ft is 20,000,004in, one step past the limit',
+          );
+          final small = press(const Tape(), '100 m × 1 = mm');
+          expect(
+            (small.chips.last as ResultChip).value,
+            isA<Length>().having((l) => l.unit, 'unit', Unit.millimetre),
+          );
+        },
+      );
     });
 
     group('digits and fractions', () {
