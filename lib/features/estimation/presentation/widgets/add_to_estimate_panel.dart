@@ -18,6 +18,10 @@ class AddToEstimateBlock {
 
 /// The "Adds to this estimate" summary card: the line total, an optional
 /// delivery row, and the estimate's total before and after.
+///
+/// Over a line already on the estimate the card is titled "Changes this
+/// estimate" and shows the difference. Before any change its title reads
+/// "No change yet" and the difference is +\$0.00.
 class AddToEstimatePanel extends StatelessWidget {
   /// This line's total, including the delivery fee.
   final double lineTotal;
@@ -59,16 +63,17 @@ class AddToEstimatePanel extends StatelessWidget {
     final block = this.block;
     final fee = deliveryFee;
     final change = changeInEstimateTotal;
-    final title = change == null
-        ? l10n.addsToEstimateLabel
-        : l10n.changesThisEstimateLabel;
+    final title = switch (change) {
+      null => l10n.addsToEstimateLabel,
+      0 => l10n.noChangeYetNote,
+      _ => l10n.changesThisEstimateLabel,
+    };
     if (block != null) {
-      return CoreEstimateSummaryCard.empty(title: title, note: block.note);
-    }
-    if (change == 0) {
       return CoreEstimateSummaryCard.empty(
-        title: title,
-        note: l10n.noChangeYetNote,
+        title: change == null
+            ? l10n.addsToEstimateLabel
+            : l10n.changesThisEstimateLabel,
+        note: block.note,
       );
     }
     final shownAmount = change == null
