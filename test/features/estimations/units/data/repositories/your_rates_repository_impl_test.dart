@@ -654,6 +654,18 @@ void main() {
         expect(result.isRight(), isTrue);
         expect(database.deletedRowIds, isEmpty);
       });
+
+      test('a longer within is honoured', () async {
+        final gate = database.insertGate = Completer<void>();
+        final patient = impatientRepository.save(
+          buildEntry(itemName: 'Skid steer'),
+          within: const Duration(seconds: 30),
+        );
+        await impatientRepository.save(buildEntry(itemName: 'Dozer'));
+        gate.complete();
+
+        expect((await patient).isRight(), isTrue);
+      });
     });
 
     group('save', () {
