@@ -358,6 +358,42 @@ void main() {
     );
 
     testWidgets(
+      'a finished chip says that a tap edits it, the chip being typed that '
+      'a tap finishes the edit, and a result chip says nothing',
+      (tester) async {
+        final l10n = AppLocalizationsEn();
+        await tester.pumpWidget(makeTestableWidget());
+
+        for (final key in const [
+          'calc_key_two',
+          'calc_key_feet',
+          'calc_key_multiply',
+          'calc_key_three',
+          'calc_key_feet',
+        ]) {
+          await tester.tap(find.byKey(ValueKey(key)));
+          await tester.pump();
+        }
+        final typed = tester.getSemantics(
+          find.byKey(const ValueKey('calc_chip_1')),
+        );
+        expect(typed.hintOverrides!.onTapHint, l10n.calculatorChipTapToFinish);
+
+        await tester.tap(find.byKey(CoreResultButton.testKey));
+        await tester.pump();
+
+        final input = tester.getSemantics(
+          find.byKey(const ValueKey('calc_chip_0')),
+        );
+        expect(input.hintOverrides!.onTapHint, l10n.calculatorChipTapToEdit);
+        final result = tester.getSemantics(
+          find.byKey(const ValueKey('calc_chip_2')),
+        );
+        expect(result.hintOverrides, isNull);
+      },
+    );
+
+    testWidgets(
       'an abbreviated key is read by its face, then its full name as a hint',
       (tester) async {
         final l10n = AppLocalizationsEn();

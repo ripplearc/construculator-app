@@ -147,6 +147,22 @@
         <regex pattern="currentGroupIndex,\s*groupOrder,\s*notice," dotAll="true" id="calculator_state.props.drop_group_order">
             <mutation text="currentGroupIndex, notice,"/>
         </regex>
+
+        <!-- RULE 23 (S1c 3/5, CA-1089): a tapped chip never reaches the tape -->
+        <regex pattern="on&lt;CalculatorChipTapped&gt;\(_onChipTapped\);" dotAll="true" id="calculator_bloc.chip_tapped.unwired">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 24: no result is ever drawn dashed -->
+        <regex pattern="ResultChip\(\) when editedIndex != null &amp;&amp; index &gt; editedIndex =&gt;" dotAll="true" id="calculator_state.chips.never_dashed">
+            <mutation text="ResultChip() when false =&gt;"/>
+        </regex>
+
+        <!-- RULE 25: every result is dashed while any chip is edited, the ones
+             before it too -->
+        <regex pattern="ResultChip\(\) when editedIndex != null &amp;&amp; index &gt; editedIndex =&gt;" dotAll="true" id="calculator_state.chips.results_before_edit_dashed">
+            <mutation text="ResultChip() when editedIndex != null =&gt;"/>
+        </regex>
     </rules>
 
     <commands>

@@ -99,6 +99,53 @@ void main() {
     });
   });
 
+  group('CalculatorLabelFormatter.localizeChips with a chip tap', () {
+    final l10n = AppLocalizationsEn();
+    final labels = CalculatorLabelFormatter(l10n);
+    const chips = [
+      CoreCalculatorChip(type: CoreCalculatorChipType.editable, value: '22ft'),
+      CoreCalculatorChip(type: CoreCalculatorChipType.active, value: '18'),
+      CoreCalculatorChip(type: CoreCalculatorChipType.result, value: '396ft²'),
+      CoreCalculatorChip(type: CoreCalculatorChipType.dashed, value: '396ft²'),
+    ];
+
+    test('a value chip taps back with its own index; a result chip, dashed '
+        'or not, takes no tap', () {
+      final tapped = <int>[];
+      final localized = labels.localizeChips(chips, onChipTap: tapped.add);
+
+      localized[0].onTap!();
+      localized[1].onTap!();
+      expect(tapped, [0, 1]);
+      expect(localized[2].onTap, isNull);
+      expect(localized[3].onTap, isNull);
+    });
+
+    test('a finished chip says a tap edits it, the chip being typed or '
+        'edited that a tap finishes the edit, and a result says nothing', () {
+      final localized = labels.localizeChips(chips, onChipTap: (_) {});
+
+      expect(localized[0].tapSemanticLabel, l10n.calculatorChipTapToEdit);
+      expect(localized[1].tapSemanticLabel, l10n.calculatorChipTapToFinish);
+      expect(
+        localized[1].tapSemanticLabel,
+        isNot(equals(localized[0].tapSemanticLabel)),
+      );
+      expect(localized[2].tapSemanticLabel, isNull);
+      expect(localized[3].tapSemanticLabel, isNull);
+    });
+
+    test('without a tap handler the chips keep their own taps and hints', () {
+      final localized = labels.localizeChips(chips);
+
+      expect(localized.map((chip) => chip.onTap), everyElement(isNull));
+      expect(
+        localized.map((chip) => chip.tapSemanticLabel),
+        everyElement(isNull),
+      );
+    });
+  });
+
   group('CalculatorLabelFormatter.localizeChips', () {
     test(
       'translates the label and carries every other field over as it is',
