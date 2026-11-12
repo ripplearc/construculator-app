@@ -4025,14 +4025,14 @@ abstract class AppLocalizations {
   /// Body of the discard-changes question, naming the line being edited
   ///
   /// In en, this message translates to:
-  /// **'Your changes to {item} will be lost. The line stays in the estimate.'**
-  String discardChangesDialogBody(String item);
+  /// **'Your changes to {item} will be lost. The line stays at {amount}.'**
+  String discardChangesDialogBody(String item, String amount);
 
   /// Body of the discard-changes question while the name of the line being edited is cleared
   ///
   /// In en, this message translates to:
-  /// **'Your changes to this line will be lost. The line stays in the estimate.'**
-  String get discardChangesDialogBodyUnnamed;
+  /// **'Your changes to this line will be lost. The line stays at {amount}.'**
+  String discardChangesDialogBodyUnnamed(String amount);
 
   /// Outlined button that closes the material sheet and drops what was typed
   ///
