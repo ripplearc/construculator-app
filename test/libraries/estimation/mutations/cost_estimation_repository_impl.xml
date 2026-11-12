@@ -20,6 +20,14 @@
     </exclude>
 
     <rules>
+        <!-- getEstimation: the phone's row wins over the server's -->
+        <regex pattern="final dto = phoneDto \?\? await _dataSource\.getEstimationById\(estimationId\);" dotAll="true" id="repo.get.ignore_phone_row">
+            <mutation text="final dto = await _dataSource.getEstimationById(estimationId);"/>
+        </regex>
+        <regex pattern="final dto = phoneDto \?\? await _dataSource\.getEstimationById\(estimationId\);" dotAll="true" id="repo.get.ignore_server_row">
+            <mutation text="final dto = phoneDto;"/>
+        </regex>
+
 
         <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
         <regex pattern="return _paginationStates\[streamKey\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">

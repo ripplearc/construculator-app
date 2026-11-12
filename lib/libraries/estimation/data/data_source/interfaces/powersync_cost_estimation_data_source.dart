@@ -59,6 +59,12 @@ abstract class PowerSyncCostEstimationDataSource {
     int? limit,
   });
 
+  /// Reads the row with [id] from local SQLite, or null when the phone has none.
+  ///
+  /// Reads once and does not activate the sync stream, so it answers at once
+  /// with what the phone holds, including a row that has not uploaded yet.
+  Future<CostEstimateDto?> loadEstimationById(String id);
+
   /// Writes [estimation] as a new row on the phone and queues it for upload.
   ///
   /// A row with an empty id gets a new one minted here; a row that already has
