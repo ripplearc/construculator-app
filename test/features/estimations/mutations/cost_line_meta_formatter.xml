@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST LINE META FORMATTER MUTATION TESTING -->
+    <!-- Targets: meta row wording per line type, delivery fee, missing-field guards -->
+
+    <files>
+        <file>lib/features/estimation/presentation/helpers/cost_line_meta_formatter.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="(_amount\(l10n\)\.format\(quantity\.value\))" dotAll="true" id="meta.material.quantity_uses_price">
+            <mutation text="_amount(l10n).format(item.unitPrice.amount)"/>
+        </regex>
+
+        <regex pattern="(unit\.countName\(l10n, quantity\.value\))" dotAll="true" id="meta.material.quantity_unit_always_singular">
+            <mutation text="unit.countName(l10n, 1)"/>
+        </regex>
+
+        <regex pattern="(unit\.countName\(l10n, 1\))" dotAll="true" id="meta.material.rate_unit_follows_quantity">
+            <mutation text="unit.countName(l10n, quantity.value)"/>
+        </regex>
+
+        <regex pattern="(lead: l10n\.costLineMaterialQuantity)" dotAll="true" id="meta.material.lead_becomes_tail">
+            <mutation text="tail: l10n.costLineMaterialQuantity"/>
+        </regex>
+
+        <regex pattern="(DisplayFormatter\.formatCurrency\(item\.unitPrice\.amount\))" dotAll="true" id="meta.material.price_uses_zero">
+            <mutation text="DisplayFormatter.formatCurrency(0)"/>
+        </regex>
+
+        <regex pattern="(when item\.laborValue\.laborHours != null)" dotAll="true" id="meta.labor.negate_hours_guard">
+            <mutation text="when item.laborValue.laborHours == null"/>
+        </regex>
+
+        <regex pattern="(when days != null)" dotAll="true" id="meta.labor.negate_days_guard">
+            <mutation text="when days == null"/>
+        </regex>
+
+        <regex pattern="(_amount\(l10n\)\.format\(item\.laborValue\.laborHours\))" dotAll="true" id="meta.labor.hours_uses_days">
+            <mutation text="_amount(l10n).format(item.laborValue.laborDays)"/>
+        </regex>
+
+        <regex pattern="(EquipmentPricingMethod\.day =&gt; _dayMeta\(item, l10n\))" dotAll="true" id="meta.equipment.day_uses_job">
+            <mutation text="EquipmentPricingMethod.day =&gt; _jobMeta(item, l10n)"/>
+        </regex>
+
+        <regex pattern="(EquipmentPricingMethod\.job =&gt; _jobMeta\(item, l10n\))" dotAll="true" id="meta.equipment.job_uses_day">
+            <mutation text="EquipmentPricingMethod.job =&gt; _dayMeta(item, l10n)"/>
+        </regex>
+
+        <regex pattern="(if \(base == null \|\| fee == null\) return base;)" dotAll="true" id="meta.equipment.always_skip_fee">
+            <mutation text="if (true) return base;"/>
+        </regex>
+
+        <regex pattern="(if \(base == null \|\| fee == null\) return base;)" dotAll="true" id="meta.equipment.never_skip_fee">
+            <mutation text="if (base == null) return base;"/>
+        </regex>
+
+        <regex pattern="(if \(base == null \|\| fee == null\) return base;)" dotAll="true" id="meta.equipment.fee_guard_inverted">
+            <mutation text="if (base == null || fee != null) return base;"/>
+        </regex>
+
+        <regex pattern="(DisplayFormatter\.formatCurrency\(fee\.amount\))" dotAll="true" id="meta.equipment.fee_uses_zero">
+            <mutation text="DisplayFormatter.formatCurrency(0)"/>
+        </regex>
+
+        <regex pattern="(if \(duration == null \|\| rate == null\) return null;)" dotAll="true" id="meta.equipment.day_guard_and">
+            <mutation text="if (duration == null &amp;&amp; rate == null) return null;"/>
+        </regex>
+
+        <regex pattern="(if \(duration == null \|\| rate == null\) return null;)" dotAll="true" id="meta.equipment.day_guard_removed">
+            <mutation text="if (false) return null;"/>
+        </regex>
+
+        <regex pattern="(l10n\.costLineEquipmentDaysDuration\(duration\))" dotAll="true" id="meta.equipment.duration_is_zero">
+            <mutation text="l10n.costLineEquipmentDaysDuration(0)"/>
+        </regex>
+
+        <regex pattern="(DisplayFormatter\.formatCurrency\(rate\.amount\))" dotAll="true" id="meta.equipment.rate_uses_zero">
+            <mutation text="DisplayFormatter.formatCurrency(0)"/>
+        </regex>
+
+        <regex pattern="(if \(job == null\) return null;)" dotAll="true" id="meta.equipment.job_guard_removed">
+            <mutation text="if (false) return null;"/>
+        </regex>
+
+        <regex pattern="(DisplayFormatter\.formatCurrency\(job\.amount\))" dotAll="true" id="meta.equipment.job_uses_zero">
+            <mutation text="DisplayFormatter.formatCurrency(0)"/>
+        </regex>
+
+        <regex pattern="(lead: base\.lead,)" dotAll="true" id="meta.equipment.fee_drops_lead">
+            <mutation text="lead: '',"/>
+        </regex>
+
+        <regex pattern="(base\.tail \+)" dotAll="true" id="meta.equipment.fee_drops_tail">
+            <mutation text="'' +"/>
+        </regex>
+
+        <regex pattern="(tail: l10n\.costLineEquipmentJobTail)" dotAll="true" id="meta.equipment.job_drops_word">
+            <mutation text="tail: ''"/>
+        </regex>
+
+        <regex pattern="(String get text =&gt; '\$lead\$tail';)" dotAll="true" id="meta.text_drops_tail">
+            <mutation text="String get text =&gt; lead;"/>
+        </regex>
+
+        <regex pattern="(NumberFormat\('#,##0\.##', l10n\.localeName\))" dotAll="true" id="meta.amount.fixed_two_decimals">
+            <mutation text="NumberFormat('#,##0.00', l10n.localeName)"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="cost_line_meta_formatter" expected-return="0">fvm flutter test test/features/estimations/helpers/cost_line_meta_formatter_test.dart</command>
+    </commands>
+</mutations>
