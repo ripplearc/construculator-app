@@ -2285,13 +2285,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discardChangesDialogTitle => 'Discard changes?';
 
   @override
-  String discardChangesDialogBody(String item) {
-    return 'Your changes to $item will be lost. The line stays in the estimate.';
+  String discardChangesDialogBody(String item, String amount) {
+    return 'Your changes to $item will be lost. The line stays at $amount.';
   }
 
   @override
-  String get discardChangesDialogBodyUnnamed =>
-      'Your changes to this line will be lost. The line stays in the estimate.';
+  String discardChangesDialogBodyUnnamed(String amount) {
+    return 'Your changes to this line will be lost. The line stays at $amount.';
+  }
 
   @override
   String get discardLineDiscardButton => 'Discard';

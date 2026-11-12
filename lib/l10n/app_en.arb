@@ -3365,20 +3365,28 @@
     "description": "Title of the question asked when a cost line already on the estimate is closed with a field changed",
     "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)"
   },
-  "discardChangesDialogBody": "Your changes to {item} will be lost. The line stays in the estimate.",
+  "discardChangesDialogBody": "Your changes to {item} will be lost. The line stays at {amount}.",
   "@discardChangesDialogBody": {
     "description": "Body of the discard-changes question, naming the line being edited",
-    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)",
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)",
     "placeholders": {
       "item": {
+        "type": "String"
+      },
+      "amount": {
         "type": "String"
       }
     }
   },
-  "discardChangesDialogBodyUnnamed": "Your changes to this line will be lost. The line stays in the estimate.",
+  "discardChangesDialogBodyUnnamed": "Your changes to this line will be lost. The line stays at {amount}.",
   "@discardChangesDialogBodyUnnamed": {
     "description": "Body of the discard-changes question while the name of the line being edited is cleared",
-    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)"
+    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
   "discardLineDiscardButton": "Discard",
   "@discardLineDiscardButton": {
