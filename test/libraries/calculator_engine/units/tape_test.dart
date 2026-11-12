@@ -327,6 +327,7 @@ void main() {
             key: 'Calc',
             value: Area(squareTicks, unit: Unit.yard),
             operator: Operator.add,
+            readIn: Unit.yard,
           ),
         );
         expect(converted.active, isNull);

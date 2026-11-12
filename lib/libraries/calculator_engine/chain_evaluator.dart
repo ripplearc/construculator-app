@@ -217,6 +217,11 @@ typedef ArctangentDivisor = ({double number, String text});
 /// and = lands Calc 5. An open bracket is worth nothing yet, which is why
 /// no Calc is offered while it is open.
 ///
+/// An error chip ends its chain (Section 5). A chip that carries an operator
+/// straight after one, left there by an edit that broke the chain (rule
+/// 4.8), starts nothing: it folds to nothing until a chip with no operator
+/// starts a chain, so no number is computed from part of a broken chain.
+///
 /// A trig chip is worth its answer, except an Arctangent whose number is
 /// followed by ÷ and bare numbers with no key: the ÷ builds the ratio for
 /// ATAN ([ArctangentReach]; Section 6, "Trig chips in a chain"). While that
@@ -241,13 +246,22 @@ class ChainEvaluator extends Equatable {
   /// The running total of [chips], as far as it can be computed.
   ChainOutcome fold(List<TapeChip> chips) {
     var running = _nothing;
+    var brokenOff = false;
     var index = 0;
     while (index < chips.length) {
       final chip = chips[index];
       var next = index + 1;
+      if (brokenOff && _leadsOn(chip)) {
+        index = next;
+        continue;
+      }
+      brokenOff = false;
       switch (chip) {
         case ErrorChip():
-          if (!_continuesAfter(chips, index)) running = _nothing;
+          if (!_continuesAfter(chips, index)) {
+            running = _nothing;
+            brokenOff = true;
+          }
         case ResultChip(:final value, :final operator):
           running = _joined(running, operator, value);
         case ValueChip(:final operator) || BracketChip(:final operator):
@@ -279,6 +293,13 @@ class ChainEvaluator extends Equatable {
   }
 
   static const _RunningChain _nothing = (total: null, steps: 0, failure: null);
+
+  static bool _leadsOn(TapeChip chip) => switch (chip) {
+    ValueChip(:final operator) ||
+    BracketChip(:final operator) ||
+    ResultChip(:final operator) => operator != null,
+    ErrorChip() => false,
+  };
 
   bool _continuesAfter(List<TapeChip> chips, int index) =>
       chips[index] == const ErrorChip(CalculationError.divisionByZero) &&

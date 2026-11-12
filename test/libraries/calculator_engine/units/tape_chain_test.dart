@@ -573,6 +573,13 @@ void main() {
       expect(evaluator.fold(chips), const ChainEmpty());
     });
 
+    test('a number typed after a Calc starts its own chain with no steps, '
+        'so = on it alone computes nothing', () {
+      final typed = press(const Tape(), '2 + 3 = 7');
+      expect(typed.runningTotal, const ChainValue(Scalar(7), steps: 0));
+      expect(typed.pressEquals(), isA<TapeRefused>());
+    });
+
     test('a result restarts the count of steps', () {
       const chips = [
         ResultChip(key: 'Calc', value: Scalar(3)),
@@ -592,7 +599,8 @@ void main() {
       expect(evaluator.fold(chips), const ChainValue(Scalar(5), steps: 1));
     });
 
-    test('only ÷ 0 continues the chain, and only through its own ÷', () {
+    test('only ÷ 0 continues the chain, and only through its own ÷; any '
+        'other chip with an operator after an error chip folds to nothing', () {
       const five = ValueChip(
         entry: EntryBuffer([Token(digits: '5')]),
         isActive: false,
@@ -611,7 +619,7 @@ void main() {
           ErrorChip(CalculationError.dimensionError),
           twoDividing,
         ]),
-        const ChainValue(Scalar(2), steps: 0),
+        const ChainEmpty(),
       );
       expect(
         evaluator.fold(const [
@@ -619,7 +627,16 @@ void main() {
           ErrorChip(CalculationError.divisionByZero),
           twoAdded,
         ]),
-        const ChainValue(Scalar(2), steps: 0),
+        const ChainEmpty(),
+      );
+      expect(
+        evaluator.fold(const [
+          five,
+          ErrorChip(CalculationError.divisionByZero, replacesAResult: true),
+          twoDividing,
+        ]),
+        const ChainEmpty(),
+        reason: 'an error an edit left in place of a result reopens no divisor',
       );
       expect(
         evaluator.fold(const [
@@ -631,13 +648,29 @@ void main() {
       );
     });
 
-    test('a result after an error chip starts a new chain', () {
-      const chips = [
-        ValueChip(entry: EntryBuffer([Token(digits: '5')]), isActive: false),
-        ErrorChip(CalculationError.divisionByZero),
-        ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
-      ];
-      expect(evaluator.fold(chips), const ChainValue(Scalar(3), steps: 0));
+    test('a result with no operator after an error chip starts a new chain, '
+        'and one that carries an operator folds to nothing', () {
+      const five = ValueChip(
+        entry: EntryBuffer([Token(digits: '5')]),
+        isActive: false,
+      );
+      const error = ErrorChip(CalculationError.divisionByZero);
+      expect(
+        evaluator.fold(const [
+          five,
+          error,
+          ResultChip(key: 'Area', value: Scalar(3)),
+        ]),
+        const ChainValue(Scalar(3), steps: 0),
+      );
+      expect(
+        evaluator.fold(const [
+          five,
+          error,
+          ResultChip(key: 'Area', value: Scalar(3), operator: Operator.add),
+        ]),
+        const ChainEmpty(),
+      );
     });
 
     test('a failed step is the fold until a chip with no operator', () {

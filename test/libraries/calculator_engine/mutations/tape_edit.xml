@@ -20,8 +20,8 @@
 
         <!-- RULE 1a: a tap reopens a chip without marking it as an edit
              (R1, B1) -->
-        <regex pattern="tape\._reactivated\(tapped\)\.copyWith\(isEditing: true\)," dotAll="true" id="tape_edit.tap.not_marked">
-            <mutation text="tape._reactivated(tapped),"/>
+        <regex pattern="tape\._reactivated\(tapped as ValueChip\)\.copyWith\(isEditing: true\)," dotAll="true" id="tape_edit.tap.not_marked">
+            <mutation text="tape._reactivated(tapped as ValueChip),"/>
         </regex>
 
         <!-- RULE 1b: the seal leaves the edit mark on the chip, so ⌫ that
@@ -65,20 +65,19 @@
         </regex>
 
         <!-- RULE 6: a tap on another chip abandons a broken edit -->
-        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*tape = closed\._sealed\(\);" dotAll="true" id="tape_edit.tap.switch_abandons_broken_edit">
-            <mutation text="tape = _withFractionClosedAsInches()._sealed();"/>
+        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*\(tape: tape, removed: removed\) = closed\._sealedReporting\(\);" dotAll="true" id="tape_edit.tap.switch_abandons_broken_edit">
+            <mutation text="(tape: tape, removed: removed) = _withFractionClosedAsInches()._sealedReporting();"/>
         </regex>
 
         <!-- RULE 7: an exit key abandons a broken edit -->
-        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*return key\(closed\._sealed\(\)\);" dotAll="true" id="tape_edit.leaving.guard_dropped">
-            <mutation text="return key(_withFractionClosedAsInches()._sealed());"/>
+        <regex pattern="final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;\s*final \(:tape, :removed\) = closed\._sealedReporting\(\);\s*return switch \(key\(tape\)\) \{" dotAll="true" id="tape_edit.leaving.guard_dropped">
+            <mutation text="final (:tape, :removed) = _withFractionClosedAsInches()._sealedReporting(); return switch (key(tape)) {"/>
         </regex>
 
         <!-- RULE 8: = on an edit only seals, and never lands the Calc, or
              lands a second result over the one shown (R1, N3) -->
-        <regex pattern="if \(editing != null\) \{\s*return _leavingEdit\(\s*\(sealed\) => switch \(sealed\.pressEquals\(\)\) \{\s*final TapeChanged landed => landed,\s*TapeOutcome\(\) => TapeChanged\(sealed\),\s*\},\s*\);\s*\}" dotAll="true" id="tape_edit.equals.not_a_seal">
-            <mutation text="if (editing != null) return _leavingEdit(TapeChanged.new);"/>
-            <mutation text=""/>
+        <regex pattern="return switch \(tape\.pressEquals\(\)\) \{\s*final TapeChanged landed =&gt; landed,\s*TapeOutcome\(\) =&gt; TapeChanged\(tape\),\s*\};" dotAll="true" id="tape_edit.equals.not_a_seal">
+            <mutation text="return TapeChanged(tape);"/>
         </regex>
 
         <!-- RULE 8a: a unit key on an emptied chip says units apply while
@@ -147,7 +146,12 @@
         <regex pattern="for \(var index = chips\.length - 1; index &gt;= 0; index--\) \{\s*if \(chips\[index\] case ValueChip\(isActive: true\)\) return index;\s*\}\s*return null;" dotAll="true" id="tape_edit.active.last_only">
             <mutation text="if (chips.lastOrNull case ValueChip(isActive: true)) return chips.length - 1; return null;"/>
         </regex>
-        </rules>
+    
+        <!-- RULE 8b: = on a broken edit seals it anyway -->
+        <regex pattern="if \(editing != null\) \{\s*final closed = _withFractionClosedAsInches\(\);\s*if \(closed\._unfinished case final refusal\?\) return refusal;" dotAll="true" id="tape_edit.equals.guard_dropped">
+            <mutation text="if (editing != null) { final closed = _withFractionClosedAsInches();"/>
+        </regex>
+    </rules>
 
     <commands>
         <command group="tape_edit" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_edit_test.dart test/libraries/calculator_engine/units/tape_test.dart</command>
