@@ -54,14 +54,14 @@ void main() {
     expect((box.border! as Border).top.color, colors.tabsHighlight);
   });
 
-  testWidgets('draws a grey border and no fill otherwise', (tester) async {
+  testWidgets('draws a grey border and a white fill otherwise', (tester) async {
     await pumpFrame(tester, isHighlighted: false);
     final colors = AppColorsExtension.of(
       tester.element(find.byKey(const Key('line_frame'))),
     );
 
     final box = decoration(tester);
-    expect(box.color, colors.transparent);
+    expect(box.color, colors.buttonInverse);
     expect((box.border! as Border).top.color, colors.lineLight);
   });
 
