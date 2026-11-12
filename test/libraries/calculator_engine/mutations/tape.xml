@@ -146,7 +146,7 @@
         </regex>
 
         <!-- RULE 16: a result with a unit is refused like a bare Calc -->
-        <regex pattern="if \(chip == null &amp;&amp; last is ResultChip &amp;&amp; last\.value is! Scalar\) \{" dotAll="true" id="tape.press_unit.never_convert_result">
+        <regex pattern="if \(last is ResultChip &amp;&amp; last\.value is! Scalar\) \{" dotAll="true" id="tape.press_unit.never_convert_result">
             <mutation text="if (false) {"/>
         </regex>
 
@@ -203,8 +203,8 @@
 
         <!-- RULE 25: two chips typed under different ton definitions
              compare equal -->
-        <regex pattern="exact,\s*poundsPerTon,\s*isActive,\s*\];" dotAll="true" id="chip.props.ignores_typed_ton">
-            <mutation text="exact, isActive, ];"/>
+        <regex pattern="poundsPerTon,\s*keyWantsUnit,\s*readsDegrees,\s*isActive,\s*isEditing,\s*\];" dotAll="true" id="chip.props.ignores_typed_ton">
+            <mutation text="keyWantsUnit, readsDegrees, isActive, isEditing, ];"/>
         </regex>
 
         <!-- RULE 20: a key press forgets the settings -->
@@ -224,10 +224,9 @@
 
         <!-- RULE CA-1087: ✕ keeps the value, or clears an empty bare chip
              as if it held a value (R1) -->
-        <regex pattern="if \(chip\.entry\.isEmpty\) \{\s*if \(chip\.key == null\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return TapeChanged\(_withWaitingChipCleared\(chip\)\);\s*\}\s*return _replaceLast\(\s*chip\.copyWith\(\s*entry: const EntryBuffer\(\),\s*exact: \(\) =&gt; null,\s*poundsPerTon: \(\) =&gt; null,\s*\),\s*\);" dotAll="true" id="tape.clear_active.wrong_chip">
-            <mutation text="if (chip.entry.isEmpty) { if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(this);"/>
-            <mutation text="if (chip.entry.isEmpty &amp;&amp; chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return _replaceLast(chip.copyWith(entry: const EntryBuffer(), exact: () =&gt; null, poundsPerTon: () =&gt; null));"/>
-            <mutation text="if (chip.entry.isEmpty) { if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
+        <regex pattern="if \(chip\.key == null\) \{\s*return const TapeRefused\(TapeRefusal\.nothingBeingTyped\);\s*\}\s*return TapeChanged\(_withWaitingChipCleared\(chip\)\);\s*\}\s*return _replaceLast\(\s*chip\.copyWith\(\s*entry: const EntryBuffer\(\),\s*exact: \(\) =&gt; null,\s*poundsPerTon: \(\) =&gt; null,\s*\),\s*\);" dotAll="true" id="tape.clear_active.wrong_chip">
+            <mutation text="if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(this);"/>
+            <mutation text="if (chip.key == null) { return const TapeRefused(TapeRefusal.nothingBeingTyped); } return TapeChanged(_withWaitingChipCleared(chip)); } return TapeChanged(_with(chips.sublist(0, chips.length - 1)));"/>
         </regex>
 
         <!-- RULE CA-1092 R1: ✕ on a waiting chip "…" closes instead of
