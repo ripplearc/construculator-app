@@ -60,7 +60,7 @@ void main() {
   });
 
   test('an estimate created through the Estimates tab repository shows on the '
-      'dashboard before the phone copy has it', () async {
+      'dashboard', () async {
     final recent = Modular.get<WatchRecentEstimationsUseCase>()(
       const RecentEstimationsParams(),
     );
