@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
+import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
@@ -178,19 +179,57 @@ class QuantityFormatter extends Equatable {
         : text;
   }
 
-  ({String text, int carry}) _fractionOfInch(Rational remainderInches) {
+  _InchFraction _fractionOfInch(Rational remainderInches) {
     final steps = preferences.fractionResolution.denominator;
     var numerator = _jsMathRound(
       (remainderInches * Rational(steps)).toDouble(),
     );
-    if (numerator == 0) return (text: '', carry: 0);
-    if (numerator == steps) return (text: '', carry: 1);
+    if (numerator == 0) {
+      return (text: '', carry: 0, numerator: 0, denominator: 0);
+    }
+    if (numerator == steps) {
+      return (text: '', carry: 1, numerator: 0, denominator: 0);
+    }
     var denominator = steps;
     while (numerator.isEven) {
       numerator ~/= 2;
       denominator ~/= 2;
     }
-    return (text: '-$numerator/$denominator', carry: 0);
+    return (
+      text: '-$numerator/$denominator',
+      carry: 0,
+      numerator: numerator,
+      denominator: denominator,
+    );
+  }
+
+  /// The tokens a ft-in reading is typed as, written the way [format] writes
+  /// it: whole feet, whole inches and the fraction of an inch at the
+  /// Fractional resolution setting, so 1m accepted from the strip reads
+  /// 3ft 3-3/8in on its chip as on the strip chip (Section 2.1, "the chip
+  /// keeps what was typed"). The tokens are only how the value is read;
+  /// the caller keeps the exact quantity beside them (rule 4.15).
+  List<Token> footInchTokens(Length value) {
+    final magnitude = value.inches.numerator < 0 ? -value.inches : value.inches;
+    var feet = (magnitude / Unit.foot.inchesPer).floor();
+    final remainder = magnitude - Rational(feet) * Unit.foot.inchesPer;
+    var wholeInches = remainder.floor();
+    final fraction = _fractionOfInch(remainder - Rational(wholeInches));
+    wholeInches += fraction.carry;
+    if (wholeInches == 12) {
+      feet += 1;
+      wholeInches = 0;
+    }
+    return [
+      Token(digits: '$feet', unit: Unit.foot),
+      Token(digits: '$wholeInches', unit: Unit.inch),
+      if (fraction.denominator != 0)
+        Token(
+          digits: '${fraction.numerator}',
+          denominator: '${fraction.denominator}',
+          unit: Unit.inch,
+        ),
+    ];
   }
 
   String _area(Area value, bool group) {
@@ -351,3 +390,10 @@ class QuantityFormatter extends Equatable {
   @override
   List<Object?> get props => [preferences];
 }
+
+typedef _InchFraction = ({
+  String text,
+  int carry,
+  int numerator,
+  int denominator,
+});

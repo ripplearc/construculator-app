@@ -523,7 +523,7 @@ void main() {
         expect: () => [
           tapeState(pressed('2 ft + 1 8 ✕')),
           tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
-            refusal: () => const TapeRefused(TapeRefusal.nothingToCompute),
+            refusal: () => const TapeRefused(TapeRefusal.operatorNeedsANumber),
           ),
           tapeState(pressed('2 ft + 1 8 ✕')).copyWith(
             refusal: () => const TapeRefused(TapeRefusal.nothingBeingTyped),
@@ -623,6 +623,12 @@ void main() {
         for (final suggestion in state.conversions) suggestion.text,
       ];
 
+      CalculatorSuggestion leadingOf(String keys) =>
+          CalculatorState(tape: pressed(keys)).suggestions.first;
+
+      CalculatorSuggestion conversionOf(String keys, {int index = 0}) =>
+          CalculatorState(tape: pressed(keys)).conversions[index];
+
       void type(CalculatorBloc bloc, String keys) {
         for (final key in keys.split(' ')) {
           bloc.add(switch (key) {
@@ -635,6 +641,7 @@ void main() {
             '+' => const CalculatorOperatorPressed(Operator.add),
             '=' => const CalculatorEqualsPressed(),
             '(' => const CalculatorControlActioned(ControlAction.paren),
+            '/' => const CalculatorFractionPressed(),
             _ when key.startsWith('[') => CalculatorKeySelected(
               key.substring(1, key.length - 1),
             ),
@@ -735,6 +742,27 @@ void main() {
         final retyped = CalculatorState(tape: pressed('$sides ÷ 0 = 2'));
         expect(row1(retyped), ['Calc: 9ft 4in']);
         expect(retyped.equalsKeyId, Tape.calcKey);
+      });
+
+      test('the equals key names only an answer = lands: after a result or '
+          'with an operator waiting for its number it reads =, though the '
+          'strip still offers answers (term 2.15, Section 1.2)', () {
+        const sides = '[Length] 2 0 ft [Width] 1 0 ft';
+        final offered = CalculatorState(tape: pressed(sides));
+        final CalculatorSuggestion(:value) = offered.suggestions.first;
+        expect(offered.equalsLands, offered.suggestions.first);
+        expect(offered.equalsKeyId, DeterministicRules.areaKey);
+        final landed = pressed(
+          sides,
+        ).landAnswer(DeterministicRules.areaKey, value);
+        for (final state in [
+          CalculatorState(tape: (landed as TapeChanged).tape),
+          CalculatorState(tape: pressed('$sides +')),
+        ]) {
+          expect(state.suggestions, isNotEmpty);
+          expect(state.equalsLands, isNull);
+          expect(state.equalsKeyId, isNull);
+        }
       });
 
       test('an error chip that ends the chain hides the rule answers the '
@@ -928,6 +956,321 @@ void main() {
       });
 
       blocTest<CalculatorBloc, CalculatorState>(
+        'accepting Area lands it as a result chip; the other answers stay on '
+        'offer and the result\'s conversions take row 2',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorKeySelected('Length'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorDigitPressed('2'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorKeySelected('Width'))
+          ..add(const CalculatorDigitPressed('1'))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorUnitSelected(Unit.foot))
+          ..add(const CalculatorDigitPressed('8'))
+          ..add(const CalculatorUnitSelected(Unit.inch))
+          ..add(
+            CalculatorSuggestionAccepted(
+              leadingOf('[Length] 2 2 ft [Width] 1 8 ft 8 in'),
+            ),
+          ),
+        skip: 10,
+        expect: () => [
+          tapeState(
+            pressed('[Length] 2 2 ft [Width] 1 8 ft 8 in').append(
+              ResultChip(
+                key: DeterministicRules.areaKey,
+                value: leadingOf('[Length] 2 2 ft [Width] 1 8 ft 8 in').value,
+              ),
+            ),
+          ),
+        ],
+        verify: (bloc) {
+          expect(
+            [
+              for (final chip in bloc.state.chipsList)
+                '${chip.label}${chip.value}',
+            ],
+            ['Length22ft', 'Width18ft 8in', 'Area410.67ft²'],
+          );
+          expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
+          expect(bloc.state.valueText, '410.67ft²');
+          expect(row1(bloc.state), ['Diagonal: 28.85ft', 'Perimeter: 81.33ft']);
+          expect(row2(bloc.state), [
+            '45.63yd²',
+            '59,136in²',
+            '38.15m²',
+            '0.0094acre',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '= lands the leading suggestion when the strip has one (Area), as '
+        'accepting it would',
+        build: () => bloc,
+        act: (bloc) => type(bloc, '[Length] 2 0 ft [Width] 1 0 ft ='),
+        skip: 8,
+        expect: () => [
+          tapeState(
+            pressed('[Length] 2 0 ft [Width] 1 0 ft').append(
+              ResultChip(
+                key: DeterministicRules.areaKey,
+                value: leadingOf('[Length] 2 0 ft [Width] 1 0 ft').value,
+              ),
+            ),
+          ),
+        ],
+        verify: (bloc) => expect(bloc.state.valueText, '200ft²'),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'Rise and Run earn the three pitch spellings; the long name keeps the '
+        'equals key\'s own id, and the accepted spelling leaves the row (S08)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Rise] 6 ft [Run] 1 2 ft');
+          bloc.add(
+            CalculatorSuggestionAccepted(leadingOf('[Rise] 6 ft [Run] 1 2 ft')),
+          );
+        },
+        skip: 6,
+        expect: () => [
+          tapeState(pressed('[Rise] 6 ft [Run] 1 2 ft')),
+          tapeState(
+            pressed('[Rise] 6 ft [Run] 1 2 ft').append(
+              ResultChip(
+                key: DeterministicRules.pitchRiseKey,
+                value: leadingOf('[Rise] 6 ft [Run] 1 2 ft').value,
+              ),
+            ),
+          ),
+        ],
+        verify: (bloc) {
+          final before = CalculatorState(
+            tape: pressed('[Rise] 6 ft [Run] 1 2 ft'),
+          );
+          expect(row1(before).take(3), [
+            'Pitch-rise per 12in run: 6in/12in',
+            'Pitch-degrees: 26.57°',
+            'Pitch-grade: 50%',
+          ]);
+          expect(before.equalsKeyId, DeterministicRules.pitchRiseKey);
+          expect(bloc.state.valueText, '6in/12in');
+          expect(row1(bloc.state).take(2), [
+            'Pitch-degrees: 26.57°',
+            'Pitch-grade: 50%',
+          ]);
+          expect(row2(bloc.state), isEmpty);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting a prefix trig answer lands the tape the postfix order '
+        'lands (rule 4.11)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[SIN] 3 8');
+          bloc.add(CalculatorSuggestionAccepted(leadingOf('[SIN] 3 8')));
+        },
+        skip: 3,
+        expect: () => [tapeState(pressed('3 8 [SIN]'))],
+        verify: (bloc) {
+          expect(row1(CalculatorState(tape: pressed('[SIN] 3 8'))), [
+            'Sine: 0.615661',
+          ]);
+          expect(row1(bloc.state), isEmpty);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a typed length offers its conversions, and accepting one converts '
+        'it in place through the unit key (S03, S05)',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 2 ft');
+          bloc.add(
+            CalculatorSuggestionAccepted(conversionOf('[Length] 2 2 ft')),
+          );
+        },
+        skip: 3,
+        expect: () => [
+          tapeState(pressed('[Length] 2 2 ft')),
+          tapeState(pressed('[Length] 2 2 ft in')),
+        ],
+        verify: (bloc) {
+          final typed = CalculatorState(tape: pressed('[Length] 2 2 ft'));
+          expect(row1(typed), isEmpty);
+          expect(typed.equalsKeyId, isNull);
+          expect(row2(typed), ['264in', '7.33yd', '6.71m']);
+          expect(bloc.state.valueText, '264in');
+          expect(row2(bloc.state), ['22ft 0in', '6,706mm']);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a result offers its conversions and accepting one re-spells the '
+        'result in place',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '1 2 ft × 5 ft =');
+          bloc.add(
+            CalculatorSuggestionAccepted(conversionOf('1 2 ft × 5 ft =')),
+          );
+        },
+        skip: 7,
+        expect: () => [tapeState(pressed('1 2 ft × 5 ft = yd'))],
+        verify: (bloc) {
+          expect(row2(CalculatorState(tape: pressed('1 2 ft × 5 ft ='))), [
+            '6.67yd²',
+            '8,640in²',
+            '5.57m²',
+          ]);
+          expect(bloc.state.valueText, '6.67yd²');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'an angle answer offers its other spelling, and accepting it respells '
+        'the answer as the D:M:S key does',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '1 2 ÷ 2 3 [ATAN]');
+          bloc.add(
+            CalculatorSuggestionAccepted(conversionOf('1 2 ÷ 2 3 [ATAN]')),
+          );
+        },
+        skip: 6,
+        expect: () => [tapeState(pressed('1 2 ÷ 2 3 [ATAN] [DMS]'))],
+        verify: (bloc) {
+          expect(row2(CalculatorState(tape: pressed('1 2 ÷ 2 3 [ATAN]'))), [
+            '27°33\'10"',
+          ]);
+          expect(bloc.state.valueText, '27°33\'10"');
+          expect(row2(bloc.state), ['27.55°']);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting an answer drops the empty chip a key had opened',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 0 ft [Width] 1 0 ft [Height]');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              leadingOf('[Length] 2 0 ft [Width] 1 0 ft [Height]'),
+            ),
+          );
+        },
+        skip: 9,
+        expect: () => [
+          tapeState(
+            pressed('[Length] 2 0 ft [Width] 1 0 ft').append(
+              ResultChip(
+                key: DeterministicRules.areaKey,
+                value: leadingOf('[Length] 2 0 ft [Width] 1 0 ft').value,
+              ),
+            ),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting an answer while a value is unfinished is refused the way '
+        '= is, and the tape keeps the dangling number',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 0 ft [Width] 1 0 ft [Height] 8');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              leadingOf('[Length] 2 0 ft [Width] 1 0 ft [Height] 8'),
+            ),
+          );
+        },
+        skip: 10,
+        expect: () => [
+          tapeState(
+            pressed('[Length] 2 0 ft [Width] 1 0 ft [Height] 8'),
+          ).copyWith(
+            refusal: () => const TapeRefused(TapeRefusal.finishThisValueFirst),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting an answer over a dangling fraction is refused with the '
+        'fraction\'s own reason, as = refuses it',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 0 ft [Width] 1 0 ft [Height] 7 / 1 6');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              leadingOf('[Length] 2 0 ft [Width] 1 0 ft [Height] 7 / 1 6'),
+            ),
+          );
+        },
+        skip: 13,
+        expect: () => [
+          tapeState(
+            pressed('[Length] 2 0 ft [Width] 1 0 ft [Height] 7 / 1 6'),
+          ).copyWith(
+            refusal: () =>
+                const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
+          ),
+        ],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a chip the strip no longer offers, tapped again before the strip '
+        'redrew, changes nothing',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 2 ft [Width] 1 8 ft 8 in');
+          final area = leadingOf('[Length] 2 2 ft [Width] 1 8 ft 8 in');
+          bloc
+            ..add(CalculatorSuggestionAccepted(area))
+            ..add(CalculatorSuggestionAccepted(area));
+        },
+        skip: 11,
+        expect: () => <CalculatorState>[],
+        verify: (bloc) => expect(
+          [for (final chip in bloc.state.chipsList) chip.label],
+          ['Length', 'Width', DeterministicRules.areaKey],
+        ),
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a conversion of a bare number and an answer with no key, which the '
+        'strip never offers, change nothing',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const CalculatorDigitPressed('5'))
+          ..add(
+            const CalculatorSuggestionAccepted(
+              CalculatorSuggestion(
+                key: null,
+                value: Scalar(5),
+                kind: CalculatorSuggestionKind.conversion,
+                text: '5',
+              ),
+            ),
+          )
+          ..add(
+            const CalculatorSuggestionAccepted(
+              CalculatorSuggestion(
+                key: null,
+                value: Scalar(5),
+                kind: CalculatorSuggestionKind.answer,
+                text: '5',
+              ),
+            ),
+          ),
+        skip: 1,
+        expect: () => <CalculatorState>[],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
         'with named values and an operator pending, the strip shows the '
         'running total in place of the rule answers, and = lands it (2.15; '
         'walkthrough 12.3)',
@@ -948,6 +1291,172 @@ void main() {
           expect(bloc.state.labelKeyId, Tape.calcKey);
         },
       );
+    });
+
+    group('S1b 3/6: what = lands and what an accepted chip lands', () {
+      CalculatorState stateOf(String keys) =>
+          CalculatorState(tape: pressed(keys));
+
+      void type(CalculatorBloc bloc, String keys) {
+        for (final key in keys.split(' ')) {
+          bloc.add(switch (key) {
+            'ft' => const CalculatorUnitSelected(Unit.foot),
+            'in' => const CalculatorUnitSelected(Unit.inch),
+            'yd' => const CalculatorUnitSelected(Unit.yard),
+            'm' => const CalculatorKeySelected('m'),
+            '×' => const CalculatorOperatorPressed(Operator.multiply),
+            '÷' => const CalculatorOperatorPressed(Operator.divide),
+            '+' => const CalculatorOperatorPressed(Operator.add),
+            '=' => const CalculatorEqualsPressed(),
+            _ when key.startsWith('[') => CalculatorKeySelected(
+              key.substring(1, key.length - 1),
+            ),
+            _ => CalculatorDigitPressed(key),
+          });
+        }
+      }
+
+      for (final (keys, calc) in const [
+        ('5 + [SIN] 3 0 =', '5.5'),
+        ('2 × [COS] 6 0 =', '1'),
+        ('5 + [ATAN] 1 6 ÷ 1 2 =', '58.13°'),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          '= lands the chain a trig chip continues, not the trig answer: '
+          '$keys is Calc $calc (term 2.15, rule 4.6)',
+          build: () => bloc,
+          act: (bloc) => type(bloc, keys),
+          skip: keys.split(' ').length - 1,
+          expect: () => [tapeState(pressed(keys))],
+          verify: (bloc) {
+            expect(bloc.state.labelKeyId, Tape.calcKey);
+            expect(bloc.state.valueText, calc);
+          },
+        );
+      }
+
+      for (final operator in const ['+', '×']) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          '= after a trailing $operator is refused and keeps the operator, '
+          'in place of landing the leading suggestion over it (rule 4.12)',
+          build: () => bloc,
+          act: (bloc) =>
+              type(bloc, '[Length] 2 0 ft [Width] 1 0 ft $operator ='),
+          skip: 9,
+          expect: () => [
+            tapeState(
+              pressed('[Length] 2 0 ft [Width] 1 0 ft $operator'),
+            ).copyWith(
+              refusal: () =>
+                  const TapeRefused(TapeRefusal.operatorNeedsANumber),
+            ),
+          ],
+          verify: (bloc) {
+            expect(bloc.state.tape.endsWithOperator, isTrue);
+            expect(
+              bloc.state.suggestions.first.key,
+              DeterministicRules.areaKey,
+            );
+            expect(
+              [for (final chip in bloc.state.chipsList) chip.value],
+              ['20ft', '10ft', operator],
+            );
+          },
+        );
+      }
+
+      Tape landedOn(Tape tape, int offer) {
+        final answer = CalculatorState(tape: tape).suggestions[offer];
+        return switch (tape.landAnswer(answer.key!, answer.value)) {
+          TapeChanged(:final tape) => tape,
+          final other => throw StateError('$other'),
+        };
+      }
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'the first = lands Area; a second and a third = are refused as the '
+        'result already shown, while a tapped chip still lands its answer',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '[Length] 2 0 ft [Width] 1 0 ft = = =');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              CalculatorState(
+                tape: landedOn(pressed('[Length] 2 0 ft [Width] 1 0 ft'), 0),
+              ).suggestions.first,
+            ),
+          );
+        },
+        skip: 8,
+        expect: () {
+          final area = landedOn(pressed('[Length] 2 0 ft [Width] 1 0 ft'), 0);
+          return [
+            tapeState(area),
+            tapeState(area).copyWith(
+              refusal: () => const TapeRefused(TapeRefusal.resultAlreadyShown),
+            ),
+            tapeState(landedOn(area, 0)),
+          ];
+        },
+        verify: (bloc) {
+          expect(
+            [for (final chip in bloc.state.chipsList) chip.label],
+            ['Length', 'Width', 'Area', 'Diagonal'],
+          );
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting the acre chip converts the area result in place '
+        '(walkthrough 14.5), and the other conversions stay on offer',
+        build: () => bloc,
+        act: (bloc) {
+          type(bloc, '2 0 0 ft × 8 0 ft =');
+          bloc.add(
+            CalculatorSuggestionAccepted(
+              stateOf('2 0 0 ft × 8 0 ft =').conversions.last,
+            ),
+          );
+        },
+        skip: 9,
+        expect: () => [
+          isA<CalculatorState>()
+              .having((s) => s.valueText, 'valueText', '0.3673acre')
+              .having((s) => s.labelKeyId, 'labelKeyId', Tape.calcKey)
+              .having((s) => s.refusal, 'refusal', isNull),
+        ],
+        verify: (bloc) {
+          expect(
+            [for (final s in bloc.state.conversions) s.text],
+            ['16,000ft²', '1,777.78yd²', '2,304,000in²', '1,486.45m²'],
+          );
+        },
+      );
+
+      for (final (keys, chip) in const [
+        ('2 yd', '6ft 0in'),
+        ('2 6 4 in', '22ft 0in'),
+        ('1 m', '3ft 3-3/8in'),
+        ('1 2 ft × 5 ft =', '6.67yd²'),
+      ]) {
+        blocTest<CalculatorBloc, CalculatorState>(
+          'accepting the conversion chip "$chip" lands the text the chip '
+          'shows: $keys (Section 1.2, walkthrough 14.2)',
+          build: () => bloc,
+          act: (bloc) {
+            type(bloc, keys);
+            bloc.add(
+              CalculatorSuggestionAccepted(stateOf(keys).conversions.first),
+            );
+          },
+          skip: keys.split(' ').length,
+          expect: () => [
+            isA<CalculatorState>()
+                .having((s) => s.valueText, 'valueText', chip)
+                .having((s) => s.refusal, 'refusal', isNull),
+          ],
+        );
+      }
     });
 
     test(

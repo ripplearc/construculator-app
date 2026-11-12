@@ -106,6 +106,12 @@
         <regex pattern="final alternative = key == Unit\.foot \? Unit\.yard : Unit\.foot;" dotAll="true" id="unit_ladder.raise.cubic_stop_alternative_always_yard">
             <mutation text="final alternative = key == Unit.foot ? Unit.yard : Unit.yard;"/>
         </regex>
+
+        <!-- RULE CA-1088f: an area no longer converts to or from acres -->
+        <regex pattern="\(isLengthKey \|\| key == Unit\.acre\)\) \{" dotAll="true" id="unit_ladder.press.area_to_acre">
+            <mutation text="isLengthKey) {"/>
+            <mutation text="false) {"/>
+        </regex>
     </rules>
 
     <commands>

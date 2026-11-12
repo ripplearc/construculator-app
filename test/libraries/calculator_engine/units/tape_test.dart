@@ -412,6 +412,42 @@ void main() {
         final tape = press(const Tape(preferences: longTon), '2 2 4 0 lbs');
         expect(changed(tape.pressUnit(Unit.ton)).active!.entry.text, '1ton');
       });
+
+      test('a ft-in conversion accepted from the strip reads as the strip '
+          'chip wrote it and keeps the exact value (X33; rule 4.15)', () {
+        Length footInchOffer(Tape tape) => const UnitConverter()
+            .offersFor(tape.active!.value(tape.parser)!)
+            .whereType<Length>()
+            .firstWhere((length) => length.unit == Unit.footInch);
+        final metre = press(const Tape(), '1 m');
+        final shown = footInchOffer(metre);
+        expect(metre.formatter.format(shown), '3ft 3-3/8in');
+        final accepted = changed(metre.acceptConversion(shown));
+        expect(accepted.active!.entry.text, '3ft 3-3/8in');
+        expect(
+          (accepted.active!.value(accepted.parser)! as Length).inches,
+          (metre.active!.value(metre.parser)! as Length).inches,
+        );
+        expect(
+          changed(metre.pressUnit(Unit.footInch)).active!.entry.text,
+          '3ft 3.37in',
+          reason: 'the unit key alone keeps the speller\'s decimals',
+        );
+        final yards = press(const Tape(), '2 yd');
+        expect(
+          changed(
+            yards.acceptConversion(footInchOffer(yards)),
+          ).active!.entry.text,
+          '6ft 0in',
+        );
+        final inches = press(const Tape(), '3 0 in');
+        expect(
+          changed(
+            inches.acceptConversion(footInchOffer(inches)),
+          ).active!.entry.text,
+          '2ft 6in',
+        );
+      });
     });
 
     group('digits and fractions', () {
@@ -985,6 +1021,140 @@ void main() {
       );
       expect(press(const Tape(), '5 × 3').trigAnswerContinuesAChain, isFalse);
       expect(const Tape().trigAnswerContinuesAChain, isFalse);
+    });
+  });
+
+  group('= after a result, and on an operator waiting for its number', () {
+    test('a second = after a result is refused as the result already shown, '
+        'and the tape keeps its one result', () {
+      final landed = press(const Tape(), '2 ft × 3 =');
+      expect(landed.endsWithResult, isTrue);
+      expect(
+        landed.pressEquals(),
+        const TapeRefused(TapeRefusal.resultAlreadyShown),
+      );
+      expect(
+        press(landed, '× 4').pressEquals(),
+        isA<TapeChanged>(),
+        reason: 'a chain continued from the result lands again',
+      );
+    });
+
+    test('= on a trailing operator asks for its number and keeps the '
+        'operator; a chip with a number is not waiting', () {
+      final waiting = press(const Tape(), '2 0 ft +');
+      expect(waiting.endsWithOperator, isTrue);
+      expect(
+        waiting.pressEquals(),
+        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+      );
+      expect(texts(waiting), ['20ft', '']);
+      expect(press(const Tape(), '2 0 ft + 3').endsWithOperator, isFalse);
+      expect(press(const Tape(), '2 0 ft').endsWithOperator, isFalse);
+      expect(const Tape().endsWithOperator, isFalse);
+      expect(
+        press(const Tape(), '5 ÷ 0 =').pressEquals(),
+        const TapeRefused(TapeRefusal.operatorNeedsANumber),
+        reason: 'the divisor reopened after ÷ 0 waits for its number too',
+      );
+    });
+  });
+
+  group('a result converts to acres and back (walkthrough 14.5)', () {
+    test('[Acre] on Calc 16,000ft² reads 0.3673acre, [Feet] brings the '
+        'square feet back, and the result keeps its key', () {
+      final lot = press(const Tape(), '2 0 0 ft × 8 0 ft =');
+      final acres = changed(lot.pressUnit(Unit.acre));
+      expect(acres.chips.last, isA<ResultChip>());
+      expect(
+        (acres.chips.last as ResultChip).value,
+        const Area(16000.0 * 64 * 64 * 144, unit: Unit.acre),
+      );
+      expect((acres.chips.last as ResultChip).key, Tape.calcKey);
+      expect(
+        (changed(acres.pressUnit(Unit.foot)).chips.last as ResultChip).value,
+        const Area(16000.0 * 64 * 64 * 144, unit: Unit.foot),
+      );
+    });
+  });
+
+  group('Tape.landAnswer', () {
+    const area = Area(16896.0 * 9216.0, unit: Unit.foot);
+
+    Tape named(String key, String keys) => press(
+      changed(
+        const Tape().pressFunctionKey(
+          key,
+          keyWantsUnit: true,
+          readsDegrees: false,
+        ),
+      ),
+      keys,
+    );
+
+    test('lands the answer after a finished chip, sealed', () {
+      final tape = changed(named('Length', '2 2 ft').landAnswer('Area', area));
+      expect(tape.chips, hasLength(2));
+      expect(tape.active, isNull);
+      expect(tape.chips.last, const ResultChip(key: 'Area', value: area));
+    });
+
+    test('closes what the chip left open, as = does: a fraction after whole '
+        'inches is read as inches', () {
+      final tape = changed(
+        press(const Tape(), '7 in 1 / 2').landAnswer('Area', area),
+      );
+      expect((tape.chips.first as ValueChip).entry.text, '7-1/2in');
+      expect(tape.chips.last, const ResultChip(key: 'Area', value: area));
+    });
+
+    test('drops a chip nothing was typed into, since its key asked for the '
+        'answer', () {
+      final tape = changed(
+        changed(
+          named(
+            'Length',
+            '2 2 ft',
+          ).pressFunctionKey('Height', keyWantsUnit: true, readsDegrees: false),
+        ).landAnswer('Area', area),
+      );
+      expect(
+        [
+          for (final chip in tape.chips)
+            chip is ValueChip ? chip.key : 'result',
+        ],
+        ['Length', 'result'],
+      );
+    });
+
+    test(
+      'keeps the answer out of an unfinished chip with the reason = gives',
+      () {
+        expect(
+          named('Length', '1 8 ft 8').landAnswer('Area', area),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+        );
+        expect(
+          press(const Tape(), '7 / 1 6').landAnswer('Area', area),
+          const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
+        );
+        expect(
+          press(
+            changed(const Tape().pressTrigKey(TrigFunction.tangent)),
+            '9 0',
+          ).landAnswer('Area', area),
+          const TapeRefused(TapeRefusal.trigCannotAnswer),
+        );
+      },
+    );
+
+    test('is refused while a bracket is open', () {
+      expect(
+        changed(
+          press(const Tape(), '2 +').pressBracket(),
+        ).landAnswer('Area', area),
+        const TapeRefused(TapeRefusal.bracketsHoldPlainArithmetic),
+      );
     });
   });
 

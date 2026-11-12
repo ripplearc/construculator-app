@@ -247,6 +247,41 @@
             <mutation text="bool get trigAnswerContinuesAChain =&gt; false;"/>
             <mutation text="bool get trigAnswerContinuesAChain =&gt; _trigQuestion != null;"/>
         </regex>
+
+        <!-- RULE CA-1088a: an answer landed on an empty named chip keeps the
+             empty chip on the tape -->
+        <regex pattern="tape\._with\(tape\.chips\.sublist\(0, tape\.chips\.length - 1\)\)\.append\(answer\)" dotAll="true" id="tape.land_answer.keeps_empty_chip">
+            <mutation text="tape.append(answer)"/>
+        </regex>
+
+        <!-- RULE CA-1088b: an unfinished chip no longer keeps the answer out -->
+        <regex pattern="if \(tape\._unfinished case final refusal\?\) return refusal;\s*return TapeChanged\(tape\.append\(answer\)\);" dotAll="true" id="tape.land_answer.lands_on_unfinished">
+            <mutation text="return TapeChanged(tape.append(answer));"/>
+        </regex>
+
+        <!-- RULE CA-1088c: the answer lands without closing what the chip left
+             open -->
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\._withFieldClosed\(\);\s*final answer = ResultChip\(key: key, value: value\);" dotAll="true" id="tape.land_answer.skips_close">
+            <mutation text="final tape = this; final answer = ResultChip(key: key, value: value);"/>
+        </regex>
+
+        <!-- RULE CA-1088e: a second = after a result lands one more chip, or
+             = on a trailing operator lands over it -->
+        <regex pattern="if \(endsWithResult\) \{\s*return const TapeRefused\(TapeRefusal\.resultAlreadyShown\);\s*\}" dotAll="true" id="tape.press_equals.after_result">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(endsWithOperator\) \{\s*return const TapeRefused\(TapeRefusal\.operatorNeedsANumber\);\s*\}" dotAll="true" id="tape.press_equals.on_trailing_operator">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="ValueChip\(operator: _\?, :final entry\) =&gt; entry\.isEmpty," dotAll="true" id="tape.ends_with_operator.any_operator_chip">
+            <mutation text="ValueChip(operator: _?) =&gt; true,"/>
+        </regex>
+
+        <!-- RULE 26 (X33): an accepted ft-in conversion reads as the unit key
+             spells it, not as the strip chip wrote it -->
+        <regex pattern="tape\._respelled\(\s*chip,\s*value,\s*tape\.formatter\.footInchTokens\(value\),\s*\)," dotAll="true" id="tape.accept_conversion.speller_text">
+            <mutation text="tape._respelled(chip, value, tape.ladder.speller.spell(value)),"/>
+        </regex>
     </rules>
 
     <commands>

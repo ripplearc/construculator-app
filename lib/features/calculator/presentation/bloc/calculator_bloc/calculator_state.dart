@@ -172,13 +172,22 @@ class CalculatorState extends Equatable {
     ];
   }
 
-  /// The id the equals key is named by: the first suggestion's key when
-  /// there is one (term 2.15: "the equals key takes the name of the first
+  /// The suggestion = lands (Section 1.2): the first one on the strip,
+  /// unless the tape ends on a result or on an operator still waiting for
+  /// its number, where = says why instead of landing anything.
+  CalculatorSuggestion? get equalsLands =>
+      tape.endsWithResult || tape.endsWithOperator
+      ? null
+      : suggestions.firstOrNull;
+
+  /// The id the equals key is named by: the key of the suggestion = lands
+  /// ([equalsLands]; term 2.15: "the equals key takes the name of the first
   /// suggestion"; whether the name fits on the key is the page's call),
   /// [ansKey] when that suggestion is the Calc of a chain continuing from
   /// a result (rule 4.9; a chip with no operator starts a chain and a result
-  /// chip restarts it, Section 7), `null` for the = sign.
-  String? get equalsKeyId => switch (suggestions.firstOrNull) {
+  /// chip restarts it, Section 7), `null` for the = sign, so the key never
+  /// names an answer that pressing it would not land.
+  String? get equalsKeyId => switch (equalsLands) {
     null => null,
     CalculatorSuggestion(kind: CalculatorSuggestionKind.runningTotal)
         when _chainStartsOnAResult =>

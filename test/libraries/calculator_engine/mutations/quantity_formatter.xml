@@ -17,8 +17,8 @@
     <rules>
         <!-- RULE 1: a remainder that rounds to a whole inch reads 16/16
              instead of carrying -->
-        <regex pattern="if \(numerator == steps\) return \(text: '', carry: 1\);" dotAll="true" id="quantity_formatter.fraction.no_carry">
-            <mutation text="if (false) return (text: '', carry: 1);"/>
+        <regex pattern="if \(numerator == steps\) \{\s*return \(text: '', carry: 1, numerator: 0, denominator: 0\);\s*\}" dotAll="true" id="quantity_formatter.fraction.no_carry">
+            <mutation text="if (false) { return (text: '', carry: 1, numerator: 0, denominator: 0); }"/>
         </regex>
 
         <!-- RULE 2: fractions are not reduced, so 8/16 stays 8/16 -->
@@ -32,8 +32,13 @@
         </regex>
 
         <!-- RULE 4: twelve inches no longer carry into a foot -->
-        <regex pattern="if \(wholeInches == 12\) \{" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
-            <mutation text="if (false) {"/>
+        <regex pattern="wholeInches \+= fraction\.carry;\s*if \(wholeInches == 12\) \{\s*feet \+= 1;\s*wholeInches = 0;\s*\}\s*final text" dotAll="true" id="quantity_formatter.feet_and_inches.no_carry">
+            <mutation text="wholeInches += fraction.carry; if (false) { feet += 1; wholeInches = 0; } final text"/>
+        </regex>
+        <!-- RULE 4b (X33): twelve inches no longer carry into a foot in the
+             ft-in tokens -->
+        <regex pattern="wholeInches \+= fraction\.carry;\s*if \(wholeInches == 12\) \{\s*feet \+= 1;\s*wholeInches = 0;\s*\}\s*return \[" dotAll="true" id="quantity_formatter.foot_inch_tokens.no_carry">
+            <mutation text="wholeInches += fraction.carry; if (false) { feet += 1; wholeInches = 0; } return ["/>
         </regex>
 
         <!-- RULE 5: a ratio below 0.1 is shown to two decimals, so 1 ÷ 78
@@ -95,8 +100,8 @@
         </regex>
 
         <!-- RULE 16: a zero remainder carries a whole inch -->
-        <regex pattern="if \(numerator == 0\) return \(text: '', carry: 0\);" dotAll="true" id="quantity_formatter.fraction.zero_carries">
-            <mutation text="if (numerator == 0) return (text: '', carry: 1);"/>
+        <regex pattern="if \(numerator == 0\) \{\s*return \(text: '', carry: 0, numerator: 0, denominator: 0\);\s*\}" dotAll="true" id="quantity_formatter.fraction.zero_carries">
+            <mutation text="if (numerator == 0) { return (text: '', carry: 1, numerator: 0, denominator: 0); }"/>
         </regex>
 
         <!-- RULE 17: the angle is truncated to whole seconds instead of
@@ -200,6 +205,13 @@
              instead of falling back to double math -->
         <regex pattern="\} on RationalOverflow \{\s*return inches\.toDouble\(\) / unit\.inchesPer\.toDouble\(\);" dotAll="true" id="quantity.amount_in.no_fallback">
             <mutation text="} on RationalOverflow { rethrow;"/>
+        </regex>
+
+        <!-- RULE X33: the ft-in tokens leave out the fraction, or write one
+             for a whole number of inches -->
+        <regex pattern="if \(fraction\.denominator != 0\)\s*Token\(" dotAll="true" id="formatter.foot_inch_tokens.fraction">
+            <mutation text="if (false) Token("/>
+            <mutation text="if (true) Token("/>
         </regex>
     </rules>
 
