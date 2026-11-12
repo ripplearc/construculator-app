@@ -228,4 +228,22 @@ const Schema schema = Schema([
       ]),
     ],
   ),
+
+  // The remembered values the memory drawers offer back (UX Design Doc
+  // term 2.11, rule 4.16): one row per value, under the function key that
+  // filed it or the one shared angle drawer, newest first by `position`.
+  // Local-only and never synced: a recent belongs to the phone it was
+  // typed on. A value is its dimension, its canonical magnitude (ticks,
+  // square ticks, cubic feet, hundredths of a pound, degrees or a bare
+  // number) and the unit it was spelled in, empty for an angle or a bare
+  // number.
+  // TODO: [CA-1399] register this table as "clear when the user changes", so a second account on the same phone is never offered the first account's recents.
+  // https://ripplearc.youtrack.cloud/issue/CA-1399
+  Table.localOnly('calculator_recents', [
+    Column.text('drawer'),
+    Column.integer('position'),
+    Column.text('dimension'),
+    Column.real('magnitude'),
+    Column.text('unit'),
+  ]),
 ]);
