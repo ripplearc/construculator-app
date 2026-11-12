@@ -4249,6 +4249,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add cost'**
   String get addCostButton;
+
+  /// Title of the category list opened by the Add cost button
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cost'**
+  String get addCostSheetTitle;
+
+  /// Line under the title of the category list opened by the Add cost button
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a category. It sets where the cost appears and which fields you fill in'**
+  String get addCostSheetSubtitle;
+
+  /// Name of the Material row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get addCostCategoryMaterialTitle;
+
+  /// Subtitle of the Material row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets, tape, fasteners — unit × quantity, with waste'**
+  String get addCostCategoryMaterialSubtitle;
+
+  /// Name of the Labor row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Labor'**
+  String get addCostCategoryLaborTitle;
+
+  /// Subtitle of the Labor row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Crew, subs, helpers — hours × rate, with burden'**
+  String get addCostCategoryLaborSubtitle;
+
+  /// Name of the Equipment row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment'**
+  String get addCostCategoryEquipmentTitle;
+
+  /// Subtitle of the Equipment row in the category list
+  ///
+  /// In en, this message translates to:
+  /// **'Rentals, lifts, dumpsters — day or job rate, with delivery'**
+  String get addCostCategoryEquipmentSubtitle;
 }
 
 class _AppLocalizationsDelegate

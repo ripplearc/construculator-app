@@ -2600,4 +2600,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addCostButton => 'Add cost';
+
+  @override
+  String get addCostSheetTitle => 'Add a cost';
+
+  @override
+  String get addCostSheetSubtitle =>
+      'Pick a category. It sets where the cost appears and which fields you fill in';
+
+  @override
+  String get addCostCategoryMaterialTitle => 'Material';
+
+  @override
+  String get addCostCategoryMaterialSubtitle =>
+      'Sheets, tape, fasteners — unit × quantity, with waste';
+
+  @override
+  String get addCostCategoryLaborTitle => 'Labor';
+
+  @override
+  String get addCostCategoryLaborSubtitle =>
+      'Crew, subs, helpers — hours × rate, with burden';
+
+  @override
+  String get addCostCategoryEquipmentTitle => 'Equipment';
+
+  @override
+  String get addCostCategoryEquipmentSubtitle =>
+      'Rentals, lifts, dumpsters — day or job rate, with delivery';
 }
