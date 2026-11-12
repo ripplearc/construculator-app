@@ -92,7 +92,7 @@ class AddCostBottomBar extends StatelessWidget {
                   children: [
                     totalBlock,
                     Row(
-                      spacing: CoreSpacing.space4,
+                      spacing: CoreSpacing.space3,
                       children: [
                         Expanded(
                           child: CoreButton(
