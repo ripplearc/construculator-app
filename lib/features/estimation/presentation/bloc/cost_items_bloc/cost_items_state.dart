@@ -42,6 +42,18 @@ class CostItemsLoaded extends CostItemsState {
   /// The sum of the Equipment lines, in dollars.
   final double equipmentSubtotal;
 
+  /// The Materials lines, in the order of [items].
+  List<CostItem> get materialLines => _linesOf(CostItemType.material);
+
+  /// The Labor lines, in the order of [items].
+  List<CostItem> get laborLines => _linesOf(CostItemType.labor);
+
+  /// The Equipment lines, in the order of [items].
+  List<CostItem> get equipmentLines => _linesOf(CostItemType.equipment);
+
+  List<CostItem> _linesOf(CostItemType type) =>
+      items.where((item) => item.itemType == type).toList();
+
   @override
   List<Object?> get props => [
     items,
