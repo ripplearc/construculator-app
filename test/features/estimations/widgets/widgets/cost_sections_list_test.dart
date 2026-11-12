@@ -285,6 +285,61 @@ void main() {
       expect(isOnScreen(tester, 'cost_line_q29'), isTrue);
     });
 
+    testWidgets('leaves the list where it is when the new line is already on '
+        'screen', (tester) async {
+      List<CostItem> lines() => [
+        materialLine(id: 'm1'),
+        materialLine(id: 'm2'),
+        for (var i = 0; i < 20; i++) equipmentLine(id: 'q$i', name: 'Lift $i'),
+      ];
+      await tester.pumpWidget(app(loaded(lines())));
+      final headerBefore = top(tester, 'cost_section_header_material');
+
+      await tester.pumpWidget(
+        app(
+          loaded([...lines(), materialLine(id: 'm3')]),
+          highlightedItemId: 'm3',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(top(tester, 'cost_section_header_material'), headerBefore);
+      expect(isOnScreen(tester, 'cost_line_m3'), isTrue);
+    });
+
+    testWidgets('moves the list only until the line is fully visible', (
+      tester,
+    ) async {
+      await tester.pumpWidget(app(loaded(manyLines())));
+
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'q10'),
+      );
+      await tester.pumpAndSettle();
+
+      final rect = tester.getRect(find.byKey(const Key('cost_line_q10')));
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      expect(rect.bottom, lessThanOrEqualTo(screen.height));
+      expect(rect.bottom, greaterThan(screen.height - 40));
+    });
+
+    testWidgets('brings a line above the top edge into view', (tester) async {
+      await tester.pumpWidget(app(loaded(manyLines())));
+      await tester.drag(
+        find.byKey(const Key('cost_sections_list')),
+        const Offset(0, -3000),
+      );
+      await tester.pumpAndSettle();
+      expect(isOnScreen(tester, 'cost_line_m1'), isFalse);
+
+      await tester.pumpWidget(
+        app(loaded(manyLines()), highlightedItemId: 'm1'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(isOnScreen(tester, 'cost_line_m1'), isTrue);
+    });
+
     testWidgets('waits for the line to arrive when the list reloads', (
       tester,
     ) async {
