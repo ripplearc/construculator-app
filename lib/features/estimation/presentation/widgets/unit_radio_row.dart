@@ -51,7 +51,8 @@ class _UnitRadioRowState extends State<UnitRadioRow> {
     final focusRing = Border.all(color: colorTheme.outlineFocus, width: 2);
     return Semantics(
       key: Key('unit_option_${unit.name}'),
-      button: true,
+      enabled: true,
+      focusable: true,
       inMutuallyExclusiveGroup: true,
       checked: isSelected,
       label: '$symbol, $name',

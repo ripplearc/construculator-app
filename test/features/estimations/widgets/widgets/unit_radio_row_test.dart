@@ -47,16 +47,23 @@ void main() {
     return (ring.decoration as BoxDecoration).border as Border?;
   }
 
-  testWidgets('reads the symbol and the name as one label', (tester) async {
+  testWidgets('reads the symbol and the name as one label, as a radio', (
+    tester,
+  ) async {
     await pumpRows(tester, selected: Unit.feet);
 
     expect(
       tester.getSemantics(find.byKey(const Key('unit_option_feet'))),
       isSemantics(
         label: 'ft, Foot',
-        isButton: true,
+        isButton: false,
+        hasCheckedState: true,
         isChecked: true,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
         isInMutuallyExclusiveGroup: true,
+        hasTapAction: true,
       ),
     );
     expect(
