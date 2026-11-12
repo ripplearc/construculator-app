@@ -1325,7 +1325,13 @@ class Tape extends Equatable {
   /// as degrees, minutes and seconds is refused a unit under any key
   /// (Section 5.4, "That value is already an angle"), and so is an angle
   /// recalled from the drawer in either spelling: a recalled value is
-  /// finished, and a unit would make it a typed start (rule 4.16).
+  /// finished, and a unit would make it a typed start (rule 4.16). A unit
+  /// key that would carry the number above [Quantity.largestShown] in the
+  /// new unit is refused as Too large, like a typed digit, and the value
+  /// stays as it was (Section 5.1; CA-1365): 15000000 [Ft] then [In] keeps
+  /// 15000000ft, and 19999999 [Ft] 13 then [In] keeps 19999999ft 13, since
+  /// the carry would read 20000000ft 1in ([EntryBuffer.closeWith] refuses
+  /// the carry itself).
   TapeOutcome pressUnit(
     Unit unit, {
     bool holdsLengthOnly = false,
@@ -1387,6 +1393,8 @@ class Tape extends Equatable {
       holdsLengthOnly: holdsLengthOnly,
     );
     return switch (outcome) {
+      UnitKeyConverted(:final value) when formatter.isTooLarge(value) =>
+        const TapeEntryRefused(EntryRefusal.tooLarge),
       UnitKeyConverted(:final value, :final tokens) ||
       UnitKeyRaised(
         :final value,
