@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST SECTIONS LIST MUTATION TESTING -->
+    <!-- Targets: empty-section placeholders, section order -->
+
+    <files>
+        <file>lib/features/estimation/presentation/widgets/cost_sections_list.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+
+        <regex pattern="(if \(lines\.isEmpty\))" dotAll="true" id="list.section.negate_empty_check">
+            <mutation text="if (lines.isNotEmpty)"/>
+        </regex>
+
+        <regex pattern="(isHighlighted: line\.id == widget\.highlightedItemId,)" dotAll="true" id="list.row.never_highlight">
+            <mutation text="isHighlighted: false,"/>
+        </regex>
+
+        <regex pattern="(onTap: \(\) =&gt; widget\.onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
+            <mutation text="onTap: null,"/>
+        </regex>
+
+        <regex pattern="(CostItemType\.labor =&gt; l10n\.costSectionEmptyLabor)" dotAll="true" id="list.placeholder.labor_uses_material">
+            <mutation text="CostItemType.labor =&gt; l10n.costSectionEmptyMaterial"/>
+        </regex>
+
+        <regex pattern="(CostItemType\.equipment =&gt; l10n\.costSectionEmptyEquipment)" dotAll="true" id="list.placeholder.equipment_uses_labor">
+            <mutation text="CostItemType.equipment =&gt; l10n.costSectionEmptyLabor"/>
+        </regex>
+
+        <regex pattern="(CostItemType\.material =&gt; l10n\.costSectionEmptyMaterial)" dotAll="true" id="list.placeholder.material_uses_equipment">
+            <mutation text="CostItemType.material =&gt; l10n.costSectionEmptyEquipment"/>
+        </regex>
+
+        <regex pattern="(else if \(lines\.isEmpty\)\s+_emptySection\(context, type\))" dotAll="true" id="list.placeholder.never_shown">
+            <mutation text="else if (false) _emptySection(context, type)"/>
+        </regex>
+
+        <regex pattern="(CoreSpacing\.space7,)" dotAll="true" id="list.spacing.no_bottom_gap">
+            <mutation text="CoreSpacing.space1,"/>
+        </regex>
+
+        <regex pattern="(costs\.materialsSubtotal,)" dotAll="true" id="list.order.material_uses_labor_subtotal">
+            <mutation text="costs.laborSubtotal,"/>
+        </regex>
+
+        <regex pattern="(costs\.laborLines,)" dotAll="true" id="list.order.labor_uses_equipment_lines">
+            <mutation text="costs.equipmentLines,"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="cost_sections_list" expected-return="0">fvm flutter test test/features/estimations/widgets/widgets/cost_sections_list_test.dart</command>
+    </commands>
+</mutations>
