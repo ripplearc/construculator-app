@@ -74,6 +74,8 @@ class _CostSectionsListState extends State<CostSectionsList> {
   @override
   void didUpdateWidget(CostSectionsList oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final ids = widget.costs.items.map((line) => line.id).toSet();
+    _lineKeys.removeWhere((id, _) => !ids.contains(id));
     _scheduleScrollToHighlighted();
   }
 
@@ -88,8 +90,22 @@ class _CostSectionsListState extends State<CostSectionsList> {
       final lineContext = _lineKeys[id]?.currentContext;
       if (!mounted || lineContext == null) return;
       _scrolledToItemId = id;
-      Scrollable.ensureVisible(lineContext, duration: _scrollDuration);
+      _revealLine(lineContext);
     });
+  }
+
+  Future<void> _revealLine(BuildContext lineContext) async {
+    await Scrollable.ensureVisible(
+      lineContext,
+      duration: _scrollDuration,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
+    if (!lineContext.mounted) return;
+    await Scrollable.ensureVisible(
+      lineContext,
+      duration: _scrollDuration,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+    );
   }
 
   @override
