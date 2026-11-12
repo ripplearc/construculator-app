@@ -1,8 +1,11 @@
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
@@ -63,6 +66,63 @@ void main() {
           tester.getSemantics(find.byKey(CalculatorPage.unitsPillKey)).hint,
           AppLocalizationsEn().calculatorUnitsSwitchToMetric,
         );
+      },
+    );
+
+    testWidgets(
+      'a setting sheet\'s options and Update meet the tap target and label '
+      'guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(makeTestableWidget(theme: theme));
+          BlocProvider.of<CalculatorBloc>(
+            tester.element(find.byType(CoreKeyboard)),
+          ).add(
+            const CalculatorSettingSheetOpened(
+              CalculatorSetting.fractionResolution,
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          // Tap target size is disabled as in the close-button test (the
+          // guideline reads the whole page, where CoreUI's close button sits
+          // below 48dp), so Update and an option row are measured below.
+          // Text contrast is not checked over the open sheet: the guideline
+          // samples the sheet's text at the page behind it (a 1.05 ratio),
+          // the sampling CA-1377 takes up; CorePreferenceOptionSheet's own
+          // a11y tests in CoreUI cover its contrast.
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CalculatorPage.settingUpdateKey),
+            checkTapTargetSize: false,
+            checkTextContrast: false,
+          );
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(CalculatorPage.settingOptionKey('half')),
+            checkTapTargetSize: false,
+            checkTextContrast: false,
+          );
+          expect(
+            tester.getSize(find.byKey(CalculatorPage.settingUpdateKey)).height,
+            greaterThanOrEqualTo(48),
+          );
+          expect(
+            tester
+                .getSize(find.byKey(CalculatorPage.settingOptionKey('half')))
+                .height,
+            greaterThanOrEqualTo(48),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(AppLocalizationsEn().calculatorSettingBack),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+        }
       },
     );
 
