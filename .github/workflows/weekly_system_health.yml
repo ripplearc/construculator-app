@@ -95,6 +95,15 @@ jobs:
           ENVIRONMENT: perf
         run: bash scripts/ci/generate_env_file.sh
 
+      - name: Install APKs without streaming
+        # On the lab phone a streamed `adb install` stalls about half the time,
+        # while `adb install --no-streaming` does not. Flutter cannot pass that
+        # flag, so it gets an SDK folder whose adb adds it.
+        run: |
+          SHIM_SDK="$(bash scripts/perf/make_no_streaming_adb_sdk.sh "$RUNNER_TEMP/no-streaming-sdk")"
+          echo "ANDROID_HOME=$SHIM_SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SHIM_SDK" >> "$GITHUB_ENV"
+
       - name: Reattach device
         # This lab machine is a WSL2 laptop, and the phone drops off the WSL VM
         # between runs. The script re-attaches it. It starts usbipd.exe from the
