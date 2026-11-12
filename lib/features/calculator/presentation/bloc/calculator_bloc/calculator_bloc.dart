@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
+part 'calculator_setting.dart';
 part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 
@@ -28,11 +29,16 @@ part 'calculator_state.dart';
 /// The settings (W1, CA-1103) are the signed-in user's, watched from the
 /// [CalculatorPreferencesRepository]: the tape renders under whatever
 /// arrives (rule 4.14, "a setting re-renders a value; it never changes
-/// what was typed"), the System of units pill re-renders at once and then
-/// saves, so the tape and the keyboard agree on one value, and a save that
-/// fails says so without taking the choice back. The four setting sheets
-/// save the same way (2/4). Settings that arrive are not a key: what the
-/// last key said stays.
+/// what was typed"), the System of units pill and a setting sheet's Update
+/// re-render at once and then save, so the tape, the keyboard and the
+/// sheet agree on one value, and a save that fails says so without taking
+/// the choice back. The toast after Update is raised from the save
+/// ([CalculatorState.settingSaved]), not from a toast queue (S2b); Update
+/// on the choice already in force closes the sheet with no save and no
+/// toast, and the pill's save raises none. A sheet opening or closing is
+/// not a key either: the Alert of the last key stays under the sheet and
+/// is still there when it closes, as settings that arrive leave what the
+/// last key said alone (decided 1 November 2026).
 ///
 /// A save sends the change, never the whole row: the repository applies it
 /// to the settings it holds once the signed-in profile has been read, so a
@@ -72,6 +78,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
        super(CalculatorState.initial()) {
     on<CalculatorPreferencesArrived>(_onPreferencesArrived);
     on<CalculatorUnitSystemToggled>(_onUnitSystemToggled);
+    on<CalculatorSettingSheetOpened>(_onSettingSheetOpened);
+    on<CalculatorSettingSheetClosed>(_onSettingSheetClosed);
+    on<CalculatorSettingUpdated>(_onSettingUpdated);
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
     on<CalculatorFractionPressed>(_onFractionPressed);
@@ -118,10 +127,43 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     MeasurementSystem.metric => MeasurementSystem.imperial,
   });
 
+  void _onSettingSheetOpened(
+    CalculatorSettingSheetOpened event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(openSettingSheet: () => event.setting));
+
+  void _onSettingSheetClosed(
+    CalculatorSettingSheetClosed event,
+    Emitter<CalculatorState> emit,
+  ) {
+    if (state.openSettingSheet == null) return;
+    emit(state.copyWith(openSettingSheet: () => null));
+  }
+
+  Future<void> _onSettingUpdated(
+    CalculatorSettingUpdated event,
+    Emitter<CalculatorState> emit,
+  ) async {
+    if (event.setting.selectedOptionId(state.tape.preferences) ==
+        event.optionId) {
+      return emit(state.copyWith(openSettingSheet: () => null));
+    }
+    CalculatorPreferences change(CalculatorPreferences current) =>
+        event.setting.applied(current, event.optionId);
+    emit(
+      state.copyWith(
+        tape: state.tape.withPreferences(change(state.tape.preferences)),
+        openSettingSheet: () => null,
+      ),
+    );
+    await _saved(emit, change, setting: event.setting);
+  }
+
   Future<void> _saved(
     Emitter<CalculatorState> emit,
-    CalculatorPreferences Function(CalculatorPreferences) change,
-  ) async {
+    CalculatorPreferences Function(CalculatorPreferences) change, {
+    CalculatorSetting? setting,
+  }) async {
     final save = _SaveInFlight(change);
     _savesInFlight.add(save);
     final result = await _preferencesRepository.updatePreferences(change);
@@ -137,7 +179,9 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
           } else {
             save.saved = saved;
           }
-          return state;
+          return setting == null
+              ? state
+              : state.copyWith(settingSaved: () => setting);
         },
       ),
     );
@@ -257,7 +301,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorPreferences change(CalculatorPreferences current) =>
         current.copyWith(system: system);
     emit(
-      state.silenced.copyWith(
+      state.copyWith(
         tape: state.tape.withPreferences(change(state.tape.preferences)),
       ),
     );
