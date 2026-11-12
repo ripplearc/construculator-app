@@ -237,7 +237,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     final colorTheme = context.colorTheme;
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: colorTheme.pageBackground,
+      backgroundColor: sheetSurface(context),
       appBar: CoreAppBar(
         height: CoreSpacing.space12,
         padding: const EdgeInsets.only(
@@ -304,16 +304,22 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           CostItemsLoading() => const Center(child: CoreLoadingIndicator()),
         },
       ),
-      bottomNavigationBar: BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
-        bloc: _summaryBloc,
-        buildWhen: (_, current) => current is EstimateSummaryLoaded,
-        builder: (context, summary) => AddCostBottomBar(
-          total: summary is EstimateSummaryLoaded
-              ? summary.estimate.totalCost
-              : null,
-          onAddCost: () => unawaited(_openAddCost(context)),
-          // TODO: [CA-186] [Cost Estimation] Implement Preview Button Logic https://ripplearc.youtrack.cloud/issue/CA-186/Cost-Estimation-Implement-Preview-Button-Logic
-        ),
+      bottomNavigationBar: BlocBuilder<CostItemsBloc, CostItemsState>(
+        bloc: _costItemsBloc,
+        builder: (context, costs) =>
+            BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
+              bloc: _summaryBloc,
+              buildWhen: (_, current) => current is EstimateSummaryLoaded,
+              builder: (context, summary) => AddCostBottomBar(
+                total: summary is EstimateSummaryLoaded
+                    ? summary.estimate.totalCost
+                    : null,
+                isEstimateEmpty:
+                    costs is CostItemsLoaded && costs.items.isEmpty,
+                onAddCost: () => unawaited(_openAddCost(context)),
+                // TODO: [CA-186] [Cost Estimation] Implement Preview Button Logic https://ripplearc.youtrack.cloud/issue/CA-186/Cost-Estimation-Implement-Preview-Button-Logic
+              ),
+            ),
       ),
     );
   }
