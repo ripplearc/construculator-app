@@ -71,9 +71,6 @@ class CalculatorState extends Equatable {
     MeasurementSystem.metric => UnitSystem.metric,
   };
 
-  /// Whether a value is being typed, inside an open bracket too.
-  bool get isTyping => tape.beingTyped != null;
-
   /// The id the label row names: the function key of the value being typed
   /// (`null` for a bare number, as every value inside a bracket is), else
   /// the key of the last answer or the error the last chip carries, else
@@ -86,13 +83,141 @@ class CalculatorState extends Equatable {
   };
 
   /// The text of the value row: the value being typed, inside an open
-  /// bracket too, else the last chip; an error chip has no value to show.
+  /// bracket too, with the reading of a bare number written after it (30°,
+  /// 7%, 8in/12in) and without the operator that leads it, which the label
+  /// names ("Addition" over 12); else the last chip — a closed bracket is
+  /// worth its inside's value (Section 7: "Addition · (3×4)" over 12); an
+  /// error chip has no value of its own: the row reads "Error" under its
+  /// title (Section 5, "Dimension Error", "Division by zero"), a word the
+  /// page supplies when [valueReadsError] is true.
   String get valueText => switch (_chipRead) {
-    null || ErrorChip() => '',
+    null || ErrorChip() || BracketChip(isOpen: true) => '',
+    final ValueChip chip => _entryTextOf(chip),
+    BracketChip(isOpen: false, :final inner) => switch (Tape(
+      chips: inner,
+      preferences: tape.preferences,
+    ).runningTotal) {
+      ChainValue(:final value) => tape.formatter.format(value),
+      ChainFailed() || ChainEmpty() => '',
+    },
     final chip => _valueTextOf(chip),
   };
 
+  /// What the label row names for the chip on the display (Section 1.1):
+  /// the key, the operator of a chip with no key, or a bare value ("Value"
+  /// over a finished 12ft as over a 12 still typed, term 2.6: the label
+  /// shows always); the reading of a bare number (rule 4.10); the inside
+  /// of a closed bracket (Section 7); and whether the value is still being
+  /// typed. `null` when there is no chip to read: an empty tape, or a
+  /// bracket just opened with nothing in it (Section 7: "Label and value
+  /// are empty").
+  CalculatorDisplayLabel? get displayLabel => switch (_chipRead) {
+    null => null,
+    final ValueChip chip => CalculatorDisplayLabel(
+      keyId: chip.key,
+      operator: chip.operator,
+      reading: _readingOf(chip),
+      isTyping: _isStillTyping(chip),
+    ),
+    ResultChip(:final key) => CalculatorDisplayLabel(keyId: key),
+    ErrorChip(:final error) => CalculatorDisplayLabel(keyId: error.name),
+    BracketChip(isOpen: true) => null,
+    BracketChip(:final operator, :final inner) => CalculatorDisplayLabel(
+      operator: operator,
+      bracketExpression: inner.map(_valueTextOf).join(),
+    ),
+  };
+
+  /// Whether the value row reads "Error": the chip read is an error chip,
+  /// or the empty divisor that ÷ 0 reopened after its Division by zero
+  /// chip, so there is no number to write under the title until the next
+  /// digit (Section 5; decision tree rows 143, 144, 190).
+  bool get valueReadsError => switch (_chipRead) {
+    ErrorChip() => true,
+    ValueChip(
+      entry: EntryBuffer(isEmpty: true),
+      operator: Operator.divide,
+      key: null,
+    ) =>
+      tape.openBracket == null &&
+          tape.chips.length > 1 &&
+          tape.chips[tape.chips.length - 2] ==
+              const ErrorChip(CalculationError.divisionByZero),
+    _ => false,
+  };
+
   TapeChip? get _chipRead => tape.beingTyped ?? tape.chips.lastOrNull;
+
+  NumberReading? _readingOf(ValueChip chip) {
+    if (chip.trigFunction case final function?) {
+      if (function.isInverse) return NumberReading.ratio;
+      return chip.entry.isDegreesMinutesSeconds
+          ? NumberReading.degreesMinutesSeconds
+          : NumberReading.degrees;
+    }
+    if (chip.entry.isDegreesMinutesSeconds) {
+      return NumberReading.degreesMinutesSeconds;
+    }
+    return switch (chip.key) {
+      PlainNumberKeys.pitch => switch (chip.value(tape.parser)) {
+        Angle(spelling: AngleSpelling.risePerFoot) ||
+        Length(unit: Unit.inch) => NumberReading.risePerFoot,
+        Angle() => NumberReading.degrees,
+        _ => null,
+      },
+      PlainNumberKeys.slope when chip.bareNumber != null => NumberReading.grade,
+      _ => null,
+    };
+  }
+
+  bool _isStillTyping(ValueChip chip) =>
+      !chip.entry.isComplete &&
+      !(chip.key == null &&
+          chip.trigFunction == null &&
+          chip.operator != null &&
+          chip.bareNumber != null);
+
+  String _entryTextOf(ValueChip chip) {
+    final reading = _readingOf(chip);
+    if (reading == NumberReading.risePerFoot &&
+        _isAFinishedRiseFraction(chip)) {
+      return switch (chip.value(tape.parser)) {
+        final value? => tape.formatter.format(value),
+        null => chip.entry.text,
+      };
+    }
+    if (reading == null || !_writesItsReading(chip, reading)) {
+      return chip.entry.text;
+    }
+    return _withReadingSuffix(chip.entry.text, reading);
+  }
+
+  static bool _isAFinishedRiseFraction(ValueChip chip) =>
+      !chip.isActive &&
+      switch (chip.entry.tokens) {
+        [Token(denominator: _?, unit: null)] => true,
+        _ => false,
+      };
+
+  static bool _writesItsReading(ValueChip chip, NumberReading reading) =>
+      switch (reading) {
+        NumberReading.degrees || NumberReading.grade => chip.bareNumber != null,
+        NumberReading.risePerFoot => switch (chip.entry.tokens) {
+          [Token(unit: Unit.inch)] => true,
+          _ => false,
+        },
+        NumberReading.ratio || NumberReading.degreesMinutesSeconds => false,
+      };
+
+  static String _withReadingSuffix(String text, NumberReading reading) {
+    if (text.isEmpty || text.endsWith('.')) return text;
+    return switch (reading) {
+      NumberReading.degrees => '$text°',
+      NumberReading.degreesMinutesSeconds => text,
+      NumberReading.risePerFoot => '$text/${Angle.inchesPerFootOfRun}in',
+      NumberReading.grade || NumberReading.ratio => '$text%',
+    };
+  }
 
   /// Row 1 of the strip (Section 1.2), in a fixed order with no ranking: a
   /// pending trig chip's answer leads (rule 4.4) when the chip stands alone
@@ -271,8 +396,7 @@ class CalculatorState extends Equatable {
   ];
 
   String _valueTextOf(TapeChip chip) => switch (chip) {
-    ValueChip(:final operator, :final entry) =>
-      '${_lead(operator)}${entry.text}',
+    final ValueChip chip => '${_lead(chip.operator)}${_entryTextOf(chip)}',
     ResultChip(:final operator, :final value) =>
       '${_lead(operator)}${tape.formatter.format(value)}',
     BracketChip(:final operator, :final inner, :final isOpen) =>

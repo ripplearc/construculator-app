@@ -2986,6 +2986,10 @@
   "@calculatorErrorTooLarge": {
     "description": "Title of the calculator error chip landed when an answer is above 19,999,999.99 in its unit"
   },
+  "calculatorValueError": "Error",
+  "@calculatorValueError": {
+    "description": "The calculator's value row under an error chip's title (Dimension Error, Division by zero, Too large), Section 5 of the UX design doc"
+  },
   "calculatorAnswerArea": "Area",
   "@calculatorAnswerArea": {
     "description": "Name of the calculator answer for the area of a rectangle, Length × Width, on the suggestion strip, the equals key and the result chip"
@@ -3087,6 +3091,46 @@
   "calculatorStripConversionsSemantics": "Convert to other units",
   "@calculatorStripConversionsSemantics": {
     "description": "Screen reader label of the conversions row of the calculator suggestion strip"
+  },
+  "calculatorLabelValue": "Value",
+  "@calculatorLabelValue": {
+    "description": "Head of the calculator label row for a value typed under no function key"
+  },
+  "calculatorOperatorAddition": "Addition",
+  "@calculatorOperatorAddition": {
+    "description": "Head of the calculator label row for a number typed after +"
+  },
+  "calculatorOperatorSubtraction": "Subtraction",
+  "@calculatorOperatorSubtraction": {
+    "description": "Head of the calculator label row for a number typed after −"
+  },
+  "calculatorOperatorMultiplication": "Multiplication",
+  "@calculatorOperatorMultiplication": {
+    "description": "Head of the calculator label row for a number typed after ×"
+  },
+  "calculatorOperatorDivision": "Division",
+  "@calculatorOperatorDivision": {
+    "description": "Head of the calculator label row for a number typed after ÷"
+  },
+  "calculatorReadingDegrees": "degrees",
+  "@calculatorReadingDegrees": {
+    "description": "Reading of a bare number named after the key on the calculator label row: decimal degrees"
+  },
+  "calculatorReadingDms": "D:M:S",
+  "@calculatorReadingDms": {
+    "description": "Reading of a number typed as degrees, minutes and seconds, named after the key on the calculator label row"
+  },
+  "calculatorReadingRatio": "a ratio",
+  "@calculatorReadingRatio": {
+    "description": "Reading of the number an inverse trigonometric key takes, named after the key on the calculator label row"
+  },
+  "calculatorReadingRisePerFoot": "in/12in",
+  "@calculatorReadingRisePerFoot": {
+    "description": "Reading of a pitch as inches of rise per 12 inches of run, on the calculator label row"
+  },
+  "calculatorReadingGrade": "grade",
+  "@calculatorReadingGrade": {
+    "description": "Reading of a bare number under Slope as a percent grade, on the calculator label row"
   },
   "calculatorGroupShapes": "Shapes",
   "@calculatorGroupShapes": {

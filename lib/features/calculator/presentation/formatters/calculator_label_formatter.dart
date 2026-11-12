@@ -74,6 +74,11 @@ class CalculatorLabelFormatter {
     TrigFunction.arctangent => l10n.calculatorKeyAtanFullName,
   };
 
+  /// The text of the value row: the state's reading of the chip, or the
+  /// word "Error" under an error chip's title (Section 5).
+  String valueText(CalculatorState state) =>
+      state.valueReadsError ? l10n.calculatorValueError : state.valueText;
+
   /// The title of an error chip.
   String errorTitle(CalculationError error) => switch (error) {
     CalculationError.dimensionError => l10n.calculatorErrorDimension,
@@ -192,6 +197,44 @@ class CalculatorLabelFormatter {
     'ATAN' => l10n.calculatorKeyAtanFullName,
     'DMS' => l10n.calculatorKeyDmsFullName,
     _ => null,
+  };
+
+  /// The text of the label row (Section 1.1): the key, the operator's name
+  /// for a chip with no key, or "Value"; then the reading of a bare number
+  /// and the inside of a closed bracket, each after a middle dot. The
+  /// ellipsis of a value still being typed is drawn by the display.
+  String labelText(CalculatorDisplayLabel label) {
+    final head = switch (label) {
+      CalculatorDisplayLabel(:final keyId?) => displayLabel(keyId),
+      CalculatorDisplayLabel(:final operator?) => operatorLabel(operator),
+      CalculatorDisplayLabel() => l10n.calculatorLabelValue,
+    };
+    final reading = switch (label.reading) {
+      final reading? => ' · ${readingLabel(reading)}',
+      null => '',
+    };
+    final bracket = switch (label.bracketExpression) {
+      final expression? => ' · ($expression)',
+      null => '',
+    };
+    return '$head$reading$bracket';
+  }
+
+  /// The name of the operation a chip with no key opens: "Addition 3".
+  String operatorLabel(Operator operator) => switch (operator) {
+    Operator.add => l10n.calculatorOperatorAddition,
+    Operator.subtract => l10n.calculatorOperatorSubtraction,
+    Operator.multiply => l10n.calculatorOperatorMultiplication,
+    Operator.divide => l10n.calculatorOperatorDivision,
+  };
+
+  /// The word the label row names a bare number's reading by.
+  String readingLabel(NumberReading reading) => switch (reading) {
+    NumberReading.degrees => l10n.calculatorReadingDegrees,
+    NumberReading.degreesMinutesSeconds => l10n.calculatorReadingDms,
+    NumberReading.ratio => l10n.calculatorReadingRatio,
+    NumberReading.risePerFoot => l10n.calculatorReadingRisePerFoot,
+    NumberReading.grade => l10n.calculatorReadingGrade,
   };
 
   /// The visible name of a dependent-key pill.

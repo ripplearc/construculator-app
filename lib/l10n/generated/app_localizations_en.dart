@@ -2028,6 +2028,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorErrorTooLarge => 'Too large';
 
   @override
+  String get calculatorValueError => 'Error';
+
+  @override
   String get calculatorAnswerArea => 'Area';
 
   @override
@@ -2101,6 +2104,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorStripConversionsSemantics => 'Convert to other units';
+
+  @override
+  String get calculatorLabelValue => 'Value';
+
+  @override
+  String get calculatorOperatorAddition => 'Addition';
+
+  @override
+  String get calculatorOperatorSubtraction => 'Subtraction';
+
+  @override
+  String get calculatorOperatorMultiplication => 'Multiplication';
+
+  @override
+  String get calculatorOperatorDivision => 'Division';
+
+  @override
+  String get calculatorReadingDegrees => 'degrees';
+
+  @override
+  String get calculatorReadingDms => 'D:M:S';
+
+  @override
+  String get calculatorReadingRatio => 'a ratio';
+
+  @override
+  String get calculatorReadingRisePerFoot => 'in/12in';
+
+  @override
+  String get calculatorReadingGrade => 'grade';
 
   @override
   String get calculatorGroupShapes => 'Shapes';
