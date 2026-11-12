@@ -77,6 +77,11 @@ class CalculatorControlActioned extends CalculatorEvent {
   List<Object?> get props => [action];
 }
 
+/// The display's ✕ was tapped: it clears the value being typed.
+class CalculatorActiveValueCleared extends CalculatorEvent {
+  const CalculatorActiveValueCleared();
+}
+
 /// A different group of function keys was selected.
 class CalculatorGroupSelected extends CalculatorEvent {
   /// Index of the newly selected group.

@@ -1,6 +1,7 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -189,7 +190,8 @@ void main() {
     expect(keyboardAlign().heightFactor, closeTo(0.95, 0.001));
   });
 
-  testWidgets('the display area close control resets the calculator', (
+  testWidgets('the display area close control empties the value being typed '
+      'and keeps its key, and with nothing typed it is refused', (
     tester,
   ) async {
     await pumpPage(tester);
@@ -204,6 +206,15 @@ void main() {
 
     await tester.tap(find.bySemanticsLabel(l10n.closeButton));
     await tester.pump();
-    expect(bloc.state, equals(CalculatorState.initial()));
+    expect(bloc.state.labelKeyId, 'Length');
+    expect(bloc.state.valueText, '');
+    expect(bloc.state.refusal, isNull);
+
+    await tester.tap(find.bySemanticsLabel(l10n.closeButton));
+    await tester.pump();
+    expect(
+      bloc.state.refusal,
+      const TapeRefused(TapeRefusal.nothingBeingTyped),
+    );
   });
 }

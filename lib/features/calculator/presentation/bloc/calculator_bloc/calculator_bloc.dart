@@ -12,7 +12,12 @@ part 'calculator_state.dart';
 ///
 /// The bloc holds no arithmetic and no rule of its own: each event is one
 /// call on [Tape], whose outcome is folded into the state — a changed tape
-/// with its notice, or the same tape with the refusal. Nothing here reads a
+/// with its notice, or the same tape with the refusal. What it does know
+/// is which key is which: the Unit group's keys press their unit, a trig
+/// key and the D:M:S key press theirs, Pitch, Slope and Sides take a plain
+/// number ([PlainNumberKeys]), and a unit under a length-only key (Section
+/// 3, "Takes: A length") or under Slope goes to the tape with that said,
+/// read off the chip being typed wherever it is. Nothing here reads a
 /// store, the recents or the preferences repository; the System of units
 /// toggle sets the tape's own preferences, so the tape and the keyboard
 /// agree on one value. The engine's answers (the strip, the pills, the
@@ -26,6 +31,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorOperatorPressed>(_onOperatorPressed);
     on<CalculatorEqualsPressed>(_onEqualsPressed);
     on<CalculatorControlActioned>(_onControlActioned);
+    on<CalculatorActiveValueCleared>(_onActiveValueCleared);
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
@@ -42,12 +48,30 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     'mton': Unit.metricTon,
   };
 
+  static const Map<String, TrigFunction> _trigKeys = {
+    'SIN': TrigFunction.sine,
+    'COS': TrigFunction.cosine,
+    'TAN': TrigFunction.tangent,
+    'ASIN': TrigFunction.arcsine,
+    'ACOS': TrigFunction.arccosine,
+    'ATAN': TrigFunction.arctangent,
+  };
+
+  static const String _dmsKey = 'DMS';
+
   void _onKeySelected(
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
   ) => _press(emit, (tape) {
-    if (_unitKeys[event.id] case final unit?) return tape.pressUnit(unit);
-    return tape.pressFunctionKey(event.id);
+    final id = event.id;
+    if (_unitKeys[id] case final unit?) return _pressUnit(tape, unit);
+    if (_trigKeys[id] case final function?) return tape.pressTrigKey(function);
+    if (id == _dmsKey) return tape.pressDmsKey();
+    return tape.pressFunctionKey(
+      id,
+      keyWantsUnit: !PlainNumberKeys.all.contains(id),
+      readsDegrees: id == PlainNumberKeys.pitch,
+    );
   });
 
   void _onDigitPressed(
@@ -63,7 +87,21 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onUnitSelected(
     CalculatorUnitSelected event,
     Emitter<CalculatorState> emit,
-  ) => _press(emit, (tape) => tape.pressUnit(event.unit));
+  ) => _press(emit, (tape) => _pressUnit(tape, event.unit));
+
+  TapeOutcome _pressUnit(Tape tape, Unit unit) {
+    final key = tape.beingTyped?.key;
+    return tape.pressUnit(
+      unit,
+      holdsLengthOnly: LengthOnlyKeys.all.contains(key),
+      takesAGrade: key == PlainNumberKeys.slope,
+    );
+  }
+
+  void _onActiveValueCleared(
+    CalculatorActiveValueCleared event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.clearActive());
 
   void _onOperatorPressed(
     CalculatorOperatorPressed event,
