@@ -65,11 +65,15 @@ class CostItemsLoaded extends CostItemsState {
 
 /// The cost lines could not be loaded.
 class CostItemsFailure extends CostItemsState {
-  const CostItemsFailure(this.failure);
+  const CostItemsFailure(this.failure, {this.failedLoads = 1});
 
   /// Why the load failed.
   final Failure failure;
 
+  /// How many loads in a row have failed, counting this one. It starts again
+  /// from one after a load works.
+  final int failedLoads;
+
   @override
-  List<Object?> get props => [failure];
+  List<Object?> get props => [failure, failedLoads];
 }

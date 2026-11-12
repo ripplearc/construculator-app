@@ -72,6 +72,14 @@
             <mutation text=""/>
         </regex>
 
+        <regex pattern="(failedLoads: \+\+_failedLoads)" id="cost_items.failure.count_never_grows">
+            <mutation text="failedLoads: 1"/>
+        </regex>
+
+        <regex pattern="(_failedLoads = 0;)(?=\s+emit)" id="cost_items.failure.count_never_resets">
+            <mutation text="_failedLoads = 1;"/>
+        </regex>
+
     </rules>
 
     <commands>

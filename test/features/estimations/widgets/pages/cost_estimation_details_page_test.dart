@@ -463,6 +463,104 @@ void main() {
         expect(find.text('Framing crew'), findsOneWidget);
       });
 
+      testWidgets('a failed load explains that nothing was changed and keeps '
+          'the total in the bar', (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: () {
+            fakeSupabase.shouldThrowOnSelectMatch = true;
+            fakeSupabase.selectMatchExceptionType =
+                SupabaseExceptionType.socket;
+          },
+        );
+
+        expect(
+          tester
+              .widget<Text>(find.byKey(const Key('cost_items_load_failed')))
+              .data,
+          l10n.costItemsLoadFailed,
+        );
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const Key('cost_items_load_failed_hint')),
+              )
+              .data,
+          l10n.costItemsLoadFailedHint,
+        );
+        expect(
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
+          r'$2,993.62',
+        );
+      });
+
+      testWidgets('a second failed load in a row says it still could not '
+          'load, and a worked retry clears the message', (
+        WidgetTester tester,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        await pumpAppAtRoute(
+          tester,
+          testEstimationRoute,
+          beforePump: () {
+            fakeSupabase.shouldThrowOnSelectMatch = true;
+            fakeSupabase.selectMatchExceptionType =
+                SupabaseExceptionType.socket;
+          },
+        );
+
+        await tester.tap(find.byKey(const Key('cost_items_retry_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<Text>(find.byKey(const Key('cost_items_load_failed')))
+              .data,
+          l10n.costItemsLoadFailedAgain,
+        );
+
+        fakeSupabase.shouldThrowOnSelectMatch = false;
+        await tester.tap(find.byKey(const Key('cost_items_retry_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('cost_items_load_failed')), findsNothing);
+      });
+
+      testWidgets('shows a dash instead of an old total when the total fails '
+          'to reload', (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        expect(
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
+          r'$2,993.62',
+        );
+
+        fakeSupabase.shouldThrowOnSelect = true;
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+        fakeSupabase.shouldThrowOnSelectMultiple = true;
+        fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.socket;
+        await tapAddCost(tester, CostItemType.labor);
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data,
+          '-',
+        );
+      });
+
       testWidgets('a failed load shows a retry, not an empty estimate', (
         WidgetTester tester,
       ) async {
@@ -529,34 +627,37 @@ void main() {
 
       expect(find.byKey(const Key('preview_button')), findsOneWidget);
       expect(find.text(l10n.previewButton), findsOneWidget);
+      expect(
+        tester
+            .widget<CoreButton>(find.byKey(AddCostBottomBar.previewButtonKey))
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('picking Labor in the category list opens the Labor form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tapAddCost(tester, CostItemType.labor);
+      await tester.pump();
+
+      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      expect(
+        fakeRouter.navigationHistory,
+        contains(RouteCall('$fullAddLabourCostRoute/$testEstimationId', null)),
+      );
+      expect(find.byType(BottomSheet), findsNothing);
     });
 
     testWidgets(
-      'tapping add labour cost button navigates to labour cost form',
-      (WidgetTester tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        await tapAddCost(tester, CostItemType.labor);
-        await tester.pump();
-
-        final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
-        expect(
-          fakeRouter.navigationHistory,
-          contains(
-            RouteCall('$fullAddLabourCostRoute/$testEstimationId', null),
-          ),
-        );
-        expect(find.byType(BottomSheet), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'tapping add equipment cost button opens "Your recents" instead of '
+      'picking Equipment in the category list opens "Your recents" instead of '
       'navigating to a route',
       (WidgetTester tester) async {
         setUpAuthenticatedUser(
@@ -1066,6 +1167,30 @@ void main() {
 
         expect(highlightedLine(tester), isNotNull);
         expect(highlightedLine(tester), isNot(first));
+      });
+
+      testWidgets('does not draw the added toast over the line just added at '
+          'the end of a long list', (tester) async {
+        fakeSupabase.addTableData(DatabaseConstants.costItemsTable, [
+          for (var i = 0; i < 14; i++)
+            CostItemTestDataMapFactory.createEquipmentItemData(
+              id: 'seed-q$i',
+              estimateId: testEstimationId,
+              itemName: 'Lift $i',
+              itemTotalCost: 100,
+            ),
+        ]);
+        await openEquipmentSheet(tester);
+        await fillValidDayForm(tester);
+
+        await tester.tap(addButton());
+        await tester.pumpAndSettle();
+
+        final newLine = tester.getRect(
+          find.byKey(Key('cost_line_${highlightedLine(tester)}')),
+        );
+        final toast = tester.getRect(find.text('Added to Bedroom 2'));
+        expect(newLine.overlaps(toast), isFalse);
       });
 
       testWidgets('reloads the estimate total after an add', (tester) async {

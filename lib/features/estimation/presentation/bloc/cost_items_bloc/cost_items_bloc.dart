@@ -19,6 +19,7 @@ part 'cost_items_state.dart';
 class CostItemsBloc extends Bloc<CostItemsEvent, CostItemsState> {
   final CostItemRepository _repository;
   String? _estimateId;
+  int _failedLoads = 0;
 
   CostItemsBloc({required this._repository}) : super(const CostItemsInitial()) {
     on<CostItemsEvent>(
@@ -36,6 +37,7 @@ class CostItemsBloc extends Bloc<CostItemsEvent, CostItemsState> {
       case CostItemsRequested():
         estimateId = event.estimateId;
         _estimateId = estimateId;
+        _failedLoads = 0;
         emit(const CostItemsLoading());
       case CostItemsRefreshed():
         final loadedEstimateId = _estimateId;
@@ -44,15 +46,18 @@ class CostItemsBloc extends Bloc<CostItemsEvent, CostItemsState> {
     }
     final result = await _repository.getCostItemsForEstimate(estimateId);
     result.fold(
-      (failure) => emit(CostItemsFailure(failure)),
-      (items) => emit(
-        CostItemsLoaded(
-          items: items,
-          materialsSubtotal: _subtotalOf(items, CostItemType.material),
-          laborSubtotal: _subtotalOf(items, CostItemType.labor),
-          equipmentSubtotal: _subtotalOf(items, CostItemType.equipment),
-        ),
-      ),
+      (failure) => emit(CostItemsFailure(failure, failedLoads: ++_failedLoads)),
+      (items) {
+        _failedLoads = 0;
+        emit(
+          CostItemsLoaded(
+            items: items,
+            materialsSubtotal: _subtotalOf(items, CostItemType.material),
+            laborSubtotal: _subtotalOf(items, CostItemType.labor),
+            equipmentSubtotal: _subtotalOf(items, CostItemType.equipment),
+          ),
+        );
+      },
     );
   }
 
