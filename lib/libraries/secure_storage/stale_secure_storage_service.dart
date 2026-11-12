@@ -16,8 +16,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// If emptying secure storage fails, the flag stays unset and the next launch
 /// tries again. The caller is told the store may still hold the previous
 /// user's session, so that launch can start signed out. [SecureStorageWrapper]
-/// logs the failure, but Sentry is not running yet at that point, so the log
-/// reaches the console only.
+/// logs the failure, and with a Sentry DSN configured the log reaches Sentry
+/// as well as the console.
 class StaleSecureStorageService {
   static const _hasLaunchedBeforeKey = 'has_launched_before';
 

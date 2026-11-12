@@ -12,10 +12,12 @@ import 'package:construculator/libraries/app_lifecycle/app_lifecycle_wrapper_imp
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
+import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/data/open_powersync_database.dart';
 import 'package:construculator/libraries/secure_storage/secure_storage_wrapper_impl.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/sentry_sdk_impl.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
@@ -29,13 +31,26 @@ Future<void> main() async {
   // tracking integration can install before SentryFlutter.init runs.
   SentryWidgetsFlutterBinding.ensureInitialized();
 
-  final appBootstrap = await _initializeApp();
+  const envName = String.fromEnvironment('ENVIRONMENT', defaultValue: devEnv);
+  final envLoader = EnvLoaderImpl();
+  final config = AppConfigImpl(envLoader: envLoader);
+  await config.initialize(_getEnvironmentFromString(envName));
+  final sentryWrapper = SentryWrapperImpl(
+    envLoader: envLoader,
+    config: config,
+    sentrySdk: SentrySdkImpl(),
+  );
 
-  AppLogger.setSentryWrapper(appBootstrap.sentryWrapper);
-  AppLogger.setConfig(appBootstrap.config);
+  AppLogger.setSentryWrapper(sentryWrapper);
+  AppLogger.setConfig(config);
 
-  await appBootstrap.sentryWrapper.initialize(
-    () => runApp(
+  await sentryWrapper.initialize(() async {
+    final appBootstrap = await _initializeApp(
+      envLoader: envLoader,
+      config: config,
+      sentryWrapper: sentryWrapper,
+    );
+    runApp(
       ModularApp(
         module: AppModule(appBootstrap),
         child: AppWidget(
@@ -43,30 +58,20 @@ Future<void> main() async {
           currentScreenTracker: appBootstrap.currentScreenTracker,
         ),
       ),
-    ),
-  );
+    );
+  });
 }
 
-Future<AppBootstrap> _initializeApp() async {
-  final String envName = const String.fromEnvironment(
-    'ENVIRONMENT',
-    defaultValue: devEnv,
-  );
-
-  final Environment env = _getEnvironmentFromString(envName);
-  final envLoader = EnvLoaderImpl();
-  final config = AppConfigImpl(envLoader: envLoader);
-  await config.initialize(env);
+Future<AppBootstrap> _initializeApp({
+  required EnvLoader envLoader,
+  required Config config,
+  required SentryWrapper sentryWrapper,
+}) async {
   final wrapper = SupabaseWrapperImpl(
     envLoader: envLoader,
     secureStorage: SecureStorageWrapperImpl(),
   );
   await wrapper.initialize();
-  final sentryWrapper = SentryWrapperImpl(
-    envLoader: envLoader,
-    config: config,
-    sentrySdk: SentrySdkImpl(),
-  );
   final powerSyncDatabase = await openPowerSyncDatabase();
   final currentScreenTracker = CurrentScreenTracker();
   final packageInfo = await PackageInfo.fromPlatform();

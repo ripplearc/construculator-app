@@ -3,6 +3,8 @@
 // native platform channels and a running host app and therefore cannot be
 // exercised in unit tests.
 
+import 'dart:async';
+
 import 'package:construculator/libraries/sentry/interfaces/sentry_sdk.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -11,7 +13,7 @@ class SentrySdkImpl implements SentrySdk {
   @override
   Future<void> init(
     FlutterOptionsConfiguration optionsConfiguration, {
-    required void Function() appRunner,
+    required FutureOr<void> Function() appRunner,
   }) {
     return SentryFlutter.init(optionsConfiguration, appRunner: appRunner);
   }

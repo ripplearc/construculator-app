@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Boundary over the static Sentry SDK entry points.
@@ -12,7 +14,7 @@ abstract class SentrySdk {
   /// SDK starts, and [appRunner] runs the Flutter app once the SDK is ready.
   Future<void> init(
     FlutterOptionsConfiguration optionsConfiguration, {
-    required void Function() appRunner,
+    required FutureOr<void> Function() appRunner,
   });
 
   /// Adds a breadcrumb to the current scope; mirrors [Sentry.addBreadcrumb].
