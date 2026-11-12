@@ -72,6 +72,16 @@ class BlocScenarioDriver implements ScenarioDriver {
   static String _rowOneText(CalculatorSuggestion suggestion) =>
       '${_labels.suggestionLabel(suggestion)}: ${suggestion.text}';
 
+  static String _bracketTextAsThePrototypeSpellsIt(
+    CoreCalculatorChip chip,
+    TapeChip tapeChip,
+  ) => switch (tapeChip) {
+    // the chip draws its parentheses and its operator is the factor icon
+    BracketChip(:final operator, :final isOpen) =>
+      '${operator?.symbol ?? ''}(${chip.value}${isOpen ? '' : ')'}',
+    _ => '${chip.value}',
+  };
+
   /// A pill as the prototype's DOM reads it: an offer is a sentence, a
   /// toggle its label, a colon and its value.
   static String _pillText(CalculatorDependentKey key) {
@@ -105,8 +115,9 @@ class BlocScenarioDriver implements ScenarioDriver {
           ? null
           : [for (final key in state.dependentKeys) _pillText(key)].join(' | '),
       tape: [
-        for (final chip in state.chipsList)
-          '${chip.label ?? ''}${chip.value}'
+        for (final (index, chip) in state.chipsList.indexed)
+          '${chip.label ?? ''}'
+              '${_bracketTextAsThePrototypeSpellsIt(chip, state.tape.chips[index])}'
               '${chip.type == CoreCalculatorChipType.active && (label?.isTyping ?? false) ? '…' : ''}',
       ],
       tapeBracket: [
@@ -116,10 +127,7 @@ class BlocScenarioDriver implements ScenarioDriver {
       tapeBracketOpen: [
         for (final chip in state.tape.chips) chip is BracketChip && chip.isOpen,
       ],
-      tapeFrozen: [
-        for (final chip in state.tape.chips)
-          state.tape.openBracket != null && chip != state.tape.chips.last,
-      ],
+      tapeFrozen: [for (final chip in state.chipsList) chip.inert],
       tapeKinds: [
         for (final chip in state.chipsList)
           switch (chip.type) {

@@ -4,6 +4,7 @@ import 'package:construculator/features/calculator/presentation/pages/calculator
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +21,7 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -37,7 +38,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(router: FakeAppRouter()),
         ),
       );
 
@@ -61,7 +62,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -134,7 +135,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(router: FakeAppRouter()),
         ),
       );
 
@@ -173,7 +174,7 @@ void main() {
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -204,7 +205,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -246,7 +247,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -269,7 +270,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -295,7 +296,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -328,7 +329,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -365,7 +366,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -398,7 +399,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -434,7 +435,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -478,7 +479,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(router: FakeAppRouter()),
         ),
       );
 
@@ -508,7 +509,7 @@ void main() {
         theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const CalculatorPage(),
+        home: CalculatorPage(router: FakeAppRouter()),
       ),
     );
 
@@ -662,7 +663,7 @@ void main() {
           theme: CoreTheme.light(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const CalculatorPage(),
+          home: CalculatorPage(router: FakeAppRouter()),
         ),
       );
 

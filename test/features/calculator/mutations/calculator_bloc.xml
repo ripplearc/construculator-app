@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR BLOC: ✕ AT REST AND THE BRACKET CHIP (T1a, CA-1092) -->
+    <!-- Targets: the one branch that turns ✕ with no value in progress into
+         "closes the calculator" and its clearing on the next key, and the
+         state's reading of a bracket chip: its face, its inside, the
+         operator as its factor, and the chips before an open bracket inert. -->
+
+    <files>
+        <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart</file>
+        <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_state.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: ✕ never closes the calculator -->
+        <regex pattern="if \(state\.tape\.openBracket == null &amp;&amp;\s*outcome == const TapeRefused\(TapeRefusal\.nothingBeingTyped\)\) \{" dotAll="true" id="calculator_bloc.clear_active.never_closes">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: ✕ closes the calculator even while it clears a value -->
+        <regex pattern="if \(state\.tape\.openBracket == null &amp;&amp;\s*outcome == const TapeRefused\(TapeRefusal\.nothingBeingTyped\)\) \{" dotAll="true" id="calculator_bloc.clear_active.always_closes">
+            <mutation text="if (true) {"/>
+        </regex>
+
+        <!-- RULE 2a: ✕ closes the calculator inside an open bracket too -->
+        <regex pattern="if \(state\.tape\.openBracket == null &amp;&amp;\s*outcome == const TapeRefused\(TapeRefusal\.nothingBeingTyped\)\) \{" dotAll="true" id="calculator_bloc.clear_active.closes_inside_bracket">
+            <mutation text="if (outcome == const TapeRefused(TapeRefusal.nothingBeingTyped)) {"/>
+        </regex>
+
+        <!-- RULE 3: the close is said as not closing -->
+        <regex pattern="refusal: \(\) => null,\s*closesCalculator: true," dotAll="true" id="calculator_bloc.clear_active.close_not_said">
+            <mutation text="refusal: () => null, closesCalculator: false,"/>
+        </regex>
+
+        <!-- RULE 4: a taken key keeps the close -->
+        <regex pattern="notice: \(\) => notice,\s*refusal: \(\) => null,\s*closesCalculator: false," dotAll="true" id="calculator_bloc.fold.taken_key_keeps_close">
+            <mutation text="notice: () => notice, refusal: () => null, closesCalculator: true,"/>
+        </regex>
+
+        <!-- RULE 5: a refused key keeps the close -->
+        <regex pattern="refusal: \(\) => refusal,\s*closesCalculator: false," dotAll="true" id="calculator_bloc.fold.refused_key_keeps_close">
+            <mutation text="refusal: () => refusal, closesCalculator: true,"/>
+        </regex>
+
+        <!-- RULE 6: the close is left out of the state's equality -->
+        <regex pattern="refusal,\s*closesCalculator,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="refusal, ];"/>
+        </regex>
+
+        <!-- RULE 7: no chip is ever inert -->
+        <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.never_inert">
+            <mutation text="inert: false,"/>
+        </regex>
+
+        <!-- RULE 8: the open bracket itself is inert too -->
+        <regex pattern="inert: waitsOnOpenBracket &amp;&amp; index &lt; tape\.chips\.length - 1," dotAll="true" id="calculator_state.chips.open_bracket_inert_too">
+            <mutation text="inert: waitsOnOpenBracket,"/>
+        </regex>
+
+        <!-- RULE 9: the chips are inert while no bracket is open -->
+        <regex pattern="final waitsOnOpenBracket = tape\.openBracket != null;" dotAll="true" id="calculator_state.chips.inert_without_open_bracket">
+            <mutation text="final waitsOnOpenBracket = tape.openBracket == null;"/>
+        </regex>
+
+        <!-- RULE 10: the open and the closed faces are swapped -->
+        <regex pattern="BracketChip\(isOpen: true\) => CoreCalculatorChipType\.bracketOpen,\s*BracketChip\(\) => CoreCalculatorChipType\.bracketClosed," dotAll="true" id="calculator_state.chips.bracket_faces_swapped">
+            <mutation text="BracketChip(isOpen: true) => CoreCalculatorChipType.bracketClosed, BracketChip() => CoreCalculatorChipType.bracketOpen,"/>
+        </regex>
+
+        <!-- RULE 11: a bracket chip holds nothing -->
+        <regex pattern="BracketChip\(:final inner\) => inner\.map\(_valueTextOf\)\.join\(\)," dotAll="true" id="calculator_state.chips.bracket_holds_nothing">
+            <mutation text="BracketChip() => '',"/>
+        </regex>
+
+        <!-- RULE 12: a bracket has no factor -->
+        <regex pattern="BracketChip\(:final operator\?\) => operatorIcons\[operator\]," dotAll="true" id="calculator_state.chips.bracket_without_factor">
+            <mutation text="BracketChip() => null,"/>
+        </regex>
+
+        <!-- RULE 13: + is drawn as − -->
+        <regex pattern="Operator\.add: CoreIcons\.addOperator," dotAll="true" id="calculator_state.factor.add_as_subtract">
+            <mutation text="Operator.add: CoreIcons.subtractOperator,"/>
+        </regex>
+
+        <!-- RULE 14: − is drawn as + -->
+        <regex pattern="Operator\.subtract: CoreIcons\.subtractOperator," dotAll="true" id="calculator_state.factor.subtract_as_add">
+            <mutation text="Operator.subtract: CoreIcons.addOperator,"/>
+        </regex>
+
+        <!-- RULE 15: × is drawn as ÷ -->
+        <regex pattern="Operator\.multiply: CoreIcons\.multiplyOperator," dotAll="true" id="calculator_state.factor.multiply_as_divide">
+            <mutation text="Operator.multiply: CoreIcons.divide,"/>
+        </regex>
+
+        <!-- RULE 16: ÷ is drawn as × -->
+        <regex pattern="Operator\.divide: CoreIcons\.divide," dotAll="true" id="calculator_state.factor.divide_as_multiply">
+            <mutation text="Operator.divide: CoreIcons.multiplyOperator,"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="calculator_bloc" expected-return="0">flutter test test/features/calculator/units/blocs/calculator_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

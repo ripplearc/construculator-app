@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR LABEL FORMATTER: THE BRACKET CHIP'S WORDS (T1a, CA-1092) -->
+    <!-- Targets: the screen-reader label a bracket chip is given, since the
+         chip's own would read the same for an open and a closed bracket. -->
+
+    <files>
+        <file>lib/features/calculator/presentation/formatters/calculator_label_formatter.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: an open bracket is read as a closed one -->
+        <regex pattern="'\$\{l10n\.calculatorBracketOpenSemantics\(chip\.value \?\? ''\)\}'," dotAll="true" id="calculator_label_formatter.chips.open_read_as_closed">
+            <mutation text="'${l10n.calculatorBracketClosedSemantics(chip.value ?? '')}',"/>
+        </regex>
+
+        <!-- RULE 2: a closed bracket is read as an open one -->
+        <regex pattern="'\$\{l10n\.calculatorBracketClosedSemantics\(chip\.value \?\? ''\)\}'," dotAll="true" id="calculator_label_formatter.chips.closed_read_as_open">
+            <mutation text="'${l10n.calculatorBracketOpenSemantics(chip.value ?? '')}',"/>
+        </regex>
+
+        <!-- RULE 3: every other chip loses the label it was given -->
+        <regex pattern="_ => chip\.semanticsLabel," dotAll="true" id="calculator_label_formatter.chips.drop_given_label">
+            <mutation text="_ => null,"/>
+        </regex>
+
+        <!-- RULE 3a: a bracket is read after the first operator its factor
+             is not -->
+        <regex pattern="if \(value == factor\) return key\.symbol;" dotAll="true" id="calculator_label_formatter.lead.wrong_operator">
+            <mutation text="if (value != factor) return key.symbol;"/>
+        </regex>
+
+        <!-- RULE 3b: a bracket that starts the chain is read after + -->
+        <regex pattern="if \(value == factor\) return key\.symbol;\s*\}\s*return '';" dotAll="true" id="calculator_label_formatter.lead.silent_as_add">
+            <mutation text="if (value == factor) return key.symbol; } return Operator.add.symbol;"/>
+        </regex>
+
+    </rules>
+
+    <commands>
+        <command group="calculator_label_formatter" expected-return="0">flutter test test/features/calculator/units/formatters/calculator_label_formatter_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

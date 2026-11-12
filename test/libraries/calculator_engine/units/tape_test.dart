@@ -576,6 +576,37 @@ void main() {
         expect(landed(press(closed, '=')), '17');
       });
 
+      test('a waiting chip "…" is a value in progress: the first ✕ clears it '
+          'and the operator before it waits again, or the tape is as it was '
+          'before the key; a second ✕ is refused (Section 1.1; Section 5, '
+          '"Closes the calculator"; CA-1092 R1)', () {
+        const refused = TapeRefused(TapeRefusal.nothingBeingTyped);
+        final waiting = press(const Tape(), '2 2 ft + [Length]');
+        expect(texts(waiting), ['22ft', 'Length']);
+        final cleared = changed(waiting.clearActive());
+        expect(texts(cleared), ['22ft', '']);
+        expect(
+          cleared.active,
+          isA<ValueChip>()
+              .having((chip) => chip.operator, 'operator', Operator.add)
+              .having((chip) => chip.key, 'key', isNull)
+              .having((chip) => chip.entry.isEmpty, 'empty', isTrue),
+        );
+        expect(cleared.clearActive(), refused);
+        expect(texts(press(cleared, '3 ft')), ['22ft', '3ft']);
+        expect(
+          changed(press(const Tape(), '[Length]').clearActive()),
+          const Tape(),
+        );
+        final named = changed(
+          press(const Tape(), '[Length] 2 2 ft [Width]').clearActive(),
+        );
+        expect(texts(named), ['Length22ft']);
+        expect(named.active, isNull);
+        expect(named.clearActive(), refused);
+        expect(texts(press(named, '5 ft')), ['Length22ft', '5ft']);
+      });
+
       test('✕ with nothing being typed is refused and changes nothing: an '
           'empty tape, a finished tape, the empty chip an operator opened, '
           'the divisor ÷ 0 reopened', () {
@@ -588,7 +619,11 @@ void main() {
         expect(press(const Tape(), '2 2 ft +').clearActive(), refused);
         final opened = changed(press(const Tape(), '2 +').pressBracket());
         final plus = press(opened, '3 +');
-        expect(plus.clearActive(), refused);
+        expect(
+          plus.clearActive(),
+          const TapeRefused(TapeRefusal.nothingTypedInGroup),
+          reason: 'inside a group the refusal names the group',
+        );
         expect(
           landed(press(changed(press(plus, '4').pressBracket()), '=')),
           '9',
@@ -601,15 +636,12 @@ void main() {
         expect(landed(press(reopened, '2 =')), '2.5');
       });
 
-      test('✕ in a bracket with nothing typed in it is refused with its own '
-          'reason, before anything is typed and again once ✕ emptied the '
-          'chip inside, while a group that holds a value says nothing is '
-          'being typed (walkthrough 12.9)', () {
+      test('✕ in a bracket with nothing typed in it is refused with the '
+          'group\'s own reason, whether the group is empty or ✕ emptied the '
+          'chip inside (Section 7; decision tree row 166)', () {
+        const refused = TapeRefused(TapeRefusal.nothingTypedInGroup);
         final opened = changed(press(const Tape(), '2 +').pressBracket());
-        expect(
-          opened.clearActive(),
-          const TapeRefused(TapeRefusal.nothingTypedInGroup),
-        );
+        expect(opened.clearActive(), refused);
         final emptied = changed(press(opened, '3').clearActive());
         expect(
           (emptied.chips.last as BracketChip).inner.single,
@@ -617,14 +649,13 @@ void main() {
               .having((chip) => chip.entry.isEmpty, 'empty', isTrue)
               .having((chip) => chip.isActive, 'active', isTrue),
         );
+        expect(emptied.clearActive(), refused);
         expect(
-          emptied.clearActive(),
-          const TapeRefused(TapeRefusal.nothingTypedInGroup),
-        );
-        final waiting = changed(press(opened, '3').pressOperator(Operator.add));
-        expect(
-          waiting.clearActive(),
-          const TapeRefused(TapeRefusal.nothingBeingTyped),
+          press(opened, '3 +').clearActive(),
+          refused,
+          reason:
+              '✕ on the empty chip an operator opened inside is the same '
+              'refusal, and the group stays',
         );
       });
 
