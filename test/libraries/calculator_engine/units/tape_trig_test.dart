@@ -234,6 +234,24 @@ void main() {
           const TapeEntryRefused(EntryRefusal.fractionNeedsUnit),
         );
       });
+
+      test('a trig answer times a length under one tick '
+          'reads Under 1/16in, never Too small and never 0ft 0in', () {
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        expect(
+          landed(press(const Tape(), 'SIN 1 × 1 / 6 4 in =')),
+          'Under 1/16in',
+        );
+        expect(
+          landed(press(const Tape(), 'SIN 3 0 × 1 / 2 5 6 in =')),
+          'Under 1/16in',
+        );
+        expect(
+          landed(press(const Tape(), '1 / 6 4 in × 0 . 5 =')),
+          'Under 1/16in',
+        );
+      });
     });
 
     group('prefix: the key before its number', () {

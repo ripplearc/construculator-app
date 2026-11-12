@@ -262,6 +262,76 @@ void main() {
       });
     });
 
+    group('CA-1339: an exact fraction that outgrows the store', () {
+      test('a chain of small fractions still answers: 65085/555951ft + '
+          '81712/3171mm ÷ 48011 = reads Under 1/16in', () {
+        final tape = press(
+          const Tape(),
+          '6 5 0 8 5 / 5 5 5 9 5 1 ft + 8 1 7 1 2 / 3 1 7 1 mm ÷ 4 8 0 1 1 =',
+        );
+        expect(
+          tape.chips.last,
+          isA<ResultChip>().having(
+            (chip) => formatter.format(chip.value),
+            'text',
+            'Under 1/16in',
+          ),
+        );
+      });
+
+      test('a real length too small to keep lands Too small, not Too large: '
+          '1in ÷ 9999999 three times', () {
+        final tape = press(
+          const Tape(),
+          '1 in ÷ 9 9 9 9 9 9 9 ÷ 9 9 9 9 9 9 9 ÷ 9 9 9 9 9 9 9 =',
+        );
+        expect(tape.chips.last, const ErrorChip(CalculationError.tooSmall));
+      });
+
+      test('19999999 ft + 1/9999973 in − 19999999 ft = reads Too small, never '
+          '0ft 0in, and a tiny typed length is Too small at the first step '
+          'that uses it', () {
+        const tooSmall = ErrorChip(CalculationError.tooSmall);
+        String landed(Tape tape) =>
+            formatter.format((tape.chips.last as ResultChip).value);
+        final walked = press(
+          const Tape(),
+          '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in − 1 9 9 9 9 9 9 9 ft =',
+        );
+        expect(walked.chips.last, tooSmall);
+        final summed = press(
+          const Tape(),
+          '1 9 9 9 9 9 9 9 ft + 1 / 9 9 9 9 9 7 3 in =',
+        );
+        expect(landed(summed), '19999999ft 0in');
+        expect(
+          press(const Tape(), '1 / 9 9 9 9 9 7 3 in × 1 =').chips.last,
+          tooSmall,
+        );
+        expect(
+          press(
+            const Tape(),
+            '1 in ÷ 9 9 9 9 9 7 3 + 1 9 9 9 9 9 9 9 ft − 1 9 9 9 9 9 9 9 ft =',
+          ).chips.last,
+          tooSmall,
+        );
+        expect(landed(press(const Tape(), '5 ft − 5 ft =')), '0ft 0in');
+      });
+
+      test('a length typed with fifteen digits computes exactly, as the trade '
+          'compound a scaled length is written in, and a sixteenth digit is '
+          'refused as it is typed', () {
+        expect(
+          press(const Tape(), '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4').typeDigit('5'),
+          const TapeEntryRefused(EntryRefusal.tooManyDigits),
+        );
+        expect(
+          calc(press(const Tape(), '1 . 1 2 3 4 5 6 7 8 9 0 1 2 3 4 ft × 1')),
+          '1ft 1-1/2in',
+        );
+      });
+    });
+
     group('errors', () {
       test('78lbs ÷ 12ft = lands a Dimension Error chip (S18)', () {
         final tape = press(const Tape(), '7 8 lbs ÷ 1 2 ft');
