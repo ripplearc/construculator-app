@@ -486,4 +486,62 @@ void main() {
     expect(display.isTyping, isFalse);
     expect(display.value, '12');
   });
+
+  testWidgets('a strip note stays on the screen while a length is named '
+      'after the pitch, because it empties the conversions row too '
+      '(Sections 1.8 and 5.4)', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_nine',
+      'calc_key_five',
+      'calc_key_Run',
+      'calc_key_one',
+      'calc_key_zero',
+      'calc_key_feet',
+    ]) {
+      await press(tester, key);
+    }
+
+    final strip = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(strip.aiSuggestions, isEmpty);
+    expect(strip.conversionSuggestions, isEmpty);
+    expect(find.text(l10n.calculatorNotePitchUnderRightAngle), findsOneWidget);
+    expect(find.text('120in'), findsNothing);
+  });
+
+  testWidgets('a strip note takes the place of the suggestions and of the '
+      'placeholder, from l10n', (tester) async {
+    await pumpPage(tester);
+    final l10n = l10nOf(tester);
+    for (final key in const [
+      'calc_key_Pitch',
+      'calc_key_nine',
+      'calc_key_five',
+    ]) {
+      await press(tester, key);
+    }
+
+    final strip = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(strip.aiSuggestions, isEmpty);
+    expect(
+      strip.suggestionAreaPlaceholder,
+      l10n.calculatorNotePitchUnderRightAngle,
+    );
+    expect(find.text(l10n.calculatorNotePitchUnderRightAngle), findsOneWidget);
+
+    await press(tester, 'calc_key_clearAll');
+
+    expect(
+      tester
+          .widget<CoreSuggestionArea>(find.byType(CoreSuggestionArea))
+          .suggestionAreaPlaceholder,
+      l10n.calculatorStripPlaceholder,
+    );
+  });
 }

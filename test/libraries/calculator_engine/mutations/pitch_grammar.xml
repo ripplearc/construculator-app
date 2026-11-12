@@ -72,8 +72,21 @@
 
         <!-- RULE 5: the refusal never fires, or misses the slope's edge
              (the pitch edges are deterministic_rules.pitch.out_of_range) -->
-        <regex pattern="if \(_pitchAngleOf\(value\) case final pitch\? when !_isInRange\(pitch\)\) \{\s*return RuleRefusal\.pitchOutOfRange;\s*\}" dotAll="true" id="pitch.refusal.pitch_never">
+        <regex pattern="if \(namedValues\[DimensionKey\.slope\.id\] case Scalar\(\s*:final value,\s*\) when value &gt; 0\) \{\s*return _inRange\(" dotAll="true" id="pitch.slope.flat_grade_reads_as_a_pitch">
+            <mutation text="if (namedValues[DimensionKey.slope.id] case Scalar(:final value)) { return _inRange("/>
+            <mutation text="if (namedValues[DimensionKey.slope.id] case Scalar(:final value) when value &gt;= 0) { return _inRange("/>
+        </regex>
+        <regex pattern="if \(!_isInRange\(pitch\)\) return RuleRefusal\.pitchOutOfRange;" dotAll="true" id="pitch.refusal.pitch_never">
             <mutation text=""/>
+        </regex>
+        <regex pattern="if \(pitch\.degrees == 0 &amp;&amp; _namesARiseAlone\(namedValues\)\) \{" dotAll="true" id="pitch.refusal.flat_with_rise">
+            <mutation text="if (false) {"/>
+            <mutation text="if (_namesARiseAlone(namedValues)) {"/>
+            <mutation text="if (pitch.degrees == 0) {"/>
+        </regex>
+        <regex pattern="namedValues\[DimensionKey\.run\.id\] is! Length &amp;&amp;\s*namedValues\[DimensionKey\.diagonal\.id\] is! Length;" dotAll="true" id="pitch.refusal.flat_ignores_run_or_diag">
+            <mutation text="namedValues[DimensionKey.run.id] is! Length;"/>
+            <mutation text="namedValues[DimensionKey.diagonal.id] is! Length;"/>
         </regex>
         <regex pattern="if \(namedValues\[DimensionKey\.slope\.id\] case Scalar\(\s*:final value,\s*\) when value &lt;= 0\) \{\s*return RuleRefusal\.slopeOutOfRange;\s*\}" dotAll="true" id="pitch.refusal.slope">
             <mutation text=""/>

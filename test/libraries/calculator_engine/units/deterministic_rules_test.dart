@@ -907,13 +907,14 @@ void main() {
         }
       });
 
-      test('a pitch of 0° or less, or of 90° or more, answers nothing', () {
+      test('a pitch below 0°, or of 90° or more, answers nothing, as does a '
+          'flat pitch with a Rise alone; with a Run it answers Rise 0ft', () {
         const outOfRange = <Map<String, Quantity>>[
           {'Pitch': Scalar(90), 'Run': feet12},
           {'Pitch': Scalar(0), 'Rise': feet6},
           {'Pitch': Scalar(100), 'Diag': feet22},
           {'Pitch': Scalar(-5), 'Run': feet10},
-          {'Pitch': Scalar(0), 'Run': feet10},
+          {'Pitch': Scalar(-0.01), 'Run': feet10},
           {'Pitch': Scalar(90)},
           {'Slope': Scalar(0)},
           {'Slope': Scalar(-3), 'Run': feet10},
@@ -930,6 +931,14 @@ void main() {
             rules.answersFor({'Pitch': const Scalar(89.9), 'Run': feet10}),
           ).first,
           'Rise: 5,729.57ft',
+        );
+        expect(
+          texts(rules.answersFor({'Pitch': const Scalar(0), 'Run': feet10})),
+          ['Rise: 0ft', 'Diagonal: 10ft'],
+        );
+        expect(
+          texts(rules.answersFor({'Pitch': const Scalar(0), 'Diag': feet10})),
+          ['Rise: 0ft', 'Run: 10ft'],
         );
       });
 

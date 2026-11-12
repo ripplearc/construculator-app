@@ -71,9 +71,14 @@ enum PolygonSpan {
 /// strip shows the reason instead of its placeholder, and keeps showing it
 /// when a second dimension is named on top of the value (S89).
 enum RuleRefusal {
-  /// Pitch holds 90° or more, or 0° or less: at 90° the wall is vertical,
-  /// with no rise per 12in of run, and at 0° there is no slope at all.
+  /// Pitch holds 90° or more, or below 0°: at 90° the wall is vertical,
+  /// with no rise per 12in of run, and below 0° the roof drops below grade.
   pitchOutOfRange,
+
+  /// Pitch holds 0° with a Rise named and no Run or Diag to solve from: a
+  /// flat roof has no run (open item Q57, decided 2026-10-15). With a Run
+  /// or a Diagonal the same pitch answers Rise 0ft instead.
+  flatPitchHasNoRun,
 
   /// Slope holds 0% or less.
   slopeOutOfRange,
@@ -123,9 +128,11 @@ final class Answer extends Equatable {
 /// its own offers all three spellings, degrees first (Section 8, "Pitch
 /// alone"), and a bare number under Slope is a percent grade that reads as
 /// a pitch, offers its other two spellings and solves Rise with Run (Section
-/// 8, "Slope"). A pitch of 0° or less, or of 90° or more, solves nothing and
+/// 8, "Slope"). A pitch below 0°, or of 90° or more, solves nothing and
 /// offers nothing (Section 5.1, "A pitch has to be under 90°": the strip
-/// says why), and a solved leg past [ChainArithmetic.maxTicks] is left out
+/// says why); a flat pitch of 0° answers Rise 0ft with a Run or a Diagonal
+/// and nothing with a Rise alone, since a flat roof has no run (open item
+/// Q57, decided 2026-10-15 and confirmed 2026-11-01), and a solved leg past [ChainArithmetic.maxTicks] is left out
 /// where the prototype would show it. Height with a Radius or a Diameter
 /// gives the column and the cone (Section 8, "Column and cone": π r² h, and
 /// a third of it), leading the circle facts, and reads the Diameter when
@@ -268,13 +275,17 @@ class DeterministicRules extends Equatable {
   };
 
   /// Why the rules answer nothing for the pitch or the slope in
-  /// [namedValues], or `null` when both are in range or absent: a pitch of
-  /// 0° or less or of 90° or more, a slope of 0% or less (Section 5.4). The
-  /// reason survives a Diag or any other value named on top (S89).
+  /// [namedValues], or `null` when both are in range or absent: a pitch
+  /// below 0° or of 90° or more, a flat pitch with a Rise alone, a slope of
+  /// 0% or less (Section 5.4). The reason survives a Diag or any other
+  /// value named on top (S89).
   RuleRefusal? refusalFor(Map<String, Quantity> namedValues) {
     if (namedValues[DimensionKey.pitch.id] case final value?) {
-      if (_pitchAngleOf(value) case final pitch? when !_isInRange(pitch)) {
-        return RuleRefusal.pitchOutOfRange;
+      if (_pitchAngleOf(value) case final pitch?) {
+        if (!_isInRange(pitch)) return RuleRefusal.pitchOutOfRange;
+        if (pitch.degrees == 0 && _namesARiseAlone(namedValues)) {
+          return RuleRefusal.flatPitchHasNoRun;
+        }
       }
     }
     if (namedValues[DimensionKey.slope.id] case Scalar(
@@ -561,7 +572,9 @@ class DeterministicRules extends Equatable {
       null => null,
     };
     if (pitch != null) return _inRange(pitch, DimensionKey.pitch);
-    if (namedValues[DimensionKey.slope.id] case Scalar(:final value)) {
+    if (namedValues[DimensionKey.slope.id] case Scalar(
+      :final value,
+    ) when value > 0) {
       return _inRange(
         Angle.ofRiseOverRun(
           value / QuantityFormatter.percent,
@@ -585,7 +598,12 @@ class DeterministicRules extends Equatable {
       _isInRange(pitch) ? (pitch, key) : null;
 
   bool _isInRange(Angle pitch) =>
-      pitch.degrees > 0 && pitch.degrees < rightAngle;
+      pitch.degrees >= 0 && pitch.degrees < rightAngle;
+
+  bool _namesARiseAlone(Map<String, Quantity> namedValues) =>
+      namedValues[DimensionKey.rise.id] is Length &&
+      namedValues[DimensionKey.run.id] is! Length &&
+      namedValues[DimensionKey.diagonal.id] is! Length;
 
   List<Answer> _triangle(
     Map<DimensionKey, Length> lengths,

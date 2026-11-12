@@ -249,7 +249,7 @@ class CalculatorState extends Equatable {
   /// ÷ 0 before and after its =, doc line 771) and while a bracket is open
   /// (Section 7: no preview until the group closes).
   List<CalculatorSuggestion> get suggestions {
-    if (_stripIsSilent) return const [];
+    if (_stripIsSilent || stripNote != null) return const [];
     final trigAnswer = switch (tape.trigAnswer) {
       final answer? => _answer(answer.key, answer.value),
       null => null,
@@ -286,9 +286,11 @@ class CalculatorState extends Equatable {
   /// except a pitch: D:M:S
   /// is not a pitch reading (Section 8), and row 1 lists its other two
   /// readings. Empty while the chain holds an error and while a bracket is
-  /// open, as row 1 is.
+  /// open, as row 1 is, and while a note shows, since the note takes the
+  /// place of both rows (Section 1.8) and the display draws it only when
+  /// the strip has nothing else to show.
   List<CalculatorSuggestion> get conversions {
-    if (_stripIsSilent) return const [];
+    if (_stripIsSilent || stripNote != null) return const [];
     final value = switch (_chipRead) {
       ValueChip(key: PlainNumberKeys.pitch) => null,
       final ValueChip chip => switch (chip.value(tape.parser)) {
@@ -355,6 +357,46 @@ class CalculatorState extends Equatable {
     }
     return false;
   }
+
+  /// The note that takes the place of the suggestions (Section 1.8), or
+  /// `null`: a warning first — a pitch or a slope the rules cannot use
+  /// (Section 5.4), a prefix trig chip its function cannot answer — then
+  /// the D:M:S key that changed nothing on a pitch answer, which the next
+  /// key closes.
+  CalculatorStripNote? get stripNote {
+    if (_stripIsSilent) return null;
+    switch (const DeterministicRules().refusalFor(tape.namedValues)) {
+      case RuleRefusal.pitchOutOfRange:
+        return CalculatorPitchOutOfRangeNote(
+          isAtLeastARightAngle: _pitchDegrees >= DeterministicRules.rightAngle,
+        );
+      case RuleRefusal.flatPitchHasNoRun:
+        return const CalculatorFlatPitchHasNoRunNote();
+      case RuleRefusal.slopeOutOfRange:
+        return const CalculatorSlopeOutOfRangeNote();
+      case null:
+        break;
+    }
+    if (tape.beingTyped case ValueChip(
+      asksAnUndefinedTrig: true,
+      :final trigFunction?,
+    )) {
+      return CalculatorTrigCannotAnswerNote(trigFunction);
+    }
+    if (refusal == const TapeRefused(TapeRefusal.pitchHasNoDms)) {
+      return const CalculatorPitchHasNoDmsNote();
+    }
+    return null;
+  }
+
+  double get _pitchDegrees => switch (tape.namedValues[DimensionKey.pitch.id]) {
+    Angle(:final degrees) => degrees,
+    Scalar(:final value) => value,
+    final Length rise => Angle.ofRiseOverRun(
+      rise.preciseTicks / Length.ticksPerInch / Angle.inchesPerFootOfRun,
+    ).degrees,
+    _ => 0,
+  };
 
   CalculatorSuggestion _answer(String key, Quantity value) =>
       CalculatorSuggestion(
