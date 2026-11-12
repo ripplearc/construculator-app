@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -19,6 +21,7 @@ import '../../../../utils/fake_app_bootstrap_factory.dart';
 void main() {
   group('EstimateSummaryBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    final fakePhoneDatabase = FakeCostEstimatesDatabase();
 
     const estimateId = 'estimate-1';
 
@@ -27,16 +30,19 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
       );
       Modular.init(EstimationModule(bootstrap));
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });
 
     tearDownAll(() {
       Modular.destroy();
+      fakePhoneDatabase.dispose();
     });
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakePhoneDatabase.reset();
     });
 
     void seedEstimate() {

@@ -146,6 +146,13 @@
         <regex pattern="\(await _wrapper\.getAll\(_buildSelectByIdSql\(\), \[id\]\)\)\.isNotEmpty" dotAll="true" id="ds.delete.row_check_inverted">
             <mutation text="(await _wrapper.getAll(_buildSelectByIdSql(), [id])).isEmpty"/>
         </regex>
+        <!-- loadEstimationById: a missing row is null, a found row is returned -->
+        <regex pattern="return rows\.isEmpty \? null : CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.load.return_nothing">
+            <mutation text="return null;"/>
+        </regex>
+        <regex pattern="return rows\.isEmpty \? null : CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.load.invert_empty_check">
+            <mutation text="return rows.isNotEmpty ? null : CostEstimateDto.fromRow(rows.first);"/>
+        </regex>
     </rules>
 
     <commands>

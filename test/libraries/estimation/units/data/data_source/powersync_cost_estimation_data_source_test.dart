@@ -394,6 +394,50 @@ void main() {
         );
       });
     });
+    group('loadEstimationById', () {
+      const byIdSql = 'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1';
+
+      test('returns the row the phone holds', () async {
+        fakeWrapper.stubGetAll(byIdSql, [sqliteRow(id: 'est-1')]);
+
+        final loaded = await dataSource.loadEstimationById('est-1');
+
+        expect(loaded?.id, 'est-1');
+        expect(fakeWrapper.getAllCalls.single.parameters, ['est-1']);
+      });
+
+      test('decodes is_locked integer encoding to a bool DTO', () async {
+        fakeWrapper.stubGetAll(byIdSql, [sqliteRow(id: 'est-1', locked: true)]);
+
+        final loaded = await dataSource.loadEstimationById('est-1');
+
+        expect(loaded?.isLocked, isTrue);
+      });
+
+      test('returns null when the phone has no row with the id', () async {
+        expect(await dataSource.loadEstimationById('missing'), isNull);
+      });
+
+      test('reads once and does not activate the sync stream', () async {
+        fakeWrapper.stubGetAll(byIdSql, [sqliteRow(id: 'est-1')]);
+
+        await dataSource.loadEstimationById('est-1');
+
+        expect(fakeWrapper.syncStreamCalls, isEmpty);
+        expect(fakeWrapper.watchCalls, isEmpty);
+      });
+
+      test('rethrows read errors', () async {
+        final error = Exception('read failed');
+        fakeWrapper.getAllError = error;
+
+        await expectLater(
+          dataSource.loadEstimationById('est-1'),
+          throwsA(same(error)),
+        );
+      });
+    });
+
     group('writes', () {
       const selectByIdSql = 'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1';
 
