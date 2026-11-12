@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,10 +28,11 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// The name the dialog shows for [state], empty when nothing was named yet.
   final String Function(S state) itemNameOf;
 
-  /// Whether [state] edits a line already on the estimate. The question then
-  /// reads "Discard changes?" and says the line stays in the estimate. Left
-  /// out, the question is the one for a line that was never added.
-  final bool Function(S state)? isEditingExistingLine;
+  /// The total the line [state] edits has on the estimate, or null for a line
+  /// that was never added. A total makes the question read "Discard changes?"
+  /// and say the line stays at that total. Left out, the question is the one
+  /// for a line that was never added.
+  final double? Function(S state)? savedLineTotalOf;
 
   final Widget child;
 
@@ -38,7 +40,7 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
     super.key,
     required this.hasUnsavedChanges,
     required this.itemNameOf,
-    this.isEditingExistingLine,
+    this.savedLineTotalOf,
     required this.child,
   });
 
@@ -119,7 +121,8 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
     final l10n = context.l10n;
     final state = context.read<B>().state;
     final name = widget.itemNameOf(state).trim();
-    final isEditing = widget.isEditingExistingLine?.call(state) ?? false;
+    final savedTotal = widget.savedLineTotalOf?.call(state);
+    final isEditing = savedTotal != null;
     final keepEditing = await ConfirmationDialog.show(
       context,
       title: isEditing
@@ -127,8 +130,13 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
           : l10n.discardLineDialogTitle,
       body: TextSpan(
         text: switch ((isEditing, name.isEmpty)) {
-          (true, true) => l10n.discardChangesDialogBodyUnnamed,
-          (true, false) => l10n.discardChangesDialogBody(name),
+          (true, true) => l10n.discardChangesDialogBodyUnnamed(
+            DisplayFormatter.formatCurrency(savedTotal),
+          ),
+          (true, false) => l10n.discardChangesDialogBody(
+            name,
+            DisplayFormatter.formatCurrency(savedTotal),
+          ),
           (false, true) => l10n.discardLineDialogBodyUnnamed,
           (false, false) => l10n.discardLineDialogBody(name),
         },
