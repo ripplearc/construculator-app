@@ -12,6 +12,7 @@ part 'dependent_key_id.dart';
 part 'calculator_state.dart';
 part 'calculator_strip_note.dart';
 part 'calculator_suggestion.dart';
+part 'calculator_toast.dart';
 
 /// Presses the keyboard's keys on the engine's tape and keeps the tape as
 /// its state (UX Design Doc Sections 1.1, 1.3 and 4; CA-1087, S1a).
@@ -56,6 +57,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     on<CalculatorGroupsReordered>(_onGroupsReordered);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
+    on<CalculatorToastClosed>(_onToastClosed);
   }
 
   static const Map<String, Unit> _unitKeys = {
@@ -146,6 +148,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         state.copyWith(
           notice: () => null,
           refusal: () => null,
+          removedResults: const [],
           closesCalculator: true,
         ),
       );
@@ -273,25 +276,47 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
 
   void _fold(Emitter<CalculatorState> emit, TapeOutcome outcome) {
     switch (outcome) {
-      case TapeChanged(:final tape, :final notice):
-        emit(
+      case TapeChanged(:final tape, :final notice, :final removed):
+        _emitCountingToast(
+          emit,
           state.copyWith(
             tape: tape,
             notice: () => notice,
             refusal: () => null,
             closesCalculator: false,
+            removedResults: removed,
+            toastClosed: false,
           ),
         );
       case final TapeOutcome refusal:
-        emit(
+        _emitCountingToast(
+          emit,
           state.copyWith(
             notice: () => null,
             refusal: () => refusal,
             closesCalculator: false,
+            removedResults: const [],
+            toastClosed: false,
           ),
         );
     }
   }
+
+  void _emitCountingToast(
+    Emitter<CalculatorState> emit,
+    CalculatorState next,
+  ) => emit(
+    // the same guard raised twice over is a new state twice over, so the
+    // page announces it again (rule 4.12)
+    next.toast == null
+        ? next
+        : next.copyWith(toastsRaised: next.toastsRaised + 1),
+  );
+
+  void _onToastClosed(
+    CalculatorToastClosed event,
+    Emitter<CalculatorState> emit,
+  ) => emit(state.copyWith(toastClosed: true));
 
   CalculatorState _cleared() => CalculatorState(
     tape: Tape(preferences: state.tape.preferences),

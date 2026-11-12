@@ -362,6 +362,29 @@ class CalculatorLabelFormatter {
     return '';
   }
 
+  /// The title of [toast], or `null` for a toast that is one sentence.
+  String? toastTitle(CalculatorToast toast) => switch (toast) {
+    CalculatorFinishValueToast() => l10n.calculatorToastFinishValueTitle,
+    CalculatorResultRemovedToast() => null,
+  };
+
+  /// The body of [toast], in the words of UX Design Doc Section 5.
+  String toastBody(CalculatorToast toast) => switch (toast) {
+    CalculatorFinishValueToast(value: '') => l10n.calculatorToastValueEmptyBody,
+    CalculatorFinishValueToast(:final value) =>
+      l10n.calculatorToastFinishValueBody(value),
+    CalculatorResultRemovedToast(keys: [final key]) =>
+      l10n.calculatorToastResultRemoved(displayLabel(key)),
+    CalculatorResultRemovedToast(keys: [final first, final second]) =>
+      l10n.calculatorToastResultsRemovedBoth(
+        displayLabel(first),
+        displayLabel(second),
+      ),
+    CalculatorResultRemovedToast(keys: [final first, ...final more]) =>
+      l10n.calculatorToastResultsRemovedMore(displayLabel(first), more.length),
+    CalculatorResultRemovedToast(keys: []) => '',
+  };
+
   String _untranslated(String id) {
     assert(false, 'No localized label for calculator id "$id"');
     return id;

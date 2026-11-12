@@ -65,6 +65,22 @@ class CalculatorState extends Equatable {
   /// and [refusal].
   final bool closesCalculator;
 
+  /// The ids of the result chips the last key's edit removed, in tape
+  /// order, for the message of Section 5.5 ("Arcsine removed"); empty
+  /// otherwise, and cleared by the next key like [notice].
+  final List<String> removedResults;
+
+  /// How many times a key has raised a message ([toast]) since the screen
+  /// opened. The same guard raised twice leaves the same [toast] in the
+  /// state twice over, so the page watches this count to announce it again
+  /// (rule 4.12: no key is ever silently dead).
+  final int toastsRaised;
+
+  /// Whether the message's own ✕ closed it. The next keypad key clears it
+  /// with [toast] (Section 5: a red Alert closes on its ✕ or the next key,
+  /// never by a timer), so the page draws [toast] while this is false.
+  final bool toastClosed;
+
   /// Creates a [CalculatorState].
   const CalculatorState({
     this.tape = const Tape(),
@@ -73,6 +89,9 @@ class CalculatorState extends Equatable {
     this.notice,
     this.refusal,
     this.closesCalculator = false,
+    this.removedResults = const [],
+    this.toastsRaised = 0,
+    this.toastClosed = false,
   });
 
   /// An empty tape, the first group up, nothing said.
@@ -88,6 +107,9 @@ class CalculatorState extends Equatable {
     TapeNotice? Function()? notice,
     TapeOutcome? Function()? refusal,
     bool? closesCalculator,
+    List<String>? removedResults,
+    int? toastsRaised,
+    bool? toastClosed,
   }) => CalculatorState(
     tape: tape ?? this.tape,
     currentGroupIndex: currentGroupIndex ?? this.currentGroupIndex,
@@ -95,6 +117,9 @@ class CalculatorState extends Equatable {
     notice: notice != null ? notice() : this.notice,
     refusal: refusal != null ? refusal() : this.refusal,
     closesCalculator: closesCalculator ?? this.closesCalculator,
+    removedResults: removedResults ?? this.removedResults,
+    toastsRaised: toastsRaised ?? this.toastsRaised,
+    toastClosed: toastClosed ?? this.toastClosed,
   );
 
   /// The System of units the tape renders by, as the keyboard names it.
@@ -523,5 +548,25 @@ class CalculatorState extends Equatable {
     notice,
     refusal,
     closesCalculator,
+    removedResults,
+    toastsRaised,
+    toastClosed,
   ];
+
+  /// What the last key left to say in a toast (Section 5), or `null`: the
+  /// result an edit removed; the editing guard, with the incomplete number
+  /// as the value row shows it, which is nothing for an empty chip. Any
+  /// other refusal has no toast here yet; a result, an error and a bracket
+  /// chip take no tap on the page, so the tape's refusal of one never
+  /// reaches a toast.
+  CalculatorToast? get toast {
+    if (removedResults.isNotEmpty) {
+      return CalculatorResultRemovedToast(keys: removedResults);
+    }
+    return switch (refusal) {
+      TapeRefused(reason: TapeRefusal.finishThisValueFirst) =>
+        CalculatorFinishValueToast(value: valueText),
+      _ => null,
+    };
+  }
 }

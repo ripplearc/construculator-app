@@ -358,6 +358,41 @@ void main() {
     );
 
     testWidgets(
+      'the close button of the editing guard\'s toast is labelled and meets '
+      'the tap target and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        // Each theme gets a tree of its own, keyed by its brightness, so the
+        // bloc and its Alert start afresh with it.
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          for (final key in const [
+            'calc_key_Length',
+            'calc_key_one',
+            'calc_key_eight',
+            'calc_key_Width',
+          ]) {
+            await tester.tap(find.byKey(ValueKey(key)));
+            await tester.pump();
+          }
+          await tester.pump(const Duration(seconds: 1));
+
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            find.byKey(const Key('toast_close_button')),
+            checkTapTargetSize: false,
+          );
+        }
+      },
+    );
+
+    testWidgets(
       'a finished chip says that a tap edits it, the chip being typed that '
       'a tap finishes the edit, and a result chip says nothing',
       (tester) async {
