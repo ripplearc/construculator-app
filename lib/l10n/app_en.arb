@@ -3632,5 +3632,15 @@
         "type": "String"
       }
     }
+  },
+  "estimateTotalLabel": "Total",
+  "@estimateTotalLabel": {
+    "description": "Label of the estimate total in the bar at the bottom of the estimate screen",
+    "context": "CUJ 3 screens 2, 3 and 14, and CUJ 4 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "addCostButton": "Add cost",
+  "@addCostButton": {
+    "description": "Label of the outlined button in the bottom bar that opens the category list",
+    "context": "CUJ 3 screens 2, 3 and 14, and CUJ 4 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
   }
 }
