@@ -2832,4 +2832,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String numberPadRateValue(String value) {
     return '\$$value';
   }
+
+  @override
+  String get costSectionEmptyMaterial => 'No material costs yet';
+
+  @override
+  String get costSectionEmptyLabor => 'No labor costs yet';
+
+  @override
+  String get costSectionEmptyEquipment => 'No equipment costs yet';
 }
