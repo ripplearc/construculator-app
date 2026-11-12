@@ -32,9 +32,9 @@ void main() {
 
   final l10n = lookupAppLocalizations(const Locale('en'));
   final names = {
-    CostItemType.material: l10n.costSectionMaterials,
-    CostItemType.labor: l10n.costSectionLabor,
-    CostItemType.equipment: l10n.costSectionEquipment,
+    CostItemType.material: l10n.costSectionMaterials.toUpperCase(),
+    CostItemType.labor: l10n.costSectionLabor.toUpperCase(),
+    CostItemType.equipment: l10n.costSectionEquipment.toUpperCase(),
   };
 
   for (final entry in names.entries) {
@@ -51,6 +51,23 @@ void main() {
       );
     });
   }
+
+  testWidgets('spaces the letters of the name as the design does', (
+    tester,
+  ) async {
+    await pumpHeader(tester, type: CostItemType.material, subtotal: 0);
+
+    expect(
+      tester
+          .widget<Text>(find.byKey(const Key('cost_section_name_material')))
+          .style,
+      isA<TextStyle>().having(
+        (style) => style.letterSpacing,
+        'letterSpacing',
+        0.84,
+      ),
+    );
+  });
 
   testWidgets('shows the subtotal in dollars and cents with commas', (
     tester,
@@ -134,7 +151,7 @@ void main() {
     final node = tester.getSemantics(
       find.byKey(const Key('cost_section_header_material')),
     );
-    expect(node.label, contains(l10n.costSectionMaterials));
+    expect(node.label, contains(l10n.costSectionMaterials.toUpperCase()));
     expect(node.label, contains(r'$1,265.02'));
     expect(node.getSemanticsData().flagsCollection.isHeader, isTrue);
     handle.dispose();
