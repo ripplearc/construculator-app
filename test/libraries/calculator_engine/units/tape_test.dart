@@ -23,6 +23,7 @@ void main() {
         'ton' => current.pressUnit(Unit.ton),
         '+' => current.pressOperator(Operator.add),
         '×' => current.pressOperator(Operator.multiply),
+        '÷' => current.pressOperator(Operator.divide),
         '=' => current.pressEquals(),
         '/' => current.typeFraction(),
         '⌫' => current.backspace(),
@@ -946,6 +947,44 @@ void main() {
         unitRefused,
         const TapeUnitRefused(UnitKeyRefused(UnitKeyRefusal.stopsAtCubic)),
       );
+    });
+  });
+
+  group('Tape.trigAnswerContinuesAChain', () {
+    test('is true for a trig chip on the right of an operator, false alone, '
+        'with nothing offered, or across the ÷ of its own ratio', () {
+      expect(
+        press(
+          changed(press(const Tape(), '5 ×').pressTrigKey(TrigFunction.sine)),
+          '3 0',
+        ).trigAnswerContinuesAChain,
+        isTrue,
+      );
+      expect(
+        press(
+          changed(
+            press(const Tape(), '5 +').pressTrigKey(TrigFunction.arctangent),
+          ),
+          '1 6 ÷ 1 2',
+        ).trigAnswerContinuesAChain,
+        isTrue,
+      );
+      expect(
+        press(
+          changed(const Tape().pressTrigKey(TrigFunction.sine)),
+          '3 0',
+        ).trigAnswerContinuesAChain,
+        isFalse,
+      );
+      expect(
+        press(
+          changed(const Tape().pressTrigKey(TrigFunction.arctangent)),
+          '1 6 ÷ 1 2',
+        ).trigAnswerContinuesAChain,
+        isFalse,
+      );
+      expect(press(const Tape(), '5 × 3').trigAnswerContinuesAChain, isFalse);
+      expect(const Tape().trigAnswerContinuesAChain, isFalse);
     });
   });
 

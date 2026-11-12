@@ -472,6 +472,13 @@ class Tape extends Equatable {
     return Answer(key: key, value: answer, sources: [function.key]);
   }
 
+  /// Whether the trig chip [trigAnswer] is offered on continues a chain:
+  /// it is the right side of an operator (5 × [SIN] 30), so the chain's
+  /// Calc is what = lands (rule 4.6) and the strip puts Calc first (term
+  /// 2.15). False when the chip stands alone or builds its own ratio
+  /// across ÷ ([ATAN] 16 ÷ 12, walkthrough 23.3), where the answer leads.
+  bool get trigAnswerContinuesAChain => _trigQuestion?.chip.operator != null;
+
   /// [answer], a trig answer an edit behind it left standing, rebuilt on
   /// this tape, the chips before it, so that it survives the edit (rule
   /// 4.8; scenario S102). It is rebuilt on the operand chip both orders
