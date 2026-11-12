@@ -132,7 +132,12 @@ void main() {
     CostItemType type, {
     bool settle = true,
   }) async {
-    await tester.tap(find.byKey(AddCostBottomBar.addCostButtonKey));
+    final firstCost = find.byKey(CostSectionsList.addFirstCostButtonKey);
+    await tester.tap(
+      firstCost.evaluate().isNotEmpty
+          ? firstCost
+          : find.byKey(AddCostBottomBar.addCostButtonKey),
+    );
     await pumpFrames(tester, settle: settle);
     await tester.tap(find.byKey(AddCostCategorySheet.rowKey(type)));
     await pumpFrames(tester, settle: settle);
@@ -276,19 +281,23 @@ void main() {
       expect(find.byKey(const Key('more_options_icon')), findsOneWidget);
     });
 
-    testWidgets('displays the + Add cost button in the bottom bar', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'leaves + Add cost out of the bar while the estimate is empty',
+      (WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      expect(find.byKey(AddCostBottomBar.addCostButtonKey), findsOneWidget);
-      expect(find.text(l10n.addCostButton), findsOneWidget);
-    });
+        expect(find.byKey(AddCostBottomBar.addCostButtonKey), findsNothing);
+        expect(
+          find.byKey(CostSectionsList.addFirstCostButtonKey),
+          findsOneWidget,
+        );
+      },
+    );
 
     group('cost lines', () {
       void seedLines(List<Map<String, dynamic>> rows) {
@@ -345,7 +354,11 @@ void main() {
               .data,
           r'$300.00',
         );
-        expect(find.text(l10n.costSectionEmptyLabor), findsOneWidget);
+        expect(
+          find.byKey(CostSectionsList.examplesKey(CostItemType.labor)),
+          findsNothing,
+        );
+        expect(find.byKey(AddCostBottomBar.addCostButtonKey), findsOneWidget);
       });
 
       testWidgets(
@@ -1739,7 +1752,7 @@ void main() {
           isNot(subtotalBefore),
         );
         expect(
-          find.byKey(CostSectionsList.placeholderKey(CostItemType.material)),
+          find.byKey(CostSectionsList.examplesKey(CostItemType.material)),
           findsNothing,
         );
       });
