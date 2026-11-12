@@ -3698,6 +3698,10 @@
   "@calculatorToastValueEmptyBody": {
     "description": "Body of the 'Finish this value first' Alert when the chip being typed or edited holds nothing (UX Design Doc Section 5)"
   },
+  "calculatorToastTypeNewFirstValue": "Type a new first value, or press C to start again.",
+  "@calculatorToastTypeNewFirstValue": {
+    "description": "Red Alert when ⌫ is pressed again on the emptied first chip of a chain, which cannot be deleted (UX Design Doc rule 4.8)"
+  },
   "calculatorToastResultRemoved": "{key} removed — can't recompute from the new value.",
   "@calculatorToastResultRemoved": {
     "description": "Message when an edit leaves a result with no valid answer and that one chip is removed (UX Design Doc Section 5.5)",

@@ -874,6 +874,19 @@ void main() {
         expect(empty.toast, const CalculatorFinishValueToast(value: ''));
       });
 
+      test('⌫ again on the emptied first chip of a chain reads "Type a new '
+          'first value" (rule 4.8)', () {
+        final chain = pressed('2 + 3 =');
+        final reopened = (chain.tapChip(0) as TapeChanged).tape;
+        final emptied = (reopened.clearActive() as TapeChanged).tape;
+        final refusal = emptied.backspace();
+        expect(refusal, const TapeRefused(TapeRefusal.typeANewFirstValue));
+        expect(
+          CalculatorState(tape: emptied, refusal: refusal).toast,
+          const CalculatorTypeNewFirstValueToast(),
+        );
+      });
+
       test('a refusal with no words yet reads as no toast, and so does the '
           'tape\'s refusal of a tap on a result, which the page never sends '
           'since a result chip takes no tap', () {

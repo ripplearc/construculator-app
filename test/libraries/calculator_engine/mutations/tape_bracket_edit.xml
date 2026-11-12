@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE: A BRACKET REOPENED IN PLACE (S1c bracket edit, CA-1089) -->
+    <!-- Targets: the open bracket found wherever it sits, the keys routed into
+         it there, the close that recomputes what follows, and the notice a
+         reopening carries. Critical path: a wrong index types into the wrong
+         chip or lands a second answer. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/tape.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the open bracket is only ever the last chip -->
+        <regex pattern="for \(var index = chips\.length - 1; index &gt;= 0; index--\) \{\s*if \(chips\[index\] case BracketChip\(isOpen: true\)\) return index;\s*\}\s*return null;" dotAll="true" id="tape_bracket_edit.open_bracket.last_only">
+            <mutation text="if (chips.lastOrNull case BracketChip(isOpen: true)) return chips.length - 1; return null;"/>
+        </regex>
+
+        <!-- RULE 2: a key typed inside a reopened bracket lands on the last chip -->
+        <regex pattern="_replaceChipAt\(index, bracket\.copyWith\(inner: tape\.chips\)\)," dotAll="true" id="tape_bracket_edit.inside.last_chip">
+            <mutation text="_replaceChipAt(chips.length - 1, bracket.copyWith(inner: tape.chips)),"/>
+        </regex>
+
+        <!-- RULE 3: closing a reopened bracket does not recompute what follows -->
+        <regex pattern="final \(:tape, :removed\) = _replaceChipAt\(\s*index,\s*closed,\s*\)\._recomputedAfter\(index, removesStale: true\);" dotAll="true" id="tape_bracket_edit.close.no_recompute">
+            <mutation text="final tape = _replaceChipAt(index, closed); const removed = &lt;String&gt;[];"/>
+        </regex>
+
+        <!-- RULE 4: = on a reopened bracket lands a second answer -->
+        <regex pattern="if \(openBracketIndex case final index\? when index &lt; chips\.length - 1\) \{.*?final outcome =&gt; outcome,\s*\};\s*\}" dotAll="true" id="tape_bracket_edit.equals.second_answer">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 4a: = on a reopened bracket closes it and lands nothing,
+             the pending step after an older answer included (R1, B2) -->
+        <regex pattern="TapeChanged\(:final tape, notice: null\)\s*when !tape\.endsWithResult &amp;&amp; !tape\.endsWithError =&gt;\s*_landedAfterClose\(tape\)," dotAll="true" id="tape_bracket_edit.equals.unanswered_chain_silent">
+            <mutation text="TapeChanged(:final tape, notice: null) when false =&gt; _landedAfterClose(tape),"/>
+        </regex>
+
+        <!-- RULE 4b: = on a reopened bracket lands a second answer over the
+             one already there, or says "nothing to compute" over an answer
+             the close recomputed or an error it left (R1, N2) -->
+        <regex pattern="TapeChanged\(:final tape, notice: null\)\s*when !tape\.endsWithResult &amp;&amp; !tape\.endsWithError =&gt;" dotAll="true" id="tape_bracket_edit.equals.answered_chain_landed_again">
+            <mutation text="TapeChanged(:final tape, notice: null) =&gt;"/>
+            <mutation text="TapeChanged(:final tape, notice: null) when !tape.endsWithResult =&gt;"/>
+        </regex>
+
+        <!-- RULE 5: a tap reopens the bracket without the notice -->
+        <regex pattern="_replaceChipAt\(index, _reopened\(closed\)\),\s*notice: TapeNotice\.editingThisGroup," dotAll="true" id="tape_bracket_edit.reopen.no_notice">
+            <mutation text="_replaceChipAt(index, _reopened(closed)),"/>
+        </regex>
+
+        <!-- RULE 5a: ⌫ over a result reopens the bracket before it without
+             the notice -->
+        <regex pattern="final BracketChip closed =&gt; _with\(\s*remaining,\s*\)\._reopenedAt\(remaining\.length - 1, closed\)," dotAll="true" id="tape_bracket_edit.backspace.reopen_no_notice">
+            <mutation text="final BracketChip closed =&gt; TapeChanged(_with([...before, _reopened(closed)])),"/>
+        </regex>
+
+        <!-- RULE 5b: a tap on the reopened bracket is refused like any other
+             chip -->
+        <regex pattern="if \(open == index\) return closeBracket\(\);" dotAll="true" id="tape_bracket_edit.tap.open_bracket_refused">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 6: a reopened bracket in the middle is removed like one at the end -->
+        <regex pattern="if \(index == chips\.length - 1\) return TapeChanged\(_removeBracket\(bracket\)\);" dotAll="true" id="tape_bracket_edit.remove.middle_as_end">
+            <mutation text="return TapeChanged(_removeBracket(bracket));"/>
+        </regex>
+
+        <!-- RULE 7 (R1, B1 and N3): removing an emptied bracket in the middle
+             drops the answers after it, leaves no chip being edited in its
+             place, or rebuilds from the place itself -->
+        <regex pattern="ValueChip\(operator: bracket\.operator, isEditing: true\),\s*\.\.\.chips\.sublist\(index \+ 1\),\s*\]\)\._recomputedFrom\(index \+ 1, removesStale: false\);" dotAll="true" id="tape_bracket_edit.remove.answers_dropped">
+            <mutation text="ValueChip(operator: bracket.operator, isEditing: true), ...chips.sublist(index + 1), ])._recomputedFrom(index + 1, removesStale: true);"/>
+            <mutation text="ValueChip(operator: bracket.operator), ...chips.sublist(index + 1), ])._recomputedFrom(index + 1, removesStale: false);"/>
+            <mutation text="if (bracket.operator case final operator?) ValueChip(operator: operator, isEditing: true), ...chips.sublist(index + 1), ])._recomputedFrom(index, removesStale: false);"/>
+        </regex>
+
+
+        <!-- RULE: = on an emptied reopened bracket cancels the edit but lands
+             nothing after it, so the step still pending is lost -->
+        <regex pattern="TapeChanged\(:final tape, notice: TapeNotice\.bracketEditCancelled\) =&gt;\s*_landedAfterClose\(tape, notice: TapeNotice\.bracketEditCancelled\)," dotAll="true" id="tape_bracket_edit.equals.cancelled_lands_nothing">
+            <mutation text="TapeChanged(:final tape, notice: TapeNotice.bracketEditCancelled) =&gt; TapeChanged(tape, notice: TapeNotice.bracketEditCancelled),"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="tape_bracket_edit" expected-return="0">flutter test test/libraries/calculator_engine/units/tape_bracket_edit_test.dart test/libraries/calculator_engine/units/tape_bracket_test.dart test/libraries/calculator_engine/units/tape_edit_recompute_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

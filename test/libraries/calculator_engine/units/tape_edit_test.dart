@@ -478,12 +478,12 @@ void main() {
       expect(texts(tape), ['Length22ft']);
     });
 
-    test('a result, an error chip, a closed bracket and a place off the tape '
-        'are not edited by a tap', () {
+    test('a result, an error chip and a place off the tape are not edited by '
+        'a tap', () {
       final tape = press(const Tape(), '2 + ( 3 ( × 4 =');
       expect(texts(tape), ['2', '+(3)', '×4', 'Calc20']);
 
-      for (final index in [1, 3, 4, -1]) {
+      for (final index in [3, 4, -1]) {
         expect(
           tape.tapChip(index),
           const TapeRefused(TapeRefusal.chipCannotBeEdited),
@@ -523,7 +523,7 @@ void main() {
 
       expect(
         tape.tapChip(0),
-        const TapeRefused(TapeRefusal.finishThisValueFirst),
+        const TapeRefused(TapeRefusal.chipCannotBeEdited),
       );
     });
   });
