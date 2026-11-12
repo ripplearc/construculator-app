@@ -2608,4 +2608,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get addCostCategoryEquipmentSubtitle =>
       'Rentals, lifts, dumpsters — day or job rate, with delivery';
+
+  @override
+  String get costSectionEmptyMaterial => 'No material costs yet';
+
+  @override
+  String get costSectionEmptyLabor => 'No labor costs yet';
+
+  @override
+  String get costSectionEmptyEquipment => 'No equipment costs yet';
 }

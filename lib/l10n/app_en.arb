@@ -3682,5 +3682,20 @@
   "@addCostCategoryEquipmentSubtitle": {
     "description": "Subtitle of the Equipment row in the category list",
     "context": "CUJ 3 screens 2, 3 and 14, and CUJ 4 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionEmptyMaterial": "No material costs yet",
+  "@costSectionEmptyMaterial": {
+    "description": "Placeholder of the Materials section while it holds no lines but the estimate does",
+    "context": "Follows the Equipment text of CUJ 6 screen 6: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionEmptyLabor": "No labor costs yet",
+  "@costSectionEmptyLabor": {
+    "description": "Placeholder of the Labor section while it holds no lines but the estimate does",
+    "context": "Follows the Equipment text of CUJ 6 screen 6: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionEmptyEquipment": "No equipment costs yet",
+  "@costSectionEmptyEquipment": {
+    "description": "Placeholder of the Equipment section while it holds no lines but the estimate does",
+    "context": "CUJ 6 screen 6 (the equipment text); the Materials and Labor texts follow it: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
   }
 }
