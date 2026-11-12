@@ -17,7 +17,7 @@ class InternetReachabilitySdkImpl implements InternetReachabilitySdk {
   Future<bool> checkReachable() => _connection.hasInternetAccess;
 
   @override
-  Stream<void> get checkTicks => Stream<void>.periodic(_checkInterval);
+  Stream<void> get checkTicks => Stream.periodic(_checkInterval);
 
   /// Releases the connection.
   Future<void> dispose() => _connection.dispose();
