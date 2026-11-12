@@ -205,7 +205,7 @@ void main() {
 
       expect(find.text(l10n.discardChangesDialogTitle), findsOneWidget);
       expect(
-        find.text(l10n.discardChangesDialogBody('Scissor lift')),
+        find.text(l10n.discardChangesDialogBody('Scissor lift', '\$685.00')),
         findsOneWidget,
       );
       expect(find.text(l10n.discardLineDialogTitle), findsNothing);

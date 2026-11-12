@@ -125,8 +125,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 state.formData.hasUnsavedChanges,
             itemNameOf: (state) => state.formData.lineName,
             isSaveRunning: (state) => state.formData.isRateSaveRunning,
-            isEditingExistingLine: (state) =>
-                state.formData.isEditingExistingLine,
+            savedLineTotalOf: (state) =>
+                state.formData.editedItem?.itemTotalCost,
             child: sheet,
           ),
         CostItemType.labor => sheet,
