@@ -118,4 +118,14 @@ void main() {
       ),
     );
   });
+
+  testWidgets('leaves 12 dp between + Add cost and Preview', (tester) async {
+    await pumpBar(tester);
+
+    expect(
+      tester.getTopLeft(find.byKey(AddCostBottomBar.previewButtonKey)).dx -
+          tester.getTopRight(find.byKey(AddCostBottomBar.addCostButtonKey)).dx,
+      CoreSpacing.space3,
+    );
+  });
 }
