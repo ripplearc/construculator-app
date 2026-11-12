@@ -46,6 +46,67 @@ void main() {
     );
 
     testWidgets(
+      'a drag handle in "View all" is read by its localized name and meets '
+      'the label and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        final shapesHandle = find.bySemanticsLabel(
+          RegExp(
+            RegExp.escape(
+              l10n.calculatorReorderGroupSemantics(l10n.calculatorGroupShapes),
+            ),
+          ),
+        );
+        // Each theme gets a tree of its own, keyed by its brightness: the
+        // sheet is a route, and a route survives a rebuild of the same app.
+        // Tap target size is disabled as in the close-button test: CoreUI's
+        // drag handle is 12px tall by design (CA-1446).
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          await tester.tap(find.text(l10n.viewAllButton));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            shapesHandle,
+            checkTapTargetSize: false,
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'the bracket key is read by its localized name and meets the label '
+      'and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        final bracketKey = find.byKey(const ValueKey('calc_key_paren'));
+        // Tap target size is disabled as in the close-button test: the
+        // guideline reads the whole page, where CoreUI's close button and
+        // drag handle sit below 48dp by design (CA-1446).
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          bracketKey,
+          checkTapTargetSize: false,
+        );
+
+        final semantics = tester.getSemantics(bracketKey);
+        expect(semantics.label, contains(l10n.calculatorBracketKeySemantics));
+        expect(semantics.hint, l10n.calculatorBracketKeyHint);
+      },
+    );
+
+    testWidgets(
       'a suggestion chip and a conversion chip meet the label and contrast '
       'guidelines in both themes',
       (tester) async {
@@ -64,7 +125,7 @@ void main() {
         // page to settle, and a strip chip animates while it is on screen.
         // Tap target size is disabled as in the close-button test: the
         // guideline reads the whole page, where CoreUI's close button and
-        // drag handle sit below 48dp by design (tracked in CoreUI).
+        // drag handle sit below 48dp by design (CA-1446).
         for (final theme in kA11yTestThemes) {
           // A Slope answer fills row 1 and leaves row 2 empty, so the
           // contrast guideline, which also reads the whole page, judges the

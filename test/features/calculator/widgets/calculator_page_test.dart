@@ -701,4 +701,103 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'the keyboard lists the groups in the order the bloc holds, and the '
+    'group on the keyboard follows its own place (Section 1.5)',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CalculatorPage(router: FakeAppRouter()),
+        ),
+      );
+      final bloc = BlocProvider.of<CalculatorBloc>(
+        tester.element(find.byType(CoreKeyboard)),
+      );
+
+      bloc.add(const CalculatorGroupSelected(2));
+      await tester.pump();
+      bloc.add(const CalculatorGroupsReordered(oldIndex: 4, newIndex: 0));
+      await tester.pump();
+      await tester.pump();
+
+      final keyboard = tester.widget<CoreKeyboard>(find.byType(CoreKeyboard));
+      expect(
+        [for (final group in keyboard.allGroups) group.name.id],
+        equals(const [
+          CalculatorGroupId.trigonometry,
+          CalculatorGroupId.basicGeometry,
+          CalculatorGroupId.shapes,
+          CalculatorGroupId.materials,
+          CalculatorGroupId.unit,
+        ]),
+      );
+      expect(keyboard.currentGroup.id, CalculatorGroupId.materials);
+    },
+  );
+
+  testWidgets(
+    'the keyboard\'s reorder callback, the one a drag in "View all" fires, '
+    'reaches the bloc as a reorder',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CalculatorPage(router: FakeAppRouter()),
+        ),
+      );
+      final bloc = BlocProvider.of<CalculatorBloc>(
+        tester.element(find.byType(CoreKeyboard)),
+      );
+
+      tester.widget<CoreKeyboard>(find.byType(CoreKeyboard)).onGroupsReordered!(
+        0,
+        2,
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        bloc.state.groupOrder,
+        equals(const [
+          CalculatorGroupId.shapes,
+          CalculatorGroupId.materials,
+          CalculatorGroupId.basicGeometry,
+          CalculatorGroupId.unit,
+          CalculatorGroupId.trigonometry,
+        ]),
+      );
+    },
+  );
+
+  testWidgets(
+    'the bracket key and the drag handles of "View all" are named by the '
+    'localization layer',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CalculatorPage(router: FakeAppRouter()),
+        ),
+      );
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(CoreKeyboard)),
+      )!;
+      final keyboard = tester.widget<CoreKeyboard>(find.byType(CoreKeyboard));
+
+      expect(keyboard.parenSemanticLabel, l10n.calculatorBracketKeySemantics);
+      expect(keyboard.parenSemanticHint, l10n.calculatorBracketKeyHint);
+      expect(
+        keyboard.reorderSemanticsLabelBuilder!(l10n.calculatorGroupShapes),
+        l10n.calculatorReorderGroupSemantics(l10n.calculatorGroupShapes),
+      );
+    },
+  );
 }

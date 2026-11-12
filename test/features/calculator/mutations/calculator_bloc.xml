@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- CALCULATOR BLOC: ✕ AT REST AND THE BRACKET CHIP (T1a, CA-1092) -->
+    <!-- CALCULATOR BLOC: ✕ AT REST AND THE BRACKET CHIP (T1a, CA-1092);
+         THE ORDER OF THE FUNCTION-KEY GROUPS (T1b, CA-1093) -->
     <!-- Targets: the one branch that turns ✕ with no value in progress into
          "closes the calculator" and its clearing on the next key, and the
          state's reading of a bracket chip: its face, its inside, the
-         operator as its factor, and the chips before an open bracket inert. -->
+         operator as its factor, and the chips before an open bracket inert
+         (RULES 1-16); then the reorder a drag in "View all" asks for: its
+         range check, the shown group following its place, C keeping the
+         order, and the order in the state's equality (RULES 17-21). -->
 
     <files>
         <file>lib/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart</file>
@@ -97,6 +101,52 @@
             <mutation text="Operator.divide: CoreIcons.multiplyOperator,"/>
         </regex>
 
+
+        <!-- RULE 17 (T1b, CA-1093): a drag from or to a place outside the five
+             groups is applied anyway -->
+        <regex pattern="if \(!inRange\(oldIndex\) \|\| !inRange\(newIndex\) \|\| oldIndex == newIndex\) \{\s*return;\s*\}" dotAll="true" id="calculator_bloc.reorder.no_range_check">
+            <mutation text="if (oldIndex == newIndex) { return; }"/>
+        </regex>
+
+        <!-- RULE 17c: the first place is outside the range -->
+        <regex pattern="bool inRange\(int index\) => index >= 0 &amp;&amp; index &lt; order\.length;" dotAll="true" id="calculator_bloc.reorder.first_place_out_of_range">
+            <mutation text="bool inRange(int index) => index > 0 &amp;&amp; index &lt; order.length;"/>
+        </regex>
+
+        <!-- RULE 17d: one place past the last is inside the range -->
+        <regex pattern="bool inRange\(int index\) => index >= 0 &amp;&amp; index &lt; order\.length;" dotAll="true" id="calculator_bloc.reorder.past_the_end_in_range">
+            <mutation text="bool inRange(int index) => index >= 0 &amp;&amp; index &lt;= order.length;"/>
+        </regex>
+
+        <!-- RULE 17e: only the place a drag starts from is checked -->
+        <regex pattern="if \(!inRange\(oldIndex\) \|\| !inRange\(newIndex\) \|\| oldIndex == newIndex\) \{" dotAll="true" id="calculator_bloc.reorder.new_place_unchecked">
+            <mutation text="if (!inRange(oldIndex) || oldIndex == newIndex) {"/>
+        </regex>
+
+        <!-- RULE 17b: a drag that ends where it started is said as a change -->
+        <regex pattern="\|\| oldIndex == newIndex\) \{" dotAll="true" id="calculator_bloc.reorder.same_place_emits">
+            <mutation text="|| false) {"/>
+        </regex>
+
+        <!-- RULE 18: the group on the keyboard does not follow its new place -->
+        <regex pattern="currentGroupIndex: order\.indexOf\(shown\)," dotAll="true" id="calculator_bloc.reorder.shown_group_left_behind">
+            <mutation text="currentGroupIndex: state.currentGroupIndex,"/>
+        </regex>
+
+        <!-- RULE 19: the dragged group is dropped instead of moved -->
+        <regex pattern="order\.insert\(newIndex, order\.removeAt\(oldIndex\)\);" dotAll="true" id="calculator_bloc.reorder.group_dropped">
+            <mutation text="order.removeAt(oldIndex);"/>
+        </regex>
+
+        <!-- RULE 20: C and a reset forget the order -->
+        <regex pattern="currentGroupIndex: state\.currentGroupIndex,\s*groupOrder: state\.groupOrder," dotAll="true" id="calculator_bloc.cleared.order_forgotten">
+            <mutation text="currentGroupIndex: state.currentGroupIndex, groupOrder: CalculatorGroupId.defaultOrder,"/>
+        </regex>
+
+        <!-- RULE 21: the order is left out of the state's equality -->
+        <regex pattern="currentGroupIndex,\s*groupOrder,\s*notice," dotAll="true" id="calculator_state.props.drop_group_order">
+            <mutation text="currentGroupIndex, notice,"/>
+        </regex>
     </rules>
 
     <commands>

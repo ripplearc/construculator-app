@@ -2484,4 +2484,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardLineKeepEditingButton => 'Keep editing';
+
+  @override
+  String get calculatorBracketKeySemantics => 'Bracket key';
+
+  @override
+  String get calculatorBracketKeyHint =>
+      'Opens a bracket; the next press closes it';
+
+  @override
+  String calculatorReorderGroupSemantics(String group) {
+    return 'Drag to move the $group group';
+  }
 }
