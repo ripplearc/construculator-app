@@ -19,6 +19,7 @@ class CostSectionHeader extends StatelessWidget {
   final double subtotal;
 
   static const _minHeight = 44.0;
+  static const _nameLetterSpacing = 0.84;
 
   const CostSectionHeader({
     super.key,
@@ -54,10 +55,11 @@ class CostSectionHeader extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _name(context),
+                      _name(context).toUpperCase(),
                       key: Key('cost_section_name_${type.name}'),
                       style: context.textTheme.bodySmallSemiBold.copyWith(
                         color: colorTheme.textBody,
+                        letterSpacing: _nameLetterSpacing,
                       ),
                     ),
                   ),
