@@ -4406,6 +4406,12 @@ abstract class AppLocalizations {
   /// **'Finish editing'**
   String get calculatorChipTapToFinish;
 
+  /// Screen reader hint of a tap on the open bracket chip of the calculator tape: the tap closes the bracket, as the bracket key does (UX Design Doc Section 7, 'Editing a bracket')
+  ///
+  /// In en, this message translates to:
+  /// **'Close the bracket'**
+  String get calculatorChipTapToClose;
+
   /// A calculator unit spelled out in a toast, by the engine's unit id (UX Design Doc Section 5.2: 'titled with the unit spelled out')
   ///
   /// In en, this message translates to:
@@ -4493,6 +4499,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{key} keeps {value}'**
   String calculatorToastKeepsLengthTitle(String key, String value);
+
+  /// Toast when a closed bracket is reopened on the calculator tape, shown the first three times only (UX Design Doc Section 5.6, 'Editing this group')
+  ///
+  /// In en, this message translates to:
+  /// **'Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.'**
+  String get calculatorToastEditingGroup;
 
   /// Body of the '<Key> keeps <value>' toast (UX Design Doc Section 5.2)
   ///

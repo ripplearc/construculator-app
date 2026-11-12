@@ -151,8 +151,12 @@ class BlocScenarioDriver implements ScenarioDriver {
       },
       value: state.valueText,
       toast: switch (state.toast) {
-        final toast? => _labels.toastBody(toast),
-        null => null,
+        CalculatorEditingGroupToast() || null => null,
+        final toast => _labels.toastBody(toast),
+      },
+      actionToast: switch (state.toast) {
+        final CalculatorEditingGroupToast toast => _labels.toastBody(toast),
+        _ => null,
       },
       hint: switch (state.stripNote) {
         final note? => _labels.stripText(note),
@@ -423,6 +427,44 @@ void main() {
       await driver.perform(const KeyStep('unit:ft'));
       expect(driver.snapshot().toast, isNull);
     });
+
+    test(
+      'a closed bracket tapped by its text reopens with the "Editing this '
+      'group" message read as the action toast, the other chips waiting and '
+      'the answer reading a dash; the message stops after three (S126, S130)',
+      () async {
+        for (final key in const [
+          'd:2',
+          'op:+',
+          'paren',
+          'd:3',
+          'op:×',
+          'd:4',
+          'paren',
+          'op:×',
+          'd:5',
+          'equals',
+        ]) {
+          await driver.perform(KeyStep(key));
+        }
+        expect(driver.snapshot().tape, ['2', '+(3×4)', '×5', 'Calc70']);
+
+        for (var reopened = 1; reopened <= 4; reopened++) {
+          expect(await driver.perform(const TapChipStep('+(3×4')), isTrue);
+          final open = driver.snapshot();
+          expect(open.tape, ['2', '+(3×4', '×5', 'Calc—'], reason: '$reopened');
+          expect(open.tapeFrozen, [true, false, true, true]);
+          expect(open.toast, isNull);
+          expect(
+            open.actionToast,
+            reopened <= 3 ? contains('Editing this group') : isNull,
+            reason: 'reopening $reopened',
+          );
+          await driver.perform(const KeyStep('paren'));
+        }
+        expect(driver.snapshot().tape, ['2', '+(3×4)', '×5', 'Calc70']);
+      },
+    );
 
     test('a tape chip is tapped by the prefix of its text: the chip reopens, '
         'the results after it read as results while dashed, and a second '

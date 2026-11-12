@@ -3670,6 +3670,10 @@
   "@calculatorChipTapToFinish": {
     "description": "Screen reader hint of a tap on the chip being typed or edited on the calculator tape: the tap seals the chip, as = does (UX Design Doc rule 4.8)"
   },
+  "calculatorChipTapToClose": "Close the bracket",
+  "@calculatorChipTapToClose": {
+    "description": "Screen reader hint of a tap on the open bracket chip of the calculator tape: the tap closes the bracket, as the bracket key does (UX Design Doc Section 7, 'Editing a bracket')"
+  },
   "calculatorUnitName": "{unit, select, inch{inches} foot{feet} footInch{feet and inches} yard{yards} metre{meters} centimetre{centimeters} millimetre{millimeters} acre{acres} pound{pounds} kilogram{kilograms} ton{tons} metricTon{metric tons} boardFoot{board feet} other{{unit}}}",
   "@calculatorUnitName": {
     "description": "A calculator unit spelled out in a toast, by the engine's unit id (UX Design Doc Section 5.2: 'titled with the unit spelled out')",
@@ -3815,6 +3819,10 @@
         "example": "22ft"
       }
     }
+  },
+  "calculatorToastEditingGroup": "Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.",
+  "@calculatorToastEditingGroup": {
+    "description": "Toast when a closed bracket is reopened on the calculator tape, shown the first three times only (UX Design Doc Section 5.6, 'Editing this group')"
   },
   "calculatorToastKeepsLengthBody": "Pressing {unit} again would make this {value}² — {key} can't hold an area or volume.",
   "@calculatorToastKeepsLengthBody": {
