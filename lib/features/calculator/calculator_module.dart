@@ -5,6 +5,7 @@ import 'package:construculator/features/calculator/data/repositories/calculator_
 import 'package:construculator/features/calculator/data/repositories/trade_stores_repository_impl.dart';
 import 'package:construculator/features/calculator/domain/repositories/calculator_preferences_repository.dart';
 import 'package:construculator/features/calculator/domain/repositories/trade_stores_repository.dart';
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
@@ -12,9 +13,10 @@ import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:powersync/powersync.dart';
 
-/// The calculator feature: its page, the settings repository it reads,
-/// which follows the signed-in profile through the auth library, and the
-/// trade stores repository over the synced `user_calculator_stores` rows.
+/// The calculator feature: its page, the bloc the page creates for its
+/// lifetime, the settings repository the bloc watches, which follows the
+/// signed-in profile through the auth library, and the trade stores
+/// repository over the synced `user_calculator_stores` rows.
 class CalculatorModule extends Module {
   /// The app's shared bootstrap, handed on to the imported
   /// [AuthLibraryModule] so the repository sees the same auth state as the
@@ -54,10 +56,16 @@ class CalculatorModule extends Module {
       ),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
+    i.add<CalculatorBloc>(() => CalculatorBloc(preferencesRepository: i()));
   }
 
   @override
   void routes(RouteManager r) {
-    r.child('/', child: (_) => const CalculatorPage());
+    r.child(
+      '/',
+      child: (_) => CalculatorPage(
+        calculatorBlocFactory: () => Modular.get<CalculatorBloc>(),
+      ),
+    );
   }
 }

@@ -13,10 +13,9 @@
     </files>
 
     <rules>
-        <!-- RULE 1: a save with no profile, or no profile row, is answered as
-             saved (both returns; a dropped guard would not compile) -->
-        <regex pattern="return Left\(UserNotFoundFailure\(\)\);" dotAll="true" id="calculator_preferences_repository.save.answer_missing_profile_as_saved">
-            <mutation text="return Right(preferences);"/>
+        <!-- RULE 1: a save with no signed-in profile is answered as saved -->
+        <regex pattern="if \(user == null\) \{\s*_logger\.warning\('No signed-in profile to save calculator preferences to'\);\s*return Left\(UserNotFoundFailure\(\)\);\s*\}" dotAll="true" id="calculator_preferences_repository.save.answer_missing_profile_as_saved">
+            <mutation text="if (user == null) { return Right(_current); }"/>
         </regex>
 
         <!-- RULE 2: the other keys under user_preferences are dropped -->
@@ -30,13 +29,13 @@
         </regex>
 
         <!-- RULE 4: the auth library's error type is replaced by a constant -->
-        <regex pattern="result\.errorType \?\? AuthErrorType\.serverError;" dotAll="true" id="calculator_preferences_repository.save.constant_error_type">
-            <mutation text="AuthErrorType.serverError;"/>
+        <regex pattern="final errorType = result\.errorType \?\? AuthErrorType\.serverError;" dotAll="true" id="calculator_preferences_repository.save.constant_error_type">
+            <mutation text="final errorType = AuthErrorType.serverError;"/>
         </regex>
 
         <!-- RULE 5: a missing profile row is answered as a success -->
-        <regex pattern="if \(result\.data == null\) \{" dotAll="true" id="calculator_preferences_repository.save.ignore_missing_row">
-            <mutation text="if (false) {"/>
+        <regex pattern="if \(written == null\) \{\s*_logger\.warning\('No profile row to save calculator preferences to'\);\s*return Left\(UserNotFoundFailure\(\)\);\s*\}" dotAll="true" id="calculator_preferences_repository.save.ignore_missing_row">
+            <mutation text="if (written == null) { return Right(preferences); }"/>
         </regex>
 
         <!-- RULE 6: the profile signed in before the first watcher is never
@@ -51,8 +50,8 @@
         </regex>
 
         <!-- RULE 8: a profile change leaves the settings where they were -->
-        <regex pattern="_user = user;\s*_current = CalculatorPreferencesDto\.fromJson\(" dotAll="true" id="calculator_preferences_repository.change.keep_current">
-            <mutation text="_user = user; final _ = CalculatorPreferencesDto.fromJson("/>
+        <regex pattern="_user = user;\s*_current = _preferencesOf\(user\);" dotAll="true" id="calculator_preferences_repository.change.keep_current">
+            <mutation text="_user = user;"/>
         </regex>
 
         <!-- RULE 9: a slow first fetch overwrites a profile announced while
@@ -131,6 +130,24 @@
             <mutation text=""/>
         </regex>
 
+
+        <!-- RULE 20: a change whose save failed stays in flight, so it rides
+             along with the next save -->
+        <regex pattern="\} finally \{\s*_changesInFlight\.remove\(change\);\s*\}" dotAll="true" id="calculator_preferences_repository.update.failed_change_rides_next_save">
+            <mutation text="} finally {}"/>
+        </regex>
+
+        <!-- RULE 21: the echoes owed to the user who signed out are kept, so
+             the next user's first announcement is swallowed -->
+        <regex pattern="_signedInProfileFetch = null;\s*_echoesDue\.clear\(\);" dotAll="true" id="calculator_preferences_repository.forget.keep_echoes_due">
+            <mutation text="_signedInProfileFetch = null;"/>
+        </regex>
+
+        <!-- RULE 22: the echo of an older save repaints the screen while a
+             newer save's echo is still due -->
+        <regex pattern="if \(_echoesDue\.isEmpty\) _onProfileChanged\(user\);" dotAll="true" id="calculator_preferences_repository.announce.repaint_mid_echoes">
+            <mutation text="_onProfileChanged(user);"/>
+        </regex>
     </rules>
 
     <commands>

@@ -627,5 +627,121 @@ void main() {
         },
       );
     });
+
+    group('updatePreferences', () {
+      test(
+        'applies the change to the profile that arrives, so a change made '
+        'before the profile is read keeps the other settings the user saved',
+        () async {
+          signIn(
+            userWith({
+              'calculator': {
+                'pounds_per_ton': 2240,
+                'fractional_resolution': 4,
+              },
+            }),
+          );
+          final fetch = Completer<void>();
+          authRepository.getUserProfileGate = fetch;
+          final saving = repository.updatePreferences(
+            (current) => current.copyWith(system: MeasurementSystem.metric),
+          );
+          fetch.complete();
+
+          final saved = savedOf(await saving);
+
+          const expected = CalculatorPreferences(
+            system: MeasurementSystem.metric,
+            tonDefinition: TonDefinition.longTon,
+            fractionResolution: FractionResolution.quarter,
+          );
+          expect(saved, expected);
+          expect(authRepository.updateProfileCalls.single.userPreferences, {
+            CalculatorPreferencesDto.preferencesKey:
+                const CalculatorPreferencesDto(expected).toJson(),
+          });
+          expect(await repository.watchPreferences().first, expected);
+        },
+      );
+
+      test(
+        'a second save made while the first is in flight carries the first '
+        'change too, and only the newest echo reaches the watchers',
+        () async {
+          await watchSignedIn(userWith({}));
+          final seen = <CalculatorPreferences>[];
+          repository.watchPreferences().listen(seen.add);
+          final writes = Completer<void>();
+          authRepository.updateUserProfileGate = writes;
+          final echoes = authNotifier.onUserProfileChanged.take(2).toList();
+          final first = repository.updatePreferences(
+            (current) => current.copyWith(tonDefinition: TonDefinition.longTon),
+          );
+          final second = repository.updatePreferences(
+            (current) => current.copyWith(system: MeasurementSystem.metric),
+          );
+          writes.complete();
+
+          final results = [savedOf(await first), savedOf(await second)];
+          await echoes;
+
+          const both = CalculatorPreferences(
+            system: MeasurementSystem.metric,
+            tonDefinition: TonDefinition.longTon,
+          );
+          expect(results, [
+            const CalculatorPreferences(tonDefinition: TonDefinition.longTon),
+            both,
+          ]);
+          expect(
+            [
+              for (final user in authRepository.updateProfileCalls)
+                user.userPreferences[CalculatorPreferencesDto
+                    .preferencesKey][CalculatorPreferencesDto.systemKey],
+            ],
+            ['imperial', 'metric'],
+          );
+          expect(await repository.watchPreferences().first, both);
+          expect(seen, [CalculatorPreferences.defaults, both]);
+        },
+      );
+
+      test(
+        'a change whose save failed is not carried by the next save',
+        () async {
+          await watchSignedIn(userWith({}));
+          authManager.setAuthResponse(
+            succeed: false,
+            errorType: AuthErrorType.networkError,
+          );
+          final failed = await repository.updatePreferences(
+            (current) => current.copyWith(system: MeasurementSystem.metric),
+          );
+          expect(failureOf(failed), isA<AuthFailure>());
+          authManager.setAuthResponse();
+
+          final saved = savedOf(
+            await repository.updatePreferences(
+              (current) =>
+                  current.copyWith(tonDefinition: TonDefinition.longTon),
+            ),
+          );
+
+          expect(
+            saved,
+            const CalculatorPreferences(tonDefinition: TonDefinition.longTon),
+          );
+        },
+      );
+
+      test('savePreferences writes the settings it is given', () async {
+        await watchSignedIn(userWith({}));
+
+        final saved = savedOf(await repository.savePreferences(metric));
+
+        expect(saved, metric);
+        expect(await repository.watchPreferences().first, metric);
+      });
+    });
   });
 }
