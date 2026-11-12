@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_radio_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -13,20 +14,23 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Column(
-          children: [
-            UnitRadioRow(
-              unit: Unit.gallons,
-              isSelected: true,
-              onSelected: () {},
-            ),
-            UnitRadioRow(
-              unit: Unit.pounds,
-              isSelected: false,
-              onSelected: () {},
-            ),
-          ],
+      home: Builder(
+        builder: (context) => Scaffold(
+          backgroundColor: sheetSurface(context),
+          body: Column(
+            children: [
+              UnitRadioRow(
+                unit: Unit.gallons,
+                isSelected: true,
+                onSelected: () {},
+              ),
+              UnitRadioRow(
+                unit: Unit.pounds,
+                isSelected: false,
+                onSelected: () {},
+              ),
+            ],
+          ),
         ),
       ),
     );

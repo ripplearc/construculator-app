@@ -35,6 +35,11 @@ void main() {
     );
   }
 
+  final focusRing = Border.all(
+    color: CoreTheme.light().extension<AppColorsExtension>()!.outlineFocus,
+    width: 2,
+  );
+
   Border? ringOf(WidgetTester tester, Unit unit) {
     final ring = tester.widget<DecoratedBox>(
       find.byKey(Key('unit_focus_ring_${unit.name}')),
@@ -78,10 +83,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
-    final ring = ringOf(tester, Unit.feet)!;
-    final colors = CoreTheme.light().extension<AppColorsExtension>()!;
-    expect(ring.top.color, colors.outlineFocus);
-    expect(ring.top.width, 2);
+    expect(ringOf(tester, Unit.feet), focusRing);
     expect(ringOf(tester, Unit.inches), isNull);
   });
 
@@ -93,16 +95,36 @@ void main() {
     await tester.pump();
 
     expect(ringOf(tester, Unit.feet), isNull);
-    expect(ringOf(tester, Unit.inches), isNotNull);
+    expect(ringOf(tester, Unit.inches), focusRing);
+  });
+
+  testWidgets('a tap after Tab hides the ring', (tester) async {
+    await pumpRows(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(ringOf(tester, Unit.feet), focusRing);
+
+    await tester.tap(find.byKey(const Key('unit_option_inches')));
+    await tester.pump();
+
+    expect(ringOf(tester, Unit.feet), isNull);
+    expect(ringOf(tester, Unit.inches), isNull);
+  });
+
+  testWidgets('a screen reader tap selects the row once', (tester) async {
+    await pumpRows(tester);
+
+    tester.semantics.tap(find.semantics.byLabel('in, Inch'));
+    await tester.pump();
+
+    expect(selections, 1);
   });
 
   for (final (name, key) in [
     ('Enter', LogicalKeyboardKey.enter),
     ('Space', LogicalKeyboardKey.space),
   ]) {
-    testWidgets('$name on a focused row selects it once', (
-      tester,
-    ) async {
+    testWidgets('$name on a focused row selects it once', (tester) async {
       await pumpRows(tester);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
@@ -149,10 +171,7 @@ void main() {
       expect(symbol.overlaps(name), isFalse);
       for (final text in ['lb', 'Pound — fasteners, compound']) {
         final paragraph = tester.renderObject<RenderParagraph>(
-          find.descendant(
-            of: find.text(text),
-            matching: find.byType(RichText),
-          ),
+          find.descendant(of: find.text(text), matching: find.byType(RichText)),
         );
         final fullHeight = paragraph.getMaxIntrinsicHeight(
           paragraph.size.width,
