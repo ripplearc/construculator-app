@@ -19,4 +19,22 @@ extension UnitDisplayName on Unit {
     Unit.rolls => l10n.unitRolls,
     Unit.sheets => l10n.unitSheets,
   };
+
+  /// This unit's lowercase name for [count], for example "sheet" for 1 and
+  /// "sheets" for 13.25, in the language of [l10n].
+  String countName(AppLocalizations l10n, num count) => switch (this) {
+    Unit.pieces => l10n.unitNamePieces(count),
+    Unit.meters => l10n.unitNameMeters(count),
+    Unit.squareMeters => l10n.unitNameSquareMeters(count),
+    Unit.cubicMeters => l10n.unitNameCubicMeters(count),
+    Unit.kilograms => l10n.unitNameKilograms(count),
+    Unit.tons => l10n.unitNameTons(count),
+    Unit.liters => l10n.unitNameLiters(count),
+    Unit.hours => l10n.unitNameHours(count),
+    Unit.days => l10n.unitNameDays(count),
+    Unit.boxes => l10n.unitNameBoxes(count),
+    Unit.bags => l10n.unitNameBags(count),
+    Unit.rolls => l10n.unitNameRolls(count),
+    Unit.sheets => l10n.unitNameSheets(count),
+  };
 }
