@@ -219,7 +219,10 @@ void main() {
       await tapBack(tester);
 
       expect(find.text(l10n.discardChangesDialogTitle), findsOneWidget);
-      expect(find.text(l10n.discardChangesDialogBody('Rebar')), findsOneWidget);
+      expect(
+        find.text(l10n.discardChangesDialogBody('Rebar', '\$500.00')),
+        findsOneWidget,
+      );
       expect(find.text(l10n.discardLineDialogTitle), findsNothing);
     });
 
