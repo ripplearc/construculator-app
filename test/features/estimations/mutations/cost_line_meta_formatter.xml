@@ -112,6 +112,54 @@
             <mutation text="NumberFormat('#,##0.00', l10n.localeName)"/>
         </regex>
 
+
+        <regex pattern="(if \(rate == null\) return '';)" dotAll="true" id="meta.labor.rate_missing_guard_inverted">
+            <mutation text="if (rate != null) return '';"/>
+        </regex>
+
+        <regex pattern="(static const _laborRateKey = 'laborRate';)" dotAll="true" id="meta.labor.rate_key_renamed">
+            <mutation text="static const _laborRateKey = 'rate';"/>
+        </regex>
+
+        <regex pattern="(DisplayFormatter\.formatCurrency\(rate\))" dotAll="true" id="meta.labor.rate_amount_zero">
+            <mutation text="DisplayFormatter.formatCurrency(0)"/>
+        </regex>
+
+        <regex pattern="(crew &gt;= 2)" dotAll="true" id="meta.labor.crew_of_two_is_one_person">
+            <mutation text="crew &gt; 2"/>
+        </regex>
+
+        <regex pattern="(crew &gt;= 2)" dotAll="true" id="meta.labor.crew_of_one_is_a_crew">
+            <mutation text="crew &gt;= 1"/>
+        </regex>
+
+        <regex pattern="(crew != null &amp;&amp; crew &gt;= 2)" dotAll="true" id="meta.labor.crew_check_dropped">
+            <mutation text="crew != null"/>
+        </regex>
+
+        <regex pattern="(tail: _laborRateTail\(item, l10n, perHour: true\))" dotAll="true" id="meta.labor.hour_tail_marked_daily">
+            <mutation text="tail: _laborRateTail(item, l10n, perHour: false)"/>
+        </regex>
+
+        <regex pattern="(tail: _laborRateTail\(item, l10n, perHour: false\))" dotAll="true" id="meta.labor.day_tail_marked_hourly">
+            <mutation text="tail: _laborRateTail(item, l10n, perHour: true)"/>
+        </regex>
+
+        <regex pattern="(\? l10n\.costLineLaborCrewHourRate\(crew, amount\))" dotAll="true" id="meta.labor.crew_hour_uses_day_text">
+            <mutation text="? l10n.costLineLaborCrewDayRate(crew, amount)"/>
+        </regex>
+
+        <regex pattern="(: l10n\.costLineLaborCrewDayRate\(crew, amount\))" dotAll="true" id="meta.labor.crew_day_uses_hour_text">
+            <mutation text=": l10n.costLineLaborCrewHourRate(crew, amount)"/>
+        </regex>
+
+        <regex pattern="(\? l10n\.costLineLaborHourRate\(amount\))" dotAll="true" id="meta.labor.single_hour_uses_day_text">
+            <mutation text="? l10n.costLineLaborDayRate(amount)"/>
+        </regex>
+
+        <regex pattern="(: l10n\.costLineLaborDayRate\(amount\))" dotAll="true" id="meta.labor.single_day_uses_hour_text">
+            <mutation text=": l10n.costLineLaborHourRate(amount)"/>
+        </regex>
     </rules>
 
     <commands>

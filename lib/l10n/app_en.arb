@@ -3597,6 +3597,52 @@
       }
     }
   },
+  "costLineLaborHourRate": " · {rate}/h",
+  "@costLineLaborHourRate": {
+    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborCrewHourRate": " · {people} people × {rate}/h",
+  "@costLineLaborCrewHourRate": {
+    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "people": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborDayRate": " · {rate}/day",
+  "@costLineLaborDayRate": {
+    "description": "Regular second part of a daily labor line's meta row for one person, for example · $200.00/day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborCrewDayRate": " · {people} people × {rate}/day",
+  "@costLineLaborCrewDayRate": {
+    "description": "Regular second part of a daily labor line's meta row for a crew of two or more, for example · 2 people × $200.00/day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "people": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
   "costLineEquipmentDaysDuration": "{days, plural, =1{1 day} other{{days} days}}",
   "@costLineEquipmentDaysDuration": {
     "description": "How long a day-priced equipment line runs",

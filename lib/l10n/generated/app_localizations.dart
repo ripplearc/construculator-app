@@ -4190,6 +4190,30 @@ abstract class AppLocalizations {
   /// **'{days, plural, =1{1 day} other{{days} days}}'**
   String costLineLaborDaysMeta(num days);
 
+  /// Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h
+  ///
+  /// In en, this message translates to:
+  /// **' · {rate}/h'**
+  String costLineLaborHourRate(String rate);
+
+  /// Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h
+  ///
+  /// In en, this message translates to:
+  /// **' · {people} people × {rate}/h'**
+  String costLineLaborCrewHourRate(int people, String rate);
+
+  /// Regular second part of a daily labor line's meta row for one person, for example · $200.00/day
+  ///
+  /// In en, this message translates to:
+  /// **' · {rate}/day'**
+  String costLineLaborDayRate(String rate);
+
+  /// Regular second part of a daily labor line's meta row for a crew of two or more, for example · 2 people × $200.00/day
+  ///
+  /// In en, this message translates to:
+  /// **' · {people} people × {rate}/day'**
+  String costLineLaborCrewDayRate(int people, String rate);
+
   /// How long a day-priced equipment line runs
   ///
   /// In en, this message translates to:

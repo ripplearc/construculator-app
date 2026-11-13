@@ -2547,6 +2547,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String costLineLaborHourRate(String rate) {
+    return ' · $rate/h';
+  }
+
+  @override
+  String costLineLaborCrewHourRate(int people, String rate) {
+    return ' · $people people × $rate/h';
+  }
+
+  @override
+  String costLineLaborDayRate(String rate) {
+    return ' · $rate/day';
+  }
+
+  @override
+  String costLineLaborCrewDayRate(int people, String rate) {
+    return ' · $people people × $rate/day';
+  }
+
+  @override
   String costLineEquipmentDaysDuration(num days) {
     final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
       localeName,

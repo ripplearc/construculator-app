@@ -134,7 +134,14 @@ void main() {
       expect(job.tail, ' job');
     });
 
-    test('a labor line has a lead and no tail', () {
+    test('a labor line has the hours as lead and the rate as tail', () {
+      final labor = meta(laborLine(calculation: const {'laborRate': 52}))!;
+
+      expect(labor.lead, '10 h');
+      expect(labor.tail, r' · $52.00/h');
+    });
+
+    test('a labor line with no rate has no tail', () {
       final labor = meta(laborLine())!;
 
       expect(labor.lead, '10 h');
@@ -172,6 +179,83 @@ void main() {
         ),
         '2.5 days',
       );
+    });
+
+    test('writes the rate after the hours for one person', () {
+      expect(
+        metaText(
+          laborLine(
+            value: const LaborValue(laborHours: 16),
+            calculation: const {'laborRate': 52},
+          ),
+          l10n,
+        ),
+        r'16 h · $52.00/h',
+      );
+    });
+
+    test('writes the crew size and the rate for a crew of three', () {
+      expect(
+        metaText(
+          laborLine(
+            value: const LaborValue(laborHours: 16),
+            calculation: const {'laborRate': 52},
+            crewSize: 3,
+          ),
+          l10n,
+        ),
+        r'16 h · 3 people × $52.00/h',
+      );
+    });
+
+    test('treats a crew of one as one person', () {
+      expect(
+        metaText(
+          laborLine(calculation: const {'laborRate': 52}, crewSize: 1),
+          l10n,
+        ),
+        r'10 h · $52.00/h',
+      );
+    });
+
+    test('writes a crew of two with the people count', () {
+      expect(
+        metaText(
+          laborLine(calculation: const {'laborRate': 58}, crewSize: 2),
+          l10n,
+        ),
+        r'10 h · 2 people × $58.00/h',
+      );
+    });
+
+    test('writes the rate per day for a per-day line', () {
+      expect(
+        metaText(
+          laborLine(
+            method: LaborCalculationMethodType.perDay,
+            value: const LaborValue(laborDays: 3),
+            calculation: const {'laborRate': 200},
+            crewSize: 2,
+          ),
+          l10n,
+        ),
+        r'3 days · 2 people × $200.00/day',
+      );
+      expect(
+        metaText(
+          laborLine(
+            method: LaborCalculationMethodType.perDay,
+            value: const LaborValue(laborDays: 3),
+            calculation: const {'laborRate': 200},
+          ),
+          l10n,
+        ),
+        r'3 days · $200.00/day',
+      );
+    });
+
+    test('keeps the hours alone when the line has no rate', () {
+      expect(metaText(laborLine(crewSize: 3), l10n), '10 h');
     });
 
     test('shows nothing when the hours are missing', () {

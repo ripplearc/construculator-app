@@ -30,17 +30,20 @@ LaborCostItem laborLine({
   double total = 480,
   LaborCalculationMethodType method = LaborCalculationMethodType.perHour,
   LaborValue value = const LaborValue(laborHours: 10),
+  Map<String, double> calculation = const {},
+  int? crewSize,
 }) => LaborCostItem(
   id: id,
   estimateId: 'e1',
   itemName: name,
-  calculation: const {},
+  calculation: calculation,
   itemTotalCost: total,
   createdAt: _stamp,
   updatedAt: _stamp,
   currency: 'USD',
   laborCalcMethod: method,
   laborValue: value,
+  crewSize: crewSize,
 );
 
 EquipmentCostItem equipmentLine({
