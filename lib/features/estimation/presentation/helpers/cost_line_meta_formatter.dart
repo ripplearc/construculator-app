@@ -29,6 +29,9 @@ class CostLineMeta {
 class CostLineMetaFormatter {
   CostLineMetaFormatter._();
 
+  /// Key of the labor rate in `CostItem.calculation`.
+  static const _laborRateKey = 'laborRate';
+
   /// The meta row of [item] in the language of [l10n].
   static CostLineMeta? format(CostItem item, AppLocalizations l10n) =>
       switch (item) {
@@ -67,12 +70,36 @@ class CostLineMetaFormatter {
           lead: l10n.costLineLaborHoursMeta(
             _amount(l10n).format(item.laborValue.laborHours),
           ),
+          tail: _laborRateTail(item, l10n, perHour: true),
         ),
       LaborCalculationMethodType.perDay when days != null => CostLineMeta(
         lead: l10n.costLineLaborDaysMeta(days),
+        tail: _laborRateTail(item, l10n, perHour: false),
       ),
       _ => null,
     };
+  }
+
+  /// The rate part of a labor row, `· $52.00/h` for one person and
+  /// `· 3 people × $52.00/h` for a crew of two or more. Empty when the line
+  /// has no saved rate.
+  static String _laborRateTail(
+    LaborCostItem item,
+    AppLocalizations l10n, {
+    required bool perHour,
+  }) {
+    final rate = item.calculation[_laborRateKey];
+    if (rate == null) return '';
+    final amount = DisplayFormatter.formatCurrency(rate);
+    final crew = item.crewSize;
+    if (crew != null && crew >= 2) {
+      return perHour
+          ? l10n.costLineLaborCrewHourRate(crew, amount)
+          : l10n.costLineLaborCrewDayRate(crew, amount);
+    }
+    return perHour
+        ? l10n.costLineLaborHourRate(amount)
+        : l10n.costLineLaborDayRate(amount);
   }
 
   static CostLineMeta? _equipmentMeta(
