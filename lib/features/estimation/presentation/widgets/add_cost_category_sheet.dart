@@ -28,6 +28,7 @@ class AddCostCategorySheet extends StatelessWidget {
       CoreQuickSheet.show<CostItemType>(
         context: context,
         backgroundColor: sheetSurface(context),
+        useSafeArea: true,
         child: const AddCostCategorySheet(),
       );
 
