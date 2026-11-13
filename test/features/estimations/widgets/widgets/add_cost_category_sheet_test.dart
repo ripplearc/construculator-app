@@ -58,6 +58,30 @@ void main() {
     expect(find.text(l10n.addCostCategoryEquipmentTitle), findsOneWidget);
   });
 
+  testWidgets('keeps the last row above the system navigation bar', (
+    tester,
+  ) async {
+    const navigationBarHeight = 48.0;
+    final ratio = tester.view.devicePixelRatio;
+    tester.view.padding = FakeViewPadding(bottom: navigationBarHeight * ratio);
+    tester.view.viewPadding = FakeViewPadding(
+      bottom: navigationBarHeight * ratio,
+    );
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+
+    await openSheet(tester);
+
+    final lastRowBottom = tester
+        .getBottomLeft(
+          find.byKey(AddCostCategorySheet.rowKey(CostItemType.equipment)),
+        )
+        .dy;
+    final usableBottom =
+        tester.view.physicalSize.height / ratio - navigationBarHeight;
+    expect(lastRowBottom, lessThanOrEqualTo(usableBottom));
+  });
+
   for (final type in CostItemType.values) {
     testWidgets('returns ${type.name} when its row is tapped', (tester) async {
       await openSheet(tester);
