@@ -134,6 +134,7 @@ class _DeleteLine extends StatelessWidget {
       button: true,
       enabled: !isDisabled,
       label: label,
+      onTap: isDisabled ? null : onTap,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
