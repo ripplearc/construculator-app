@@ -484,7 +484,7 @@ void main() {
       await tester.pump();
       await tester.enterText(find.byKey(const Key('rate_field')), '150');
       await tester.pump();
-      FocusManager.instance.primaryFocus?.unfocus();
+      FocusManager.instance.primaryFocus!.unfocus();
       final gate = database.getAllGate = Completer();
       heldSaves.add(gate);
       final link = find.byKey(const Key('save_as_my_rate_link'));
