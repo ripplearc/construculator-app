@@ -3812,6 +3812,24 @@ abstract class AppLocalizations {
   /// **'Add to estimate'**
   String get addToEstimateButton;
 
+  /// Label of the full-width button that saves the changes to a cost line already on the estimate
+  ///
+  /// In en, this message translates to:
+  /// **'Save this line'**
+  String get saveThisLineButton;
+
+  /// Title of the summary card above the Save this line button, replacing the Adds to this estimate title when a line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Changes this estimate'**
+  String get changesThisEstimateLabel;
+
+  /// Note in the summary card of the edit sheet before any field of the line has changed
+  ///
+  /// In en, this message translates to:
+  /// **'No change yet'**
+  String get noChangeYetNote;
+
   /// Disabled submit button label while the equipment name is empty
   ///
   /// In en, this message translates to:

@@ -202,6 +202,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     return BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
       builder: (context, state) {
         final data = state.formData;
+        if (data.isEditingExistingLine) {
+          return SheetHeader(title: data.lineName);
+        }
         if (data.recalledFromRecents) {
           return SheetHeader(
             title: data.equipmentType,
