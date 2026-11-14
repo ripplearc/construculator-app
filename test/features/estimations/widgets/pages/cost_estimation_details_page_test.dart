@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/add_cost
 import 'package:construculator/features/estimation/presentation/widgets/add_cost_category_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_line_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_sections_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
@@ -2000,6 +2001,164 @@ void main() {
               .where((c) => c['table'] == DatabaseConstants.costItemsTable),
           hasLength(1),
         );
+      });
+    });
+
+    group('Editing a line', () {
+      Future<void> openLine(
+        WidgetTester tester,
+        List<Map<String, dynamic>> lines,
+      ) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        fakeSupabase.addTableData(DatabaseConstants.costItemsTable, lines);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+      }
+
+      Map<String, dynamic> scissorLift() =>
+          CostItemTestDataMapFactory.createEquipmentItemData(
+            id: 'q1',
+            estimateId: testEstimationId,
+            itemName: 'Scissor lift',
+            duration: 3.0,
+            dailyRate: 200.0,
+            itemTotalCost: 600.0,
+          );
+
+      Finder lineRow(String id) => find.byKey(Key('cost_line_frame_$id'));
+
+      testWidgets('tapping an equipment line opens its sheet, filled in', (
+        tester,
+      ) async {
+        await openLine(tester, [scissorLift()]);
+
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text(l10n.saveThisLineButton), findsOneWidget);
+        expect(find.text('Scissor lift'), findsWidgets);
+      });
+
+      testWidgets('saving a change shows the new total on the line and adds '
+          'no line or toast', (tester) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(
+          find.descendant(of: lineRow('q1'), matching: find.text(r'$800.00')),
+          findsOneWidget,
+        );
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+        expect(
+          fakeSupabase
+              .getMethodCallsFor('insert')
+              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
+          isEmpty,
+        );
+      });
+
+      testWidgets('a saved change does not mark the line as just added', (
+        tester,
+      ) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pumpAndSettle();
+
+        expect(
+          BlocProvider.of<AddedLineHighlightCubit>(
+            tester.element(find.byType(Scaffold).first),
+          ).state,
+          isNull,
+        );
+      });
+
+      testWidgets('deleting takes the line off the list', (tester) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(lineRow('q1'), findsNothing);
+        expect(find.text(l10n.costSectionExamplesEquipment), findsOneWidget);
+      });
+
+      testWidgets('two quick taps on a line open one sheet', (tester) async {
+        await openLine(tester, [scissorLift()]);
+
+        final tapRow = tester
+            .widget<CostLineRow>(find.byType(CostLineRow))
+            .onTap!;
+        tapRow();
+        tapRow();
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('a line can be opened again once its sheet is closed', (
+        tester,
+      ) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('tapping a material line opens no sheet yet', (tester) async {
+        await openLine(tester, [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'm1',
+            estimateId: testEstimationId,
+            itemName: 'Drywall sheets',
+          ),
+        ]);
+
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+      });
+
+      testWidgets('closing an untouched sheet leaves the line as it was', (
+        tester,
+      ) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(SheetHeader.backButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(fakeSupabase.getMethodCallsFor('update'), isEmpty);
+        expect(lineRow('q1'), findsOneWidget);
       });
     });
   });
