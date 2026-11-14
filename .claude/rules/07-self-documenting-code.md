@@ -9,7 +9,7 @@ Code Quality & Maintainability
 ## Severity Levels
 - **Critical:** AI-generated artifacts or placeholder comments in production code
 - **Major:** Step-by-step narrative comments explaining what code does
-- **Minor:** Obscure naming requiring explanatory comments
+- **Minor:** Any comment above a private member; obscure naming requiring explanatory comments
 - **Suggestion:** Refactor complex logic into descriptive helper methods
 
 ## Description
@@ -36,10 +36,10 @@ All production code in `lib/`.
 
 - **Public APIs:** dartdoc with purpose, contract, return shape (`Either<Failure, T>`), and an example. Document inputs that are not obvious from the type.
 - **Class purpose:** one paragraph at the top of every public class — what it does, what it abstracts, lifecycle notes (e.g. dispose).
-- **Non-obvious state:** brief dartdoc on private fields whose meaning isn't obvious from the name.
 
 ### What NOT to Write — Implementation Comments
 
+- **Any comment above a private member** (`_field`, `_method()`, `_PrivateClass`, and every member of a private class or enum, whatever its name). This covers `//` and `///`, including "why" comments. Rename so the name carries the meaning; if the why still matters, put it in a named constant, a helper or a test. The reviewers ruled this on many PRs. Two lines are not comments about the code and are allowed: a `// TODO:` line that names its YouTrack ticket, as `[CA-XXX]` or as the `https://ripplearc.youtrack.cloud/issue/CA-XXX` link (and the `//` lines that continue it), and an analyzer `// ignore:` line.
 - AI residuals (`// <-- ADD THIS`, `// TODO: implement`, `// Fix:`).
 - Step-by-step narration (`// Initialize total to zero`, `// Loop through items`).
 - Comments that restate the code (`// Increment counter` above `counter++`).
@@ -94,7 +94,9 @@ Comments earn their place when they explain **why**, not **what**:
 
 - **Non-obvious business rules:** `// Tax rate changes to 9% for commercial properties per 2024 tax law`
 - **Workarounds:** `// Supabase doesn't support nested transactions; commit stages separately. https://github.com/supabase/supabase/issues/1234`
-- **Algorithm intent** that survives extraction: complexity notes, contract on non-trivial private helpers.
+- **Algorithm intent** that survives extraction: complexity notes inside a method body.
+
+These are comments inside a method body (any method, private methods included) or above a public declaration. None of them goes above a private member; only a ticketed `// TODO:` or an `// ignore:` line may sit there.
 
 ---
 
@@ -105,7 +107,8 @@ Comments earn their place when they explain **why**, not **what**:
 | Pattern | Grep / Regex | Severity |
 |---|---|---|
 | AI residuals | `grep -rn "// <--\\|// ADD THIS\\|// implementation here\\|// TODO: implement\\|// Fix:" lib/` | Critical |
-| Step-by-step narration | 3+ consecutive `//` lines inside a method body | Major |
+| Step-by-step narration | 3+ consecutive `//` lines inside a method body that only say what the code does (a block that says *why* is fine) | Major |
+| Comment above a private member | a `//` or `///` line directly above a declaration whose name starts with `_`, or above any member of a `class _…` / `enum _…`. Not a `// TODO:` line that names its ticket (`[CA-XXX]` or the YouTrack link) or its continuation lines, and not an `// ignore:` line | Minor |
 | Obscure name + comment | `(var\\|final\\|const)\\s+(data\\|info\\|val\\|tmp\\|temp\\|x\\|y)\\s*=.*//` | Minor |
 | Commented-out code | `grep -rn "^[[:space:]]*//.*\\(await\\|return\\|if\\|for\\)" lib/` | Major |
 | Magic numbers | numeric literal ≥ 2 with no named constant context, used > once | Minor |
@@ -117,10 +120,11 @@ Comments earn their place when they explain **why**, not **what**:
 |---|---|---|
 | `// <-- ADD THIS` / `// TODO: implement` | Delete the placeholder | Critical |
 | `// Loop through items` above a `for` | Delete the comment | Major |
+| `/// Rows loaded so far.` above `final _rows` | Delete the comment; rename to `_loadedRows` | Minor |
 | `var data // user info` | Rename to `userData` | Minor |
 | Commented-out code block | Delete; use git for history | Major |
 | `0.08` repeated without a constant | Extract to `static const _taxRate = 0.08;` | Minor |
-| 5+ single-line comments in one method | Extract complex logic into helpers | Major |
+| 5+ single-line comments in one method that say what the code does | Extract complex logic into helpers | Major |
 | Inline changelog comment | Delete; commit messages own history | Minor |
 
 ### Review Questions

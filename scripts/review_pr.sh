@@ -341,7 +341,7 @@ echo "**Core Principle:** Code must be expressive and clean. Use 'Code Documenta
 echo "" >> "$OUTPUT_FILE"
 echo "**✅ What to Keep (Code Documentation):**" >> "$OUTPUT_FILE"
 echo "- **Public APIs:** Brief docstrings for Classes, Interfaces, and public Methods that explain *purpose* and *usage*." >> "$OUTPUT_FILE"
-echo "- **Member Variables:** Documentation explaining the *intent* of a state variable if not immediately obvious." >> "$OUTPUT_FILE"
+echo "- **Public Members:** Documentation of the *intent* of a public field or getter if not immediately obvious. No comment above a private member; rename it instead." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 echo "**❌ Red Flags (Implementation Comments/Vibe Killers):**" >> "$OUTPUT_FILE"
 echo "- **AI Residuals:** Instructional comments left by LLMs like \`// <-- ADD THIS\`, \`// implementation here\`, or \`// Fix: ...\`." >> "$OUTPUT_FILE"
