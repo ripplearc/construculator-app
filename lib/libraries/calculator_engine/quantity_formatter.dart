@@ -91,6 +91,11 @@ class QuantityFormatter extends Equatable {
         Volume() => _volume(value, groupThousands),
         Weight() => _weight(value, groupThousands),
         Angle() => _angle(value, groupThousands),
+        Scalar(:final decimals?, padsDecimals: true) => _paddedNumber(
+          value.value,
+          decimals,
+          groupThousands,
+        ),
         Scalar(:final decimals?) => _jsRoundedNumber(
           value.value,
           decimals,
@@ -279,6 +284,13 @@ class QuantityFormatter extends Equatable {
       return _jsRoundedNumber(value, resultDecimals, group);
     }
     return double.parse(value.toStringAsPrecision(2)).toString();
+  }
+
+  String _paddedNumber(double value, int decimals, bool group) {
+    final text = _jsRoundedNumber(value, decimals, group);
+    final point = text.indexOf('.');
+    final shown = point == -1 ? 0 : text.length - point - 1;
+    return '${point == -1 ? '$text.' : text}${'0' * (decimals - shown)}';
   }
 
   String _jsRoundedNumber(double value, int decimals, bool group) {

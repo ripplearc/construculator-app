@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CALCULATOR ENGINE TRADES MUTATION TESTING -->
+    <!-- Targets: Trades, the sheet and piece counts of UX Design Doc
+         Section 9. Critical path: the count is what the user orders; a
+         count over the wrong face, a size that divides by nothing, or a
+         recount that forgets its area is a wrong order that still looks
+         like one. -->
+
+    <files>
+        <file>lib/libraries/calculator_engine/trades.dart</file>
+        <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: the face is the width alone -->
+        <regex pattern="double get squareTicks =&gt; width\.preciseTicks \* height\.preciseTicks;" dotAll="true" id="trades.piece.face_is_width">
+            <mutation text="double get squareTicks =&gt; width.preciseTicks;"/>
+        </regex>
+
+        <!-- RULE 1a: the face is rounded to whole ticks before the division -->
+        <regex pattern="double get squareTicks =&gt; width\.preciseTicks \* height\.preciseTicks;" dotAll="true" id="trades.piece.face_from_whole_ticks">
+            <mutation text="double get squareTicks =&gt; width.ticks * height.ticks.toDouble();"/>
+        </regex>
+
+        <!-- RULE 2: the count multiplies instead of divides -->
+        <regex pattern="double get count =&gt; area\.squareTicks / size\.squareTicks;" dotAll="true" id="trades.count.multiply">
+            <mutation text="double get count =&gt; area.squareTicks * size.squareTicks;"/>
+        </regex>
+
+        <!-- RULE 3: a recount forgets the area or the trade -->
+        <regex pattern="return TradeCount\(trade: trade, area: area, size: size\);" dotAll="true" id="trades.recount.forgets">
+            <mutation text="return TradeCount(trade: trade, area: const Area(0), size: size);"/>
+            <mutation text="return TradeCount(trade: Trade.drywall, area: area, size: size);"/>
+        </regex>
+
+        <!-- RULE 3a: a recount takes a size with no face, or refuses one with a face -->
+        <regex pattern="if \(!size\.hasFace\) return null;" dotAll="true" id="trades.recount.no_face_taken">
+            <mutation text=""/>
+            <mutation text="if (size.hasFace) return null;"/>
+            <mutation text="if (size.squareTicks &lt;= 0) return null;"/>
+        </regex>
+
+        <!-- RULE 7: a face is checked as a product, on one side, or at zero -->
+        <regex pattern="bool get hasFace =&gt; width\.preciseTicks &gt; 0 &amp;&amp; height\.preciseTicks &gt; 0;" dotAll="true" id="trades.piece.has_face">
+            <mutation text="bool get hasFace =&gt; width.preciseTicks &gt; 0 || height.preciseTicks &gt; 0;"/>
+            <mutation text="bool get hasFace =&gt; width.preciseTicks &gt; 0;"/>
+            <mutation text="bool get hasFace =&gt; height.preciseTicks &gt; 0;"/>
+            <mutation text="bool get hasFace =&gt; width.preciseTicks &gt;= 0 &amp;&amp; height.preciseTicks &gt; 0;"/>
+            <mutation text="bool get hasFace =&gt; width.preciseTicks &gt; 0 &amp;&amp; height.preciseTicks &gt;= 0;"/>
+            <mutation text="bool get hasFace =&gt; squareTicks &gt; 0;"/>
+        </regex>
+
+        <!-- RULE 8: the count is written as any result, with other decimals,
+             or with its trailing zeros dropped (0.003 reads 0, not 0.00) -->
+        <regex pattern="Scalar get value =&gt;\s*Scalar\(count, decimals: countDecimals, padsDecimals: true\);" dotAll="true" id="trades.count.decimals">
+            <mutation text="Scalar get value =&gt; Scalar(count);"/>
+            <mutation text="Scalar get value =&gt; Scalar(count, decimals: 3, padsDecimals: true);"/>
+            <mutation text="Scalar get value =&gt; Scalar(count, decimals: 1, padsDecimals: true);"/>
+            <mutation text="Scalar get value =&gt; Scalar(count, decimals: countDecimals);"/>
+        </regex>
+
+        <!-- RULE 8b: a padded count loses its zeros, or a whole count its
+             point (12 reads 12., or 12 where it is 12.00) -->
+        <regex pattern="return '\$\{point == -1 \? '\$text\.' : text\}\$\{'0' \* \(decimals - shown\)\}';" dotAll="true" id="formatter.padded_number.zeros">
+            <mutation text="return text;"/>
+            <mutation text="return '${point == -1 ? text : text}${'0' * (decimals - shown)}';"/>
+            <mutation text="return '${point == -1 ? '$text.' : text}${'0' * (decimals - shown - 1)}';"/>
+        </regex>
+
+        <!-- RULE 6: an area of zero or less is counted -->
+        <regex pattern="if \(area\.squareTicks &lt;= 0\) return const \[\];" dotAll="true" id="trades.counts.area_below_zero_counted">
+            <mutation text=""/>
+            <mutation text="if (area.squareTicks &lt; 0) return const [];"/>
+            <mutation text="if (area.squareTicks &lt;= 1) return const [];"/>
+        </regex>
+
+        <!-- RULE 4: a size with no face is counted -->
+        <regex pattern="if \(size\.hasFace\) TradeCount" dotAll="true" id="trades.counts.no_face_guard">
+            <mutation text="if (size.squareTicks &gt; 0) TradeCount"/>
+            <mutation text="if (!size.hasFace) TradeCount"/>
+        </regex>
+
+        <!-- RULE 5: the masonry result key is the drywall one -->
+        <regex pattern="masonry\('Masonry', 'Number of pieces'\);" dotAll="true" id="trades.trade.wrong_result_key">
+            <mutation text="masonry('Masonry', 'Number of sheets');"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="trades" expected-return="0">flutter test test/libraries/calculator_engine/units/trades_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
