@@ -27,9 +27,13 @@ class YourRatesRefreshRecents extends YourRatesRecentsEvent {
 /// Fired when the user searches by item name, optionally scoped to one
 /// [category]. An empty [query] returns every matching entry.
 class YourRatesSearched extends YourRatesEvent {
-  const YourRatesSearched(this.query, {this.category});
+  const YourRatesSearched(this.query, {this.category, this.immediate = false});
   final String query;
   final CostItemType? category;
+
+  /// Skips the typing debounce, for a search the user asked for with a tap
+  /// rather than by typing, such as "Try again".
+  final bool immediate;
 }
 
 /// Fired as the user types in a search box that sits above the recents list.

@@ -664,6 +664,35 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'a search that starts while a retry runs emits no Loading, only the '
+        'SearchResults',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a refresh of the recents that starts while a retry runs emits no '
+        'Loading, only the Loaded',
+        build: () => bloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'a search after a read that worked emits Loading, not Retrying',
         setUp: () {
           database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
@@ -684,6 +713,26 @@ void main() {
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
         queryDebounce: const Duration(days: 1),
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'an immediate search skips the debounce and emits Retrying at once',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: longDebounceBloc,
+        seed: () => failedRead,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched(
+              'exc',
+              category: CostItemType.equipment,
+              immediate: true,
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesSearchResults>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(

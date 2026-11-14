@@ -13,6 +13,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -185,33 +186,102 @@ void main() {
       await setupA11yTest(tester);
       database.getAllError = StateError('database locked');
       final handle = tester.ensureSemantics();
+      final gate = Completer<void>();
+      try {
+        await tester.pumpWidget(makeWidget(CoreTheme.light()));
+        await tester.pumpAndSettle();
+        database.getAllError = null;
+        database.getAllGate = gate;
+
+        await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+        await tester.pumpAndSettle();
+
+        final zone = tester.getSize(
+          find.byKey(const Key('your_rates_try_again_button')),
+        );
+        expect(zone.width, greaterThanOrEqualTo(48));
+        expect(zone.height, greaterThanOrEqualTo(48));
+        final action = tester
+            .getSemantics(find.bySemanticsLabel(_l10n.yourRatesTryAgain))
+            .getSemanticsData();
+        expect(action.flagsCollection.isButton, isTrue);
+        expect(action.flagsCollection.isEnabled, Tristate.isFalse);
+        expect(action.hasAction(SemanticsAction.tap), isFalse);
+        expect(
+          tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
+          isSemantics(isLiveRegion: true),
+        );
+      } finally {
+        gate.complete();
+        await tester.pumpAndSettle();
+        handle.dispose();
+      }
+    });
+
+    testWidgets('a11y: a retry that fails again announces the failed-read '
+        'message, and opening the sheet does not', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final announcements = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockDecodedMessageHandler<dynamic>(
+        SystemChannels.accessibility,
+        (message) async {
+          final event = message as Map<Object?, Object?>;
+          if (event['type'] == 'announce') {
+            final data = event['data']! as Map<Object?, Object?>;
+            announcements.add(data['message']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => messenger.setMockDecodedMessageHandler<dynamic>(
+          SystemChannels.accessibility,
+          null,
+        ),
+      );
+
       await tester.pumpWidget(makeWidget(CoreTheme.light()));
       await tester.pumpAndSettle();
-      database.getAllError = null;
-      database.getAllGate = Completer<void>();
+      expect(announcements, isEmpty);
 
       await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
       await tester.pumpAndSettle();
 
-      final zone = tester.getSize(
-        find.byKey(const Key('your_rates_try_again_button')),
-      );
-      expect(zone.width, greaterThanOrEqualTo(48));
-      expect(zone.height, greaterThanOrEqualTo(48));
-      final action = tester
-          .getSemantics(find.bySemanticsLabel(_l10n.yourRatesTryAgain))
-          .getSemanticsData();
-      expect(action.flagsCollection.isButton, isTrue);
-      expect(action.flagsCollection.isEnabled, Tristate.isFalse);
-      expect(action.hasAction(SemanticsAction.tap), isFalse);
-      expect(
-        tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
-        isSemantics(isLiveRegion: true),
-      );
+      expect(announcements, [_l10n.yourRatesLoadError]);
+    });
 
-      database.getAllGate!.complete();
+    testWidgets('a11y: a retry that works announces nothing', (tester) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final announcements = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockDecodedMessageHandler<dynamic>(
+        SystemChannels.accessibility,
+        (message) async {
+          final event = message as Map<Object?, Object?>;
+          if (event['type'] == 'announce') {
+            final data = event['data']! as Map<Object?, Object?>;
+            announcements.add(data['message']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => messenger.setMockDecodedMessageHandler<dynamic>(
+          SystemChannels.accessibility,
+          null,
+        ),
+      );
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
       await tester.pumpAndSettle();
-      handle.dispose();
+      database.getAllError = null;
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      expect(announcements, isEmpty);
     });
   });
 }

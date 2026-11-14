@@ -74,7 +74,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       _onSearched,
       transformer: _lookupSearchTransformer(
         queryDebounce,
-        (event) => event.query,
+        (event) => event.immediate ? '' : event.query,
       ),
     );
     on<YourRatesRecentsEvent>(
@@ -93,6 +93,11 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
       transformer: _ignoreWhileInFlight(),
     );
   }
+
+  YourRatesState _stateWhileLoading() =>
+      state is YourRatesError || state is YourRatesRetrying
+      ? const YourRatesRetrying()
+      : const YourRatesLoading();
 
   Future<String?> _resolvedCompanyId({
     required void Function(Failure failure) onFailure,
@@ -113,11 +118,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     YourRatesRefreshRecents event,
     Emitter<YourRatesState> emit,
   ) async {
-    emit(
-      state is YourRatesError
-          ? const YourRatesRetrying()
-          : const YourRatesLoading(),
-    );
+    emit(_stateWhileLoading());
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
       onNoCompany: () => emit(const YourRatesLoaded([])),
@@ -138,19 +139,14 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   Future<void> _onSearched(
     YourRatesSearched event,
     Emitter<YourRatesState> emit,
-  ) => _search(event.query, event.category, emit, retryAfterError: true);
+  ) => _search(event.query, event.category, emit);
 
   Future<void> _search(
     String query,
     CostItemType? category,
-    Emitter<YourRatesState> emit, {
-    bool retryAfterError = false,
-  }) async {
-    emit(
-      retryAfterError && state is YourRatesError
-          ? const YourRatesRetrying()
-          : const YourRatesLoading(),
-    );
+    Emitter<YourRatesState> emit,
+  ) async {
+    emit(_stateWhileLoading());
     final companyId = await _resolvedCompanyId(
       onFailure: (failure) => emit(YourRatesError(failure)),
       onNoCompany: () => emit(YourRatesSearchResults(const [], query.trim())),
@@ -180,7 +176,6 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
         query,
         category,
         emit,
-        retryAfterError: true,
       ),
     };
   }
