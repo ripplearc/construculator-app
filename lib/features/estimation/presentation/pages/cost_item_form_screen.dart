@@ -119,6 +119,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     state is EquipmentCostFormFailure) &&
                 state.formData.hasUnsavedChanges,
             itemNameOf: (state) => state.formData.equipmentType,
+            isSaveRunning: (state) => state.formData.isRateSaveRunning,
             child: sheet,
           ),
         CostItemType.labor => sheet,

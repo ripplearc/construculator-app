@@ -14,7 +14,7 @@ void main() {
     WidgetTester tester, {
     double? deliveryFee,
     AddToEstimateBlock? block,
-    bool isSubmitting = false,
+    bool isBusy = false,
     String? errorMessage,
   }) async {
     await tester.pumpWidget(
@@ -30,7 +30,7 @@ void main() {
             estimateName: 'Bedroom 2',
             estimateTotal: 2993.62,
             block: block,
-            isSubmitting: isSubmitting,
+            isBusy: isBusy,
             errorMessage: errorMessage,
             onAdd: () => addCount++,
           ),
@@ -67,7 +67,7 @@ void main() {
   testWidgets('keeps the label but ignores taps while submitting', (
     tester,
   ) async {
-    await pumpFooter(tester, isSubmitting: true);
+    await pumpFooter(tester, isBusy: true);
 
     await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
 

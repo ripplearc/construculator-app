@@ -1090,6 +1090,164 @@ void main() {
       );
     });
 
+    group('EquipmentRateSaveRunningChangedEvent', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'marks a running save and clears it when the save ends',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true))
+          ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: false)),
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            true,
+          ),
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does not add the line while a save runs',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+          ..add(const EquipmentDurationUpdatedEvent('5'))
+          ..add(const EquipmentRateUpdatedEvent('100'))
+          ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true))
+          ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+          ..add(const EquipmentDeliveryFeeUpdatedEvent('5')),
+        skip: 4,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.deliveryFee,
+            'deliveryFee',
+            5,
+          ),
+        ],
+        verify: (_) {
+          expect(fakeSupabaseWrapper.getMethodCallsFor('insert'), isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a save starting while the line is being added leaves the submit alone',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'));
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..completer = Completer<void>();
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormSubmitting);
+          bloc.add(const EquipmentRateSaveRunningChangedEvent(isRunning: true));
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormSuccess);
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormSuccess>(),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a save that started while the line was being added is still running '
+        'when the add fails',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'));
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..shouldThrowOnInsert = true
+            ..completer = Completer<void>();
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormSubmitting);
+          bloc.add(const EquipmentRateSaveRunningChangedEvent(isRunning: true));
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormFailure);
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormFailure>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a save ending after the line was added does not reopen the form',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'))
+            ..add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormSuccess);
+          bloc
+            ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true))
+            ..add(const EquipmentDeliveryFeeUpdatedEvent('5'));
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having((s) => s.data.deliveryFee, 'deliveryFee', 5)
+              .having(
+                (s) => s.data.isRateSaveRunning,
+                'isRateSaveRunning',
+                false,
+              ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'leaves what was typed, and the unsaved-changes flag, alone',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const EquipmentCostItemTypeChanged('Mini excavator'))
+          ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true)),
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormEditing>()
+              .having(
+                (s) => s.data.equipmentType,
+                'equipmentType',
+                'Mini excavator',
+              )
+              .having(
+                (s) => s.data.hasUnsavedChanges,
+                'hasUnsavedChanges',
+                true,
+              )
+              .having(
+                (s) => s.data.isRateSaveRunning,
+                'isRateSaveRunning',
+                true,
+              ),
+        ],
+      );
+    });
+
     group('EquipmentCostSubmittedEvent', () {
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'sends the typed delivery fee as final (no status) in the insert '
@@ -1527,6 +1685,27 @@ void main() {
             (s) => s.data.deliveryFee,
             'deliveryFee',
             8500,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Go back keeps a default save that started during the fee question '
+        'running',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '8500');
+          bloc
+            ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+            ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true))
+            ..add(const EquipmentOutsizedFeeDeclinedEvent());
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            true,
           ),
         ],
       );
