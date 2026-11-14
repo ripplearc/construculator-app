@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/trimmed_number_format.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
@@ -24,7 +26,11 @@ const double _nameBottomPadding = 6;
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
-  const MaterialCostFormFields({super.key});
+  /// The line already on the estimate that this form edits and fills its
+  /// fields from, or `null` when the form adds a new line.
+  final MaterialCostItem? editedItem;
+
+  const MaterialCostFormFields({super.key, this.editedItem});
 
   @override
   State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
@@ -37,6 +43,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   final _nameFocus = FocusNode();
   final _quantityFocus = FocusNode();
   final _rateFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editedItem case final item?) _fillFromEditedItem(item);
+  }
 
   @override
   void dispose() {
@@ -152,8 +164,17 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     );
   }
 
+  void _fillFromEditedItem(MaterialCostItem item) {
+    context.read<MaterialCostFormBloc>().add(MaterialCostEditOpened(item));
+    _nameController.text = item.itemName;
+    _quantityController.text = formatTrimmedNumber(item.quantity.value);
+    _rateController.text = formatTrimmedNumber(item.unitPrice.amount);
+  }
+
   bool _isSaving(MaterialCostFormState state) =>
-      state is MaterialCostFormSubmitting || state is MaterialCostFormSuccess;
+      state is MaterialCostFormSubmitting ||
+      state is MaterialCostFormSuccess ||
+      state is MaterialCostFormDeleted;
 
   TextInputFormatter _decimalLimitFormatter({required int decimals}) {
     final allowed = RegExp(
