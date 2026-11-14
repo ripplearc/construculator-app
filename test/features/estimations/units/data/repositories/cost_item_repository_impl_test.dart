@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/repositories/cost_item
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -12,6 +13,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/fake_cost_items_database.dart';
 import '../../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
@@ -41,6 +43,9 @@ void main() {
             supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
           ),
         ),
+      );
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(
+        FakeCostItemsDatabase(),
       );
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
@@ -134,8 +139,12 @@ void main() {
     group('getEstimateItemsTotal', () {
       void seedTotals(List<num> totals) {
         fakeSupabaseWrapper.addTableData('cost_items', [
-          for (final total in totals)
-            {'estimate_id': 'estimate-1', 'item_total_cost': total},
+          for (final (index, total) in totals.indexed)
+            {
+              'id': 'line-$index',
+              'estimate_id': 'estimate-1',
+              'item_total_cost': total,
+            },
         ]);
       }
 
@@ -192,10 +201,10 @@ void main() {
         expect(result.getRightOrNull(), 0);
       });
 
-      test('maps a connection failure to connectionError', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType =
-            SupabaseExceptionType.socket;
+      test('maps an unexpected server failure to unexpectedError', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.postgrest;
 
         final result = await repository.getEstimateItemsTotal('estimate-1');
 
@@ -204,14 +213,18 @@ void main() {
           isA<EstimationFailure>().having(
             (f) => f.errorType,
             'errorType',
-            EstimationErrorType.connectionError,
+            EstimationErrorType.unexpectedError,
           ),
         );
       });
 
       test('maps a TypeError to parsingError', () async {
         fakeSupabaseWrapper.addTableData('cost_items', [
-          {'estimate_id': 'estimate-1', 'item_total_cost': 'not a number'},
+          {
+            'id': 'line-1',
+            'estimate_id': 'estimate-1',
+            'item_total_cost': 'not a number',
+          },
         ]);
 
         final result = await repository.getEstimateItemsTotal('estimate-1');

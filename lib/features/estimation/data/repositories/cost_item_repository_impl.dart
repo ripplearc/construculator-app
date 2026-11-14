@@ -89,19 +89,44 @@ class CostItemRepositoryImpl implements CostItemRepository {
   Future<Either<Failure, double>> getEstimateItemsTotal(
     String estimateId,
   ) async {
+    final Map<String, double> onThisPhone;
     try {
-      final totals = await dataSource.fetchItemTotalCostsByEstimateId(
+      final lines = await localDataSource.loadCostItemsByEstimateId(estimateId);
+      onThisPhone = {for (final line in lines) line.id: line.itemTotalCost};
+    } catch (_) {
+      return const Left(_phoneStorageFailure);
+    }
+    try {
+      final onServer = await dataSource.fetchItemTotalCostsByEstimateId(
         estimateId,
       );
-      if (totals.length >= _maxRowsPerRequest) {
+      if (onServer.length >= _maxRowsPerRequest) {
         return _rowLimitFailure(estimateId);
       }
-      final cents = totals.fold<int>(0, (sum, t) => sum + (t * 100).round());
-      return Right(cents / 100);
+      return Right(_sumToCent({...onServer, ...onThisPhone}));
+    } on TimeoutException catch (e) {
+      return _totalFromThisPhone(onThisPhone, e);
+    } on SocketException catch (e) {
+      return _totalFromThisPhone(onThisPhone, e);
     } catch (e) {
       return _handleError(e, 'summing cost items');
     }
   }
+
+  Either<Failure, double> _totalFromThisPhone(
+    Map<String, double> onThisPhone,
+    Object reason,
+  ) {
+    // TODO: [CA-648] read every line from the phone once a sync stream delivers cost_items. https://ripplearc.youtrack.cloud/issue/CA-648
+    _logger.warning(
+      'Server unreachable ($reason), so the total counts only the '
+      '${onThisPhone.length} lines on this phone',
+    );
+    return Right(_sumToCent(onThisPhone));
+  }
+
+  static double _sumToCent(Map<String, double> totalsById) =>
+      totalsById.values.fold<int>(0, (sum, t) => sum + (t * 100).round()) / 100;
 
   @override
   Future<Either<Failure, List<CostItem>>> getCostItemsForEstimate(

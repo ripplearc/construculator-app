@@ -22,6 +22,10 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   /// How long the estimate lookup waits for the server before it gives up.
   final Duration lookupTimeout;
 
+  /// How long the estimate total waits for the server before the total counts
+  /// only the lines on this phone.
+  final Duration totalsTimeout;
+
   /// How many of the newest matching lines the estimate lookup reads. A line
   /// further back is not found, and the message is then shown without an
   /// estimate name.
@@ -30,6 +34,7 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   RemoteCostItemDataSource({
     required this._supabaseWrapper,
     this.lookupTimeout = const Duration(seconds: 3),
+    this.totalsTimeout = const Duration(seconds: 5),
   });
 
   @override
@@ -69,22 +74,24 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   }
 
   @override
-  Future<List<double>> fetchItemTotalCostsByEstimateId(
+  Future<Map<String, double>> fetchItemTotalCostsByEstimateId(
     String estimateId,
   ) async {
     _logger.debug('Fetching item totals for estimate: $estimateId');
-    final response = await _supabaseWrapper.select(
-      table: DatabaseConstants.costItemsTable,
-      columns: DatabaseConstants.itemTotalCostColumn,
-      filterColumn: DatabaseConstants.estimateIdColumn,
-      filterValue: estimateId,
-    );
-    return response
-        .map(
-          (row) =>
-              (row[DatabaseConstants.itemTotalCostColumn] as num).toDouble(),
+    final response = await _supabaseWrapper
+        .selectMatch(
+          table: DatabaseConstants.costItemsTable,
+          columns:
+              '${DatabaseConstants.idColumn}, ${DatabaseConstants.itemTotalCostColumn}',
+          filters: {DatabaseConstants.estimateIdColumn: estimateId},
+          retry: false,
         )
-        .toList();
+        .timeout(totalsTimeout);
+    return {
+      for (final row in response)
+        row[DatabaseConstants.idColumn] as String:
+            (row[DatabaseConstants.itemTotalCostColumn] as num).toDouble(),
+    };
   }
 
   @override

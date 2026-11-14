@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -92,6 +93,108 @@ void main() {
         database.executeError = StateError('disk full');
 
         final result = await repository.addCostItemOnPhone(line());
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+      });
+    });
+
+    group('getEstimateItemsTotal', () {
+      void seedServer(Map<String, num> totalsById) {
+        supabase.addTableData('cost_items', [
+          for (final entry in totalsById.entries)
+            {
+              'id': entry.key,
+              'estimate_id': 'estimate-1',
+              'item_total_cost': entry.value,
+            },
+        ]);
+      }
+
+      test('counts a line saved on the phone that the server lacks', () async {
+        seedServer({'server-1': 2000});
+        await repository.addCostItemOnPhone(line());
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 2100);
+      });
+
+      test('counts a line the server and the phone both have once', () async {
+        seedServer({'line-1': 100});
+        await repository.addCostItemOnPhone(line());
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 100);
+      });
+
+      test('counts the phone\'s total for a line both have', () async {
+        seedServer({'line-1': 90});
+        await repository.addCostItemOnPhone(line());
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 100);
+      });
+
+      test('counts only the lines on the phone when the server cannot be '
+          'reached', () async {
+        seedServer({'server-1': 2000});
+        await repository.addCostItemOnPhone(line());
+        supabase.shouldThrowOnSelectMatch = true;
+        supabase.selectMatchExceptionType = SupabaseExceptionType.socket;
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 100);
+      });
+
+      test(
+        'counts only the lines on the phone when the server times out',
+        () async {
+          await repository.addCostItemOnPhone(line());
+          supabase.shouldThrowOnSelectMatch = true;
+          supabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+
+          final result = await repository.getEstimateItemsTotal('estimate-1');
+
+          expect(result.getRightOrNull(), 100);
+        },
+      );
+
+      test('does not count another estimate\'s lines on the phone', () async {
+        await repository.addCostItemOnPhone(line());
+        await repository.addCostItemOnPhone(
+          MaterialCostItem(
+            id: 'other',
+            estimateId: 'estimate-2',
+            itemName: 'Sand',
+            calculation: const {},
+            itemTotalCost: 50,
+            createdAt: DateTime.utc(2026, 11, 14),
+            updatedAt: DateTime.utc(2026, 11, 14),
+            currency: 'USD',
+            unitPrice: const Money(amount: 5),
+            quantity: const Quantity(value: 10, unit: Unit.bags),
+            rateStatus: RateStatus.ownRateUnconfirmed,
+            quantityProvenance: QuantityProvenance.manual,
+          ),
+        );
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
+
+        expect(result.getRightOrNull(), 100);
+      });
+
+      test('fails when the phone cannot be read', () async {
+        database.getAllError = StateError('database locked');
+
+        final result = await repository.getEstimateItemsTotal('estimate-1');
 
         expect(
           result.getLeftOrNull(),

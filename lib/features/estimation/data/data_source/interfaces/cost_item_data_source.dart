@@ -29,11 +29,18 @@ abstract class CostItemDataSource {
     String? itemType,
   });
 
-  /// Fetches only the `item_total_cost` of every live cost item of an
-  /// estimate. Soft-deleted items are hidden by the database policy.
+  /// Fetches the `item_total_cost` of every live cost item of an estimate,
+  /// keyed by the item's id. Soft-deleted items are hidden by the database
+  /// policy.
   ///
-  /// Returns an empty list if the estimate has no items.
-  Future<List<double>> fetchItemTotalCostsByEstimateId(String estimateId);
+  /// Returns an empty map if the estimate has no items.
+  ///
+  /// Does not retry. Throws a `TimeoutException` if the server does not
+  /// answer within a few seconds, and a `SocketException` when there is no
+  /// connection, so a caller can fall back to the lines on the phone.
+  Future<Map<String, double>> fetchItemTotalCostsByEstimateId(
+    String estimateId,
+  );
 
   /// Creates a new cost item in the remote database.
   ///
