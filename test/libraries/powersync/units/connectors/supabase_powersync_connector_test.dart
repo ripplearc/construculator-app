@@ -213,6 +213,141 @@ void main() {
         expect(calls.last['data'], {'deleted_at': '2026-11-02T10:00:00.000Z'});
       });
 
+      test(
+        'PUT of a cost item sends its calculation as a JSON object',
+        () async {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+                'estimate_id': 'estimate-1',
+                'item_name': 'Plywood',
+                'calculation': '{"unit_price": 10.0, "quantity": 2.0}',
+              }),
+            ]),
+          );
+
+          await connector.uploadData(fakeDatabase);
+
+          final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+          expect(data, containsPair('id', 'line-1'));
+          expect(
+            data['calculation'],
+            equals({'unit_price': 10.0, 'quantity': 2.0}),
+          );
+        },
+      );
+
+      test('PUT of a cost item sends a null for each column the phone left '
+          'out, so a cleared field is cleared on the server', () async {
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'cost_items', 'line-1', null, {
+              'estimate_id': 'estimate-1',
+              'calculation': '{}',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+        expect(data, containsPair('description', null));
+        expect(data, containsPair('item_name', null));
+        expect(data, containsPair('estimate_id', 'estimate-1'));
+      });
+
+      test('PUT of another table sends only the columns it has', () async {
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.put, 'projects', 'proj-1', null, {
+              'project_name': 'House',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+        expect(data.keys, unorderedEquals(['project_name', 'id']));
+      });
+
+      test('PATCH of a cost item decodes calculation and sends only what '
+          'changed', () async {
+        fakeSupabase.addTableData('cost_items', [
+          {'id': 'line-1', 'item_name': 'Plywood'},
+        ]);
+        fakeDatabase.setNextTransaction(
+          FakeCrudTransaction([
+            CrudEntry(1, UpdateType.patch, 'cost_items', 'line-1', null, {
+              'calculation': '{"quantity": 3.0}',
+            }),
+          ]),
+        );
+
+        await connector.uploadData(fakeDatabase);
+
+        final data = fakeSupabase.getMethodCallsFor('update').single['data'];
+        expect(data, {
+          'calculation': {'quantity': 3.0},
+        });
+      });
+
+      test(
+        'a cost item uploaded twice with one id stays one server row',
+        () async {
+          for (final changeId in [1, 2]) {
+            fakeDatabase.setNextTransaction(
+              FakeCrudTransaction([
+                CrudEntry(
+                  changeId,
+                  UpdateType.put,
+                  'cost_items',
+                  'line-1',
+                  null,
+                  {
+                    'estimate_id': 'estimate-1',
+                    'item_name': 'Plywood',
+                    'calculation': '{}',
+                  },
+                ),
+              ]),
+            );
+            await connector.uploadData(fakeDatabase);
+          }
+
+          final rows = await fakeSupabase.selectMatch(
+            table: 'cost_items',
+            filters: const {},
+          );
+          expect(rows.map((row) => row['id']), ['line-1']);
+        },
+      );
+
+      test('the later of two uploads of one cost item is the one the server '
+          'keeps', () async {
+        for (final entry in [(1, 'Plywood'), (2, 'Plywood 3/4 in')]) {
+          fakeDatabase.setNextTransaction(
+            FakeCrudTransaction([
+              CrudEntry(
+                entry.$1,
+                UpdateType.put,
+                'cost_items',
+                'line-1',
+                null,
+                {'item_name': entry.$2, 'calculation': '{}'},
+              ),
+            ]),
+          );
+          await connector.uploadData(fakeDatabase);
+        }
+
+        final rows = await fakeSupabase.selectMatch(
+          table: 'cost_items',
+          filters: const {},
+        );
+        expect(rows.single['item_name'], 'Plywood 3/4 in');
+      });
+
       test('another table\'s JSON text is sent as the text it is', () async {
         fakeDatabase.setNextTransaction(
           FakeCrudTransaction([
