@@ -290,6 +290,39 @@ void main() {
       );
     });
 
+    testWidgets('a failed add keeps Add to estimate off and back waiting '
+        'while the default still saves', (tester) async {
+      await Modular.get<CurrentCompanyResolver>().resolve();
+      await openSheet(tester);
+      await enter(tester, 'equipment_name_field', 'Mini excavator');
+      await enter(tester, 'duration_field', '3');
+      await enter(tester, 'rate_field', '145');
+      final insertGate = fakeSupabase.completer = Completer();
+      fakeSupabase
+        ..shouldDelayOperations = true
+        ..shouldThrowOnInsert = true;
+      final addButton = find.byKey(AddToEstimateFooter.buttonKey);
+      await tester.tap(addButton);
+      await tester.pump();
+      final saveGate = database.getAllGate = Completer<void>();
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pump();
+
+      insertGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(addButton).flagsCollection.isEnabled,
+        Tristate.isFalse,
+      );
+      await tapBack(tester);
+      expect(dialogTitle(), findsNothing);
+      saveGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+    });
+
     testWidgets('a form put back as it was opened closes without asking '
         'once the save ends', (tester) async {
       await openSheet(tester);

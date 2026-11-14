@@ -1161,6 +1161,38 @@ void main() {
       );
 
       blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a save that started while the line was being added is still running '
+        'when the add fails',
+        build: () => bloc,
+        act: (bloc) async {
+          bloc
+            ..add(const EquipmentCostItemTypeChanged(testEquipmentType))
+            ..add(const EquipmentDurationUpdatedEvent('5'))
+            ..add(const EquipmentRateUpdatedEvent('100'));
+          fakeSupabaseWrapper
+            ..shouldDelayOperations = true
+            ..shouldThrowOnInsert = true
+            ..completer = Completer<void>();
+          bloc.add(
+            const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+          );
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormSubmitting);
+          bloc.add(const EquipmentRateSaveRunningChangedEvent(isRunning: true));
+          fakeSupabaseWrapper.completer!.complete();
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormFailure);
+        },
+        skip: 3,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormFailure>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            true,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
         'a save ending after the line was added does not reopen the form',
         build: () => bloc,
         act: (bloc) async {
@@ -1653,6 +1685,27 @@ void main() {
             (s) => s.data.deliveryFee,
             'deliveryFee',
             8500,
+          ),
+        ],
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'Go back keeps a default save that started during the fee question '
+        'running',
+        build: () => bloc,
+        act: (bloc) {
+          fillDay(bloc, fee: '8500');
+          bloc
+            ..add(const EquipmentCostSubmittedEvent(estimateId: testEstimateId))
+            ..add(const EquipmentRateSaveRunningChangedEvent(isRunning: true))
+            ..add(const EquipmentOutsizedFeeDeclinedEvent());
+        },
+        skip: 5,
+        expect: () => [
+          isA<EquipmentCostFormEditing>().having(
+            (s) => s.data.isRateSaveRunning,
+            'isRateSaveRunning',
+            true,
           ),
         ],
       );

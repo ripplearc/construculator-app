@@ -56,7 +56,7 @@ class EquipmentAddToEstimateFooter extends StatelessWidget {
           estimateName: estimateName,
           estimateTotal: estimateTotal,
           block: blocker == null ? null : _blockFor(blocker, l10n),
-          isSubmitting:
+          isBusy:
               state is EquipmentCostFormSubmitting ||
               state is EquipmentCostFormSuccess ||
               data.isRateSaveRunning,
