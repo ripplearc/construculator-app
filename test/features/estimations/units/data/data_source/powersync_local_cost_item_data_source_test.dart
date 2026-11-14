@@ -1,0 +1,158 @@
+import 'package:construculator/features/estimation/data/data_source/interfaces/local_cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/powersync_local_cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../../utils/fake_cost_items_database.dart';
+
+void main() {
+  group('PowerSyncLocalCostItemDataSource', () {
+    late FakeCostItemsDatabase database;
+    late LocalCostItemDataSource dataSource;
+
+    CostItemDto line({
+      String id = 'line-1',
+      String estimateId = 'estimate-1',
+      String itemName = 'Plywood',
+      String createdAt = '2026-11-14T10:00:00.000Z',
+    }) => CostItemDto(
+      id: id,
+      estimateId: estimateId,
+      itemName: itemName,
+      itemType: 'material',
+      calculation: const {'unit_price': 10.5, 'quantity': 2.0},
+      itemTotalCost: 21,
+      createdAt: createdAt,
+      updatedAt: createdAt,
+      currency: 'USD',
+      unitPrice: 10.5,
+      quantity: 2,
+      unitMeasurement: 'pieces',
+      rateStatus: 'own_rate_unconfirmed',
+      quantityProvenance: 'manual',
+    );
+
+    setUp(() {
+      database = FakeCostItemsDatabase();
+      Modular.init(_DataSourceTestModule(database));
+      dataSource = Modular.get<LocalCostItemDataSource>();
+    });
+
+    tearDown(Modular.destroy);
+
+    group('saveCostItemOnPhone', () {
+      test('keeps the line under the id it was given', () async {
+        await dataSource.saveCostItemOnPhone(line(id: 'line-7'));
+
+        expect(database.rows.single['id'], 'line-7');
+      });
+
+      test('stores the calculation as JSON text', () async {
+        await dataSource.saveCostItemOnPhone(line());
+
+        expect(
+          database.rows.single['calculation'],
+          '{"unit_price":10.5,"quantity":2.0}',
+        );
+      });
+
+      test('leaves one row when the same line is saved twice', () async {
+        await dataSource.saveCostItemOnPhone(line());
+        await dataSource.saveCostItemOnPhone(line());
+
+        expect(database.rows, hasLength(1));
+      });
+
+      test('keeps the later save when the same id is saved twice', () async {
+        await dataSource.saveCostItemOnPhone(line(itemName: 'Plywood'));
+        await dataSource.saveCostItemOnPhone(line(itemName: 'Plywood 3/4 in'));
+
+        expect(database.rows.single['item_name'], 'Plywood 3/4 in');
+      });
+
+      test('rethrows when the phone cannot write', () async {
+        database.executeError = StateError('disk full');
+
+        await expectLater(
+          dataSource.saveCostItemOnPhone(line()),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('leaves no row behind when the phone cannot write', () async {
+        database.executeError = StateError('disk full');
+
+        await expectLater(
+          dataSource.saveCostItemOnPhone(line()),
+          throwsA(isA<StateError>()),
+        );
+
+        expect(database.rows, isEmpty);
+      });
+    });
+
+    group('loadCostItemsByEstimateId', () {
+      test('returns a saved line with every value it was saved with', () async {
+        await dataSource.saveCostItemOnPhone(line());
+
+        final lines = await dataSource.loadCostItemsByEstimateId('estimate-1');
+
+        expect(lines, [line()]);
+      });
+
+      test('returns only the lines of the asked estimate', () async {
+        await dataSource.saveCostItemOnPhone(line(id: 'mine'));
+        await dataSource.saveCostItemOnPhone(
+          line(id: 'theirs', estimateId: 'estimate-2'),
+        );
+
+        final lines = await dataSource.loadCostItemsByEstimateId('estimate-1');
+
+        expect(lines.map((l) => l.id), ['mine']);
+      });
+
+      test('returns the oldest line first', () async {
+        await dataSource.saveCostItemOnPhone(
+          line(id: 'newer', createdAt: '2026-11-14T12:00:00.000Z'),
+        );
+        await dataSource.saveCostItemOnPhone(
+          line(id: 'older', createdAt: '2026-11-14T09:00:00.000Z'),
+        );
+
+        final lines = await dataSource.loadCostItemsByEstimateId('estimate-1');
+
+        expect(lines.map((l) => l.id), ['older', 'newer']);
+      });
+
+      test('returns no lines for an estimate with none', () async {
+        expect(
+          await dataSource.loadCostItemsByEstimateId('estimate-9'),
+          isEmpty,
+        );
+      });
+
+      test('rethrows when the phone cannot read', () async {
+        database.getAllError = StateError('database locked');
+
+        await expectLater(
+          dataSource.loadCostItemsByEstimateId('estimate-1'),
+          throwsA(isA<StateError>()),
+        );
+      });
+    });
+  });
+}
+
+class _DataSourceTestModule extends Module {
+  final FakeCostItemsDatabase database;
+
+  _DataSourceTestModule(this.database);
+
+  @override
+  void binds(Injector i) {
+    i.addSingleton<LocalCostItemDataSource>(
+      () => PowerSyncLocalCostItemDataSource(database: database),
+    );
+  }
+}

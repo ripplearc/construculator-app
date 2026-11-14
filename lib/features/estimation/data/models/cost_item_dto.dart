@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 
 /// Data Transfer Object for CostItem entity.
@@ -192,6 +195,18 @@ class CostItemDto extends Equatable {
       quantityProvenance: json['quantity_provenance'] as String?,
       calculatorFormula: json['calculator_formula'] as String?,
     );
+  }
+
+  /// Creates a [CostItemDto] from a row of the phone's `cost_items` table,
+  /// where `calculation` is stored as JSON text.
+  factory CostItemDto.fromRow(Map<String, dynamic> row) {
+    final calculation = row[DatabaseConstants.calculationColumn];
+    return CostItemDto.fromJson({
+      ...row,
+      DatabaseConstants.calculationColumn: calculation is String
+          ? jsonDecode(calculation)
+          : null,
+    });
   }
 
   /// Converts this DTO to a JSON map.
