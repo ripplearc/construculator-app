@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/your_rate_recency_label.dart';
@@ -8,6 +10,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -66,6 +69,7 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   final _searchController = TextEditingController();
   List<YourRateEntry> _lastEntries = const [];
   String? _createPendingFor;
+  YourRatesState? _previousState;
 
   @override
   void initState() {
@@ -124,7 +128,21 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
     );
   }
 
+  void _announceFailedRetry(BuildContext context) {
+    final l10n = context.l10n;
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        '${l10n.yourRatesLoadError} ${l10n.yourRatesRecentsLoadErrorHint}',
+        Directionality.of(context),
+      ),
+    );
+  }
+
   void _onStateChanged(BuildContext context, YourRatesState state) {
+    final wasRetrying = _previousState is YourRatesRetrying;
+    _previousState = state;
+    if (wasRetrying && state is YourRatesError) _announceFailedRetry(context);
     final pendingName = _createPendingFor;
     if (pendingName == null) return;
     if (state is YourRatesSearchResults && state.query == pendingName) {
@@ -328,7 +346,6 @@ class _YourRatesRecentsSheetState extends State<YourRatesRecentsSheet> {
   }
 }
 
-// TODO: [CA-1316] replace with the CoreUI inline error row once it exists. https://ripplearc.youtrack.cloud/issue/CA-1316
 class _RecentsLoadError extends StatelessWidget {
   final bool isRetrying;
   final VoidCallback onTryAgain;
@@ -356,24 +373,7 @@ class _RecentsLoadError extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    CoreIconWidget(
-                      icon: CoreIcons.error,
-                      size: CoreIconSize.size16,
-                      color: colorTheme.iconRed,
-                    ),
-                    const SizedBox(width: CoreSpacing.space1),
-                    Expanded(
-                      child: Text(
-                        l10n.yourRatesLoadError,
-                        style: textTheme.bodySmallRegular.copyWith(
-                          color: colorTheme.textError,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                CoreInlineErrorRow(message: l10n.yourRatesLoadError),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
                   l10n.yourRatesRecentsLoadErrorHint,
