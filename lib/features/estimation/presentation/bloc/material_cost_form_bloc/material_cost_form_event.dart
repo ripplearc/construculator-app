@@ -49,3 +49,22 @@ class MaterialCostFormSubmitted extends MaterialCostFormEvent {
   /// The estimate this cost item is being added to.
   final String estimateId;
 }
+
+/// Loads a line already on the estimate into the form, so Save changes that
+/// line instead of adding a new one.
+///
+/// Dispatched once, when the sheet for that line opens.
+class MaterialCostEditOpened extends MaterialCostFormEvent {
+  const MaterialCostEditOpened(this.item);
+
+  /// The line to edit.
+  final MaterialCostItem item;
+}
+
+/// Deletes the line this form edits from the estimate.
+///
+/// Ignored when the form adds a new line, and while a save or delete is
+/// running.
+class MaterialCostDeleteRequested extends MaterialCostFormEvent {
+  const MaterialCostDeleteRequested();
+}
