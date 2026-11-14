@@ -1977,6 +1977,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyPitch => 'Pitch';
 
   @override
+  String get calculatorAnswerPitchRise => 'Pitch-rise per 12in run';
+
+  @override
+  String get calculatorAnswerPitchDegrees => 'Pitch-degrees';
+
+  @override
+  String get calculatorAnswerPitchGrade => 'Pitch-grade';
+
+  @override
   String get calculatorKeyRise => 'Rise';
 
   @override
@@ -2007,7 +2016,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculatorKeyTan => 'TAN';
 
   @override
-  String get calculatorResultPosts => 'Posts';
+  String get calculatorResultCalc => 'Calc';
+
+  @override
+  String get calculatorErrorDimension => 'Dimension Error';
+
+  @override
+  String get calculatorErrorDivisionByZero => 'Division by zero';
+
+  @override
+  String get calculatorErrorTooLarge => 'Too large';
 
   @override
   String get calculatorGroupShapes => 'Shapes';

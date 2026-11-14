@@ -1,88 +1,79 @@
+import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
 part 'dependent_key_id.dart';
-part 'calculator_math.dart';
 part 'calculator_state.dart';
 
-/// Manages the state of the calculator display area.
+/// Presses the keyboard's keys on the engine's tape and keeps the tape as
+/// its state (UX Design Doc Sections 1.1, 1.3 and 4; CA-1087, S1a).
+///
+/// The bloc holds no arithmetic and no rule of its own: each event is one
+/// call on [Tape], whose outcome is folded into the state — a changed tape
+/// with its notice, or the same tape with the refusal. Nothing here reads a
+/// store, the recents or the preferences repository; the System of units
+/// toggle sets the tape's own preferences, so the tape and the keyboard
+/// agree on one value. The engine's answers (the strip, the pills, the
+/// equals-key label) are mapped in S1b (CA-1088).
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
     on<CalculatorDigitPressed>(_onDigitPressed);
+    on<CalculatorFractionPressed>(_onFractionPressed);
     on<CalculatorUnitSelected>(_onUnitSelected);
     on<CalculatorOperatorPressed>(_onOperatorPressed);
+    on<CalculatorEqualsPressed>(_onEqualsPressed);
     on<CalculatorControlActioned>(_onControlActioned);
     on<CalculatorGroupSelected>(_onGroupSelected);
     on<CalculatorUnitSystemChanged>(_onUnitSystemChanged);
     on<CalculatorResetRequested>(_onResetRequested);
   }
 
+  static const Map<String, Unit> _unitKeys = {
+    'bf': Unit.boardFoot,
+    'm': Unit.metre,
+    'cm': Unit.centimetre,
+    'mm': Unit.millimetre,
+    'lbs': Unit.pound,
+    'kg': Unit.kilogram,
+    'ton': Unit.ton,
+    'mton': Unit.metricTon,
+  };
+
   void _onKeySelected(
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
-  ) {
-    if (event.id == _fenceLabel) {
-      final finalizedState = _finalizeCurrentInput(state);
-      emit(_computeFence(finalizedState));
-      return;
-    }
-
-    final finalizedState = _finalizeCurrentInput(state);
-
-    emit(
-      finalizedState.copyWith(
-        activeInputLabel: () => event.id,
-        currentInputValue: '',
-        currentNumericValue: '',
-        isTyping: true,
-        resultLabel: () => null,
-        resultValue: () => null,
-        resultChip: () => null,
-      ),
-    );
-  }
+  ) => _press(emit, (tape) {
+    if (_unitKeys[event.id] case final unit?) return tape.pressUnit(unit);
+    return tape.pressFunctionKey(event.id);
+  });
 
   void _onDigitPressed(
     CalculatorDigitPressed event,
     Emitter<CalculatorState> emit,
-  ) {
-    if (!state.isTyping) return;
+  ) => _press(emit, (tape) => tape.typeDigit(event.digit));
 
-    final newValue = state.currentInputValue + event.digit;
-    final newNumericValue = state.currentNumericValue + event.digit;
-    emit(
-      state.copyWith(
-        currentInputValue: newValue,
-        currentNumericValue: newNumericValue,
-      ),
-    );
-  }
+  void _onFractionPressed(
+    CalculatorFractionPressed event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.typeFraction());
 
   void _onUnitSelected(
     CalculatorUnitSelected event,
     Emitter<CalculatorState> emit,
-  ) {
-    if (!state.isTyping) return;
-
-    final unit = event.unit.toLowerCase() == 'feet' ? 'ft' : event.unit;
-    final newValue = state.currentInputValue.isEmpty
-        ? unit
-        : '${state.currentInputValue} $unit';
-
-    emit(state.copyWith(currentInputValue: newValue));
-  }
+  ) => _press(emit, (tape) => tape.pressUnit(event.unit));
 
   void _onOperatorPressed(
     CalculatorOperatorPressed event,
     Emitter<CalculatorState> emit,
-  ) {
-    if (event.operator == '=') {
-      emit(_finalizeCurrentInput(state));
-    }
-  }
+  ) => _press(emit, (tape) => tape.pressOperator(event.operator));
+
+  void _onEqualsPressed(
+    CalculatorEqualsPressed event,
+    Emitter<CalculatorState> emit,
+  ) => _press(emit, (tape) => tape.pressEquals());
 
   void _onControlActioned(
     CalculatorControlActioned event,
@@ -90,33 +81,12 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) {
     switch (event.action) {
       case ControlAction.delete:
-        if (!state.isTyping || state.currentInputValue.isEmpty) return;
-        final newInput = state.currentInputValue.substring(
-          0,
-          state.currentInputValue.length - 1,
-        );
-        final newNumeric = state.currentNumericValue.isEmpty
-            ? ''
-            : state.currentNumericValue.substring(
-                0,
-                state.currentNumericValue.length - 1,
-              );
-        emit(
-          state.copyWith(
-            currentInputValue: newInput,
-            currentNumericValue: newNumeric,
-          ),
-        );
+        _press(emit, (tape) => tape.backspace());
       case ControlAction.clearAll:
-        emit(CalculatorState.initial());
-      // TODO: [CA-1087] Open and close a bracket on the tape (Tape.pressBracket)
-      // once S1a replaces this bloc's state with the engine's tape.
-      // https://ripplearc.youtrack.cloud/issue/CA-1087
+        emit(_cleared());
       case ControlAction.paren:
-        break;
-      // TODO: [CA-1197] Remove this arm before coreui deletes
-      // ControlAction.moreOptions; coreui never sends it since 0.28.0.
-      // https://ripplearc.youtrack.cloud/issue/CA-1197
+        _press(emit, (tape) => tape.pressBracket());
+      // TODO: [CA-1195] Delete this arm when coreui removes moreOptions.
       // ignore: deprecated_member_use
       case ControlAction.moreOptions:
         break;
@@ -126,55 +96,46 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   void _onGroupSelected(
     CalculatorGroupSelected event,
     Emitter<CalculatorState> emit,
-  ) {
-    emit(state.copyWith(currentGroupIndex: event.groupIndex));
-  }
+  ) => emit(state.copyWith(currentGroupIndex: event.groupIndex));
 
   void _onUnitSystemChanged(
     CalculatorUnitSystemChanged event,
     Emitter<CalculatorState> emit,
   ) {
-    emit(state.copyWith(currentUnitSystem: event.unitSystem));
+    final system = switch (event.unitSystem) {
+      UnitSystem.imperial => MeasurementSystem.imperial,
+      UnitSystem.metric => MeasurementSystem.metric,
+    };
+    emit(
+      state.copyWith(
+        tape: state.tape.withPreferences(
+          state.tape.preferences.copyWith(system: system),
+        ),
+      ),
+    );
   }
 
   void _onResetRequested(
     CalculatorResetRequested event,
     Emitter<CalculatorState> emit,
+  ) => emit(_cleared());
+
+  void _press(
+    Emitter<CalculatorState> emit,
+    TapeOutcome Function(Tape tape) press,
   ) {
-    emit(CalculatorState.initial());
-  }
-
-  CalculatorState _finalizeCurrentInput(CalculatorState currentState) {
-    final activeInputLabel = currentState.activeInputLabel;
-    if (currentState.isTyping &&
-        activeInputLabel != null &&
-        currentState.currentInputValue.isNotEmpty) {
-      final newChip = CoreCalculatorChip(
-        label: activeInputLabel,
-        value: currentState.currentInputValue,
-        type: CoreCalculatorChipType.editable,
-      );
-
-      final updatedChips = [...currentState.completedChips, newChip];
-
-      final updatedNumericValues =
-          Map<String, double>.from(currentState.finalizedValues)
-            ..[activeInputLabel] =
-                double.tryParse(currentState.currentNumericValue) ?? 0.0;
-
-      var newState = currentState.copyWith(
-        isTyping: false,
-        completedChips: updatedChips,
-        finalizedValues: updatedNumericValues,
-      );
-
-      if (updatedNumericValues.containsKey(_riseLabel) &&
-          updatedNumericValues.containsKey(_runLabel)) {
-        newState = _computePitch(newState);
-      }
-
-      return newState;
+    switch (press(state.tape)) {
+      case TapeChanged(:final tape, :final notice):
+        emit(
+          state.copyWith(tape: tape, notice: () => notice, refusal: () => null),
+        );
+      case final TapeOutcome refusal:
+        emit(state.copyWith(notice: () => null, refusal: () => refusal));
     }
-    return currentState;
   }
+
+  CalculatorState _cleared() => CalculatorState(
+    tape: Tape(preferences: state.tape.preferences),
+    currentGroupIndex: state.currentGroupIndex,
+  );
 }
