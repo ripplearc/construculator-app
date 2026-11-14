@@ -76,8 +76,8 @@
         </regex>
 
         <!-- RULE 9: = lands the total under a label that is not Calc -->
-        <regex pattern="append\(ResultChip\(key: calcKey, value: value\)\)," dotAll="true" id="tape.press_equals.wrong_label">
-            <mutation text="append(ResultChip(key: 'Total', value: value)),"/>
+        <regex pattern="tape\.append\(ResultChip\(key: calcKey, value: value\)\)," dotAll="true" id="tape.press_equals.wrong_label">
+            <mutation text="tape.append(ResultChip(key: 'Total', value: value)),"/>
         </regex>
 
         <!-- RULE 10: a lone value counts as a calculation -->
@@ -132,8 +132,8 @@
         <regex pattern="if \(chips\[chips\.length - 2\] !=\s*const ErrorChip\(CalculationError\.divisionByZero\)\) \{\s*return null;\s*\}" dotAll="true" id="tape.divisor_repaired.any_error">
             <mutation text="if (chips[chips.length - 2] is! ErrorChip) { return null; }"/>
         </regex>
-        <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(" dotAll="true" id="tape.press_operator.keeps_error_chip">
-            <mutation text="return _replaceLast("/>
+        <regex pattern="return \(_withDivisorRepaired \?\? this\)\._replaceLast\(\s*chip\.copyWith\(operator: \(\) =&gt; operator\)," dotAll="true" id="tape.press_operator.keeps_error_chip">
+            <mutation text="return _replaceLast(chip.copyWith(operator: () =&gt; operator),"/>
         </regex>
         <regex pattern="if \(_withDivisorRepaired case final repaired\?\) return TapeChanged\(repaired\);" dotAll="true" id="tape.backspace.keeps_error_chip">
             <mutation text=""/>

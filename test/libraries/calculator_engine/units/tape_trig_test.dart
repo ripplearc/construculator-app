@@ -213,15 +213,14 @@ void main() {
         expect(lastResult(press(tape, '=')), 'Calc 55.99');
       });
 
-      test('S98: Sine 54° − 56 = is Calc −55.19; [SIN] then opens Sine…', () {
+      test('S98: Sine 54° − 56 = is Calc −55.19; [SIN] then reads the Calc '
+          'as degrees (rule 4.9; decision tree row 181)', () {
         final landed = press(const Tape(), 'SIN 5 4 − 5 6 =');
         expect(lastResult(landed), 'Calc -55.19');
         expect(landed.endsWithResult, isTrue);
         final next = press(landed, 'SIN');
-        expect(
-          next.active,
-          const ValueChip(key: 'Sine', keyWantsUnit: false, readsDegrees: true),
-        );
+        expect(lastResult(next), 'Sine -0.821059');
+        expect(next.active, isNull);
       });
 
       test('S103: the chain is worth the angle on the chip, Sine 80° × 56', () {
@@ -438,6 +437,31 @@ void main() {
     });
 
     group('which answers a trig key takes', () {
+      test('a forward key after a Calc reads the plain number as degrees '
+          '(rule 4.9; decision tree row 181)', () {
+        final sine = press(const Tape(), '1 2 + 1 8 = SIN');
+        expect(lastResult(sine), 'Sine 0.5');
+        expect(sine.chips.length, 4);
+        expect(
+          lastResult(press(const Tape(), '1 2 + 1 8 = COS')),
+          'Cosine 0.866025',
+        );
+        expect(lastResult(press(const Tape(), '9 × 5 = TAN')), 'Tangent 1');
+        expect(
+          lastResult(press(const Tape(), '1 2 + 0 = ATAN')),
+          'Arctangent 85.24°',
+        );
+      });
+
+      test('a trig key on the divisor ÷ 0 reopened drops the error chip, as '
+          'an operator does (Section 5; decision tree row 44)', () {
+        final retyped = press(const Tape(), '2 ÷ 0 = SIN');
+        expect(retyped.chips.whereType<ErrorChip>(), isEmpty);
+        expect(retyped.chips.length, 2);
+        expect(activeOf(retyped).key, 'Sine');
+        expect(lastResult(press(retyped, '3 0 =')), 'Calc 4');
+      });
+
       test('S96: a ratio Calc is eaten, a sine is not an angle', () {
         expect(
           lastResult(press(const Tape(), '1 2 ÷ 2 3 = ASIN')),
@@ -490,9 +514,9 @@ void main() {
           expect(
             press(const Tape(), '1 5 × 1 =').pressTrigKey(TrigFunction.sine),
             isA<TapeChanged>().having(
-              (outcome) => activeOf(outcome.tape).key,
-              'opens',
-              'Sine',
+              (outcome) => lastResult(outcome.tape),
+              'reads the Calc as degrees',
+              'Sine 0.258819',
             ),
           );
         },

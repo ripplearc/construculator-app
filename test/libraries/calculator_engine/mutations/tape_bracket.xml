@@ -47,8 +47,38 @@
         </regex>
 
         <!-- RULE 7: a digit after a closed bracket is appended to its value -->
-        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);" dotAll="true" id="tape.type_digit.after_closed_bracket">
-            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
+        <regex pattern="if \(_endsWithClosedBracket\) \{\s*return const TapeRefused\(TapeRefusal\.addAnOperatorFirst\);\s*\}\s*if \(active case ValueChip\(exactValue: Angle\(\)\)\) \{" dotAll="true" id="tape.type_digit.after_closed_bracket">
+            <mutation text="if (false) { return const TapeRefused(TapeRefusal.addAnOperatorFirst); } if (active case ValueChip(exactValue: Angle())) {"/>
+        </regex>
+
+        <!-- RULE 7b (CA-1340): a trig key after a closed bracket opens a
+             fresh chip and the group drops out of the chain, or is refused
+             as a digit is -->
+        <regex pattern="if \(_endsWithClosedBracket\) return _answeredOnClosedBracket\(function\);" id="tape.trig_key.after_closed_bracket">
+            <mutation text="if (false) return _answeredOnClosedBracket(function);"/>
+            <mutation text="if (_endsWithClosedBracket) return const TapeRefused(TapeRefusal.addAnOperatorFirst);"/>
+        </regex>
+
+        <!-- RULE 7c (CA-1340): the answer on a bracket that opens the chain
+             lands without the Calc it was taken on, or a bracket further on
+             lands a Calc of the chain before its answer -->
+        <regex pattern="ChainValue\(:final value, isCalculation: true\) when opensTheChain =&gt;" dotAll="true" id="tape.trig_key.closed_bracket_without_calc">
+            <mutation text="ChainValue(:final value, isCalculation: true) when false =&gt;"/>
+            <mutation text="ChainValue(:final value, isCalculation: true) =&gt;"/>
+        </regex>
+
+        <!-- RULE 7d (CA-1340): a bracket further on in the chain answers on
+             the value the chain has come to, not on its own inside, so
+             2 + (3) [ATAN] reads 78.69° where walkthrough 12.9 says 71.57° -->
+        <regex pattern="return switch \(evaluator\.fold\(bracket\.inner\)\) \{" dotAll="true" id="tape.trig_key.closed_bracket_reads_the_chain">
+            <mutation text="return switch (total) {"/>
+        </regex>
+
+        <!-- RULE 7e (CA-1340): a chain that failed at the bracket answers on
+             the bracket's inside, so 5 ÷ (2 − 2) [ATAN] reads 0° where it is
+             Division by zero (decision tree row 24) -->
+        <regex pattern="if \(total case ChainFailed\(:final error\)\) \{\s*return TapeChanged\(append\(ErrorChip\(error\)\)\);\s*\}" dotAll="true" id="tape.trig_key.failed_group_lands_error">
+            <mutation text=""/>
         </regex>
 
         <!-- RULE 8: a function key is accepted inside a bracket -->
@@ -133,6 +163,7 @@
         <regex pattern="TapeChanged\(:final tape\) =&gt; TapeChanged\(tape, notice: notice\)," dotAll="true" id="tape.press_equals.lose_notice_after_restore">
             <mutation text="TapeChanged(:final tape) =&gt; TapeChanged(tape),"/>
         </regex>
+
     </rules>
 
     <commands>
