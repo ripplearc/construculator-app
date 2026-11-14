@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
@@ -9,6 +12,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -171,6 +175,42 @@ void main() {
         tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
         isSemantics(isLiveRegion: true),
       );
+      handle.dispose();
+    });
+
+    testWidgets('a11y: while the retry runs, "Try again" is a disabled button '
+        'with a 48 x 48 dp zone and the message stays a live region', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+      database.getAllError = null;
+      database.getAllGate = Completer<void>();
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      final zone = tester.getSize(
+        find.byKey(const Key('your_rates_try_again_button')),
+      );
+      expect(zone.width, greaterThanOrEqualTo(48));
+      expect(zone.height, greaterThanOrEqualTo(48));
+      final action = tester
+          .getSemantics(find.bySemanticsLabel(_l10n.yourRatesTryAgain))
+          .getSemanticsData();
+      expect(action.flagsCollection.isButton, isTrue);
+      expect(action.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(action.hasAction(SemanticsAction.tap), isFalse);
+      expect(
+        tester.getSemantics(find.text(_l10n.yourRatesLoadError)),
+        isSemantics(isLiveRegion: true),
+      );
+
+      database.getAllGate!.complete();
+      await tester.pumpAndSettle();
       handle.dispose();
     });
   });

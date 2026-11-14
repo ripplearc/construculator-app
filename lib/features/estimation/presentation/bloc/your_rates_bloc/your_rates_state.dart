@@ -10,9 +10,9 @@ class YourRatesLoading extends YourRatesState {
   const YourRatesLoading();
 }
 
-/// State while [YourRatesRefreshRecents] runs again after a [YourRatesError].
-/// Lets the recents sheet leave its error message on screen, with the button
-/// disabled, instead of flashing a spinner.
+/// State while a load or search runs again after a [YourRatesError]. Lets the
+/// recents and look-up sheets leave their error message on screen, with the
+/// button disabled, instead of flashing a spinner.
 class YourRatesRetrying extends YourRatesState {
   const YourRatesRetrying();
 }

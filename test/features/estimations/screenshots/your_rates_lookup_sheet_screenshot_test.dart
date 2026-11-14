@@ -198,6 +198,31 @@ void main() {
       );
     });
 
+    testWidgets('shows the disabled Try again while the retry runs', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      database.getAllError = StateError('database locked');
+      await pumpSheet(tester: tester, theme: theme);
+      database.getAllError = null;
+      final gate = Completer<void>();
+      database.getAllGate = gate;
+      addTearDown(gate.complete);
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(YourRatesLookupSheet),
+        matchesGoldenFile(
+          'goldens/your_rates_lookup_sheet/${size.width}x${size.height}/error_retrying$suffix.png',
+        ),
+      );
+    });
+
     testWidgets('shows the loading indicator while the rates are read', (
       tester,
     ) async {

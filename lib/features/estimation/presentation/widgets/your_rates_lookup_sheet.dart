@@ -210,20 +210,20 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     YourRateEntry? selected,
   ) {
     final l10n = context.l10n;
-    // TODO: [CA-1411] keep the error row with "Try again" disabled while retrying (https://ripplearc.youtrack.cloud/issue/CA-1411)
     if (state is YourRatesLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: CoreSpacing.space6),
         child: CoreLoadingIndicator(),
       );
     }
-    if (state is YourRatesError) {
+    if (state is YourRatesError || state is YourRatesRetrying) {
       return CoreInlineErrorRow(
         key: const Key('your_rates_load_error'),
         message: l10n.yourRatesLoadError,
         actionLabel: l10n.yourRatesTryAgain,
         actionKey: const Key('your_rates_try_again_button'),
         onAction: () => _search(_searchController.text),
+        isActionDisabled: state is YourRatesRetrying,
       );
     }
     if (entries.isEmpty) {

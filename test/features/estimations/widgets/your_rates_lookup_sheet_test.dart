@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Tristate;
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
@@ -507,6 +508,165 @@ void main() {
 
       expect(find.byKey(const Key('your_rate_row_rate-1')), findsOneWidget);
       expect(find.byKey(const Key('your_rate_row_rate-0')), findsNothing);
+    });
+
+    group('while Try again runs', () {
+      const tryAgainKey = Key('your_rates_try_again_button');
+      const errorKey = Key('your_rates_load_error');
+
+      int yourRatesReads() => database.getAllCalls
+          .where((call) => call.sql.contains('your_rates'))
+          .length;
+
+      Future<void> openFailedSheetAndHoldRetry(WidgetTester tester) async {
+        database.getAllError = StateError('database locked');
+        await openSheet(tester, []);
+        database.getAllError = null;
+        database.getAllGate = Completer<void>();
+      }
+
+      testWidgets('the error row and its label stay, with no spinner', (
+        tester,
+      ) async {
+        await openFailedSheetAndHoldRetry(tester);
+
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(errorKey), findsOneWidget);
+        expect(find.text(l10n.yourRatesLoadError), findsOneWidget);
+        expect(find.text(l10n.yourRatesTryAgain), findsOneWidget);
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('Try again is disabled and a second tap reads nothing', (
+        tester,
+      ) async {
+        await openFailedSheetAndHoldRetry(tester);
+        final readsBefore = yourRatesReads();
+
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+
+        expect(yourRatesReads(), readsBefore + 1);
+        expect(
+          tester.widget<CoreInlineErrorRow>(find.byKey(errorKey)).isActionDisabled,
+          isTrue,
+        );
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('the rows replace the error row when the retry works', (
+        tester,
+      ) async {
+        await openFailedSheetAndHoldRetry(tester);
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(errorKey), findsNothing);
+        expect(find.byKey(const Key('your_rate_row_rate-0')), findsOneWidget);
+      });
+
+      testWidgets('the row stays and Try again works again when the retry '
+          'fails', (tester) async {
+        await openFailedSheetAndHoldRetry(tester);
+        database.getAllError = StateError('database locked');
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(errorKey), findsOneWidget);
+        expect(
+          tester.widget<CoreInlineErrorRow>(find.byKey(errorKey)).isActionDisabled,
+          isFalse,
+        );
+        database.getAllError = null;
+        database.getAllGate = null;
+        await tester.tap(find.byKey(tryAgainKey));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('your_rate_row_rate-0')), findsOneWidget);
+      });
+
+      testWidgets('the row is not disabled before any retry', (tester) async {
+        database.getAllError = StateError('database locked');
+
+        await openSheet(tester, []);
+
+        expect(
+          tester.widget<CoreInlineErrorRow>(find.byKey(errorKey)).isActionDisabled,
+          isFalse,
+        );
+      });
+
+      testWidgets('typing a name while the row shows keeps it, with Try again '
+          'disabled, until the search ends', (tester) async {
+        await openFailedSheetAndHoldRetry(tester);
+
+        await tester.enterText(find.byKey(CoreSearchBox.textFieldKey), '1');
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(errorKey), findsOneWidget);
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(
+          tester.widget<CoreInlineErrorRow>(find.byKey(errorKey)).isActionDisabled,
+          isTrue,
+        );
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('your_rate_row_rate-1')), findsOneWidget);
+      });
+
+      testWidgets('a first load shows the spinner, not the error row', (
+        tester,
+      ) async {
+        database.getAllGate = Completer<void>();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: CoreTheme.light(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  key: const Key('open_sheet'),
+                  onPressed: () => YourRatesLookupSheet.show(
+                    context: context,
+                    method: EquipmentPricingMethod.day,
+                    onSwitchMethod: (_) {},
+                    clock: clock,
+                    blocFactory: () => Modular.get<YourRatesBloc>(),
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.byKey(const Key('open_sheet')));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+        expect(find.byKey(errorKey), findsNothing);
+
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+      });
     });
   });
 

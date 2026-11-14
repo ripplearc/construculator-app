@@ -138,7 +138,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
   Future<void> _onSearched(
     YourRatesSearched event,
     Emitter<YourRatesState> emit,
-  ) => _search(event.query, event.category, emit);
+  ) => _search(event.query, event.category, emit, retryAfterError: true);
 
   Future<void> _search(
     String query,
