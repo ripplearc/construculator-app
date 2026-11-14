@@ -20,7 +20,7 @@ String _formatTrimmedNumber(double value) => value == value.roundToDouble()
     ? value.toStringAsFixed(0)
     : value.toString();
 
-enum _RateSaveStatus { idle, saved, failed }
+enum _RateSaveStatus { idle, saving, saved, failed }
 
 enum _RecalledFooter { none, editedWithButton, savedSecondPrice, savedDefault }
 
@@ -148,6 +148,8 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   late final YourRatesBloc _yourRatesBloc;
   _RateSaveStatus _rateSaveStatus = _RateSaveStatus.idle;
   bool _savedUnderLabel = false;
+  bool _rateEditedWhileSaving = false;
+  double? _amountBeingSaved;
 
   @override
   void initState() {
@@ -223,7 +225,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onEquipmentNameChanged() {
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentCostItemTypeChanged(_equipmentNameController.text),
     );
@@ -255,7 +257,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _hideRateLimitHintOnDelete(rate);
     if (rate == _lastDailyRateText) return;
     _lastDailyRateText = rate;
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(EquipmentRateUpdatedEvent(rate));
   }
 
@@ -264,7 +266,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _hideRateLimitHintOnDelete(amount);
     if (amount == _lastJobAmountText) return;
     _lastJobAmountText = amount;
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(amount),
     );
@@ -374,7 +376,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
-    _clearRateSaveStatus();
+    _onRateEdited();
     _daySelected.value = false;
     _jobSelected.value = false;
     context.read<EquipmentCostFormBloc>().add(
@@ -505,37 +507,57 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     );
   }
 
+  bool get _isSavingRate => _rateSaveStatus == _RateSaveStatus.saving;
+
   void _saveAsMyRate(EquipmentCostFormData data) {
-    _clearRateSaveStatus();
+    _onRateEdited();
     _savedUnderLabel = false;
-    _yourRatesBloc.add(YourRatesSaveRequested(_buildYourRateEntry(data)));
+    _rateEditedWhileSaving = false;
+    final entry = _buildYourRateEntry(data);
+    _amountBeingSaved = entry.rate.amount;
+    _yourRatesBloc.add(YourRatesSaveRequested(entry));
   }
 
-  void _clearRateSaveStatus() {
+  void _onRateEdited() {
     if (_rateSaveStatus == _RateSaveStatus.idle || !mounted) return;
+    if (_isSavingRate) {
+      _rateEditedWhileSaving = true;
+      return;
+    }
     setState(() => _rateSaveStatus = _RateSaveStatus.idle);
   }
 
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
     switch (state) {
       // TODO: [CA-1336] a recalled price that collides should ask "Replace your saved rate?" and write over the saved row, not add a second price
+      case YourRatesSaving():
+        setState(() => _rateSaveStatus = _RateSaveStatus.saving);
       case YourRatesSaveCollision(:final entry):
+        _rateEditedWhileSaving = false;
+        setState(() => _rateSaveStatus = _RateSaveStatus.idle);
         _savedUnderLabel = true;
         unawaited(_promptEntryLabel(context, entry));
       case YourRatesSaveLabelTaken():
-        break;
-      // TODO: [CA-1207](https://ripplearc.youtrack.cloud/issue/CA-1207) Every YourRatesSaveFailed shows the same line, though the repository already tells a timeout, a lost connection, a parsing error, a refused write and a missing row apart. Thread the error type through this state and write copy for each.
+        _rateEditedWhileSaving = false;
+        setState(() => _rateSaveStatus = _RateSaveStatus.idle);
       case YourRatesSaveFailed():
       case YourRatesSaveNoCompany():
-        setState(() => _rateSaveStatus = _RateSaveStatus.failed);
+        setState(
+          () => _rateSaveStatus = _rateEditedWhileSaving
+              ? _RateSaveStatus.idle
+              : _RateSaveStatus.failed,
+        );
       case YourRatesSaveSucceeded():
-        setState(() => _rateSaveStatus = _RateSaveStatus.saved);
+        setState(
+          () => _rateSaveStatus = _rateEditedWhileSaving
+              ? _RateSaveStatus.idle
+              : _RateSaveStatus.saved,
+        );
         if (!_savedUnderLabel) {
           context.read<EquipmentCostFormBloc>().add(
-            const EquipmentRecalledAmountSavedEvent(),
+            EquipmentRecalledAmountSavedEvent(amount: _amountBeingSaved),
           );
         }
-      case YourRatesSaving():
       case YourRatesLoading():
       case YourRatesRetrying():
       case YourRatesLoaded():
@@ -579,19 +601,22 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final textTheme = context.textTheme;
     return Semantics(
       button: true,
+      enabled: !_isSavingRate,
       label: l10n.equipmentSaveAsMyRateLink,
       excludeSemantics: true,
       child: GestureDetector(
         key: const Key('save_as_my_rate_link'),
         behavior: HitTestBehavior.opaque,
-        onTap: () => _saveAsMyRate(data),
+        onTap: _isSavingRate ? null : () => _saveAsMyRate(data),
         child: Container(
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           alignment: Alignment.centerRight,
           child: Text(
             l10n.equipmentSaveAsMyRateLink,
             style: textTheme.bodyLargeSemiBold.copyWith(
-              color: colorTheme.textLink,
+              color: _isSavingRate
+                  ? colorTheme.textDisable
+                  : colorTheme.textLink,
             ),
           ),
         ),
@@ -711,7 +736,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           iconColor: context.colorTheme.iconGrayMid,
           text: _hintText(context, data, saved: true),
         ),
-        _RateSaveStatus.idle => _hintRow(
+        _RateSaveStatus.idle || _RateSaveStatus.saving => _hintRow(
           context,
           key: const Key('save_as_my_rate_helper_text'),
           icon: CoreIcons.info,
@@ -1078,8 +1103,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    final labelAmount = _isSavingRate
+        ? (_amountBeingSaved ?? data.jobAmount ?? 0)
+        : (data.jobAmount ?? 0);
     final saveLabel = l10n.equipmentRecalledAmountSaveButton(
-      DisplayFormatter.currency.format(data.jobAmount ?? 0),
+      DisplayFormatter.currency.format(labelAmount),
     );
     return Padding(
       padding: const EdgeInsets.only(top: CoreSpacing.space2),
@@ -1090,19 +1118,22 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           if (_isSavableRate(data))
             Semantics(
               button: true,
+              enabled: !_isSavingRate,
               label: saveLabel,
               excludeSemantics: true,
               child: GestureDetector(
                 key: const Key('save_recalled_amount_button'),
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _saveAsMyRate(data),
+                onTap: _isSavingRate ? null : () => _saveAsMyRate(data),
                 child: Container(
                   constraints: const BoxConstraints(minHeight: 48),
                   alignment: Alignment.centerLeft,
                   child: Text(
                     saveLabel,
                     style: textTheme.bodyLargeSemiBold.copyWith(
-                      color: colorTheme.textLink,
+                      color: _isSavingRate
+                          ? colorTheme.textDisable
+                          : colorTheme.textLink,
                     ),
                   ),
                 ),

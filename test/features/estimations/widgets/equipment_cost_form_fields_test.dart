@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
@@ -2882,6 +2883,37 @@ void main() {
       });
 
       testWidgets(
+        'while a save runs the Save button is disabled and a second tap '
+        'starts no second save',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          final button = find.byKey(const Key('save_recalled_amount_button'));
+          expect(
+            tester.getSemantics(button).flagsCollection.isEnabled,
+            Tristate.isTrue,
+          );
+          final gate = database.getAllGate = Completer();
+
+          await tester.tap(button);
+          await tester.pump();
+          await tester.tap(button);
+          await tester.pump();
+
+          expect(
+            tester.getSemantics(button).flagsCollection.isEnabled,
+            Tristate.isFalse,
+          );
+          gate.complete();
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const Key('entry_label_dialog_title')),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
         'shows the used-on-this-line hint and a Save button with the edited '
         'amount once the amount differs',
         (tester) async {
@@ -3112,6 +3144,50 @@ void main() {
             find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
             findsOneWidget,
           );
+          expect(
+            find.text(
+              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'an amount edited while the default saves keeps the saved amount as '
+        'the default and on the grey button',
+        (tester) async {
+          await tester.pumpWidget(
+            makeWidget(
+              initialRateEntry: YourRateEntry(
+                id: '',
+                companyId: 'company-1',
+                itemName: 'Dumpster',
+                category: CostItemType.equipment,
+                rate: Money(amount: 400),
+                savedAt: DateTime(2026, 1, 1),
+                equipmentMethod: EquipmentPricingMethod.job,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await editAmount(tester, '450');
+          final gate = database.getAllGate = Completer();
+
+          await tester.tap(
+            find.byKey(const Key('save_recalled_amount_button')),
+          );
+          await tester.pump();
+          await editAmount(tester, '500');
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveButton('\$450.00')),
+            findsOneWidget,
+          );
+
+          gate.complete();
+          await tester.pumpAndSettle();
+
           expect(
             find.text(
               recalledRateSubtitleText(450, EquipmentPricingMethod.job),
@@ -3508,6 +3584,183 @@ void main() {
         expect(hintText(tester), startsWith('Saved to ${l10n.yourRatesName}'));
       },
     );
+
+    testWidgets(
+      'while a save runs the link is disabled and a second tap starts no '
+      'second save',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await typeSavableRate(tester);
+        final link = find.byKey(const Key('save_as_my_rate_link'));
+        expect(
+          tester.getSemantics(link).flagsCollection.isEnabled,
+          Tristate.isTrue,
+        );
+        final gate = database.getAllGate = Completer();
+
+        await tester.tap(link);
+        await tester.pump();
+        await tester.tap(link);
+        await tester.pump();
+
+        expect(link, findsOneWidget);
+        expect(
+          tester.getSemantics(link).flagsCollection.isEnabled,
+          Tristate.isFalse,
+        );
+        gate.complete();
+        await tester.pumpAndSettle();
+        expect(database.insertedRows, hasLength(1));
+      },
+    );
+
+    testWidgets(
+      'editing the rate while a save runs keeps the link disabled, and the '
+      'result does not mark the edited rate as saved',
+      (tester) async {
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await typeSavableRate(tester);
+        final link = find.byKey(const Key('save_as_my_rate_link'));
+        final gate = database.getAllGate = Completer();
+        await tester.tap(link);
+        await tester.pump();
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '160');
+        await tester.pump();
+
+        expect(
+          tester.getSemantics(link).flagsCollection.isEnabled,
+          Tristate.isFalse,
+        );
+        gate.complete();
+        await tester.pumpAndSettle();
+
+        expect(link, findsOneWidget);
+        expect(
+          tester.getSemantics(link).flagsCollection.isEnabled,
+          Tristate.isTrue,
+        );
+      },
+    );
+
+    testWidgets(
+      'editing the rate while a save runs that then fails shows no error '
+      'line for the edited rate',
+      (tester) async {
+        database.executeError = StateError('disk full');
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await typeSavableRate(tester);
+        final gate = database.getAllGate = Completer();
+        await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+        await tester.pump();
+
+        await tester.enterText(find.byKey(const Key('rate_field')), '160');
+        await tester.pump();
+        gate.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('save_as_my_rate_error')), findsNothing);
+        expect(find.byKey(const Key('save_as_my_rate_link')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a second failure removes the error line while it runs and shows it '
+      'again when it ends',
+      (tester) async {
+        database.executeError = StateError('disk full');
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await typeSavableRate(tester);
+        final link = find.byKey(const Key('save_as_my_rate_link'));
+        await tester.tap(link);
+        await tester.pumpAndSettle();
+        final gate = database.getAllGate = Completer();
+
+        await tester.tap(link);
+        await tester.pump();
+        expect(find.byKey(const Key('save_as_my_rate_error')), findsNothing);
+        gate.complete();
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('save_as_my_rate_error')), findsOneWidget);
+      },
+    );
+
+    testWidgets('the link works again after the label prompt is cancelled', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Backhoe',
+        amount: 100,
+        method: EquipmentPricingMethod.day,
+        entryLabel: 'Supplier A',
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+      final link = find.byKey(const Key('save_as_my_rate_link'));
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const Key('entry_label_dialog_cancel_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(link).flagsCollection.isEnabled,
+        Tristate.isTrue,
+      );
+    });
+
+    testWidgets('the link works again after a label that is already taken', (
+      tester,
+    ) async {
+      await seedRate(
+        itemName: 'Backhoe',
+        amount: 100,
+        method: EquipmentPricingMethod.day,
+        entryLabel: 'Supplier A',
+      );
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('rate_field')), '150');
+      await tester.pump();
+      final link = find.byKey(const Key('save_as_my_rate_link'));
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('entry_label_field')),
+        'Supplier A',
+      );
+
+      await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('entry_label_dialog_cancel_button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(link).flagsCollection.isEnabled,
+        Tristate.isTrue,
+      );
+    });
 
     testWidgets(
       'changing the rate after a save brings the link back, and a second '
