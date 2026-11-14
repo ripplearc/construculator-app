@@ -36,7 +36,11 @@
             <mutation text=""/>
         </regex>
 
-        <regex pattern="(Scrollable\.ensureVisible\(lineContext, duration: _scrollDuration\);)" dotAll="true" id="list.scroll.never_ensure_visible">
+        <regex pattern="(await Scrollable\.ensureVisible\(\s*lineContext,\s*duration: _scrollDuration,\s*alignmentPolicy: ScrollPositionAlignmentPolicy\.keepVisibleAtEnd,\s*\);)" dotAll="true" id="list.scroll.never_reveal_line_below_fold">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="(await Scrollable\.ensureVisible\(\s*lineContext,\s*duration: _scrollDuration,\s*alignmentPolicy: ScrollPositionAlignmentPolicy\.keepVisibleAtStart,\s*\);)" dotAll="true" id="list.scroll.never_reveal_line_above_top">
             <mutation text=""/>
         </regex>
 
