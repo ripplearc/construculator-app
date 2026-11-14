@@ -62,7 +62,8 @@ void main() {
             tester,
             makeWidget(changeInEstimateTotal: change),
             find.byKey(AddToEstimateFooter.buttonKey),
-            // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card. https://ripplearc.youtrack.cloud/issue/CA-1257
+            // TODO: [CA-1257] re-enable once design fixes the 2.42:1 grey on the summary card.
+            // https://ripplearc.youtrack.cloud/issue/CA-1257
             checkTextContrast: false,
           );
         },
