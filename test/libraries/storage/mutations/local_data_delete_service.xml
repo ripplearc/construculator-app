@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- LOCAL DATA DELETE SERVICE MUTATION TESTING -->
+    <!-- Targets: the order and result of the shared delete routine -->
+
+    <files>
+        <file>lib/libraries/storage/local_data_delete_service.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="await _setPendingDeleteFlag\(arrivingUserId\);" dotAll="true" id="delete.skip_flag">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await registration\.clearForUserChange\(_database\);" dotAll="true" id="delete.skip_clear_steps">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _syncedData\.deleteSyncedDataAndUnsentEdits\(\);" dotAll="true" id="delete.skip_synced_data">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await _finishRecord\(arrivingUserId\);" dotAll="true" id="delete.skip_finish">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="OwnerRecordUnknown\(\) =&gt; throw const OwnerRecordUnreadableException\(\)," dotAll="true" id="delete.unknown_read_as_absent">
+            <mutation text="OwnerRecordUnknown() =&gt; null,"/>
+        </regex>
+        <regex pattern="OwnerRecordAbsent\(\) =&gt; null," dotAll="true" id="delete.absent_read_throws">
+            <mutation text="OwnerRecordAbsent() =&gt; throw const OwnerRecordUnreadableException(),"/>
+        </regex>
+        <regex pattern="userId: current\?\.userId," dotAll="true" id="delete.forget_user_id">
+            <mutation text="userId: null,"/>
+        </regex>
+        <regex pattern="signOutDate: current\?\.signOutDate," dotAll="true" id="delete.forget_sign_out_date">
+            <mutation text="signOutDate: null,"/>
+        </regex>
+        <regex pattern="pendingDelete: _flagFor\(arrivingUserId, current\?\.pendingDelete\)," dotAll="true" id="delete.ignore_flag_choice">
+            <mutation text="pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),"/>
+        </regex>
+        <regex pattern="if \(arrivingUserId != null\) return PendingDelete\.arrivalOf\(arrivingUserId\);" dotAll="true" id="delete.flag_names_nobody_on_arrival">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="earlierFlag\.kind == PendingDeleteKind\.arrivalOfNewUser" dotAll="true" id="delete.keep_logout_flag_on_retry">
+            <mutation text="earlierFlag.kind == PendingDeleteKind.logoutOrNoOwnerRecord"/>
+        </regex>
+        <regex pattern="return earlierFlag;" dotAll="true" id="delete.lose_arrival_on_retry">
+            <mutation text="return const PendingDelete.logoutOrNoOwnerRecord();"/>
+        </regex>
+        <regex pattern="_finishRecord\(String\? arrivingUserId\) =&gt; arrivingUserId == null" dotAll="true" id="delete.invert_finish">
+            <mutation text="_finishRecord(String? arrivingUserId) =&gt; arrivingUserId != null"/>
+        </regex>
+        <regex pattern="_ownerRecords\.write\(OwnerRecord\(userId: arrivingUserId\)\)" dotAll="true" id="delete.keep_flag_after_arrival">
+            <mutation text="_ownerRecords.write(OwnerRecord(userId: arrivingUserId, pendingDelete: const PendingDelete.logoutOrNoOwnerRecord()))"/>
+        </regex>
+        <regex pattern="this\._registrations = LocalOnlyTableRegistry\.registrations" dotAll="true" id="delete.empty_default_registry">
+            <mutation text="this._registrations = const []"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="local_data_delete_service" expected-return="0">flutter test test/libraries/storage/units/local_data_delete_service_test.dart</command>
+    </commands>
+
+    <threshold failure="85"/>
+</mutations>
