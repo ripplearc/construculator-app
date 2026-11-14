@@ -4087,6 +4087,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Equipment'**
   String get costSectionEquipment;
+
+  /// Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{piece} other{pieces}}'**
+  String unitNamePieces(num count);
+
+  /// Lowercase name of the unit meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{meter} other{meters}}'**
+  String unitNameMeters(num count);
+
+  /// Lowercase name of the unit square meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{square meter} other{square meters}}'**
+  String unitNameSquareMeters(num count);
+
+  /// Lowercase name of the unit cubic meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{cubic meter} other{cubic meters}}'**
+  String unitNameCubicMeters(num count);
+
+  /// Lowercase name of the unit kilograms, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{kilogram} other{kilograms}}'**
+  String unitNameKilograms(num count);
+
+  /// Lowercase name of the unit tons, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{ton} other{tons}}'**
+  String unitNameTons(num count);
+
+  /// Lowercase name of the unit liters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{liter} other{liters}}'**
+  String unitNameLiters(num count);
+
+  /// Lowercase name of the unit hours, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{hour} other{hours}}'**
+  String unitNameHours(num count);
+
+  /// Lowercase name of the unit days, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{day} other{days}}'**
+  String unitNameDays(num count);
+
+  /// Lowercase name of the unit boxes, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{box} other{boxes}}'**
+  String unitNameBoxes(num count);
+
+  /// Lowercase name of the unit bags, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{bag} other{bags}}'**
+  String unitNameBags(num count);
+
+  /// Lowercase name of the unit rolls, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{roll} other{rolls}}'**
+  String unitNameRolls(num count);
+
+  /// Lowercase name of the unit sheets, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{sheet} other{sheets}}'**
+  String unitNameSheets(num count);
+
+  /// Bold first part of a material line's meta row: the quantity and its unit, for example 13.25 sheets
+  ///
+  /// In en, this message translates to:
+  /// **'{quantity} {unit}'**
+  String costLineMaterialQuantity(String quantity, String unit);
+
+  /// Regular second part of a material line's meta row: the price per one unit, for example · $14.50/sheet
+  ///
+  /// In en, this message translates to:
+  /// **' · {unitPrice}/{unit}'**
+  String costLineMaterialRate(String unitPrice, String unit);
+
+  /// Meta row of a labor line priced by the hour
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String costLineLaborHoursMeta(String hours);
+
+  /// Meta row of a labor line priced by the day
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String costLineLaborDaysMeta(num days);
+
+  /// Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h
+  ///
+  /// In en, this message translates to:
+  /// **' · {rate}/h'**
+  String costLineLaborHourRate(String rate);
+
+  /// Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h
+  ///
+  /// In en, this message translates to:
+  /// **' · {people} people × {rate}/h'**
+  String costLineLaborCrewHourRate(int people, String rate);
+
+  /// Regular second part of a daily labor line's meta row for one person, for example · $200.00/day
+  ///
+  /// In en, this message translates to:
+  /// **' · {rate}/day'**
+  String costLineLaborDayRate(String rate);
+
+  /// Regular second part of a daily labor line's meta row for a crew of two or more, for example · 2 people × $200.00/day
+  ///
+  /// In en, this message translates to:
+  /// **' · {people} people × {rate}/day'**
+  String costLineLaborCrewDayRate(int people, String rate);
+
+  /// How long a day-priced equipment line runs
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String costLineEquipmentDaysDuration(num days);
+
+  /// Regular second part of a day-priced equipment line's meta row, for example · $145.00/day
+  ///
+  /// In en, this message translates to:
+  /// **' · {rate}/day'**
+  String costLineEquipmentDayRate(String rate);
+
+  /// Regular word after the amount of a job-priced equipment line, for example $520.00 job
+  ///
+  /// In en, this message translates to:
+  /// **' job'**
+  String get costLineEquipmentJobTail;
+
+  /// Adds a priced delivery fee to the end of the meta row of an equipment line
+  ///
+  /// In en, this message translates to:
+  /// **' + {fee} delivery'**
+  String costLineDeliveryFee(String fee);
 }
 
 class _AppLocalizationsDelegate

@@ -2319,4 +2319,279 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get costSectionEquipment => 'Equipment';
+
+  @override
+  String unitNamePieces(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'pieces',
+      one: 'piece',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameMeters(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'meters',
+      one: 'meter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameSquareMeters(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'square meters',
+      one: 'square meter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameCubicMeters(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'cubic meters',
+      one: 'cubic meter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameKilograms(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'kilograms',
+      one: 'kilogram',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameTons(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tons',
+      one: 'ton',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameLiters(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'liters',
+      one: 'liter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameHours(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hours',
+      one: 'hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameDays(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'days',
+      one: 'day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameBoxes(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'boxes',
+      one: 'box',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameBags(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bags',
+      one: 'bag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameRolls(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'rolls',
+      one: 'roll',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String unitNameSheets(num count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'sheets',
+      one: 'sheet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String costLineMaterialQuantity(String quantity, String unit) {
+    return '$quantity $unit';
+  }
+
+  @override
+  String costLineMaterialRate(String unitPrice, String unit) {
+    return ' · $unitPrice/$unit';
+  }
+
+  @override
+  String costLineLaborHoursMeta(String hours) {
+    return '$hours h';
+  }
+
+  @override
+  String costLineLaborDaysMeta(num days) {
+    final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String daysString = daysNumberFormat.format(days);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$daysString days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String costLineLaborHourRate(String rate) {
+    return ' · $rate/h';
+  }
+
+  @override
+  String costLineLaborCrewHourRate(int people, String rate) {
+    return ' · $people people × $rate/h';
+  }
+
+  @override
+  String costLineLaborDayRate(String rate) {
+    return ' · $rate/day';
+  }
+
+  @override
+  String costLineLaborCrewDayRate(int people, String rate) {
+    return ' · $people people × $rate/day';
+  }
+
+  @override
+  String costLineEquipmentDaysDuration(num days) {
+    final intl.NumberFormat daysNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String daysString = daysNumberFormat.format(days);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$daysString days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String costLineEquipmentDayRate(String rate) {
+    return ' · $rate/day';
+  }
+
+  @override
+  String get costLineEquipmentJobTail => ' job';
+
+  @override
+  String costLineDeliveryFee(String fee) {
+    return ' + $fee delivery';
+  }
 }

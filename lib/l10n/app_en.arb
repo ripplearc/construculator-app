@@ -3419,5 +3419,264 @@
   "@costSectionEquipment": {
     "description": "Name of the Equipment section on the estimate screen",
     "context": "CUJ 3, screen 3 Open the estimate: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "unitNamePieces": "{count, plural, =1{piece} other{pieces}}",
+  "@unitNamePieces": {
+    "description": "Lowercase name of the unit pieces, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameMeters": "{count, plural, =1{meter} other{meters}}",
+  "@unitNameMeters": {
+    "description": "Lowercase name of the unit meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameSquareMeters": "{count, plural, =1{square meter} other{square meters}}",
+  "@unitNameSquareMeters": {
+    "description": "Lowercase name of the unit square meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameCubicMeters": "{count, plural, =1{cubic meter} other{cubic meters}}",
+  "@unitNameCubicMeters": {
+    "description": "Lowercase name of the unit cubic meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameKilograms": "{count, plural, =1{kilogram} other{kilograms}}",
+  "@unitNameKilograms": {
+    "description": "Lowercase name of the unit kilograms, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameTons": "{count, plural, =1{ton} other{tons}}",
+  "@unitNameTons": {
+    "description": "Lowercase name of the unit tons, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameLiters": "{count, plural, =1{liter} other{liters}}",
+  "@unitNameLiters": {
+    "description": "Lowercase name of the unit liters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameHours": "{count, plural, =1{hour} other{hours}}",
+  "@unitNameHours": {
+    "description": "Lowercase name of the unit hours, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameDays": "{count, plural, =1{day} other{days}}",
+  "@unitNameDays": {
+    "description": "Lowercase name of the unit days, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameBoxes": "{count, plural, =1{box} other{boxes}}",
+  "@unitNameBoxes": {
+    "description": "Lowercase name of the unit boxes, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameBags": "{count, plural, =1{bag} other{bags}}",
+  "@unitNameBags": {
+    "description": "Lowercase name of the unit bags, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameRolls": "{count, plural, =1{roll} other{rolls}}",
+  "@unitNameRolls": {
+    "description": "Lowercase name of the unit rolls, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "unitNameSheets": "{count, plural, =1{sheet} other{sheets}}",
+  "@unitNameSheets": {
+    "description": "Lowercase name of the unit sheets, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "costLineMaterialQuantity": "{quantity} {unit}",
+  "@costLineMaterialQuantity": {
+    "description": "Bold first part of a material line's meta row: the quantity and its unit, for example 13.25 sheets",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineMaterialRate": " · {unitPrice}/{unit}",
+  "@costLineMaterialRate": {
+    "description": "Regular second part of a material line's meta row: the price per one unit, for example · $14.50/sheet",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "unitPrice": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborHoursMeta": "{hours} h",
+  "@costLineLaborHoursMeta": {
+    "description": "Meta row of a labor line priced by the hour",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborDaysMeta": "{days, plural, =1{1 day} other{{days} days}}",
+  "@costLineLaborDaysMeta": {
+    "description": "Meta row of a labor line priced by the day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "days": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "costLineLaborHourRate": " · {rate}/h",
+  "@costLineLaborHourRate": {
+    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborCrewHourRate": " · {people} people × {rate}/h",
+  "@costLineLaborCrewHourRate": {
+    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "people": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborDayRate": " · {rate}/day",
+  "@costLineLaborDayRate": {
+    "description": "Regular second part of a daily labor line's meta row for one person, for example · $200.00/day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineLaborCrewDayRate": " · {people} people × {rate}/day",
+  "@costLineLaborCrewDayRate": {
+    "description": "Regular second part of a daily labor line's meta row for a crew of two or more, for example · 2 people × $200.00/day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "people": {
+        "type": "int"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineEquipmentDaysDuration": "{days, plural, =1{1 day} other{{days} days}}",
+  "@costLineEquipmentDaysDuration": {
+    "description": "How long a day-priced equipment line runs",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "days": {
+        "type": "num",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "costLineEquipmentDayRate": " · {rate}/day",
+  "@costLineEquipmentDayRate": {
+    "description": "Regular second part of a day-priced equipment line's meta row, for example · $145.00/day",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "costLineEquipmentJobTail": " job",
+  "@costLineEquipmentJobTail": {
+    "description": "Regular word after the amount of a job-priced equipment line, for example $520.00 job",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costLineDeliveryFee": " + {fee} delivery",
+  "@costLineDeliveryFee": {
+    "description": "Adds a priced delivery fee to the end of the meta row of an equipment line",
+    "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
+    "placeholders": {
+      "fee": {
+        "type": "String"
+      }
+    }
   }
 }
