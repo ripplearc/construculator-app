@@ -326,11 +326,21 @@ stream:
      construction rather than waiting for a fresh `signedIn` event.
 
 **Sign-out with a different user on the same device:** `disconnectAndClear()` is called
-with its default `clearLocal: true`, which wipes the locally synced SQLite data on
-`signedOut`. The next `signedIn` for a different user triggers a fresh `connect()` and
-resync — so there's no cross-user data leakage in local storage. This wasn't independently
-tested end-to-end in this spike; it's a read of the implementation's intent, not a
-verified behavior.
+with `clearLocal: false`, which wipes the locally synced SQLite data on `signedOut`
+and keeps the `Table.localOnly` tables. The next `signedIn` for a different user triggers
+a fresh `connect()` and resync, so synced rows do not leak between users. Local-only rows
+do stay, which is why they are registered below. This wasn't independently tested
+end-to-end in this spike. It's a read of the implementation's intent, not a verified
+behavior.
+
+**Local-only tables:** every `Table.localOnly` in `schema.dart` is listed in
+`LocalOnlyTableRegistry` as "clear when the user changes" or "keep as a device setting",
+and a test fails when one is not registered. Add the entry in the same change as a new
+local-only table. No code reads the registrations yet. Today only `current_company` is
+deleted on sign-out, by `CurrentCompanyResolver.clearCache()`, and a failed delete is
+only logged. Nothing empties `your_rate_refusals` on sign-out. The shared delete routine
+will call `clearForUserChange` on every registration. It is built in the owner record
+ticket of the sign-out design (CA-1429).
 
 `FakeSupabaseWrapper._authStateController` was changed from `.broadcast()` to
 `.broadcast(sync: true)` (PR #364) specifically so tests can assert on both listeners'
