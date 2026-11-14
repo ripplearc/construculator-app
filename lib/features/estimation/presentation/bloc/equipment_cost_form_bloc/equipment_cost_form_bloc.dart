@@ -91,12 +91,18 @@ class EquipmentCostFormBloc
       final rateStatus = rate == null
           ? RateStatus.missing
           : RateStatus.ownRateUnconfirmed;
-      _emit(
-        emit,
-        (d) => d.method == EquipmentPricingMethod.day
+      _emit(emit, (d) {
+        final isDay = d.method == EquipmentPricingMethod.day;
+        // The fields echo the stored rate when the form opens on a line, and
+        // that must not turn a confirmed rate into an unconfirmed one.
+        if (d.isEditingExistingLine &&
+            rate == (isDay ? d.dailyRate : d.jobAmount)) {
+          return d;
+        }
+        return isDay
             ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
-            : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
-      );
+            : d.copyWith(jobAmount: rate, rateStatus: rateStatus);
+      });
     });
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
       _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);

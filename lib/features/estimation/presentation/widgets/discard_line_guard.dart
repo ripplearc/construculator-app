@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,12 +28,19 @@ class DiscardLineGuard<B extends StateStreamable<S>, S> extends StatefulWidget {
   /// The name the dialog shows for [state], empty when nothing was named yet.
   final String Function(S state) itemNameOf;
 
+  /// The total the line [state] edits has on the estimate, or null for a line
+  /// that was never added. A total makes the question read "Discard changes?"
+  /// and say the line stays at that total. Left out, the question is the one
+  /// for a line that was never added.
+  final double? Function(S state)? savedLineTotalOf;
+
   final Widget child;
 
   const DiscardLineGuard({
     super.key,
     required this.hasUnsavedChanges,
     required this.itemNameOf,
+    this.savedLineTotalOf,
     required this.child,
   });
 
@@ -111,14 +119,27 @@ class _DiscardLineGuardState<B extends StateStreamable<S>, S>
       return;
     }
     final l10n = context.l10n;
-    final name = widget.itemNameOf(context.read<B>().state).trim();
+    final state = context.read<B>().state;
+    final name = widget.itemNameOf(state).trim();
+    final savedTotal = widget.savedLineTotalOf?.call(state);
+    final isEditing = savedTotal != null;
     final keepEditing = await ConfirmationDialog.show(
       context,
-      title: l10n.discardLineDialogTitle,
+      title: isEditing
+          ? l10n.discardChangesDialogTitle
+          : l10n.discardLineDialogTitle,
       body: TextSpan(
-        text: name.isEmpty
-            ? l10n.discardLineDialogBodyUnnamed
-            : l10n.discardLineDialogBody(name),
+        text: switch ((isEditing, name.isEmpty)) {
+          (true, true) => l10n.discardChangesDialogBodyUnnamed(
+            DisplayFormatter.formatCurrency(savedTotal),
+          ),
+          (true, false) => l10n.discardChangesDialogBody(
+            name,
+            DisplayFormatter.formatCurrency(savedTotal),
+          ),
+          (false, true) => l10n.discardLineDialogBodyUnnamed,
+          (false, false) => l10n.discardLineDialogBody(name),
+        },
       ),
       secondaryLabel: l10n.discardLineDiscardButton,
       primaryLabel: l10n.discardLineKeepEditingButton,
