@@ -85,6 +85,11 @@ abstract class YourRatesRepository {
   /// So `save` never changes a saved row. It only inserts a row or reports why
   /// it did not.
   ///
+  /// A save that is not done after [within] (the repository's own limit when
+  /// null) returns an `EstimationErrorType.timeoutError` failure. If the phone
+  /// finishes it later anyway, the new row is deleted again, so the failure
+  /// stays true. A save made while that undo is pending waits for it first.
+  ///
   /// A row of the same name with the other pricing method is not in the
   /// grouping: a Day price and a Job price for one name are two rows, and
   /// saving one never changes the other.
@@ -93,7 +98,7 @@ abstract class YourRatesRepository {
   /// whitespace-only) is treated exactly like `null` throughout this rule — a
   /// UI text field naturally hands back '' for an empty input, and this
   /// repository does not rely on callers to normalize that themselves.
-  Future<Either<Failure, void>> save(YourRateEntry entry);
+  Future<Either<Failure, void>> save(YourRateEntry entry, {Duration? within});
 
   /// Records that a cost line was just added with the saved rate [rateId]:
   /// its [YourRateEntry.lastUsedAt] becomes the current time in UTC, so the

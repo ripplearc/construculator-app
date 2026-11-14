@@ -1,8 +1,13 @@
+import 'dart:async';
+
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/your_rates_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/your_rates_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -20,6 +25,7 @@ import '../../../../../utils/fake_your_rates_database.dart';
 void main() {
   group('YourRatesRepositoryImpl', () {
     late YourRatesRepositoryImpl repository;
+    late YourRatesRepositoryImpl impatientRepository;
     late FakeYourRatesDatabase database;
 
     const testCompanyId = 'company-1';
@@ -102,6 +108,13 @@ void main() {
 
     setUp(() {
       database.reset();
+      // ignore: no_direct_instantiation
+      impatientRepository = YourRatesRepositoryImpl(
+        dataSource: Modular.get<YourRatesDataSource>(),
+        refusalDataSource: Modular.get<YourRateRefusalDataSource>(),
+        authRepository: Modular.get<AuthRepository>(),
+        saveTimeLimit: Duration.zero,
+      );
     });
 
     void seed(List<Map<String, dynamic>> rows) {
@@ -514,6 +527,144 @@ void main() {
         expect(database.getAllCalls, isEmpty);
         expect(database.insertedRows, isEmpty);
         expect(database.updatedRowIds, isEmpty);
+      });
+    });
+
+    group('a save that runs past its time limit', () {
+      test('reports a timeout', () async {
+        database.insertGate = Completer<void>();
+
+        final result = await impatientRepository.save(buildEntry());
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
+        );
+        final deleted = database.nextRowDeleted;
+        database.insertGate!.complete();
+        await deleted;
+      });
+
+      test('is deleted again when the phone finishes it later', () async {
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        final deleted = database.nextRowDeleted;
+
+        gate.complete();
+        await deleted;
+
+        final result = await repository.search(
+          'skid',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.getRightOrNull(), isEmpty);
+      });
+
+      test('leaves the rows saved before it alone', () async {
+        seed([row(id: 'kept', itemName: 'Dozer')]);
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        final deleted = database.nextRowDeleted;
+
+        gate.complete();
+        await deleted;
+
+        expect(database.deletedRowIds, isNot(contains('kept')));
+        final result = await repository.search(
+          'dozer',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.getRightOrNull()!.map((e) => e.id), ['kept']);
+      });
+
+      test('a late save that fails deletes nothing', () async {
+        seed([row(id: 'existing', itemName: 'Skid steer')]);
+        final gate = database.getAllGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(database.deletedRowIds, isEmpty);
+        final result = await repository.search(
+          'skid',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.getRightOrNull()!.map((e) => e.id), ['existing']);
+      });
+
+      test('a save made while the late one is pending waits for its undo, '
+          'then saves once', () async {
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        final retry = await impatientRepository.save(
+          buildEntry(itemName: 'Skid steer'),
+        );
+        expect(retry.isLeft(), isTrue);
+
+        gate.complete();
+        final third = await impatientRepository.save(
+          buildEntry(itemName: 'Skid steer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(third.isRight(), isTrue);
+        final result = await repository.search(
+          'skid',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.getRightOrNull(), hasLength(1));
+      });
+
+      test('a failing undo leaves the row and does not crash', () async {
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        database.failRowDeletes = true;
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        final result = await repository.search(
+          'skid',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.getRightOrNull(), hasLength(1));
+      });
+
+      test('a save inside the limit is kept', () async {
+        final result = await repository.save(
+          buildEntry(itemName: 'Skid steer'),
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(database.deletedRowIds, isEmpty);
+      });
+
+      test('a longer within is honoured', () async {
+        final gate = database.insertGate = Completer<void>();
+        final patient = impatientRepository.save(
+          buildEntry(itemName: 'Skid steer'),
+          within: const Duration(seconds: 30),
+        );
+        await impatientRepository.save(buildEntry(itemName: 'Dozer'));
+        gate.complete();
+
+        expect((await patient).isRight(), isTrue);
       });
     });
 
@@ -1170,6 +1321,20 @@ void main() {
 
         expect(result.isRight(), isTrue);
         expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a save that ran past its limit keeps the refusal', () async {
+        refuse();
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(amount: 500.0));
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(database.refusalRow(excavatorKey), isNotNull);
       });
 
       test('a successful save with a new label forgets the refusal', () async {

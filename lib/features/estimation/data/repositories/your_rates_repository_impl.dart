@@ -19,6 +19,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     required this.dataSource,
     required this.refusalDataSource,
     required this.authRepository,
+    this.saveTimeLimit = const Duration(seconds: 2),
   });
 
   final YourRatesDataSource dataSource;
@@ -30,6 +31,13 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   /// Tells whose refusals to read and forget: a user never sees another
   /// user's refusal, even in the same company.
   final AuthRepository authRepository;
+
+  /// How long [save] waits for the phone before it reports a
+  /// [EstimationErrorType.timeoutError]. A save that finishes after that is
+  /// deleted again, so the failure the user was shown stays true.
+  final Duration saveTimeLimit;
+
+  Future<void>? _pendingUndo;
   static final _logger = AppLogger().tag('YourRatesRepositoryImpl');
   static const _blankCompanyFailure = EstimationFailure(
     errorType: EstimationErrorType.permissionDenied,
@@ -98,7 +106,49 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   @override
-  Future<Either<Failure, void>> save(YourRateEntry entry) async {
+  Future<Either<Failure, void>> save(
+    YourRateEntry entry, {
+    Duration? within,
+  }) async {
+    final saving = _saveAfterPendingUndo(entry);
+    final result = await saving.timeout(
+      within ?? saveTimeLimit,
+      onTimeout: () {
+        _pendingUndo = _deleteWhenSaved(saving);
+        return const Left(
+          EstimationFailure(errorType: EstimationErrorType.timeoutError),
+        );
+      },
+    );
+    final saved = result.getRightOrNull();
+    if (saved != null) await _forgetRefusalOf(saved);
+    return result.fold(Left.new, (_) => const Right(null));
+  }
+
+  Future<Either<Failure, YourRateEntry>> _saveAfterPendingUndo(
+    YourRateEntry entry,
+  ) async {
+    final pendingUndo = _pendingUndo;
+    if (pendingUndo != null) await pendingUndo;
+    return _saveOnPhone(entry);
+  }
+
+  Future<void> _deleteWhenSaved(
+    Future<Either<Failure, YourRateEntry>> saving,
+  ) async {
+    final saved = (await saving).getRightOrNull();
+    if (saved == null) return;
+    try {
+      await dataSource.deleteRateById(saved.id);
+    } catch (_) {
+      // The data source already logged this failure. The user was told the
+      // rate was not saved and nothing more can be done here.
+    }
+  }
+
+  Future<Either<Failure, YourRateEntry>> _saveOnPhone(
+    YourRateEntry entry,
+  ) async {
     if (entry.companyId.trim().isEmpty) return const Left(_blankCompanyFailure);
     try {
       final effectiveLabel = _normalizeLabel(entry.entryLabel);
@@ -122,11 +172,10 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
               .toList();
 
       if (existing.isEmpty) {
-        await dataSource.insertRate(
+        final inserted = await dataSource.insertRate(
           YourRateEntryDto.fromEntity(normalizedEntry),
         );
-        await _forgetRefusalOf(normalizedEntry);
-        return const Right(null);
+        return Right(_toEntry(inserted));
       }
 
       if (effectiveLabel == null) {
@@ -147,9 +196,10 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         );
       }
 
-      await dataSource.insertRate(YourRateEntryDto.fromEntity(normalizedEntry));
-      await _forgetRefusalOf(normalizedEntry);
-      return const Right(null);
+      final inserted = await dataSource.insertRate(
+        YourRateEntryDto.fromEntity(normalizedEntry),
+      );
+      return Right(_toEntry(inserted));
     } catch (e) {
       return Left(_handleError(e));
     }
@@ -217,9 +267,9 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
   }
 
   Future<void> _forgetRefusalOf(YourRateEntry entry) async {
-    final userId = authRepository.getCurrentCredentials()?.id;
-    if (userId == null) return;
     try {
+      final userId = authRepository.getCurrentCredentials()?.id;
+      if (userId == null) return;
       await refusalDataSource.deleteRefusalByItem(
         userId: userId,
         companyId: entry.companyId,

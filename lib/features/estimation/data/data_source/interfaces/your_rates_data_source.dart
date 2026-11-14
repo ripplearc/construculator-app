@@ -45,4 +45,9 @@ abstract class YourRatesDataSource {
   ///
   /// Throws an exception if the write fails.
   Future<void> stampLastUsedAtById(String id);
+
+  /// Deletes the row identified by [id]. Does nothing if no row has [id].
+  ///
+  /// Throws an exception if the write fails.
+  Future<void> deleteRateById(String id);
 }
