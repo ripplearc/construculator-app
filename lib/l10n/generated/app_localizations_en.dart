@@ -2310,4 +2310,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardLineKeepEditingButton => 'Keep editing';
+
+  @override
+  String get costSectionMaterials => 'Materials';
+
+  @override
+  String get costSectionLabor => 'Labor';
+
+  @override
+  String get costSectionEquipment => 'Equipment';
 }
