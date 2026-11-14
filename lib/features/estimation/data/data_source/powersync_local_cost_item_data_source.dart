@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/data/models/cost_item_dto.dar
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:flutter/foundation.dart';
 
 /// Reads and writes cost lines in the phone's own PowerSync database.
 ///
@@ -12,8 +13,13 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// signal returns. No sync stream delivers `cost_items` yet, so a read finds
 /// only the lines written on this phone.
 ///
-/// Failures are logged here, at the storage boundary, and rethrown for the
-/// repository to translate.
+/// A line's upload is waiting while PowerSync's `ps_crud` queue holds an entry
+/// for it. Each entry is JSON text with the table name and the row id, and
+/// PowerSync deletes it when the connector completes the upload.
+///
+/// A failed read or write is logged here, at the storage boundary, and
+/// rethrown for the repository to translate. A failed watch arrives as an
+/// error on the stream, and the repository logs it.
 class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
   final PowerSyncDatabaseWrapper _database;
   static final _logger = AppLogger().tag('PowerSyncLocalCostItemDataSource');
@@ -22,6 +28,15 @@ class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
       'SELECT * FROM ${DatabaseConstants.costItemsTable} '
       'WHERE ${DatabaseConstants.estimateIdColumn} = ? '
       'ORDER BY ${DatabaseConstants.createdAtColumn} ASC';
+
+  static const _pendingUploadsSql =
+      'SELECT ${DatabaseConstants.idColumn} '
+      'FROM ${DatabaseConstants.costItemsTable} '
+      'WHERE ${DatabaseConstants.estimateIdColumn} = ? '
+      'AND ${DatabaseConstants.idColumn} IN ('
+      "SELECT json_extract(data, '\$.id') FROM ps_crud "
+      "WHERE json_extract(data, '\$.type') = "
+      "'${DatabaseConstants.costItemsTable}')";
 
   /// Creates a data source over [_database].
   PowerSyncLocalCostItemDataSource({required this._database});
@@ -55,5 +70,17 @@ class PowerSyncLocalCostItemDataSource implements LocalCostItemDataSource {
       _logger.error('Failed to read cost lines from the phone', e, stack);
       rethrow;
     }
+  }
+
+  @override
+  Stream<Set<String>> watchCostItemIdsWithPendingUpload(String estimateId) {
+    return _database
+        .watch(_pendingUploadsSql, parameters: [estimateId])
+        .map(
+          (rows) => {
+            for (final row in rows) row[DatabaseConstants.idColumn] as String,
+          },
+        )
+        .distinct(setEquals);
   }
 }
