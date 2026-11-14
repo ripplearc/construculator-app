@@ -185,6 +185,51 @@ void main() {
       expect(fakeDatabase.disconnectAndClearCallCount, 0);
     });
 
+    group('disconnectAndClearOrThrow', () {
+      test('clears even when the manager is not connected', () async {
+        final manager = startManager();
+        await settle();
+
+        await manager.disconnectAndClearOrThrow();
+
+        expect(fakeDatabase.disconnectAndClearCallCount, 1);
+        expect(fakeDatabase.lastClearLocal, isFalse);
+      });
+
+      test('throws when the clear fails', () async {
+        final manager = startManager();
+        await settle();
+        fakeDatabase.disconnectAndClearError = Exception('disk error');
+
+        await expectLater(manager.disconnectAndClearOrThrow(), throwsException);
+      });
+
+      test('connects again after a successful clear', () async {
+        signIn();
+        final manager = startManager();
+        await settle();
+
+        await manager.disconnectAndClearOrThrow();
+        await manager.connect();
+
+        expect(fakeDatabase.connectCallCount, 2);
+      });
+
+      test('a failed clear is retried before the next connect', () async {
+        signIn();
+        final manager = startManager();
+        await settle();
+        fakeDatabase.disconnectAndClearError = Exception('disk error');
+        await expectLater(manager.disconnectAndClearOrThrow(), throwsException);
+
+        fakeDatabase.disconnectAndClearError = null;
+        await manager.connect();
+
+        expect(fakeDatabase.disconnectAndClearCallCount, 2);
+        expect(fakeDatabase.connectCallCount, 2);
+      });
+    });
+
     test('stops reacting to auth events after dispose', () async {
       final manager = startManager();
 

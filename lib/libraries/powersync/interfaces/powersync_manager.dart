@@ -30,4 +30,12 @@ abstract class PowerSyncManager {
   /// Call this on sign-out so the next user does not inherit the previous
   /// user's synced rows.
   Future<void> disconnectAndClear();
+
+  /// Stops syncing and deletes the synced data and the unsent edits, whatever
+  /// the connection state is, and leaves the local-only tables alone.
+  ///
+  /// Unlike [disconnectAndClear], it does not skip the delete when the manager
+  /// is not connected, and it throws when the delete fails. A later [connect]
+  /// retries a failed delete first.
+  Future<void> disconnectAndClearOrThrow();
 }
