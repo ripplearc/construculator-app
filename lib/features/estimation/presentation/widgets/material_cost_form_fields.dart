@@ -137,7 +137,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                   ),
                   if (state.data.unit case final unit?)
                     Text(
-                      l10n.materialRatePerUnitSuffix(unit.displayName(l10n)),
+                      l10n.materialRatePerUnitSuffix(unit.symbol(l10n)),
                       style: context.textTheme.bodyMediumRegular.copyWith(
                         color: context.colorTheme.textBody,
                       ),
