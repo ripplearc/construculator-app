@@ -2173,6 +2173,92 @@ void main() {
       );
 
       test(
+        'a delete of a row no list has shown yet stays hidden when the list grows to it',
+        () async {
+          const rowBelowFirstPage = 'estimate-5';
+          final queue = await watchFirstPageOfThree();
+          await repository.deleteEstimation(rowBelowFirstPage, testProjectId);
+          await syncNewerRowFirst(queue);
+
+          await repository.loadMoreEstimations(testProjectId);
+          await repository.loadMoreEstimations(testProjectId);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == 'estimate-4')) {
+              expect(list.map((e) => e.id), isNot(contains(rowBelowFirstPage)));
+              break;
+            }
+          }
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a delete is forgotten once the phone shows the row gone from a full list',
+        () async {
+          final queue = await watchFirstPageOfThree();
+          await repository.deleteEstimation(lastRowOfFirstPage, testProjectId);
+          fakePhoneDatabase.removeRow(lastRowOfFirstPage);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == 'estimate-19')) break;
+          }
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: lastRowOfFirstPage,
+              projectId: testProjectId,
+              estimateName: 'Estimate 20',
+              createdAt: '2026-01-21T00:00:00.000Z',
+            ),
+          ]);
+
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == lastRowOfFirstPage)) break;
+          }
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a delete is forgotten once the phone shows the last row gone from a short list',
+        () async {
+          seedEstimations(5);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await queue.next;
+          await repository.deleteEstimation('estimate-0', testProjectId);
+          fakePhoneDatabase.removeRow('estimate-0');
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: 'estimate-newest-marker',
+              projectId: testProjectId,
+              estimateName: 'Estimate newest marker',
+              createdAt: '2027-01-01T00:00:00.000Z',
+            ),
+          ]);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == 'estimate-newest-marker')) break;
+          }
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: 'estimate-0',
+              projectId: testProjectId,
+              estimateName: 'Estimate 0',
+              createdAt: '2026-01-01T00:00:00.000Z',
+            ),
+          ]);
+
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            if (list.any((e) => e.id == 'estimate-0')) break;
+          }
+          await queue.cancel();
+        },
+      );
+
+      test(
         'a rename stays shown when a newer row pushes the row out of the list and the list grows',
         () async {
           final queue = await watchFirstPageOfThree();
