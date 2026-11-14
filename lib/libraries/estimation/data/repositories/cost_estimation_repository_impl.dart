@@ -351,6 +351,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       apply: apply,
       isReflected: isReflected,
       estimationId: estimationId,
+      rowOnPhone: _rowOnPhone(projectId, estimationId),
     );
     for (final key in _watchedKeysOf(projectId)) {
       final copy = _phoneCopies[key];
@@ -371,11 +372,35 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     _ListView view,
   ) {
     final estimationId = edit.estimationId;
+    final rowIsAbsent =
+        estimationId != null && estimates.every((e) => e.id != estimationId);
     final rowIsStillBeingCreated =
-        estimationId != null &&
-        _pendingEdits.containsKey('create:$estimationId') &&
-        estimates.every((e) => e.id != estimationId);
-    return !rowIsStillBeingCreated && edit.isReflected(estimates, view);
+        rowIsAbsent && _pendingEdits.containsKey('create:$estimationId');
+    if (rowIsStillBeingCreated) return false;
+    if (rowIsAbsent && !_absenceProvesEdit(edit, estimates, view)) return false;
+    return edit.isReflected(estimates, view);
+  }
+
+  bool _absenceProvesEdit(
+    _PendingEdit edit,
+    List<CostEstimate> estimates,
+    _ListView view,
+  ) {
+    if (estimates.length < view.limit) return true;
+    final row = edit.rowOnPhone;
+    return row != null && _sortsBefore(row, estimates.last, view);
+  }
+
+  CostEstimate? _rowOnPhone(String projectId, String? estimationId) {
+    if (estimationId == null) return null;
+    for (final key in _watchedKeysOf(projectId)) {
+      final copy = _phoneCopies[key];
+      if (copy == null) continue;
+      for (final estimate in copy.estimates) {
+        if (estimate.id == estimationId) return estimate;
+      }
+    }
+    return null;
   }
 
   String _newEditKey(String kind, String estimationId) =>
@@ -797,10 +822,12 @@ class _PendingEdit {
     required this.apply,
     required this.isReflected,
     this.estimationId,
+    this.rowOnPhone,
   });
 
   final String projectId;
   final String? estimationId;
+  final CostEstimate? rowOnPhone;
   final Set<String> awaitingKeys = {};
   _Apply apply;
   _IsReflected isReflected;
