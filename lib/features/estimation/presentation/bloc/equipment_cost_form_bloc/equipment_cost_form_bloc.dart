@@ -39,6 +39,7 @@ class EquipmentCostFormBloc
   StreamSubscription<Either<Failure, RefusedYourRate?>>? _refusalWatch;
   Future<void>? _estimateLookup;
   String? _companyId;
+  bool _isRateSaveRunning = false;
 
   final Map<String, RefusedDefaultNotice> _noticesKeptAfterShownByItem = {};
 
@@ -128,6 +129,7 @@ class EquipmentCostFormBloc
       );
     });
     on<EquipmentRateSaveRunningChangedEvent>((e, emit) {
+      _isRateSaveRunning = e.isRunning;
       final isSubmittingOrAsking =
           state is EquipmentCostFormSubmitting ||
           state is EquipmentCostFormSuccess ||
@@ -418,7 +420,11 @@ class EquipmentCostFormBloc
   ) {
     final current = state;
     if (current is! EquipmentCostFormOutsizedFeeConfirm) return;
-    emit(EquipmentCostFormEditing(current.data));
+    emit(
+      EquipmentCostFormEditing(
+        current.data.copyWith(isRateSaveRunning: _isRateSaveRunning),
+      ),
+    );
   }
 
   Future<void> _onOutsizedFeeAccepted(
@@ -440,7 +446,12 @@ class EquipmentCostFormBloc
       _buildCostItem(draft, estimateId),
     );
     final created = result.fold<CostItem?>((failure) {
-      emit(EquipmentCostFormFailure(draft, failure));
+      emit(
+        EquipmentCostFormFailure(
+          draft.copyWith(isRateSaveRunning: _isRateSaveRunning),
+          failure,
+        ),
+      );
       return null;
     }, (item) => item);
     if (created == null) return;
