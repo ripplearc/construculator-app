@@ -209,6 +209,16 @@ void main() {
 
         await seen;
       });
+
+      test('passes on a failed read of the phone', () async {
+        final seen = expectLater(
+          dataSource.watchCostItemIdsWithPendingUpload('estimate-1'),
+          emitsInOrder([<String>{}, emitsError(isA<StateError>())]),
+        );
+        database.failWatches(StateError('database locked'));
+
+        await seen;
+      });
     });
   });
 }
