@@ -32,6 +32,28 @@ class CostItemRepositoryImpl implements CostItemRepository {
   }
 
   @override
+  Future<Either<Failure, CostItem>> updateCostItem(CostItem item) async {
+    try {
+      final updated = await dataSource.updateCostItem(
+        CostItemDto.fromEntity(item),
+      );
+      return Right(updated.toEntity());
+    } catch (e) {
+      return _handleError(e, 'updating cost item');
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteCostItem(String itemId) async {
+    try {
+      await dataSource.deleteCostItemById(itemId);
+      return const Right(null);
+    } catch (e) {
+      return _handleError(e, 'deleting cost item');
+    }
+  }
+
+  @override
   Future<Either<Failure, double>> getEstimateItemsTotal(
     String estimateId,
   ) async {

@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -128,6 +129,138 @@ void main() {
             EstimationErrorType.unexpectedError,
           ),
         );
+      });
+    });
+
+    group('updateCostItem', () {
+      void seedStoredItem() =>
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
+            CostItemTestDataMapFactory.createMaterialItemData(
+              id: 'item-1',
+              estimateId: 'estimate-1',
+              itemName: 'Cement',
+            ),
+          ]);
+
+      test(
+        'returns Right with the entity as stored after the change',
+        () async {
+          seedStoredItem();
+
+          final result = await repository.updateCostItem(
+            testItem.copyWith(itemName: 'Cement mix'),
+          );
+
+          expect(result.getRightOrNull()?.itemName, 'Cement mix');
+        },
+      );
+
+      test('keeps the changed name when the estimate is read again', () async {
+        seedStoredItem();
+
+        await repository.updateCostItem(
+          testItem.copyWith(itemName: 'Cement mix'),
+        );
+
+        final items = await repository.getCostItemsForEstimate('estimate-1');
+        expect(items.getRightOrNull()?.single.itemName, 'Cement mix');
+      });
+
+      test(
+        'returns Left unexpectedError for an item that does not exist',
+        () async {
+          final result = await repository.updateCostItem(testItem);
+
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.unexpectedError,
+            ),
+          );
+        },
+      );
+
+      test('maps TimeoutException to timeoutError failure', () async {
+        seedStoredItem();
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+
+        final result = await repository.updateCostItem(testItem);
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
+        );
+      });
+
+      test('maps SocketException to connectionError failure', () async {
+        seedStoredItem();
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.socket;
+
+        final result = await repository.updateCostItem(testItem);
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
+          ),
+        );
+      });
+    });
+
+    group('deleteCostItem', () {
+      void seedStoredItem() =>
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
+            CostItemTestDataMapFactory.createMaterialItemData(
+              id: 'item-1',
+              estimateId: 'estimate-1',
+            ),
+          ]);
+
+      test('returns Right and the estimate no longer holds the item', () async {
+        seedStoredItem();
+
+        final result = await repository.deleteCostItem('item-1');
+
+        final items = await repository.getCostItemsForEstimate('estimate-1');
+        expect(result.isRight(), true);
+        expect(items.getRightOrNull(), isEmpty);
+      });
+
+      test('maps SocketException to connectionError failure', () async {
+        seedStoredItem();
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.socket;
+
+        final result = await repository.deleteCostItem('item-1');
+
+        expect(
+          result.getLeftOrNull(),
+          isA<EstimationFailure>().having(
+            (f) => f.errorType,
+            'errorType',
+            EstimationErrorType.connectionError,
+          ),
+        );
+      });
+
+      test('keeps the item when the delete fails', () async {
+        seedStoredItem();
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+
+        await repository.deleteCostItem('item-1');
+
+        final items = await repository.getCostItemsForEstimate('estimate-1');
+        expect(items.getRightOrNull(), hasLength(1));
       });
     });
 
