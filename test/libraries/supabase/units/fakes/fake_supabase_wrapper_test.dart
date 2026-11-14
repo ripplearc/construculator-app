@@ -1498,6 +1498,38 @@ void main() {
           expect(result['updated_at'], isNotNull);
         });
 
+        test('keeps the id the caller gives a new record', () async {
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'id': 'chosen-id', 'user_id': 'u1'},
+            onConflict: 'id',
+          );
+
+          final result = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u1',
+          );
+
+          expect(result!['id'], equals('chosen-id'));
+        });
+
+        test('gives a new record an id when the caller gives none', () async {
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u2'},
+            onConflict: 'user_id',
+          );
+
+          final result = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u2',
+          );
+
+          expect(result!['id'], isNotNull);
+        });
+
         test('updates an existing record when a conflict is found', () async {
           fakeWrapper.addTableData('profiles', [
             {

@@ -222,6 +222,10 @@ class DatabaseConstants {
   /// mapper.
   static const String valuesColumn = 'values';
 
+  /// A cost line's breakdown as one JSON object, such as the unit price and
+  /// the quantity.
+  static const String calculationColumn = 'calculation';
+
   /// The unit system an entry was typed under: `imperial` or `metric`.
   static const String unitSystemColumn = 'unit_system';
 

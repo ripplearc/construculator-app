@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -30,6 +31,13 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// one id per default on every phone, so this is a safety net, not the path
 /// a change normally takes.
 ///
+/// A `cost_items` row is sent with its `calculation` decoded for the same
+/// reason: sent as text, the jsonb column would hold a JSON string instead of
+/// an object. PowerSync leaves a null column out of a queued PUT, so a PUT of
+/// a `cost_items` row sends every column of the table, null where the row has
+/// no value. A resend can clear a field the server still holds, and also
+/// reverts any edit another phone made to those columns in the meantime.
+///
 /// When two phones save the same Your rates entry, the later upload overwrites
 /// the earlier one. Two entries are the same when the item name, pricing
 /// method and label match, where a name or label matches ignoring capital
@@ -40,6 +48,11 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final SupabaseWrapper _supabaseWrapper;
   final EnvLoader _envLoader;
   static final _logger = AppLogger().tag('SupabasePowerSyncConnector');
+
+  static const _jsonTextColumnByTable = {
+    DatabaseConstants.userCalculatorStoresTable: DatabaseConstants.valuesColumn,
+    DatabaseConstants.costItemsTable: DatabaseConstants.calculationColumn,
+  };
 
   /// Creates a connector for syncing PowerSync with Supabase.
   SupabasePowerSyncConnector({
@@ -345,7 +358,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   Future<bool> _overwroteDefaultWithSameSeed(CrudEntry operation) async {
     final sent = operation.opData;
     if (sent == null) return false;
-    final row = _withDecodedValues(operation.table, sent);
+    final row = _withDecodedJsonColumn(operation.table, sent);
     final userId = row[DatabaseConstants.userIdColumn];
     final kind = row[DatabaseConstants.storeKindColumn];
     final seed = _seedOf(row);
@@ -417,7 +430,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         await _supabaseWrapper.upsert(
           table: operation.table,
           data: {
-            ..._withDecodedValues(operation.table, putData),
+            ..._withNullsForOmittedColumns(
+              operation.table,
+              _withDecodedJsonColumn(operation.table, putData),
+            ),
             'id': operation.id,
           },
           onConflict: 'id',
@@ -431,7 +447,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
         }
         await _supabaseWrapper.update(
           table: operation.table,
-          data: _withDecodedValues(operation.table, patchData),
+          data: _withDecodedJsonColumn(operation.table, patchData),
           filterColumn: 'id',
           filterValue: operation.id,
         );
@@ -444,14 +460,26 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
-  Map<String, dynamic> _withDecodedValues(
+  Map<String, dynamic> _withNullsForOmittedColumns(
     String table,
     Map<String, dynamic> row,
   ) {
-    if (table != DatabaseConstants.userCalculatorStoresTable) return row;
-    final values = row[DatabaseConstants.valuesColumn];
-    if (values is! String) return row;
-    return {...row, DatabaseConstants.valuesColumn: jsonDecode(values)};
+    if (table != DatabaseConstants.costItemsTable) return row;
+    final columns = schema.tables
+        .singleWhere((candidate) => candidate.name == table)
+        .columns;
+    return {for (final column in columns) column.name: null, ...row};
+  }
+
+  Map<String, dynamic> _withDecodedJsonColumn(
+    String table,
+    Map<String, dynamic> row,
+  ) {
+    final column = _jsonTextColumnByTable[table];
+    if (column == null) return row;
+    final text = row[column];
+    if (text is! String) return row;
+    return {...row, column: jsonDecode(text)};
   }
 
   // Handles a failed upload transaction. A permanent RLS denial (Postgres code
@@ -477,6 +505,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       return;
     }
 
+    // TODO: [CA-1291] a cost_items line the server refuses for good (a deleted estimate, 23503) is retried forever and blocks the queue. https://ripplearc.youtrack.cloud/issue/CA-1291
     _logger.error(
       'Transient error during upload: $error. '
       'PowerSync will retry automatically.',
