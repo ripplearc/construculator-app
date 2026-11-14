@@ -666,29 +666,16 @@ void main() {
       });
 
       group('deleteEstimationRowById', () {
-        test('deletes a row the phone has', () async {
-          phoneHasRow('est-1');
+        test('deletes the row in one write transaction', () async {
+          await dataSource.deleteEstimationRowById('est-1');
 
-          final deleted = await dataSource.deleteEstimationRowById('est-1');
-
-          expect(deleted, isTrue);
           final call = fakeWrapper.executeCalls.single;
+          expect(fakeWrapper.writeTransactionCallCount, 1);
           expect(call.sql, 'DELETE FROM cost_estimates WHERE id = ?');
           expect(call.parameters, ['est-1']);
         });
 
-        test(
-          'writes nothing and returns false when the phone lacks the row',
-          () async {
-            final deleted = await dataSource.deleteEstimationRowById('missing');
-
-            expect(deleted, isFalse);
-            expect(fakeWrapper.executeCalls, isEmpty);
-          },
-        );
-
         test('rethrows a write error', () async {
-          phoneHasRow('est-1');
           final error = Exception('disk full');
           fakeWrapper.executeError = error;
 
