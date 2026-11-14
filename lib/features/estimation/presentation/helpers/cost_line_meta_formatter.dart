@@ -61,6 +61,8 @@ class CostLineMetaFormatter {
     );
   }
 
+  // TODO: [CA-1459] the burden line under a labor row needs a burden field on LaborCostItem.
+  // https://ripplearc.youtrack.cloud/issue/CA-1459
   static CostLineMeta? _laborMeta(LaborCostItem item, AppLocalizations l10n) {
     final days = item.laborValue.laborDays;
     return switch (item.laborCalcMethod) {
