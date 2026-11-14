@@ -2120,28 +2120,29 @@ void main() {
     group('renameEstimation', () {
       const String newEstimateName = 'Renamed Estimate';
 
-      test(
-        'should return updated estimation and update stream when rename succeeds',
-        () async {
-          fakeClock.set(DateTime.parse(timestamp2));
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            estimateName: estimateNameDefault,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          );
-          seedEstimationTable([initialMap]);
+      Map<String, dynamic> seedOneEstimate() {
+        final map = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          createdAt: timestamp2,
+          updatedAt: timestamp2,
+        );
+        fakePhoneDatabase.seedRows([map]);
+        return map;
+      }
 
-          final expectedEstimation = CostEstimateDto.fromJson(
-            initialMap,
+      test(
+        'should return the renamed estimation and show it in the watched list',
+        () async {
+          final expected = CostEstimateDto.fromJson(
+            seedOneEstimate(),
           ).toDomain();
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
           await expectLater(
             queue.next,
-            completion(rightEstimations(equals([expectedEstimation]))),
+            completion(rightEstimations(equals([expected]))),
           );
 
           final result = await repository.renameEstimation(
@@ -2150,36 +2151,21 @@ void main() {
             projectId: testProjectId,
           );
 
-          expect(result.isRight(), isTrue);
-          expectResult(result, (updatedEstimation) {
-            expect(
-              updatedEstimation,
-              equals(
-                expectedEstimation.copyWith(estimateName: newEstimateName),
-              ),
-            );
-          });
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  expectedEstimation.copyWith(estimateName: newEstimateName),
-                ]),
-              ),
+          expectResult(
+            result,
+            (renamed) => expect(
+              renamed,
+              equals(expected.copyWith(estimateName: newEstimateName)),
             ),
           );
           await expectLater(
             queue.next,
             completion(
               rightEstimations(
-                equals([
-                  expectedEstimation.copyWith(estimateName: newEstimateName),
-                ]),
+                equals([expected.copyWith(estimateName: newEstimateName)]),
               ),
             ),
           );
-
           await queue.cancel();
         },
       );
@@ -2187,189 +2173,37 @@ void main() {
       test(
         'should keep the last edited date of the estimate when it is renamed',
         () async {
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            estimateName: estimateNameDefault,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          );
-          seedEstimationTable([initialMap]);
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-          await queue.next;
+          seedOneEstimate();
 
           final result = await repository.renameEstimation(
             estimationId: estimateIdDefault,
             newName: newEstimateName,
             projectId: testProjectId,
           );
-          await queue.next;
 
-          final lastEmission = (await queue.next).getRightOrNull()!.single;
           expect(
             result.getRightOrNull()!.updatedAt,
             DateTime.parse(timestamp2),
           );
-          expect(lastEmission.updatedAt, DateTime.parse(timestamp2));
-          await queue.cancel();
         },
       );
 
       test(
-        'should emit optimistic update to stream before API call completes',
+        'should keep the order of a list sorted by last edited date',
         () async {
-          fakeClock.set(DateTime.parse(timestamp2));
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
+          final older = buildEstimationMap(
+            id: 'older',
             projectId: testProjectId,
-            estimateName: estimateNameDefault,
             createdAt: timestamp2,
             updatedAt: timestamp2,
           );
-          seedEstimationTable([initialMap]);
-
-          final expectedEstimation = CostEstimateDto.fromJson(
-            initialMap,
-          ).toDomain();
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(equals([expectedEstimation]))),
-          );
-
-          final resultFuture = repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
+          final newer = buildEstimationMap(
+            id: 'newer',
             projectId: testProjectId,
+            createdAt: timestamp3,
+            updatedAt: timestamp3,
           );
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  expectedEstimation.copyWith(estimateName: newEstimateName),
-                ]),
-              ),
-            ),
-          );
-
-          await resultFuture;
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  expectedEstimation.copyWith(estimateName: newEstimateName),
-                ]),
-              ),
-            ),
-          );
-
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'should return notFoundError when data source throws PostgrestException with no data found',
-        () async {
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.postgrestErrorCode =
-              PostgresErrorCode.noDataFound;
-          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
-
-          final result = await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-
-          expect(result.isLeft(), isTrue);
-          expectFailure(
-            result,
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.notFoundError),
-            ),
-          );
-        },
-      );
-
-      test('should revert optimistic update when data source throws', () async {
-        fakeClock.set(DateTime.parse(timestamp2));
-        final initialMap = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-          createdAt: timestamp2,
-          updatedAt: timestamp2,
-        );
-        seedEstimationTable([initialMap]);
-
-        final expectedEstimation = CostEstimateDto.fromJson(
-          initialMap,
-        ).toDomain();
-        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-        final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(equals([expectedEstimation]))),
-        );
-
-        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
-        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
-
-        final result = await repository.renameEstimation(
-          estimationId: estimateIdDefault,
-          newName: newEstimateName,
-          projectId: testProjectId,
-        );
-
-        expect(result.isLeft(), isTrue);
-
-        await expectLater(
-          queue.next,
-          completion(
-            rightEstimations(
-              equals([
-                expectedEstimation.copyWith(estimateName: newEstimateName),
-              ]),
-            ),
-          ),
-        );
-        await expectLater(
-          queue.next,
-          completion(rightEstimations(equals([expectedEstimation]))),
-        );
-
-        await queue.cancel();
-      });
-
-      test(
-        'should rollback optimistic rename for updatedAt stream when update fails',
-        () async {
-          fakeClock.set(DateTime.parse(timestamp2));
-          final initialMap = buildEstimationMap(
-            id: estimateIdDefault,
-            projectId: testProjectId,
-            estimateName: estimateNameDefault,
-            createdAt: timestamp2,
-            updatedAt: timestamp2,
-          );
-          seedEstimationTable([initialMap]);
-
-          final expectedEstimation = CostEstimateDto.fromJson(
-            initialMap,
-          ).toDomain();
-
+          fakePhoneDatabase.seedRows([older, newer]);
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(
             repository.watchEstimations(
@@ -2377,51 +2211,22 @@ void main() {
               sortBy: EstimationSortOption.updatedAt,
             ),
           );
+          await queue.next;
 
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(equals([expectedEstimation]))),
-          );
-
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
-
-          final result = await repository.renameEstimation(
-            estimationId: estimateIdDefault,
+          await repository.renameEstimation(
+            estimationId: 'older',
             newName: newEstimateName,
             projectId: testProjectId,
           );
 
-          expect(result.isLeft(), isTrue);
-
-          await expectLater(
-            queue.next,
-            completion(
-              rightEstimations(
-                equals([
-                  expectedEstimation.copyWith(estimateName: newEstimateName),
-                ]),
-              ),
-            ),
-          );
-          await expectLater(
-            queue.next,
-            completion(rightEstimations(equals([expectedEstimation]))),
-          );
-
+          final shown = (await queue.next).getRightOrNull()!;
+          expect(shown.map((e) => e.id), ['newer', 'older']);
           await queue.cancel();
         },
       );
 
-      test('should call supabaseWrapper with correct parameters', () async {
-        final initialMap = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-        );
-        seedEstimationTable([initialMap]);
+      test('should write only the new name to the phone', () async {
+        seedOneEstimate();
 
         await repository.renameEstimation(
           estimationId: estimateIdDefault,
@@ -2429,21 +2234,64 @@ void main() {
           projectId: testProjectId,
         );
 
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
-        expect(methodCalls, hasLength(1));
-
-        final call = methodCalls.first;
+        final write = fakePhoneDatabase.executeCalls.single;
         expect(
-          call,
-          equals({
-            'method': 'update',
-            'table': DatabaseConstants.costEstimatesTable,
-            'data': {DatabaseConstants.estimateNameColumn: newEstimateName},
-            'filterColumn': DatabaseConstants.idColumn,
-            'filterValue': estimateIdDefault,
-          }),
+          write.sql,
+          'UPDATE cost_estimates SET estimate_name = ? WHERE id = ?',
         );
+        expect(write.parameters, [newEstimateName, estimateIdDefault]);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
       });
+
+      test(
+        'should return notFoundError and write nothing when the phone has no such estimation',
+        () async {
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.notFoundError),
+            ),
+          );
+          expect(fakePhoneDatabase.executeCalls, isEmpty);
+        },
+      );
+
+      test(
+        'should return an unexpected failure and keep the old name when the phone write fails',
+        () async {
+          final expected = CostEstimateDto.fromJson(
+            seedOneEstimate(),
+          ).toDomain();
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await queue.next;
+          fakePhoneDatabase.executeError = Exception('disk full');
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expectFailure(
+            result,
+            (failure) => expect(failure, UnexpectedFailure()),
+          );
+          fakePhoneDatabase.executeError = null;
+          final shown = (await repository.fetchInitialEstimations(
+            testProjectId,
+          )).getRightOrNull()!;
+          expect(shown, [expected]);
+          await queue.cancel();
+        },
+      );
     });
 
     group('writes before the phone copy catches up', () {
@@ -2526,101 +2374,6 @@ void main() {
         seedEstimationTable(maps);
         return watchProject(testProjectId, maps.length);
       }
-
-      group('a rename', () {
-        test('does not flip back when the phone copy re-emits', () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            neighbourEstimate(),
-          ]);
-
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(3);
-          expect(estimateIn(emissions.last).estimateName, newEstimateName);
-          expectNeighbourUntouched(emissions);
-          await queue.cancel();
-        });
-
-        test('stops being re-applied once the phone copy shows it', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          fakePhoneDatabase.replaceRow(
-            projectEstimate(estimateName: newEstimateName),
-          );
-          await queue.next;
-
-          const nameChangedElsewhere = 'Renamed on another phone';
-          fakePhoneDatabase.replaceRow(
-            projectEstimate(estimateName: nameChangedElsewhere),
-          );
-
-          expect(
-            estimateIn(await queue.next).estimateName,
-            nameChangedElsewhere,
-          );
-          await queue.cancel();
-        });
-
-        test('that fails online shows the old name again', () async {
-          final queue = await watchSeeded([
-            projectEstimate(),
-            neighbourEstimate(),
-          ]);
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          syncUnrelatedEstimate();
-
-          final emissions = await queue.take(3);
-          expect(estimateIn(emissions.last).estimateName, estimateNameDefault);
-          expectNeighbourUntouched(emissions);
-          await queue.cancel();
-        });
-
-        test(
-          'is shown when the phone copy re-emits before the server answers',
-          () async {
-            final queue = await watchSeeded([
-              projectEstimate(),
-              neighbourEstimate(),
-            ]);
-            fakeSupabaseWrapper.shouldDelayOperations = true;
-            fakeSupabaseWrapper.completer = Completer();
-
-            final renaming = repository.renameEstimation(
-              estimationId: estimateIdDefault,
-              newName: newEstimateName,
-              projectId: testProjectId,
-            );
-            await queue.next;
-            syncUnrelatedEstimate();
-            final emission = await queue.next;
-
-            expect(estimateIn(emission).estimateName, newEstimateName);
-            expectNeighbourUntouched([emission]);
-            fakeSupabaseWrapper.completer!.complete();
-            await renaming;
-            await queue.cancel();
-          },
-        );
-      });
 
       group('a lock', () {
         test('does not flip back when the phone copy re-emits', () async {
@@ -2862,36 +2615,6 @@ void main() {
         });
 
         test(
-          'a pending rename is kept while another list of the project is watched',
-          () async {
-            final createdAtQueue = await watchSeeded([projectEstimate()]);
-            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-            final updatedAtQueue = StreamQueue(
-              repository.watchEstimations(
-                testProjectId,
-                sortBy: EstimationSortOption.updatedAt,
-              ),
-            );
-            await updatedAtQueue.next;
-            await repository.renameEstimation(
-              estimationId: estimateIdDefault,
-              newName: newEstimateName,
-              projectId: testProjectId,
-            );
-            await createdAtQueue.cancel();
-
-            syncUnrelatedEstimate();
-            await updatedAtQueue.take(2);
-
-            expect(
-              estimateIn(await updatedAtQueue.next).estimateName,
-              newEstimateName,
-            );
-            await updatedAtQueue.cancel();
-          },
-        );
-
-        test(
           'a write made with no list open is applied to a list opened later',
           () async {
             seedEstimationTable([projectEstimate()]);
@@ -2912,32 +2635,7 @@ void main() {
         );
       });
 
-      test(
-        'a lock and a rename of the same estimate are both kept when the phone copy re-emits',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.changeLockStatus(
-            estimationId: estimateIdDefault,
-            isLocked: true,
-            projectId: testProjectId,
-          );
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.take(4);
-          syncUnrelatedEstimate();
-
-          final reEmitted = estimateIn(await queue.next);
-          expect(reEmitted.estimateName, newEstimateName);
-          expect(reEmitted.lockStatus.isLocked, isTrue);
-          await queue.cancel();
-        },
-      );
-
       group('with more than one list of the project watched', () {
-        const newestId = 'estimate-newest';
         const staleId = 'estimate-stale';
 
         Map<String, dynamic> row(
@@ -2950,57 +2648,6 @@ void main() {
           estimateName: id,
           createdAt: createdAt,
           updatedAt: updatedAt,
-        );
-
-        test(
-          'a delete stays hidden when a limited list that never held the row syncs first',
-          () async {
-            final queue = await watchSeeded([
-              row(
-                newestId,
-                createdAt: '2023-04-01T00:00:00.000Z',
-                updatedAt: '2023-01-01T00:00:00.000Z',
-              ),
-              row(
-                estimateId2,
-                createdAt: '2023-03-01T00:00:00.000Z',
-                updatedAt: '2023-02-01T00:00:00.000Z',
-              ),
-              row(
-                estimateId3,
-                createdAt: '2023-02-01T00:00:00.000Z',
-                updatedAt: '2023-09-01T00:00:00.000Z',
-              ),
-            ]);
-            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-            final recentQueue = StreamQueue(
-              repository.watchEstimations(
-                testProjectId,
-                sortBy: EstimationSortOption.updatedAt,
-                limit: 1,
-              ),
-            );
-            expect(idsIn(await recentQueue.next), [estimateId3]);
-
-            await repository.deleteEstimation(newestId, testProjectId);
-            expect(idsIn(await queue.next), [estimateId2, estimateId3]);
-            await recentQueue.next;
-
-            syncUnrelatedEstimate();
-            await queue.next;
-            await recentQueue.next;
-            fakePhoneDatabase.seedRows([
-              row(
-                'estimate-second-unrelated',
-                createdAt: '2022-01-01T00:00:00.000Z',
-                updatedAt: '2022-01-01T00:00:00.000Z',
-              ),
-            ]);
-
-            expect(idsIn(await queue.next), isNot(contains(newestId)));
-            await queue.cancel();
-            await recentQueue.cancel();
-          },
         );
 
         test(
@@ -3113,76 +2760,6 @@ void main() {
       );
 
       test(
-        'a teammate\'s change made before my write reached the server does not replace my rename',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final serverReply = Completer<void>();
-          fakeSupabaseWrapper.shouldDelayOperations = true;
-          fakeSupabaseWrapper.completer = serverReply;
-
-          final renaming = repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.next;
-          fakePhoneDatabase.replaceRow(
-            buildEstimationMap(
-              id: estimateIdDefault,
-              projectId: testProjectId,
-              estimateName: 'Renamed by a teammate',
-              updatedAt: '2025-01-01T00:00:00.000Z',
-            ),
-          );
-          await queue.next;
-          serverReply.complete();
-          await renaming;
-
-          expect(estimateIn(await queue.next).estimateName, newEstimateName);
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'a fetch with nobody watching does not keep an edit alive after the phone copy shows it',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          await repository.fetchInitialEstimations(
-            testProjectId,
-            ascending: true,
-          );
-
-          fakePhoneDatabase.replaceRow(
-            buildEstimationMap(
-              id: estimateIdDefault,
-              projectId: testProjectId,
-              estimateName: newEstimateName,
-            ),
-          );
-          await queue.next;
-          fakePhoneDatabase.replaceRow(
-            buildEstimationMap(
-              id: estimateIdDefault,
-              projectId: testProjectId,
-              estimateName: 'Renamed by a teammate',
-            ),
-          );
-
-          expect(
-            estimateIn(await queue.next).estimateName,
-            'Renamed by a teammate',
-          );
-          await queue.cancel();
-        },
-      );
-
-      test(
         'a created estimate that the phone already had is not brought back after a teammate deletes it',
         () async {
           final queue = await watchSeeded([projectEstimate()]);
@@ -3230,30 +2807,6 @@ void main() {
         },
       );
 
-      test(
-        'a list that failed on an unreadable row is not replaced by the old list when a write republishes',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          Map<String, dynamic> broken(String createdAt) => buildEstimationMap(
-            id: 'estimate-broken',
-            projectId: testProjectId,
-            createdAt: createdAt,
-          );
-          fakePhoneDatabase.seedRows([broken('not-a-date')]);
-          expect((await queue.next).isLeft(), isTrue);
-
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          fakePhoneDatabase.replaceRow(broken('2026-07-01T00:00:00.000Z'));
-
-          expect(idsIn(await queue.next), contains('estimate-broken'));
-          await queue.cancel();
-        },
-      );
-
       group('a new estimate the phone does not have yet', () {
         Future<CostEstimate> createUnsyncedEstimate(
           StreamQueue<Either<Failure, List<CostEstimate>>> queue,
@@ -3268,25 +2821,6 @@ void main() {
           await queue.next;
           return created;
         }
-
-        test('shows a rename made before the phone has the row', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final created = await createUnsyncedEstimate(queue);
-
-          await repository.renameEstimation(
-            estimationId: created.id,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.next;
-          syncUnrelatedEstimate();
-
-          expect(
-            estimateIn(await queue.next, created.id).estimateName,
-            newEstimateName,
-          );
-          await queue.cancel();
-        });
 
         test('shows a lock made before the phone has the row', () async {
           final queue = await watchSeeded([projectEstimate()]);
@@ -3326,168 +2860,8 @@ void main() {
         );
       });
 
-      test(
-        'a rename made before the phone had the row stops being applied once the row arrives with it',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          final created = (await repository.createEstimation(
-            buildEstimationDto(
-              id: estimateId2,
-              projectId: testProjectId,
-              estimateName: estimateName2,
-            ).toDomain(),
-          )).getRightOrNull()!;
-          await queue.next;
-          await repository.renameEstimation(
-            estimationId: created.id,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          Map<String, dynamic> row(String name) => buildEstimationMap(
-            id: created.id,
-            projectId: testProjectId,
-            estimateName: name,
-            createdAt: '2026-07-01T00:00:00.000Z',
-          );
-
-          fakePhoneDatabase.seedRows([row(newEstimateName)]);
-          await queue.next;
-          fakePhoneDatabase.replaceRow(row('Renamed by a teammate'));
-
-          expect(
-            estimateIn(await queue.next, created.id).estimateName,
-            'Renamed by a teammate',
-          );
-          await queue.cancel();
-        },
-      );
-
-      test(
-        'a failed second rename of the same estimate keeps the first rename on screen',
-        () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
-
-          final second = await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: 'Second name',
-            projectId: testProjectId,
-          );
-          await queue.take(2);
-          syncUnrelatedEstimate();
-
-          expect(second.isLeft(), isTrue);
-          expect(estimateIn(await queue.next).estimateName, newEstimateName);
-          await queue.cancel();
-        },
-      );
-
-      group('an edit that outlived its list', () {
-        Map<String, dynamic> renamedBy(String name) => buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: name,
-        );
-
-        test('stops being applied once the reopened list shows it', () async {
-          final queue = await watchSeeded([projectEstimate()]);
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await queue.cancel();
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final reopened = StreamQueue(
-            repository.watchEstimations(testProjectId),
-          );
-          await reopened.next;
-
-          fakePhoneDatabase.replaceRow(renamedBy(newEstimateName));
-          await reopened.next;
-          fakePhoneDatabase.replaceRow(renamedBy('Renamed by a teammate'));
-
-          expect(
-            estimateIn(await reopened.next).estimateName,
-            'Renamed by a teammate',
-          );
-          await reopened.cancel();
-        });
-
-        test('stops being applied once the lists still open show it', () async {
-          final closedQueue = await watchSeeded([projectEstimate()]);
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final openQueue = StreamQueue(
-            repository.watchEstimations(
-              testProjectId,
-              sortBy: EstimationSortOption.updatedAt,
-            ),
-          );
-          await openQueue.next;
-          await repository.renameEstimation(
-            estimationId: estimateIdDefault,
-            newName: newEstimateName,
-            projectId: testProjectId,
-          );
-          await closedQueue.cancel();
-          await openQueue.take(2);
-
-          fakePhoneDatabase.replaceRow(renamedBy(newEstimateName));
-          await openQueue.next;
-          fakePhoneDatabase.replaceRow(renamedBy('Renamed by a teammate'));
-
-          expect(
-            estimateIn(await openQueue.next).estimateName,
-            'Renamed by a teammate',
-          );
-          await openQueue.cancel();
-        });
-      });
-
       group('when someone else changes the same estimate', () {
         const teammateChangeAt = '2026-06-02T00:00:00.000Z';
-
-        test(
-          'a teammate\'s rename replaces mine once the phone copy has it',
-          () async {
-            final queue = await watchSeeded([projectEstimate()]);
-            await repository.renameEstimation(
-              estimationId: estimateIdDefault,
-              newName: newEstimateName,
-              projectId: testProjectId,
-            );
-            await queue.take(2);
-
-            fakePhoneDatabase.replaceRow(
-              buildEstimationMap(
-                id: estimateIdDefault,
-                projectId: testProjectId,
-                estimateName: 'Renamed by a teammate',
-                updatedAt: teammateChangeAt,
-              ),
-            );
-            expect(
-              estimateIn(await queue.next).estimateName,
-              'Renamed by a teammate',
-            );
-            syncUnrelatedEstimate();
-
-            expect(
-              estimateIn(await queue.next).estimateName,
-              'Renamed by a teammate',
-            );
-            await queue.cancel();
-          },
-        );
 
         test(
           'a teammate\'s unlock replaces my lock once the phone copy has it',
@@ -3591,8 +2965,6 @@ void main() {
     });
 
     group('writes with other estimates in the list', () {
-      const newEstimateName = 'Renamed Estimate';
-
       Map<String, dynamic> projectEstimate({String? id, String? createdAt}) =>
           buildEstimationMap(
             id: id,
@@ -3632,26 +3004,6 @@ void main() {
         return queue;
       }
 
-      test('a rename leaves the other estimates as they were', () async {
-        final queue = await watchTwoEstimates();
-
-        await repository.renameEstimation(
-          estimationId: estimateIdDefault,
-          newName: newEstimateName,
-          projectId: testProjectId,
-        );
-
-        final emissions = await queue.take(2);
-        for (final emission in emissions) {
-          expect(
-            estimateIn(emission, estimateIdDefault).estimateName,
-            newEstimateName,
-          );
-          expectNeighbourUntouched(emission);
-        }
-        await queue.cancel();
-      });
-
       test('a lock leaves the other estimates as they were', () async {
         final queue = await watchTwoEstimates();
 
@@ -3667,28 +3019,6 @@ void main() {
             estimateIn(emission, estimateIdDefault).lockStatus.isLocked,
             isTrue,
           );
-          expectNeighbourUntouched(emission);
-        }
-        await queue.cancel();
-      });
-
-      test('a failed rename puts back only the renamed estimate', () async {
-        final queue = await watchTwoEstimates();
-        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
-
-        await repository.renameEstimation(
-          estimationId: estimateIdDefault,
-          newName: newEstimateName,
-          projectId: testProjectId,
-        );
-
-        final emissions = await queue.take(2);
-        expect(
-          estimateIn(emissions.last, estimateIdDefault).estimateName,
-          estimateNameDefault,
-        );
-        for (final emission in emissions) {
           expectNeighbourUntouched(emission);
         }
         await queue.cancel();

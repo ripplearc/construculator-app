@@ -140,5 +140,73 @@ void main() {
 
       expect(database.watchCalls.single.sql, equals(ascendingSql));
     });
+    group('writes', () {
+      const byIdSql = 'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1';
+
+      test('an INSERT adds the row and sends it to an open watch', () async {
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final queue = StreamQueue(
+          database.watch(ascendingSql, parameters: ['project-1']),
+        );
+        expect(ids(await queue.next), isEmpty);
+
+        await database.execute(
+          'INSERT INTO cost_estimates (id, project_id, created_at, is_locked) '
+          'VALUES (?, ?, ?, ?)',
+          ['new', 'project-1', '2026-01-01T00:00:00.000Z', 0],
+        );
+
+        final shown = await queue.next;
+        expect(ids(shown), ['new']);
+        expect(shown.single['is_locked'], 0);
+        await queue.cancel();
+      });
+
+      test('an UPDATE of one column changes only that column', () async {
+        database.seedRows([row('a', name: 'Old')]);
+
+        await database.execute(
+          'UPDATE cost_estimates SET estimate_name = ? WHERE id = ?',
+          ['New', 'a'],
+        );
+
+        final stored = (await database.getAll(byIdSql, ['a'])).single;
+        expect(stored['estimate_name'], 'New');
+        expect(stored['project_id'], 'project-1');
+      });
+
+      test('a DELETE removes the row', () async {
+        database.seedRows([row('a'), row('b')]);
+
+        await database.execute('DELETE FROM cost_estimates WHERE id = ?', [
+          'a',
+        ]);
+
+        expect(await database.getAll(byIdSql, ['a']), isEmpty);
+        expect(await database.getAll(byIdSql, ['b']), hasLength(1));
+      });
+
+      test('a write is recorded and fails with executeError', () async {
+        database.executeError = Exception('disk full');
+
+        await expectLater(
+          database.execute('DELETE FROM cost_estimates WHERE id = ?', ['a']),
+          throwsException,
+        );
+        expect(database.executeCalls, hasLength(1));
+      });
+
+      test(
+        'a read by id returns a copy, so a caller cannot edit the row',
+        () async {
+          database.seedRows([row('a', name: 'Old')]);
+
+          (await database.getAll(byIdSql, ['a'])).single['estimate_name'] = 'X';
+
+          final stored = (await database.getAll(byIdSql, ['a'])).single;
+          expect(stored['estimate_name'], 'Old');
+        },
+      );
+    });
   });
 }
