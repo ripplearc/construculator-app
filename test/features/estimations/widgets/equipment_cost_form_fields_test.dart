@@ -3153,6 +3153,50 @@ void main() {
         },
       );
 
+      testWidgets(
+        'an amount edited while the default saves keeps the saved amount as '
+        'the default and on the grey button',
+        (tester) async {
+          await tester.pumpWidget(
+            makeWidget(
+              initialRateEntry: YourRateEntry(
+                id: '',
+                companyId: 'company-1',
+                itemName: 'Dumpster',
+                category: CostItemType.equipment,
+                rate: Money(amount: 400),
+                savedAt: DateTime(2026, 1, 1),
+                equipmentMethod: EquipmentPricingMethod.job,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await editAmount(tester, '450');
+          final gate = database.getAllGate = Completer();
+
+          await tester.tap(
+            find.byKey(const Key('save_recalled_amount_button')),
+          );
+          await tester.pump();
+          await editAmount(tester, '500');
+
+          expect(
+            find.text(l10n.equipmentRecalledAmountSaveButton('\$450.00')),
+            findsOneWidget,
+          );
+
+          gate.complete();
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(
+              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
       testWidgets('a recalled Day rate has no hint and no button', (
         tester,
       ) async {

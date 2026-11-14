@@ -225,7 +225,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _onEquipmentNameChanged() {
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentCostItemTypeChanged(_equipmentNameController.text),
     );
@@ -257,7 +257,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _hideRateLimitHintOnDelete(rate);
     if (rate == _lastDailyRateText) return;
     _lastDailyRateText = rate;
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(EquipmentRateUpdatedEvent(rate));
   }
 
@@ -266,7 +266,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _hideRateLimitHintOnDelete(amount);
     if (amount == _lastJobAmountText) return;
     _lastJobAmountText = amount;
-    _clearRateSaveStatus();
+    _onRateEdited();
     context.read<EquipmentCostFormBloc>().add(
       EquipmentRateUpdatedEvent(amount),
     );
@@ -376,7 +376,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _selectMethod(EquipmentPricingMethod tapped) {
-    _clearRateSaveStatus();
+    _onRateEdited();
     _daySelected.value = false;
     _jobSelected.value = false;
     context.read<EquipmentCostFormBloc>().add(
@@ -510,7 +510,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   bool get _isSavingRate => _rateSaveStatus == _RateSaveStatus.saving;
 
   void _saveAsMyRate(EquipmentCostFormData data) {
-    _clearRateSaveStatus();
+    _onRateEdited();
     _savedUnderLabel = false;
     _rateEditedWhileSaving = false;
     final entry = _buildYourRateEntry(data);
@@ -518,7 +518,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _yourRatesBloc.add(YourRatesSaveRequested(entry));
   }
 
-  void _clearRateSaveStatus() {
+  void _onRateEdited() {
     if (_rateSaveStatus == _RateSaveStatus.idle || !mounted) return;
     if (_isSavingRate) {
       _rateEditedWhileSaving = true;
@@ -1103,8 +1103,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    final labelAmount = _isSavingRate
+        ? (_amountBeingSaved ?? data.jobAmount ?? 0)
+        : (data.jobAmount ?? 0);
     final saveLabel = l10n.equipmentRecalledAmountSaveButton(
-      DisplayFormatter.currency.format(data.jobAmount ?? 0),
+      DisplayFormatter.currency.format(labelAmount),
     );
     return Padding(
       padding: const EdgeInsets.only(top: CoreSpacing.space2),
