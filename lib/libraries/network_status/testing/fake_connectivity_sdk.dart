@@ -49,6 +49,16 @@ class FakeConnectivitySdk implements ConnectivitySdk {
     await check?.future;
   }
 
+  /// Makes a held [checkConnectivity] fail.
+  ///
+  /// Returns once whoever was waiting on that check has handled the error.
+  Future<void> failHeldCheck() async {
+    final check = _heldCheck;
+    _heldCheck = null;
+    check?.completeError(StateError('connectivity check failed'));
+    await check?.future.then((_) {}, onError: (Object _) {});
+  }
+
   /// Closes [onConnectivityChanged].
   void dispose() => unawaited(_changes.close());
 }
