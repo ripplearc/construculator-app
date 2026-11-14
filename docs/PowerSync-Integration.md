@@ -97,10 +97,11 @@ top of #405 and will land next; flagging it here so it isn't a surprise.
 | [#405](https://github.com/ripplearc/construculator-app/pull/405) | `skills/create-agentic-skill-for-powersync` ← `feat/powersync_cost_estimate_data_source` | First consumer: `PowerSyncCostEstimationDataSource(Impl)`, `CostEstimateDto`, DI registration |
 | [#529](https://github.com/ripplearc/construculator-app/pull/529) | `feat/powersync_cost_estimate_data_source` ← `feat/watch_estimation_by_id` | `watchEstimationById` |
 
-**Note:** #405 registers `PowerSyncCostEstimationDataSource` in DI, but
-`CostEstimationRepositoryImpl` still consumes the existing Supabase-direct
-`CostEstimationDataSource` — the PowerSync-backed read path is wired but not yet consumed
-anywhere. That switchover is presumably a later PR in the stack.
+**Note:** #405 registers `PowerSyncCostEstimationDataSource` in DI. Since CA-1359 and
+CA-1423, `CostEstimationRepositoryImpl` reads the estimate list through it and writes a
+create, rename, lock change and delete to the phone's database, and PowerSync uploads them
+later. Only the estimate summary's fallback read (`getEstimation`, when the phone has no
+such row) still goes to Supabase.
 
 ### Does this still work on Flutter 3.44 / current coreui?
 
@@ -404,9 +405,6 @@ review threads and direct code reading — not from re-running the app:
   an adapter closure in R2. The flag was a non-blocking nit, and #367 has since collected
   two `APPROVED` reviews (2026-06-30, 2026-08-19) with the dependency promotion still in
   place — see [CA-643 Subtask Status](#ca-643-subtask-status).
-- **`CostEstimationRepositoryImpl` doesn't consume `PowerSyncCostEstimationDataSource` yet**
-  (PR #405) — it's registered in DI but the repository still reads through the Supabase-
-  direct data source. The switchover PR wasn't found in the current stack.
 - **RLS-denial conflicts are silent to the user.** `SupabasePowerSyncConnector` already
   distinguishes permanent RLS denials from transient errors correctly, but surfacing that
   to the UI is an explicit `TODO: [CA-660]` — not yet implemented.
