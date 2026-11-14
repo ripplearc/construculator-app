@@ -194,7 +194,8 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // TODO: [CA-1222] [Cost Estimation] Labor: edit an already-added line; the edit screen is not drawn yet https://ripplearc.youtrack.cloud/issue/CA-1222
+          // TODO: [CA-1458] Labor: edit an already-added line; the edit screen is not drawn yet.
+          // https://ripplearc.youtrack.cloud/issue/CA-1458
           CoreIconWidget(
             key: const Key('edit_title_button'),
             icon: CoreIcons.edit,
