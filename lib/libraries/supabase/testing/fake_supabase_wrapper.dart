@@ -808,7 +808,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       upsertData['created_at'] = tableData[existingIndex]['created_at'];
       tableData[existingIndex] = upsertData;
     } else {
-      upsertData['id'] = (_nextId++).toString();
+      upsertData['id'] ??= (_nextId++).toString();
       upsertData['created_at'] = _clock.now().toIso8601String();
       tableData.add(upsertData);
     }
