@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/other_method_suggestion.dart';
@@ -9,6 +11,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -95,6 +98,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   final _searchController = TextEditingController();
   late EquipmentPricingMethod _method = widget.method;
   YourRateEntry? _selectedEntry;
+  YourRatesState? _previousState;
 
   @override
   void initState() {
@@ -108,10 +112,30 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     super.dispose();
   }
 
-  void _search(String query) {
+  void _search(String query, {bool immediate = false}) {
     context.read<YourRatesBloc>().add(
-      YourRatesSearched(query, category: CostItemType.equipment),
+      YourRatesSearched(
+        query,
+        category: CostItemType.equipment,
+        immediate: immediate,
+      ),
     );
+  }
+
+  void _announceFailedRetry(BuildContext context) {
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.yourRatesLoadError,
+        Directionality.of(context),
+      ),
+    );
+  }
+
+  void _onStateChanged(BuildContext context, YourRatesState state) {
+    final wasRetrying = _previousState is YourRatesRetrying;
+    _previousState = state;
+    if (wasRetrying && state is YourRatesError) _announceFailedRetry(context);
   }
 
   void _onRowTap(YourRateEntry entry) {
@@ -142,7 +166,8 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocBuilder<YourRatesBloc, YourRatesState>(
+    return BlocConsumer<YourRatesBloc, YourRatesState>(
+      listener: _onStateChanged,
       builder: (context, state) {
         final entries = _entriesOf(state);
         final selected = entries
@@ -222,7 +247,7 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
         message: l10n.yourRatesLoadError,
         actionLabel: l10n.yourRatesTryAgain,
         actionKey: const Key('your_rates_try_again_button'),
-        onAction: () => _search(_searchController.text),
+        onAction: () => _search(_searchController.text, immediate: true),
         isActionDisabled: state is YourRatesRetrying,
       );
     }
