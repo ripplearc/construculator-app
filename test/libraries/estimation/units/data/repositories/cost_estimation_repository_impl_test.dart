@@ -71,10 +71,10 @@ void main() {
     late CostEstimationRepositoryImpl repository;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     final fakePhoneDatabase = FakeCostEstimatesDatabase();
-    late FakeClockImpl fakeClock;
+    final fakeClock = FakeClockImpl();
 
     setUp(() {
-      fakeClock = FakeClockImpl();
+      fakeClock.set(DateTime.parse('2026-06-01T00:00:00.000Z'));
       Modular.init(
         _TestAppModule(
           FakeAppBootstrapFactory.create(
@@ -1049,7 +1049,7 @@ void main() {
               rightEstimations(
                 equals([
                   createdEstimation,
-                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2),
+                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2 - 1),
                 ]),
               ),
             ),
@@ -1428,7 +1428,7 @@ void main() {
         },
       );
 
-      test('should refetch estimations when delete fails', () async {
+      test('should show the deleted estimate again when delete fails', () async {
         final maps = seedEstimations(smallDatasetSize);
         final expectedEstimations = mapsToDomainEntities(
           maps.reversed.toList(),
@@ -1561,12 +1561,20 @@ void main() {
             queue.next,
             completion(
               rightEstimations(
-                equals(mapsToDomainEntities([renamedNeighbour, maps[0]])),
+                equals(mapsToDomainEntities([renamedNeighbour])),
               ),
             ),
           );
           fakeSupabaseWrapper.completer!.complete();
           final result = await deleting;
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(mapsToDomainEntities([renamedNeighbour, maps[0]])),
+              ),
+            ),
+          );
           fakePhoneDatabase.seedRows([extraRow]);
 
           expect(result.isLeft(), isTrue);
@@ -1614,6 +1622,7 @@ void main() {
           fakePhoneDatabase.seedRows([newestRow]);
 
           expect(result.isLeft(), isTrue);
+          await latestOnlyQueue.next;
           await latestOnlyQueue.next;
           await expectLater(
             latestOnlyQueue.next,
@@ -2176,6 +2185,38 @@ void main() {
       );
 
       test(
+        'should keep the last edited date of the estimate when it is renamed',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await queue.next;
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.next;
+
+          final lastEmission = (await queue.next).getRightOrNull()!.single;
+          expect(
+            result.getRightOrNull()!.updatedAt,
+            DateTime.parse(timestamp2),
+          );
+          expect(lastEmission.updatedAt, DateTime.parse(timestamp2));
+          await queue.cancel();
+        },
+      );
+
+      test(
         'should emit optimistic update to stream before API call completes',
         () async {
           fakeClock.set(DateTime.parse(timestamp2));
@@ -2403,6 +2444,1150 @@ void main() {
           }),
         );
       });
+    });
+
+    group('writes before the phone copy catches up', () {
+      const newEstimateName = 'Renamed Estimate';
+      const unrelatedEstimateId = 'estimate-unrelated';
+      const otherProjectEstimateId = 'estimate-other-project';
+
+      Map<String, dynamic> projectEstimate({
+        String? id,
+        String? estimateName,
+        String? createdAt,
+        bool? isLocked,
+      }) => buildEstimationMap(
+        id: id,
+        projectId: testProjectId,
+        estimateName: estimateName,
+        createdAt: createdAt,
+        isLocked: isLocked,
+        lockedByUserId: isLocked == true ? userIdDefault : null,
+        lockedAt: isLocked == true ? timestampDefault : null,
+      );
+
+      Map<String, dynamic> neighbourEstimate() => projectEstimate(
+        id: estimateId3,
+        estimateName: estimateName3,
+        createdAt: '2023-06-01T00:00:00.000Z',
+      );
+
+      void syncUnrelatedEstimate() => fakePhoneDatabase.seedRows([
+        projectEstimate(
+          id: unrelatedEstimateId,
+          createdAt: '2023-01-01T00:00:00.000Z',
+        ),
+      ]);
+
+      void syncOtherProjectEstimate() => fakePhoneDatabase.seedRows([
+        buildEstimationMap(
+          id: otherProjectEstimateId,
+          projectId: otherProjectId,
+        ),
+      ]);
+
+      CostEstimate estimateIn(
+        Either<Failure, List<CostEstimate>> result, [
+        String id = estimateIdDefault,
+      ]) =>
+          result.getRightOrNull()!.firstWhere((estimate) => estimate.id == id);
+
+      List<String> idsIn(Either<Failure, List<CostEstimate>> result) =>
+          result.getRightOrNull()!.map((estimate) => estimate.id).toList();
+
+      void expectNeighbourUntouched(
+        List<Either<Failure, List<CostEstimate>>> emissions,
+      ) {
+        for (final emission in emissions) {
+          expect(estimateIn(emission, estimateId3).estimateName, estimateName3);
+          expect(
+            estimateIn(emission, estimateId3).lockStatus.isLocked,
+            isFalse,
+          );
+        }
+      }
+
+      Future<StreamQueue<Either<Failure, List<CostEstimate>>>> watchProject(
+        String projectId,
+        int expectedCount,
+      ) async {
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final queue = StreamQueue(repository.watchEstimations(projectId));
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(hasLength(expectedCount))),
+        );
+        return queue;
+      }
+
+      Future<StreamQueue<Either<Failure, List<CostEstimate>>>> watchSeeded(
+        List<Map<String, dynamic>> maps,
+      ) {
+        seedEstimationTable(maps);
+        return watchProject(testProjectId, maps.length);
+      }
+
+      group('a rename', () {
+        test('does not flip back when the phone copy re-emits', () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            neighbourEstimate(),
+          ]);
+
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(3);
+          expect(estimateIn(emissions.last).estimateName, newEstimateName);
+          expectNeighbourUntouched(emissions);
+          await queue.cancel();
+        });
+
+        test('stops being re-applied once the phone copy shows it', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          fakePhoneDatabase.replaceRow(
+            projectEstimate(estimateName: newEstimateName),
+          );
+          await queue.next;
+
+          const nameChangedElsewhere = 'Renamed on another phone';
+          fakePhoneDatabase.replaceRow(
+            projectEstimate(estimateName: nameChangedElsewhere),
+          );
+
+          expect(
+            estimateIn(await queue.next).estimateName,
+            nameChangedElsewhere,
+          );
+          await queue.cancel();
+        });
+
+        test('that fails online shows the old name again', () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            neighbourEstimate(),
+          ]);
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(3);
+          expect(estimateIn(emissions.last).estimateName, estimateNameDefault);
+          expectNeighbourUntouched(emissions);
+          await queue.cancel();
+        });
+
+        test(
+          'is shown when the phone copy re-emits before the server answers',
+          () async {
+            final queue = await watchSeeded([
+              projectEstimate(),
+              neighbourEstimate(),
+            ]);
+            fakeSupabaseWrapper.shouldDelayOperations = true;
+            fakeSupabaseWrapper.completer = Completer();
+
+            final renaming = repository.renameEstimation(
+              estimationId: estimateIdDefault,
+              newName: newEstimateName,
+              projectId: testProjectId,
+            );
+            await queue.next;
+            syncUnrelatedEstimate();
+            final emission = await queue.next;
+
+            expect(estimateIn(emission).estimateName, newEstimateName);
+            expectNeighbourUntouched([emission]);
+            fakeSupabaseWrapper.completer!.complete();
+            await renaming;
+            await queue.cancel();
+          },
+        );
+      });
+
+      group('a lock', () {
+        test('does not flip back when the phone copy re-emits', () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            neighbourEstimate(),
+          ]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(3);
+          expect(estimateIn(emissions.last).lockStatus.isLocked, isTrue);
+          expectNeighbourUntouched(emissions);
+          await queue.cancel();
+        });
+
+        test('stops being re-applied once the phone copy shows it', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          fakePhoneDatabase.replaceRow(projectEstimate(isLocked: true));
+          await queue.next;
+
+          fakePhoneDatabase.replaceRow(projectEstimate(isLocked: false));
+
+          expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
+          await queue.cancel();
+        });
+
+        test(
+          'keeps a name the phone copy received while the lock was pending',
+          () async {
+            final queue = await watchSeeded([projectEstimate()]);
+            await repository.changeLockStatus(
+              estimationId: estimateIdDefault,
+              isLocked: true,
+              projectId: testProjectId,
+            );
+            await queue.take(2);
+
+            const nameChangedElsewhere = 'Renamed on another phone';
+            fakePhoneDatabase.replaceRow(
+              projectEstimate(estimateName: nameChangedElsewhere),
+            );
+
+            final emission = await queue.next;
+            expect(estimateIn(emission).estimateName, nameChangedElsewhere);
+            expect(estimateIn(emission).lockStatus.isLocked, isTrue);
+            await queue.cancel();
+          },
+        );
+
+        test('that fails online shows it unlocked again', () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            neighbourEstimate(),
+          ]);
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(3);
+          expect(estimateIn(emissions.last).lockStatus.isLocked, isFalse);
+          expectNeighbourUntouched(emissions);
+          await queue.cancel();
+        });
+
+        test(
+          'is shown when the phone copy re-emits before the server answers',
+          () async {
+            final queue = await watchSeeded([
+              projectEstimate(),
+              neighbourEstimate(),
+            ]);
+            fakeSupabaseWrapper.shouldDelayOperations = true;
+            fakeSupabaseWrapper.completer = Completer();
+
+            final locking = repository.changeLockStatus(
+              estimationId: estimateIdDefault,
+              isLocked: true,
+              projectId: testProjectId,
+            );
+            await queue.next;
+            syncUnrelatedEstimate();
+            final emission = await queue.next;
+
+            expect(estimateIn(emission).lockStatus.isLocked, isTrue);
+            expectNeighbourUntouched([emission]);
+            fakeSupabaseWrapper.completer!.complete();
+            await locking;
+            await queue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a delete made online does not bring the estimate back when the phone copy re-emits',
+        () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            projectEstimate(id: estimateId2, createdAt: timestamp2),
+          ]);
+
+          await repository.deleteEstimation(estimateIdDefault, testProjectId);
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(2);
+          expect(idsIn(emissions.last), [estimateId2, unrelatedEstimateId]);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a delete that fails does not hide the estimate when the phone copy re-emits',
+        () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            projectEstimate(id: estimateId2, createdAt: timestamp2),
+          ]);
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+
+          await repository.deleteEstimation(estimateIdDefault, testProjectId);
+          await queue.take(2);
+          syncUnrelatedEstimate();
+
+          expect(
+            idsIn(await queue.next),
+            containsAll([estimateIdDefault, estimateId2]),
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a created estimate does not vanish when the phone copy re-emits before it syncs',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = buildEstimationDto(
+            id: estimateId2,
+            projectId: testProjectId,
+            estimateName: estimateName2,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          ).toDomain();
+
+          final createdId = (await repository.createEstimation(
+            created,
+          )).getRightOrNull()!.id;
+          syncUnrelatedEstimate();
+
+          final emissions = await queue.take(2);
+          expect(idsIn(emissions.last), [
+            createdId,
+            estimateIdDefault,
+            unrelatedEstimateId,
+          ]);
+          await queue.cancel();
+        },
+      );
+
+      group('with two projects watched', () {
+        test(
+          'a delete is not cleared by the other project re-emitting',
+          () async {
+            final queue = await watchSeeded([
+              projectEstimate(),
+              neighbourEstimate(),
+            ]);
+            final otherQueue = await watchProject(otherProjectId, 0);
+            await repository.deleteEstimation(estimateIdDefault, testProjectId);
+            await queue.next;
+
+            syncOtherProjectEstimate();
+            await otherQueue.next;
+            syncUnrelatedEstimate();
+
+            expect(idsIn(await queue.next), [estimateId3, unrelatedEstimateId]);
+            await queue.cancel();
+            await otherQueue.cancel();
+          },
+        );
+
+        test('a created estimate is not shown in the other project', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final otherQueue = await watchProject(otherProjectId, 0);
+          final created = buildEstimationDto(
+            id: estimateId2,
+            projectId: testProjectId,
+            estimateName: estimateName2,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          ).toDomain();
+          await repository.createEstimation(created);
+          await queue.next;
+
+          syncOtherProjectEstimate();
+
+          expect(idsIn(await otherQueue.next), [otherProjectEstimateId]);
+          await queue.cancel();
+          await otherQueue.cancel();
+        });
+      });
+
+      group('when nobody watches the project', () {
+        test('a pending rename is kept for a list opened later', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.cancel();
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final reopened = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+
+          expect(estimateIn(await reopened.next).estimateName, newEstimateName);
+          await reopened.cancel();
+        });
+
+        test(
+          'a pending rename is kept while another list of the project is watched',
+          () async {
+            final createdAtQueue = await watchSeeded([projectEstimate()]);
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final updatedAtQueue = StreamQueue(
+              repository.watchEstimations(
+                testProjectId,
+                sortBy: EstimationSortOption.updatedAt,
+              ),
+            );
+            await updatedAtQueue.next;
+            await repository.renameEstimation(
+              estimationId: estimateIdDefault,
+              newName: newEstimateName,
+              projectId: testProjectId,
+            );
+            await createdAtQueue.cancel();
+
+            syncUnrelatedEstimate();
+            await updatedAtQueue.take(2);
+
+            expect(
+              estimateIn(await updatedAtQueue.next).estimateName,
+              newEstimateName,
+            );
+            await updatedAtQueue.cancel();
+          },
+        );
+
+        test(
+          'a write made with no list open is applied to a list opened later',
+          () async {
+            seedEstimationTable([projectEstimate()]);
+            await repository.renameEstimation(
+              estimationId: estimateIdDefault,
+              newName: newEstimateName,
+              projectId: testProjectId,
+            );
+
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final queue = StreamQueue(
+              repository.watchEstimations(testProjectId),
+            );
+
+            expect(estimateIn(await queue.next).estimateName, newEstimateName);
+            await queue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a lock and a rename of the same estimate are both kept when the phone copy re-emits',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(4);
+          syncUnrelatedEstimate();
+
+          final reEmitted = estimateIn(await queue.next);
+          expect(reEmitted.estimateName, newEstimateName);
+          expect(reEmitted.lockStatus.isLocked, isTrue);
+          await queue.cancel();
+        },
+      );
+
+      group('with more than one list of the project watched', () {
+        const newestId = 'estimate-newest';
+        const staleId = 'estimate-stale';
+
+        Map<String, dynamic> row(
+          String id, {
+          required String createdAt,
+          required String updatedAt,
+        }) => buildEstimationMap(
+          id: id,
+          projectId: testProjectId,
+          estimateName: id,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        );
+
+        test(
+          'a delete stays hidden when a limited list that never held the row syncs first',
+          () async {
+            final queue = await watchSeeded([
+              row(
+                newestId,
+                createdAt: '2023-04-01T00:00:00.000Z',
+                updatedAt: '2023-01-01T00:00:00.000Z',
+              ),
+              row(
+                estimateId2,
+                createdAt: '2023-03-01T00:00:00.000Z',
+                updatedAt: '2023-02-01T00:00:00.000Z',
+              ),
+              row(
+                estimateId3,
+                createdAt: '2023-02-01T00:00:00.000Z',
+                updatedAt: '2023-09-01T00:00:00.000Z',
+              ),
+            ]);
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final recentQueue = StreamQueue(
+              repository.watchEstimations(
+                testProjectId,
+                sortBy: EstimationSortOption.updatedAt,
+                limit: 1,
+              ),
+            );
+            expect(idsIn(await recentQueue.next), [estimateId3]);
+
+            await repository.deleteEstimation(newestId, testProjectId);
+            expect(idsIn(await queue.next), [estimateId2, estimateId3]);
+            await recentQueue.next;
+
+            syncUnrelatedEstimate();
+            await queue.next;
+            await recentQueue.next;
+            fakePhoneDatabase.seedRows([
+              row(
+                'estimate-second-unrelated',
+                createdAt: '2022-01-01T00:00:00.000Z',
+                updatedAt: '2022-01-01T00:00:00.000Z',
+              ),
+            ]);
+
+            expect(idsIn(await queue.next), isNot(contains(newestId)));
+            await queue.cancel();
+            await recentQueue.cancel();
+          },
+        );
+
+        test(
+          'a created estimate is shown by the sort and limit of each list',
+          () async {
+            final queue = await watchSeeded([
+              row(
+                staleId,
+                createdAt: '2023-04-01T00:00:00.000Z',
+                updatedAt: '2027-01-01T00:00:00.000Z',
+              ),
+            ]);
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final recentQueue = StreamQueue(
+              repository.watchEstimations(
+                testProjectId,
+                sortBy: EstimationSortOption.updatedAt,
+                limit: 1,
+              ),
+            );
+            await recentQueue.next;
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final oldestFirstQueue = StreamQueue(
+              repository.watchEstimations(testProjectId, ascending: true),
+            );
+            await oldestFirstQueue.next;
+
+            final created = (await repository.createEstimation(
+              buildEstimationDto(
+                id: estimateId2,
+                projectId: testProjectId,
+                estimateName: estimateName2,
+              ).toDomain(),
+            )).getRightOrNull()!;
+
+            expect(idsIn(await queue.next), [created.id, staleId]);
+            expect(idsIn(await recentQueue.next), [staleId]);
+            expect(idsIn(await oldestFirstQueue.next), [staleId, created.id]);
+            await queue.cancel();
+            await recentQueue.cancel();
+            await oldestFirstQueue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a created estimate with the same time as an existing one is shown first',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          fakeClock.set(DateTime.parse(timestampDefault));
+
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+
+          expect(idsIn(await queue.next), [created.id, estimateIdDefault]);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a created estimate is not brought back after a teammate deletes it, even when a limited list never showed it',
+        () async {
+          final queue = await watchSeeded([
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              createdAt: '2023-04-01T00:00:00.000Z',
+              updatedAt: '2027-01-01T00:00:00.000Z',
+            ),
+          ]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final recentQueue = StreamQueue(
+            repository.watchEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+              limit: 1,
+            ),
+          );
+          await recentQueue.next;
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.next;
+          await recentQueue.next;
+
+          final syncedRow = buildEstimationMap(
+            id: created.id,
+            projectId: testProjectId,
+            estimateName: created.estimateName,
+            createdAt: created.createdAt.toIso8601String(),
+            updatedAt: created.updatedAt.toIso8601String(),
+          );
+          fakePhoneDatabase.seedRows([syncedRow]);
+          await queue.next;
+          fakePhoneDatabase.removeRow(created.id);
+
+          expect(idsIn(await queue.next), [estimateIdDefault]);
+          await queue.cancel();
+          await recentQueue.cancel();
+        },
+      );
+
+      test(
+        'a teammate\'s change made before my write reached the server does not replace my rename',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final serverReply = Completer<void>();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = serverReply;
+
+          final renaming = repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              estimateName: 'Renamed by a teammate',
+              updatedAt: '2025-01-01T00:00:00.000Z',
+            ),
+          );
+          await queue.next;
+          serverReply.complete();
+          await renaming;
+
+          expect(estimateIn(await queue.next).estimateName, newEstimateName);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a fetch with nobody watching does not keep an edit alive after the phone copy shows it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          await repository.fetchInitialEstimations(
+            testProjectId,
+            ascending: true,
+          );
+
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              estimateName: newEstimateName,
+            ),
+          );
+          await queue.next;
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              estimateName: 'Renamed by a teammate',
+            ),
+          );
+
+          expect(
+            estimateIn(await queue.next).estimateName,
+            'Renamed by a teammate',
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a created estimate that the phone already had is not brought back after a teammate deletes it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          fakePhoneDatabase.seedRows([
+            buildEstimationMap(
+              id: '1',
+              projectId: testProjectId,
+              estimateName: estimateName2,
+              createdAt: '2026-07-01T00:00:00.000Z',
+            ),
+          ]);
+          await queue.next;
+          await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          );
+          await queue.next;
+
+          fakePhoneDatabase.removeRow('1');
+
+          expect(idsIn(await queue.next), [estimateIdDefault]);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a row the phone holds in a form that cannot be read fails the list instead of hanging',
+        () async {
+          seedEstimationTable([
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              createdAt: 'not-a-date',
+            ),
+          ]);
+
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
+
+          expect(result.getLeftOrNull(), isA<UnexpectedFailure>());
+        },
+      );
+
+      test(
+        'a list that failed on an unreadable row is not replaced by the old list when a write republishes',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          Map<String, dynamic> broken(String createdAt) => buildEstimationMap(
+            id: 'estimate-broken',
+            projectId: testProjectId,
+            createdAt: createdAt,
+          );
+          fakePhoneDatabase.seedRows([broken('not-a-date')]);
+          expect((await queue.next).isLeft(), isTrue);
+
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          fakePhoneDatabase.replaceRow(broken('2026-07-01T00:00:00.000Z'));
+
+          expect(idsIn(await queue.next), contains('estimate-broken'));
+          await queue.cancel();
+        },
+      );
+
+      group('a new estimate the phone does not have yet', () {
+        Future<CostEstimate> createUnsyncedEstimate(
+          StreamQueue<Either<Failure, List<CostEstimate>>> queue,
+        ) async {
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.next;
+          return created;
+        }
+
+        test('shows a rename made before the phone has the row', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = await createUnsyncedEstimate(queue);
+
+          await repository.renameEstimation(
+            estimationId: created.id,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          syncUnrelatedEstimate();
+
+          expect(
+            estimateIn(await queue.next, created.id).estimateName,
+            newEstimateName,
+          );
+          await queue.cancel();
+        });
+
+        test('shows a lock made before the phone has the row', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = await createUnsyncedEstimate(queue);
+
+          await repository.changeLockStatus(
+            estimationId: created.id,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          syncUnrelatedEstimate();
+
+          expect(
+            estimateIn(await queue.next, created.id).lockStatus.isLocked,
+            isTrue,
+          );
+          await queue.cancel();
+        });
+
+        test(
+          'stays gone after a delete made before the phone has the row',
+          () async {
+            final queue = await watchSeeded([projectEstimate()]);
+            final created = await createUnsyncedEstimate(queue);
+
+            await repository.deleteEstimation(created.id, testProjectId);
+            expect(idsIn(await queue.next), [estimateIdDefault]);
+            syncUnrelatedEstimate();
+
+            expect(idsIn(await queue.next), [
+              estimateIdDefault,
+              unrelatedEstimateId,
+            ]);
+            await queue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a rename made before the phone had the row stops being applied once the row arrives with it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.next;
+          await repository.renameEstimation(
+            estimationId: created.id,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          Map<String, dynamic> row(String name) => buildEstimationMap(
+            id: created.id,
+            projectId: testProjectId,
+            estimateName: name,
+            createdAt: '2026-07-01T00:00:00.000Z',
+          );
+
+          fakePhoneDatabase.seedRows([row(newEstimateName)]);
+          await queue.next;
+          fakePhoneDatabase.replaceRow(row('Renamed by a teammate'));
+
+          expect(
+            estimateIn(await queue.next, created.id).estimateName,
+            'Renamed by a teammate',
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a failed second rename of the same estimate keeps the first rename on screen',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+
+          final second = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: 'Second name',
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          syncUnrelatedEstimate();
+
+          expect(second.isLeft(), isTrue);
+          expect(estimateIn(await queue.next).estimateName, newEstimateName);
+          await queue.cancel();
+        },
+      );
+
+      group('an edit that outlived its list', () {
+        Map<String, dynamic> renamedBy(String name) => buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: name,
+        );
+
+        test('stops being applied once the reopened list shows it', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await queue.cancel();
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final reopened = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+          await reopened.next;
+
+          fakePhoneDatabase.replaceRow(renamedBy(newEstimateName));
+          await reopened.next;
+          fakePhoneDatabase.replaceRow(renamedBy('Renamed by a teammate'));
+
+          expect(
+            estimateIn(await reopened.next).estimateName,
+            'Renamed by a teammate',
+          );
+          await reopened.cancel();
+        });
+
+        test('stops being applied once the lists still open show it', () async {
+          final closedQueue = await watchSeeded([projectEstimate()]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final openQueue = StreamQueue(
+            repository.watchEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+          );
+          await openQueue.next;
+          await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+          await closedQueue.cancel();
+          await openQueue.take(2);
+
+          fakePhoneDatabase.replaceRow(renamedBy(newEstimateName));
+          await openQueue.next;
+          fakePhoneDatabase.replaceRow(renamedBy('Renamed by a teammate'));
+
+          expect(
+            estimateIn(await openQueue.next).estimateName,
+            'Renamed by a teammate',
+          );
+          await openQueue.cancel();
+        });
+      });
+
+      group('when someone else changes the same estimate', () {
+        const teammateChangeAt = '2026-06-02T00:00:00.000Z';
+
+        test(
+          'a teammate\'s rename replaces mine once the phone copy has it',
+          () async {
+            final queue = await watchSeeded([projectEstimate()]);
+            await repository.renameEstimation(
+              estimationId: estimateIdDefault,
+              newName: newEstimateName,
+              projectId: testProjectId,
+            );
+            await queue.take(2);
+
+            fakePhoneDatabase.replaceRow(
+              buildEstimationMap(
+                id: estimateIdDefault,
+                projectId: testProjectId,
+                estimateName: 'Renamed by a teammate',
+                updatedAt: teammateChangeAt,
+              ),
+            );
+            expect(
+              estimateIn(await queue.next).estimateName,
+              'Renamed by a teammate',
+            );
+            syncUnrelatedEstimate();
+
+            expect(
+              estimateIn(await queue.next).estimateName,
+              'Renamed by a teammate',
+            );
+            await queue.cancel();
+          },
+        );
+
+        test(
+          'a teammate\'s unlock replaces my lock once the phone copy has it',
+          () async {
+            final queue = await watchSeeded([projectEstimate()]);
+            await repository.changeLockStatus(
+              estimationId: estimateIdDefault,
+              isLocked: true,
+              projectId: testProjectId,
+            );
+            await queue.take(2);
+
+            fakePhoneDatabase.replaceRow(
+              buildEstimationMap(
+                id: estimateIdDefault,
+                projectId: testProjectId,
+                isLocked: false,
+                updatedAt: teammateChangeAt,
+              ),
+            );
+            expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
+            syncUnrelatedEstimate();
+
+            expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
+            await queue.cancel();
+          },
+        );
+      });
+
+      test(
+        'a created estimate is still shown when its list is closed and reopened before the sync',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final created = (await repository.createEstimation(
+            buildEstimationDto(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+            ).toDomain(),
+          )).getRightOrNull()!;
+          await queue.cancel();
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final reopened = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+
+          expect(idsIn(await reopened.next), [created.id, estimateIdDefault]);
+          await reopened.cancel();
+        },
+      );
+
+      test(
+        'a failed lock does not remove the edit of a second lock on the same estimate',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final firstRequest = Completer<void>();
+          final secondRequest = Completer<void>();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+
+          fakeSupabaseWrapper.completer = firstRequest;
+          final firstLock = repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          fakeSupabaseWrapper.completer = secondRequest;
+          final secondLock = repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+
+          firstRequest.complete();
+          expect((await firstLock).isLeft(), isTrue);
+
+          expect(estimateIn(await queue.next).lockStatus.isLocked, isTrue);
+          fakeSupabaseWrapper.shouldThrowOnUpdate = false;
+          secondRequest.complete();
+          expect((await secondLock).isRight(), isTrue);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a fetch with nobody watching releases the phone watch once it has answered',
+        () async {
+          final released = Completer<void>();
+          fakePhoneDatabase.syncStreamUnsubscribeSignal = released;
+
+          await repository.fetchInitialEstimations(testProjectId);
+
+          await released.future;
+          expect(fakePhoneDatabase.syncStreamUnsubscribes, isNotEmpty);
+        },
+      );
     });
 
     group('writes with other estimates in the list', () {
