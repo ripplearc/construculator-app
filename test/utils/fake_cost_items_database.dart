@@ -67,6 +67,10 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     _changes.add(null);
   }
 
+  /// While set, every write waits for it to complete, so a test can hold a
+  /// save open and look at the form while it runs.
+  Completer<void>? writeGate;
+
   /// Makes every open watch report [error], as a failed read of the phone's
   /// database would.
   void failWatches(Object error) => _watchFailures.add(error);
@@ -85,6 +89,7 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     _refusalsById.clear();
     refusalReadError = null;
     _pendingUploadIds.clear();
+    writeGate = null;
   }
 
   @override
@@ -135,6 +140,7 @@ class FakeCostItemsDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
+    await writeGate?.future;
     await super.execute(sql, parameters);
     final isInsert = sql.trimLeft().toUpperCase().startsWith(
       'INSERT OR REPLACE INTO ${DatabaseConstants.costItemsTable.toUpperCase()}',

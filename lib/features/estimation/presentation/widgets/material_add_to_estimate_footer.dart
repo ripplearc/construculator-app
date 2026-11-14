@@ -10,9 +10,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// button, driven by [MaterialCostFormBloc].
 ///
 /// The button only sends [MaterialCostFormSubmitted]; the bloc validates. A
-/// successful add closes the sheet. A failed save keeps the sheet open and
-/// says so in a line above the button, which goes away while the next save
-/// runs.
+/// successful add closes the sheet. A failed save on the phone keeps the sheet
+/// open and says so in a line above the button, which goes away while the next
+/// save runs.
 class MaterialAddToEstimateFooter extends StatelessWidget {
   /// The estimate the line is added to.
   final String estimateId;
@@ -57,7 +57,7 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
               state is MaterialCostFormSubmitting ||
               state is MaterialCostFormSuccess,
           errorMessage: state is MaterialCostFormFailure
-              ? l10n.addToEstimateFailedError
+              ? l10n.addToEstimatePhoneSaveFailedError
               : null,
           onAdd: () => context.read<MaterialCostFormBloc>().add(
             MaterialCostFormSubmitted(estimateId: estimateId),

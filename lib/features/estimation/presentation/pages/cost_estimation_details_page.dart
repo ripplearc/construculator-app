@@ -99,6 +99,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) =>
       _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
         type: CostItemType.equipment,
+        failureMessageOf: (l10n) => l10n.addToEstimateFailedError,
         asksBeforeClosing: true,
         entry: entry,
         name: name,
@@ -116,6 +117,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
         type: CostItemType.material,
+        failureMessageOf: (l10n) => l10n.addToEstimatePhoneSaveFailedError,
         asksBeforeClosing: true,
         blocFactory: widget.materialCostFormBlocFactory,
         addedItemIdOf: (state) =>
@@ -130,6 +132,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
 
   Future<void> _openCostSheet<B extends BlocBase<S>, S>({
     required CostItemType type,
+    required String Function(AppLocalizations l10n) failureMessageOf,
     bool asksBeforeClosing = false,
     required B Function() blocFactory,
     String? Function(S state)? addedItemIdOf,
@@ -189,6 +192,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           final addedItemId = addedItemIdOf?.call(formBloc.state);
           if (addedItemId != null) _addedLineHighlight.highlight(addedItemId);
           if (summary is EstimateSummaryLoaded) {
+            // TODO: [CA-1290] word the toast by signal: no signal, weak signal, signal. https://ripplearc.youtrack.cloud/issue/CA-1290
             CoreToast.showCustomToast(
               context,
               (_) => AddedToEstimateToast(
@@ -200,11 +204,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             );
           }
         case _SheetOutcome.failed when wasSavingWhenDismissed:
-          CoreToast.showError(
-            context,
-            l10n.addToEstimateFailedError,
-            l10n.closeLabel,
-          );
+          CoreToast.showError(context, failureMessageOf(l10n), l10n.closeLabel);
         default:
           break;
       }

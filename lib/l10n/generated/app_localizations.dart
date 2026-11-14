@@ -3920,11 +3920,17 @@ abstract class AppLocalizations {
   /// **'Added to {estimateName}'**
   String addedToEstimateToast(String estimateName);
 
-  /// Message shown when saving a cost line fails: a line above the Add button, or a toast if the sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.
+  /// Message shown when saving a cost line fails: a line above the Add button of the Equipment sheet, or a toast if a sheet was closed during the save. Storyboard frame: CUJ 6, Line not added.
   ///
   /// In en, this message translates to:
   /// **'This cost was not added. Try again.'**
   String get addToEstimateFailedError;
+
+  /// Helper line above the Material sheet's Add button when the line could not be saved on this phone, or a toast if the sheet was closed during the save. The sheet stays open with every field filled in. Storyboard: CUJ 4, Adding a cost with weak or no signal, build note Add always works.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save on this phone. Try again.'**
+  String get addToEstimatePhoneSaveFailedError;
 
   /// Summary card note while the material quantity is empty
   ///
