@@ -14,6 +14,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// `PowerSyncLocalCurrentCompanyDataSource` issue: for `your_rates` the
 /// filtered `SELECT`, the `SELECT` by id, an `INSERT` and an `UPDATE` by id;
 /// for `current_company` a `SELECT` by user id, an `INSERT` and a `DELETE`.
+/// A read of `cost_estimates` finds no rows, as on a phone with no estimates.
 /// Statements are still recorded in [executeCalls] and [getAllCalls].
 class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   final List<Map<String, Object?>> _rows = [];
@@ -195,6 +196,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
             },
       ];
     }
+    if (sql.contains(DatabaseConstants.costEstimatesTable)) return const [];
     _requireYourRatesTable(sql);
     await getAllGate?.future;
 

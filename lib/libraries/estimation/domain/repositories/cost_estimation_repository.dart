@@ -87,6 +87,10 @@ abstract class CostEstimationRepository {
 
   /// Retrieves a single cost estimation by its ID.
   ///
+  /// The phone's copy answers first, so an estimation that was created or
+  /// changed on the phone and has not uploaded yet is found as it is there. The
+  /// server is asked only when the phone has no such row.
+  ///
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] (a not-found failure when no row has this ID) or the
   /// matching [CostEstimate].
