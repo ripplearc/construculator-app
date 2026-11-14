@@ -11,6 +11,7 @@ import 'package:construculator/features/estimation/presentation/widgets/guarded_
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -21,23 +22,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_items_database.dart';
 import '../../../../utils/toast_test_utils.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeCostItemsDatabase database;
 
   setUpAll(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    database = FakeCostItemsDatabase();
     Modular.init(
       EstimationModule(
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
 
-  setUp(() => fakeSupabase.reset());
+  setUp(() {
+    fakeSupabase.reset();
+    database.reset();
+  });
 
   Future<void> openSheet(
     WidgetTester tester, {
@@ -169,9 +177,7 @@ void main() {
     await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
     await tester.pumpAndSettle();
 
-    final row =
-        fakeSupabase.getMethodCallsFor('insert').single['data']
-            as Map<String, dynamic>;
+    final row = database.rows.single;
     expect(row['estimate_id'], 'estimate-1');
     expect(row['item_name'], 'Interior paint');
     expect(row['item_total_cost'], 156.0);
@@ -182,8 +188,7 @@ void main() {
       'being saved', (tester) async {
     await openSheet(tester);
     await fillAllFields(tester);
-    fakeSupabase.shouldDelayOperations = true;
-    fakeSupabase.completer = Completer<void>();
+    database.writeGate = Completer<void>();
 
     await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
     await tester.pump();
@@ -210,8 +215,7 @@ void main() {
     await tester.pump();
     expect(find.text('Select unit'), findsNothing);
 
-    fakeSupabase.completer!.complete();
-    fakeSupabase.shouldDelayOperations = false;
+    database.writeGate!.complete();
     await tester.pumpAndSettle();
     expect(find.text('New material cost'), findsNothing);
   });
@@ -219,7 +223,7 @@ void main() {
   testWidgets('keeps the sheet and its values when adding fails', (
     tester,
   ) async {
-    fakeSupabase.shouldThrowOnInsert = true;
+    database.executeError = StateError('disk full');
     await openSheet(tester);
     await fillAllFields(tester);
 
@@ -419,7 +423,7 @@ void main() {
 
       expect(dialogTitle(), findsNothing);
       expect(find.text('New material cost'), findsNothing);
-      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+      expect(database.executeCalls, isEmpty);
     });
 
     testWidgets('a tap outside the dialog means Keep editing', (tester) async {
@@ -625,7 +629,7 @@ void main() {
     testWidgets('asks again after a failed save leaves the values in place', (
       tester,
     ) async {
-      fakeSupabase.shouldThrowOnInsert = true;
+      database.executeError = StateError('disk full');
       await openSheet(tester);
       await fillAllFields(tester);
       await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));

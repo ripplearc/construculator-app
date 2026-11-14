@@ -38,6 +38,7 @@ import 'package:construculator/libraries/estimation/data/estimation_tile_provide
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/identifiers/identifiers_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -92,6 +93,7 @@ class EstimationModule extends Module {
     EstimationLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     ClockModule(),
+    IdentifiersModule(),
     StorageModule(),
     PowerSyncModule(appBootstrap),
   ];
@@ -201,6 +203,7 @@ class EstimationModule extends Module {
         repository: i.get(),
         lastUsedUnitRepository: i.get(),
         clock: i.get(),
+        idGenerator: i.get(),
       ),
     );
     i.add<LabourCostFormBloc>(() => LabourCostFormBloc());

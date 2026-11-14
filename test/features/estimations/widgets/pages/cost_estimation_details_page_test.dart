@@ -1434,14 +1434,7 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsNothing);
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
-        final saved =
-            fakeSupabase
-                    .getMethodCallsFor('insert')
-                    .where(
-                      (c) => c['table'] == DatabaseConstants.costItemsTable,
-                    )
-                    .single['data']
-                as Map<String, dynamic>;
+        final saved = database.costItems.rows.single;
         expect(saved['estimate_id'], testEstimationId);
         expect(saved['item_name'], 'Interior paint');
         expect(saved['item_total_cost'], 156);
@@ -1452,8 +1445,7 @@ void main() {
       ) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldDelayOperations = true;
-        fakeSupabase.completer = Completer();
+        database.costItems.writeGate = Completer();
 
         await tester.tap(addButton());
         await tester.pump();
@@ -1462,8 +1454,7 @@ void main() {
         expect(find.byType(CostItemFormScreen), findsNothing);
         expect(find.text('Added to Bedroom 2'), findsNothing);
 
-        fakeSupabase.completer!.complete();
-        fakeSupabase.shouldDelayOperations = false;
+        database.costItems.writeGate!.complete();
         await tester.pumpAndSettle();
 
         expect(find.text('Added to Bedroom 2'), findsOneWidget);
@@ -1473,21 +1464,20 @@ void main() {
           'the error', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldDelayOperations = true;
-        fakeSupabase.completer = Completer();
-        fakeSupabase.shouldThrowOnInsert = true;
-        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
-        fakeSupabase.insertErrorMessage = 'Connection failed';
+        database.costItems.writeGate = Completer();
+        database.costItems.executeError = StateError('disk full');
 
         await tester.tap(addButton());
         await tester.pump();
         await tester.tapAt(const Offset(200, 20));
         await tester.pumpAndSettle();
-        fakeSupabase.completer!.complete();
-        fakeSupabase.shouldDelayOperations = false;
+        database.costItems.writeGate!.complete();
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(
+          find.text(l10n.addToEstimatePhoneSaveFailedError),
+          findsOneWidget,
+        );
         expect(find.text('Added to Bedroom 2'), findsNothing);
       });
 
@@ -1552,26 +1542,27 @@ void main() {
 
         expect(find.byType(CostItemFormScreen), findsNothing);
         expect(find.textContaining('Added to'), findsNothing);
-        expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+        expect(database.costItems.executeCalls, isEmpty);
       });
 
       testWidgets('keeps the sheet open with its values and shows an error '
           'when the save fails, then adds on a second try', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldThrowOnInsert = true;
-        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
-        fakeSupabase.insertErrorMessage = 'Connection failed';
+        database.costItems.executeError = StateError('disk full');
 
         await tester.tap(addButton());
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
         expect(find.text('Interior paint'), findsOneWidget);
-        expect(find.text(l10n.addToEstimateFailedError), findsOneWidget);
+        expect(
+          find.text(l10n.addToEstimatePhoneSaveFailedError),
+          findsOneWidget,
+        );
         expect(find.text('Added to Bedroom 2'), findsNothing);
 
-        fakeSupabase.shouldThrowOnInsert = false;
+        database.costItems.executeError = null;
         await tester.tap(addButton());
         await tester.pumpAndSettle();
 
@@ -1611,26 +1602,19 @@ void main() {
 
         expect(highlightedLine(tester), isNotNull);
         expect(highlightedLine(tester), isNot(first));
-        expect(
-          fakeSupabase
-              .getMethodCallsFor('insert')
-              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
-          hasLength(2),
-        );
+        expect(database.costItems.rows, hasLength(2));
       });
 
       testWidgets('marks nothing when the save fails or the sheet is just '
           'closed', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldThrowOnInsert = true;
-        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
-        fakeSupabase.insertErrorMessage = 'Connection failed';
+        database.costItems.executeError = StateError('disk full');
         await tester.tap(addButton());
         await tester.pumpAndSettle();
         expect(highlightedLine(tester), isNull);
 
-        fakeSupabase.shouldThrowOnInsert = false;
+        database.costItems.executeError = null;
         await tester.tap(find.byKey(SheetHeader.backButtonKey));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
@@ -1658,15 +1642,13 @@ void main() {
           ' on the page', (tester) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldThrowOnInsert = true;
-        fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
-        fakeSupabase.insertErrorMessage = 'Connection failed';
+        database.costItems.executeError = StateError('disk full');
         await tester.tap(addButton());
         await tester.pumpAndSettle();
         expect(
           find.descendant(
             of: find.byKey(AddToEstimateFooter.errorKey),
-            matching: find.text(l10n.addToEstimateFailedError),
+            matching: find.text(l10n.addToEstimatePhoneSaveFailedError),
           ),
           findsOneWidget,
         );
@@ -1677,7 +1659,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
-        expect(find.text(l10n.addToEstimateFailedError), findsNothing);
+        expect(find.text(l10n.addToEstimatePhoneSaveFailedError), findsNothing);
       });
 
       testWidgets('a second tap on Add while saving does not save twice', (
@@ -1685,23 +1667,16 @@ void main() {
       ) async {
         await openMaterialSheet(tester);
         await fillValidMaterialForm(tester);
-        fakeSupabase.shouldDelayOperations = true;
-        fakeSupabase.completer = Completer();
+        database.costItems.writeGate = Completer();
 
         await tester.tap(addButton());
         await tester.pump();
         await tester.tap(addButton(), warnIfMissed: false);
         await tester.pump();
-        fakeSupabase.completer!.complete();
-        fakeSupabase.shouldDelayOperations = false;
+        database.costItems.writeGate!.complete();
         await tester.pumpAndSettle();
 
-        expect(
-          fakeSupabase
-              .getMethodCallsFor('insert')
-              .where((c) => c['table'] == DatabaseConstants.costItemsTable),
-          hasLength(1),
-        );
+        expect(database.costItems.executeCalls, hasLength(1));
       });
     });
   });
