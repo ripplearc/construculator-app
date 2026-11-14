@@ -61,6 +61,11 @@ class YourRatesRecentsQueried extends YourRatesRecentsEvent {
 /// company look-up included, is limited by [YourRatesBloc.saveTimeLimit]. See
 /// [YourRatesRepository.save] for the rule.
 class YourRatesSaveRequested extends YourRatesEvent {
-  const YourRatesSaveRequested(this.entry);
+  const YourRatesSaveRequested(this.entry, {this.replacesRateId});
   final YourRateEntry entry;
+
+  /// The id of the saved row whose price [entry] replaces, set only after the
+  /// user agreed to the replace. Null for a save that must not change a saved
+  /// price.
+  final String? replacesRateId;
 }

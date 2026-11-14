@@ -69,6 +69,7 @@ void main() {
       String? entryLabel,
       EquipmentPricingMethod method = EquipmentPricingMethod.day,
       DateTime? savedAt,
+      Unit? unit,
     }) {
       var entrySavedAt = DateTime.parse('2026-01-05T00:00:00.000Z');
       if (savedAt != null) {
@@ -83,6 +84,7 @@ void main() {
         savedAt: entrySavedAt,
         equipmentMethod: category == CostItemType.equipment ? method : null,
         entryLabel: entryLabel,
+        unit: unit,
       );
     }
 
@@ -507,6 +509,27 @@ void main() {
         expect(database.getAllCalls, isEmpty);
       });
 
+      test('getByItemName treats a whitespace-only id as blank', () async {
+        final result = await repository.getByItemName(
+          'Excavator',
+          CostItemType.equipment,
+          companyId: '  ',
+        );
+
+        expect(result.isLeft(), true);
+        expect(database.getAllCalls, isEmpty);
+      });
+
+      test('save treats a whitespace-only id as blank', () async {
+        final result = await repository.save(
+          buildEntry().copyWith(companyId: '  '),
+        );
+
+        expect(result.isLeft(), true);
+        expect(database.getAllCalls, isEmpty);
+        expect(database.insertedRows, isEmpty);
+      });
+
       test('getByItemName returns a failure and reads nothing', () async {
         final result = await repository.getByItemName(
           'Excavator',
@@ -563,6 +586,55 @@ void main() {
           companyId: testCompanyId,
         );
         expect(result.getRightOrNull(), isEmpty);
+      });
+
+      test('gives a replaced row its old price back when the phone finishes '
+          'the replace later', () async {
+        seed([row(id: 'r1', rateAmount: 400.0)]);
+        final gate = database.updateGate = Completer<void>();
+        final result = await impatientRepository.save(
+          buildEntry(amount: 450.0),
+          replacesRateId: 'r1',
+        );
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        final found = await repository.search(
+          'excavator',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(result.isLeft(), isTrue);
+        expect(found.getRightOrNull()!.single.rate.amount, 400.0);
+      });
+
+      test('gives a labeled legacy row its old price back and keeps its label '
+          'when the phone finishes the replace later', () async {
+        seed([row(id: 'r1', rateAmount: 400.0, entryLabel: 'Supplier A')]);
+        final gate = database.updateGate = Completer<void>();
+        await impatientRepository.save(
+          buildEntry(amount: 450.0),
+          replacesRateId: 'r1',
+        );
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        final found = await repository.search(
+          'excavator',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        final restored = found.getRightOrNull()!.single;
+        expect(restored.rate.amount, 400.0);
+        expect(restored.entryLabel, 'Supplier A');
       });
 
       test('leaves the rows saved before it alone', () async {
@@ -625,6 +697,28 @@ void main() {
           companyId: testCompanyId,
         );
         expect(result.getRightOrNull(), hasLength(1));
+      });
+      test('a save made while a late save is being undone waits for the undo '
+          'before it writes', () async {
+        final insertGate = database.insertGate = Completer<void>();
+        final deleteGate = database.deleteGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        insertGate.complete();
+
+        final whileUndoing = await impatientRepository.save(
+          buildEntry(itemName: 'Skid steer', entryLabel: 'Supplier A'),
+        );
+        deleteGate.complete();
+        final afterUndo = await impatientRepository.save(
+          buildEntry(itemName: 'Skid steer', entryLabel: 'Supplier B'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(
+          whileUndoing.getLeftOrNull(),
+          const EstimationFailure(errorType: EstimationErrorType.timeoutError),
+        );
+        expect(afterUndo.isRight(), isTrue);
       });
 
       test('a failing undo leaves the row and does not crash', () async {
@@ -714,17 +808,6 @@ void main() {
         expect(database.insertedRows, isEmpty);
         expect(database.updatedRowIds, isEmpty);
       });
-
-      test(
-        'leaves last_used_at out of the saved body, so a new save records no use',
-        () async {
-          await repository.save(buildEntry(amount: 300.0));
-
-          final body = database.insertedRows.single;
-          expect(body.containsKey('last_used_at'), isFalse);
-          expect(body['rate_amount'], 300.0);
-        },
-      );
 
       test(
         'rejects a labeled save whose label the grouping already has, leaving '
@@ -984,15 +1067,6 @@ void main() {
         expect(database.updatedRowIds, isEmpty);
       });
 
-      test('saves the name trimmed', () async {
-        final result = await repository.save(
-          buildEntry(itemName: '  Backhoe  '),
-        );
-
-        expect(result.isRight(), true);
-        expect(database.insertedRows.single['item_name'], 'Backhoe');
-      });
-
       test(
         'scopes the collision check to category, name and pricing method',
         () async {
@@ -1029,6 +1103,279 @@ void main() {
         expect(database.updatedRowIds, isEmpty);
       });
 
+      Future<List<YourRateEntry>> savedRates() async =>
+          (await repository.search(
+            '',
+            category: CostItemType.equipment,
+            companyId: testCompanyId,
+          )).getRightOrNull()!;
+
+      test('replaces the saved price for the same name and method without '
+          'adding a row', () async {
+        seed([row(id: 'existing', rateAmount: 100.0)]);
+
+        final result = await repository.save(
+          buildEntry(amount: 300.0),
+          replacesRateId: 'existing',
+        );
+
+        expect(result.isRight(), true);
+        expect(database.insertedRows, isEmpty);
+        expect(database.updatedRowIds, ['existing']);
+        final saved = await savedRates();
+        expect(saved.map((entry) => entry.id), ['existing']);
+        expect(saved.single.rate.amount, 300.0);
+      });
+
+      test('stamps the replaced row with the new saved time', () async {
+        seed([row(id: 'existing', savedAt: '2026-01-01T00:00:00.000Z')]);
+
+        await repository.save(
+          buildEntry(savedAt: DateTime.parse('2026-03-09T10:00:00.000Z')),
+          replacesRateId: 'existing',
+        );
+
+        expect(
+          (await savedRates()).single.savedAt,
+          DateTime.utc(2026, 3, 9, 10),
+        );
+      });
+
+      test('keeps the method and the label of the replaced row', () async {
+        seed([
+          row(id: 'existing', entryLabel: 'Supplier A', equipmentMethod: 'job'),
+        ]);
+
+        await repository.save(
+          buildEntry(
+            amount: 700.0,
+            method: EquipmentPricingMethod.job,
+            entryLabel: 'Another label',
+          ),
+          replacesRateId: 'existing',
+        );
+
+        final replaced = (await savedRates()).single;
+        expect(replaced.equipmentMethod, EquipmentPricingMethod.job);
+        expect(replaced.entryLabel, 'Supplier A');
+        expect(replaced.rate.amount, 700.0);
+      });
+
+      test('keeps when the replaced rate was last used', () async {
+        seed([row(id: 'existing', lastUsedAt: '2026-02-02T00:00:00.000Z')]);
+
+        await repository.save(
+          buildEntry(amount: 300.0),
+          replacesRateId: 'existing',
+        );
+
+        expect(
+          (await savedRates()).single.lastUsedAt,
+          DateTime.utc(2026, 2, 2),
+        );
+      });
+
+      test(
+        'leaves last_used_at out of the saved body, so a new save records no use',
+        () async {
+          await repository.save(buildEntry(amount: 300.0));
+
+          final body = database.insertedRows.single;
+          expect(body.containsKey('last_used_at'), isFalse);
+          expect(body['rate_amount'], 300.0);
+        },
+      );
+
+      test(
+        'replaces the unlabeled row when the grouping also has labeled rows, '
+        'leaving the labeled ones alone',
+        () async {
+          seed([
+            row(id: 'unlabeled', rateAmount: 145),
+            row(id: 'labeled', entryLabel: 'Supplier A', rateAmount: 160),
+          ]);
+
+          await repository.save(
+            buildEntry(amount: 170),
+            replacesRateId: 'unlabeled',
+          );
+
+          expect(database.updatedRowIds, ['unlabeled']);
+          expect(database.insertedRows, isEmpty);
+          expect(
+            {for (final e in await savedRates()) e.id: e.rate.amount},
+            {'unlabeled': 170.0, 'labeled': 160.0},
+          );
+        },
+      );
+
+      test('replaces the row it is asked to replace, not the newest one, when '
+          'every row has a label', () async {
+        seed([
+          row(
+            id: 'older',
+            entryLabel: 'Supplier A',
+            savedAt: '2026-01-01T00:00:00.000Z',
+          ),
+          row(
+            id: 'newer',
+            entryLabel: 'Supplier B',
+            savedAt: '2026-02-01T00:00:00.000Z',
+          ),
+        ]);
+
+        await repository.save(
+          buildEntry(amount: 999.0),
+          replacesRateId: 'older',
+        );
+
+        expect(database.updatedRowIds, ['older']);
+        expect(database.insertedRows, isEmpty);
+      });
+      test('clears the stored unit when the saved entry has none', () async {
+        seed([row(id: 'existing', unit: 'days')]);
+
+        await repository.save(
+          buildEntry(amount: 999.0),
+          replacesRateId: 'existing',
+        );
+
+        expect(database.updatedRowIds, ['existing']);
+        final found = await repository.search(
+          'excavator',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(found.getRightOrNull()!.single.unit, isNull);
+      });
+
+      test('saves a new row with a blank label as no label', () async {
+        await repository.save(buildEntry(entryLabel: '   '));
+
+        expect(database.insertedRows.single['entry_label'], isNull);
+      });
+
+      test(
+        'takes the unit of the saved entry when it replaces a row',
+        () async {
+          seed([
+            row(
+              id: 'existing',
+              category: 'material',
+              itemName: 'Gravel',
+              equipmentMethod: null,
+              unit: 'meters',
+            ),
+          ]);
+
+          await repository.save(
+            buildEntry(
+              itemName: 'Gravel',
+              category: CostItemType.material,
+              unit: Unit.pieces,
+            ),
+            replacesRateId: 'existing',
+          );
+
+          final replaced = (await repository.search(
+            '',
+            category: CostItemType.material,
+            companyId: testCompanyId,
+          )).getRightOrNull()!.single;
+          expect(replaced.unit, Unit.pieces);
+        },
+      );
+
+      test('replaces a row whose name differs only by capital letters or '
+          'extra spaces', () async {
+        seed([
+          row(id: 'existing', itemName: 'Mini excavator', rateAmount: 145),
+        ]);
+
+        await repository.save(
+          buildEntry(itemName: '  mini   EXCAVATOR ', amount: 160),
+          replacesRateId: 'existing',
+        );
+
+        expect(database.updatedRowIds, ['existing']);
+        expect(database.insertedRows, isEmpty);
+        expect((await savedRates()).single.rate.amount, 160.0);
+      });
+
+      test('saving a Day price and a Job price of one name gives two rows, and '
+          'saving each again replaces only its own', () async {
+        await repository.save(
+          buildEntry(itemName: 'Mini excavator', amount: 145),
+        );
+        await repository.save(
+          buildEntry(
+            itemName: 'Mini excavator',
+            amount: 520,
+            method: EquipmentPricingMethod.job,
+          ),
+        );
+        final dayRowId = (await savedRates())
+            .singleWhere((e) => e.equipmentMethod == EquipmentPricingMethod.day)
+            .id;
+        await repository.save(
+          buildEntry(itemName: 'Mini excavator', amount: 150),
+          replacesRateId: dayRowId,
+        );
+
+        final byMethod = {
+          for (final e in await savedRates()) e.equipmentMethod: e.rate.amount,
+        };
+        expect(byMethod, {
+          EquipmentPricingMethod.day: 150.0,
+          EquipmentPricingMethod.job: 520.0,
+        });
+      });
+
+      test('saves the name trimmed', () async {
+        final result = await repository.save(
+          buildEntry(itemName: '  Backhoe  '),
+        );
+
+        expect(result.isRight(), true);
+        expect(database.insertedRows.single['item_name'], 'Backhoe');
+      });
+
+      test(
+        'replaces nothing of another category, item or pricing method',
+        () async {
+          seed([
+            row(id: 'other-category', category: 'material', entryLabel: null),
+            row(id: 'other-item', itemName: 'Bulldozer', entryLabel: null),
+            row(id: 'other-method', equipmentMethod: 'job', entryLabel: null),
+          ]);
+          final entry = buildEntry();
+
+          final result = await repository.save(entry);
+
+          expect(result.isRight(), true);
+          expect(database.insertedRows, hasLength(1));
+        },
+      );
+
+      test("a row in a second company is not replaced by this company's "
+          'save', () async {
+        seed([
+          row(
+            id: 'theirs',
+            companyId: 'company-2',
+            entryLabel: null,
+            rateAmount: 100.0,
+          ),
+        ]);
+        final entry = buildEntry(amount: 300.0);
+
+        final result = await repository.save(entry);
+
+        expect(result.isRight(), true);
+        expect(database.insertedRows, hasLength(1));
+        expect(database.updatedRowIds, isEmpty);
+      });
+
       test(
         'reports a write the phone cannot do as a database failure',
         () async {
@@ -1047,6 +1394,58 @@ void main() {
           );
         },
       );
+
+      test('a failed replace reports a database failure and keeps the saved '
+          'price', () async {
+        seed([row(id: 'existing', rateAmount: 100.0)]);
+        database.executeError = StateError('disk full');
+
+        final result = await repository.save(
+          buildEntry(amount: 300.0),
+          replacesRateId: 'existing',
+        );
+        database.executeError = null;
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+        expect((await savedRates()).single.rate.amount, 100.0);
+      });
+      test('a replace of an id no saved row has returns a not-found failure '
+          'and writes nothing', () async {
+        seed([row(id: 'existing', rateAmount: 100.0)]);
+
+        final result = await repository.save(
+          buildEntry(amount: 300.0),
+          replacesRateId: 'gone',
+        );
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        );
+        expect(database.updatedRowIds, isEmpty);
+        expect(database.insertedRows, isEmpty);
+        expect((await savedRates()).single.rate.amount, 100.0);
+      });
+
+      test('a save without a row to replace never changes a saved price, '
+          'whatever its price', () async {
+        seed([row(id: 'existing', rateAmount: 100.0)]);
+
+        final result = await repository.save(buildEntry(amount: 100.0));
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(
+            errorType: EstimationErrorType.duplicateEntry,
+          ),
+        );
+        expect(database.updatedRowIds, isEmpty);
+      });
     });
 
     group('recordRateUse', () {
@@ -1243,7 +1642,9 @@ void main() {
         seed([row(id: 'r1', rateAmount: 450.0)]);
         refuse();
 
-        final result = await repository.save(buildEntry(amount: 500.0));
+        final result = await repository.save(
+          buildEntry(amount: 500.0).copyWith(companyId: ''),
+        );
 
         expect(result.isLeft(), isTrue);
         expect(database.refusalRow(excavatorKey), isNotNull);
@@ -1297,22 +1698,143 @@ void main() {
         },
       );
 
-      test(
-        'a save with no label is a duplicate of a row the refusal hides',
-        () async {
-          seed([row(id: 'r1', rateAmount: 450.0)]);
-          refuse(accepted: null);
+      test('a save over a row the server never accepted inserts a fresh row '
+          'and deletes the old one', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse(accepted: null);
 
-          final result = await repository.save(buildEntry(amount: 500.0));
+        final result = await repository.save(buildEntry(amount: 500.0));
 
-          expect(
-            result.getLeftOrNull(),
-            const EstimationFailure(
-              errorType: EstimationErrorType.duplicateEntry,
-            ),
-          );
-        },
-      );
+        expect(result.isRight(), isTrue);
+        expect(database.updatedRowIds, isEmpty);
+        expect(database.deletedRowIds, ['r1']);
+        expect(database.insertedRows.single['rate_amount'], 500.0);
+        final entries = await lookUp();
+        expect(entries.map((entry) => entry.rate.amount), [500.0]);
+        expect(entries.single.id, isNot('r1'));
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a save deletes a row the server never accepted and replaces the '
+          'accepted one of the same name', () async {
+        seed([
+          row(id: 'r1', rateAmount: 450.0),
+          row(id: 'r2', rateAmount: 300.0, entryLabel: 'Weekend'),
+        ]);
+        refuse(accepted: null);
+
+        await repository.save(buildEntry(amount: 500.0), replacesRateId: 'r2');
+
+        expect(database.deletedRowIds, ['r1']);
+        expect(database.updatedRowIds, ['r2']);
+        expect(database.insertedRows, isEmpty);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a save whose write fails after it deleted a row the server never '
+          'accepted fails, and a retry saves one row', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse(accepted: null);
+        database.failRowInserts = true;
+
+        final failed = await repository.save(buildEntry(amount: 500.0));
+        database.failRowInserts = false;
+        final retried = await repository.save(buildEntry(amount: 500.0));
+
+        expect(failed.isLeft(), isTrue);
+        expect(retried.isRight(), isTrue);
+        expect((await lookUp()).map((entry) => entry.rate.amount), [500.0]);
+      });
+
+      test('a replace that ran past its limit does not bring back the row the '
+          'server never accepted', () async {
+        seed([
+          row(id: 'r1', rateAmount: 450.0),
+          row(id: 'r2', rateAmount: 300.0, entryLabel: 'Weekend'),
+        ]);
+        refuse(accepted: null);
+        final gate = database.updateGate = Completer<void>();
+        await impatientRepository.save(
+          buildEntry(amount: 500.0),
+          replacesRateId: 'r2',
+        );
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(database.deletedRowIds, ['r1']);
+        expect(database.insertedRows.map((row) => row['item_name']), ['Dozer']);
+      });
+
+      test('a save forgets the refusal when it deletes a row the server never '
+          'accepted, even if the accepted row keeps its price', () async {
+        seed([
+          row(id: 'r1', rateAmount: 450.0),
+          row(id: 'r2', rateAmount: 500.0, entryLabel: 'Weekend'),
+        ]);
+        refuse(accepted: null);
+
+        await repository.save(buildEntry(amount: 500.0), replacesRateId: 'r2');
+
+        expect(database.deletedRowIds, ['r1']);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a failed delete of a row the server never accepted reports a '
+          'database failure and saves nothing', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse(accepted: null);
+        database.failRowDeletes = true;
+
+        final result = await repository.save(buildEntry(amount: 500.0));
+
+        expect(
+          result.getLeftOrNull(),
+          const EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
+        expect(database.insertedRows, isEmpty);
+        expect(database.refusalRow(excavatorKey), isNotNull);
+      });
+      test('a successful save with a new label forgets the refusal', () async {
+        seed([row(id: 'r2', rateAmount: 300.0, entryLabel: 'Weekend')]);
+        refuse(refusedRowId: 'r2');
+
+        final result = await repository.save(
+          buildEntry(amount: 500.0, entryLabel: 'With operator'),
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a save keeps the row the server accepted at its old price when it '
+          'replaces the price', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
+
+        await repository.save(buildEntry(amount: 500.0), replacesRateId: 'r1');
+
+        expect(database.updatedRowIds, ['r1']);
+        expect(database.deletedRowIds, isEmpty);
+        expect((await lookUp()).single.rate.amount, 500.0);
+      });
+
+      test('saving the price the server refused again forgets the refusal, so '
+          'Your rates shows that price', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
+
+        await repository.save(buildEntry(amount: 450.0), replacesRateId: 'r1');
+
+        expect(database.refusalRow(excavatorKey), isNull);
+        expect(database.updatedRowIds, ['r1', 'r1']);
+        expect((await lookUp()).single.rate.amount, 450.0);
+      });
 
       test('a successful first save of the item forgets its refusal', () async {
         refuse();
@@ -1337,12 +1859,13 @@ void main() {
         expect(database.refusalRow(excavatorKey), isNotNull);
       });
 
-      test('a successful save with a new label forgets the refusal', () async {
-        seed([row(id: 'r2', rateAmount: 300.0, entryLabel: 'Weekend')]);
-        refuse(refusedRowId: 'r2');
+      test('a successful replace forgets the refusal', () async {
+        seed([row(id: 'r1', rateAmount: 450.0)]);
+        refuse();
 
         final result = await repository.save(
-          buildEntry(amount: 500.0, entryLabel: 'With operator'),
+          buildEntry(amount: 500.0),
+          replacesRateId: 'r1',
         );
 
         expect(result.isRight(), isTrue);
