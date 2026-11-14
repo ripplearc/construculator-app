@@ -14,6 +14,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -171,6 +172,7 @@ void main() {
           bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
         },
         expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveSucceeded>(),
           isA<YourRatesLoading>(),
           isA<YourRatesLoaded>().having(
@@ -190,7 +192,7 @@ void main() {
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [isA<YourRatesSaveCollision>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveCollision>()],
         verify: (_) {
           expect(database.insertedRows, isEmpty);
         },
@@ -340,6 +342,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -347,6 +350,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -411,6 +415,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -418,6 +423,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -590,6 +596,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -622,6 +629,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -765,7 +773,7 @@ void main() {
         'emits SaveSucceeded when there is no collision',
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [isA<YourRatesSaveSucceeded>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveSucceeded>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
@@ -779,8 +787,92 @@ void main() {
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
         },
         expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveSucceeded>(),
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveSucceeded>(),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'stays Saving while the phone holds the write, then ends in '
+        'SaveSucceeded',
+        build: () => bloc,
+        act: (bloc) async {
+          final gate = database.insertGate = Completer();
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaving);
+          gate.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
+        },
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveSucceeded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'ends in SaveFailed with a timeout, and saves nothing, when the '
+        'company look-up does not answer within the save limit',
+        // ignore: no_direct_instantiation, reason: needs saveTimeLimit: Duration.zero, which Modular's registration can't supply per-test
+        build: () => YourRatesBloc(
+          repository: Modular.get<YourRatesRepository>(),
+          companyResolver: Modular.get<CurrentCompanyResolver>(),
+          clock: Modular.get<Clock>(),
+          saveTimeLimit: Duration.zero,
+        ),
+        act: (bloc) async {
+          final lookUp = fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveFailed);
+          lookUp.complete();
+        },
+        expect: () => [
+          isA<YourRatesSaving>(),
+          isA<YourRatesSaveFailed>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
+        ],
+        verify: (_) {
+          expect(database.insertedRows, isEmpty);
+        },
+      );
+
+      const oneHour = Duration(hours: 1);
+      late FakeClockImpl saveClock;
+      late Completer<void> heldWrite;
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'ends in SaveFailed with a timeout when the company look-up used up '
+        'the save limit and the phone is still holding the write',
+        setUp: () {
+          saveClock = FakeClockImpl();
+          heldWrite = database.insertGate = Completer();
+        },
+        // ignore: no_direct_instantiation, reason: needs the FakeClockImpl the test moves forward, which Modular's registration can't supply per-test
+        build: () => YourRatesBloc(
+          repository: Modular.get<YourRatesRepository>(),
+          companyResolver: Modular.get<CurrentCompanyResolver>(),
+          clock: saveClock,
+          saveTimeLimit: oneHour,
+        ),
+        act: (bloc) async {
+          final lookUp = fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaving);
+          saveClock.advance(oneHour);
+          lookUp.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveFailed);
+          heldWrite.complete();
+        },
+        expect: () => [
+          isA<YourRatesSaving>(),
+          isA<YourRatesSaveFailed>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
         ],
       );
 
@@ -799,6 +891,7 @@ void main() {
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
         expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveCollision>().having(
             (s) => s.entry.itemName,
             'entry.itemName',
@@ -823,6 +916,7 @@ void main() {
         act: (bloc) =>
             bloc.add(YourRatesSaveRequested(entry(entryLabel: 'supplier  a'))),
         expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveLabelTaken>().having(
             (s) => s.entry.entryLabel,
             'entry.entryLabel',
@@ -855,7 +949,9 @@ void main() {
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
         },
         expect: () => [
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveCollision>(),
+          isA<YourRatesSaving>(),
           isA<YourRatesSaveSucceeded>(),
         ],
       );
@@ -867,7 +963,7 @@ void main() {
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [isA<YourRatesSaveFailed>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveFailed>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
@@ -876,7 +972,7 @@ void main() {
         build: () => bloc,
         act: (bloc) =>
             bloc.add(YourRatesSaveRequested(entry().copyWith(companyId: ''))),
-        expect: () => [isA<YourRatesSaveSucceeded>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveSucceeded>()],
         verify: (_) {
           expect(
             database.insertedRows.single[DatabaseConstants.companyIdColumn],
@@ -895,7 +991,7 @@ void main() {
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [isA<YourRatesSaveNoCompany>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveNoCompany>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
@@ -905,7 +1001,7 @@ void main() {
         },
         build: () => bloc,
         act: (bloc) => bloc.add(YourRatesSaveRequested(entry())),
-        expect: () => [isA<YourRatesSaveFailed>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveFailed>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
@@ -922,7 +1018,7 @@ void main() {
 
           await bloc.stream.firstWhere((s) => s is YourRatesSaveSucceeded);
         },
-        expect: () => [isA<YourRatesSaveSucceeded>()],
+        expect: () => [isA<YourRatesSaving>(), isA<YourRatesSaveSucceeded>()],
         verify: (_) {
           expect(database.insertedRows, hasLength(1));
         },

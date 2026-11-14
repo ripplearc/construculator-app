@@ -206,7 +206,11 @@ class EstimationModule extends Module {
       ),
     );
     i.add<YourRatesBloc>(
-      () => YourRatesBloc(repository: i.get(), companyResolver: i.get()),
+      () => YourRatesBloc(
+        repository: i.get(),
+        companyResolver: i.get(),
+        clock: i.get(),
+      ),
     );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
