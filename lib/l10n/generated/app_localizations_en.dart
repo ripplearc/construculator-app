@@ -2175,6 +2175,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noChangeYetNote => 'No change yet';
 
   @override
+  String get deleteThisLineButton => 'Delete this line';
+
+  @override
+  String get deleteLineDialogTitle => 'Delete this line?';
+
+  @override
+  String deleteLineDialogBody(String item, String estimate) {
+    return '$item will be removed from $estimate.';
+  }
+
+  @override
+  String get saveLineFailedError => 'This change was not saved. Try again.';
+
+  @override
+  String get deleteLineFailedError => 'This line was not deleted. Try again.';
+
+  @override
   String get enterEquipmentNameToContinueButton =>
       'Enter an equipment name to continue';
 

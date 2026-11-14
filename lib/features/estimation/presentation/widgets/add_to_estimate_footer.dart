@@ -8,10 +8,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class AddToEstimateFooter extends StatelessWidget {
   /// Key of the summary card.
   static const panelKey = Key('adds_to_estimate_panel');
+
   /// Key of the submit button.
   static const buttonKey = Key('add_to_estimate_button');
+
   /// Key of the save-error line.
   static const errorKey = Key('add_to_estimate_error');
+
+  /// Key of the Delete this line button.
+  static const deleteButtonKey = Key('delete_line_button');
 
   /// The line's own total including delivery. Ignored while [block] is set.
   final double lineTotal;
@@ -43,6 +48,10 @@ class AddToEstimateFooter extends StatelessWidget {
   /// new line. Switches the panel and the button label to their edit wording.
   final double? changeInEstimateTotal;
 
+  /// Called when the user taps Delete this line. The button is drawn only
+  /// when this is set, which is for a line already on the estimate.
+  final VoidCallback? onDelete;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -54,6 +63,7 @@ class AddToEstimateFooter extends StatelessWidget {
     this.errorMessage,
     required this.onAdd,
     this.changeInEstimateTotal,
+    this.onDelete,
   });
 
   @override
@@ -94,7 +104,50 @@ class AddToEstimateFooter extends StatelessWidget {
               isDisabled: block != null || isSubmitting,
               onPressed: onAdd,
             ),
+            if (onDelete case final onDelete?) ...[
+              _DeleteLine(
+                key: deleteButtonKey,
+                isDisabled: isSubmitting,
+                onTap: onDelete,
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The red `Delete this line` text under the save button. It is plain text,
+/// not an outlined button, with a tap area at least 48 dp high.
+class _DeleteLine extends StatelessWidget {
+  final bool isDisabled;
+  final VoidCallback onTap;
+
+  const _DeleteLine({super.key, required this.isDisabled, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.deleteThisLineButton;
+    final colorTheme = context.colorTheme;
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      label: label,
+      onTap: isDisabled ? null : onTap,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: isDisabled ? null : onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: context.textTheme.bodyLargeSemiBold.copyWith(
+              color: isDisabled ? colorTheme.textDisable : colorTheme.textError,
+            ),
+          ),
         ),
       ),
     );

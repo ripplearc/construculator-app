@@ -310,5 +310,126 @@ void main() {
         expect((await storedLine()).duration, 3.0);
       },
     );
+
+    group('deleting the line', () {
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'removes the stored line and ends in Deleted',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          bloc.add(const EquipmentCostDeleteRequested());
+        },
+        skip: 1,
+        expect: () => [
+          isA<EquipmentCostFormSubmitting>(),
+          isA<EquipmentCostFormDeleted>(),
+        ],
+        verify: (_) async {
+          final items = await repository.getCostItemsForEstimate(estimateId);
+          expect(items.getRightOrNull(), isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'keeps the line and reports a delete failure when the delete fails',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          bloc.add(const EquipmentCostDeleteRequested());
+        },
+        skip: 2,
+        expect: () => [
+          isA<EquipmentCostFormFailure>()
+              .having((s) => s.whileDeleting, 'whileDeleting', true)
+              .having(
+                (s) => s.failure,
+                'failure',
+                isA<EstimationFailure>().having(
+                  (f) => f.errorType,
+                  'errorType',
+                  EstimationErrorType.unexpectedError,
+                ),
+              ),
+        ],
+        verify: (_) async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = false;
+          expect(await storedLine(), isA<EquipmentCostItem>());
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'drops the delete failure once a field is changed',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          bloc.add(const EquipmentCostDeleteRequested());
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormFailure);
+          bloc.add(const EquipmentDurationUpdatedEvent('4'));
+        },
+        verify: (bloc) => expect(bloc.state, isA<EquipmentCostFormEditing>()),
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'ignores a save once the line is deleted',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          bloc.add(const EquipmentCostDeleteRequested());
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormDeleted);
+          bloc.add(const EquipmentCostSubmittedEvent(estimateId: estimateId));
+        },
+        verify: (bloc) {
+          expect(bloc.state, isA<EquipmentCostFormDeleted>());
+          expect(fakeSupabaseWrapper.getMethodCallsFor('update'), isEmpty);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'a failed save is not reported as a delete failure',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          bloc.add(const EquipmentDurationUpdatedEvent('4'));
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          bloc.add(const EquipmentCostSubmittedEvent(estimateId: estimateId));
+        },
+        verify: (bloc) {
+          final state = bloc.state as EquipmentCostFormFailure;
+          expect(state.whileDeleting, false);
+        },
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does nothing on a form that adds a new line',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const EquipmentCostDeleteRequested()),
+        expect: () => <EquipmentCostFormState>[],
+        verify: (_) =>
+            expect(fakeSupabaseWrapper.getMethodCallsFor('delete'), isEmpty),
+      );
+
+      blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+        'does not delete a second time once the line is gone',
+        setUp: seedLine,
+        build: () => bloc,
+        act: (bloc) async {
+          bloc.add(EquipmentCostEditOpened(await storedLine()));
+          bloc.add(const EquipmentCostDeleteRequested());
+          await bloc.stream.firstWhere((s) => s is EquipmentCostFormDeleted);
+          bloc.add(const EquipmentCostDeleteRequested());
+        },
+        verify: (_) => expect(
+          fakeSupabaseWrapper.getMethodCallsFor('delete'),
+          hasLength(1),
+        ),
+      );
+    });
   });
 }

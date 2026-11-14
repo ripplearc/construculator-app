@@ -176,3 +176,11 @@ class EquipmentCostEditOpened extends EquipmentCostFormEvent {
   /// The line to edit.
   final EquipmentCostItem item;
 }
+
+/// Deletes the line this form edits from the estimate.
+///
+/// Ignored when the form adds a new line, and while a save or delete is
+/// already running.
+class EquipmentCostDeleteRequested extends EquipmentCostFormEvent {
+  const EquipmentCostDeleteRequested();
+}

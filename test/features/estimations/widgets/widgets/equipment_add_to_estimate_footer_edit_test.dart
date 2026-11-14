@@ -162,6 +162,7 @@ void main() {
         const EquipmentRateUpdatedEvent('100'),
       ]);
 
+      expect(find.byKey(AddToEstimateFooter.deleteButtonKey), findsNothing);
       expect(buttonLabel(tester), l10n.addToEstimateButton);
       expect(find.text(l10n.addsToEstimateLabel), findsOneWidget);
       expect(find.text(l10n.changesThisEstimateLabel), findsNothing);
