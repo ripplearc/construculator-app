@@ -216,6 +216,29 @@
         <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
         </regex>
+
+        <!-- RULE R79a (decision tree row 79): = leaves the inch part of a
+             compound open, so the value is refused as unfinished -->
+        <regex pattern="final tape = _withFractionClosedAsInches\(\)\s*\._withInchPartClosed\(\)\s*\._withFieldClosed\(\);" dotAll="true" id="tape.equals.inch_part_left_open">
+            <mutation text="final tape = _withFractionClosedAsInches()._withFieldClosed();"/>
+        </regex>
+
+        <!-- RULE R79b: the compound = closed is not landed as Calc -->
+        <regex pattern="ChainValue\(:final value\)\s*when tape\._endsWithClosedBracket \|\| closedInchPart =&gt;" dotAll="true" id="tape.equals.closed_inch_part_not_landed">
+            <mutation text="ChainValue(:final value) when tape._endsWithClosedBracket =&gt;"/>
+        </regex>
+
+        <!-- RULE R79c (decision tree row 79): = inside a bracket leaves the
+             inch part open, so ( 12 [Feet] 5 = is refused -->
+        <regex pattern="\(inner\) =&gt; TapeChanged\(inner\._withInchPartClosed\(\)\)," dotAll="true" id="tape.equals.inch_part_left_open_in_bracket">
+            <mutation text="(inner) =&gt; TapeChanged(inner),"/>
+        </regex>
+
+        <!-- RULE R84 (decision tree row 84): a digit after a fraction the Inch
+             key closed goes on with the value -->
+        <regex pattern="if \(active case final chip\? when chip\.entry\.endsWithClosedInchFraction\) \{\s*return _sealed\(\)\.typeDigit\(digit\);\s*\}" dotAll="true" id="tape.type_digit.after_closed_fraction">
+            <mutation text=""/>
+        </regex>
     </rules>
 
     <commands>

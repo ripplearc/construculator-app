@@ -74,6 +74,13 @@ enum EntryRefusal {
 
   /// Backspace with nothing typed; the tape decides what to unwind.
   nothingToDelete,
+
+  /// A unit key that cannot close the part of a compound still being typed:
+  /// 12 [Feet] 5 then [Feet], [Yards] or any key but [Inch]. "5 has no unit
+  /// yet" / "Press Inch for 12ft 5in. Or press ⌫, then + or ×." (Section 6;
+  /// team decision of 3 November 2026, decision tree row 101). The part
+  /// belongs to the compound, so it never starts a value of its own.
+  compoundPartNeedsItsUnit,
 }
 
 /// What a key did to the buffer.
@@ -94,6 +101,9 @@ final class EntryChanged extends EntryOutcome {
 
 /// A unit that could not continue the compound closed a new value instead:
 /// 2511ft³ then 45 [Inch] is a finished volume and a new 45in (rule 4.5).
+/// Only a value that can take no part splits this way; a part typed after
+/// whole feet or metres belongs to the compound and its wrong unit is
+/// refused ([EntryRefusal.compoundPartNeedsItsUnit]).
 final class EntrySplit extends EntryOutcome {
   /// The value that was already typed, now finished.
   final EntryBuffer finished;
@@ -199,6 +209,31 @@ class EntryBuffer extends Equatable {
       tokens.length > 1 &&
       _isUnitlessFraction(tokens.last) &&
       _isWholeInches(tokens[tokens.length - 2]);
+
+  /// Whether the number being typed is the inch part of a ft-in compound
+  /// still waiting for its key: whole or decimal feet, then a plain number
+  /// (12ft 5). = closes it as inches (Section 6; decision tree row 79).
+  bool get endsWithOpenInchPart {
+    if (tokens.length < 2) return false;
+    final last = tokens.last;
+    final previous = tokens[tokens.length - 2];
+    return last.unit == null &&
+        last.denominator == null &&
+        !last.isDegreesMinutesSeconds &&
+        previous.unit == Unit.foot &&
+        previous.power == 1;
+  }
+
+  /// Whether the last token is a fraction closed as inches by the Inch key
+  /// (3/4in, 7-1/2in): nothing can follow it inside the value, so the next
+  /// digit starts a chip of its own (rule 4.5; decision tree row 84). A
+  /// fraction the tape closed by itself after whole inches keeps taking
+  /// denominator digits ([Token.typedAs]).
+  bool get endsWithClosedInchFraction =>
+      tokens.isNotEmpty &&
+      tokens.last.unit == Unit.inch &&
+      tokens.last.typedAs == null &&
+      (tokens.last.denominator?.isNotEmpty ?? false);
 
   static bool _isUnitlessFraction(Token token) =>
       token.unit == null && (token.denominator?.isNotEmpty ?? false);
@@ -489,8 +524,10 @@ class EntryBuffer extends Equatable {
   /// [editing] a tapped chip. [holdsLengthOnly] is true under a key that
   /// takes lengths, which refuses a weight unit, on fresh entry as while
   /// editing: Width 18ft 8 [Lbs] needs a length and keeps the 8 typed
-  /// (Section 5.2; owner decision of 3 October 2026), where Width 18ft 8
-  /// [Feet] still starts 8ft as its own chip (rule 4.5). A part as large as
+  /// (Section 5.2; owner decision of 3 October 2026), and Width 18ft 8
+  /// [Feet] is refused too, since the 8 is the compound's inch part with no
+  /// unit yet ([EntryRefusal.compoundPartNeedsItsUnit]; Section 6, decision
+  /// tree row 101). A part as large as
   /// the unit above it is carried up on its whole parts when the unit closes
   /// it ([EntryCarried]): 18ft 13in reads 19ft 1in and 18ft 13.5in reads
   /// 19ft 1.5in (Section 6: any inch part as large as a foot), and the carry
@@ -525,6 +562,9 @@ class EntryBuffer extends Equatable {
         !_stepsDownWithinOneSystem(previous, unit) &&
         !(unit == Unit.inch && endsWithFractionAfterWholeInches)) {
       if (editing) return const EntryRefused(EntryRefusal.cannotAppendUnit);
+      if (_takesACompoundPart(previous)) {
+        return const EntryRefused(EntryRefusal.compoundPartNeedsItsUnit);
+      }
       return EntrySplit(
         finished: EntryBuffer(
           List.unmodifiable(tokens.take(tokens.length - 1)),
@@ -640,6 +680,9 @@ class EntryBuffer extends Equatable {
       ),
     );
   }
+
+  bool _takesACompoundPart(Token previous) =>
+      previous.power == 1 && (previous.unit?.compoundRank ?? 0) > 1;
 
   bool _stepsDownWithinOneSystem(Token previous, Unit unit) {
     final previousUnit = previous.unit;

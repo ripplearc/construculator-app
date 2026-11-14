@@ -12,9 +12,10 @@ import 'package:equatable/equatable.dart';
 ///
 /// Nothing is rounded until it is displayed, and a setting changes the text,
 /// never the value (rule 4.14): the same [Length] renders as 3-5/16in at
-/// 1/16 and 3-1/2in at 1/2. Results show a thousands separator; entries and
-/// stored sizes do not, so [format] takes a `groupThousands` switch and
-/// [formatStoredLength] never groups.
+/// 1/16 and 3-1/2in at 1/2, and a bare fraction of an inch reads 1/2in,
+/// never 0-1/2in (Section 6; decision tree row 110). Results show a
+/// thousands separator; entries and stored sizes do not, so [format] takes
+/// a `groupThousands` switch and [formatStoredLength] never groups.
 ///
 /// Rounding follows the prototype, so a value on a boundary lands where the
 /// prototype lands: volumes, angles, scalars at or above 0.1, acres and
@@ -151,9 +152,10 @@ class QuantityFormatter extends Equatable {
     var whole = magnitude.floor();
     final fraction = _fractionOfInch(magnitude - Rational(whole));
     whole += fraction.carry;
-    final text =
-        '${_localeNumber(whole.toDouble(), 0, group)}'
-        '${fraction.text}${Unit.inch.suffix}';
+    final text = whole == 0 && fraction.text.isNotEmpty
+        ? '${fraction.text.substring(1)}${Unit.inch.suffix}'
+        : '${_localeNumber(whole.toDouble(), 0, group)}'
+              '${fraction.text}${Unit.inch.suffix}';
     return negative && (whole != 0 || fraction.text.isNotEmpty)
         ? '-$text'
         : text;

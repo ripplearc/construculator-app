@@ -16,6 +16,7 @@ void main() {
       current = changed(switch (key) {
         'ft' => current.pressUnit(Unit.foot),
         'in' => current.pressUnit(Unit.inch),
+        'cm' => current.pressUnit(Unit.centimetre),
         'lbs' => current.pressUnit(Unit.pound),
         '×' => current.pressOperator(Operator.multiply),
         '÷' => current.pressOperator(Operator.divide),
@@ -104,12 +105,14 @@ void main() {
         );
       });
 
-      test('= closes the bracket even when nothing lands', () {
+      test('= closes the bracket and lands the group as Calc, since a closed '
+          'group on its own is a calculation (Section 7)', () {
         final outcome = press(const Tape(), '( 3').pressEquals();
         final closed = outcome as TapeChanged;
-        expect(closed.notice, TapeNotice.bracketClosedNothingToCompute);
+        expect(closed.notice, isNull);
         expect(closed.tape.openBracket, isNull);
         expect(bracketText(closed.tape), '(3)');
+        expect(lastResult(closed.tape), 'Calc 3');
       });
 
       test('a bracket keeps its exact value: (1 ÷ 3) × 3,000,000', () {
@@ -131,6 +134,27 @@ void main() {
     });
 
     group('the bracket chip', () {
+      test('a closed bracket on its own is a calculation: = lands its value as '
+          'Calc (Section 7; decision tree rows 66 and 107)', () {
+        expect(lastResult(press(const Tape(), '( 1 2 ( =')), 'Calc 12');
+        expect(lastResult(press(const Tape(), '( 1 2 =')), 'Calc 12');
+        expect(lastResult(press(const Tape(), '( 1 / 2 in ( =')), 'Calc 1/2in');
+        expect(lastResult(press(const Tape(), '( 1 / 3 cm =')), 'Calc 0.33cm');
+        expect(
+          lastResult(press(const Tape(), '( 1 / 3 cm ( =')),
+          'Calc 0.33cm',
+        );
+        expect(
+          lastResult(press(const Tape(), '( 2 ft + 3 in ( =')),
+          'Calc 2ft 3in',
+        );
+        expect(
+          press(const Tape(), '1 2').pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+          reason: 'a bare value keeps its Nothing to compute yet',
+        );
+      });
+
       test('grows from "+(" to "+(3×4" and closes to "+(3×4)"', () {
         var tape = press(const Tape(), '2 + (');
         expect(bracketText(tape), '+(');
@@ -373,13 +397,14 @@ void main() {
         expect(outcome.tape.chips, hasLength(3));
       });
 
-      test('= on an emptied reopened bracket with nothing to compute', () {
+      test('= on an emptied reopened bracket brings the group back and lands '
+          'it as Calc', () {
         final tape = press(const Tape(), '( 3 ( ⌫ ⌫');
         final outcome = tape.pressEquals() as TapeChanged;
         expect(outcome.notice, TapeNotice.bracketEditCancelled);
         expect(bracketText(outcome.tape), '(3)');
         expect(outcome.tape.openBracket, isNull);
-        expect(outcome.tape.endsWithResult, isFalse);
+        expect(lastResult(outcome.tape), 'Calc 3');
       });
 
       test('= on an emptied reopened bracket can land an error chip', () {

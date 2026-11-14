@@ -1021,7 +1021,13 @@ void main() {
       });
 
       test('a value still being typed and a bare number are left out', () {
-        final tape = press(const Tape(), '[Length] 2 2 ft 8 ft [Width] 1 8');
+        final bare = press(const Tape(), '[Length] 2 2 ft').append(
+          const ValueChip(
+            entry: EntryBuffer([Token(digits: '8', unit: Unit.foot)]),
+            isActive: false,
+          ),
+        );
+        final tape = press(bare, '[Width] 1 8');
         expect(tape.namedValues, {'Length': feet22});
       });
 

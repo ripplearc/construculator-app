@@ -202,12 +202,21 @@ void main() {
         expect(texts(press(const Tape(), '[Sides] 6 ft')), ['Sides6ft']);
       });
 
-      test('a new number after a finished value is its own chip', () {
-        final tape = press(const Tape(), '[Length] 1 2 ft [Width] 1 0 ft');
-        final sealed = changed(tape.pressFunctionKey('Height'));
-        final parked = press(changed(sealed.backspace()), '8 ft');
-        expect(texts(parked), ['Length12ft', 'Width10ft', '8ft']);
-      });
+      test(
+        'a digit after a value ⌫ reopened goes on with its compound, so '
+        'the part wants the unit below (Section 6; decision tree row 101)',
+        () {
+          final tape = press(const Tape(), '[Length] 1 2 ft [Width] 1 0 ft');
+          final sealed = changed(tape.pressFunctionKey('Height'));
+          final reopened = press(changed(sealed.backspace()), '8');
+          expect(texts(reopened), ['Length12ft', 'Width10ft 8']);
+          expect(
+            reopened.pressUnit(Unit.foot),
+            const TapeEntryRefused(EntryRefusal.compoundPartNeedsItsUnit),
+          );
+          expect(texts(press(reopened, 'in')), ['Length12ft', 'Width10ft 8in']);
+        },
+      );
 
       test('a digit after a sealed chip starts a bare chip', () {
         const sealed = Tape(
@@ -414,6 +423,52 @@ void main() {
     });
 
     group('digits and fractions', () {
+      test('= closes the inch part of a compound still being typed and lands '
+          'it as Calc: 12 [Feet] 5 = is Calc 12ft 5in (Section 6; decision '
+          'tree row 79)', () {
+        const formatter = QuantityFormatter();
+        String calc(Tape tape) =>
+            'Calc ${formatter.format((tape.chips.last as ResultChip).value)}';
+        final landed = press(const Tape(), '1 2 ft 5 =');
+        expect(texts(landed), ['12ft 5in', 'Calc']);
+        expect(calc(landed), 'Calc 12ft 5in');
+        final carried = press(const Tape(), '1 9 ft 1 3 =');
+        expect(texts(carried), ['20ft 1in', 'Calc']);
+        expect(calc(carried), 'Calc 20ft 1in');
+        final named = press(const Tape(), '[Length] 1 2 ft 5 =');
+        expect(texts(named), ['Length12ft 5in', 'Calc']);
+        expect(calc(named), 'Calc 12ft 5in');
+        final opened = changed(const Tape().pressBracket());
+        final grouped = press(opened, '1 2 ft 5 =');
+        expect(texts(grouped), ['(12ft 5in)', 'Calc']);
+        expect(calc(grouped), 'Calc 12ft 5in');
+        expect(
+          press(opened, '1 2 ft 5').pressBracket(),
+          isA<TapeRefused>(),
+          reason: 'only = closes the inch part; ) leaves it to the user',
+        );
+        expect(
+          press(const Tape(), '1 2 ft 5 in').pressEquals(),
+          const TapeRefused(TapeRefusal.nothingToCompute),
+          reason: 'a finished bare value keeps its Nothing to compute yet',
+        );
+        expect(
+          press(const Tape(), '1 2 ft 5 /').pressEquals(),
+          const TapeRefused(TapeRefusal.finishThisValueFirst),
+          reason: 'a fraction under way is not an inch part',
+        );
+      });
+
+      test('a digit after a fraction the Inch key closed starts its own chip '
+          '(rule 4.5; decision tree row 84), while one after whole inches '
+          'goes on with the compound', () {
+        expect(texts(press(const Tape(), '3 / 4 in 5')), ['3/4in', '5']);
+        expect(texts(press(const Tape(), '5 ft 7 in 1 / 2 3')), [
+          '5ft 7in 1/23',
+        ]);
+        expect(texts(press(const Tape(), '7 in 1 / 2')), ['7in 1/2']);
+      });
+
       test('a function key closes a fraction after whole inches first', () {
         final named = press(const Tape(), '5 ft 7 in 1 / 2 [Width]');
         expect(texts(named), ['5ft 7-1/2in', 'Width']);
@@ -484,8 +539,11 @@ void main() {
       });
 
       test('rule 4.15: the next value typed never changes a converted one', () {
-        final tape = press(const Tape(), '[Length] 1 8 ft 8 in yd 3 cm');
-        expect(texts(tape), ['Length6.222yd', '3cm']);
+        final tape = press(
+          const Tape(),
+          '[Length] 1 8 ft 8 in yd [Width] 3 cm',
+        );
+        expect(texts(tape), ['Length6.222yd', 'Width3cm']);
         final converted = tape.chips.first as ValueChip;
         expect(converted.isActive, isFalse);
         expect(converted.value(parser), const Length(14336, unit: Unit.yard));
