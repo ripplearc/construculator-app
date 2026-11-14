@@ -5,6 +5,8 @@ import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 
+import 'fake_cost_items_database.dart';
+
 /// A [FakePowerSyncDatabaseWrapper] that remembers what is written to the
 /// `your_rates` and `current_company` tables, so a write in one test step is
 /// what a read in the next step finds, with no signal involved.
@@ -17,6 +19,10 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 /// for `current_company` a `SELECT` by user id, an `INSERT` and a `DELETE`.
 /// Statements are still recorded in [executeCalls] and [getAllCalls].
 class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
+  /// The `cost_items` table of the same database, which answers every
+  /// statement that names that table.
+  final FakeCostItemsDatabase costItems = FakeCostItemsDatabase();
+
   final List<Map<String, Object?>> _rows = [];
 
   /// Every row an `INSERT` has added since the last [reset], as stored.
@@ -173,6 +179,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     List<Object?> parameters = const [],
     Duration throttle = kDefaultWatchThrottle,
   }) {
+    if (sql.contains(DatabaseConstants.costItemsTable)) {
+      return costItems.watch(sql, parameters: parameters, throttle: throttle);
+    }
     if (!sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       return super.watch(sql, parameters: parameters, throttle: throttle);
     }
@@ -205,6 +214,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
+    if (sql.contains(DatabaseConstants.costItemsTable)) {
+      return costItems.getAll(sql, parameters);
+    }
     await super.getAll(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       if (parameters.isEmpty) {
@@ -255,6 +267,9 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
+    if (sql.contains(DatabaseConstants.costItemsTable)) {
+      return costItems.execute(sql, parameters);
+    }
     await super.execute(sql, parameters);
     if (sql.contains(DatabaseConstants.yourRateRefusalsTable)) {
       if (sql.startsWith('DELETE')) {
@@ -365,6 +380,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   @override
   void reset() {
     super.reset();
+    costItems.reset();
     _rows.clear();
     _companyRows.clear();
     _refusalRows.clear();

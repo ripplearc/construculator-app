@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -15,10 +16,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_cost_items_database.dart';
+import '../../helpers/cost_item_test_data_map_factory.dart';
 
 void main() {
   group('EstimateSummaryBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    late FakeCostItemsDatabase phone;
 
     const estimateId = 'estimate-1';
 
@@ -27,6 +31,8 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
       );
       Modular.init(EstimationModule(bootstrap));
+      phone = FakeCostItemsDatabase();
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(phone);
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });
@@ -37,6 +43,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      phone.reset();
     });
 
     void seedEstimate() {
@@ -48,9 +55,13 @@ void main() {
         ),
       ]);
       fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
-        {'estimate_id': estimateId, 'item_total_cost': 2000},
-        {'estimate_id': estimateId, 'item_total_cost': 993.62},
-        {'estimate_id': 'other-estimate', 'item_total_cost': 500},
+        {'id': 'line-1', 'estimate_id': estimateId, 'item_total_cost': 2000},
+        {'id': 'line-2', 'estimate_id': estimateId, 'item_total_cost': 993.62},
+        {
+          'id': 'line-3',
+          'estimate_id': 'other-estimate',
+          'item_total_cost': 500,
+        },
       ]);
     }
 
@@ -98,12 +109,40 @@ void main() {
     );
 
     blocTest<EstimateSummaryBloc, EstimateSummaryState>(
+      'counts the lines on this phone when the server cannot be reached',
+      setUp: () {
+        seedEstimate();
+        phone.seedRow({
+          ...CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'phone-line',
+            estimateId: estimateId,
+            itemTotalCost: 156.0,
+          ),
+          'calculation': '{}',
+        });
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.socket;
+      },
+      build: () => Modular.get<EstimateSummaryBloc>(),
+      act: (bloc) => bloc.add(const EstimateSummaryRequested(estimateId)),
+      expect: () => [
+        isA<EstimateSummaryLoading>(),
+        isA<EstimateSummaryLoaded>().having(
+          (s) => s.estimate.totalCost,
+          'total',
+          156.0,
+        ),
+      ],
+    );
+
+    blocTest<EstimateSummaryBloc, EstimateSummaryState>(
       'emits a failure when the items cannot be summed',
       setUp: () {
         seedEstimate();
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType =
-            SupabaseExceptionType.socket;
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.postgrest;
       },
       build: () => Modular.get<EstimateSummaryBloc>(),
       act: (bloc) => bloc.add(const EstimateSummaryRequested(estimateId)),
@@ -112,7 +151,7 @@ void main() {
         isA<EstimateSummaryFailure>().having(
           (s) => s.failure,
           'failure',
-          EstimationFailure(errorType: EstimationErrorType.connectionError),
+          EstimationFailure(errorType: EstimationErrorType.unexpectedError),
         ),
       ],
     );
