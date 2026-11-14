@@ -164,3 +164,15 @@ class EquipmentRefusalNoticeLookedUp extends EquipmentCostFormEvent {
 class EquipmentRefusalNoticeSeen extends EquipmentCostFormEvent {
   const EquipmentRefusalNoticeSeen();
 }
+
+/// Opens the form on a line already on the estimate, filled with that line's
+/// values, so that saving changes the line instead of adding a new one.
+///
+/// Dispatched once, when the form opens. Dispatching it later replaces the
+/// values the form holds with those of [item].
+class EquipmentCostEditOpened extends EquipmentCostFormEvent {
+  const EquipmentCostEditOpened(this.item);
+
+  /// The line to edit.
+  final EquipmentCostItem item;
+}
