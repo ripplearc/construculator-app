@@ -7,6 +7,7 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:flutter/foundation.dart';
+import 'package:powersync/powersync.dart' show uuid;
 
 /// PowerSync-backed [PowerSyncCostEstimationDataSource].
 ///
@@ -15,7 +16,9 @@ import 'package:flutter/foundation.dart';
 /// `user_cost_estimates` sync stream lazily on the first watch subscription.
 /// Rows come back as `Map<String, dynamic>` and are mapped to DTOs via
 /// [CostEstimateDto.fromRow], which handles SQLite encodings (e.g. `is_locked`
-/// as `0`/`1`). Write operations are added in later PRs.
+/// as `0`/`1`). Writes go through [PowerSyncDatabaseWrapper.writeTransaction].
+/// A rename or lock change first reads the row, to tell whether the phone has
+/// it and whether the value already matches.
 ///
 /// `_table` backs onto the local SQLite table defined in `schema.dart`.
 /// `_syncStreamName` names the on-demand sync stream gating which estimates
@@ -174,4 +177,76 @@ class PowerSyncCostEstimationDataSourceImpl
     projectId,
     ?limit,
   ];
+
+  @override
+  Future<CostEstimateDto> insertEstimationRow(
+    CostEstimateDto estimation,
+  ) async {
+    final id = estimation.id.isEmpty ? uuid.v4() : estimation.id;
+    final row = {
+      DatabaseConstants.idColumn: id,
+      ...estimation.toJson(),
+      DatabaseConstants.isLockedColumn: estimation.isLocked ? 1 : 0,
+    };
+    final columns = row.keys.join(', ');
+    final placeholders = List.filled(row.length, '?').join(', ');
+    await _wrapper.writeTransaction(
+      (tx) => tx.execute(
+        'INSERT INTO $_table ($columns) VALUES ($placeholders)',
+        row.values.toList(),
+      ),
+    );
+    return CostEstimateDto.fromRow(row);
+  }
+
+  @override
+  Future<CostEstimateDto?> updateEstimationNameById({
+    required String id,
+    required String newName,
+  }) => _updateColumnById(id, DatabaseConstants.estimateNameColumn, newName);
+
+  @override
+  Future<CostEstimateDto?> updateEstimationLockById({
+    required String id,
+    required bool isLocked,
+  }) =>
+      _updateColumnById(id, DatabaseConstants.isLockedColumn, isLocked ? 1 : 0);
+
+  @override
+  Future<bool> deleteEstimationRowById(String id) async {
+    if (!await _phoneHasRow(id)) return false;
+    await _wrapper.writeTransaction(
+      (tx) => tx.execute(
+        'DELETE FROM $_table WHERE ${DatabaseConstants.idColumn} = ?',
+        [id],
+      ),
+    );
+    return true;
+  }
+
+  // TODO: [CA-1451] Let the upload skip an update the server no longer finds, so one refused write does not block the queue.
+  // https://ripplearc.youtrack.cloud/issue/CA-1451
+  Future<CostEstimateDto?> _updateColumnById(
+    String id,
+    String column,
+    Object value,
+  ) async {
+    final rows = await _wrapper.getAll(_buildSelectByIdSql(), [id]);
+    if (rows.isEmpty) return null;
+    if (rows.first[column] == value) return CostEstimateDto.fromRow(rows.first);
+    await _wrapper.writeTransaction(
+      (tx) => tx.execute(
+        'UPDATE $_table SET $column = ? '
+        'WHERE ${DatabaseConstants.idColumn} = ?',
+        [value, id],
+      ),
+    );
+    final updatedRows = await _wrapper.getAll(_buildSelectByIdSql(), [id]);
+    return updatedRows.isEmpty
+        ? null
+        : CostEstimateDto.fromRow(updatedRows.first);
+  }
+
+  Future<bool> _phoneHasRow(String id) async =>
+      (await _wrapper.getAll(_buildSelectByIdSql(), [id])).isNotEmpty;
 }

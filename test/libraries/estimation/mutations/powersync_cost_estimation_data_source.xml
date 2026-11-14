@@ -78,6 +78,74 @@
         <regex pattern="\(dedupeWith != null \? mapped\.distinct\(dedupeWith\) : mapped\)" dotAll="true" id="ds.watch.skip_dedupe">
             <mutation text="mapped"/>
         </regex>
+        <!-- WRITES: insert mints an id only when the row has none -->
+        <regex pattern="estimation\.id\.isEmpty \? uuid\.v4\(\) : estimation\.id" dotAll="true" id="ds.insert.always_mint_id">
+            <mutation text="uuid.v4()"/>
+        </regex>
+        <regex pattern="estimation\.id\.isEmpty \? uuid\.v4\(\) : estimation\.id" dotAll="true" id="ds.insert.never_mint_id">
+            <mutation text="estimation.id"/>
+        </regex>
+
+        <!-- WRITES: is_locked is stored as 1 / 0 -->
+        <regex pattern="estimation\.isLocked \? 1 : 0" dotAll="true" id="ds.insert.invert_locked_encoding">
+            <mutation text="estimation.isLocked ? 0 : 1"/>
+        </regex>
+        <regex pattern="DatabaseConstants\.isLockedColumn, isLocked \? 1 : 0\)" dotAll="true" id="ds.lock.invert_locked_encoding">
+            <mutation text="DatabaseConstants.isLockedColumn, isLocked ? 0 : 1)"/>
+        </regex>
+
+        <regex pattern="return true;" dotAll="true" id="ds.write.report_false_after_write">
+            <mutation text="return false;"/>
+        </regex>
+
+        <regex pattern="'DELETE FROM \$_table WHERE" dotAll="true" id="ds.delete.keeps_row">
+            <mutation text="'SELECT id FROM $_table WHERE"/>
+        </regex>
+
+        <!-- WRITES: insert drops its transaction -->
+        <regex pattern="await _wrapper\.writeTransaction\(\s*\(tx\) =&gt; tx\.execute\(\s*'INSERT INTO \$_table \(\$columns\) VALUES \(\$placeholders\)',\s*row\.values\.toList\(\),\s*\),\s*\);" dotAll="true" id="ds.insert.skip_write">
+            <mutation text=""/>
+        </regex>
+        <!-- WRITES: an update of a row the phone lacks writes nothing and returns null -->
+        <regex pattern="if \(rows\.isEmpty\) return null;" dotAll="true" id="ds.update.write_even_when_row_missing">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(rows\.isEmpty\) return null;" dotAll="true" id="ds.update.never_write">
+            <mutation text="return null;"/>
+        </regex>
+
+        <!-- WRITES: a value the row already has is not written again -->
+        <regex pattern="if \(rows\.first\[column\] == value\) return CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.update.write_unchanged_value">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="rows\.first\[column\] == value" dotAll="true" id="ds.update.skip_changed_value">
+            <mutation text="rows.first[column] != value"/>
+        </regex>
+
+        <!-- WRITES: the answer is the row as it now is on the phone -->
+        <regex pattern="return updatedRows\.isEmpty\s*\?\s*null\s*:\s*CostEstimateDto\.fromRow\(updatedRows\.first\);" dotAll="true" id="ds.update.return_nothing_after_write">
+            <mutation text="return null;"/>
+        </regex>
+
+        <regex pattern="return updatedRows\.isEmpty\s*\?\s*null\s*:\s*CostEstimateDto\.fromRow\(updatedRows\.first\);" dotAll="true" id="ds.update.invert_empty_after_write">
+            <mutation text="return updatedRows.isNotEmpty ? null : CostEstimateDto.fromRow(updatedRows.first);"/>
+        </regex>
+
+        <!-- WRITES: parameters and column of an update -->
+        <regex pattern="\[value, id\]," dotAll="true" id="ds.update.swap_parameters">
+            <mutation text="[id, value],"/>
+        </regex>
+        <regex pattern="_updateColumnById\(id, DatabaseConstants\.estimateNameColumn, newName\)" dotAll="true" id="ds.rename.wrong_column">
+            <mutation text="_updateColumnById(id, DatabaseConstants.updatedAtColumn, newName)"/>
+        </regex>
+        <regex pattern="_updateColumnById\(id, DatabaseConstants\.isLockedColumn, isLocked \? 1 : 0\)" dotAll="true" id="ds.lock.wrong_column">
+            <mutation text="_updateColumnById(id, DatabaseConstants.estimateNameColumn, isLocked ? 1 : 0)"/>
+        </regex>
+
+        <!-- WRITES: the phone-has-row check used by delete -->
+        <regex pattern="\(await _wrapper\.getAll\(_buildSelectByIdSql\(\), \[id\]\)\)\.isNotEmpty" dotAll="true" id="ds.delete.row_check_inverted">
+            <mutation text="(await _wrapper.getAll(_buildSelectByIdSql(), [id])).isEmpty"/>
+        </regex>
     </rules>
 
     <commands>
