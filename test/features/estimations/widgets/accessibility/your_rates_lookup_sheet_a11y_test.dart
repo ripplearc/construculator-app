@@ -252,6 +252,44 @@ void main() {
       expect(announcements, [_l10n.yourRatesLoadError]);
     });
 
+    testWidgets('a11y: a second failed retry announces the message again', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      database.getAllError = StateError('database locked');
+      final announcements = <String>[];
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockDecodedMessageHandler<dynamic>(
+        SystemChannels.accessibility,
+        (message) async {
+          final event = message as Map<Object?, Object?>;
+          if (event['type'] == 'announce') {
+            final data = event['data']! as Map<Object?, Object?>;
+            announcements.add(data['message']! as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => messenger.setMockDecodedMessageHandler<dynamic>(
+          SystemChannels.accessibility,
+          null,
+        ),
+      );
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('your_rates_try_again_button')));
+      await tester.pumpAndSettle();
+
+      expect(announcements, [
+        _l10n.yourRatesLoadError,
+        _l10n.yourRatesLoadError,
+      ]);
+    });
+
     testWidgets('a11y: a retry that works announces nothing', (tester) async {
       await setupA11yTest(tester);
       database.getAllError = StateError('database locked');
