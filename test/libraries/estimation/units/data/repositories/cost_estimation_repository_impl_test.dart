@@ -2117,6 +2117,107 @@ void main() {
       );
     });
 
+    group('a write on the last row of a full list', () {
+      const lastRowOfFirstPage = 'estimate-20';
+      const newerRowId = 'estimate-newer';
+
+      Future<StreamQueue<Either<Failure, List<CostEstimate>>>>
+      watchFirstPageOfThree() async {
+        seedEstimations(defaultPageDatasetSize * 3);
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+        final queue = StreamQueue(repository.watchEstimations(testProjectId));
+        await queue.next;
+        return queue;
+      }
+
+      Future<void> syncNewerRowFirst(
+        StreamQueue<Either<Failure, List<CostEstimate>>> queue,
+      ) async {
+        fakePhoneDatabase.seedRows([
+          buildEstimationMap(
+            id: newerRowId,
+            projectId: testProjectId,
+            estimateName: newerRowId,
+            createdAt: '2026-02-01T00:00:00.000Z',
+          ),
+        ]);
+        while (true) {
+          final list = (await queue.next).getRightOrNull()!;
+          if (list.any((e) => e.id == newerRowId)) return;
+        }
+      }
+
+      Future<List<CostEstimate>> grownListAfterLoadMore(
+        StreamQueue<Either<Failure, List<CostEstimate>>> queue,
+      ) async {
+        await repository.loadMoreEstimations(testProjectId);
+        while (true) {
+          final list = (await queue.next).getRightOrNull()!;
+          if (list.length > defaultPageDatasetSize) return list;
+        }
+      }
+
+      test(
+        'a delete stays hidden when a newer row pushes the row out of the list and the list grows',
+        () async {
+          final queue = await watchFirstPageOfThree();
+          await repository.deleteEstimation(lastRowOfFirstPage, testProjectId);
+          await syncNewerRowFirst(queue);
+
+          final grown = await grownListAfterLoadMore(queue);
+
+          expect(grown.map((e) => e.id), isNot(contains(lastRowOfFirstPage)));
+          expect(grown.map((e) => e.id), contains('estimate-19'));
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a rename stays shown when a newer row pushes the row out of the list and the list grows',
+        () async {
+          final queue = await watchFirstPageOfThree();
+          await repository.renameEstimation(
+            estimationId: lastRowOfFirstPage,
+            newName: 'Renamed Estimate',
+            projectId: testProjectId,
+          );
+          await syncNewerRowFirst(queue);
+
+          final grown = await grownListAfterLoadMore(queue);
+
+          expect(
+            grown.singleWhere((e) => e.id == lastRowOfFirstPage).estimateName,
+            'Renamed Estimate',
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a lock stays shown when a newer row pushes the row out of the list and the list grows',
+        () async {
+          final queue = await watchFirstPageOfThree();
+          await repository.changeLockStatus(
+            estimationId: lastRowOfFirstPage,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await syncNewerRowFirst(queue);
+
+          final grown = await grownListAfterLoadMore(queue);
+
+          expect(
+            grown
+                .singleWhere((e) => e.id == lastRowOfFirstPage)
+                .lockStatus
+                .isLocked,
+            isTrue,
+          );
+          await queue.cancel();
+        },
+      );
+    });
+
     group('renameEstimation', () {
       const String newEstimateName = 'Renamed Estimate';
 

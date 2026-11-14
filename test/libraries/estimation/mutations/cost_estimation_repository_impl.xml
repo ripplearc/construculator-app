@@ -211,6 +211,42 @@
             <mutation text="publish(Left(_handleError(e,
  'reading estimations from the phone'"/>
         </regex>
+
+        <!-- RULE 58: A row missing from a list is taken as proof without asking whether it could have been pushed out -->
+        <regex pattern="(if \(rowIsAbsent &amp;&amp; !_absenceProvesEdit\(edit, estimates, view\)\) return false;)" dotAll="true" id="repo.absence.skip_proof_check">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE 59: A full list counts as a short one -->
+        <regex pattern="(if \(estimates\.length &lt; view\.limit\) return true;)" dotAll="true" id="repo.absence.full_list_counts_as_short">
+            <mutation text="if (estimates.length &lt;= view.limit) return true;"/>
+        </regex>
+
+        <!-- RULE 60: A short list never proves an absence -->
+        <regex pattern="(if \(estimates\.length &lt; view\.limit\) return true;)" dotAll="true" id="repo.absence.short_list_proves_nothing">
+            <mutation text="if (estimates.length &gt; view.limit) return true;"/>
+        </regex>
+
+        <!-- RULE 61: A row that sorts outside a full list proves its absence -->
+        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.ignore_sort_position">
+            <mutation text="return row != null;"/>
+        </regex>
+
+        <!-- RULE 62: A row never seen on the phone proves its absence from a full list -->
+        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.unseen_row_proves_absence">
+            <mutation text="return row == null || _sortsBefore(row, estimates.last, view);"/>
+        </regex>
+
+        <!-- RULE 63: A full list never proves an absence -->
+        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.full_list_never_proves">
+            <mutation text="return false;"/>
+        </regex>
+
+        <!-- RULE 64: The edit forgets which row was on the phone -->
+        <regex pattern="(rowOnPhone: _rowOnPhone\(projectId, estimationId\),)" dotAll="true" id="repo.absence.forget_row_on_phone">
+            <mutation text="rowOnPhone: null,"/>
+        </regex>
+
     </rules>
 
     <commands>
