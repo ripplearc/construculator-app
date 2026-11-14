@@ -62,7 +62,8 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
 
   /// Debounce applied to a [YourRatesSearched] with a non-empty query, and to a
   /// [YourRatesRecentsQueried] with a query that is not blank. An empty query
-  /// (every saved rate), a blank one and [YourRatesRefreshRecents] run at once.
+  /// (every saved rate), a blank one, [YourRatesRefreshRecents] and a
+  /// [YourRatesSearched] with [YourRatesSearched.immediate] run at once.
   /// Defaults to [_kQueryDebounceDuration]; overridable so tests can pass
   /// [Duration.zero] instead of waiting out the real debounce window.
   YourRatesBloc({

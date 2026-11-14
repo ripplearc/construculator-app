@@ -681,6 +681,23 @@ void main() {
       );
 
       blocTest<YourRatesBloc, YourRatesState>(
+        'a typed recents query that starts while a retry runs emits no '
+        'Loading, only the SearchResults',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
         'a refresh of the recents that starts while a retry runs emits no '
         'Loading, only the Loaded',
         build: () => bloc,

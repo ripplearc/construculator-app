@@ -98,7 +98,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   final _searchController = TextEditingController();
   late EquipmentPricingMethod _method = widget.method;
   YourRateEntry? _selectedEntry;
-  YourRatesState? _previousState;
 
   @override
   void initState() {
@@ -132,12 +131,6 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     );
   }
 
-  void _onStateChanged(BuildContext context, YourRatesState state) {
-    final wasRetrying = _previousState is YourRatesRetrying;
-    _previousState = state;
-    if (wasRetrying && state is YourRatesError) _announceFailedRetry(context);
-  }
-
   void _onRowTap(YourRateEntry entry) {
     setState(() {
       _selectedEntry = _selectedEntry?.id == entry.id ? null : entry;
@@ -167,7 +160,9 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return BlocConsumer<YourRatesBloc, YourRatesState>(
-      listener: _onStateChanged,
+      listenWhen: (previous, current) =>
+          previous is YourRatesRetrying && current is YourRatesError,
+      listener: (context, _) => _announceFailedRetry(context),
       builder: (context, state) {
         final entries = _entriesOf(state);
         final selected = entries
