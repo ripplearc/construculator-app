@@ -607,9 +607,7 @@ void main() {
           'ignoring taps, until the search ends', (tester) async {
         await openFailedSheetAndHoldRetry(tester);
 
-        await tester.enterText(find.byKey(CoreSearchBox.textFieldKey), '1');
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pumpAndSettle();
+        await search(tester, '1');
         final readsBefore = yourRatesReads();
         await tester.tap(find.byKey(tryAgainKey));
         await tester.pumpAndSettle();
@@ -629,9 +627,7 @@ void main() {
         await tester.tap(find.byKey(tryAgainKey));
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byKey(CoreSearchBox.textFieldKey), '1');
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.pumpAndSettle();
+        await search(tester, '1');
 
         expect(find.byKey(errorKey), findsOneWidget);
         expect(find.text(l10n.yourRatesTryAgain), findsOneWidget);
