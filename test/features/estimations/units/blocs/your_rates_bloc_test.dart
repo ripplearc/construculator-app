@@ -14,6 +14,7 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -341,6 +342,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -348,6 +350,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -412,6 +415,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -419,6 +423,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -591,6 +596,7 @@ void main() {
       YourRatesBloc zeroDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: Duration.zero,
       );
 
@@ -623,6 +629,7 @@ void main() {
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
+        clock: Modular.get<Clock>(),
         queryDebounce: const Duration(days: 1),
       );
 
@@ -808,6 +815,7 @@ void main() {
         build: () => YourRatesBloc(
           repository: Modular.get<YourRatesRepository>(),
           companyResolver: Modular.get<CurrentCompanyResolver>(),
+          clock: Modular.get<Clock>(),
           saveTimeLimit: Duration.zero,
         ),
         act: (bloc) async {
@@ -828,6 +836,44 @@ void main() {
         verify: (_) {
           expect(database.insertedRows, isEmpty);
         },
+      );
+
+      const oneHour = Duration(hours: 1);
+      late FakeClockImpl saveClock;
+      late Completer<void> heldWrite;
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'ends in SaveFailed with a timeout when the company look-up used up '
+        'the save limit and the phone is still holding the write',
+        setUp: () {
+          saveClock = FakeClockImpl();
+          heldWrite = database.insertGate = Completer();
+        },
+        // ignore: no_direct_instantiation, reason: needs the FakeClockImpl the test moves forward, which Modular's registration can't supply per-test
+        build: () => YourRatesBloc(
+          repository: Modular.get<YourRatesRepository>(),
+          companyResolver: Modular.get<CurrentCompanyResolver>(),
+          clock: saveClock,
+          saveTimeLimit: oneHour,
+        ),
+        act: (bloc) async {
+          final lookUp = fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(YourRatesSaveRequested(entry()));
+          await bloc.stream.firstWhere((s) => s is YourRatesSaving);
+          saveClock.advance(oneHour);
+          lookUp.complete();
+          await bloc.stream.firstWhere((s) => s is YourRatesSaveFailed);
+          heldWrite.complete();
+        },
+        expect: () => [
+          isA<YourRatesSaving>(),
+          isA<YourRatesSaveFailed>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.timeoutError,
+          ),
+        ],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(

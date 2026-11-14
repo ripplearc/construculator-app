@@ -19,7 +19,7 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
     required this.dataSource,
     required this.refusalDataSource,
     required this.authRepository,
-    this.saveTimeLimit = const Duration(seconds: 2),
+    this.saveTimeLimit = yourRatesSaveTimeLimit,
   });
 
   final YourRatesDataSource dataSource;

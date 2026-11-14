@@ -4,6 +4,10 @@ import 'package:construculator/features/estimation/domain/entities/refused_your_
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
+/// How long one save to Your rates may take in all, from the company look-up
+/// to the write on the phone, before it counts as failed.
+const Duration yourRatesSaveTimeLimit = Duration(seconds: 2);
+
 /// Repository interface for the contractor's personal saved-rate book
 /// ("Your rates"): searching, looking up, and saving [YourRateEntry] rows.
 ///
