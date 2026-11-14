@@ -19,9 +19,6 @@
         <regex pattern="b\.savedAt\.compareTo\(a\.savedAt\)" dotAll="false" id="your_rates_repo.order.reverse_tiebreak">
             <mutation text="a.savedAt.compareTo(b.savedAt)"/>
         </regex>
-        <regex pattern="byRecency != 0 \? byRecency : " dotAll="false" id="your_rates_repo.order.drop_tiebreak">
-            <mutation text="byRecency != 0 ? byRecency : 0 * "/>
-        </regex>
         <regex pattern="\.\.sort\(_mostRecentlyUsedFirst\)" dotAll="false" id="your_rates_repo.order.skip_sort">
             <mutation text=""/>
         </regex>
@@ -36,78 +33,183 @@
         </regex>
         <regex pattern="words\.any\(name\.contains\)" dotAll="false" id="your_rates_repo.search.any_to_every">
             <mutation text="words.every(name.contains)"/>
-
         </regex>
-
-        <regex pattern="refusal == null \|\| refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.keep_when_amounts_match">
+        <regex pattern="final name = entry\.itemName\.toLowerCase\(\);" dotAll="false" id="your_rates_repo.search.skip_lowercase_name">
+            <mutation text="final name = entry.itemName;"/>
+        </regex>
+        <regex pattern="query\s*\.toLowerCase\(\)" dotAll="false" id="your_rates_repo.search.skip_lowercase_query">
+            <mutation text="query"/>
+        </regex>
+        <regex pattern="\.where\(\(word\) =&gt; word\.isNotEmpty\)" dotAll="false" id="your_rates_repo.search.keep_empty_words">
+            <mutation text=".where((word) =&gt; true)"/>
+        </regex>
+        <regex pattern="if \(companyId\.trim\(\)\.isEmpty\) return" dotAll="false" id="your_rates_repo.guard.search_and_get_blank_company">
+            <mutation text="if (false) return"/>
+        </regex>
+        <regex pattern="if \(companyId\.trim\(\)\.isEmpty\)" dotAll="false" id="your_rates_repo.guard.search_and_get_skip_trim">
+            <mutation text="if (companyId.isEmpty)"/>
+        </regex>
+        <regex pattern="if \(entry\.companyId\.trim\(\)\.isEmpty\) return" dotAll="false" id="your_rates_repo.guard.save_blank_company">
+            <mutation text="if (false) return"/>
+        </regex>
+        <regex pattern="if \(entry\.companyId\.trim\(\)\.isEmpty\)" dotAll="false" id="your_rates_repo.guard.save_skip_trim">
+            <mutation text="if (entry.companyId.isEmpty)"/>
+        </regex>
+        <regex pattern="matches\.length != 1" dotAll="false" id="your_rates_repo.get.single_match_only">
+            <mutation text="matches.length &gt; 1"/>
+        </regex>
+        <regex pattern="refusal == null \|\| refusal\.refusedAmount != dto\.rateAmount" dotAll="false" id="your_rates_repo.mask.keep_when_amounts_match">
             <mutation text="refusal == null &amp;&amp; refusal.refusedAmount != dto.rateAmount"/>
         </regex>
-
-        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" id="your_rates.mask.compare_equal">
+        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" dotAll="false" id="your_rates_repo.mask.compare_equal">
             <mutation text="refusal.refusedAmount == dto.rateAmount"/>
         </regex>
-
-        <regex pattern="if \(acceptedAmount != null\)" id="your_rates.mask.drop_null_accepted">
-            <mutation text="if (acceptedAmount == null)"/>
-        </regex>
-
-        <regex pattern="lastAccepted\.add\(dto\.withRateAmount\(acceptedAmount\)\)" id="your_rates.mask.keep_refused_price">
-            <mutation text="lastAccepted.add(dto)"/>
-        </regex>
-
-        <regex pattern="refusal\.refusedRowId: refusal," id="your_rates.mask.key_by_wrong_id">
-            <mutation text="refusal.id: refusal,"/>
-        </regex>
-
-        <regex pattern="refusals\[dto\.id\]" id="your_rates.mask.look_up_wrong_row">
-            <mutation text="refusals[dto.companyId]"/>
-        </regex>
-
-        <regex pattern="await _forgetRefusalOf\(normalizedEntry\);" id="your_rates.save.keep_refusal">
-            <mutation text="// kept"/>
-        </regex>
-
-        <regex pattern="asLastAccepted: false," id="your_rates.save.check_filtered_rows">
-            <mutation text="asLastAccepted: true,"/>
-        </regex>
-
-        <regex pattern="\(refusal\) =&gt; Right\(refusal\?\.toEntity\(\)\)" id="your_rates.watch.drop_refusal">
-            <mutation text="(refusal) =&gt; const Right(null)"/>
-        </regex>
-
-        <regex pattern="sink\.add\(Left\(_handleError\(error\)\)\)" id="your_rates.watch.swallow_error">
-            <mutation text="sink.add(const Right(null))"/>
-        </regex>
-
-        <regex pattern="category: category\.toJson\(\),\s*itemName: itemName," id="your_rates.watch.wrong_category">
-            <mutation text="category: 'material', itemName: itemName,"/>
-        </regex>
-
-        <regex pattern="companyId: companyId,\s*category: category\.toJson\(\),\s*itemName: itemName,\s*equipmentMethod: equipmentMethod\?\.toJson\(\),\s*\);\s*return const Right\(null\);" id="your_rates.shown.skip_write">
-            <mutation text="return const Right(null);"/>
-        </regex>
-
-        <regex pattern="equipmentMethod: equipmentMethod\?\.toJson\(\),\s*\);\s*return const Right\(null\);" id="your_rates.shown.wrong_method">
-            <mutation text="equipmentMethod: null, ); return const Right(null);"/>
-        </regex>
-
-        <regex pattern="refusal\.userId == userId" dotAll="false" id="your_rates_repo.refusal.any_user">
+        <regex pattern="refusal == null \|\| refusal\.refusedAmount != dto\.rateAmount" dotAll="false" id="your_rates_repo.mask.ignore_amount">
             <mutation text="true"/>
         </regex>
-        <regex pattern="refusals\[dto\.id\]" dotAll="false" id="your_rates_repo.refusal.match_wrong_key">
-            <mutation text="refusals[dto.itemName]"/>
-        </regex>
-        <regex pattern="refusal\.refusedAmount != dto\.rateAmount" dotAll="false" id="your_rates_repo.refusal.ignore_amount">
-            <mutation text="false"/>
-        </regex>
-        <regex pattern="if \(acceptedAmount != null\)" dotAll="false" id="your_rates_repo.refusal.negate_accepted">
+        <regex pattern="if \(acceptedAmount != null\)" dotAll="false" id="your_rates_repo.mask.drop_null_accepted">
             <mutation text="if (acceptedAmount == null)"/>
         </regex>
-        <regex pattern="dto\.withRateAmount\(acceptedAmount\)" dotAll="false" id="your_rates_repo.refusal.keep_refused_amount">
-            <mutation text="dto"/>
+        <regex pattern="lastAccepted\.add\(dto\.withRateAmount\(acceptedAmount\)\)" dotAll="false" id="your_rates_repo.mask.keep_refused_price">
+            <mutation text="lastAccepted.add(dto)"/>
         </regex>
-        <regex pattern="await _forgetRefusalOf\(normalizedEntry\);" dotAll="false" id="your_rates_repo.forget.skip">
-            <mutation text=";"/>
+        <regex pattern="refusal\.refusedRowId: refusal," dotAll="false" id="your_rates_repo.mask.key_by_wrong_field">
+            <mutation text="refusal.companyId: refusal,"/>
+        </regex>
+        <regex pattern="refusals\[dto\.id\]" dotAll="false" id="your_rates_repo.mask.look_up_wrong_row">
+            <mutation text="refusals[dto.companyId]"/>
+        </regex>
+        <regex pattern="refusal\.userId == userId" dotAll="false" id="your_rates_repo.mask.any_user">
+            <mutation text="true"/>
+        </regex>
+        <regex pattern="\(refusal\) =&gt; Right\(refusal\?\.toEntity\(\)\)" dotAll="false" id="your_rates_repo.watch.drop_refusal">
+            <mutation text="(refusal) =&gt; const Right(null)"/>
+        </regex>
+        <regex pattern="sink\.add\(Left\(_handleError\(error\)\)\)" dotAll="false" id="your_rates_repo.watch.swallow_error">
+            <mutation text="sink.add(const Right(null))"/>
+        </regex>
+        <regex pattern="if \(userId == null\) return Stream\.value\(const Right\(null\)\);" dotAll="false" id="your_rates_repo.watch.no_user_guard">
+            <mutation text="if (userId != null) return Stream.value(const Right(null));"/>
+        </regex>
+        <regex pattern="category: category\.toJson\(\),\s*itemName: itemName," dotAll="false" id="your_rates_repo.watch_and_shown.wrong_category">
+            <mutation text="category: 'material', itemName: itemName,"/>
+        </regex>
+        <regex pattern="equipmentMethod: equipmentMethod\?\.toJson\(\)," dotAll="false" id="your_rates_repo.watch_and_shown.wrong_method">
+            <mutation text="equipmentMethod: null,"/>
+        </regex>
+        <regex pattern="if \(userId == null\) return const Right\(null\);\s*try \{" dotAll="false" id="your_rates_repo.shown.skip_write">
+            <mutation text="if (userId == null || userId != null) return const Right(null);&#10;    try {"/>
+        </regex>
+        <regex pattern="if \(userId == null\) return const Right\(null\);\s*try \{" dotAll="false" id="your_rates_repo.shown.no_user_guard">
+            <mutation text="try {"/>
+        </regex>
+        <regex pattern="await dataSource\.stampLastUsedAtById\(rateId\);" dotAll="false" id="your_rates_repo.use.skip_stamp">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(saved != null\) await _forgetRefusalOf\(saved\.entry\);" dotAll="false" id="your_rates_repo.save.forget_skipped">
+            <mutation text="if (saved != null) {}"/>
+        </regex>
+        <regex pattern="if \(saved != null\) await" dotAll="false" id="your_rates_repo.save.forget_on_failure">
+            <mutation text="await"/>
+        </regex>
+        <regex pattern="within \?\? saveTimeLimit" dotAll="false" id="your_rates_repo.save.ignore_within">
+            <mutation text="saveTimeLimit"/>
+        </regex>
+        <regex pattern="errorType: EstimationErrorType\.timeoutError" dotAll="false" id="your_rates_repo.save.timeout_wrong_error">
+            <mutation text="errorType: EstimationErrorType.unexpectedDatabaseError"/>
+        </regex>
+        <regex pattern="_pendingUndo = _undoWhenSaved\(saving\);" dotAll="false" id="your_rates_repo.save.skip_undo_after_timeout">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(pendingUndo != null\) await pendingUndo;" dotAll="false" id="your_rates_repo.save.skip_wait_for_pending_undo">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(saved == null\) return;" dotAll="false" id="your_rates_repo.save.undo_when_save_failed">
+            <mutation text="if (saved != null) return;"/>
+        </regex>
+        <regex pattern="await saved\.undo\(\);" dotAll="false" id="your_rates_repo.save.undo_skipped">
+            <mutation text="await saved.undo;"/>
+        </regex>
+        <regex pattern="result\.fold\(Left\.new, \(_\) =&gt; const Right\(null\)\)" dotAll="false" id="your_rates_repo.save.return_failure_as_success">
+            <mutation text="const Right(null)"/>
+        </regex>
+        <regex pattern="itemName: entry\.itemName\.trim\(\)," dotAll="false" id="your_rates_repo.phone.skip_trim_name">
+            <mutation text="itemName: entry.itemName,"/>
+        </regex>
+        <regex pattern="entryLabel: _normalizeLabel\(entry\.entryLabel\) \?\? clearField," dotAll="false" id="your_rates_repo.phone.skip_label_normalize">
+            <mutation text="entryLabel: entry.entryLabel,"/>
+        </regex>
+        <regex pattern="return \(trimmed == null \|\| trimmed\.isEmpty\) \? null : trimmed;" dotAll="false" id="your_rates_repo.phone.blank_label_kept">
+            <mutation text="return trimmed;"/>
+        </regex>
+        <regex pattern="label\?\.trim\(\)" dotAll="false" id="your_rates_repo.phone.label_not_trimmed">
+            <mutation text="label"/>
+        </regex>
+        <regex pattern="final nameKey = _matchKey\(itemName\);" dotAll="false" id="your_rates_repo.phone.name_key_raw">
+            <mutation text="final nameKey = itemName;"/>
+        </regex>
+        <regex pattern="_matchKey\(entry\.itemName\) == nameKey" dotAll="false" id="your_rates_repo.phone.name_key_equal">
+            <mutation text="_matchKey(entry.itemName) != nameKey"/>
+        </regex>
+        <regex pattern="candidate\.equipmentMethod ==\s*normalizedEntry\.equipmentMethod" dotAll="false" id="your_rates_repo.phone.method_match">
+            <mutation text="candidate.equipmentMethod != normalizedEntry.equipmentMethod"/>
+        </regex>
+        <regex pattern="asLastAccepted: false," dotAll="false" id="your_rates_repo.phone.existing_from_accepted_only">
+            <mutation text="asLastAccepted: true,"/>
+        </regex>
+        <regex pattern="\.map\(\(candidate\) =&gt; candidate\.id\)\.toSet\(\)" dotAll="false" id="your_rates_repo.phone.accepted_ids_blank">
+            <mutation text=".map((candidate) =&gt; '').toSet()"/>
+        </regex>
+        <regex pattern="!acceptedIds\.contains\(candidate\.id\)" dotAll="false" id="your_rates_repo.phone.never_accepted_inverted">
+            <mutation text="acceptedIds.contains(candidate.id)"/>
+        </regex>
+        <regex pattern="\.where\(\(candidate\) =&gt; acceptedIds\.contains\(candidate\.id\)\)" dotAll="false" id="your_rates_repo.phone.accepted_inverted">
+            <mutation text=".where((candidate) =&gt; !acceptedIds.contains(candidate.id))"/>
+        </regex>
+        <regex pattern="await _deleteRows\(neverAccepted\);" dotAll="false" id="your_rates_repo.phone.skip_delete_never_accepted">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="await dataSource\.deleteRateById\(row\.id\);" dotAll="false" id="your_rates_repo.phone.delete_loop_skips_rows">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="YourRateEntryDto\.fromEntity\(normalizedEntry\)" dotAll="false" id="your_rates_repo.phone.insert_untrimmed_entry">
+            <mutation text="YourRateEntryDto.fromEntity(entry)"/>
+        </regex>
+        <regex pattern="undo: \(\) =&gt; dataSource\.deleteRateById\(inserted\.id\)," dotAll="false" id="your_rates_repo.phone.insert_undo_skipped">
+            <mutation text="undo: () async {},"/>
+        </regex>
+        <regex pattern="dataSource\.deleteRateById\(inserted\.id\)" dotAll="false" id="your_rates_repo.phone.insert_undo_wrong_row">
+            <mutation text="dataSource.deleteRateById('')"/>
+        </regex>
+        <regex pattern="await dataSource\.updateRate\(\s*replaced\.id," dotAll="false" id="your_rates_repo.replace.update_wrong_row">
+            <mutation text="await dataSource.updateRate('',"/>
+        </regex>
+        <regex pattern="rate: normalizedEntry\.rate," dotAll="false" id="your_rates_repo.replace.keep_old_price">
+            <mutation text="rate: replaced.rate,"/>
+        </regex>
+        <regex pattern="unit: normalizedEntry\.unit \?\? clearField," dotAll="false" id="your_rates_repo.replace.keep_old_unit">
+            <mutation text="unit: replaced.unit,"/>
+        </regex>
+        <regex pattern="unit: normalizedEntry\.unit \?\? clearField," dotAll="false" id="your_rates_repo.replace.cannot_clear_unit">
+            <mutation text="unit: normalizedEntry.unit,"/>
+        </regex>
+        <regex pattern="savedAt: normalizedEntry\.savedAt," dotAll="false" id="your_rates_repo.replace.keep_old_saved_at">
+            <mutation text="savedAt: replaced.savedAt,"/>
+        </regex>
+        <regex pattern="undo: \(\) =&gt; dataSource\.updateRate\(\s*replaced\.id,\s*YourRateEntryDto\.fromEntity\(replaced\),\s*\)," dotAll="false" id="your_rates_repo.replace.undo_skipped">
+            <mutation text="undo: () async {},"/>
+        </regex>
+        <regex pattern="undo: \(\) =&gt; dataSource\.updateRate\(\s*replaced\.id," dotAll="false" id="your_rates_repo.replace.undo_wrong_row">
+            <mutation text="undo: () =&gt; dataSource.updateRate('',"/>
+        </regex>
+        <regex pattern="YourRateEntryDto\.fromEntity\(replaced\)," dotAll="false" id="your_rates_repo.replace.undo_restores_new_price">
+            <mutation text="YourRateEntryDto.fromEntity(updated),"/>
+        </regex>
+        <regex pattern="if \(userId == null\) return;" dotAll="false" id="your_rates_repo.forget.no_user_guard">
+            <mutation text="if (userId != null) return;"/>
+        </regex>
+        <regex pattern="await refusalDataSource\.deleteRefusalByItem\(" dotAll="false" id="your_rates_repo.forget.skip_delete">
+            <mutation text="await Future&lt;void&gt;.value("/>
         </regex>
         <regex pattern="companyId: entry\.companyId," dotAll="false" id="your_rates_repo.forget.wrong_company">
             <mutation text="companyId: 'other-company',"/>
@@ -121,13 +223,73 @@
         <regex pattern="equipmentMethod: entry\.equipmentMethod\?\.toJson\(\)," dotAll="false" id="your_rates_repo.forget.wrong_method">
             <mutation text="equipmentMethod: null,"/>
         </regex>
-        <regex pattern="asLastAccepted: false," dotAll="false" id="your_rates_repo.save.duplicate_check_on_filtered_rows">
-            <mutation text="asLastAccepted: true,"/>
+        <regex pattern="priceTheServerHolds != normalizedEntry\.rate\)" dotAll="false" id="your_rates_repo.replace.resend_never">
+            <mutation text="false)"/>
+        </regex>
+        <regex pattern="replaced\.rate == normalizedEntry\.rate &amp;&amp;" dotAll="false" id="your_rates_repo.replace.resend_when_price_differs">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="replaced\.rate == normalizedEntry\.rate &amp;&amp;" dotAll="false" id="your_rates_repo.replace.resend_negated">
+            <mutation text="replaced.rate != normalizedEntry.rate &amp;&amp;"/>
+        </regex>
+        <regex pattern="if \(accepted\.isNotEmpty\) \{" dotAll="false" id="your_rates_repo.phone.checks_run_when_accepted_empty">
+            <mutation text="if (accepted.isEmpty) {"/>
+        </regex>
+        <regex pattern="final failure = replacesRateId == null" dotAll="false" id="your_rates_repo.phone.collision_when_replacing">
+            <mutation text="final failure = replacesRateId != null"/>
+        </regex>
+        <regex pattern="_collisionFailure\(accepted, normalizedEntry\.entryLabel\)" dotAll="false" id="your_rates_repo.phone.skip_collision_check">
+            <mutation text="null"/>
+        </regex>
+        <regex pattern=": _missingRowFailure\(accepted, replacesRateId\);" dotAll="false" id="your_rates_repo.phone.skip_missing_row_check">
+            <mutation text=": null;"/>
+        </regex>
+        <regex pattern="if \(failure != null\) return Left\(failure\);" dotAll="false" id="your_rates_repo.phone.skip_return_failure">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="if \(accepted\.isEmpty \|\| replacesRateId == null\) \{" dotAll="false" id="your_rates_repo.phone.insert_only_when_both">
+            <mutation text="if (accepted.isEmpty &amp;&amp; replacesRateId == null) {"/>
+        </regex>
+        <regex pattern="if \(accepted\.isEmpty \|\| replacesRateId == null\) \{" dotAll="false" id="your_rates_repo.phone.insert_only_when_accepted_empty">
+            <mutation text="if (accepted.isEmpty) {"/>
+        </regex>
+        <regex pattern="if \(accepted\.isEmpty \|\| replacesRateId == null\) \{" dotAll="false" id="your_rates_repo.phone.insert_when_replacing">
+            <mutation text="if (accepted.isEmpty || replacesRateId != null) {"/>
+        </regex>
+        <regex pattern="accepted\.firstWhere\(\s*\(candidate\) =&gt; candidate\.id == replacesRateId," dotAll="false" id="your_rates_repo.phone.replace_other_row">
+            <mutation text="accepted.firstWhere((candidate) =&gt; candidate.id != replacesRateId,"/>
+        </regex>
+        <regex pattern="if \(label == null\) \{" dotAll="false" id="your_rates_repo.collision.label_null_flipped">
+            <mutation text="if (label != null) {"/>
+        </regex>
+        <regex pattern="errorType: EstimationErrorType\.duplicateEntry" dotAll="false" id="your_rates_repo.collision.entry_reported_as_label">
+            <mutation text="errorType: EstimationErrorType.duplicateLabel"/>
+        </regex>
+        <regex pattern="errorType: EstimationErrorType\.duplicateLabel" dotAll="false" id="your_rates_repo.collision.label_reported_as_entry">
+            <mutation text="errorType: EstimationErrorType.duplicateEntry"/>
+        </regex>
+        <regex pattern="_matchKey\(savedLabel\) == labelKey" dotAll="false" id="your_rates_repo.collision.labels_differ_collide">
+            <mutation text="_matchKey(savedLabel) != labelKey"/>
+        </regex>
+        <regex pattern="savedLabel != null &amp;&amp;" dotAll="false" id="your_rates_repo.collision.unlabeled_row_collides">
+            <mutation text="savedLabel == null &amp;&amp;"/>
+        </regex>
+        <regex pattern="return labelAlreadyUsed" dotAll="false" id="your_rates_repo.collision.free_label_collides">
+            <mutation text="return !labelAlreadyUsed"/>
+        </regex>
+        <regex pattern="return rowIsSaved" dotAll="false" id="your_rates_repo.missing_row.saved_row_missing">
+            <mutation text="return !rowIsSaved"/>
+        </regex>
+        <regex pattern="accepted\.any\(\s*\(candidate\) =&gt; candidate\.id == replacesRateId," dotAll="false" id="your_rates_repo.missing_row.other_id_counts">
+            <mutation text="accepted.any((candidate) =&gt; candidate.id != replacesRateId,"/>
+        </regex>
+        <regex pattern="errorType: EstimationErrorType\.notFoundError" dotAll="false" id="your_rates_repo.missing_row.wrong_error">
+            <mutation text="errorType: EstimationErrorType.duplicateEntry"/>
         </regex>
     </rules>
 
     <commands>
-        <command group="your_rates_repo" expected-return="0">flutter test test/features/estimations/units/data/repositories/your_rates_repository_impl_test.dart</command>
+        <command group="your_rates_repo" expected-return="0" timeout="120">fvm flutter test --no-pub test/features/estimations/units/data/repositories/your_rates_repository_impl_test.dart</command>
     </commands>
 
     <threshold failure="70"/>

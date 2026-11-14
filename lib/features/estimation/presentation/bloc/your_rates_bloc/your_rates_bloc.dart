@@ -223,6 +223,7 @@ class YourRatesBloc extends Bloc<YourRatesEvent, YourRatesState> {
     final result = await _repository.save(
       entry,
       within: saveTimeLimit - _clock.now().difference(startedAt),
+      replacesRateId: event.replacesRateId,
     );
     result.fold((failure) {
       final errorType = failure is EstimationFailure ? failure.errorType : null;
