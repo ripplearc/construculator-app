@@ -3743,5 +3743,35 @@
   "@costSectionEmptyEquipment": {
     "description": "Placeholder of the Equipment section while it holds no lines but the estimate does",
     "context": "CUJ 6 screen 6 (the equipment text); the Materials and Labor texts follow it: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionExamplesMaterial": "Sheets, lumber, fixtures, fasteners",
+  "@costSectionExamplesMaterial": {
+    "description": "Examples under the Materials section while the whole estimate is empty",
+    "context": "CUJ 3 screens 1 and 3: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionExamplesLabor": "Crew hours, day rates, subcontract",
+  "@costSectionExamplesLabor": {
+    "description": "Examples under the Labor section while the whole estimate is empty",
+    "context": "CUJ 3 screens 1 and 3: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "costSectionExamplesEquipment": "Rentals, delivery, fuel",
+  "@costSectionExamplesEquipment": {
+    "description": "Examples under the Equipment section while the whole estimate is empty",
+    "context": "CUJ 3 screens 1 and 3: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
+  },
+  "emptyEstimateTitle": "No costs yet",
+  "@emptyEstimateTitle": {
+    "description": "Bold title of the message shown while the whole estimate is empty",
+    "context": "CUJ 3 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "emptyEstimateBody": "Every estimate starts with one cost. Pick a category and the form works out the total.",
+  "@emptyEstimateBody": {
+    "description": "Line under the title of the message shown while the whole estimate is empty",
+    "context": "CUJ 3 screen 1: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html"
+  },
+  "addFirstCostButton": "Add the first cost",
+  "@addFirstCostButton": {
+    "description": "Primary button shown while the whole estimate is empty; opens the category list",
+    "context": "CUJ 3 screens 1 and 3: https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html"
   }
 }
