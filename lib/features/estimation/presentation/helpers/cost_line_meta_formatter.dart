@@ -82,9 +82,6 @@ class CostLineMetaFormatter {
     };
   }
 
-  /// The rate part of a labor row, `· $52.00/h` for one person and
-  /// `· 3 people × $52.00/h` for a crew of two or more. Empty when the line
-  /// has no saved rate.
   static String _laborRateTail(
     LaborCostItem item,
     AppLocalizations l10n, {
