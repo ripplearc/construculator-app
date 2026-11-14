@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../helpers/cost_item_test_data_map_factory.dart';
+import '../../helpers/cost_line_test_items.dart';
 
 void main() {
   group('CostItemsBloc', () {
@@ -242,6 +243,23 @@ void main() {
   });
 
   group('CostItems events and states', () {
+    test('loaded state splits its lines by section, oldest first', () {
+      final state = CostItemsLoaded(
+        items: [
+          equipmentLine(id: 'q1'),
+          materialLine(id: 'm1'),
+          materialLine(id: 'm2'),
+        ],
+        materialsSubtotal: 0,
+        laborSubtotal: 0,
+        equipmentSubtotal: 0,
+      );
+
+      expect(state.materialLines.map((line) => line.id), ['m1', 'm2']);
+      expect(state.laborLines, isEmpty);
+      expect(state.equipmentLines.map((line) => line.id), ['q1']);
+    });
+
     test('requests for the same estimate are equal', () {
       expect(
         const CostItemsRequested('estimate-1'),
