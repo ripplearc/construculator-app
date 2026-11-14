@@ -8,8 +8,6 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// border and a white fill. Every card has the library's small card shadow. The
 /// highlight changes only the colours: it adds no shadow of its own, has no
 /// animation, and does not change the corners or padding.
-///
-// TODO: [CA-151] draw the estimate's cost lines inside this frame once the details screen is bound to data, and call clear on the highlight cubit from [onTap].
 class CostLineCardFrame extends StatelessWidget {
   static const double _cornerRadius = 14;
   static const double _horizontalPadding = 17;

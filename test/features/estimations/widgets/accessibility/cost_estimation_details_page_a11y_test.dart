@@ -154,7 +154,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeApp(theme: theme),
-        find.byKey(const Key('cost_estimation_details_tab_view')),
+        find.byKey(const Key('cost_sections_list')),
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
           await t.pumpAndSettle();

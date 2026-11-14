@@ -2657,4 +2657,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addFirstCostButton => 'Add the first cost';
+
+  @override
+  String get costItemsLoadFailed => 'Couldn\'t load the cost lines.';
+
+  @override
+  String get costItemsLoadFailedAgain => 'Still couldn\'t load the cost lines.';
+
+  @override
+  String get costItemsLoadFailedHint =>
+      'Nothing was deleted or changed. Try again, or close and reopen the estimate.';
+
+  @override
+  String get costItemsRetryButton => 'Try again';
 }

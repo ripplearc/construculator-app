@@ -2,17 +2,19 @@ import 'dart:async';
 
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/added_line_highlight_cubit/added_line_highlight_cubit.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_items_bloc/cost_items_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/estimate_summary_bloc/estimate_summary_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_cost_bottom_bar.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_cost_category_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/added_to_estimate_toast.dart';
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_sections_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -23,22 +25,22 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The cost estimation details page.
 ///
-/// Displays a tabbed view of [CostEstimationDetailsTabView] (Materials,
-/// Labours, Equipments) with a custom app bar, context-aware FAB for adding
-/// cost items, and a bottom bar with lock and preview actions.
+/// Displays the estimate's cost lines as one list of three sections
+/// (Materials, Labor, Equipment) under a custom app bar, with a bottom bar
+/// that holds the estimate total, `+ Add cost` and Preview.
 class CostEstimationDetailsPage extends StatefulWidget {
   final String estimationId;
 
   /// Router used for navigation (e.g. popping this page).
   final AppRouter router;
 
-  /// Builds an [EquipmentCostFormBloc] for the equipment cost sheet the FAB
-  /// launches. Injected rather than resolved with `Modular.get` here, since
+  /// Builds an [EquipmentCostFormBloc] for the equipment cost sheet that
+  /// `+ Add cost` opens. Injected rather than resolved with `Modular.get` here, since
   /// this page isn't a module file.
   final EquipmentCostFormBloc Function() equipmentCostFormBlocFactory;
 
-  /// Builds a [MaterialCostFormBloc] for the material cost sheet the FAB
-  /// launches. Same not-a-module-file reasoning as
+  /// Builds a [MaterialCostFormBloc] for the material cost sheet that
+  /// `+ Add cost` opens. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
   final MaterialCostFormBloc Function() materialCostFormBlocFactory;
 
@@ -51,6 +53,10 @@ class CostEstimationDetailsPage extends StatefulWidget {
   /// features. Same not-a-module-file reasoning as
   /// [equipmentCostFormBlocFactory].
   final YourRatesBloc Function() yourRatesBlocFactory;
+
+  /// Builds the [CostItemsBloc] that loads this estimate's cost lines. Same
+  /// not-a-module-file reasoning as [equipmentCostFormBlocFactory].
+  final CostItemsBloc Function() costItemsBlocFactory;
 
   /// Backs the equipment form's "Save as my rate" timestamp and the
   /// "Your recents" sheet's recency subtitles. Same not-a-module-file
@@ -65,6 +71,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
     required this.materialCostFormBlocFactory,
     required this.estimateSummaryBlocFactory,
     required this.yourRatesBlocFactory,
+    required this.costItemsBlocFactory,
     required this.clock,
   });
 
@@ -76,10 +83,8 @@ class CostEstimationDetailsPage extends StatefulWidget {
 enum _SheetOutcome { editing, submitting, added, failed }
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
-  CostEstimationTab _selectedTab = CostEstimationTab.material;
   late final EstimateSummaryBloc _summaryBloc;
-
-  // TODO: [CA-151] have the bound cost list read this cubit to highlight the line and clear it on tap.
+  late final CostItemsBloc _costItemsBloc;
   final _addedLineHighlight = AddedLineHighlightCubit();
 
   @override
@@ -87,11 +92,14 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.initState();
     _summaryBloc = widget.estimateSummaryBlocFactory()
       ..add(EstimateSummaryRequested(widget.estimationId));
+    _costItemsBloc = widget.costItemsBlocFactory()
+      ..add(CostItemsRequested(widget.estimationId));
   }
 
   @override
   void dispose() {
     unawaited(_summaryBloc.close());
+    unawaited(_costItemsBloc.close());
     unawaited(_addedLineHighlight.close());
     super.dispose();
   }
@@ -184,7 +192,11 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       if (!mounted) return;
       final summary = _summaryBloc.state;
       _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
-      switch (outcomeOf(formBloc.state)) {
+      final outcome = outcomeOf(formBloc.state);
+      if (outcome != _SheetOutcome.editing) {
+        _costItemsBloc.add(const CostItemsRefreshed());
+      }
+      switch (outcome) {
         case _SheetOutcome.added:
           final addedItemId = addedItemIdOf?.call(formBloc.state);
           if (addedItemId != null) _addedLineHighlight.highlight(addedItemId);
@@ -225,7 +237,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     final colorTheme = context.colorTheme;
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: colorTheme.pageBackground,
+      backgroundColor: sheetSurface(context),
       appBar: CoreAppBar(
         height: CoreSpacing.space12,
         padding: const EdgeInsets.only(
@@ -276,84 +288,100 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           ),
         ],
       ),
-      body: CostEstimationDetailsTabView(
-        onTabChanged: (tab) => setState(() => _selectedTab = tab),
+      body: BlocBuilder<CostItemsBloc, CostItemsState>(
+        bloc: _costItemsBloc,
+        builder: (context, state) => switch (state) {
+          CostItemsLoaded() => BlocBuilder<AddedLineHighlightCubit, String?>(
+            builder: (context, highlightedItemId) => CostSectionsList(
+              costs: state,
+              highlightedItemId: highlightedItemId,
+              onLineTap: (_) => _addedLineHighlight.clear(),
+              onAddFirstCost: () => unawaited(_openAddCost(context)),
+            ),
+          ),
+          CostItemsFailure() => _buildLoadFailure(context, state),
+          CostItemsInitial() ||
+          CostItemsLoading() => const Center(child: CoreLoadingIndicator()),
+        },
       ),
-      floatingActionButton: _buildFab(context, l10n),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          decoration: BoxDecoration(
-            boxShadow: CoreShadows.sticky,
-            color: colorTheme.pageBackground,
-          ),
-          child: Row(
-            spacing: CoreSpacing.space4,
-            children: [
-              // TODO: [CA-160] [Cost Estimation] Implement Lock/Unlock Button Logic
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colorTheme.lineLight),
-                ),
-                child: CoreIconWidget(
-                  key: const Key('lock_icon'),
-                  icon: CoreIcons.lock,
-                  size: 24,
-                  padding: EdgeInsets.all(CoreSpacing.space3),
-                  color: colorTheme.iconDark,
-                  semanticLabel: l10n.lockLabel,
-                ),
+      bottomNavigationBar: BlocBuilder<CostItemsBloc, CostItemsState>(
+        bloc: _costItemsBloc,
+        builder: (context, costs) =>
+            BlocBuilder<EstimateSummaryBloc, EstimateSummaryState>(
+              bloc: _summaryBloc,
+              buildWhen: (_, current) =>
+                  current is EstimateSummaryLoaded ||
+                  current is EstimateSummaryFailure,
+              builder: (context, summary) => AddCostBottomBar(
+                total: summary is EstimateSummaryLoaded
+                    ? summary.estimate.totalCost
+                    : null,
+                isEstimateEmpty:
+                    costs is CostItemsLoaded && costs.items.isEmpty,
+                onAddCost: () => unawaited(_openAddCost(context)),
+                // TODO: [CA-186] [Cost Estimation] Implement Preview Button Logic https://ripplearc.youtrack.cloud/issue/CA-186/Cost-Estimation-Implement-Preview-Button-Logic
               ),
-              // TODO: [CA-186] [Cost Estimation] Implement Preview Button Logic https://ripplearc.youtrack.cloud/issue/CA-186/Cost-Estimation-Implement-Preview-Button-Logic
-              Expanded(
-                child: CoreButton(
-                  key: const Key('preview_button'),
-                  label: l10n.previewButton,
-                ),
+            ),
+      ),
+    );
+  }
+
+  Widget _buildLoadFailure(BuildContext context, CostItemsFailure failure) {
+    final l10n = context.l10n;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: CoreSpacing.space4,
+          children: [
+            Text(
+              failure.failedLoads > 1
+                  ? l10n.costItemsLoadFailedAgain
+                  : l10n.costItemsLoadFailed,
+              key: const Key('cost_items_load_failed'),
+              textAlign: TextAlign.center,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
               ),
-            ],
-          ),
+            ),
+            Text(
+              l10n.costItemsLoadFailedHint,
+              key: const Key('cost_items_load_failed_hint'),
+              textAlign: TextAlign.center,
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textBody,
+              ),
+            ),
+            CoreButton(
+              key: const Key('cost_items_retry_button'),
+              label: l10n.costItemsRetryButton,
+              variant: CoreButtonVariant.secondary,
+              fullWidth: false,
+              onPressed: () => _costItemsBloc.add(const CostItemsRefreshed()),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildFab(BuildContext context, AppLocalizations l10n) {
-    return switch (_selectedTab) {
-      CostEstimationTab.labour => CoreButton(
-        key: const Key('add_labour_cost_button'),
-        label: l10n.addLabourCostButton,
-        variant: CoreButtonVariant.secondary,
-        icon: CoreIconWidget(icon: CoreIcons.add),
-        size: CoreButtonSize.medium,
-        fullWidth: false,
-        onPressed: () => widget.router.pushNamed(
+  Future<void> _openAddCost(BuildContext context) async {
+    final type = await AddCostCategorySheet.show(context);
+    if (type == null || !context.mounted) return;
+    switch (type) {
+      case CostItemType.material:
+        await _openMaterialSheet();
+      case CostItemType.labor:
+        await widget.router.pushNamed(
           '$fullAddLabourCostRoute/${widget.estimationId}',
-        ),
-      ),
-      CostEstimationTab.equipment => CoreButton(
-        key: const Key('add_equipment_cost_button'),
-        label: l10n.addEquipmentCostButton,
-        variant: CoreButtonVariant.secondary,
-        icon: CoreIconWidget(icon: CoreIcons.add),
-        size: CoreButtonSize.medium,
-        fullWidth: false,
-        onPressed: () => unawaited(_openRecentsThenEquipmentForm(context)),
-      ),
-      CostEstimationTab.material => CoreButton(
-        key: const Key('add_material_cost_button'),
-        label: l10n.addMaterialCostButton,
-        variant: CoreButtonVariant.secondary,
-        icon: CoreIconWidget(icon: CoreIcons.add),
-        size: CoreButtonSize.medium,
-        fullWidth: false,
-        onPressed: _openMaterialSheet,
-      ),
-    };
+        );
+        if (!mounted) return;
+        _summaryBloc.add(EstimateSummaryRequested(widget.estimationId));
+        _costItemsBloc.add(const CostItemsRefreshed());
+      case CostItemType.equipment:
+        await _openRecentsThenEquipmentForm(context);
+    }
   }
 
   Future<void> _openRecentsThenEquipmentForm(BuildContext context) async {
