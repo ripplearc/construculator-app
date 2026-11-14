@@ -120,10 +120,15 @@ abstract class CostEstimationRepository {
   ///
   /// [estimationId] The ID of the estimation to update.
   /// [isLocked] Whether the estimation should be locked or unlocked.
-  /// [projectId] The ID of the project the estimation belongs to (required for cache/stream updates).
+  /// [projectId] The ID of the project the estimation belongs to, used for error
+  /// context.
+  ///
+  /// Writes only the lock state to the phone, which uploads it later, so the call
+  /// does not wait for the server. The server fills in who locked it and when.
   ///
   /// Returns a [Future] that completes with an [Either] containing either
-  /// a [Failure] or the updated [CostEstimate].
+  /// a [Failure] (a not-found failure when the phone has no such estimation) or
+  /// the updated [CostEstimate].
   Future<Either<Failure, CostEstimate>> changeLockStatus({
     required String estimationId,
     required bool isLocked,

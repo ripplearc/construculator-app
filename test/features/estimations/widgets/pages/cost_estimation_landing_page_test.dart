@@ -998,8 +998,7 @@ void main() {
         ),
       );
 
-      fakeSupabase.shouldThrowOnUpdate = true;
-      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+      fakePhoneDatabase.executeError = Exception('disk full');
 
       await tester.tap(find.byKey(const Key('menuIcon')));
       await tester.pumpAndSettle();
@@ -1007,7 +1006,7 @@ void main() {
       await tester.tap(find.byType(CoreSwitch));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
     });
 
     testWidgets('rolls back switch value when lock update fails', (
@@ -1024,8 +1023,7 @@ void main() {
         ),
       );
 
-      fakeSupabase.shouldThrowOnUpdate = true;
-      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+      fakePhoneDatabase.executeError = Exception('disk full');
 
       await tester.tap(find.byKey(const Key('menuIcon')));
       await tester.pumpAndSettle();
@@ -1036,7 +1034,7 @@ void main() {
       await tester.tap(find.byType(CoreSwitch));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
 
       final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
       expect(switchAfter.value, isFalse);
@@ -1056,8 +1054,7 @@ void main() {
           ),
         );
 
-        fakeSupabase.shouldDelayOperations = true;
-        fakeSupabase.completer = Completer<void>();
+        fakePhoneDatabase.executeGate = Completer<void>();
 
         await tester.tap(find.byKey(const Key('menuIcon')));
         await tester.pumpAndSettle();
@@ -1065,24 +1062,24 @@ void main() {
         final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
         expect(switchBefore.value, isFalse);
 
-        fakeSupabase.clearMethodCalls();
+        fakePhoneDatabase.executeCalls.clear();
 
         await tester.tap(find.byType(CoreSwitch));
         await tester.pump();
 
-        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+        expect(fakePhoneDatabase.executeCalls.length, 1);
 
         await tester.tap(find.byType(CoreSwitch));
         await tester.pump();
 
-        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+        expect(fakePhoneDatabase.executeCalls.length, 1);
 
         await tester.tap(find.byType(CoreSwitch));
         await tester.pump();
 
-        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+        expect(fakePhoneDatabase.executeCalls.length, 1);
 
-        fakeSupabase.completer!.complete();
+        fakePhoneDatabase.executeGate!.complete();
         await tester.pumpAndSettle();
 
         final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
@@ -1129,8 +1126,7 @@ void main() {
       );
       expect(switchAfterSecond.value, isFalse);
 
-      final updateCalls = fakeSupabase.getMethodCallsFor('update');
-      expect(updateCalls.length, 2);
+      expect(fakePhoneDatabase.executeCalls.length, 2);
     });
 
     testWidgets(
@@ -1147,10 +1143,8 @@ void main() {
           ),
         );
 
-        fakeSupabase.shouldDelayOperations = true;
-        fakeSupabase.completer = Completer<void>();
-        fakeSupabase.shouldThrowOnUpdate = true;
-        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+        fakePhoneDatabase.executeGate = Completer<void>();
+        fakePhoneDatabase.executeError = Exception('disk full');
 
         await tester.tap(find.byKey(const Key('menuIcon')));
         await tester.pumpAndSettle();
@@ -1158,7 +1152,7 @@ void main() {
         final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
         expect(switchBefore.value, isFalse);
 
-        fakeSupabase.clearMethodCalls();
+        fakePhoneDatabase.executeCalls.clear();
 
         await tester.tap(find.byType(CoreSwitch));
         await tester.pump();
@@ -1167,16 +1161,16 @@ void main() {
         await tester.tap(find.byType(CoreSwitch));
         await tester.pump();
 
-        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+        expect(fakePhoneDatabase.executeCalls.length, 1);
 
-        fakeSupabase.completer!.complete();
+        fakePhoneDatabase.executeGate!.complete();
         await tester.pumpAndSettle();
 
         final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
         expect(switchAfter.value, isFalse);
-        expect(find.text(l10n().connectionError), findsOneWidget);
+        expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
 
-        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+        expect(fakePhoneDatabase.executeCalls.length, 1);
       },
     );
     testWidgets(

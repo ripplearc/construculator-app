@@ -8,7 +8,6 @@ import 'package:construculator/libraries/estimation/data/data_source/interfaces/
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/data/models/pagination_state.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart'
     show EstimationSortOption;
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -18,21 +17,21 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Implementation of [CostEstimationRepository] that reads the list from the
-/// phone's PowerSync copy, writes a rename there, and writes the other changes
-/// through Supabase.
+/// phone's PowerSync copy, writes a rename and a lock change there, and writes
+/// the other changes through Supabase.
 ///
 /// Isolates reactive estimation streams, pagination state, and cache
 /// by a composite key of `projectId + sortBy + limit`, so multiple
 /// query contexts for the same project do not share state. Paging raises the
 /// limit of the local watch instead of fetching offsets.
 ///
-/// A rename is written to the phone's copy and the list watch shows it at once.
-/// The other writes reach the phone's copy only after the next sync, so a local
-/// re-emission in between would show the old value. Until they go through the
-/// phone too, each of them is remembered as a pending edit and re-applied to every
-/// list that arrives from the local watch. An edit is dropped once each list
-/// that held the row shows the change, so it survives a screen being closed
-/// and reopened before the sync.
+/// A rename and a lock change are written to the phone's copy and the list
+/// watch shows them at once. The other writes reach the phone's copy only after
+/// the next sync, so a local re-emission in between would show the old value.
+/// Until they go through the phone too, each of them is remembered as a pending
+/// edit and re-applied to every list that arrives from the local watch. An edit
+/// is dropped once each list that held the row shows the change, so it survives
+/// a screen being closed and reopened before the sync.
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   final PowerSyncCostEstimationDataSource _localDataSource;
@@ -385,31 +384,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
   void _forgetPendingEdit(String editKey) => _pendingEdits.remove(editKey);
 
-  void _rememberServerVersion(
-    _PendingEdit edit, {
-    required String estimationId,
-    required DateTime writtenAt,
-    required CostEstimate Function(CostEstimate) patch,
-    required bool Function(CostEstimate) showsWrite,
-  }) {
-    edit.apply = (estimates, _) =>
-        _replaceEstimation(estimates, estimationId, patch);
-    edit.isReflected = _rowReflects(estimationId, showsWrite, writtenAt);
-  }
-
-  _IsReflected _rowReflects(
-    String estimationId,
-    bool Function(CostEstimate) showsWrite, [
-    DateTime? writtenAt,
-  ]) {
-    return (estimates, _) => estimates.every(
-      (e) =>
-          e.id != estimationId ||
-          showsWrite(e) ||
-          (writtenAt != null && e.updatedAt.isAfter(writtenAt)),
-    );
-  }
-
   void _republishProject(String projectId) {
     for (final key in _watchedKeysOf(projectId).toList()) {
       final copy = _phoneCopies[key];
@@ -419,14 +393,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         Right(_applyPendingEdits(key, projectId, copy.estimates, copy.view)),
       );
     }
-  }
-
-  List<CostEstimate> _replaceEstimation(
-    List<CostEstimate> estimates,
-    String estimationId,
-    CostEstimate Function(CostEstimate) replace,
-  ) {
-    return estimates.map((e) => e.id == estimationId ? replace(e) : e).toList();
   }
 
   List<CostEstimate> _withCreated(
@@ -631,49 +597,24 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required bool isLocked,
     required String projectId,
   }) async {
-    final lockEdit = _newEditKey('lock', estimationId);
-    final optimisticLockStatus = isLocked
-        ? LockStatus.locked()
-        : LockStatus.unlocked();
-    bool showsWrite(CostEstimate e) => e.lockStatus.isLocked == isLocked;
-    final edit = _rememberPendingEdit(
-      lockEdit,
-      projectId,
-      estimationId: estimationId,
-      apply: (estimates, _) => _replaceEstimation(
-        estimates,
-        estimationId,
-        (e) => e.copyWith(lockStatus: optimisticLockStatus),
-      ),
-      isReflected: _rowReflects(estimationId, showsWrite),
-    );
-    _republishProject(projectId);
-
     try {
       _logger.debug(
         'Changing lock status for estimation: $estimationId to $isLocked',
       );
 
-      final updatedDto = await _dataSource.changeLockStatus(
-        estimationId: estimationId,
+      final lockedDto = await _localDataSource.updateEstimationLockById(
+        id: estimationId,
         isLocked: isLocked,
       );
+      if (lockedDto == null) {
+        _logger.warning('Estimation to lock not on the phone: $estimationId');
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.notFoundError),
+        );
+      }
 
-      final updatedEstimation = updatedDto.toDomain();
-
-      _rememberServerVersion(
-        edit,
-        estimationId: estimationId,
-        writtenAt: updatedEstimation.updatedAt,
-        patch: (e) => e.copyWith(lockStatus: updatedEstimation.lockStatus),
-        showsWrite: showsWrite,
-      );
-      _republishProject(projectId);
-
-      return Right(updatedEstimation);
+      return Right(lockedDto.toDomain());
     } catch (e) {
-      _forgetPendingEdit(lockEdit);
-      _republishProject(projectId);
       return Left(
         _handleError(
           e,
