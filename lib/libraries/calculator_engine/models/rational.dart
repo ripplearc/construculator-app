@@ -20,10 +20,13 @@ class RationalOverflow implements Exception {
 /// numerator or denominator would pass [maxMagnitude], the last whole
 /// number a double still holds exactly, is a [RationalOverflow] rather than
 /// a wrong number. So is any product formed on the way to a result — a
-/// numerator times the other denominator in a sum, a comparison or a
-/// division — that would pass 2⁶¹, the size at which two of them still add
-/// inside a 64-bit `int`; without that check 2³² × 2³² wraps around to 0
-/// and the size check of the result sees nothing wrong.
+/// numerator times the other denominator in a comparison or a division, or
+/// times what the other denominator adds to the shared one in a sum — that
+/// would pass 2⁶¹, the size at which two of them still add inside a 64-bit
+/// `int`; without that check 2³² × 2³² wraps around to 0 and the size check
+/// of the result sees nothing wrong. A sum is formed over the least common
+/// denominator, so two decimals of fourteen places add on their own 10¹⁴
+/// instead of a 10²⁸ that no `int` holds.
 class Rational extends Equatable implements Comparable<Rational> {
   /// The largest numerator or denominator a rational may carry: 2⁵³.
   static const int maxMagnitude = 1 << 53;
@@ -96,18 +99,10 @@ class Rational extends Equatable implements Comparable<Rational> {
   }
 
   /// This plus [other].
-  Rational operator +(Rational other) => _checked(
-    _product(numerator, other.denominator) +
-        _product(other.numerator, denominator),
-    _product(denominator, other.denominator),
-  );
+  Rational operator +(Rational other) => _sum(other, sign: 1);
 
   /// This minus [other].
-  Rational operator -(Rational other) => _checked(
-    _product(numerator, other.denominator) -
-        _product(other.numerator, denominator),
-    _product(denominator, other.denominator),
-  );
+  Rational operator -(Rational other) => _sum(other, sign: -1);
 
   /// This times [other].
   Rational operator *(Rational other) => _checked(
@@ -144,6 +139,16 @@ class Rational extends Equatable implements Comparable<Rational> {
   @override
   String toString() =>
       denominator == 1 ? '$numerator' : '$numerator/$denominator';
+
+  Rational _sum(Rational other, {required int sign}) {
+    final shared = _gcd(denominator, other.denominator);
+    final scale = other.denominator ~/ shared;
+    final otherScale = denominator ~/ shared;
+    return _checked(
+      _product(numerator, scale) + sign * _product(other.numerator, otherScale),
+      _product(denominator, scale),
+    );
+  }
 
   Rational _checked(int numerator, int denominator) {
     final result = Rational(numerator, denominator).reduced;

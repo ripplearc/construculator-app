@@ -303,6 +303,34 @@
             <mutation text=") when false) {"/>
             <mutation text=") when key != function.key) {"/>
         </regex>
+
+        <!-- RULE CA-1236 (R6, B7): a trig answer above the limit lands as a
+             result instead of the Too large chip -->
+        <regex pattern="formatter\.isTooLarge\(answer\)\s*\? const ErrorChip\(CalculationError\.outOfRange\)\s*: ResultChip\(key: key, value: answer\);" dotAll="true" id="tape.landed_answer.never_too_large">
+            <mutation text="ResultChip(key: key, value: answer);"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B7): the strip offers a trig answer above the
+             limit -->
+        <regex pattern="if \(answer == null \|\| formatter\.isTooLarge\(answer\)\) return null;" id="tape.trig_answer.offers_too_large">
+            <mutation text="if (answer == null) return null;"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R6, B7): = on a prefix trig chip whose answer is
+             above the limit lands nothing -->
+        <!-- RULE CA-1236 (R8, B7): an operator on a trig chip whose answer is
+             above the limit seals it as a step instead of landing Too large -->
+        <regex pattern="if \(tape\._offersATooLargeTrigAnswer\) \{\s*return TapeChanged\(\s*tape\.append\(const ErrorChip\(CalculationError\.outOfRange\)\),\s*\);\s*\}" dotAll="true" id="tape.press_operator.too_large_trig_sealed">
+            <mutation text="return TapeChanged(tape._sealed().append(ValueChip(operator: operator)));"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R8, B7): the first value of a chain is taken without
+             the Too large check, so a Tangent answer above the limit becomes
+             the running total -->
+        <regex pattern="if \(formatter\.isAboveTheLimit\(value\)\) \{\s*return \(\s*total: null,\s*steps: stepsInside,\s*failure: ChainFailed\.firstValueTooLarge\(value\),\s*\);\s*\}" dotAll="true" id="chain_evaluator.joined.first_value_unchecked">
+            <mutation text=""/>
+            <mutation text="if (formatter.isAboveTheLimit(value)) { return (total: value, steps: stepsInside, failure: null); }"/>
+        </regex>
     </rules>
 
     <commands>

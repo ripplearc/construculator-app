@@ -143,14 +143,14 @@
         <regex pattern="if \(!_isSolo\(chip\)\) return null;\s*final token = chip\.entry\.tokens\.single;\s*if \(token\.isDegreesMinutesSeconds \|\| token\.digits\.endsWith" dotAll="true" id="read_as.slope.fraction_or_length">
             <mutation text="final token = chip.entry.tokens.single; if (token.isDegreesMinutesSeconds || token.digits.endsWith"/>
         </regex>
-        <regex pattern="List\.unmodifiable\(\[Token\(digits: raw, unit: Unit\.inch, typedAs: raw\)\]\)," dotAll="true" id="read_as.pitch.rise_without_way_back">
-            <mutation text="List.unmodifiable([Token(digits: raw, unit: Unit.inch)]),"/>
+        <regex pattern="Token\(\s*digits: raw,\s*unit: Unit\.inch,\s*typedAs: raw,\s*startedWithPoint: token\.startedWithPoint,\s*\)," dotAll="true" id="read_as.pitch.rise_without_way_back">
+            <mutation text="Token(digits: raw, unit: Unit.inch, startedWithPoint: token.startedWithPoint),"/>
         </regex>
-        <regex pattern="if \(last case Token\(unit: Unit\.inch, power: 1, typedAs: _\?\)\) \{\s*return EntryBuffer\(\s*List\.unmodifiable\(\[\s*\.\.\.tokens\.sublist\(0, tokens\.length - 1\),\s*Token\(digits: last\.digits\),\s*\]\),\s*\)\.typeDigit\(digit, readsAngles: readsAngles\);\s*\}" dotAll="true" id="read_as.entry.digit_after_rise">
+        <regex pattern="if \(last case Token\(unit: Unit\.inch, power: 1, typedAs: _\?\)\) \{\s*return EntryBuffer\(\s*List\.unmodifiable\(\[\s*\.\.\.tokens\.sublist\(0, tokens\.length - 1\),\s*Token\(digits: last\.digits, startedWithPoint: last\.startedWithPoint\),\s*\]\),\s*\)\.typeDigit\(digit, readsAngles: readsAngles\);\s*\}" dotAll="true" id="read_as.entry.digit_after_rise">
             <mutation text=""/>
-            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return _replaceLast(Token(digits: '${last.digits}$digit')); }"/>
-            <mutation text="if (last case Token(unit: Unit.inch, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit, readsAngles: readsAngles); }"/>
-            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits)])).typeDigit(digit); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return _replaceLast(Token(digits: '${last.digits}$digit', startedWithPoint: last.startedWithPoint)); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits, startedWithPoint: last.startedWithPoint)])).typeDigit(digit, readsAngles: readsAngles); }"/>
+            <mutation text="if (last case Token(unit: Unit.inch, power: 1, typedAs: _?)) { return EntryBuffer(List.unmodifiable([...tokens.sublist(0, tokens.length - 1), Token(digits: last.digits, startedWithPoint: last.startedWithPoint)])).typeDigit(digit); }"/>
         </regex>
 
         <!-- RULE 13: the typed digits are forgotten on the promotion, or
@@ -159,8 +159,8 @@
             <mutation text="final String? typedAs = null;"/>
             <mutation text="final typedAs = plain.typedAs ?? plain.digits;"/>
         </regex>
-        <regex pattern="last\.copyWith\(digits: '\$\{last\.digits\}\$digit', typedAs: \(\) =&gt; null\)," dotAll="true" id="read_as.typed_as.kept_through_digit">
-            <mutation text="last.copyWith(digits: '${last.digits}$digit'),"/>
+        <regex pattern="last\.copyWith\(digits: digits, typedAs: \(\) =&gt; null\)" dotAll="true" id="read_as.typed_as.kept_through_digit">
+            <mutation text="last.copyWith(digits: digits)"/>
         </regex>
         <regex pattern="digits: last\.digits\.substring\(0, last\.digits\.length - 1\),\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.kept_through_backspace">
             <mutation text="digits: last.digits.substring(0, last.digits.length - 1),"/>
@@ -180,11 +180,20 @@
         <regex pattern="minutes: \(\) =&gt; '\$\{angle\.minutes\}\$digit',\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_digit">
             <mutation text="minutes: () =&gt; '${angle.minutes}$digit',"/>
         </regex>
-        <regex pattern="_withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
-            <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null),"/>
+        <regex pattern="_withMinutesClosed\(\s*last\.digits,\s*minutes,\s*typedAs: last\.typedAs,\s*startedWithPoint: last\.startedWithPoint,\s*\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
+            <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null, startedWithPoint: last.startedWithPoint),"/>
         </regex>
-        <regex pattern="seconds,\s*typedAs,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
-            <mutation text="seconds, ];"/>
+        <regex pattern="seconds,\s*typedAs,\s*startedWithPoint,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
+            <mutation text="seconds, startedWithPoint, ];"/>
+        </regex>
+
+        <!-- RULE CA-1236 (R8, N2): the pill's reading forgets that the number
+             started with a point, so the 0 the tape wrote counts as typed -->
+        <regex pattern="NumberReading\.degrees =&gt; _plain\(\s*raw,\s*startedWithPoint: token\.startedWithPoint,\s*\)," dotAll="true" id="read_as.pitch_offer.degrees_forget_point">
+            <mutation text="NumberReading.degrees =&gt; _plain(raw),"/>
+        </regex>
+        <regex pattern="typedAs: raw,\s*startedWithPoint: token\.startedWithPoint,\s*\),\s*\]\)," dotAll="true" id="read_as.pitch_offer.rise_forgets_point">
+            <mutation text="typedAs: raw), ]),"/>
         </regex>
 
         <!-- RULE 15 (R1): a pill whose reading has no answer under the key

@@ -133,24 +133,99 @@ void main() {
         );
       });
 
-      test('a number too long to be an angle is refused, not NaN', () {
-        final tooLong = press(const Tape(), List.filled(310, '9').join(' '));
-        for (final function in TrigFunction.values) {
+      test('a number past the typed limit is refused before a trig key '
+          'sees it', () {
+        final atLimit = press(const Tape(), List.filled(7, '9').join(' '));
+        expect(
+          atLimit.typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
+        );
+        for (final function in [
+          TrigFunction.sine,
+          TrigFunction.cosine,
+          TrigFunction.tangent,
+        ]) {
           expect(
-            tooLong.pressTrigKey(function),
-            const TapeRefused(TapeRefusal.trigCannotAnswer),
+            atLimit.pressTrigKey(function),
+            isA<TapeChanged>(),
             reason: '$function',
           );
         }
-        expect(activeOf(tooLong).key, isNull);
         final prefix = press(
           const Tape(),
-          'SIN ${List.filled(310, '9').join(' ')}',
+          'SIN ${List.filled(7, '9').join(' ')}',
         );
         expect(
-          prefix.pressEquals(),
-          const TapeRefused(TapeRefusal.trigCannotAnswer),
+          prefix.typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.tooLarge),
         );
+      });
+
+      test('B7: an answer above 19,999,999.99 is Too large: after its number '
+          'the key lands the error chip, before it nothing is offered and = '
+          'lands the chip, and ⌫ reopens the number', () {
+        const tooLarge = ErrorChip(CalculationError.outOfRange);
+        final landed = press(const Tape(), '8 9 . 9 9 9 9 9 9 9 9 5 TAN');
+        expect(landed.chips.last, tooLarge);
+        expect(landed.chips, hasLength(2));
+        expect(landed.trigAnswer, isNull);
+        final reopened = changed(landed.backspace());
+        expect(reopened.chips, hasLength(1));
+        expect(
+          reopened.active,
+          isA<ValueChip>().having((c) => c.entry.text, 'text', '89.999999995'),
+        );
+        expect(
+          press(const Tape(), '2 6 9 . 9 9 9 9 9 9 9 9 5 TAN').chips.last,
+          tooLarge,
+        );
+        final prefix = press(const Tape(), 'TAN 9 0 . 0 0 0 0 0 0 0 0 2');
+        expect(prefix.trigAnswer, isNull);
+        expect(press(prefix, '=').chips.last, tooLarge);
+        expect(press(prefix, '×').chips.last, tooLarge);
+        final offered = press(const Tape(), 'TAN 8 9 . 9 9 9 9 9');
+        expect(
+          offered.trigAnswer,
+          isA<Answer>().having(
+            (a) => formatter.format(a.value),
+            'text',
+            '5,729,577.941222',
+          ),
+        );
+      });
+
+      test('a trig answer above the limit that starts a chain '
+          'is Too large at the operator, and is never a running total', () {
+        const tooLarge = ErrorChip(CalculationError.outOfRange);
+        final typed = press(const Tape(), 'TAN 8 9 . 9 9 9 9 9 9 9 9 5');
+        expect(typed.trigAnswer, isNull);
+        expect(
+          typed.runningTotal,
+          isA<ChainFailed>()
+              .having((f) => f.error, 'error', CalculationError.outOfRange)
+              .having((f) => f.left, 'left', isNull)
+              .having((f) => f.operator, 'operator', isNull),
+        );
+        for (final operator in ['÷', '×', '+', '−']) {
+          final landed = press(typed, operator);
+          expect(landed.chips.last, tooLarge, reason: operator);
+          expect(landed.chips, hasLength(2), reason: operator);
+          expect(landed.runningTotal, const ChainEmpty(), reason: operator);
+        }
+        final divided = press(typed, '÷ 1 0 0 0');
+        expect(divided.chips[1], tooLarge);
+        expect(divided.pressEquals(), isA<TapeRefused>());
+        final zeroed = press(typed, '× 0');
+        expect(zeroed.chips[1], tooLarge);
+        expect(zeroed.pressEquals(), isA<TapeRefused>());
+        final reopened = press(const Tape(), '8 9 . 9 9 9 9 9 9 9 9 5 TAN ⌫');
+        expect(reopened.runningTotal, isNot(isA<ChainValue>()));
+        expect(reopened.trigAnswer, isNull);
+        final inChain = press(const Tape(), '2 × TAN 8 9 . 9 9 9 9 9 9 9 9 5');
+        expect(press(inChain, '÷').chips.last, tooLarge);
+        final fine = press(const Tape(), 'TAN 8 9 . 9 9 9 9 9');
+        expect(fine.runningTotal, isA<ChainValue>());
+        expect(press(fine, '÷ 1 0 0 0 =').chips.last, isA<ResultChip>());
       });
 
       test('a fraction with no unit still wants its unit key', () {

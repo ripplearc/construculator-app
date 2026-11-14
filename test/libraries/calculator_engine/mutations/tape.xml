@@ -10,6 +10,8 @@
     <files>
         <file>lib/libraries/calculator_engine/tape.dart</file>
         <file>lib/libraries/calculator_engine/models/chip.dart</file>
+        <file>lib/libraries/calculator_engine/chain_evaluator.dart</file>
+        <file>lib/libraries/calculator_engine/quantity_formatter.dart</file>
     </files>
 
     <rules>
@@ -153,8 +155,8 @@
 
         <!-- RULE 17b: a plain number under Pitch is a scalar, or every
              plain number is an angle -->
-        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;\s*return Scalar\(entry\.tokens\.first\.value\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
-            <mutation text="return Scalar(entry.tokens.first.value);"/>
+        <regex pattern="if \(entry\.isDegreesMinutesSeconds \|\| readsDegrees\) return _typedAngle;\s*final number = entry\.tokens\.first;\s*return Scalar\(number\.value, exact: parser\.exactValueOf\(number\)\);" dotAll="true" id="chip.plain_number.degrees_under_pitch">
+            <mutation text="final number = entry.tokens.first; return Scalar(number.value, exact: parser.exactValueOf(number));"/>
             <mutation text="return _typedAngle;"/>
         </regex>
 
@@ -198,8 +200,8 @@
 
         <!-- RULE 25: two chips typed under different ton definitions
              compare equal -->
-        <regex pattern="exact,\s*poundsPerTon,\s*isActive,\s*\];" dotAll="true" id="chip.props.ignores_typed_ton">
-            <mutation text="exact, isActive, ];"/>
+        <regex pattern="exact,\s*poundsPerTon,\s*keyWantsUnit,\s*readsDegrees,\s*isActive,\s*\];" dotAll="true" id="chip.props.ignores_typed_ton">
+            <mutation text="exact, keyWantsUnit, readsDegrees, isActive, ];"/>
         </regex>
 
         <!-- RULE 20: a key press forgets the settings -->
@@ -215,6 +217,24 @@
         <!-- RULE 21: the formatter ignores the settings -->
         <regex pattern="QuantityFormatter get formatter =&gt;\s*QuantityFormatter\(preferences: preferences\);" dotAll="true" id="tape.formatter.ignores_settings">
             <mutation text="QuantityFormatter get formatter =&gt; const QuantityFormatter();"/>
+        </regex>
+
+        <!-- RULE CA-1236: a step after a first value above the limit starts
+             the chain again from that step, so 19999999.6 mm + 1 mm + 1 mm =
+             lands Calc 2mm -->
+        <regex pattern="if \(operator != null &amp;&amp; running\.failure != null\) return running;" dotAll="true" id="chain_evaluator.joined.failed_first_value_dropped">
+            <mutation text=""/>
+        </regex>
+
+        <!-- RULE CA-1236: the first value is judged on the number it writes,
+             so 19,999,999.99mm typed at the limit reads Too large -->
+        <regex pattern="if \(formatter\.isAboveTheLimit\(value\)\) \{" dotAll="true" id="chain_evaluator.joined.first_value_by_written_number">
+            <mutation text="if (formatter.isTooLarge(value)) {"/>
+        </regex>
+
+        <!-- RULE CA-1236: a value exactly at the limit is above it -->
+        <regex pattern="!\(_amountShown\(value\)\.abs\(\) &lt;= Quantity\.largestShown\);" dotAll="true" id="quantity_formatter.above_the_limit.edge">
+            <mutation text="!(_amountShown(value).abs() &lt; Quantity.largestShown);"/>
         </regex>
     </rules>
 

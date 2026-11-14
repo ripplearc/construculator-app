@@ -19,6 +19,50 @@ void main() {
 
   group('EntryBuffer', () {
     group('typing digits', () {
+      test('CA-1236: a digit past 19,999,999.99 is refused as Too large', () {
+        const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+        final edge = type('19999999');
+        expect(edge.typeDigit('9'), tooLarge);
+        expect(type('.99', edge).text, '19999999.99');
+        expect(type('.99', edge).typeDigit('1'), tooLarge);
+        expect(type('2000000').typeDigit('0'), tooLarge);
+        final bottom = type('1/9999999');
+        expect(bottom.typeDigit('9'), tooLarge);
+        expect(type('1/19999999').typeDigit('9'), tooLarge);
+        expect(type('1/19999999').text, '1/19999999');
+        expect(type('1999999').typeDigit('9'), isA<EntryChanged>());
+      });
+
+      test('B6, R7: the sixteenth digit of one number is refused, every '
+          'typed digit counted, the zeros that lead it included', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        final fifteen = type('9999999.99999999');
+        expect(fifteen.text, '9999999.99999999');
+        expect(fifteen.typeDigit('9'), tooMany);
+        expect(type('1.00000000000000').typeDigit('0'), tooMany);
+        expect(type('1.00000000000000').typeDigit('1'), tooMany);
+        expect(type('0.00000000000001').typeDigit('2'), tooMany);
+        expect(type('007.000000000000').text, '007.000000000000');
+        expect(type('007.000000000000').typeDigit('1'), tooMany);
+        expect(type('1.0000000000000').typeDigit('1'), isA<EntryChanged>());
+        expect(type('0.0000000000000').typeDigit('1'), isA<EntryChanged>());
+      });
+
+      test('R7: the 0 the tape writes for a leading point was not typed and '
+          'does not count, before or after a backspace', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        expect(type('.000000000000001').text, '0.000000000000001');
+        expect(type('.000000000000001').typeDigit('1'), tooMany);
+        expect(type('.00000000000000').typeDigit('1'), isA<EntryChanged>());
+        final left = changed(type('.').backspace());
+        expect(left.text, '0');
+        expect(
+          type('.00000000000000', left).typeDigit('1'),
+          isA<EntryChanged>(),
+        );
+        expect(type('.000000000000001', left).typeDigit('1'), tooMany);
+      });
+
       test('fills the open number and echoes it', () {
         final buffer = type('22');
         expect(buffer, const EntryBuffer([Token(digits: '22')]));
@@ -134,6 +178,72 @@ void main() {
         final feet = changed(type('18').closeWith(Unit.foot));
         final compound = changed(type('8', feet).closeWith(Unit.inch));
         expect(compound.text, '18ft 8in');
+      });
+
+      test(
+        'a carry that would push the part above '
+        'the limit is refused as Too large, and the buffer stays as typed',
+        () {
+          const tooLarge = EntryRefused(EntryRefusal.tooLarge);
+          final atTheLimit = changed(type('19999999').closeWith(Unit.foot));
+          expect(type('12', atTheLimit).closeWith(Unit.inch), tooLarge);
+          expect(type('24', atTheLimit).closeWith(Unit.inch), tooLarge);
+          expect(
+            type('11', atTheLimit).closeWith(Unit.inch),
+            isA<EntryChanged>(),
+          );
+          expect(
+            changed(type('11', atTheLimit).closeWith(Unit.inch)).text,
+            '19999999ft 11in',
+          );
+          final oneBelow = changed(type('19999998').closeWith(Unit.foot));
+          expect(
+            type('12', oneBelow).closeWith(Unit.inch),
+            isA<EntryCarried>().having(
+              (c) => c.buffer.text,
+              'text',
+              '19999999ft 0in',
+            ),
+          );
+          expect(
+            type('23', oneBelow).closeWith(Unit.inch),
+            isA<EntryCarried>(),
+          );
+          expect(type('24', oneBelow).closeWith(Unit.inch), tooLarge);
+          final metres = changed(type('19999999').closeWith(Unit.metre));
+          expect(type('100', metres).closeWith(Unit.centimetre), tooLarge);
+          expect(
+            type('99', metres).closeWith(Unit.centimetre),
+            isA<EntryChanged>(),
+          );
+          final twoLevels = changed(
+            type(
+              '99',
+              changed(type('19999999').closeWith(Unit.metre)),
+            ).closeWith(Unit.centimetre),
+          );
+          expect(type('10', twoLevels).closeWith(Unit.millimetre), tooLarge);
+        },
+      );
+
+      test('the Read-as pill keeps the mark of a '
+          'number that started with a point, so its 0 stays uncounted', () {
+        const tooMany = EntryRefused(EntryRefusal.tooManyDigits);
+        const pilled = EntryBuffer([
+          Token(
+            digits: '0.5',
+            unit: Unit.inch,
+            typedAs: '0.5',
+            startedWithPoint: true,
+          ),
+        ]);
+        final fourteenMore = type('1' * 14, pilled);
+        expect(fourteenMore.text, '0.5${'1' * 14}');
+        expect(fourteenMore.typeDigit('1'), tooMany);
+        const typedZero = EntryBuffer([
+          Token(digits: '0.5', unit: Unit.inch, typedAs: '0.5'),
+        ]);
+        expect(type('1' * 13, typedZero).typeDigit('1'), tooMany);
       });
 
       test('centimetres after metres make a compound, 1m 20cm', () {
@@ -640,8 +750,8 @@ void main() {
 
         test('past 2⁵³ seconds the fields are padded and left as typed', () {
           expect(
-            typeAngle('150119987579015:4:7').sealed.text,
-            '150119987579015°04\'07"',
+            typeAngle('19999999:9007198054741054:7').sealed.text,
+            '19999999°9007198054741054\'07"',
           );
         });
 
@@ -664,14 +774,16 @@ void main() {
       });
 
       test('the carry runs up to 2⁵³ minutes exactly, and stops past it', () {
+        // The degrees stop at the typed limit (19,999,999), so the minutes
+        // segment, which has no limit, carries the total to 2⁵³.
         expect(
-          typeAngle('150119987579015:92:').text,
+          typeAngle('19999999:9007198054741052:').text,
           '150119987579016°32\'00"',
           reason: '9,007,199,254,740,992 minutes, the last exact carry',
         );
         expect(
-          typeAngle('150119987579015:94:').text,
-          '150119987579015°94\'00"',
+          typeAngle('19999999:9007198054741054:').text,
+          '19999999°9007198054741054\'00"',
           reason: 'two past it: the segments are left as typed',
         );
       });
@@ -725,9 +837,9 @@ void main() {
       });
 
       test('segments past 2⁵³ minutes are left as typed', () {
-        final huge = typeAngle('99999999999999999:5:');
-        expect(huge.text, '99999999999999999°05\'00"');
-        expect(typeAngle('9', huge).text, '99999999999999999°05\'9"');
+        final huge = typeAngle('19999999:99999999999999999:');
+        expect(huge.text, '19999999°99999999999999999\'00"');
+        expect(typeAngle('9', huge).text, '19999999°99999999999999999\'9"');
       });
 
       test(
