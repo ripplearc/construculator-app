@@ -618,11 +618,138 @@ void main() {
         ],
       );
 
+      const failedRead = YourRatesError(
+        EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search after a failed read emits Retrying, not Loading, then the '
+        'SearchResults',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => failedRead,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [
+          isA<YourRatesRetrying>(),
+          isA<YourRatesSearchResults>().having(
+            (s) => s.results.map((e) => e.itemName).toList(),
+            'results',
+            ['Excavator'],
+          ),
+        ],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search that fails again after a failed read emits Retrying then '
+        'Error',
+        setUp: () {
+          database.getAllError = StateError('database locked');
+        },
+        build: zeroDebounceBloc,
+        seed: () => failedRead,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesError);
+        },
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesError>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search that starts while a retry runs emits no Loading, only the '
+        'SearchResults',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a typed recents query that starts while a retry runs emits no '
+        'Loading, only the SearchResults',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesRecentsQueried('exc', CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesSearchResults>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a refresh of the recents that starts while a retry runs emits no '
+        'Loading, only the Loaded',
+        build: () => bloc,
+        seed: () => const YourRatesRetrying(),
+        act: (bloc) async {
+          bloc.add(const YourRatesRefreshRecents(CostItemType.equipment));
+          await bloc.stream.firstWhere((s) => s is YourRatesLoaded);
+        },
+        expect: () => [isA<YourRatesLoaded>()],
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'a search after a read that worked emits Loading, not Retrying',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: zeroDebounceBloc,
+        seed: () => const YourRatesLoaded([]),
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched('exc', category: CostItemType.equipment),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesLoading>(), isA<YourRatesSearchResults>()],
+      );
+
       // ignore: no_direct_instantiation, reason: needs a debounce far longer than the test, which Modular's registration can't supply per-test
       YourRatesBloc longDebounceBloc() => YourRatesBloc(
         repository: Modular.get<YourRatesRepository>(),
         companyResolver: Modular.get<CurrentCompanyResolver>(),
         queryDebounce: const Duration(days: 1),
+      );
+
+      blocTest<YourRatesBloc, YourRatesState>(
+        'an immediate search skips the debounce and emits Retrying at once',
+        setUp: () {
+          database.seedRows([row(id: 'r1', itemName: 'Excavator')]);
+        },
+        build: longDebounceBloc,
+        seed: () => failedRead,
+        act: (bloc) async {
+          bloc.add(
+            const YourRatesSearched(
+              'exc',
+              category: CostItemType.equipment,
+              immediate: true,
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is YourRatesSearchResults);
+        },
+        expect: () => [isA<YourRatesRetrying>(), isA<YourRatesSearchResults>()],
       );
 
       blocTest<YourRatesBloc, YourRatesState>(

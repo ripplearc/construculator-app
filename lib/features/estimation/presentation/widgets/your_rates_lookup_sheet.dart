@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/other_method_suggestion.dart';
@@ -9,6 +11,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -108,9 +111,23 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     super.dispose();
   }
 
-  void _search(String query) {
+  void _search(String query, {bool immediate = false}) {
     context.read<YourRatesBloc>().add(
-      YourRatesSearched(query, category: CostItemType.equipment),
+      YourRatesSearched(
+        query,
+        category: CostItemType.equipment,
+        immediate: immediate,
+      ),
+    );
+  }
+
+  void _announceFailedRetry(BuildContext context) {
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.yourRatesLoadError,
+        Directionality.of(context),
+      ),
     );
   }
 
@@ -142,7 +159,10 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocBuilder<YourRatesBloc, YourRatesState>(
+    return BlocConsumer<YourRatesBloc, YourRatesState>(
+      listenWhen: (previous, current) =>
+          previous is YourRatesRetrying && current is YourRatesError,
+      listener: (context, _) => _announceFailedRetry(context),
       builder: (context, state) {
         final entries = _entriesOf(state);
         final selected = entries
@@ -210,20 +230,20 @@ class _YourRatesLookupSheetState extends State<YourRatesLookupSheet> {
     YourRateEntry? selected,
   ) {
     final l10n = context.l10n;
-    // TODO: [CA-1411] keep the error row with "Try again" disabled while retrying (https://ripplearc.youtrack.cloud/issue/CA-1411)
     if (state is YourRatesLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: CoreSpacing.space6),
         child: CoreLoadingIndicator(),
       );
     }
-    if (state is YourRatesError) {
+    if (state is YourRatesError || state is YourRatesRetrying) {
       return CoreInlineErrorRow(
         key: const Key('your_rates_load_error'),
         message: l10n.yourRatesLoadError,
         actionLabel: l10n.yourRatesTryAgain,
         actionKey: const Key('your_rates_try_again_button'),
-        onAction: () => _search(_searchController.text),
+        onAction: () => _search(_searchController.text, immediate: true),
+        isActionDisabled: state is YourRatesRetrying,
       );
     }
     if (entries.isEmpty) {
