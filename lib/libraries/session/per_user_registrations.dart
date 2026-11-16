@@ -2,5 +2,6 @@ import 'package:construculator/libraries/session/session_module.dart';
 
 /// Every library's per-user registration, in the order they are added.
 ///
-/// Only [SessionServiceImpl]'s module reads this list.
+/// Only `SessionLibraryModule` reads this list, and passes it to the session
+/// service.
 const List<PerUserRegistration> perUserRegistrations = [];
