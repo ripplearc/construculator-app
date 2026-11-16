@@ -246,17 +246,21 @@ void main() {
       expect(formatter.format(bigs.single.value), '111.11');
     });
 
-    group('D2: footing (CA-1066)', () {
+    group('D2: footing, fence and members at spacing (CA-1066)', () {
       Length feet(double value) => Length.exact(
         Rational((value * 100).round() * 12, 100),
         unit: Unit.foot,
       );
+      Length inchesLong(double value) =>
+          Length.exact(Rational((value * 100).round(), 100), unit: Unit.inch);
       Length metres(double value) => Length.exact(
         Rational((value * 1000).round() * 10, 254),
         unit: Unit.metre,
       );
       const noLength = Length(0, unit: Unit.foot);
       final crossSections = [inches(16, 8), inches(24, 18)];
+      final seventyFiveFeet = feet(75);
+      final eightFeet = feet(8);
 
       String sizeText(PieceSize size) =>
           '${formatter.formatStoredLength(size.width)} x '
@@ -417,7 +421,403 @@ void main() {
         expect(formatter.format(volume.volume), '2,222,222.22yd³');
       });
 
-      test('volumes compare by what they carry', () {
+      test('S44, row 241: 75ft of fence at 8ft on centre with 3 rails per '
+          'section is 11 posts and 30 rails', () {
+        final fence = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 10);
+        expect(fence.posts, 11);
+        expect(fence.rails, 30);
+        expect(formatter.format(fence.postsValue), '11');
+        expect(formatter.format(fence.railsValue), '30');
+        expect(FenceCount.postsKey, 'Fence posts');
+        expect(FenceCount.railsOfferKey, 'Rails');
+        expect(FenceCount.railsKey, 'Fence rails');
+      });
+
+      test('row 241: the O.C. pill set to 10ft recomputes 9 posts and 24 '
+          'rails, keeping the length and the rails per section', () {
+        final fence = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        final wider = fence.recount(onCentre: feet(10))!;
+        expect(wider.posts, 9);
+        expect(wider.rails, 24);
+        expect(wider.length, seventyFiveFeet);
+        expect(wider.railsPerSection, 3);
+        final twoRails = fence.recount(railsPerSection: 2)!;
+        expect(twoRails.rails, 20);
+        expect(twoRails.onCentre, eightFeet);
+      });
+
+      test('a length that is a whole number of sections takes no extra one: '
+          '80ft at 8ft is 10 sections and 11 posts', () {
+        final fence = trades.fenceFor(
+          feet(80),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 10);
+        expect(fence.posts, 11);
+      });
+
+      test('the sections are counted exactly over the inches, never over '
+          'doubles: 0.9m at 0.3m is 3 sections, 24m at 2.4m is 10, and '
+          '55.5m at 0.5m is 111, where a double ratio reads 112', () {
+        expect(
+          trades
+              .fenceFor(
+                metres(55.5),
+                onCentre: metres(0.5),
+                railsPerSection: 1,
+              )!
+              .sections,
+          111,
+        );
+        expect(
+          trades
+              .fenceFor(metres(0.9), onCentre: metres(0.3), railsPerSection: 1)!
+              .sections,
+          3,
+        );
+        expect(
+          trades
+              .fenceFor(metres(24), onCentre: metres(2.4), railsPerSection: 1)!
+              .sections,
+          10,
+        );
+      });
+
+      group('R1 (review of 19 Nov): a Calc length made by a division', () {
+        const arithmetic = ChainArithmetic();
+        Quantity combined(Quantity left, Operator operator, Quantity right) =>
+            switch (arithmetic.combine(left, operator, right)) {
+              ArithmeticValue(:final value) => value,
+              final outcome => throw StateError('expected a value: $outcome'),
+            };
+        Length calcMetres(double metresLong, double by) =>
+            combined(
+                  combined(
+                    metres(metresLong * by),
+                    Operator.multiply,
+                    metres(1),
+                  ),
+                  Operator.divide,
+                  metres(by),
+                )
+                as Length;
+
+        test('blocker 1: Calc 24m from 57.6m² ÷ 2.4m at 2.4m is 10 '
+            'sections, 11 posts and 30 rails, as a typed 24m is', () {
+          final calc24 = calcMetres(24, 2.4);
+          expect(formatter.format(calc24), '24m');
+          expect(
+            calc24.inches,
+            isNot(metres(24).inches),
+            reason: 'a computed length is kept to 1/512 of a tick',
+          );
+          final fence = trades.fenceFor(
+            calc24,
+            onCentre: metres(2.4),
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 10);
+          expect(fence.posts, 11);
+          expect(fence.rails, 30);
+          expect(
+            trades.spacingCountsFor(calc24, [metres(2.4)]).single.members,
+            11,
+          );
+        });
+
+        test('the other runs of the review read as typed: Calc 2.4m at 0.4m '
+            'is 7 posts, Calc 0.9m at 0.3m is 4, Calc 4.8m at 0.4m is 13, '
+            'and Qty@OC the same', () {
+          for (final (long, by, spacing, posts) in [
+            (2.4, 2.4, 0.4, 7),
+            (0.9, 2.4, 0.3, 4),
+            (4.8, 2.4, 0.4, 13),
+            (24.0, 2.4, 2.4, 11),
+          ]) {
+            final calc = calcMetres(long, by);
+            final fence = trades.fenceFor(
+              calc,
+              onCentre: metres(spacing),
+              railsPerSection: 1,
+            )!;
+            expect(fence.posts, posts, reason: 'Calc ${long}m at ${spacing}m');
+            expect(
+              trades.spacingCountsFor(calc, [metres(spacing)]).single.members,
+              posts,
+              reason: 'Qty@OC on Calc ${long}m at ${spacing}m',
+            );
+          }
+        });
+
+        test('a length less than half a tick past a whole number of '
+            'spacings is that many, and half a tick past is one more', () {
+          final twentyFour = metres(24);
+          Length plusParts(int parts) => Length.exact(
+            twentyFour.inches +
+                Rational(parts, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.metre,
+          );
+          FenceCount fenceOn(Length length) => trades.fenceFor(
+            length,
+            onCentre: metres(2.4),
+            railsPerSection: 1,
+          )!;
+          const halfATick = Length.partsPerTick ~/ 2;
+          expect(fenceOn(plusParts(1)).sections, 10);
+          expect(fenceOn(plusParts(halfATick - 1)).sections, 10);
+          expect(fenceOn(plusParts(halfATick)).sections, 11);
+          expect(
+            trades
+                .fenceFor(
+                  Length.exact(
+                    const Rational(96 * 12) + const Rational(1, 64),
+                    unit: Unit.footInch,
+                  ),
+                  onCentre: eightFeet,
+                  railsPerSection: 1,
+                )!
+                .posts,
+            14,
+            reason: 'a typed 96ft 0-1/64in is past twelve spacings of 8ft',
+          );
+        });
+
+        test('R2 (review of 26 Nov): a Calc length multiplied after its '
+            'division counts as the typed length does — Calc 20m from '
+            '10m² ÷ 2m × 4 at 2m is 10 sections, 11 posts and 30 rails, '
+            'Calc 4m from 2m² ÷ 2m × 4 at 2m is 3 members, and Calc 96ft '
+            'from 96ft² ÷ 7ft × 7 at 8ft is 13 posts', () {
+          Length multiplied(Length side, Length one, Length by, double times) =>
+              combined(
+                    combined(
+                      combined(side, Operator.multiply, one),
+                      Operator.divide,
+                      by,
+                    ),
+                    Operator.multiply,
+                    Scalar(times),
+                  )
+                  as Length;
+
+          final calc20 = multiplied(metres(10), metres(1), metres(2), 4);
+          expect(formatter.format(calc20), '20m');
+          expect(calc20.inches, isNot(metres(20).inches));
+          final fence = trades.fenceFor(
+            calc20,
+            onCentre: metres(2),
+            railsPerSection: 3,
+          )!;
+          expect([fence.sections, fence.posts, fence.rails], [10, 11, 30]);
+
+          final calc4 = multiplied(metres(2), metres(1), metres(2), 4);
+          expect(formatter.format(calc4), '4m');
+          expect(trades.spacingCountsFor(calc4, [metres(2)]).single.members, 3);
+
+          final calc96 = multiplied(feet(96), feet(1), feet(7), 7);
+          expect(formatter.format(calc96), '96ft 0in');
+          expect(
+            trades
+                .fenceFor(calc96, onCentre: eightFeet, railsPerSection: 1)!
+                .posts,
+            13,
+          );
+        });
+
+        test('a length of one part of a tick is still one section', () {
+          final onePart = Length.exact(
+            Rational(1, Length.ticksPerInch * Length.partsPerTick),
+            unit: Unit.inch,
+          );
+          final fence = trades.fenceFor(
+            onePart,
+            onCentre: eightFeet,
+            railsPerSection: 3,
+          )!;
+          expect(fence.sections, 1);
+          expect(
+            trades.spacingCountsFor(onePart, [eightFeet]).single.members,
+            2,
+          );
+        });
+
+        test('nit 1: a length and a spacing too long for exact sums are '
+            'counted in ticks, never thrown: 123.456789012m at '
+            '0.4123456789m is 300 sections and 301 posts', () {
+          final long = Length.exact(
+            const Rational(1234567890120, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          final spacing = Length.exact(
+            const Rational(4123456789, 254000000).reduced,
+            unit: Unit.metre,
+          );
+          expect(
+            () => long.inches / spacing.inches,
+            throwsA(isA<RationalOverflow>()),
+            reason: 'the exact ratio does not fit a Rational',
+          );
+          final fence = trades.fenceFor(
+            long,
+            onCentre: spacing,
+            railsPerSection: 1,
+          )!;
+          expect(fence.sections, 300);
+          expect(fence.posts, 301);
+          expect(trades.spacingCountsFor(long, [spacing]).single.members, 301);
+        });
+      });
+
+      test('a length shorter than one spacing is one section: 1in at 8ft '
+          'is 2 posts and 3 rails', () {
+        final fence = trades.fenceFor(
+          inchesLong(1),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(fence.sections, 1);
+        expect(fence.posts, 2);
+        expect(fence.rails, 3);
+      });
+
+      test('no rails per section is a fence of posts only; rails below zero '
+          'or a spacing of zero or less are refused, and so is a length of '
+          'zero or less', () {
+        final posts = trades.fenceFor(
+          seventyFiveFeet,
+          onCentre: eightFeet,
+          railsPerSection: 0,
+        )!;
+        expect(posts.rails, 0);
+        expect(posts.posts, 11);
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: eightFeet,
+            railsPerSection: -1,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: noLength,
+            railsPerSection: 3,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(
+            seventyFiveFeet,
+            onCentre: feet(-8),
+            railsPerSection: 3,
+          ),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(noLength, onCentre: eightFeet, railsPerSection: 3),
+          isNull,
+        );
+        expect(
+          trades.fenceFor(feet(-75), onCentre: eightFeet, railsPerSection: 3),
+          isNull,
+        );
+        expect(posts.recount(onCentre: noLength), isNull);
+        expect(posts.recount(railsPerSection: -1), isNull);
+        expect(posts.recount(railsPerSection: 0)!.rails, 0);
+      });
+
+      test('the longest fence the parser accepts, 19,999,999.99ft at 8ft, '
+          'is 2,500,001 posts and 7,500,000 rails', () {
+        final fence = trades.fenceFor(
+          feet(19999999.99),
+          onCentre: eightFeet,
+          railsPerSection: 3,
+        )!;
+        expect(formatter.format(fence.postsValue), '2,500,001');
+        expect(formatter.format(fence.railsValue), '7,500,000');
+      });
+
+      test('S46, row 242: 22ft 8-3/4in at 16in on centre is 19 members, and '
+          'at 24in it is 13, in the store\'s order', () {
+        final span = inchesLong(22 * 12 + 8.75);
+        final counts = trades.spacingCountsFor(span, [
+          inchesLong(16),
+          inchesLong(24),
+        ]);
+        expect(
+          [
+            for (final count in counts)
+              '${SpacingCount.offerKey} @'
+                  '${formatter.formatStoredLength(count.spacing)}: '
+                  '${formatter.format(count.value)}',
+          ],
+          ['Qty @16in: 19', 'Qty @24in: 13'],
+        );
+        expect(SpacingCount.resultKey, 'Quantity');
+      });
+
+      test('row 242: the O.C. pill set to 19.5in recomputes 15 members over '
+          'the same span, and a spacing of zero or less is refused', () {
+        final span = inchesLong(22 * 12 + 8.75);
+        final count = trades.spacingCountsFor(span, [inchesLong(16)]).single;
+        final wider = count.recount(inchesLong(19.5))!;
+        expect(wider.members, 15);
+        expect(wider.span, span);
+        expect(count.recount(noLength), isNull);
+        expect(count.recount(inchesLong(-16)), isNull);
+      });
+
+      test('a span up to one spacing long has two members, one at each '
+          'end: 6in and 16in at 16in', () {
+        expect(
+          trades
+              .spacingCountsFor(inchesLong(6), [inchesLong(16)])
+              .single
+              .members,
+          2,
+        );
+        expect(
+          trades
+              .spacingCountsFor(inchesLong(16), [inchesLong(16)])
+              .single
+              .members,
+          2,
+        );
+      });
+
+      test('a span of zero or less has no members, a spacing of zero or '
+          'less is left out, and no spacings is no count', () {
+        final spacings = [inchesLong(16), inchesLong(24)];
+        expect(trades.spacingCountsFor(noLength, spacings), isEmpty);
+        expect(trades.spacingCountsFor(feet(-22), spacings), isEmpty);
+        expect(
+          trades
+              .spacingCountsFor(feet(22), [noLength, inchesLong(16)])
+              .map((count) => count.spacing),
+          [inchesLong(16)],
+        );
+        expect(trades.spacingCountsFor(feet(22), const []), isEmpty);
+      });
+
+      test('the longest span the parser accepts, 19,999,999.99ft at 16in, '
+          'is 15,000,001 members', () {
+        final count = trades.spacingCountsFor(feet(19999999.99), [
+          inchesLong(16),
+        ]).single;
+        expect(formatter.format(count.value), '15,000,001');
+      });
+
+      test('volumes, fences and counts compare by what they carry', () {
         expect(
           FootingVolume(
             length: feet(22),
@@ -443,6 +843,323 @@ void main() {
               system: MeasurementSystem.imperial,
             ),
           ),
+        );
+        expect(
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+        );
+        expect(
+          FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 3),
+          isNot(
+            FenceCount(length: feet(75), onCentre: feet(8), railsPerSection: 2),
+          ),
+        );
+        expect(
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+        );
+        expect(
+          SpacingCount(span: feet(22), spacing: inchesLong(16)),
+          isNot(SpacingCount(span: feet(22), spacing: inchesLong(24))),
+        );
+      });
+    });
+
+    group('E2: weight through a named density (CA-1068)', () {
+      const concrete = NamedDensity(name: 'concrete', poundsPerCubicYard: 4050);
+      const gravel = NamedDensity(name: 'gravel', poundsPerCubicYard: 3000);
+      const sand = NamedDensity(name: 'sand', poundsPerCubicYard: 2700);
+      const densities = [concrete, gravel, sand];
+      const elevenCubicYards = Volume(11.0 * 27, unit: Unit.yard);
+
+      List<String> texts(List<MaterialWeight> weights) => [
+        for (final weight in weights)
+          '${formatter.format(weight.weight)} (${weight.density.name})',
+      ];
+
+      List<MaterialWeight> imperial(Volume volume) => trades.weightsFor(
+        volume,
+        densities,
+        system: MeasurementSystem.imperial,
+      );
+
+      double writtenNumber(Volume volume) => double.parse(
+        formatter
+            .format(volume)
+            .replaceAll(',', '')
+            .replaceAll(RegExp(r'[^0-9.]+$'), ''),
+      );
+
+      double inTheUnitOf(Volume volume, double cubicYards) {
+        final cubicFeet = cubicYards * 27;
+        if (volume.unit == Unit.boardFoot) {
+          return cubicFeet * Volume.boardFeetPerCubicFoot;
+        }
+        final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+        return cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+      }
+
+      test('S48, row 243: 11yd³ is 22.28 ton of concrete, 16.5 ton of '
+          'gravel and 14.85 ton of sand, in the store\'s order', () {
+        expect(texts(imperial(elevenCubicYards)), [
+          '22.28 ton (concrete)',
+          '16.5 ton (gravel)',
+          '14.85 ton (sand)',
+        ]);
+        expect(MaterialWeight.key, 'Weight');
+      });
+
+      test('the weight is kept exact in hundredths of a pound and rounded '
+          'only at display', () {
+        final weight = imperial(elevenCubicYards).first.weight;
+        expect(weight.hundredthsOfPound, closeTo(11 * 4050 * 100, 1e-6));
+        expect(weight.unit, Unit.ton);
+      });
+
+      test('S50: the footing\'s 0.72yd³ on screen weighs 1.46 ton of '
+          'concrete, 1.08 of gravel and 0.97 of sand — the shown volume, '
+          'not the exact 0.7243yd³, which would weigh 1.47', () {
+        final footing = trades
+            .footingVolumesFor(
+              const Length(22 * Length.ticksPerFoot, unit: Unit.foot),
+              [inches(16, 8)],
+              system: MeasurementSystem.imperial,
+            )
+            .single
+            .volume;
+        expect(formatter.format(footing), '0.72yd³');
+        expect(footing.cubicFeet / 27, closeTo(0.724279, 1e-6));
+        expect(texts(imperial(footing)), [
+          '1.46 ton (concrete)',
+          '1.08 ton (gravel)',
+          '0.97 ton (sand)',
+        ]);
+        expect(imperial(footing).first.shownCubicYards, closeTo(0.72, 1e-12));
+      });
+
+      test('row 231: 20ft³ is 1.5 ton of concrete and 1,750.7yd³ is '
+          '3,545.17 ton', () {
+        expect(texts(imperial(const Volume(20))).first, '1.5 ton (concrete)');
+        expect(
+          texts(imperial(const Volume(1750.7 * 27, unit: Unit.yard))).first,
+          '3,545.17 ton (concrete)',
+        );
+      });
+
+      test('row 232: board feet are weighed as shown too — 50.1751bf, '
+          'which shows 50.18bf, is 0.31 ton of concrete', () {
+        const boardFeet = Volume(50.1751 / 12, unit: Unit.boardFoot);
+        expect(formatter.format(boardFeet), '50.18bf');
+        final weight = imperial(boardFeet).first;
+        expect(weight.shownCubicYards, closeTo(50.18 / 12 / 27, 1e-12));
+        expect(texts([weight]).single, '0.31 ton (concrete)');
+      });
+
+      test('a volume written in cubic inches or metres is weighed as it '
+          'shows: 1,728in³ is one cubic foot, 1m³ shows 1m³', () {
+        expect(
+          imperial(const Volume(1, unit: Unit.inch)).first.shownCubicYards,
+          closeTo(1 / 27, 1e-12),
+        );
+        const cubicMetre = Volume(35.31466672148859, unit: Unit.metre);
+        expect(formatter.format(cubicMetre), '1m³');
+        expect(
+          imperial(cubicMetre).first.shownCubicYards,
+          closeTo(35.31466672148859 / 27, 1e-9),
+        );
+      });
+
+      test('under the metric system the weight is written in metric tons: '
+          '11yd³ of concrete is 20.21 m tons', () {
+        final weights = trades.weightsFor(
+          elevenCubicYards,
+          densities,
+          system: MeasurementSystem.metric,
+        );
+        expect(texts(weights).first, '20.21 m tons (concrete)');
+        expect(weights.first.weight.unit, Unit.metricTon);
+      });
+
+      test('row 244: the Density pill recomputes the same volume — gravel '
+          'edited to 3,200 weighs 11yd³ as 17.6 ton — and a density that '
+          'weighs nothing is refused', () {
+        final weight = imperial(elevenCubicYards).first;
+        const heavier = NamedDensity(name: 'gravel', poundsPerCubicYard: 3200);
+        final recounted = weight.recount(heavier)!;
+        expect(texts([recounted]).single, '17.6 ton (gravel)');
+        expect(recounted.volume, elevenCubicYards);
+        expect(recounted.system, MeasurementSystem.imperial);
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'air', poundsPerCubicYard: 0),
+          ),
+          isNull,
+        );
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'void', poundsPerCubicYard: -1),
+          ),
+          isNull,
+        );
+        expect(
+          weight.recount(
+            const NamedDensity(name: 'nan', poundsPerCubicYard: double.nan),
+          ),
+          isNull,
+        );
+      });
+
+      test('a volume of zero or less, or one that is not finite, weighs '
+          'nothing; a density of zero or less is left out; no densities is '
+          'no weight', () {
+        expect(imperial(const Volume(0)), isEmpty);
+        expect(imperial(const Volume(-20)), isEmpty);
+        expect(imperial(const Volume(double.nan)), isEmpty);
+        expect(imperial(const Volume(double.infinity)), isEmpty);
+        expect(
+          trades
+              .weightsFor(elevenCubicYards, const [
+                NamedDensity(name: 'air', poundsPerCubicYard: 0),
+                concrete,
+                NamedDensity(name: 'void', poundsPerCubicYard: -1),
+              ], system: MeasurementSystem.imperial)
+              .map((weight) => weight.density),
+          [concrete],
+        );
+        expect(
+          trades.weightsFor(
+            elevenCubicYards,
+            const [],
+            system: MeasurementSystem.imperial,
+          ),
+          isEmpty,
+        );
+      });
+
+      test('the smallest volume that shows weighs as shown, and 0.004yd³, '
+          'which shows as 0.00, is weighed at its stored value: 16.2lbs of '
+          'concrete, never 0', () {
+        const oneHundredth = Volume(0.01 * 27, unit: Unit.yard);
+        expect(texts(imperial(oneHundredth)).first, '0.02 ton (concrete)');
+        const underADisplayStep = Volume(0.004 * 27, unit: Unit.yard);
+        final weights = imperial(underADisplayStep);
+        expect(weights, hasLength(3));
+        expect(weights.first.shownCubicYards, closeTo(0.004, 1e-12));
+        expect(weights.first.weight.hundredthsOfPound, closeTo(1620, 1e-6));
+        expect(weights.last.weight.hundredthsOfPound, closeTo(1080, 1e-6));
+      });
+
+      test('a volume below the display step weighs its stored value in '
+          'every unit: 0.001ft³ is 0.15lbs of concrete, 1/8in x 1/8in x '
+          '1/8in is 0.00017lbs and 0.004bf is 0.05lbs', () {
+        final cubicFoot = imperial(const Volume(0.001)).first.weight;
+        expect(cubicFoot.hundredthsOfPound, closeTo(15, 1e-9));
+        const eighthInchCube = Volume(0.125 * 0.125 * 0.125 / 1728);
+        final cubicInch = imperial(eighthInchCube.spelledIn(Unit.inch)).first;
+        expect(cubicInch.weight.hundredthsOfPound, closeTo(0.016954, 1e-6));
+        const boardFeet = Volume(0.004 / 12, unit: Unit.boardFoot);
+        expect(
+          imperial(boardFeet).first.weight.hundredthsOfPound,
+          closeTo(5, 1e-9),
+        );
+      });
+
+      test('a volume that rounds up to the display step is weighed as '
+          'shown: 0.006yd³ shows 0.01yd³ and weighs 40.5lbs of concrete, '
+          'not the 24.3lbs of its stored value', () {
+        const roundsUp = Volume(0.006 * 27, unit: Unit.yard);
+        expect(formatter.format(roundsUp), '0.01yd³');
+        final weight = imperial(roundsUp).first;
+        expect(weight.shownCubicYards, closeTo(0.01, 1e-12));
+        expect(weight.weight.hundredthsOfPound, closeTo(4050, 1e-6));
+      });
+
+      test('the shown volume is the number the formatter writes, in every '
+          'unit and at the half-way values 0.725yd³ and 1.005yd³', () {
+        const volumes = [
+          Volume(0.725 * 27, unit: Unit.yard),
+          Volume(1.005 * 27, unit: Unit.yard),
+          Volume(2.675 * 27, unit: Unit.yard),
+          Volume(0.7243 * 27, unit: Unit.yard),
+          Volume(1750.7 * 27, unit: Unit.yard),
+          Volume(19999999.99 * 27, unit: Unit.yard),
+          Volume(20.005),
+          Volume(0.125),
+          Volume(1.005 / 1728, unit: Unit.inch),
+          Volume(123.455 / 1728, unit: Unit.inch),
+          Volume(0.725 / 12, unit: Unit.boardFoot),
+          Volume(50.1751 / 12, unit: Unit.boardFoot),
+          Volume(35.31466672148859 * 1.005, unit: Unit.metre),
+          Volume(35.31466672148859 * 0.725, unit: Unit.metre),
+        ];
+        for (final volume in volumes) {
+          expect(
+            inTheUnitOf(volume, imperial(volume).first.shownCubicYards),
+            closeTo(writtenNumber(volume), 1e-6),
+            reason: 'the display writes ${formatter.format(volume)}',
+          );
+        }
+      });
+
+      // The engine returns the weight as it is. This one is above the
+      // limit of 19,999,999.99 in the largest weight unit, so the user never
+      // reads this text: the strip step that offers and lands a weight
+      // (CA-1072) puts it through the Too large check of CA-1236
+      // (`QuantityFormatter.isTooLarge`), and the answer reads "Over
+      // 19,999,999.99" (Section 5.3).
+      test('the largest volume the parser accepts, 19,999,999.99yd³ of '
+          'concrete, comes out of the engine as the raw weight '
+          '40,499,999.98 ton, above the Too large limit', () {
+        const largest = Volume(19999999.99 * 27, unit: Unit.yard);
+        expect(texts(imperial(largest)).first, '40,499,999.98 ton (concrete)');
+      });
+
+      test('a density is usable when it is a finite number above zero', () {
+        expect(concrete.isUsable, isTrue);
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: 0.01).isUsable,
+          isTrue,
+        );
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: 0).isUsable,
+          isFalse,
+        );
+        expect(
+          const NamedDensity(name: 'x', poundsPerCubicYard: -4050).isUsable,
+          isFalse,
+        );
+        expect(
+          const NamedDensity(
+            name: 'x',
+            poundsPerCubicYard: double.infinity,
+          ).isUsable,
+          isFalse,
+        );
+      });
+
+      test('weights and densities compare by what they carry', () {
+        const weight = MaterialWeight(
+          volume: elevenCubicYards,
+          density: concrete,
+          system: MeasurementSystem.imperial,
+        );
+        expect(
+          const MaterialWeight(
+            volume: elevenCubicYards,
+            density: NamedDensity(name: 'concrete', poundsPerCubicYard: 4050),
+            system: MeasurementSystem.imperial,
+          ),
+          weight,
+        );
+        expect(weight.recount(gravel), isNot(weight));
+        expect(weight.recount(concrete), weight);
+        expect(
+          const MaterialWeight(
+            volume: elevenCubicYards,
+            density: concrete,
+            system: MeasurementSystem.metric,
+          ),
+          isNot(weight),
         );
       });
     });

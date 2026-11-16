@@ -1,6 +1,10 @@
+import 'dart:math';
+
 import 'package:construculator/libraries/calculator_engine/models/calculator_preferences.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
 import 'package:equatable/equatable.dart';
 
 /// The two trades that count pieces over an area (UX Design Doc Section 9,
@@ -174,19 +178,268 @@ final class FootingVolume extends Equatable {
   List<Object?> get props => [length, crossSection, system];
 }
 
+/// The posts and rails a length of fence needs (Section 9, "Fence":
+/// sections = ceil(length ÷ O.C.), at least 1; posts = sections + 1;
+/// rails = sections × rails per section; seeds O.C. 8ft, 3 rails per
+/// section). The Posts result carries the O.C. and Rails/section pills,
+/// and the rails are offered as a suggestion beside it (requirement R8). A
+/// recount after a pill is edited goes through [recount], which keeps the
+/// length the fence was counted for.
+final class FenceCount extends Equatable {
+  /// The key the accepted posts are labelled by.
+  static const String postsKey = 'Fence posts';
+
+  /// The key the strip labels the rails offer by.
+  static const String railsOfferKey = 'Rails';
+
+  /// The key the accepted rails are labelled by.
+  static const String railsKey = 'Fence rails';
+
+  /// The run of fence.
+  final Length length;
+
+  /// The post spacing, on centre.
+  final Length onCentre;
+
+  /// Rails between two posts.
+  final int railsPerSection;
+
+  /// A run of fence of [length] with posts [onCentre] and [railsPerSection]
+  /// rails between them. A spacing of zero or less has no sections, so a
+  /// caller counts through [Trades.fenceFor] or [recount], which refuse it.
+  const FenceCount({
+    required this.length,
+    required this.onCentre,
+    required this.railsPerSection,
+  });
+
+  /// Sections of fence: the length over the spacing, rounded up, computed
+  /// exactly over the inches so that 24m at 2.4m is ten sections and not
+  /// eleven. A length less than half a tick ([Length.ticksPerInch]) past a
+  /// whole number of spacings is that many: the screen writes no length
+  /// finer than a tick, and a computed length carries the rounding of every
+  /// step that made it, so Calc 24m from 57.6m² ÷ 2.4m is ten sections and
+  /// so is Calc 20m from 10m² ÷ 2m × 4 at 2m, as the screen reads them. A
+  /// length above zero always has at least one, and lengths too long for
+  /// exact sums are counted in ticks.
+  int get sections => _spacingsIn(length, onCentre);
+
+  /// One post more than there are sections.
+  int get posts => sections + 1;
+
+  /// The rails of every section.
+  int get rails => sections * railsPerSection;
+
+  /// The posts as the whole number the result chip holds.
+  Scalar get postsValue => Scalar(posts.toDouble(), decimals: 0);
+
+  /// The rails as the whole number the result chip holds.
+  Scalar get railsValue => Scalar(rails.toDouble(), decimals: 0);
+
+  /// The same length of fence at another spacing or with other rails per
+  /// section, as the pills recompute it, or `null` for a spacing of zero
+  /// or less or rails below zero, which are refused so that the caller
+  /// keeps the last good pill.
+  FenceCount? recount({Length? onCentre, int? railsPerSection}) {
+    final spacing = onCentre ?? this.onCentre;
+    final rails = railsPerSection ?? this.railsPerSection;
+    if (!_isAboveZero(spacing) || rails < 0) return null;
+    return FenceCount(
+      length: length,
+      onCentre: spacing,
+      railsPerSection: rails,
+    );
+  }
+
+  @override
+  List<Object?> get props => [length, onCentre, railsPerSection];
+}
+
+/// The members along a span at one on-centre spacing (Section 9, "Quantity
+/// at on-centre spacing": members = ceil(length ÷ spacing) + 1 for each
+/// stored spacing, 16in and 24in): the offer the strip makes per spacing
+/// and, once accepted, the result that carries its O.C. pill (requirement
+/// R8). A recount after the pill is edited goes through [recount], which
+/// keeps the span: 22ft 8-3/4in at 19.5in gives 15.
+final class SpacingCount extends Equatable {
+  /// The key the strip labels the offer by.
+  static const String offerKey = 'Qty';
+
+  /// The key the accepted count is labelled by.
+  static const String resultKey = 'Quantity';
+
+  /// The span the members are laid along.
+  final Length span;
+
+  /// The spacing, on centre.
+  final Length spacing;
+
+  /// Members along [span] at [spacing] on centre. A spacing of zero or
+  /// less has no members, so a caller counts through
+  /// [Trades.spacingCountsFor] or [recount], which leave it out.
+  const SpacingCount({required this.span, required this.spacing});
+
+  /// The members: the span over the spacing, rounded up as
+  /// [FenceCount.sections] rounds it, plus the one that closes the span.
+  int get members => _spacingsIn(span, spacing) + 1;
+
+  /// The members as the whole number the result chip holds.
+  Scalar get value => Scalar(members.toDouble(), decimals: 0);
+
+  /// The same span at another spacing, as the pill recomputes it, or
+  /// `null` for a spacing of zero or less, which is refused so that the
+  /// caller keeps the last good one.
+  SpacingCount? recount(Length spacing) {
+    if (!_isAboveZero(spacing)) return null;
+    return SpacingCount(span: span, spacing: spacing);
+  }
+
+  @override
+  List<Object?> get props => [span, spacing];
+}
+
+/// A stored material and its density, as the densities store holds it (UX
+/// Design Doc Section 9, "Weight": concrete 4,050, gravel 3,000, sand
+/// 2,700 lb/yd³; + Add material extends the list).
+final class NamedDensity extends Equatable {
+  /// The material's name as the user typed it.
+  final String name;
+
+  /// The density in pounds per cubic yard, the stored unit whatever the
+  /// display setting (Appendix C).
+  final double poundsPerCubicYard;
+
+  /// The material [name] at [poundsPerCubicYard].
+  const NamedDensity({required this.name, required this.poundsPerCubicYard});
+
+  /// Whether the density can weigh anything: a finite number above zero.
+  bool get isUsable => poundsPerCubicYard.isFinite && poundsPerCubicYard > 0;
+
+  @override
+  List<Object?> get props => [name, poundsPerCubicYard];
+}
+
+/// The weight of a volume of one named material (Section 9, "Weight":
+/// weight = volume (yd³) × density (lb/yd³), rendered in tons, or metric
+/// tons under the metric system; requirement R11). The first stored
+/// material is the offer the strip proposes; once accepted, every other
+/// stored material answers the same volume, and the chosen one is the
+/// Density pill. A recount after the pill is edited goes through
+/// [recount], which keeps the volume the weight was made from.
+///
+/// The volume is weighed as the display shows it, at two decimals in its
+/// own unit (Section 6, "Rounding at display": weight uses the quantity
+/// shown on screen): 22ft of footing shows 0.72yd³ and weighs 1.46 ton of
+/// concrete, not the 1.47 ton its exact 0.7243yd³ would come to (S50). A
+/// volume too small to show as a number is weighed at its stored value
+/// (same section: "a result shown in words uses the stored value"), so
+/// 0.004yd³ of concrete weighs 16.2lbs and never exactly 0.
+final class MaterialWeight extends Equatable {
+  /// The key the strip labels the offer and the accepted weight by.
+  static const String key = 'Weight';
+
+  /// The volume weighed.
+  final Volume volume;
+
+  /// The material it is made of.
+  final NamedDensity density;
+
+  /// The system of units the weight is written in: tons under Imperial,
+  /// metric tons under Metric.
+  final MeasurementSystem system;
+
+  /// A [volume] of [density]'s material, weighed in the tons of [system].
+  const MaterialWeight({
+    required this.volume,
+    required this.density,
+    required this.system,
+  });
+
+  /// The cubic yards the display shows for [volume]: its amount in its
+  /// own unit — board feet, or the cube of a length unit — rounded as a
+  /// result is, half up to two decimals, and read back. An amount that
+  /// rounds to 0.00 is shown in words, not as a number, so it is read
+  /// back as stored.
+  double get shownCubicYards {
+    final stored = _amountInItsUnit(volume);
+    final shown = _roundedAsAResult(stored);
+    final weighed = shown == 0 ? stored : shown;
+    return weighed / _unitsPerCubicFoot(volume.unit) / _cubicFeetPerCubicYard;
+  }
+
+  /// The weight, kept exact in hundredths of a pound and rounded at
+  /// display.
+  Weight get weight => Weight(
+    shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound,
+    unit: switch (system) {
+      MeasurementSystem.imperial => Unit.ton,
+      MeasurementSystem.metric => Unit.metricTon,
+    },
+  );
+
+  /// The same volume of another material, as the pill recomputes it, or
+  /// `null` for a density that can weigh nothing ([NamedDensity.isUsable]),
+  /// which is refused so that the caller keeps the last good one.
+  MaterialWeight? recount(NamedDensity density) {
+    if (!density.isUsable) return null;
+    return MaterialWeight(volume: volume, density: density, system: system);
+  }
+
+  @override
+  List<Object?> get props => [volume, density, system];
+}
+
+const int _cubicFeetPerCubicYard = 27;
+
+const int _hundredthsPerPound = 100;
+
 const int _squareTicksPerSquareFoot =
     Area.squareTicksPerSquareInch * Area.squareInchesPerSquareFoot;
 
 bool _isAboveZero(Length length) => length.preciseTicks > 0;
 
+const Rational _halfATick = Rational(1, Length.ticksPerInch * 2);
+
+int _spacingsIn(Length length, Length spacing) {
+  try {
+    final whole = (length.inches / spacing.inches).floor();
+    final over = length.inches - spacing.inches * Rational(whole);
+    if (whole > 0 && over.compareTo(_halfATick) < 0) return whole;
+    return whole + 1;
+  } on RationalOverflow {
+    final ticksOver = length.preciseTicks - 1 / Length.partsPerTick;
+    return max(1, (ticksOver / spacing.preciseTicks).ceil());
+  }
+}
+
+double _unitsPerCubicFoot(Unit unit) {
+  if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble();
+  final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit;
+  return feetPerUnit * feetPerUnit * feetPerUnit;
+}
+
+double _amountInItsUnit(Volume volume) {
+  if (volume.unit == Unit.boardFoot) return volume.boardFeet;
+  final feetPerUnit = Length.ticksPerFoot / volume.unit.ticksPerUnit;
+  return volume.cubicFeet * feetPerUnit * feetPerUnit * feetPerUnit;
+}
+
+double _roundedAsAResult(double amount) {
+  const scale = 100;
+  assert(QuantityFormatter.resultDecimals == 2, 'the scale is 10^decimals');
+  return (amount * scale + 0.5).floorToDouble() / scale;
+}
+
 /// The material rules of UX Design Doc Section 9: an area on the tape
 /// becomes a sheet count for every stored drywall size, or a piece count
 /// for every stored masonry size, one offer per size in the store's order;
-/// a length becomes concrete for every stored footing cross-section. The
-/// port of the prototype's `materials` and `footingChips`, over what the
-/// trade-stores repository holds; which value earns the offers, and when,
-/// is the arbiter's, and so are the follow-on offers after a trade result
-/// (Cost, Weight), which are rules of their own.
+/// a length becomes concrete for every stored footing cross-section, posts
+/// and rails at the stored fence spacing, or members at every stored
+/// on-centre spacing; a volume becomes a weight for every stored material.
+/// The port of the prototype's `materials`, `footingChips`, `fenceCalc`,
+/// `qtyOcChips` and `weightChip`, over what the trade-stores repository
+/// holds; which value earns the offers, and when, is the arbiter's, and so
+/// is the Cost follow-on after a trade result, which is a rule of its own.
 class Trades extends Equatable {
   const Trades();
 
@@ -227,6 +480,57 @@ class Trades extends Equatable {
             crossSection: crossSection,
             system: system,
           ),
+    ];
+  }
+
+  /// The fence along [length] with posts [onCentre] and [railsPerSection]
+  /// rails between them; `null` for a length of zero or less, a spacing of
+  /// zero or less, or rails below zero, none of which the screen lets
+  /// through.
+  FenceCount? fenceFor(
+    Length length, {
+    required Length onCentre,
+    required int railsPerSection,
+  }) {
+    if (!_isAboveZero(length) ||
+        !_isAboveZero(onCentre) ||
+        railsPerSection < 0) {
+      return null;
+    }
+    return FenceCount(
+      length: length,
+      onCentre: onCentre,
+      railsPerSection: railsPerSection,
+    );
+  }
+
+  /// The members along [span] at each of [spacings], in their order. A span
+  /// of zero or less has no members at all; a spacing of zero or less is
+  /// left out.
+  List<SpacingCount> spacingCountsFor(Length span, List<Length> spacings) {
+    if (!_isAboveZero(span)) return const [];
+    return [
+      for (final spacing in spacings)
+        if (_isAboveZero(spacing)) SpacingCount(span: span, spacing: spacing),
+    ];
+  }
+
+  /// The weight of [volume] in each of [densities], in their order, the
+  /// first being the material the strip proposes and the rest the ones
+  /// that answer behind it, written in the tons of [system]. A volume of
+  /// zero or less, or one that is not a finite number, weighs nothing at
+  /// all; a density that can weigh nothing is left out.
+  List<MaterialWeight> weightsFor(
+    Volume volume,
+    List<NamedDensity> densities, {
+    required MeasurementSystem system,
+  }) {
+    final cubicFeet = volume.cubicFeet;
+    if (!cubicFeet.isFinite || cubicFeet <= 0) return const [];
+    return [
+      for (final density in densities)
+        if (density.isUsable)
+          MaterialWeight(volume: volume, density: density, system: system),
     ];
   }
 
