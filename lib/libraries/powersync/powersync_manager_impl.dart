@@ -92,7 +92,10 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
         }
       },
       onError: (error) {
-        _logger.warning('Error in auth state stream, ignoring', error);
+        _logger.warning(
+          'Error in auth state stream, ignoring',
+          error.runtimeType,
+        );
       },
     );
 

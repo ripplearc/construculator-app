@@ -62,7 +62,7 @@ class AuthManagerImpl implements AuthManager {
         }
       },
       onError: (error) {
-        _logger.warning('Error in auth state stream', error);
+        _logger.warning('Error in auth state stream', error.runtimeType);
         if (error is supabase.AuthSessionMissingException) {
           _logger.warning('Auth-specific error, emitting unauthenticated');
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);

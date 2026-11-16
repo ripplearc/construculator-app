@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
 import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -17,6 +19,7 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 void main() {
   final fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
   final fakeDatabase = FakePowerSyncDatabase();
+  late FakeSentryWrapper fakeSentry;
   final bootstrap = FakeAppBootstrapFactory.create(
     supabaseWrapper: fakeSupabase,
     powerSyncDatabase: fakeDatabase,
@@ -39,6 +42,11 @@ void main() {
     Modular.dispose<PowerSyncManager>();
     fakeSupabase.reset();
     fakeDatabase.reset();
+    fakeSentry = FakeSentryWrapper();
+  });
+
+  tearDown(() {
+    AppLogger.setSentryWrapper(null);
   });
 
   PowerSyncManager startManager() => Modular.get<PowerSyncManager>();
@@ -310,6 +318,28 @@ void main() {
         await settle();
 
         expect(fakeDatabase.connectCallCount, 2);
+      },
+    );
+
+    test(
+      'auth stream error breadcrumb holds the error type and not the error text',
+      () {
+        AppLogger.setSentryWrapper(fakeSentry);
+        startManager();
+
+        fakeSupabase.setAuthStreamError(
+          'unused',
+          exception: const FormatException(
+            'refresh_token=secret-session-value',
+          ),
+        );
+
+        final breadcrumb = fakeSentry.breadcrumbs.singleWhere(
+          (call) =>
+              call.message ==
+              '[PowerSyncManager] Error in auth state stream, ignoring',
+        );
+        expect(breadcrumb.data, {'error': 'FormatException'});
       },
     );
   });
