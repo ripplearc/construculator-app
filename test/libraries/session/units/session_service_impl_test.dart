@@ -99,6 +99,16 @@ void main() {
       expect(first.isDisposed, isFalse);
     });
 
+    test('registers the objects once when started twice', () {
+      var registrationCount = 0;
+      service = createService([(i) => registrationCount++]);
+
+      service.startSession();
+      service.startSession();
+
+      expect(registrationCount, 1);
+    });
+
     test('does nothing when ended without a session', () {
       service.endSession();
 
