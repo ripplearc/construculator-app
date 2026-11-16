@@ -48,9 +48,22 @@
         <regex pattern="if \(kept\.length == depth\) break;" dotAll="true" id="angle_memory.depth">
             <mutation text="if (kept.length == depth + 1) break;"/>
         </regex>
-        <regex pattern="if \(kept\.any\(\(earlier\) =&gt; earlier\.entry\.text == angle\.entry\.text\)\) \{\s*continue;\s*\}" dotAll="true" id="angle_memory.duplicates">
+        <regex pattern="if \(kept\.any\(\(earlier\) =&gt; earlier\.isSameEntryAs\(angle\)\)\) continue;" dotAll="true" id="angle_memory.duplicates">
             <mutation text=""/>
-            <mutation text="if (kept.any((earlier) =&gt; earlier.entry == angle.entry)) { continue; }"/>
+            <mutation text="if (kept.any((earlier) =&gt; earlier.entry == angle.entry)) continue;"/>
+        </regex>
+
+        <!-- RULE 4a: two spellings of one angle are two entries (CA-1368):
+             the entry is compared by its text alone, by its value alone, by
+             the exact double, by the whole Angle with its spelling, or
+             within a tolerance wide enough to merge 38.05 with 38°03'01" -->
+        <regex pattern="entry\.text == other\.entry\.text \|\|\s*\(value\.degrees - other\.value\.degrees\)\.abs\(\) &lt;=\s*AngleMemory\.sameAngleTolerance;" dotAll="true" id="angle_memory.same_entry">
+            <mutation text="entry.text == other.entry.text;"/>
+            <mutation text="(value.degrees - other.value.degrees).abs() &lt;= AngleMemory.sameAngleTolerance;"/>
+            <mutation text="entry.text == other.entry.text || value.degrees == other.value.degrees;"/>
+            <mutation text="entry.text == other.entry.text || value == other.value;"/>
+            <mutation text="entry.text == other.entry.text || (value.degrees - other.value.degrees).abs() &lt;= 1e-3;"/>
+            <mutation text="entry.text == other.entry.text || (value.degrees - other.value.degrees) &lt;= AngleMemory.sameAngleTolerance;"/>
         </regex>
         <regex pattern="AngleMemory\.of\(\[angle, \.\.\.remembered\]\);" dotAll="true" id="angle_memory.filed_at_the_back">
             <mutation text="AngleMemory.of([...remembered, angle]);"/>
