@@ -23,6 +23,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   group('DashboardBloc', () {
@@ -59,6 +60,8 @@ void main() {
       );
 
       Modular.init(DashboardModule(FakeAppBootstrapFactory.create()));
+
+      startTestSession();
       Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
       Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
       Modular.replaceInstance<AuthNotifierController>(fakeAuthNotifier);

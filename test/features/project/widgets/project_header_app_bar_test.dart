@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   late FakeProjectRepository fakeProjectRepository;
@@ -26,6 +27,7 @@ void main() {
   setUpAll(() async {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
     Modular.replaceInstance<CurrentProjectNotifier>(
       FakeCurrentProjectNotifier(),

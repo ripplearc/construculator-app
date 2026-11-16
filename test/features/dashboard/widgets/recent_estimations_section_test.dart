@@ -27,6 +27,7 @@ import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.d
 import '../../../utils/dashboard_shell_test_module.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   late FakeClockImpl clock;
@@ -105,6 +106,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(DashboardShellTestModule(bootstrap));
+    startTestSession();
 
     Modular.replaceInstance<AppRouter>(router);
     Modular.replaceInstance<CostEstimationRepository>(fakeRepository);

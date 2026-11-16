@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   final size = const Size(390, 64);
@@ -29,6 +30,7 @@ void main() {
   setUpAll(() async {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
     Modular.replaceInstance<CurrentProjectNotifier>(
       FakeCurrentProjectNotifier(),

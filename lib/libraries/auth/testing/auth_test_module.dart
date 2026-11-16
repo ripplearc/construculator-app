@@ -13,6 +13,7 @@ import 'package:construculator/libraries/company/data/data_source/powersync_loca
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database_wrapper.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -48,6 +49,7 @@ class AuthTestModule extends Module {
         sentryWrapper: FakeSentryWrapper(),
         analyticsRepository: FakeAnalyticsRepository(),
         currentCompanyResolver: i(),
+        sessionService: FakeSessionService(),
       ),
       key: 'authManagerWithFakeDep',
     );

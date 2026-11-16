@@ -7,6 +7,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/start_test_session.dart';
 
 class _FakeRouteManager extends Fake implements RouteManager {}
 
@@ -27,6 +28,7 @@ void main() {
     setUp(() {
       module = ProjectModule(FakeAppBootstrapFactory.create());
       Modular.init(_ProjectModuleTestHarness());
+      startTestSession();
     });
 
     tearDown(() {

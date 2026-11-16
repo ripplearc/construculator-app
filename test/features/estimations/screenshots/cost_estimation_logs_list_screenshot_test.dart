@@ -19,6 +19,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/start_test_session.dart';
 import '../helpers/log_test_data_factory.dart';
 
 void main() {
@@ -40,6 +41,8 @@ void main() {
     bootstrap = FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase);
 
     Modular.init(EstimationModule(bootstrap));
+
+    startTestSession();
   });
 
   tearDownAll(() {

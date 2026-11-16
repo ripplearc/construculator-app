@@ -8,6 +8,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -39,6 +40,7 @@ class AuthLibraryModule extends Module {
         sentryWrapper: appBootstrap.sentryWrapper,
         analyticsRepository: appBootstrap.analyticsRepository,
         currentCompanyResolver: i<CurrentCompanyResolver>(),
+        sessionService: Modular.get<SessionService>(),
       ),
     );
   }

@@ -17,6 +17,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../../utils/start_test_session.dart';
 
 void main() {
   group('GetProjectHeaderUseCase', () {
@@ -40,6 +41,8 @@ void main() {
       fakeAuthRepository = FakeAuthRepository(clock: fakeClock);
 
       Modular.init(ProjectModule(FakeAppBootstrapFactory.create()));
+
+      startTestSession();
 
       Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
       Modular.replaceInstance<AuthRepository>(fakeAuthRepository);
