@@ -113,6 +113,52 @@
             <mutation text="if (!crossSection.hasFace) return null; return FootingVolume(length: const Length(0, unit: Unit.foot), crossSection: crossSection, system: system);"/>
         </regex>
 
+        <!-- RULE 11: the fence sections are rounded down, always up, or
+             counted over doubles -->
+        <regex pattern="int get sections =&gt; _ceil\(length\.inches / onCentre\.inches\);" dotAll="true" id="trades.fence.sections">
+            <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor();"/>
+            <mutation text="int get sections =&gt; (length.inches / onCentre.inches).floor() + 1;"/>
+            <mutation text="int get sections =&gt; (length.preciseTicks / onCentre.preciseTicks).ceil();"/>
+        </regex>
+
+        <!-- RULE 12: the posts are the sections, or the rails are added -->
+        <regex pattern="int get posts =&gt; sections \+ 1;" dotAll="true" id="trades.fence.posts">
+            <mutation text="int get posts =&gt; sections;"/>
+            <mutation text="int get posts =&gt; sections + 2;"/>
+        </regex>
+        <regex pattern="int get rails =&gt; sections \* railsPerSection;" dotAll="true" id="trades.fence.rails">
+            <mutation text="int get rails =&gt; sections + railsPerSection;"/>
+            <mutation text="int get rails =&gt; posts * railsPerSection;"/>
+        </regex>
+
+        <!-- RULE 13: a fence recount takes a spacing of zero or rails below
+             zero, forgets the length, or drops a pill that was not edited -->
+        <regex pattern="if \(!_isAboveZero\(spacing\) \|\| rails &lt; 0\) return null;" dotAll="true" id="trades.fence.recount_guard">
+            <mutation text=""/>
+            <mutation text="if (!_isAboveZero(spacing)) return null;"/>
+            <mutation text="if (rails &lt; 0) return null;"/>
+            <mutation text="if (!_isAboveZero(spacing) || rails &lt;= 0) return null;"/>
+        </regex>
+        <regex pattern="return FenceCount\(\s*length: length,\s*onCentre: spacing,\s*railsPerSection: rails,\s*\);" dotAll="true" id="trades.fence.recount">
+            <mutation text="return FenceCount(length: length, onCentre: spacing, railsPerSection: this.railsPerSection);"/>
+            <mutation text="return FenceCount(length: length, onCentre: this.onCentre, railsPerSection: rails);"/>
+        </regex>
+
+        <!-- RULE 14: the members forget the closing one, or are rounded
+             down -->
+        <regex pattern="int get members =&gt; _ceil\(span\.inches / spacing\.inches\) \+ 1;" dotAll="true" id="trades.spacing.members">
+            <mutation text="int get members =&gt; _ceil(span.inches / spacing.inches);"/>
+            <mutation text="int get members =&gt; (span.inches / spacing.inches).floor() + 1;"/>
+            <mutation text="int get members =&gt; _ceil(span.inches / spacing.inches) + 2;"/>
+        </regex>
+
+        <!-- RULE 15: a spacing recount takes a spacing of zero, or forgets
+             the span -->
+        <regex pattern="if \(!_isAboveZero\(spacing\)\) return null;\s*return SpacingCount\(span: span, spacing: spacing\);" dotAll="true" id="trades.spacing.recount">
+            <mutation text="return SpacingCount(span: span, spacing: spacing);"/>
+            <mutation text="if (!_isAboveZero(spacing)) return null; return SpacingCount(span: spacing, spacing: spacing);"/>
+        </regex>
+
         <!-- RULE 16: a length of zero is usable, the smallest one above
              zero is not, or only a length below zero is refused -->
         <regex pattern="bool _isAboveZero\(Length length\) =&gt; length\.preciseTicks &gt; 0;" dotAll="true" id="trades.is_above_zero">
@@ -121,11 +167,31 @@
             <mutation text="bool _isAboveZero(Length length) =&gt; length.ticks &gt; 0;"/>
         </regex>
 
-        <!-- RULE 18: the footing rule takes a length of zero, or a
-             cross-section with no face -->
+        <!-- RULE 17: the exact ceiling rounds down, always up, or to the
+             nearest -->
+        <regex pattern="int _ceil\(Rational ratio\) =&gt; ratio\.isWhole \? ratio\.floor\(\) : ratio\.floor\(\) \+ 1;" dotAll="true" id="trades.ceil">
+            <mutation text="int _ceil(Rational ratio) =&gt; ratio.floor();"/>
+            <mutation text="int _ceil(Rational ratio) =&gt; ratio.floor() + 1;"/>
+            <mutation text="int _ceil(Rational ratio) =&gt; ratio.round();"/>
+        </regex>
+
+        <!-- RULE 18: the footing, fence and spacing rules take a length of
+             zero, a cross-section with no face, a spacing of zero, or rails
+             below zero -->
         <regex pattern="if \(!_isAboveZero\(length\)\) return const \[\];\s*return \[\s*for \(final crossSection in crossSections\)\s*if \(crossSection\.hasFace\)" dotAll="true" id="trades.footing.guards">
             <mutation text="return [ for (final crossSection in crossSections) if (crossSection.hasFace)"/>
             <mutation text="if (!_isAboveZero(length)) return const []; return [ for (final crossSection in crossSections)"/>
+        </regex>
+        <regex pattern="if \(!_isAboveZero\(length\) \|\|\s*!_isAboveZero\(onCentre\) \|\|\s*railsPerSection &lt; 0\) \{\s*return null;\s*\}" dotAll="true" id="trades.fence.guards">
+            <mutation text=""/>
+            <mutation text="if (!_isAboveZero(onCentre) || railsPerSection &lt; 0) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || railsPerSection &lt; 0) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || !_isAboveZero(onCentre)) { return null; }"/>
+            <mutation text="if (!_isAboveZero(length) || !_isAboveZero(onCentre) || railsPerSection &lt;= 0) { return null; }"/>
+        </regex>
+        <regex pattern="if \(!_isAboveZero\(span\)\) return const \[\];\s*return \[\s*for \(final spacing in spacings\)\s*if \(_isAboveZero\(spacing\)\)" dotAll="true" id="trades.spacing.guards">
+            <mutation text="return [ for (final spacing in spacings) if (_isAboveZero(spacing))"/>
+            <mutation text="if (!_isAboveZero(span)) return const []; return [ for (final spacing in spacings)"/>
         </regex>
     </rules>
 
