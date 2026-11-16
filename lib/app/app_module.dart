@@ -10,6 +10,7 @@ import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/consent_routes.dart';
+import 'package:construculator/libraries/session/session_library_module.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -26,6 +27,7 @@ class AppModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
     PowerSyncModule(appBootstrap),
+    SessionLibraryModule(),
   ];
 
   @override

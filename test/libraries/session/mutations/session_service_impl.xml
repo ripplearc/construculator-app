@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- SESSION SERVICE MUTATION TESTING (start and end of the per-user session) -->
+
+    <files>
+        <file>lib/libraries/session/session_service_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="bool _isActive = false;" id="session.initial_active">
+            <mutation text="bool _isActive = true;"/>
+        </regex>
+
+        <regex pattern="if \(_isActive\) return;" id="start.guard_negated">
+            <mutation text="if (!_isActive) return;"/>
+        </regex>
+
+        <regex pattern="if \(_isActive\) return;" id="start.guard_removed">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="if \(!_isActive\) return;" id="end.guard_negated">
+            <mutation text="if (_isActive) return;"/>
+        </regex>
+
+        <regex pattern="if \(!_isActive\) return;" id="end.guard_removed">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="Modular\.bindModule\(SessionModule\(registrations: _registrations\)\);" id="start.skip_bind">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="Modular\.bindModule\(SessionModule\(registrations: _registrations\)\);" id="start.empty_registrations">
+            <mutation text="Modular.bindModule(SessionModule(registrations: const []));"/>
+        </regex>
+
+        <regex pattern="Modular\.unbindModule&lt;SessionModule&gt;\(\);" id="end.skip_unbind">
+            <mutation text=""/>
+        </regex>
+
+        <regex pattern="_isActive = true;\n  \}" id="start.skip_set_active">
+            <mutation text="}"/>
+        </regex>
+
+        <regex pattern="_isActive = false;\n  \}" id="end.skip_set_inactive">
+            <mutation text="}"/>
+        </regex>
+    </rules>
+</mutations>
