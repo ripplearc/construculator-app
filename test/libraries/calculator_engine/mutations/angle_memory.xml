@@ -35,8 +35,32 @@
         </regex>
 
         <!-- RULE 3: a value that is not an angle is filed -->
-        <regex pattern="final angle = chip\.typedAngle;\s*if \(angle == null\) return this;" dotAll="true" id="angle_memory.filed.not_an_angle">
-            <mutation text="final angle = chip.typedAngle ?? const Angle(0);"/>
+        <regex pattern="final angle = chip\.filedAngle\(parser\);\s*if \(angle == null\) return this;" dotAll="true" id="angle_memory.filed.not_an_angle">
+            <mutation text="final angle = chip.filedAngle(parser) ?? const Angle(0);"/>
+        </regex>
+
+        <!-- RULE 3b: a pitch typed in inches of rise is not filed, is filed
+             as degrees equal to its inches, or over its ticks (CA-1366) -->
+        <regex pattern="final Length rise =&gt; Angle\.ofRisePerFoot\(\s*rise\.preciseTicks / Length\.ticksPerInch,\s*\)," dotAll="true" id="chip.filed_angle.pitch_length">
+            <mutation text="Length() =&gt; null,"/>
+            <mutation text="final Length rise =&gt; Angle(rise.preciseTicks / Length.ticksPerInch),"/>
+            <mutation text="final Length rise =&gt; Angle.ofRisePerFoot(rise.preciseTicks),"/>
+        </regex>
+        <!-- RULE 3c: a length under a key that does not read degrees is
+             filed as a rise, or no length is -->
+        <regex pattern="if \(!readsDegrees \|\| trigFunction != null\) return null;\s*return switch \(value\(parser\)\) \{" dotAll="true" id="chip.filed_angle.guard">
+            <mutation text="if (trigFunction != null) return null; return switch (value(parser)) {"/>
+            <mutation text="return null; return switch (value(parser)) {"/>
+        </regex>
+        <!-- RULE 3d: the bare fraction over twelve is not filed -->
+        <regex pattern="Angle\(spelling: AngleSpelling\.risePerFoot\) &amp;&amp; final pitch =&gt; pitch,\s*_ =&gt; null," dotAll="true" id="chip.filed_angle.fraction_over_twelve">
+            <mutation text="_ =&gt; null,"/>
+        </regex>
+        <!-- RULE 3e: a rise is filed in its rise spelling, as typed, or every
+             typed angle is re-spelled by the formatter -->
+        <regex pattern="if \(angle\.spelling == AngleSpelling\.risePerFoot\) \{\s*return filedAnswer\(angle, formatter: formatter\);\s*\}" dotAll="true" id="angle_memory.filed.rise_spelling">
+            <mutation text=""/>
+            <mutation text="if (angle.spelling != AngleSpelling.degreesMinutesSeconds) { return filedAnswer(angle, formatter: formatter); }"/>
         </regex>
         <regex pattern="_isPlainNumber &amp;&amp; \(readsDegrees \|\| entry\.isDegreesMinutesSeconds\)\s*\? _typedAngle\s*: null;" dotAll="true" id="chip.typed_angle">
             <mutation text="_isPlainNumber ? _typedAngle : null;"/>

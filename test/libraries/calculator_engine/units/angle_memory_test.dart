@@ -20,6 +20,8 @@ void main() {
     'ATAN' => tape.pressTrigKey(TrigFunction.arctangent),
     'ft' => tape.pressUnit(Unit.foot),
     'in' => tape.pressUnit(Unit.inch),
+    'mm' => tape.pressUnit(Unit.millimetre),
+    '/' => tape.typeFraction(),
     '⌫' => tape.backspace(),
     '×' => tape.pressOperator(Operator.multiply),
     '+' => tape.pressOperator(Operator.add),
@@ -81,7 +83,11 @@ void main() {
         'spelling intact', () {
       final sine = landed(press(const Tape(), 'SIN 3 8 DMS 0 3'));
       expect(texts(sine), ['Sine38°03\'00"', 'Sine 0.616349']);
-      final memory = const AngleMemory().filed(sine.chips.first as ValueChip);
+      final memory = const AngleMemory().filed(
+        sine.chips.first as ValueChip,
+        parser: parser,
+        formatter: formatter,
+      );
       final offered = newest(memory, PlainNumberKeys.pitch);
       expect(offered!.entry.text, '38°03\'00"');
       expect(memory.remembered, hasLength(1), reason: 'one chip, never a menu');
@@ -159,7 +165,14 @@ void main() {
       );
       expect(recalled.typedAngle, const Angle(53.1301));
       expect(
-        newest(const AngleMemory().filed(recalled), 'Sine')!.value,
+        newest(
+          const AngleMemory().filed(
+            recalled,
+            parser: parser,
+            formatter: formatter,
+          ),
+          'Sine',
+        )!.value,
         const Angle(53.1301),
       );
     });
@@ -245,7 +258,11 @@ void main() {
     test('Section 6: a recalled angle under a forward trig key stays the '
         'function\'s operand, so × 10 after it is the sine times ten', () {
       final sine = landed(press(const Tape(), 'SIN 4 5'));
-      final memory = const AngleMemory().filed(sine.chips.first as ValueChip);
+      final memory = const AngleMemory().filed(
+        sine.chips.first as ValueChip,
+        parser: parser,
+        formatter: formatter,
+      );
       final remembered = newest(memory, 'Sine')!;
       for (final (key, product) in [
         ('SIN', 'Calc 7.07'),
@@ -360,7 +377,11 @@ void main() {
     test('rule 4.10: a chip filed while still active is filed as it reads '
         'once sealed, 38 [D:M:S] 75 as 39°15\'00"', () {
       final typed = activeOf(press(const Tape(), '3 8 DMS 7 5'));
-      final memory = const AngleMemory().filed(typed);
+      final memory = const AngleMemory().filed(
+        typed,
+        parser: parser,
+        formatter: formatter,
+      );
       expect(newest(memory, 'Sine')!.entry.text, '39°15\'00"');
       expect(
         newest(memory, 'Sine')!.value,
@@ -430,6 +451,8 @@ void main() {
       for (final degrees in ['3 0', '4 5', '6 0']) {
         memory = memory.filed(
           activeOf(press(const Tape(), '[Pitch] $degrees')),
+          parser: parser,
+          formatter: formatter,
         );
       }
       List<String> offered(String key, {required bool rowHasAnswers}) => [
@@ -459,7 +482,7 @@ void main() {
         );
         final chip = activeOf(press(const Tape(), '[Pitch] 3 8 DMS 0 3'));
         final memory = const AngleMemory()
-            .filed(chip)
+            .filed(chip, parser: parser, formatter: formatter)
             .filedAnswer(answer, formatter: formatter);
         expect(memory.remembered, hasLength(1));
         expect(memory.remembered.single.entry.text, '38°03\'00"');
@@ -545,7 +568,11 @@ void main() {
         'ASIN 0 . 5',
       ]) {
         final chip = activeOf(press(const Tape(), keys));
-        expect(memory.filed(chip), memory, reason: keys);
+        expect(
+          memory.filed(chip, parser: parser, formatter: formatter),
+          memory,
+          reason: keys,
+        );
         expect(chip.typedAngle, isNull, reason: keys);
       }
       expect(
@@ -564,6 +591,8 @@ void main() {
       for (final degrees in ['3 0', '4 5', '6 0', '7 5']) {
         memory = memory.filed(
           activeOf(press(const Tape(), '[Pitch] $degrees')),
+          parser: parser,
+          formatter: formatter,
         );
       }
       expect(
@@ -571,16 +600,28 @@ void main() {
         ['75', '60', '45'],
       );
       expect(newest(memory, PlainNumberKeys.pitch)!.entry.text, '75');
-      memory = memory.filed(activeOf(press(const Tape(), '[Pitch] 4 5')));
+      memory = memory.filed(
+        activeOf(press(const Tape(), '[Pitch] 4 5')),
+        parser: parser,
+        formatter: formatter,
+      );
       expect(
         [for (final angle in memory.remembered) angle.entry.text],
         ['45', '75', '60'],
       );
-      memory = memory.filed(activeOf(press(const Tape(), '[Pitch] 4 5')));
+      memory = memory.filed(
+        activeOf(press(const Tape(), '[Pitch] 4 5')),
+        parser: parser,
+        formatter: formatter,
+      );
       expect(memory.remembered, hasLength(3));
       var two = const AngleMemory();
       for (final degrees in ['3 0', '4 5', '3 0']) {
-        two = two.filed(activeOf(press(const Tape(), '[Pitch] $degrees')));
+        two = two.filed(
+          activeOf(press(const Tape(), '[Pitch] $degrees')),
+          parser: parser,
+          formatter: formatter,
+        );
       }
       expect(
         [for (final angle in two.remembered) angle.entry.text],
@@ -600,8 +641,11 @@ void main() {
         for (final angle in memory.remembered) angle.entry.text,
       ];
 
-      AngleMemory filedTyped(AngleMemory memory, String keys) =>
-          memory.filed(activeOf(press(const Tape(), keys)));
+      AngleMemory filedTyped(AngleMemory memory, String keys) => memory.filed(
+        activeOf(press(const Tape(), keys)),
+        parser: parser,
+        formatter: formatter,
+      );
 
       Angle angleAnswer(TrigFunction function, double ratio) {
         final answer = function.answerTo(Scalar(ratio));
@@ -865,7 +909,126 @@ void main() {
         );
         final respelled = changed(recalled.pressDmsKey());
         expect(activeOf(respelled).entry.text, '30°00\'00"');
-        expect(entries(memory.filed(activeOf(respelled))), ['30°00\'00"']);
+        expect(
+          entries(
+            memory.filed(
+              activeOf(respelled),
+              parser: parser,
+              formatter: formatter,
+            ),
+          ),
+          ['30°00\'00"'],
+        );
+      });
+    });
+
+    group('rule 4.16: a pitch typed in inches of rise is filed, stored as '
+        'the degrees it is worth (CA-1366)', () {
+      List<String> entries(AngleMemory memory) => [
+        for (final angle in memory.remembered) angle.entry.text,
+      ];
+
+      AngleMemory filedTyped(AngleMemory memory, String keys) => memory.filed(
+        activeOf(press(const Tape(), keys)),
+        parser: parser,
+        formatter: formatter,
+      );
+
+      test('[Pitch] 6 [Inch] files 26.57 over the exact angle, offered back '
+          'to Pitch and the forward trig keys, never to an inverse key', () {
+        final memory = filedTyped(const AngleMemory(), '[Pitch] 6 in');
+        expect(entries(memory), ['26.57']);
+        final remembered = memory.remembered.single;
+        expect(remembered.value.spelling, AngleSpelling.degrees);
+        expect(remembered.value.degrees, closeTo(26.565051177077994, 1e-12));
+        expect(newest(memory, PlainNumberKeys.pitch), remembered);
+        expect(newest(memory, 'Sine'), remembered);
+        expect(newest(memory, 'Arcsine'), isNull);
+      });
+
+      test('a number typed as degrees is still filed as typed: 30.50 stays '
+          '30.50, not the formatter\'s 30.5', () {
+        expect(entries(filedTyped(const AngleMemory(), '[Pitch] 3 0 . 5 0')), [
+          '30.50',
+        ]);
+      });
+
+      test('recalled under Pitch it is the exact pitch again, so the Pitch '
+          'key reads it as 6in/12in; recalled under Tangent it answers '
+          '0.5', () {
+        final memory = filedTyped(const AngleMemory(), '[Pitch] 6 in');
+        final remembered = newest(memory, PlainNumberKeys.pitch)!;
+        final pitch = changed(
+          press(const Tape(), '[Pitch]').recall(remembered),
+        );
+        expect(activeOf(pitch).entry.text, '26.57');
+        expect(activeOf(pitch).exactValue, remembered.value);
+        expect(
+          texts(press(pitch, '[Pitch]')).last,
+          'Pitch-rise per 12in run 6in/12in',
+        );
+        final tangent = changed(press(const Tape(), 'TAN').recall(remembered));
+        expect(
+          tangent.trigAnswer!.value,
+          isA<Scalar>().having((s) => s.value, 'value', closeTo(0.5, 1e-12)),
+        );
+      });
+
+      test('12in is 45, 16in is 53.13, 30in past the roof is 68.2, and a '
+          'rise of 0in is 0', () {
+        expect(entries(filedTyped(const AngleMemory(), '[Pitch] 1 2 in')), [
+          '45',
+        ]);
+        expect(entries(filedTyped(const AngleMemory(), '[Pitch] 1 6 in')), [
+          '53.13',
+        ]);
+        expect(entries(filedTyped(const AngleMemory(), '[Pitch] 3 0 in')), [
+          '68.2',
+        ]);
+        expect(entries(filedTyped(const AngleMemory(), '[Pitch] 0 in')), ['0']);
+      });
+
+      test('every spelling of a rise files: a bare fraction over twelve, a '
+          'mixed number, a bare fraction of an inch, a compound, whole '
+          'feet and a metric length', () {
+        for (final (keys, degrees) in const [
+          ('[Pitch] 6 / 1 2', '26.57'),
+          ('[Pitch] 6 in 1 / 2 in', '28.44'),
+          ('[Pitch] 1 / 2 in', '2.39'),
+          ('[Pitch] 1 ft 4 in', '53.13'),
+          ('[Pitch] 1 ft', '45'),
+          ('[Pitch] 1 5 2 . 4 mm', '26.57'),
+        ]) {
+          expect(entries(filedTyped(const AngleMemory(), keys)), [
+            degrees,
+          ], reason: keys);
+        }
+      });
+
+      test('a rise filed when the chip seals and again when its answer '
+          'renders is one entry', () {
+        final sealed = press(const Tape(), '[Pitch] 6 in +').chips.first;
+        final memory = const AngleMemory()
+            .filed(sealed as ValueChip, parser: parser, formatter: formatter)
+            .filedAnswer(Angle.ofRisePerFoot(6), formatter: formatter);
+        expect(entries(memory), ['26.57']);
+      });
+
+      test('a length under any other key, and a fraction over twelve under '
+          'a key that does not read degrees, are not filed', () {
+        for (final keys in ['[Width] 8 ft', '[Length] 1 2 in', '[Sides] 6']) {
+          final chip = activeOf(press(const Tape(), keys));
+          expect(chip.filedAngle(parser), isNull, reason: keys);
+          expect(
+            const AngleMemory().filed(
+              chip,
+              parser: parser,
+              formatter: formatter,
+            ),
+            const AngleMemory(),
+            reason: keys,
+          );
+        }
       });
     });
 
@@ -1006,7 +1169,11 @@ void main() {
       expect(texts(press(sine, '⌫ 5')), ['Sine5'], reason: 'never Sine-5');
       final typed = landed(press(const Tape(), 'SIN 3 8 DMS 0 3'));
       final dms = newest(
-        const AngleMemory().filed(typed.chips.first as ValueChip),
+        const AngleMemory().filed(
+          typed.chips.first as ValueChip,
+          parser: parser,
+          formatter: formatter,
+        ),
         PlainNumberKeys.pitch,
       )!;
       final recalled = changed(press(const Tape(), '[Pitch]').recall(dms));

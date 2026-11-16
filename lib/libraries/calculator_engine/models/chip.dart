@@ -176,6 +176,26 @@ final class ValueChip extends TapeChip {
         : null;
   }
 
+  /// The angle the drawer files for the chip (rule 4.16: "a pitch typed in
+  /// inches of rise included, stored as the degrees it is worth"):
+  /// [typedAngle], or the pitch a length typed under Pitch stands for —
+  /// [Pitch] 6 [Inch] is 6in of rise per 12in of run, 26.57°, and the bare
+  /// [Pitch] 6/12 is the same pitch — in the rise spelling, read the way
+  /// the rules read it ([Angle.ofRisePerFoot] over the precise ticks, so
+  /// the drawer and the strip agree). `null` for a chip that files nothing:
+  /// a count, a grade, a ratio, or a length under any other key.
+  Angle? filedAngle(QuantityParser parser) {
+    if (typedAngle case final angle?) return angle;
+    if (!readsDegrees || trigFunction != null) return null;
+    return switch (value(parser)) {
+      final Length rise => Angle.ofRisePerFoot(
+        rise.preciseTicks / Length.ticksPerInch,
+      ),
+      Angle(spelling: AngleSpelling.risePerFoot) && final pitch => pitch,
+      _ => null,
+    };
+  }
+
   QuantityParser _typedUnder(QuantityParser parser) {
     if (poundsPerTon case final typedUnder?
         when typedUnder != parser.poundsPerTon) {
