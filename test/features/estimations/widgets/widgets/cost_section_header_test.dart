@@ -32,9 +32,9 @@ void main() {
 
   final l10n = lookupAppLocalizations(const Locale('en'));
   final names = {
-    CostItemType.material: l10n.costSectionMaterials.toUpperCase(),
-    CostItemType.labor: l10n.costSectionLabor.toUpperCase(),
-    CostItemType.equipment: l10n.costSectionEquipment.toUpperCase(),
+    CostItemType.material: l10n.costSectionMaterials,
+    CostItemType.labor: l10n.costSectionLabor,
+    CostItemType.equipment: l10n.costSectionEquipment,
   };
 
   for (final entry in names.entries) {
@@ -52,9 +52,7 @@ void main() {
     });
   }
 
-  testWidgets('spaces the letters of the name as the design does', (
-    tester,
-  ) async {
+  testWidgets('draws the name without extra letter spacing', (tester) async {
     await pumpHeader(tester, type: CostItemType.material, subtotal: 0);
 
     expect(
@@ -64,7 +62,37 @@ void main() {
       isA<TextStyle>().having(
         (style) => style.letterSpacing,
         'letterSpacing',
-        0.84,
+        isNull,
+      ),
+    );
+  });
+
+  testWidgets('draws a subtotal of zero in the lighter body colour', (
+    tester,
+  ) async {
+    await pumpHeader(tester, type: CostItemType.labor, subtotal: 0);
+    final subtotal = find.byKey(const Key('cost_section_subtotal_labor'));
+    final colors = AppColorsExtension.of(tester.element(subtotal));
+
+    expect(
+      tester.widget<Text>(subtotal).style,
+      isA<TextStyle>().having((style) => style.color, 'color', colors.textBody),
+    );
+  });
+
+  testWidgets('draws a subtotal above zero in the dark headline colour', (
+    tester,
+  ) async {
+    await pumpHeader(tester, type: CostItemType.labor, subtotal: 480);
+    final subtotal = find.byKey(const Key('cost_section_subtotal_labor'));
+    final colors = AppColorsExtension.of(tester.element(subtotal));
+
+    expect(
+      tester.widget<Text>(subtotal).style,
+      isA<TextStyle>().having(
+        (style) => style.color,
+        'color',
+        colors.textHeadline,
       ),
     );
   });
@@ -151,7 +179,7 @@ void main() {
     final node = tester.getSemantics(
       find.byKey(const Key('cost_section_header_material')),
     );
-    expect(node.label, contains(l10n.costSectionMaterials.toUpperCase()));
+    expect(node.label, contains(l10n.costSectionMaterials));
     expect(node.label, contains(r'$1,265.02'));
     expect(node.getSemanticsData().flagsCollection.isHeader, isTrue);
     handle.dispose();

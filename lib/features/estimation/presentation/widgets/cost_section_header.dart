@@ -9,8 +9,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// The band has a light line above and below it, so it still shows on a page
 /// that is the same grey. It runs the full width of the screen, scrolls with
-/// the list and is never pinned. The subtotal comes from the caller, since the screen does
-/// not add up lines.
+/// the list and is never pinned. The subtotal comes from the caller, since the
+/// screen does not add up lines. A section at zero dollars shows its subtotal
+/// in the lighter body colour.
 class CostSectionHeader extends StatelessWidget {
   /// The category this section holds.
   final CostItemType type;
@@ -19,7 +20,6 @@ class CostSectionHeader extends StatelessWidget {
   final double subtotal;
 
   static const _minHeight = 44.0;
-  static const _nameLetterSpacing = 0.84;
 
   const CostSectionHeader({
     super.key,
@@ -55,11 +55,10 @@ class CostSectionHeader extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _name(context).toUpperCase(),
+                      _name(context),
                       key: Key('cost_section_name_${type.name}'),
                       style: context.textTheme.bodySmallSemiBold.copyWith(
                         color: colorTheme.textBody,
-                        letterSpacing: _nameLetterSpacing,
                       ),
                     ),
                   ),
@@ -71,7 +70,9 @@ class CostSectionHeader extends StatelessWidget {
                         DisplayFormatter.formatCurrency(subtotal),
                         key: Key('cost_section_subtotal_${type.name}'),
                         style: context.textTheme.bodyLargeSemiBold.copyWith(
-                          color: colorTheme.textHeadline,
+                          color: subtotal == 0
+                              ? colorTheme.textBody
+                              : colorTheme.textHeadline,
                         ),
                       ),
                     ),
