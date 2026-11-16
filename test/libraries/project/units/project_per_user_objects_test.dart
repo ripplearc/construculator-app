@@ -2,7 +2,7 @@ import 'package:construculator/libraries/project/domain/repositories/project_rep
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
-import 'package:construculator/libraries/session/session_library_module.dart';
+import 'package:construculator/libraries/session/session_service_impl.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -17,7 +17,6 @@ class _TestModule extends Module {
 
   @override
   List<Module> get imports => [
-    SessionLibraryModule(registrations: const [registerProjectPerUserObjects]),
     ProjectLibraryModule(
       FakeAppBootstrapFactory.create(supabaseWrapper: supabaseWrapper),
     ),
@@ -32,7 +31,10 @@ void main() {
       _TestModule(supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl())),
     );
     addTearDown(Modular.destroy);
-    sessionService = Modular.get<SessionService>();
+    // ignore: no_direct_instantiation
+    sessionService = SessionServiceImpl(
+      registrations: const [registerProjectPerUserObjects],
+    );
     addTearDown(sessionService.endSession);
   });
 
