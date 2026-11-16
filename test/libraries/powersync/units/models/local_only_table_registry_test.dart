@@ -158,9 +158,8 @@ void main() {
         expect(
           database.executeCalls.map((call) => call.sql),
           unorderedEquals([
-            for (final entry in LocalOnlyTableRegistry.registrations)
-              if (entry.policy == LocalOnlyTablePolicy.clearWhenUserChanges)
-                'DELETE FROM ${entry.tableName}',
+            'DELETE FROM current_company',
+            'DELETE FROM your_rate_refusals',
           ]),
         );
       });
