@@ -44,6 +44,7 @@ abstract class OwnerRecordStorageService {
   Future<void> write(OwnerRecord record);
 
   /// Removes the owner record, so the next [read] returns [OwnerRecordAbsent].
+  /// Removing when there is no record succeeds.
   ///
   /// Throws an exception if the removal fails.
   Future<void> remove();

@@ -43,14 +43,14 @@ class FakeOwnerRecordStorageService implements OwnerRecordStorageService {
 
   @override
   Future<void> write(OwnerRecord record) async {
-    if (shouldThrowOnWrite) throw StateError('write failed');
+    if (shouldThrowOnWrite) throw Exception('write failed');
     _current = OwnerRecordFound(record);
     writes.add(record);
   }
 
   @override
   Future<void> remove() async {
-    if (shouldThrowOnRemove) throw StateError('remove failed');
+    if (shouldThrowOnRemove) throw Exception('remove failed');
     _current = const OwnerRecordAbsent();
   }
 }

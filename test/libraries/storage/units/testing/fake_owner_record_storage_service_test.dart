@@ -58,7 +58,7 @@ void main() {
     test('a failing write throws and stores nothing', () async {
       fake.shouldThrowOnWrite = true;
 
-      await expectLater(fake.write(userOne), throwsStateError);
+      await expectLater(fake.write(userOne), throwsException);
 
       expect(fake.record, isNull);
       expect(fake.writes, isEmpty);
@@ -68,7 +68,7 @@ void main() {
       fake.seed(userOne);
       fake.shouldThrowOnRemove = true;
 
-      await expectLater(fake.remove(), throwsStateError);
+      await expectLater(fake.remove(), throwsException);
 
       expect(fake.record, userOne);
     });
