@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:construculator/libraries/storage/models/owner_record.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -142,6 +144,38 @@ void main() {
       cases.forEach((name, json) {
         test(name, () {
           expect(() => OwnerRecord.fromJson(json), throwsFormatException);
+        });
+      });
+    });
+    group('stored file format', () {
+      final storedRecords = {
+        'an arrival flag': (
+          text:
+              '{"userId":"user-1","pendingDelete":{"kind":"arrivalOfNewUser","userId":"user-2"},"signOutDate":"2026-11-10T08:30:00.000Z"}',
+          record: OwnerRecord(
+            userId: 'user-1',
+            pendingDelete: const PendingDelete.arrivalOf('user-2'),
+            signOutDate: DateTime.utc(2026, 11, 10, 8, 30),
+          ),
+        ),
+        'a logout flag': (
+          text:
+              '{"userId":null,"pendingDelete":{"kind":"logoutOrNoOwnerRecord","userId":null},"signOutDate":null}',
+          record: OwnerRecord(
+            pendingDelete: const PendingDelete.logoutOrNoOwnerRecord(),
+          ),
+        ),
+      };
+
+      storedRecords.forEach((name, stored) {
+        test('reads a record saved by an earlier version with $name', () {
+          final saved = jsonDecode(stored.text) as Map<String, Object?>;
+
+          expect(OwnerRecord.fromJson(saved), stored.record);
+        });
+
+        test('writes the same text for $name', () {
+          expect(jsonEncode(stored.record.toJson()), stored.text);
         });
       });
     });
