@@ -13,6 +13,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/start_test_session.dart';
 
 void main() {
   const size = Size(390, 300);
@@ -25,6 +26,7 @@ void main() {
   setUpAll(() async {
     await loadAppFonts();
     Modular.init(EstimationModule(FakeAppBootstrapFactory.create()));
+    startTestSession();
 
     fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(initialProjectId: testProjectId);
     Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);

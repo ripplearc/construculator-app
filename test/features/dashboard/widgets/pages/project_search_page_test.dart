@@ -31,6 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/start_test_session.dart';
 import '../../../../utils/toast_test_utils.dart';
 
 const String _testUserId = 'user-project-search-page-test';
@@ -50,7 +51,7 @@ class _ProjectSearchPageTestModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+      () => ProjectDropdownBloc(projectRepository: Modular.get<ProjectRepository>(), authManager: i()),
     );
   }
 }
@@ -66,6 +67,7 @@ void main() {
       supabaseWrapper: FakeSupabaseWrapper(clock: clock),
     );
     Modular.init(_ProjectSearchPageTestModule(bootstrap));
+    startTestSession();
     final supabase = Modular.get<SupabaseWrapper>();
     expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;

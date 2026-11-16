@@ -18,6 +18,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   late Clock clock;
@@ -62,6 +63,7 @@ void main() {
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
       Modular.init(ProjectModule(appBootstrap));
+      startTestSession();
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       Modular.replaceInstance<AuthRepository>(FakeAuthRepository(clock: clock));
       Modular.replaceInstance<CurrentProjectNotifier>(
