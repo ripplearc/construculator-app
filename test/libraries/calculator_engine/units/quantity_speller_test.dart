@@ -62,6 +62,62 @@ void main() {
           Token(digits: '0', unit: Unit.inch),
         ]);
       });
+
+      group('leftover inches that round up to a whole foot carry into the '
+          'feet (CA-1364)', () {
+        List<Token> compound(Rational inches) =>
+            speller.spell(Length.exact(inches, unit: Unit.footInch));
+
+        List<Token> feetAndInches(String feet, String inches) => [
+          Token(digits: feet, unit: Unit.foot),
+          Token(digits: inches, unit: Unit.inch),
+        ];
+
+        test('5.9999999ft, which is 5ft 11.9999988in, reads 6ft 0in and '
+            'never 5ft 12in', () {
+          expect(
+            compound(const Rational(719999988, 10000000)),
+            feetAndInches('6', '0'),
+          );
+        });
+
+        test('the carry follows the rounding: 5ft 11.994in stays 5ft '
+            '11.99in, 5ft 11.995in is 6ft 0in', () {
+          expect(
+            compound(const Rational(71994, 1000)),
+            feetAndInches('5', '11.99'),
+          );
+          expect(
+            compound(const Rational(71995, 1000)),
+            feetAndInches('6', '0'),
+          );
+        });
+
+        test('the carry rolls the feet over: 0.9999999ft is 1ft 0in, '
+            '9.9999999ft is 10ft 0in, 999.9999999ft is 1000ft 0in', () {
+          expect(
+            compound(const Rational(119999988, 10000000)),
+            feetAndInches('1', '0'),
+          );
+          expect(
+            compound(const Rational(1199999988, 10000000)),
+            feetAndInches('10', '0'),
+          );
+          expect(
+            compound(const Rational(119999999988, 10000000)),
+            feetAndInches('1000', '0'),
+          );
+        });
+
+        test('nothing carries below the boundary: 5ft 11.99in exactly stays, '
+            'and so does 5ft 11.5in', () {
+          expect(
+            compound(const Rational(7199, 100)),
+            feetAndInches('5', '11.99'),
+          );
+          expect(compound(const Rational(715, 10)), feetAndInches('5', '11.5'));
+        });
+      });
     });
 
     group('spell an area', () {

@@ -18,9 +18,13 @@ import 'package:equatable/equatable.dart';
 ///
 /// A ft-in compound is written as whole feet, then the leftover inches to
 /// two decimals: 224in reads 18ft 8in and 1ft 1/16in re-spelled reads
-/// 1ft 0.06in. Every number is rounded half up to the decimals its
-/// dimension keeps (the constants below), and written without trailing
-/// zeros or a trailing point, so 264 not 264.000 and 6.222 not 6.2220.
+/// 1ft 0.06in. Leftover inches that round up to a whole foot are carried
+/// into the feet, so 5.9999999ft reads 6ft 0in and never 5ft 12in, the
+/// same carry a fraction of an inch makes at display (Section 6: an inch
+/// part as large as a foot is carried up). Every number is rounded half up
+/// to the decimals its dimension keeps (the constants below), and written
+/// without trailing zeros or a trailing point, so 264 not 264.000 and
+/// 6.222 not 6.2220.
 class QuantitySpeller extends Equatable {
   /// Decimals kept when a length, an area or a weight is re-spelled; an
   /// angle or a scalar, which no key converts, is spelled the same way
@@ -110,8 +114,15 @@ class QuantitySpeller extends Equatable {
   };
 
   List<Token> _wholeFeetAndDecimalInches(Rational inches) {
-    final feet = (inches / Unit.foot.inchesPer).floor();
-    final leftover = (inches - Rational(feet) * Unit.foot.inchesPer).toDouble();
+    var feet = (inches / Unit.foot.inchesPer).floor();
+    var leftover = _roundedTo(
+      (inches - Rational(feet) * Unit.foot.inchesPer).toDouble(),
+      compoundInchDecimals,
+    );
+    if (leftover >= Unit.foot.inchesPer.toDouble()) {
+      feet += 1;
+      leftover = 0;
+    }
     return [
       Token(digits: '$feet', unit: Unit.foot),
       Token(
@@ -126,10 +137,13 @@ class QuantitySpeller extends Equatable {
     return feetPerUnit * feetPerUnit * feetPerUnit;
   }
 
-  String _digitsWithoutTrailingZeros(double value, int decimals) {
+  double _roundedTo(double value, int decimals) {
     final scale = math.pow(10, decimals);
-    final rounded = (value * scale).round() / scale;
-    final text = rounded.toStringAsFixed(decimals);
+    return (value * scale).round() / scale;
+  }
+
+  String _digitsWithoutTrailingZeros(double value, int decimals) {
+    final text = _roundedTo(value, decimals).toStringAsFixed(decimals);
     if (!text.contains('.')) return text;
     return text.replaceFirst(RegExp(r'\.?0+$'), '');
   }

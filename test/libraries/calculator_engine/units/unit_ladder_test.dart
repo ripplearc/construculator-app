@@ -96,6 +96,20 @@ void main() {
         );
       });
 
+      test('[Feet] on 5.9999999ft shows 6ft 0in, never 5ft 12in, and the '
+          'value is still 5.9999999ft (CA-1364)', () {
+        expect(
+          press(const [Token(digits: '5.9999999', unit: Unit.foot)], Unit.foot),
+          const UnitKeyConverted(
+            Length.exact(Rational(719999988, 10000000), unit: Unit.footInch),
+            [
+              Token(digits: '6', unit: Unit.foot),
+              Token(digits: '0', unit: Unit.inch),
+            ],
+          ),
+        );
+      });
+
       test('[Feet] on decimal feet shows the compound instead of raising', () {
         expect(
           press(const [Token(digits: '18.67', unit: Unit.foot)], Unit.foot),

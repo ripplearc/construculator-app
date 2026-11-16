@@ -243,6 +243,20 @@ void main() {
         expect(steps, ['224in', '18ft 8in', '6.222yd']);
       });
 
+      test('5.9999999 [Feet] [Feet] reads 6ft 0in, never 5ft 12in, and the '
+          'chip is still worth 5.9999999ft (CA-1364)', () {
+        final tape = press(const Tape(), '5 . 9 9 9 9 9 9 9 ft ft');
+        expect(texts(tape), ['6ft 0in']);
+        expect(
+          tape.active!.value(parser),
+          isA<Length>().having(
+            (l) => l.inches,
+            'inches',
+            const Rational(719999988, 10000000),
+          ),
+        );
+      });
+
       test('the same key again raises, and a fourth press is refused', () {
         var tape = press(const Tape(), '2 in in in');
         expect(tape.active!.entry.text, '2in³');
