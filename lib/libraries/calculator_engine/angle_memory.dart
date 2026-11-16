@@ -20,6 +20,15 @@ final class RememberedAngle extends Equatable {
 
   const RememberedAngle({required this.entry, required this.value});
 
+  /// Whether [other] is the same drawer entry: it reads the same, or it is
+  /// worth the same angle in another spelling (rule 4.16: 30 and 30°00'00"
+  /// are one entry). Worth the same means within
+  /// [AngleMemory.sameAngleTolerance] of each other.
+  bool isSameEntryAs(RememberedAngle other) =>
+      entry.text == other.entry.text ||
+      (value.degrees - other.value.degrees).abs() <=
+          AngleMemory.sameAngleTolerance;
+
   @override
   List<Object?> get props => [entry, value];
 }
@@ -41,36 +50,45 @@ final class RememberedAngle extends Equatable {
 /// into the empty chip the key opened. When the chip is removed from the
 /// strip (the first keystroke) is the strip's rule.
 ///
-/// Two entries are the same value when they read the same: 38°03'00" typed
-/// as 38 [D:M:S] 03 and the answer 38.05° rendered as D:M:S are one entry.
-/// The drawer keeps the minus of a negative answer (-30°00'00" files as it
-/// reads, with its hyphen); [Tape.recall] refuses it into Pitch, which
-/// needs an angle above 0°, and takes it under a forward trig key.
+/// Two spellings of one angle are one entry, kept in the newest spelling
+/// (rule 4.16): 30 typed under Sine and 30°00'00" typed afterwards are the
+/// one entry 30°00'00", and 38.05 and 38°03'00" are one, since three
+/// minutes are 0.05°. Two entries that read the same are one as well, so
+/// the answer 38.05° and a typed 38.05 never sit side by side. The drawer
+/// keeps the minus of a negative answer (-30°00'00" files as it reads, with
+/// its hyphen); [Tape.recall] refuses it into Pitch, which needs an angle
+/// above 0°, and takes it under a forward trig key.
 class AngleMemory extends Equatable {
   /// How many angles the drawer keeps: three, so that a value reused across
   /// a job stays reachable without the drawer becoming a menu.
   static const int depth = 3;
 
-  /// The remembered angles, newest first, at most [depth], no two reading
-  /// the same.
+  /// How far apart two angles may be and still be one angle: a billionth
+  /// of a degree, which is well under a second of arc (1/3600°, the finest
+  /// any spelling shows) and well over the rounding noise of a double, so
+  /// that Arcsine 0.5, which a double computes as 29.999999999999996°, is
+  /// the same entry as a typed 30.
+  static const double sameAngleTolerance = 1e-9;
+
+  /// The remembered angles, newest first, at most [depth], no two the same
+  /// entry ([RememberedAngle.isSameEntryAs]).
   final List<RememberedAngle> remembered;
 
   /// An empty drawer.
   const AngleMemory() : remembered = const [];
 
   /// A drawer holding [angles], newest first, under the drawer's own rules:
-  /// a later entry that reads like an earlier one is dropped, and only the
-  /// first [depth] are kept. The list is copied, so the caller's list can
-  /// change afterwards without changing the drawer.
+  /// a later entry that reads like an earlier one, or is worth the same
+  /// angle, is dropped, and only the first [depth] are kept. The list is
+  /// copied, so the caller's list can change afterwards without changing
+  /// the drawer.
   AngleMemory.of(Iterable<RememberedAngle> angles) : remembered = _kept(angles);
 
   static List<RememberedAngle> _kept(Iterable<RememberedAngle> angles) {
     final kept = <RememberedAngle>[];
     for (final angle in angles) {
       if (kept.length == depth) break;
-      if (kept.any((earlier) => earlier.entry.text == angle.entry.text)) {
-        continue;
-      }
+      if (kept.any((earlier) => earlier.isSameEntryAs(angle))) continue;
       kept.add(angle);
     }
     return List.unmodifiable(kept);

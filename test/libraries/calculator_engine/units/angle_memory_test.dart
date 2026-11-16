@@ -594,6 +594,176 @@ void main() {
       );
     });
 
+    group('rule 4.16: two spellings of one angle are one entry, and the '
+        'newest spelling is kept (CA-1368)', () {
+      List<String> entries(AngleMemory memory) => [
+        for (final angle in memory.remembered) angle.entry.text,
+      ];
+
+      AngleMemory filedTyped(AngleMemory memory, String keys) =>
+          memory.filed(activeOf(press(const Tape(), keys)));
+
+      Angle angleAnswer(TrigFunction function, double ratio) {
+        final answer = function.answerTo(Scalar(ratio));
+        if (answer is Angle) return answer;
+        throw StateError('$function has no angle for $ratio');
+      }
+
+      test('decision tree row 282: SIN 30 = then 30 [D:M:S] 00 00 = then '
+          'Pitch offers one entry, 30°00\'00"', () {
+        final memory = filedTyped(
+          filedTyped(const AngleMemory(), 'SIN 3 0'),
+          '3 0 . 0 0 . 0 0',
+        );
+        expect(entries(memory), ['30°00\'00"']);
+        expect(
+          memory.offeredFor(PlainNumberKeys.pitch, rowHasAnswers: false),
+          hasLength(1),
+        );
+        expect(
+          memory.remembered.single.value,
+          const Angle(30, spelling: AngleSpelling.degreesMinutesSeconds),
+          reason: 'the value comes with the newest spelling too',
+        );
+      });
+
+      test('two entries that read the same are one, whatever the second '
+          'is worth: a typed 38.05 and an answer that renders 38.05', () {
+        final typed = AngleMemory.of(const [
+          RememberedAngle(
+            entry: EntryBuffer([Token(digits: '38.05')]),
+            value: Angle(38.05),
+          ),
+        ]);
+        final memory = typed.filedAnswer(
+          const Angle(38.0523),
+          formatter: formatter,
+        );
+        expect(entries(memory), ['38.05']);
+        expect(memory.remembered.single.value, const Angle(38.0523));
+      });
+
+      test('the other way round keeps 30, the newer spelling', () {
+        final memory = filedTyped(
+          filedTyped(const AngleMemory(), '3 0 . 0 0 . 0 0'),
+          'SIN 3 0',
+        );
+        expect(entries(memory), ['30']);
+      });
+
+      test('an answer a double computes a hair off 30° is the same entry as '
+          'a typed 30°00\'00", in either order', () {
+        final arcsine = angleAnswer(TrigFunction.arcsine, 0.5);
+        expect(arcsine.degrees, isNot(30), reason: 'the premise');
+        expect(arcsine.degrees, closeTo(30, 1e-12));
+        final answerFirst = filedTyped(
+          const AngleMemory().filedAnswer(arcsine, formatter: formatter),
+          '3 0 . 0 0 . 0 0',
+        );
+        expect(entries(answerFirst), ['30°00\'00"']);
+        final typedFirst = filedTyped(
+          const AngleMemory(),
+          '3 0 . 0 0 . 0 0',
+        ).filedAnswer(arcsine, formatter: formatter);
+        expect(entries(typedFirst), ['30']);
+        expect(typedFirst.remembered.single.value, arcsine);
+      });
+
+      test('38.05 and 38°03\'00" are one entry; 33.68 and 33°41\'00" are '
+          'two, and so are 38.05 and 38°03\'01"', () {
+        expect(
+          entries(
+            filedTyped(
+              filedTyped(const AngleMemory(), '[Pitch] 3 8 . 0 5'),
+              '3 8 . 0 3 . 0 0',
+            ),
+          ),
+          ['38°03\'00"'],
+        );
+        expect(
+          entries(
+            filedTyped(
+              filedTyped(const AngleMemory(), '[Pitch] 3 3 . 6 8'),
+              '3 3 . 4 1 . 0 0',
+            ),
+          ),
+          ['33°41\'00"', '33.68'],
+        );
+        expect(
+          entries(
+            filedTyped(
+              filedTyped(const AngleMemory(), '[Pitch] 3 8 . 0 5'),
+              '3 8 . 0 3 . 0 1',
+            ),
+          ),
+          ['38°03\'01"', '38.05'],
+        );
+      });
+
+      test('re-filing the oldest of three in a new spelling moves it to the '
+          'front and drops nothing else', () {
+        var memory = const AngleMemory();
+        for (final degrees in ['3 0', '4 5', '6 0']) {
+          memory = filedTyped(memory, '[Pitch] $degrees');
+        }
+        expect(entries(memory), ['60', '45', '30']);
+        memory = filedTyped(memory, '3 0 . 0 0 . 0 0');
+        expect(entries(memory), ['30°00\'00"', '60', '45']);
+      });
+
+      test('a drawer built from a list holding both spellings keeps the '
+          'first one, which is the newest', () {
+        final typed = activeOf(press(const Tape(), '3 0 . 0 0 . 0 0'));
+        final memory = AngleMemory.of([
+          RememberedAngle(entry: typed.entry.sealed, value: typed.typedAngle!),
+          const RememberedAngle(
+            entry: EntryBuffer([Token(digits: '30')]),
+            value: Angle(30),
+          ),
+          const RememberedAngle(
+            entry: EntryBuffer([Token(digits: '45')]),
+            value: Angle(45),
+          ),
+        ]);
+        expect(entries(memory), ['30°00\'00"', '45']);
+      });
+
+      test('a sign or a full turn makes another angle: 30 and -30 are two, '
+          '-30 and -30°00\'00" are one, 0 and 360 are two', () {
+        final signed = filedTyped(
+          const AngleMemory(),
+          '[Pitch] 3 0',
+        ).filedAnswer(const Angle(-30), formatter: formatter);
+        expect(entries(signed), ['-30', '30']);
+        final negative = const AngleMemory()
+            .filedAnswer(const Angle(-30), formatter: formatter)
+            .filedAnswer(
+              const Angle(-30, spelling: AngleSpelling.degreesMinutesSeconds),
+              formatter: formatter,
+            );
+        expect(entries(negative), ['-30°00\'00"']);
+        final turn = filedTyped(
+          filedTyped(const AngleMemory(), '[Pitch] 0'),
+          '[Pitch] 3 6 0',
+        );
+        expect(entries(turn), ['360', '0']);
+      });
+
+      test('the D:M:S key on a recalled 30, sealed and filed again, leaves '
+          'the one entry 30°00\'00"', () {
+        final memory = filedTyped(const AngleMemory(), '[Pitch] 3 0');
+        final recalled = changed(
+          press(
+            const Tape(),
+            '[Pitch]',
+          ).recall(newest(memory, PlainNumberKeys.pitch)!),
+        );
+        final respelled = changed(recalled.pressDmsKey());
+        expect(activeOf(respelled).entry.text, '30°00\'00"');
+        expect(entries(memory.filed(activeOf(respelled))), ['30°00\'00"']);
+      });
+    });
+
     test('a recalled angle needs an empty chip under a key that takes one', () {
       final remembered = newest(
         const AngleMemory().filedAnswer(const Angle(45), formatter: formatter),
