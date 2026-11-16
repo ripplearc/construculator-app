@@ -51,4 +51,8 @@
             <mutation text="}"/>
         </regex>
     </rules>
+
+    <commands>
+        <command group="session_service" expected-return="0">flutter test test/libraries/session/units/session_service_impl_test.dart</command>
+    </commands>
 </mutations>
