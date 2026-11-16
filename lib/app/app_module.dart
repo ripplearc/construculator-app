@@ -1,5 +1,6 @@
 // coverage:ignore-file
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/per_user_registrations.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/consent/consent_module.dart';
@@ -27,7 +28,7 @@ class AppModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
     PowerSyncModule(appBootstrap),
-    SessionLibraryModule(),
+    SessionLibraryModule(registrations: perUserRegistrations),
   ];
 
   @override

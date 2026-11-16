@@ -8,9 +8,8 @@ class SessionServiceImpl implements SessionService {
   bool _isActive = false;
 
   /// Creates a [SessionServiceImpl] whose session holds the objects that
-  /// [registrations] add.
-  SessionServiceImpl({required List<PerUserRegistration> registrations})
-    : _registrations = registrations;
+  /// [_registrations] add.
+  SessionServiceImpl({required this._registrations});
 
   @override
   bool get isActive => _isActive;
