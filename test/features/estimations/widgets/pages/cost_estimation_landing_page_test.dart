@@ -37,6 +37,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/start_test_session.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -85,6 +86,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(fakePhoneDatabase);
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
