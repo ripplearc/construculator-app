@@ -295,6 +295,36 @@
         <regex pattern="return Right\(matches\.firstOrNull\);" dotAll="false" id="your_rates_repo.label_lookup.never_found">
             <mutation text="return const Right(null);"/>
         </regex>
+        <regex pattern="\.where\(\(candidate\) =&gt; candidate\.id == newId\)" dotAll="false" id="your_rates_repo.id.refused_under_new_id">
+            <mutation text=".where((candidate) =&gt; candidate.id != newId)"/>
+        </regex>
+        <regex pattern="neverAccepted\s*\.where\(\(candidate\) =&gt; candidate\.id != newId\)\s*\.toList\(\)," dotAll="false" id="your_rates_repo.id.delete_refused_with_new_id">
+            <mutation text="neverAccepted,"/>
+        </regex>
+        <regex pattern="if \(refusedUnderNewId != null\) \{" dotAll="false" id="your_rates_repo.id.take_over_flipped">
+            <mutation text="if (refusedUnderNewId == null) {"/>
+        </regex>
+        <regex pattern="current == null \|\|" dotAll="false" id="your_rates_repo.undo.row_is_gone">
+            <mutation text="current != null ||"/>
+        </regex>
+        <regex pattern="!_holdsWhatWasWritten\(current, written\)" dotAll="false" id="your_rates_repo.undo.delete_changed_row">
+            <mutation text="_holdsWhatWasWritten(current, written)"/>
+        </regex>
+        <regex pattern="row\.rate == written\.rate &amp;&amp;" dotAll="false" id="your_rates_repo.undo.price_compare">
+            <mutation text="row.rate != written.rate &amp;&amp;"/>
+        </regex>
+        <regex pattern="row\.unit == written\.unit &amp;&amp;" dotAll="false" id="your_rates_repo.undo.unit_compare">
+            <mutation text="row.unit != written.unit &amp;&amp;"/>
+        </regex>
+        <regex pattern="row\.savedAt == written\.savedAt &amp;&amp;" dotAll="false" id="your_rates_repo.undo.saved_time_compare">
+            <mutation text="row.savedAt != written.savedAt &amp;&amp;"/>
+        </regex>
+        <regex pattern="row\.entryLabel == written\.entryLabel;" dotAll="false" id="your_rates_repo.undo.label_compare">
+            <mutation text="row.entryLabel != written.entryLabel;"/>
+        </regex>
+        <regex pattern="undo: \(\) =&gt; dataSource\.updateRate\(\s*newId," dotAll="false" id="your_rates_repo.undo.restore_refused_row_skipped">
+            <mutation text="undo: () =&gt; dataSource.updateRate('',"/>
+        </regex>
     </rules>
 
     <commands>

@@ -11,6 +11,7 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_id.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 
 /// Implementation of [YourRatesRepository] over the phone's own database.
@@ -220,17 +221,36 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
         if (failure != null) return Left(failure);
       }
 
-      await _deleteRows(neverAccepted);
+      final newDto = YourRateEntryDto.fromEntity(normalizedEntry);
+      final newId = YourRateId.of(
+        companyId: newDto.companyId,
+        category: newDto.category,
+        itemName: newDto.itemName,
+        equipmentMethod: newDto.equipmentMethod,
+        entryLabel: newDto.entryLabel,
+      );
+      final refusedUnderNewId = neverAccepted
+          .where((candidate) => candidate.id == newId)
+          .firstOrNull;
+      await _deleteRows(
+        neverAccepted.where((candidate) => candidate.id != newId).toList(),
+      );
 
       if (accepted.isEmpty || replacesRateId == null) {
-        final inserted = _toEntry(
-          await dataSource.insertRate(
-            YourRateEntryDto.fromEntity(normalizedEntry),
-          ),
-        );
+        if (refusedUnderNewId != null) {
+          final retried = _toEntry(await dataSource.updateRate(newId, newDto));
+          return Right((
+            entry: retried,
+            undo: () => dataSource.updateRate(
+              newId,
+              YourRateEntryDto.fromEntity(refusedUnderNewId),
+            ),
+          ));
+        }
+        final inserted = _toEntry(await dataSource.insertRate(newDto));
         return Right((
           entry: inserted,
-          undo: () => dataSource.deleteRateById(inserted.id),
+          undo: () => _deleteRowIfStillWrittenBy(normalizedEntry, inserted.id),
         ));
       }
 
@@ -335,6 +355,27 @@ class YourRatesRepositoryImpl implements YourRatesRepository {
       return Left(_handleError(e));
     }
   }
+
+  Future<void> _deleteRowIfStillWrittenBy(
+    YourRateEntry written,
+    String rowId,
+  ) async {
+    final rows = await _entriesNamed(
+      written.category,
+      written.itemName,
+      companyId: written.companyId,
+      asLastAccepted: false,
+    );
+    final current = rows.where((row) => row.id == rowId).firstOrNull;
+    if (current == null || !_holdsWhatWasWritten(current, written)) return;
+    await dataSource.deleteRateById(rowId);
+  }
+
+  static bool _holdsWhatWasWritten(YourRateEntry row, YourRateEntry written) =>
+      row.rate == written.rate &&
+      row.unit == written.unit &&
+      row.savedAt == written.savedAt &&
+      row.entryLabel == written.entryLabel;
 
   Future<void> _deleteRows(List<YourRateEntry> rows) async {
     for (final row in rows) {

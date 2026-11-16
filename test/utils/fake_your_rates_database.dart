@@ -71,6 +71,22 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
   /// removes the row, so a test can hold an undo that is still running.
   Completer<void>? deleteGate;
 
+  /// Runs right after an `INSERT` of a saved rate adds its row, before the row
+  /// is read back, so a test can make a sync bring another phone's version of
+  /// that row at that moment.
+  void Function()? afterInsert;
+
+  /// Replaces the stored row that has the same id as [row], like a sync that
+  /// brings another phone's version of it.
+  void replaceRow(Map<String, Object?> row) {
+    final index = _rows.indexWhere(
+      (stored) =>
+          stored[DatabaseConstants.idColumn] == row[DatabaseConstants.idColumn],
+    );
+    if (index == -1) throw StateError('No stored row with id ${row['id']}');
+    _rows[index] = Map.of(row);
+  }
+
   int _yourRatesReads = 0;
   int? _failingYourRatesRead;
 
@@ -317,6 +333,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
       };
       _rows.add(inserted);
       insertedRows.add(inserted);
+      afterInsert?.call();
       _refusalChanges.add(null);
     } else if (sql.startsWith('DELETE')) {
       if (failRowDeletes) throw StateError('disk full');
@@ -386,6 +403,7 @@ class FakeYourRatesDatabase extends FakePowerSyncDatabaseWrapper {
     insertGate = null;
     updateGate = null;
     deleteGate = null;
+    afterInsert = null;
     failRowDeletes = false;
     failRowInserts = false;
     deletedRowIds.clear();

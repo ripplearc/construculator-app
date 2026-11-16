@@ -12,6 +12,7 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_id.dart';
 import 'package:construculator/libraries/powersync/models/your_rate_refusal_key.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -860,6 +861,89 @@ void main() {
         );
         expect(result.getRightOrNull(), hasLength(1));
       });
+
+      test('its undo leaves a row that another phone saved under the same id, '
+          'and the row of this phone is not deleted by id', () async {
+        final skidSteerId = YourRateId.of(
+          companyId: testCompanyId,
+          category: 'equipment',
+          itemName: 'Skid steer',
+          equipmentMethod: 'day',
+        );
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(itemName: 'Skid steer'));
+        database.afterInsert = () => database.replaceRow(
+          row(
+            id: skidSteerId,
+            itemName: 'Skid steer',
+            rateAmount: 999.0,
+            savedAt: '2026-03-03T00:00:00.000Z',
+          ),
+        );
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        final found = await repository.search(
+          'skid',
+          category: CostItemType.equipment,
+          companyId: testCompanyId,
+        );
+        expect(database.deletedRowIds, isEmpty);
+        expect(found.getRightOrNull()!.single.rate.amount, 999.0);
+      });
+
+      // The written row has price 250, no unit, saved 2026-01-05 and no label.
+      final otherPhoneVersions = {
+        'price': row(id: 'x', rateAmount: 999.0, unit: null),
+        'unit': row(id: 'x', rateAmount: 250.0, unit: 'meters'),
+        'saved time': row(
+          id: 'x',
+          rateAmount: 250.0,
+          unit: null,
+          savedAt: '2026-03-03T00:00:00.000Z',
+        ),
+        'label': row(
+          id: 'x',
+          rateAmount: 250.0,
+          unit: null,
+          savedAt: '2026-01-05T00:00:00.000Z',
+          entryLabel: 'With operator',
+        ),
+      };
+      for (final version in otherPhoneVersions.entries) {
+        test('its undo leaves a row that differs from what it wrote only by '
+            'the ${version.key}', () async {
+          final entryLabel = version.key == 'label' ? 'with   OPERATOR' : null;
+          final skidSteerId = YourRateId.of(
+            companyId: testCompanyId,
+            category: 'equipment',
+            itemName: 'Skid steer',
+            equipmentMethod: 'day',
+            entryLabel: entryLabel,
+          );
+          final gate = database.insertGate = Completer<void>();
+          await impatientRepository.save(
+            buildEntry(itemName: 'Skid steer', entryLabel: entryLabel),
+          );
+          database.afterInsert = () => database.replaceRow({
+            ...version.value,
+            'id': skidSteerId,
+            'item_name': 'Skid steer',
+          });
+
+          gate.complete();
+          await impatientRepository.save(
+            buildEntry(itemName: 'Dozer'),
+            within: const Duration(seconds: 30),
+          );
+
+          expect(database.deletedRowIds, isEmpty);
+        });
+      }
 
       test('a save inside the limit is kept', () async {
         final result = await repository.save(
@@ -1931,6 +2015,70 @@ void main() {
 
         expect(result.isRight(), isTrue);
         expect(database.refusalRow(excavatorKey), isNull);
+      });
+      test('a save over a row the server never accepted under the same id '
+          'updates that row and deletes nothing', () async {
+        final excavatorId = YourRateId.of(
+          companyId: testCompanyId,
+          category: 'equipment',
+          itemName: 'Excavator',
+          equipmentMethod: 'day',
+        );
+        seed([row(id: excavatorId, rateAmount: 450.0)]);
+        refuse(accepted: null, refusedRowId: excavatorId);
+
+        final result = await repository.save(buildEntry(amount: 500.0));
+
+        expect(result.isRight(), isTrue);
+        expect(database.deletedRowIds, isEmpty);
+        expect(database.insertedRows, isEmpty);
+        expect(database.updatedRowIds, [excavatorId]);
+        expect((await lookUp()).single.rate.amount, 500.0);
+        expect(database.refusalRow(excavatorKey), isNull);
+      });
+
+      test('a late save over a row the server never accepted under the same id '
+          'writes the refused price back and deletes nothing', () async {
+        final excavatorId = YourRateId.of(
+          companyId: testCompanyId,
+          category: 'equipment',
+          itemName: 'Excavator',
+          equipmentMethod: 'day',
+        );
+        seed([row(id: excavatorId, rateAmount: 450.0)]);
+        refuse(accepted: null, refusedRowId: excavatorId);
+        final gate = database.updateGate = Completer<void>();
+        await impatientRepository.save(buildEntry(amount: 500.0));
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(database.updatedRowIds, [excavatorId, excavatorId]);
+        expect(database.deletedRowIds, isEmpty);
+      });
+
+      test('a late save that the server refused before its undo is still '
+          'deleted by the undo', () async {
+        final excavatorId = YourRateId.of(
+          companyId: testCompanyId,
+          category: 'equipment',
+          itemName: 'Excavator',
+          equipmentMethod: 'day',
+        );
+        final gate = database.insertGate = Completer<void>();
+        await impatientRepository.save(buildEntry(amount: 500.0));
+        refuse(refused: 500.0, accepted: null, refusedRowId: excavatorId);
+
+        gate.complete();
+        await impatientRepository.save(
+          buildEntry(itemName: 'Dozer'),
+          within: const Duration(seconds: 30),
+        );
+
+        expect(database.deletedRowIds, [excavatorId]);
       });
 
       test('a save keeps the row the server accepted at its old price when it '

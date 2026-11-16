@@ -4,9 +4,9 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/y
 import 'package:construculator/features/estimation/data/models/your_rate_entry_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/powersync/models/your_rate_id.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:powersync/powersync.dart' show uuid;
 
 /// Reads and writes "Your rates" in the phone's own PowerSync database.
 ///
@@ -105,7 +105,13 @@ class LocalYourRatesDataSource implements YourRatesDataSource {
   Future<YourRateEntryDto> insertRate(YourRateEntryDto dto) async {
     try {
       await _ensureSyncing();
-      final id = uuid.v4();
+      final id = YourRateId.of(
+        companyId: dto.companyId,
+        category: dto.category,
+        itemName: dto.itemName,
+        equipmentMethod: dto.equipmentMethod,
+        entryLabel: dto.entryLabel,
+      );
       final now = _clock.now().toUtc().toIso8601String();
       await _database.execute(_insertSql, [
         id,

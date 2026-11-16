@@ -2475,6 +2475,7 @@ void main() {
       required String itemName,
       required double amount,
       required EquipmentPricingMethod method,
+      String? entryLabel,
     }) async {
       final repository = Modular.get<YourRatesRepository>();
       final saveResult = await repository.save(
@@ -2486,6 +2487,7 @@ void main() {
           rate: Money(amount: amount),
           savedAt: DateTime(2026, 1, 1),
           equipmentMethod: method,
+          entryLabel: entryLabel,
         ),
       );
       saveResult.fold((f) => throw StateError('seed save failed: $f'), (_) {});
@@ -3195,6 +3197,7 @@ void main() {
             itemName: 'Dumpster',
             amount: 300,
             method: EquipmentPricingMethod.job,
+            entryLabel: 'Other supplier',
           );
           await tapSave(tester);
 
@@ -3226,6 +3229,7 @@ void main() {
             itemName: 'Dumpster',
             amount: 300,
             method: EquipmentPricingMethod.job,
+            entryLabel: 'Other supplier',
           );
           await tapSave(tester);
           await answerReplaceDialog(

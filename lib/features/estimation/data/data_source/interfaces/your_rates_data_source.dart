@@ -30,7 +30,8 @@ abstract class YourRatesDataSource {
     int? limit,
   });
 
-  /// Inserts a new row under a newly generated id and returns it.
+  /// Inserts a new row under the id [YourRateId] works out from [dto] (company,
+  /// category, name, pricing method and label) and returns it.
   ///
   /// Throws an exception if the write fails.
   Future<YourRateEntryDto> insertRate(YourRateEntryDto dto);

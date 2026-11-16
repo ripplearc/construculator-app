@@ -114,17 +114,21 @@ abstract class YourRatesRepository {
   /// saved rows and none has that id, it returns an
   /// `EstimationErrorType.notFoundError` failure and nothing is written.
   ///
-  /// A row the server refused and never accepted is deleted before a write.
-  /// When no accepted row is left, [entry] is saved as a new row under a new
-  /// id, because the change would otherwise go up as an edit to a row the
-  /// server has never seen. A successful save forgets the refusal recorded for
-  /// the item, so the price just saved is the one shown.
+  /// A row the server refused and never accepted is deleted before a write,
+  /// unless it has the id the new price gets (the id comes from the name,
+  /// method and label): that row is updated in place, so no delete goes up for
+  /// an id another phone may have saved. When no accepted row is left, [entry]
+  /// is saved as a new row, because the change would otherwise go up as an edit
+  /// to a row the server has never seen. A successful save forgets the refusal
+  /// recorded for the item, so the price just saved is the one shown.
   ///
   /// A save that is not done after [within] (the repository's own limit when
   /// null) returns an `EstimationErrorType.timeoutError` failure. If the phone
   /// finishes it later anyway, the save is undone so the failure stays true: a
-  /// new row is deleted, and a replaced row gets its old price back. A save
-  /// made while that undo is pending waits for it first.
+  /// new row is deleted only while it still holds what the save wrote (a row
+  /// another phone saved under the same id is left alone), and a replaced row
+  /// gets its old price back. A save made while that undo is pending waits
+  /// for it first.
   ///
   /// A row of the same name with the other pricing method is not in the
   /// grouping: a Day price and a Job price for one name are two rows, and
