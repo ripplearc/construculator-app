@@ -215,6 +215,62 @@
             <mutation text="return [ for (final spacing in spacings) if (_isAboveZero(spacing))"/>
             <mutation text="if (!_isAboveZero(span)) return const []; return [ for (final spacing in spacings)"/>
         </regex>
+
+        <!-- E2 (CA-1068) -->
+        <!-- RULE 19: the volume is weighed exactly instead of as shown, is
+             not read back from its unit, or is taken in cubic feet -->
+        <regex pattern="final shown = _roundedAsAResult\(volume\.cubicFeet \* perCubicFoot\);\s*return shown / perCubicFoot / _cubicFeetPerCubicYard;" dotAll="true" id="trades.weight.shown_cubic_yards">
+            <mutation text="return volume.cubicFeet / _cubicFeetPerCubicYard;"/>
+            <mutation text="final shown = _roundedAsAResult(volume.cubicFeet * perCubicFoot); return shown / _cubicFeetPerCubicYard;"/>
+            <mutation text="final shown = _roundedAsAResult(volume.cubicFeet * perCubicFoot); return shown / perCubicFoot;"/>
+        </regex>
+
+        <!-- RULE 20: the weight is in pounds, not hundredths; or always in
+             tons, or always in metric tons -->
+        <regex pattern="shownCubicYards \* density\.poundsPerCubicYard \* _hundredthsPerPound,\s*unit: switch \(system\) \{\s*MeasurementSystem\.imperial =&gt; Unit\.ton,\s*MeasurementSystem\.metric =&gt; Unit\.metricTon,\s*\}," dotAll="true" id="trades.weight.weight">
+            <mutation text="shownCubicYards * density.poundsPerCubicYard, unit: switch (system) { MeasurementSystem.imperial =&gt; Unit.ton, MeasurementSystem.metric =&gt; Unit.metricTon, },"/>
+            <mutation text="shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound, unit: Unit.ton,"/>
+            <mutation text="shownCubicYards * density.poundsPerCubicYard * _hundredthsPerPound, unit: Unit.metricTon,"/>
+        </regex>
+
+        <!-- RULE 21: a weight recount takes a density that weighs nothing,
+             or forgets the volume or the system -->
+        <regex pattern="if \(!density\.isUsable\) return null;\s*return MaterialWeight\(volume: volume, density: density, system: system\);" dotAll="true" id="trades.weight.recount">
+            <mutation text="return MaterialWeight(volume: volume, density: density, system: system);"/>
+            <mutation text="if (!density.isUsable) return null; return MaterialWeight(volume: const Volume(0), density: density, system: system);"/>
+            <mutation text="if (!density.isUsable) return null; return MaterialWeight(volume: volume, density: density, system: MeasurementSystem.metric);"/>
+        </regex>
+
+        <!-- RULE 22: a density of zero, below zero or not finite is usable -->
+        <regex pattern="bool get isUsable =&gt; poundsPerCubicYard\.isFinite &amp;&amp; poundsPerCubicYard &gt; 0;" dotAll="true" id="trades.density.is_usable">
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard &gt; 0;"/>
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard.isFinite &amp;&amp; poundsPerCubicYard &gt;= 0;"/>
+            <mutation text="bool get isUsable =&gt; poundsPerCubicYard.isFinite;"/>
+        </regex>
+
+        <!-- RULE 23: a volume of zero, below zero or not finite is weighed,
+             or a density that weighs nothing is kept -->
+        <regex pattern="if \(!cubicFeet\.isFinite \|\| cubicFeet &lt;= 0\) return const \[\];\s*return \[\s*for \(final density in densities\)\s*if \(density\.isUsable\)" dotAll="true" id="trades.weight.guards">
+            <mutation text="return [ for (final density in densities) if (density.isUsable)"/>
+            <mutation text="if (cubicFeet &lt; 0) return const []; return [ for (final density in densities) if (density.isUsable)"/>
+            <mutation text="if (!cubicFeet.isFinite || cubicFeet &lt;= 0) return const []; return [ for (final density in densities)"/>
+            <mutation text="if (cubicFeet &lt;= 0) return const []; return [ for (final density in densities) if (density.isUsable)"/>
+        </regex>
+
+        <!-- RULE 24: board feet are read as cubic feet, or the cube of a
+             length unit is its square -->
+        <regex pattern="if \(unit == Unit\.boardFoot\) return Volume\.boardFeetPerCubicFoot\.toDouble\(\);\s*final feetPerUnit = Length\.ticksPerFoot / unit\.ticksPerUnit;\s*return feetPerUnit \* feetPerUnit \* feetPerUnit;" dotAll="true" id="trades.weight.units_per_cubic_foot">
+            <mutation text="final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit * feetPerUnit;"/>
+            <mutation text="if (unit == Unit.boardFoot) return Volume.boardFeetPerCubicFoot.toDouble(); final feetPerUnit = Length.ticksPerFoot / unit.ticksPerUnit; return feetPerUnit * feetPerUnit;"/>
+        </regex>
+
+        <!-- RULE 25: the display rounding is rounded down, to one decimal,
+             or half down -->
+        <regex pattern="return \(amount \* scale \+ 0\.5\)\.floorToDouble\(\) / scale;" dotAll="true" id="trades.weight.rounded_as_a_result">
+            <mutation text="return (amount * scale).floorToDouble() / scale;"/>
+            <mutation text="return (amount * scale / 10 + 0.5).floorToDouble() / scale * 10;"/>
+            <mutation text="return (amount * scale + 0.5).ceilToDouble() / scale;"/>
+        </regex>
     </rules>
 
     <commands>
