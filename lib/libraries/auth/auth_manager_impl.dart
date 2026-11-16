@@ -14,6 +14,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -25,6 +26,7 @@ class AuthManagerImpl implements AuthManager {
   final SentryWrapper _sentryWrapper;
   final AnalyticsRepository _analyticsRepository;
   final CurrentCompanyResolver _currentCompanyResolver;
+  final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
@@ -34,6 +36,7 @@ class AuthManagerImpl implements AuthManager {
     required this._sentryWrapper,
     required this._analyticsRepository,
     required this._currentCompanyResolver,
+    required this._sessionService,
   }) {
     _initAuthListener();
   }
@@ -48,6 +51,7 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
+            _sessionService.startSession();
             unawaited(_currentCompanyResolver.resolveAfterSignIn());
             _emitAuthStateChanged(
               AuthStatus.authenticated,
@@ -57,6 +61,7 @@ class AuthManagerImpl implements AuthManager {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
+          _sessionService.endSession();
           unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
         }
@@ -77,6 +82,7 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
+        _sessionService.startSession();
         unawaited(_sentryWrapper.setUser(user.id));
         // TODO: [CA-961] Gate identify() on recorded analytics consent once
         // the server-driven consent flow lands; currently relies on the
@@ -367,6 +373,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
+      _sessionService.endSession();
 
       await _sentryWrapper.setUser(null);
       unawaited(

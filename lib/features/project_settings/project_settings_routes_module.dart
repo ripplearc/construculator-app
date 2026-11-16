@@ -6,6 +6,7 @@ import 'package:construculator/features/project_settings/presentation/pages/proj
 import 'package:construculator/features/project_settings/presentation/pages/project_detail_screen.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
@@ -29,7 +30,11 @@ class ProjectSettingsRoutesModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectSettingsBloc>(() => ProjectSettingsBloc(repository: i()));
-    i.add<ProjectDetailsBloc>(() => ProjectDetailsBloc(projectRepository: i()));
+    i.add<ProjectDetailsBloc>(
+      () => ProjectDetailsBloc(
+        projectRepository: Modular.get<ProjectRepository>(),
+      ),
+    );
   }
 
   @override

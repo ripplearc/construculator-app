@@ -20,6 +20,8 @@ import 'package:construculator/libraries/company/testing/fake_current_company_da
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -345,6 +347,70 @@ void main() {
           AuthStatus.connectionError,
           AuthStatus.unauthenticated,
         ]);
+      });
+    });
+
+    group('Session', () {
+      late FakeSessionService sessionService;
+
+      FakeUser signedInUser() => FakeUser(
+        email: testEmail,
+        id: 'test-id',
+        createdAt: clock.now().toIso8601String(),
+        appMetadata: {},
+      );
+
+      setUp(() {
+        sessionService = Modular.get<SessionService>() as FakeSessionService;
+      });
+
+      test('does not start a session when nobody is signed in', () {
+        expect(sessionService.isActive, false);
+        expect(sessionService.startCount, 0);
+      });
+
+      test('starts the session when a user signs in', () async {
+        final signedIn = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(predicate<AuthState>((s) => s.status == AuthStatus.authenticated)),
+        );
+
+        supabaseWrapper.setCurrentUser(signedInUser());
+        await signedIn;
+
+        expect(sessionService.isActive, true);
+        expect(sessionService.startCount, 1);
+      });
+
+      test('starts the session for a resumed login at app start', () {
+        supabaseWrapper.setCurrentUser(signedInUser());
+
+        Modular.get<AuthManager>();
+
+        expect(sessionService.isActive, true);
+      });
+
+      test('ends the session when the user is signed out', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        final signedOut = expectLater(
+          authNotifier.onAuthStateChanged,
+          emits(predicate<AuthState>((s) => s.status == AuthStatus.unauthenticated)),
+        );
+
+        supabaseWrapper.setCurrentUser(null);
+        await signedOut;
+
+        expect(sessionService.isActive, false);
+        expect(sessionService.endCount, 1);
+      });
+
+      test('ends the session on logout', () async {
+        supabaseWrapper.setCurrentUser(signedInUser());
+        expect(sessionService.isActive, true);
+
+        await authManager.logout();
+
+        expect(sessionService.isActive, false);
       });
     });
 
@@ -1709,8 +1775,10 @@ class _TestAppModule extends Module {
         sentryWrapper: i<SentryWrapper>(),
         analyticsRepository: i<AnalyticsRepository>(),
         currentCompanyResolver: i<CurrentCompanyResolver>(),
+        sessionService: i<SessionService>(),
       ),
     );
+    i.addSingleton<SessionService>(() => FakeSessionService());
   }
 }
 

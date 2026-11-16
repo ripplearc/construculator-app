@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../utils/dashboard_shell_test_module.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
 import '../../utils/screenshot/font_loader.dart';
+import '../../utils/start_test_session.dart';
 
 /// Shared test harness for [ProjectsBottomSheet] widget and screenshot tests.
 ///
@@ -77,6 +78,7 @@ class ProjectsBottomSheetTestHarness {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(DashboardShellTestModule(bootstrap));
+    startTestSession();
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
     Modular.replaceInstance<ProjectRepository>(fakeRepository);
 
