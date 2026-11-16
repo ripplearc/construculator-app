@@ -234,6 +234,102 @@ void main() {
       expect(formatter.format(bigs.single.value), '111.11');
     });
 
+    group('D2: footing (CA-1066)', () {
+      Length feet(double value) => Length.exact(
+        Rational((value * 100).round() * 12, 100),
+        unit: Unit.foot,
+      );
+      Length metres(double value) => Length.exact(
+        Rational((value * 1000).round() * 10, 254),
+        unit: Unit.metre,
+      );
+      const noLength = Length(0, unit: Unit.foot);
+      final crossSections = [inches(16, 8), inches(24, 18)];
+
+      String sizeText(PieceSize size) =>
+          '${formatter.formatStoredLength(size.width)} x '
+          '${formatter.formatStoredLength(size.height)}';
+
+      test('S45, row 238: 22ft of footing is 0.72yd³ at 16in x 8in and '
+          '2.44yd³ at 24in x 18in, in the store\'s order', () {
+        final volumes = trades.footingVolumesFor(feet(22), crossSections);
+        expect(
+          [
+            for (final volume in volumes)
+              '${FootingVolume.offerKey}: ${formatter.format(volume.volume)} '
+                  '(${sizeText(volume.crossSection)})',
+          ],
+          ['Footing: 0.72yd³ (16in x 8in)', 'Footing: 2.44yd³ (24in x 18in)'],
+        );
+        expect(FootingVolume.resultKey, 'Footing volume');
+      });
+
+      test('the volume is kept exact and rounded only at display', () {
+        final volume = trades.footingVolumesFor(feet(22), crossSections).first;
+        expect(volume.volume.cubicFeet, closeTo(22 * 16 * 8 / 144, 1e-9));
+        expect(volume.volume.unit, Unit.yard);
+      });
+
+      test('a metric length of footing answers in cubic metres: 7m at '
+          '16in x 8in is 0.58m³ (Section 6, results follow the entry '
+          'system)', () {
+        final volume = trades.footingVolumesFor(metres(7), crossSections).first;
+        expect(formatter.format(volume.volume), '0.58m³');
+      });
+
+      test('the cross-section pill recomputes the same length: 22ft at '
+          '24in x 18in is 2.44yd³, and a section with no face is refused', () {
+        final volume = trades.footingVolumesFor(feet(22), crossSections).first;
+        final wider = volume.recount(inches(24, 18))!;
+        expect(formatter.format(wider.volume), '2.44yd³');
+        expect(wider.length, feet(22));
+        expect(volume.recount(inches(0, 8)), isNull);
+        expect(volume.recount(inches(16, -8)), isNull);
+      });
+
+      test('a length of zero or less takes no concrete, one under half a '
+          'tick (0.1mm) still does, and a cross-section with no face is left '
+          'out', () {
+        expect(trades.footingVolumesFor(noLength, crossSections), isEmpty);
+        expect(trades.footingVolumesFor(feet(-22), crossSections), isEmpty);
+        const tenthOfAMillimetre = Length.exact(
+          Rational(1, 254),
+          unit: Unit.millimetre,
+        );
+        expect(tenthOfAMillimetre.ticks, 0, reason: 'under half a tick');
+        expect(
+          trades.footingVolumesFor(tenthOfAMillimetre, crossSections),
+          hasLength(2),
+        );
+        expect(
+          trades
+              .footingVolumesFor(feet(22), [inches(0, 8), inches(16, 8)])
+              .map((volume) => volume.crossSection),
+          [inches(16, 8)],
+        );
+        expect(trades.footingVolumesFor(feet(22), const []), isEmpty);
+      });
+
+      test('the longest footing the parser accepts, 19,999,999.99ft at '
+          '24in x 18in, is 2,222,222.22yd³', () {
+        final volume = trades
+            .footingVolumesFor(feet(19999999.99), crossSections)
+            .last;
+        expect(formatter.format(volume.volume), '2,222,222.22yd³');
+      });
+
+      test('volumes compare by what they carry', () {
+        expect(
+          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
+          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
+        );
+        expect(
+          FootingVolume(length: feet(22), crossSection: inches(16, 8)),
+          isNot(FootingVolume(length: feet(22), crossSection: inches(24, 18))),
+        );
+      });
+    });
+
     test('counts and sizes compare by what they carry', () {
       final size = inches(48, 96);
       const count = TradeCount(

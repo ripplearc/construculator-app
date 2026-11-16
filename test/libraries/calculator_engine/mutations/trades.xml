@@ -88,6 +88,39 @@
         <regex pattern="masonry\('Masonry', 'Number of pieces'\);" dotAll="true" id="trades.trade.wrong_result_key">
             <mutation text="masonry('Masonry', 'Number of sheets');"/>
         </regex>
+
+        <!-- D2 (CA-1066) -->
+        <!-- RULE 9: the footing volume multiplies by the ticks per foot,
+             forgets the square feet, or is written in yards after a metric
+             length or in metres after an imperial one -->
+        <regex pattern="length\.preciseTicks /\s*Length\.ticksPerFoot \*\s*crossSection\.squareTicks /\s*_squareTicksPerSquareFoot,\s*unit: length\.unit\.isMetric \? Unit\.metre : Unit\.yard," dotAll="true" id="trades.footing.volume">
+            <mutation text="length.preciseTicks * Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: length.unit.isMetric ? Unit.metre : Unit.yard,"/>
+            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks, unit: length.unit.isMetric ? Unit.metre : Unit.yard,"/>
+            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: Unit.yard,"/>
+            <mutation text="length.preciseTicks / Length.ticksPerFoot * crossSection.squareTicks / _squareTicksPerSquareFoot, unit: Unit.metre,"/>
+        </regex>
+
+        <!-- RULE 10: a footing recount takes a cross-section with no face,
+             or forgets the length -->
+        <regex pattern="if \(!crossSection\.hasFace\) return null;\s*return FootingVolume\(length: length, crossSection: crossSection\);" dotAll="true" id="trades.footing.recount">
+            <mutation text="return FootingVolume(length: length, crossSection: crossSection);"/>
+            <mutation text="if (!crossSection.hasFace) return null; return FootingVolume(length: const Length(0, unit: Unit.foot), crossSection: crossSection);"/>
+        </regex>
+
+        <!-- RULE 16: a length of zero is usable, the smallest one above
+             zero is not, or only a length below zero is refused -->
+        <regex pattern="bool _isAboveZero\(Length length\) =&gt; length\.preciseTicks &gt; 0;" dotAll="true" id="trades.is_above_zero">
+            <mutation text="bool _isAboveZero(Length length) =&gt; length.preciseTicks &gt;= 0;"/>
+            <mutation text="bool _isAboveZero(Length length) =&gt; length.preciseTicks &gt; 1;"/>
+            <mutation text="bool _isAboveZero(Length length) =&gt; length.ticks &gt; 0;"/>
+        </regex>
+
+        <!-- RULE 18: the footing rule takes a length of zero, or a
+             cross-section with no face -->
+        <regex pattern="if \(!_isAboveZero\(length\)\) return const \[\];\s*return \[\s*for \(final crossSection in crossSections\)\s*if \(crossSection\.hasFace\)" dotAll="true" id="trades.footing.guards">
+            <mutation text="return [ for (final crossSection in crossSections) if (crossSection.hasFace)"/>
+            <mutation text="if (!_isAboveZero(length)) return const []; return [ for (final crossSection in crossSections)"/>
+        </regex>
     </rules>
 
     <commands>

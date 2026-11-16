@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
+import 'package:construculator/libraries/calculator_engine/models/unit.dart';
 import 'package:equatable/equatable.dart';
 
 /// The two trades that count pieces over an area (UX Design Doc Section 9,
@@ -98,12 +99,69 @@ final class TradeCount extends Equatable {
   List<Object?> get props => [trade, area, size];
 }
 
+/// The concrete a length of footing takes at one stored cross-section (UX
+/// Design Doc Section 9, "Concrete footing": volume (yd³) = length (ft) ×
+/// (w × h ÷ 144) ÷ 27, for each stored cross-section, 16in × 8in and
+/// 24in × 18in): the offer the strip makes per cross-section and, once
+/// accepted, the result that carries its Cross-section pill (requirement
+/// R8). The cross-section is a stored width × height like a sheet, so it
+/// is a [PieceSize]. A recount after the pill is edited goes through
+/// [recount], which keeps the length the volume was made from.
+final class FootingVolume extends Equatable {
+  /// The key the strip labels the offer by.
+  static const String offerKey = 'Footing';
+
+  /// The key the accepted volume is labelled by.
+  static const String resultKey = 'Footing volume';
+
+  /// The run of footing.
+  final Length length;
+
+  /// The cross-section of the footing.
+  final PieceSize crossSection;
+
+  /// A run of footing of [length] at [crossSection].
+  const FootingVolume({required this.length, required this.crossSection});
+
+  /// The concrete: the length times the cross-section's face, both at
+  /// their precise ticks, kept exact and rounded to two decimals at
+  /// display. It is written in cubic yards after an imperial length and
+  /// cubic metres after a metric one (Section 6: results follow the entry
+  /// system).
+  Volume get volume => Volume(
+    length.preciseTicks /
+        Length.ticksPerFoot *
+        crossSection.squareTicks /
+        _squareTicksPerSquareFoot,
+    unit: length.unit.isMetric ? Unit.metre : Unit.yard,
+  );
+
+  /// The same length of footing at another cross-section, as the pill
+  /// recomputes it, or `null` for a cross-section with no face — a side of
+  /// zero or less, see [PieceSize.hasFace] — which is refused so that the
+  /// caller keeps the last good one ("Size must be more than zero").
+  FootingVolume? recount(PieceSize crossSection) {
+    if (!crossSection.hasFace) return null;
+    return FootingVolume(length: length, crossSection: crossSection);
+  }
+
+  @override
+  List<Object?> get props => [length, crossSection];
+}
+
+const int _squareTicksPerSquareFoot =
+    Area.squareTicksPerSquareInch * Area.squareInchesPerSquareFoot;
+
+bool _isAboveZero(Length length) => length.preciseTicks > 0;
+
 /// The material rules of UX Design Doc Section 9: an area on the tape
 /// becomes a sheet count for every stored drywall size, or a piece count
-/// for every stored masonry size, one offer per size in the store's order.
-/// The port of the prototype's `materials`, over the sizes the trade-stores
-/// repository holds; which area earns the offers, and when, is the
-/// arbiter's.
+/// for every stored masonry size, one offer per size in the store's order;
+/// a length becomes concrete for every stored footing cross-section. The
+/// port of the prototype's `materials` and `footingChips`, over what the
+/// trade-stores repository holds; which value earns the offers, and when,
+/// is the arbiter's, and so are the follow-on offers after a trade result
+/// (Cost, Weight), which are rules of their own.
 class Trades extends Equatable {
   const Trades();
 
@@ -121,6 +179,24 @@ class Trades extends Equatable {
     return [
       for (final size in sizes)
         if (size.hasFace) TradeCount(trade: trade, area: area, size: size),
+    ];
+  }
+
+  /// The concrete of [length] at each of [crossSections], in their order.
+  /// A length of zero or less takes no concrete at all, so that the screen
+  /// can refuse the key ("Size must be more than zero"; decision tree row
+  /// 371); a cross-section with no face — see [PieceSize.hasFace] — is
+  /// left out. A length is always finite ([Length.computed] refuses the
+  /// rest), so that is the one guard.
+  List<FootingVolume> footingVolumesFor(
+    Length length,
+    List<PieceSize> crossSections,
+  ) {
+    if (!_isAboveZero(length)) return const [];
+    return [
+      for (final crossSection in crossSections)
+        if (crossSection.hasFace)
+          FootingVolume(length: length, crossSection: crossSection),
     ];
   }
 
