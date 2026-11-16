@@ -96,9 +96,24 @@
             <mutation text="return feetPerUnit * feetPerUnit;"/>
         </regex>
 
-        <!-- RULE 17: the compound's inches are the whole length -->
-        <regex pattern="final leftover = \(inches - Rational\(feet\) \* Unit\.foot\.inchesPer\)\.toDouble\(\);" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
-            <mutation text="final leftover = inches.toDouble();"/>
+        <!-- RULE 17: the compound's inches are the whole length, or are not
+             rounded to their decimals before the carry is decided -->
+        <regex pattern="var leftover = _roundedTo\(\s*\(inches - Rational\(feet\) \* Unit\.foot\.inchesPer\)\.toDouble\(\),\s*compoundInchDecimals,\s*\);" dotAll="true" id="quantity_speller.compound.whole_length_as_inches">
+            <mutation text="var leftover = _roundedTo(inches.toDouble(), compoundInchDecimals);"/>
+            <mutation text="var leftover = (inches - Rational(feet) * Unit.foot.inchesPer).toDouble();"/>
+            <mutation text="var leftover = _roundedTo((inches - Rational(feet) * Unit.foot.inchesPer).toDouble(), compoundInchDecimals + 1);"/>
+        </regex>
+
+        <!-- RULE 19: leftover inches that round up to a whole foot are not
+             carried (5ft 12in), carry without taking the foot, carry
+             without emptying the inches, or carry a hair under a foot
+             (CA-1364) -->
+        <regex pattern="if \(leftover &gt;= Unit\.foot\.inchesPer\.toDouble\(\)\) \{\s*feet \+= 1;\s*leftover = 0;\s*\}" dotAll="true" id="quantity_speller.compound.carry">
+            <mutation text=""/>
+            <mutation text="if (leftover &gt;= Unit.foot.inchesPer.toDouble()) { leftover = 0; }"/>
+            <mutation text="if (leftover &gt;= Unit.foot.inchesPer.toDouble()) { feet += 1; }"/>
+            <mutation text="if (leftover &gt; Unit.foot.inchesPer.toDouble()) { feet += 1; leftover = 0; }"/>
+            <mutation text="if (leftover &gt;= Unit.foot.inchesPer.toDouble() - 0.01) { feet += 1; leftover = 0; }"/>
         </regex>
 
         <!-- RULE 18: the cubic stop points every key at yards, so [Inch] a
