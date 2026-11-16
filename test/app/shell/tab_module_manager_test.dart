@@ -11,6 +11,7 @@ import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,7 @@ void main() {
           currentScreenTracker: CurrentScreenTracker(),
           appLifecycleWrapper: FakeAppLifecycleWrapper(),
           appVersion: '1.0.0',
+          sessionService: FakeSessionService(),
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -91,6 +93,7 @@ void main() {
           currentScreenTracker: CurrentScreenTracker(),
           appLifecycleWrapper: FakeAppLifecycleWrapper(),
           appVersion: '1.0.0',
+          sessionService: FakeSessionService(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();

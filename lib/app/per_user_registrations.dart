@@ -4,5 +4,5 @@ import 'package:construculator/libraries/session/session_module.dart';
 ///
 /// It lives in the app layer because the session also holds objects that
 /// belong to features, and a library may not import a feature. Only
-/// `AppModule` reads this list, and passes it to `SessionLibraryModule`.
+/// `main` reads this list, and passes it to the session service.
 const List<PerUserRegistration> perUserRegistrations = [];

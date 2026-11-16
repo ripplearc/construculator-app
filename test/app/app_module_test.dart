@@ -2,7 +2,6 @@ import 'package:construculator/app/app_module.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/consent/consent_module.dart';
 import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
-import 'package:construculator/libraries/session/session_library_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -34,8 +33,7 @@ void main() {
       expect(
         shell.persistenceReady,
         consentPersistenceReady,
-        reason:
-            'AppModule must not override the consent persistence block; '
+        reason: 'AppModule must not override the consent persistence block; '
             'only CA-971 flipping the const may mount ConsentGuard.',
       );
     });
@@ -49,17 +47,10 @@ void main() {
       expect(
         consent.persistenceReady,
         consentPersistenceReady,
-        reason:
-            'AppModule must not override the consent persistence block; '
+        reason: 'AppModule must not override the consent persistence block; '
             'only CA-971 flipping the const may register the gate route, '
             'whose Accept button records a consent acceptance.',
       );
-    });
-
-    test('imports the session library module', () {
-      final module = AppModule(FakeAppBootstrapFactory.create());
-
-      expect(module.imports.whereType<SessionLibraryModule>(), hasLength(1));
     });
   });
 }
