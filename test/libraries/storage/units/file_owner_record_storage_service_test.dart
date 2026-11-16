@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/storage/file_owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/interfaces/owner_record_storage_service.dart';
 import 'package:construculator/libraries/storage/models/owner_record.dart';
@@ -14,6 +16,7 @@ void main() {
   group('FileOwnerRecordStorageService', () {
     late Directory directory;
     late FileOwnerRecordStorageService service;
+    final sentry = FakeSentryWrapper();
 
     File fileNamed(String name) => File(p.join(directory.path, name));
 
@@ -22,7 +25,15 @@ void main() {
       service = buildService(() => directory);
     });
 
-    tearDown(() => directory.delete(recursive: true));
+    setUp(() {
+      sentry.reset();
+      AppLogger.setSentryWrapper(sentry);
+    });
+
+    tearDown(() {
+      AppLogger.setSentryWrapper(null);
+      return directory.delete(recursive: true);
+    });
 
     final userOne = OwnerRecord(userId: 'user-1');
     final userTwoWithFlag = OwnerRecord(
@@ -170,6 +181,22 @@ void main() {
         service = buildService(() => throw Exception('no app folder'));
 
         expect(await service.read(), isA<OwnerRecordUnknown>());
+      });
+
+      test('in a folder that fails with an Error, not an Exception', () async {
+        service = buildService(() => throw StateError('no app folder'));
+
+        expect(await service.read(), isA<OwnerRecordUnknown>());
+      });
+
+      test('cut off, and reports only the error type to Sentry', () async {
+        fileNamed('owner_record.json').writeAsStringSync('{"userId":"user-1');
+
+        await service.read();
+
+        expect(sentry.exceptions.map((call) => call.exception), [
+          'FormatException',
+        ]);
       });
     });
 

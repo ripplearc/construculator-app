@@ -52,8 +52,12 @@ class FileOwnerRecordStorageService implements OwnerRecordStorageService {
         throw const FormatException('The owner record is not an object');
       }
       return OwnerRecordFound(OwnerRecord.fromJson(json));
-    } on Exception catch (error, stackTrace) {
-      _logger.error('Could not read the owner record', error, stackTrace);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Could not read the owner record',
+        error.runtimeType.toString(),
+        stackTrace,
+      );
       return const OwnerRecordUnknown();
     }
   }

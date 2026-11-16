@@ -76,8 +76,14 @@
         <regex pattern="on PathNotFoundException \{\s*return const OwnerRecordAbsent\(\);" dotAll="true" id="storage.missing_reads_unknown">
             <mutation text="on PathNotFoundException { return const OwnerRecordUnknown();"/>
         </regex>
-        <regex pattern="on Exception catch \(error, stackTrace\) \{\s*_logger\.error\('Could not read the owner record', error, stackTrace\);\s*return const OwnerRecordUnknown\(\);" dotAll="true" id="storage.failed_read_reads_absent">
-            <mutation text="on Exception catch (error, stackTrace) { return const OwnerRecordAbsent();"/>
+        <regex pattern="catch \(error, stackTrace\) \{\s*_logger\.error\(\s*'Could not read the owner record',\s*error\.runtimeType\.toString\(\),\s*stackTrace,\s*\);\s*return const OwnerRecordUnknown\(\);" dotAll="true" id="storage.failed_read_reads_absent">
+            <mutation text="catch (error, stackTrace) { return const OwnerRecordAbsent();"/>
+        </regex>
+        <regex pattern="error\.runtimeType\.toString\(\)" dotAll="true" id="storage.log_the_error_object">
+            <mutation text="error"/>
+        </regex>
+        <regex pattern="catch \(error, stackTrace\) \{\s*_logger\.error\(\s*'Could not read" dotAll="true" id="storage.catch_only_exceptions">
+            <mutation text="on Exception catch (error, stackTrace) { _logger.error('Could not read"/>
         </regex>
         <regex pattern="for \(final name in \[_recordFileName, _temporaryFileName\]\)" dotAll="true" id="storage.leave_temporary_file">
             <mutation text="for (final name in [_recordFileName])"/>
