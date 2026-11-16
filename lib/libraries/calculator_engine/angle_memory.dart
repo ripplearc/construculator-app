@@ -3,6 +3,7 @@ import 'package:construculator/libraries/calculator_engine/models/chip.dart';
 import 'package:construculator/libraries/calculator_engine/models/quantity.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/quantity_formatter.dart';
+import 'package:construculator/libraries/calculator_engine/quantity_parser.dart';
 import 'package:construculator/libraries/calculator_engine/tape.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
@@ -116,16 +117,27 @@ class AngleMemory extends Equatable {
     return List.unmodifiable(remembered.take(rowHasAnswers ? 1 : depth));
   }
 
-  /// The drawer with [chip]'s typed number filed, when it reads as an angle
-  /// ([ValueChip.typedAngle]); any other chip leaves the drawer as it is.
-  /// The entry is filed as it reads once sealed ([EntryBuffer.sealed]), so
-  /// a chip filed while still active (C pressed on 38 [D:M:S] 75) comes
-  /// back as 39°15'00", the spelling the tape shows for it, never as a
-  /// field left open. A typed angle is never negative: the keypad has no
-  /// minus.
-  AngleMemory filed(ValueChip chip) {
-    final angle = chip.typedAngle;
+  /// The drawer with [chip]'s typed value filed, when it reads as an angle
+  /// ([ValueChip.filedAngle]); any other chip leaves the drawer as it is.
+  /// A number typed as degrees or D:M:S is filed as it reads once sealed
+  /// ([EntryBuffer.sealed]), so a chip filed while still active (C pressed
+  /// on 38 [D:M:S] 75) comes back as 39°15'00", the spelling the tape
+  /// shows for it, never as a field left open. A pitch typed in inches of
+  /// rise is filed as the degrees it is worth, spelled as an answer is
+  /// ([filedAnswer]): [Pitch] 6 [Inch] comes back as 26.57° over the exact
+  /// angle, and the same chip filed again when its answer renders is still
+  /// one entry (rule 4.16; product decision of 23 October 2026). A typed
+  /// angle is never negative: the keypad has no minus.
+  AngleMemory filed(
+    ValueChip chip, {
+    required QuantityParser parser,
+    required QuantityFormatter formatter,
+  }) {
+    final angle = chip.filedAngle(parser);
     if (angle == null) return this;
+    if (angle.spelling == AngleSpelling.risePerFoot) {
+      return filedAnswer(angle, formatter: formatter);
+    }
     return _withFront(RememberedAngle(entry: chip.entry.sealed, value: angle));
   }
 
