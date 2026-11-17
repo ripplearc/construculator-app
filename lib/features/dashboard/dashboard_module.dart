@@ -91,9 +91,8 @@ class DashboardModule extends Module {
           value: Modular.get<ProjectDropdownBloc>(),
         ),
         BlocProvider<RecentEstimationsBloc>(
-          create: (_) =>
-              Modular.get<RecentEstimationsBloc>()
-                ..add(const RecentEstimationsWatchStarted()),
+          create: (_) => Modular.get<RecentEstimationsBloc>()
+            ..add(const RecentEstimationsWatchStarted()),
         ),
       ],
       child: child,
