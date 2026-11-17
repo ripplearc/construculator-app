@@ -41,6 +41,7 @@ void main() {
     WidgetTester tester, {
     NumberPadSession Function()? numberPad,
     FocusNode? fieldFocus,
+    bool isSplit = false,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -67,12 +68,20 @@ void main() {
                               focusNode: fieldFocus,
                               child: const SizedBox(),
                             ),
-                            MaterialAddToEstimateFooter(
-                              estimateId: 'estimate-1',
-                              estimateName: 'Bedroom 2',
-                              estimateTotal: 2093.02,
-                              numberPad: session,
-                            ),
+                            for (final part
+                                in isSplit
+                                    ? const [
+                                        AddToEstimateFooterPart.panel,
+                                        AddToEstimateFooterPart.controls,
+                                      ]
+                                    : const [AddToEstimateFooterPart.all])
+                              MaterialAddToEstimateFooter(
+                                estimateId: 'estimate-1',
+                                estimateName: 'Bedroom 2',
+                                estimateTotal: 2093.02,
+                                numberPad: session,
+                                part: part,
+                              ),
                           ],
                         ),
                       ),
@@ -251,6 +260,20 @@ void main() {
       );
 
       expect(find.text(r'$1.01'), findsOneWidget);
+    });
+
+    testWidgets('a footer split into card and controls closes the sheet '
+        'once after the add', (tester) async {
+      await pumpFooter(tester, isSplit: true);
+      await fillAll(tester);
+      expect(find.byKey(AddToEstimateFooter.panelKey), findsOneWidget);
+
+      await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+      await tester.pumpAndSettle();
+
+      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(find.byType(MaterialAddToEstimateFooter), findsNothing);
+      expect(find.byKey(const Key('open_sheet')), findsOneWidget);
     });
 
     testWidgets('saves the line and closes the sheet when Add is tapped', (

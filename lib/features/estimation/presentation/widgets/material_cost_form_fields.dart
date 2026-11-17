@@ -32,7 +32,11 @@ class MaterialCostFormFields extends StatefulWidget {
   /// open the phone's number keyboard.
   final ValueNotifier<NumberPadSession?>? numberPad;
 
-  const MaterialCostFormFields({super.key, this.numberPad});
+  /// Drawn after the last row, inside the scrolling area, so it scrolls with
+  /// the fields: the summary card on a phone too short to pin it.
+  final Widget? trailing;
+
+  const MaterialCostFormFields({super.key, this.numberPad, this.trailing});
 
   @override
   State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
@@ -175,6 +179,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ],
               ),
             ),
+            ?widget.trailing,
             const SizedBox(height: CoreSpacing.space4),
           ],
         ),
