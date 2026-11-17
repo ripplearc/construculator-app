@@ -189,6 +189,16 @@ void main() {
         expect(await service.read(), isA<OwnerRecordUnknown>());
       });
 
+      test('not an object, and reports it as a bad format', () async {
+        fileNamed('owner_record.json').writeAsStringSync('[1, 2]');
+
+        await service.read();
+
+        expect(sentry.exceptions.map((call) => call.exception), [
+          'FormatException',
+        ]);
+      });
+
       test('cut off, and reports only the error type to Sentry', () async {
         fileNamed('owner_record.json').writeAsStringSync('{"userId":"user-1');
 
