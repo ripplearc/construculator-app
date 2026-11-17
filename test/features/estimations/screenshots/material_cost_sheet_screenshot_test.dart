@@ -256,6 +256,23 @@ void main() {
       await expectPadGolden(tester, 'pad_up_empty_rate');
     });
 
+    testWidgets('number pad up on the rate, scrolled 12 clear of the card, '
+        'with a line under the title', (tester) async {
+      await padUpOnQuantity(tester, size);
+      await tester.pumpAndSettle();
+      await tester.showKeyboard(find.byKey(const Key('material_rate_field')));
+      await expectPadGolden(tester, 'pad_up_rate_scrolled');
+    });
+
+    testWidgets('phone keyboard up on the name: the form button is back above '
+        'it', (tester) async {
+      await openSheet(tester, theme);
+      await tester.showKeyboard(find.byKey(const Key('material_name_field')));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await expectPadGolden(tester, 'text_keyboard_up');
+    });
+
     testWidgets('number pad up on a 667 dp phone, card scrolled with the '
         'form', (tester) async {
       await padUpOnQuantity(tester, const Size(375, 667));
