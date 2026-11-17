@@ -51,6 +51,8 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
+            // TODO: [CA-1471] Move session start and end into the sign-in check
+            // and the sign-out handler.
             _sessionService.startSession();
             unawaited(_currentCompanyResolver.resolveAfterSignIn());
             _emitAuthStateChanged(
@@ -63,6 +65,7 @@ class AuthManagerImpl implements AuthManager {
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
           unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
+          // TODO: [CA-1471] see the sign-in call above.
           _sessionService.endSession();
         }
       },
@@ -82,6 +85,7 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
+        // TODO: [CA-1471] see the sign-in call above.
         _sessionService.startSession();
         unawaited(_sentryWrapper.setUser(user.id));
         // TODO: [CA-961] Gate identify() on recorded analytics consent once
