@@ -48,7 +48,7 @@ class AuthTestModule extends Module {
         authNotifier: i(),
         sentryWrapper: FakeSentryWrapper(),
         analyticsRepository: FakeAnalyticsRepository(),
-        currentCompanyResolver: i(),
+        currentCompanyResolver: () => i<CurrentCompanyResolver>(),
         sessionService: FakeSessionService(),
       ),
       key: 'authManagerWithFakeDep',

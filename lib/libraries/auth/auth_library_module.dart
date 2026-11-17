@@ -38,7 +38,7 @@ class AuthLibraryModule extends Module {
         authNotifier: i(),
         sentryWrapper: appBootstrap.sentryWrapper,
         analyticsRepository: appBootstrap.analyticsRepository,
-        currentCompanyResolver: i<CurrentCompanyResolver>(),
+        currentCompanyResolver: () => Modular.tryGet<CurrentCompanyResolver>(),
         sessionService: appBootstrap.sessionService,
       ),
     );

@@ -32,6 +32,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/company/company_library_module.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
@@ -199,14 +200,14 @@ class EstimationModule extends Module {
       () => EquipmentCostFormBloc(
         repository: i.get(),
         yourRatesRepository: i.get(),
-        companyResolver: i.get(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
         clock: i.get(),
       ),
     );
     i.add<YourRatesBloc>(
       () => YourRatesBloc(
         repository: i.get(),
-        companyResolver: i.get(),
+        companyResolver: Modular.get<CurrentCompanyResolver>(),
         clock: i.get(),
       ),
     );

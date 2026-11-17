@@ -2,6 +2,7 @@
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/libraries/company/company_library_module.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/session/session_module.dart';
 
@@ -12,6 +13,7 @@ import 'package:construculator/libraries/session/session_module.dart';
 /// this list to the session service. Tests that need the real objects pass it
 /// to a session service too.
 const List<PerUserRegistration> perUserRegistrations = [
+  registerCompanyPerUserObjects,
   registerProjectPerUserObjects,
   registerProjectHeaderPerUserObjects,
   registerDashboardPerUserObjects,
