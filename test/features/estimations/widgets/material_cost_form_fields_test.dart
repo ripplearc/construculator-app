@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/domain/repositories/last_used
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -62,7 +63,10 @@ void main() {
     );
   });
 
-  Future<void> pumpFields(WidgetTester tester) async {
+  Future<void> pumpFields(
+    WidgetTester tester, {
+    ValueNotifier<NumberPadSession?>? numberPad,
+  }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
     await tester.pumpWidget(
@@ -74,7 +78,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<MaterialCostFormBloc>.value(
             value: bloc,
-            child: const MaterialCostFormFields(),
+            child: MaterialCostFormFields(numberPad: numberPad),
           ),
         ),
       ),
@@ -638,6 +642,210 @@ void main() {
 
       expect(textOf(tester, quantityField), '3');
       expect(dataOf().quantity, 3);
+    });
+  });
+  group('with the app\'s own number pad', () {
+    late ValueNotifier<NumberPadSession?> numberPad;
+
+    Future<void> pumpWithPad(WidgetTester tester) async {
+      numberPad = ValueNotifier(null);
+      addTearDown(numberPad.dispose);
+      await pumpFields(tester, numberPad: numberPad);
+    }
+
+    TextField textFieldOf(WidgetTester tester, Finder field) =>
+        tester.widget<TextField>(
+          find.descendant(of: field, matching: find.byType(TextField)),
+        );
+
+    testWidgets('quantity and rate keep the phone keyboard down; the name '
+        'keeps its own', (tester) async {
+      await pumpWithPad(tester);
+
+      expect(
+        textFieldOf(tester, quantityField).keyboardType,
+        TextInputType.none,
+      );
+      expect(textFieldOf(tester, rateField).keyboardType, TextInputType.none);
+      expect(textFieldOf(tester, quantityField).readOnly, isFalse);
+      expect(
+        textFieldOf(tester, nameField).keyboardType,
+        isNot(TextInputType.none),
+      );
+    });
+
+    testWidgets('tapping the quantity opens the pad on it with its value '
+        'selected and the put-back key naming it', (tester) async {
+      await pumpWithPad(tester);
+      await tester.enterText(quantityField, '3');
+      FocusScope.of(tester.element(nameField)).unfocus();
+      await tester.pump();
+      expect(numberPad.value, isNull);
+
+      await tester.tap(quantityField);
+      await tester.pump();
+
+      final session = numberPad.value!;
+      expect(session.controller.text, '3');
+      expect(
+        session.controller.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 1),
+      );
+      expect(session.putBackLabel, 'Back to 3');
+    });
+
+    testWidgets('a tap anywhere on the quantity row opens the pad too', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+      await tester.enterText(quantityField, '12');
+      FocusScope.of(tester.element(nameField)).unfocus();
+      await tester.pump();
+
+      final row = find.ancestor(
+        of: quantityField,
+        matching: find.byType(SheetFieldRow),
+      );
+      await tester.tapAt(tester.getTopLeft(row) + const Offset(30, 10));
+      await tester.pump();
+
+      expect(numberPad.value!.controller.text, '12');
+      expect(
+        numberPad.value!.controller.selection,
+        const TextSelection(baseOffset: 0, extentOffset: 2),
+      );
+    });
+
+    testWidgets('a key typed on the pad replaces the selected quantity and '
+        'reaches the bloc', (tester) async {
+      await pumpWithPad(tester);
+      await tester.enterText(quantityField, '3');
+      await tester.tap(quantityField);
+      await tester.pump();
+
+      numberPad.value!.typeDigit(2);
+      numberPad.value!.typeDigit(5);
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, quantityField), '25');
+      expect(bloc.state.data.quantity, 25);
+    });
+
+    testWidgets('an empty rate puts back nothing: the key reads Clear', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+
+      await tester.tap(rateField);
+      await tester.pump();
+
+      expect(numberPad.value!.putBackLabel, 'Clear');
+    });
+
+    testWidgets('a rate names its value with the currency sign', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+      await tester.enterText(rateField, '52');
+      FocusScope.of(tester.element(nameField)).unfocus();
+      await tester.pump();
+
+      await tester.tap(rateField);
+      await tester.pump();
+      numberPad.value!.typeDecimal();
+      numberPad.value!.typeDigit(5);
+      await tester.pumpAndSettle();
+
+      expect(numberPad.value!.putBackLabel, r'Back to $52');
+      expect(textOf(tester, rateField), '.5');
+      expect(bloc.state.data.rate, 0.5);
+    });
+
+    testWidgets('the pad keeps the rate field\'s own limit of two decimals', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+      await tester.tap(rateField);
+      await tester.pump();
+
+      for (final digit in [1, 2, 3]) {
+        if (digit == 2) numberPad.value!.typeDecimal();
+        numberPad.value!.typeDigit(digit);
+      }
+      numberPad.value!.typeDigit(4);
+      numberPad.value!.typeDigit(5);
+      await tester.pump();
+
+      expect(textOf(tester, rateField), '1.23');
+    });
+
+    testWidgets('tapping the rate keeps the typed quantity and moves the pad', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+      await tester.tap(quantityField);
+      await tester.pump();
+      numberPad.value!.typeDigit(7);
+      await tester.pump();
+
+      await tester.tap(rateField);
+      await tester.pump();
+
+      expect(textOf(tester, quantityField), '7');
+      expect(numberPad.value!.controller.text, '');
+      expect(numberPad.value!.putBackLabel, 'Clear');
+      numberPad.value!.typeDigit(4);
+      await tester.pump();
+      expect(textOf(tester, rateField), '4');
+      expect(textOf(tester, quantityField), '7');
+    });
+
+    testWidgets('moving to the name closes the pad, keeping the quantity', (
+      tester,
+    ) async {
+      await pumpWithPad(tester);
+      await tester.tap(quantityField);
+      await tester.pump();
+      numberPad.value!.typeDigit(7);
+
+      await tester.tap(nameField);
+      await tester.pump();
+
+      expect(numberPad.value, isNull);
+      expect(textOf(tester, quantityField), '7');
+    });
+
+    testWidgets('losing focus closes the pad', (tester) async {
+      await pumpWithPad(tester);
+      await tester.tap(rateField);
+      await tester.pump();
+
+      FocusScope.of(tester.element(nameField)).unfocus();
+      await tester.pump();
+
+      expect(numberPad.value, isNull);
+    });
+  });
+
+  group('without a number pad', () {
+    testWidgets('quantity and rate open the phone\'s number keyboard and a '
+        'tap leaves the caret where it lands', (tester) async {
+      await pumpFields(tester);
+      await tester.enterText(quantityField, '25');
+      FocusScope.of(tester.element(nameField)).unfocus();
+      await tester.pump();
+
+      await tester.tap(quantityField);
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(of: quantityField, matching: find.byType(TextField)),
+      );
+      expect(
+        field.keyboardType,
+        const TextInputType.numberWithOptions(decimal: true),
+      );
+      expect(field.controller!.selection.isCollapsed, isTrue);
     });
   });
 }
