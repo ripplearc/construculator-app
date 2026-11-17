@@ -57,7 +57,7 @@ void main() {
     fakeSupabase.dispose();
   });
 
-  group('LocalDataDeleteService with its real collaborators', () {
+  group('LocalDataDeleteService with the real file store', () {
     late Directory directory;
     late FileOwnerRecordStorageService ownerRecords;
     late FakePowerSyncDatabaseWrapper tables;

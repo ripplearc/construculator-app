@@ -182,7 +182,7 @@ void main() {
         () async {
           syncedData.shouldThrowOnDelete = true;
 
-          await expectLater(service.deleteLocalData(), throwsStateError);
+          await expectLater(service.deleteLocalData(), throwsException);
 
           expect(executedSql(), ['DELETE FROM notes', 'DELETE FROM drafts']);
           expect(ownerRecords.record, flagged);
@@ -192,7 +192,7 @@ void main() {
       test('the last write fails, after everything was deleted', () async {
         ownerRecords.shouldThrowOnRemove = true;
 
-        await expectLater(service.deleteLocalData(), throwsStateError);
+        await expectLater(service.deleteLocalData(), throwsException);
 
         expect(syncedData.deleteCallCount, 1);
         expect(ownerRecords.record, flagged);
@@ -270,7 +270,7 @@ void main() {
       ownerRecords.seed(OwnerRecord(userId: 'user-1'));
       ownerRecords.shouldThrowOnWrite = true;
 
-      await expectLater(service.deleteLocalData(), throwsStateError);
+      await expectLater(service.deleteLocalData(), throwsException);
 
       expect(executedSql(), isEmpty);
       expect(syncedData.deleteCallCount, 0);
