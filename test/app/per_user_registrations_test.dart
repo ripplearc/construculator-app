@@ -35,8 +35,8 @@ void main() {
     Modular.init(_TestModule());
     // ignore: no_direct_instantiation
     sessionService = SessionServiceImpl(registrations: perUserRegistrations);
-    addTearDown(sessionService.endSession);
     addTearDown(Modular.destroy);
+    addTearDown(sessionService.endSession);
   });
 
   group('per-user registrations', () {
