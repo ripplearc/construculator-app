@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/domain/usecases/add_cost_esti
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/domain/usecases/get_project_header_usecase.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
@@ -41,6 +42,7 @@ void main() {
 
   group('per-user registrations', () {
     test('add no objects before a session starts', () {
+      expect(Modular.tryGet<CurrentCompanyResolver>(), isNull);
       expect(Modular.tryGet<CurrentProjectNotifier>(), isNull);
       expect(Modular.tryGet<ProjectRepository>(), isNull);
       expect(Modular.tryGet<ProjectDropdownBloc>(), isNull);
@@ -48,9 +50,10 @@ void main() {
       expect(Modular.tryGet<AddCostEstimationUseCase>(), isNull);
     });
 
-    test('add the project, dashboard, header and estimation objects', () {
+    test('add the company, project, dashboard, header and estimation objects', () {
       sessionService.startSession();
 
+      expect(Modular.tryGet<CurrentCompanyResolver>(), isNotNull);
       expect(Modular.tryGet<CurrentProjectNotifier>(), isNotNull);
       expect(Modular.tryGet<ProjectRepository>(), isNotNull);
       expect(Modular.tryGet<ProjectDropdownBloc>(), isNotNull);
@@ -66,6 +69,8 @@ void main() {
 
       sessionService.endSession();
 
+      expect(Modular.tryGet<CurrentCompanyResolver>(), isNull);
+      expect(Modular.tryGet<CurrentCompanyResolver>(), isNull);
       expect(Modular.tryGet<CurrentProjectNotifier>(), isNull);
       expect(Modular.tryGet<ProjectRepository>(), isNull);
       expect(Modular.tryGet<ProjectDropdownBloc>(), isNull);
@@ -111,6 +116,7 @@ void main() {
 
     test('build new objects for the next session', () {
       sessionService.startSession();
+      final resolver = Modular.get<CurrentCompanyResolver>();
       final dropdown = Modular.get<ProjectDropdownBloc>();
       final header = Modular.get<GetProjectHeaderUseCase>();
       final addUseCase = Modular.get<AddCostEstimationUseCase>();
@@ -119,6 +125,7 @@ void main() {
 
       sessionService.startSession();
 
+      expect(Modular.get<CurrentCompanyResolver>(), isNot(same(resolver)));
       expect(Modular.get<ProjectDropdownBloc>(), isNot(same(dropdown)));
       expect(Modular.get<GetProjectHeaderUseCase>(), isNot(same(header)));
       expect(Modular.get<AddCostEstimationUseCase>(), isNot(same(addUseCase)));

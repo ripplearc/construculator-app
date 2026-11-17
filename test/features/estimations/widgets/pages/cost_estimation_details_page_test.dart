@@ -47,6 +47,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 import '../../../../utils/toast_test_utils.dart';
 import '../../helpers/cost_item_test_data_map_factory.dart';
 
@@ -90,6 +91,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationDetailsPageTestModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     Modular.setInitialRoute(testEstimationRoute);
   });
@@ -99,12 +101,12 @@ void main() {
     CoreToast.enableTimers();
   });
 
-  setUp(() {
+  setUp(() async {
     storage.reset();
     fakeSupabase.reset();
     database.reset();
     Modular.dispose<AuthManager>();
-    Modular.dispose<CurrentCompanyResolver>();
+    await Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',

@@ -26,6 +26,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -39,6 +40,7 @@ void main() {
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    startTestSession();
     database = FakeYourRatesDatabase();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });

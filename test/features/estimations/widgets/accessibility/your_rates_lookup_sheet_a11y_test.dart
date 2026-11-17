@@ -22,6 +22,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 
 final _l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -39,6 +40,7 @@ void main() {
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
