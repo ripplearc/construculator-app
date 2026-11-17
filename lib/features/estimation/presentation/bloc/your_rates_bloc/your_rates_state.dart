@@ -38,6 +38,13 @@ class YourRatesError extends YourRatesState {
   final Failure failure;
 }
 
+/// State while a [YourRatesSaveRequested] runs, until it ends in one of the
+/// save states below. A save that runs past [YourRatesBloc.saveTimeLimit], the
+/// company look-up included, ends in [YourRatesSaveFailed].
+class YourRatesSaving extends YourRatesState {
+  const YourRatesSaving();
+}
+
 /// State after [YourRatesSaveRequested] succeeds outright (no collision).
 ///
 /// Not const on purpose: every success must be a new object, because bloc

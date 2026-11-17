@@ -535,6 +535,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
             const EquipmentRecalledAmountSavedEvent(),
           );
         }
+      case YourRatesSaving():
       case YourRatesLoading():
       case YourRatesRetrying():
       case YourRatesLoaded():
@@ -1528,7 +1529,8 @@ class _EntryLabelDialogState extends State<_EntryLabelDialog> {
           YourRatesSaveFailed() ||
           YourRatesSaveNoCompany():
         Navigator.of(context).pop();
-      case YourRatesLoading() ||
+      case YourRatesSaving() ||
+          YourRatesLoading() ||
           YourRatesRetrying() ||
           YourRatesLoaded() ||
           YourRatesSearchResults() ||
