@@ -195,6 +195,83 @@ void main() {
           expect(_dataOf(b.state).unit, Unit.squareFeet);
         });
       });
+
+      test('gives a longer name its own unit when it is typed one letter at a '
+          'time past a shorter remembered name', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          rememberNow(settle, 'Drywall screws', Unit.pounds);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          const name = 'Drywall screws';
+          for (var length = 1; length <= name.length; length++) {
+            b.add(MaterialCostItemTypeChanged(name.substring(0, length)));
+          }
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.pounds);
+        });
+      });
+
+      test('moves a remembered unit to the new name while nothing else is '
+          'typed', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Drywall'))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.gallons);
+        });
+      });
+
+      test('empties a remembered unit when the new name has none', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Drywall'))
+            ..add(const MaterialCostItemTypeChanged('Drywall tape'));
+          settle();
+
+          expect(_dataOf(b.state).unit, isNull);
+        });
+      });
+
+      test('keeps a remembered unit once a quantity is typed for it', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Drywall', Unit.sheets);
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Drywall'))
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.sheets);
+        });
+      });
+
+      test('still fills an empty unit when the quantity was typed first', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialCostItemTypeChanged('Paint'));
+          settle();
+
+          expect(_dataOf(b.state).unit, Unit.gallons);
+        });
+      });
     });
 
     group('changing the unit', () {
@@ -663,7 +740,23 @@ void main() {
         verify: (b) => expect(hasChanges(b), isFalse),
       );
 
-      test('stay when a filled-in remembered unit is left after the name is '
+      test('disappear when the name is cleared and its remembered unit goes '
+          'with it', () {
+        inFakeTime((b, settle) {
+          rememberNow(settle, 'Paint', Unit.gallons);
+          b.add(const MaterialCostFormStarted());
+          settle();
+          b
+            ..add(const MaterialCostItemTypeChanged('Paint'))
+            ..add(const MaterialCostItemTypeChanged(''));
+          settle();
+
+          expect(_dataOf(b.state).unit, isNull);
+          expect(hasChanges(b), isFalse);
+        });
+      });
+
+      test('stay when a kept remembered unit is left after the name is '
           'cleared, since the unit is still on screen', () {
         inFakeTime((b, settle) {
           rememberNow(settle, 'Paint', Unit.gallons);
@@ -671,6 +764,8 @@ void main() {
           settle();
           b
             ..add(const MaterialCostItemTypeChanged('Paint'))
+            ..add(const MaterialRateUpdated('5'))
+            ..add(const MaterialRateUpdated(''))
             ..add(const MaterialCostItemTypeChanged(''));
           settle();
 
