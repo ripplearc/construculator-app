@@ -46,8 +46,6 @@ class LocalOnlyTableRegistration {
 /// the same change.
 abstract final class LocalOnlyTableRegistry {
   /// The registered local-only tables.
-  // TODO: [CA-1429] call clearForUserChange for each one in the delete routine
-  // https://ripplearc.youtrack.cloud/issue/CA-1429
   static const registrations = <LocalOnlyTableRegistration>[
     LocalOnlyTableRegistration(
       tableName: DatabaseConstants.currentCompanyTable,
