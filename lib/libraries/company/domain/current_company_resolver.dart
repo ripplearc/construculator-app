@@ -48,8 +48,8 @@ abstract class CurrentCompanyResolver {
   /// Clears the cached result and the id kept on the device, so the next
   /// [resolve] call hits the network again.
   ///
-  /// Callers that hold this resolver across a sign-out/sign-in must call
-  /// this on sign-out — otherwise a different signed-in user could see the
-  /// previous user's company id.
+  /// The resolver belongs to one signed-in user and is dropped when the
+  /// session ends. Sign-out still calls this to empty the id kept on the
+  /// device, which the session does not remove.
   Future<void> clearCache();
 }
