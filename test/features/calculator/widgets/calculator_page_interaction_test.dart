@@ -1100,4 +1100,233 @@ void main() {
       '5',
     );
   });
+
+  group('T2a 1/2: the keypad folds to show the detail panel (Section 1.4, '
+      'term 2.17)', () {
+    const panel = Key('calculator_detail_panel');
+    const firstDigit = ValueKey('calc_key_one');
+
+    // CoreUI names the keyboard's handle itself, in English, with no
+    // parameter to pass a localized label through.
+    Finder handle() => find.bySemanticsLabel('Keyboard drag handle');
+
+    Finder inPanel(String text) =>
+        find.descendant(of: find.byKey(panel), matching: find.text(text));
+
+    Future<void> acceptAreaOf20ftBy9ft(WidgetTester tester) async {
+      for (final key in const [
+        'calc_key_Length',
+        'calc_key_two',
+        'calc_key_zero',
+        'calc_key_feet',
+        'calc_key_Height',
+        'calc_key_nine',
+        'calc_key_feet',
+      ]) {
+        await press(tester, key);
+      }
+      await tester.tap(find.byKey(CoreResultButton.testKey));
+      await tester.pump();
+    }
+
+    testWidgets('a tap on the handle folds the keypad and shows the tiles '
+        'of what Area 180ft² left unasked: Diagonal 21.93ft and Perimeter '
+        '58ft (walkthrough 11.3, decision tree row 224)', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      expect(find.byKey(panel), findsNothing);
+      expect(find.text(l10n.calculatorDetailDimensionsTitle), findsNothing);
+
+      await tester.tap(handle());
+      await settle(tester);
+
+      expect(find.text(l10n.calculatorDetailDimensionsTitle), findsOneWidget);
+      expect(find.text(l10n.calculatorDetailExpandButton), findsOneWidget);
+      expect(inPanel(l10n.calculatorAnswerDiagonal), findsOneWidget);
+      expect(inPanel('21.93ft'), findsOneWidget);
+      expect(inPanel(l10n.calculatorAnswerPerimeter), findsOneWidget);
+      expect(inPanel('58ft'), findsOneWidget);
+      expect(inPanel(l10n.calculatorAnswerArea), findsNothing);
+      expect(
+        inPanel(CoreGeometryArea.defaultAttachmentsTitleLabel),
+        findsNothing,
+        reason: 'the detail panel of Section 1.4 has no attachments',
+      );
+      expect(find.byKey(firstDigit).hitTestable(), findsNothing);
+    });
+
+    testWidgets('under the fold the strip sits right below the display and '
+        'the panel right below the strip', (tester) async {
+      await pumpPage(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      await tester.tap(handle());
+      await settle(tester);
+
+      final display = tester.getRect(find.byType(CoreDisplayArea));
+      final strip = tester.getRect(find.byType(CoreSuggestionArea));
+      expect(strip.top, display.bottom);
+      expect(tester.getRect(find.byKey(panel)).top, strip.bottom);
+    });
+
+    testWidgets('folding and unfolding leave the tape, the label and the '
+        'value as they were, and unfolding brings the keys back (decision '
+        'tree row 227, case 1)', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      final bloc = blocOf(tester);
+      final accepted = bloc.state;
+
+      await tester.tap(handle());
+      await settle(tester);
+      expect(bloc.state, equals(accepted));
+      expect(find.text(l10n.calculatorAnswerArea), findsWidgets);
+      expect(find.text('180ft²'), findsWidgets);
+
+      await tester.tap(handle());
+      await settle(tester);
+      expect(bloc.state, equals(accepted));
+      expect(find.byKey(panel), findsNothing);
+      expect(find.text(l10n.calculatorDetailDimensionsTitle), findsNothing);
+
+      await press(tester, 'calc_key_one');
+      expect(bloc.state.valueText, '1');
+    });
+
+    testWidgets('a drag down on the handle folds the keypad and a drag up '
+        'unfolds it', (tester) async {
+      await pumpPage(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+
+      await tester.fling(handle(), const Offset(0, 200), 1000);
+      await settle(tester);
+      expect(find.byKey(panel), findsOneWidget);
+      expect(find.byKey(firstDigit).hitTestable(), findsNothing);
+
+      await tester.fling(handle(), const Offset(0, -200), 1000);
+      await settle(tester);
+      expect(find.byKey(panel), findsNothing);
+      expect(find.byKey(firstDigit).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('a value still being typed keeps its label and value under '
+        'the fold, and its shape gives the tiles (decision tree row 227, '
+        'case 2: Radius 6ft)', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      final bloc = blocOf(tester)
+        ..add(const CalculatorKeySelected('Radius'))
+        ..add(const CalculatorDigitPressed('6'))
+        ..add(const CalculatorUnitSelected(Unit.foot));
+      await tester.pump();
+      final typed = bloc.state;
+
+      await tester.tap(handle());
+      await settle(tester);
+
+      expect(bloc.state, equals(typed));
+      expect(bloc.state.labelKeyId, 'Radius');
+      expect(bloc.state.valueText, '6ft');
+      expect(inPanel(l10n.calculatorKeyDiameter), findsOneWidget);
+      expect(inPanel('12ft'), findsOneWidget);
+    });
+
+    testWidgets('the tiles follow the tape while the keypad stays folded: '
+        'an answer accepted from the strip leaves them', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      await tester.tap(handle());
+      await settle(tester);
+      expect(inPanel(l10n.calculatorAnswerDiagonal), findsOneWidget);
+
+      final bloc = blocOf(tester);
+      bloc.add(CalculatorSuggestionAccepted(bloc.state.suggestions.first));
+      await settle(tester);
+
+      expect(bloc.state.labelKeyId, DeterministicRules.diagonalKey);
+      expect(inPanel(l10n.calculatorAnswerDiagonal), findsNothing);
+      expect(inPanel(l10n.calculatorAnswerPerimeter), findsOneWidget);
+    });
+
+    testWidgets('a tape with nothing to work out folds to no panel', (
+      tester,
+    ) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await press(tester, 'calc_key_one');
+      await press(tester, 'calc_key_two');
+
+      await tester.tap(handle());
+      await settle(tester);
+
+      expect(find.byKey(firstDigit).hitTestable(), findsNothing);
+      expect(find.byKey(panel), findsNothing);
+      expect(find.text(l10n.calculatorDetailDimensionsTitle), findsNothing);
+    });
+
+    testWidgets('while the display area is pulled open the panel gives its '
+        'room back, and it returns when the display closes', (tester) async {
+      await pumpPage(tester);
+      for (final key in const [
+        'calc_key_Length',
+        'calc_key_two',
+        'calc_key_zero',
+        'calc_key_feet',
+        'calc_key_Height',
+        'calc_key_nine',
+        'calc_key_feet',
+        'calc_key_add',
+        'calc_key_one',
+        'calc_key_add',
+        'calc_key_one',
+        'calc_key_add',
+        'calc_key_one',
+        'calc_key_add',
+        'calc_key_one',
+      ]) {
+        await press(tester, key);
+      }
+      await tester.tap(handle());
+      await settle(tester);
+      expect(find.byKey(panel), findsOneWidget);
+
+      await tester.fling(
+        find.byType(CoreDisplayArea),
+        const Offset(0, 100),
+        1000,
+      );
+      await settle(tester);
+      expect(find.byKey(panel), findsNothing);
+
+      await tester.fling(
+        find.byType(CoreDisplayArea),
+        const Offset(0, -100),
+        1000,
+      );
+      await settle(tester);
+      expect(find.byKey(panel), findsOneWidget);
+    });
+
+    testWidgets('the tiles open on Expand and close on Collapse, both '
+        'named from l10n', (tester) async {
+      await pumpPage(tester);
+      final l10n = l10nOf(tester);
+      await acceptAreaOf20ftBy9ft(tester);
+      await tester.tap(handle());
+      await settle(tester);
+      expect(find.text(l10n.calculatorDetailExpandButton), findsOneWidget);
+      expect(find.text(l10n.calculatorDetailCollapseButton), findsNothing);
+
+      await tester.tap(find.text(l10n.calculatorDetailExpandButton));
+      await settle(tester);
+      expect(find.text(l10n.calculatorDetailExpandButton), findsNothing);
+      expect(find.text(l10n.calculatorDetailCollapseButton), findsOneWidget);
+
+      await tester.tap(find.text(l10n.calculatorDetailCollapseButton));
+      await settle(tester);
+      expect(find.text(l10n.calculatorDetailExpandButton), findsOneWidget);
+    });
+  });
 }

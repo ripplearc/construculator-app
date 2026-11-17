@@ -64,6 +64,40 @@
             <mutation text="when identical(_orderedFor, order)) {"/>
         </regex>
 
+        <!-- RULE 6 (T2a 1/2, CA-1095): the detail panel never shows, shows
+             with the keys up, or keeps the display's room while the display
+             is pulled open -->
+        <regex pattern="_isKeypadFolded &amp;&amp; _currentStage == DisplayAreaStage\.collapsed;" dotAll="true" id="calculator_page.detail_panel.when_shown">
+            <mutation text="false;"/>
+            <mutation text="_currentStage == DisplayAreaStage.collapsed;"/>
+            <mutation text="_isKeypadFolded;"/>
+        </regex>
+
+        <!-- RULE 7: the page never hears the keypad unfold, or fold -->
+        <regex pattern="setState\(\(\) =&gt; _isKeypadFolded = isFolded\)," dotAll="true" id="calculator_page.detail_panel.fold_unheard">
+            <mutation text="setState(() =&gt; _isKeypadFolded = true),"/>
+            <mutation text="setState(() =&gt; _isKeypadFolded = false),"/>
+        </regex>
+
+        <!-- RULE 8: a tape with nothing to work out draws an empty panel -->
+        <regex pattern="child: state\.dimensions\.isEmpty\s*\? const SizedBox\.shrink\(\)" dotAll="true" id="calculator_page.detail_panel.drawn_empty">
+            <mutation text="child: state.dimensions.length &lt; 0 ? const SizedBox.shrink()"/>
+        </regex>
+
+        <!-- RULE 9: the display keeps its half of the page under the fold,
+             so the strip and the panel hang below a gap -->
+        <regex pattern="flex: _showsDetailPanel \? 0 : 1," dotAll="true" id="calculator_page.detail_panel.display_keeps_its_room">
+            <mutation text="flex: 1,"/>
+        </regex>
+
+        <!-- RULE 10: CoreUI's Attachments heading is drawn, and the Expand
+             and Collapse buttons trade their names -->
+        <regex pattern="attachmentsTitleLabel: _noAttachmentsTitle," dotAll="true" id="calculator_page.detail_panel.attachments_heading">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="expandLabel: labels\.l10n\.calculatorDetailExpandButton,\s*collapseLabel: labels\.l10n\.calculatorDetailCollapseButton," dotAll="true" id="calculator_page.detail_panel.buttons_swapped">
+            <mutation text="expandLabel: labels.l10n.calculatorDetailCollapseButton, collapseLabel: labels.l10n.calculatorDetailExpandButton,"/>
+        </regex>
 
     </rules>
 
