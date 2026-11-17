@@ -67,6 +67,7 @@ void main() {
     WidgetTester tester, {
     ValueNotifier<NumberPadSession?>? numberPad,
     ThemeData? theme,
+    Widget? trailing,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -79,7 +80,10 @@ void main() {
         home: Scaffold(
           body: BlocProvider<MaterialCostFormBloc>.value(
             value: bloc,
-            child: MaterialCostFormFields(numberPad: numberPad),
+            child: MaterialCostFormFields(
+              numberPad: numberPad,
+              trailing: trailing,
+            ),
           ),
         ),
       ),
@@ -886,5 +890,26 @@ void main() {
       );
       expect(field.controller!.selection.isCollapsed, isTrue);
     });
+  });
+
+  testWidgets('draws the trailing widget under the rate, inside the scroll', (
+    tester,
+  ) async {
+    const trailingKey = Key('trailing');
+    await pumpFields(
+      tester,
+      trailing: const SizedBox(key: trailingKey, height: 600),
+    );
+
+    final rate = tester.getRect(rateField);
+    final trailing = tester.getRect(find.byKey(trailingKey));
+    expect(trailing.top, greaterThan(rate.bottom));
+    expect(
+      find.ancestor(
+        of: find.byKey(trailingKey),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsOneWidget,
+    );
   });
 }
