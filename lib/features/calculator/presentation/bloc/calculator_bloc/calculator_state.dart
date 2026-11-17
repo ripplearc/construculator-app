@@ -362,16 +362,25 @@ class CalculatorState extends Equatable {
     final trigLeads = trigAnswer != null && !tape.trigAnswerContinuesAChain;
     return [
       if (trigLeads) trigAnswer,
-      if (runningTotal != null)
-        runningTotal
-      else
-        for (final answer in const DeterministicRules().answersFor(
-          tape.namedValues,
-        ))
-          if (!_hasLanded(answer.key)) _answer(answer.key, answer.value),
+      if (runningTotal != null) runningTotal else ...dimensions,
       if (trigAnswer != null && !trigLeads) trigAnswer,
     ];
   }
+
+  /// The tiles of the detail panel (Section 1.4: "Diagonal, Perimeter and
+  /// the other derived values of the current inputs"): every answer the
+  /// rules compute from the named values, minus the ones already landed as
+  /// result chips, so that once Area 180ft² is accepted the tiles read
+  /// Diagonal 21.93ft and Perimeter 58ft (walkthrough 11.3; decision tree
+  /// row 224). They are read off the tape ("the dimension tiles for the
+  /// current tape"), so they stay while Calc or a note takes row 1 of the
+  /// strip.
+  List<CalculatorSuggestion> get dimensions => [
+    for (final answer in const DeterministicRules().answersFor(
+      tape.namedValues,
+    ))
+      if (!_hasLanded(answer.key)) _answer(answer.key, answer.value),
+  ];
 
   /// Row 2 of the strip: the value on screen in its other units (term
   /// 2.12; Section 6, "Where conversions show"), as plain values with no

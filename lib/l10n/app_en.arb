@@ -3114,6 +3114,18 @@
   "@calculatorStripConversionsSemantics": {
     "description": "Screen reader label of the conversions row of the calculator suggestion strip"
   },
+  "calculatorDetailDimensionsTitle": "Dimensions",
+  "@calculatorDetailDimensionsTitle": {
+    "description": "Title of the tiles in the calculator detail panel that show the values worked out from what was typed, such as Diagonal and Perimeter"
+  },
+  "calculatorDetailExpandButton": "Expand",
+  "@calculatorDetailExpandButton": {
+    "description": "Button in the calculator detail panel that shows every dimension tile"
+  },
+  "calculatorDetailCollapseButton": "Collapse",
+  "@calculatorDetailCollapseButton": {
+    "description": "Button in the calculator detail panel that goes back to the first dimension tiles"
+  },
   "calculatorLabelValue": "Value",
   "@calculatorLabelValue": {
     "description": "Head of the calculator label row for a value typed under no function key"

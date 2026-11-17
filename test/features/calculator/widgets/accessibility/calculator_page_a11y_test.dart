@@ -610,5 +610,59 @@ void main() {
         expect(diag.hint, isEmpty);
       },
     );
+
+    testWidgets(
+      'the detail panel under the folded keypad: its Expand button is read '
+      'by its localized name, a tile reads its name and value, and both '
+      'meet the label and contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        final l10n = AppLocalizationsEn();
+        final expand = find.bySemanticsLabel(l10n.calculatorDetailExpandButton);
+        // Each theme gets a tree of its own, keyed by its brightness, so the
+        // second theme starts from an empty tape and an unfolded keypad.
+        // Tap target size is disabled as in the close-button test: the
+        // guideline reads the whole page, where CoreUI's close button and
+        // drag handle sit below 48dp by design (CA-1446).
+        for (final theme in kA11yTestThemes) {
+          await tester.pumpWidget(
+            KeyedSubtree(
+              key: ValueKey(theme.brightness),
+              child: makeTestableWidget(theme: theme),
+            ),
+          );
+          await tester.pump();
+          BlocProvider.of<CalculatorBloc>(
+              tester.element(find.byType(CoreKeyboard)),
+            )
+            ..add(const CalculatorKeySelected('Length'))
+            ..add(const CalculatorDigitPressed('2'))
+            ..add(const CalculatorDigitPressed('0'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorKeySelected('Height'))
+            ..add(const CalculatorDigitPressed('9'))
+            ..add(const CalculatorUnitSelected(Unit.foot))
+            ..add(const CalculatorEqualsPressed());
+          await tester.pump();
+          await tester.tap(find.bySemanticsLabel('Keyboard drag handle'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+
+          await expectMeetsTapTargetAndLabelGuidelines(
+            tester,
+            expand,
+            checkTapTargetSize: false,
+          );
+          expect(
+            find.bySemanticsLabel('${l10n.calculatorAnswerDiagonal}: 21.93ft'),
+            findsOneWidget,
+          );
+          expect(
+            find.bySemanticsLabel('${l10n.calculatorAnswerPerimeter}: 58ft'),
+            findsOneWidget,
+          );
+        }
+      },
+    );
   });
 }

@@ -254,5 +254,39 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the detail panel under the folded keypad: the '
+        'tiles of what Area 180ft² left unasked (Section 1.4, walkthrough '
+        '11.3)', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCalculatorPage(tester: tester, theme: theme);
+
+      blocOf(tester)
+        ..add(const CalculatorKeySelected('Length'))
+        ..add(const CalculatorDigitPressed('2'))
+        ..add(const CalculatorDigitPressed('0'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorKeySelected('Height'))
+        ..add(const CalculatorDigitPressed('9'))
+        ..add(const CalculatorUnitSelected(Unit.foot))
+        ..add(const CalculatorEqualsPressed());
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('Keyboard drag handle'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        [for (final tile in blocOf(tester).state.dimensions) tile.key],
+        [DeterministicRules.diagonalKey, DeterministicRules.perimeterKey],
+      );
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_detail_panel$suffix.png',
+        ),
+      );
+    });
   });
 }
