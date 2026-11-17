@@ -168,6 +168,19 @@ void main() {
       },
     );
 
+    test('clear also removes a value written behind its back', () async {
+      final space = buildSpace();
+      await space.save<String>('one', '1');
+      store.data['flutter.user.two'] = '2';
+
+      await space.clear();
+
+      expect(
+        store.data.keys.where((key) => key.startsWith('flutter.user.')),
+        isEmpty,
+      );
+    });
+
     test('reads an empty list that the platform returns untyped', () async {
       store.data['flutter.user.texts'] = <Object?>[];
 
