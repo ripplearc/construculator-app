@@ -16,6 +16,9 @@ class FakeAppLifecycleWrapper implements AppLifecycleWrapper {
   @override
   Stream<bool> get foregroundChanges => _foregroundChanges.stream;
 
+  /// Whether something is listening to [foregroundChanges].
+  bool get hasListener => _foregroundChanges.hasListener;
+
   /// Moves the app to the foreground or the background.
   void setInForeground(bool isInForeground) {
     if (isInForeground == _isInForeground) return;

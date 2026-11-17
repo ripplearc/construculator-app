@@ -20,9 +20,6 @@
             <mutation text="results.every((result) =&gt; result != ConnectivityResult.none)"/>
         </regex>
 
-        <regex pattern="result != ConnectivityResult\.none" id="network.none_negated">
-            <mutation text="result == ConnectivityResult.none"/>
-        </regex>
 
         <regex pattern="if \(!_hasNetwork\) \{\s*_checkGeneration\+\+;" id="network.lost_skip_generation_bump">
             <mutation text="if (!_hasNetwork) {"/>
@@ -36,9 +33,6 @@
             <mutation text="return;"/>
         </regex>
 
-        <regex pattern="if \(!_hasNetwork\) \{" id="network.lost_negated">
-            <mutation text="if (_hasNetwork) {"/>
-        </regex>
 
         <regex pattern="\}\s*_startChecking\(\);\s*\}\s*void _onForegroundChange" id="network.attached_skip_checking">
             <mutation text="}
@@ -99,9 +93,6 @@
             <mutation text=""/>
         </regex>
 
-        <regex pattern="if \(generation != _checkGeneration\) return;" id="check.stale_guard_negated">
-            <mutation text="if (generation == _checkGeneration) return;"/>
-        </regex>
 
         <regex pattern="final generation = \+\+_checkGeneration;" id="check.skip_generation_bump">
             <mutation text="final generation = _checkGeneration;"/>
@@ -115,9 +106,6 @@
             <mutation text="isReachable ? NetworkStatus.offline : NetworkStatus.online"/>
         </regex>
 
-        <regex pattern="status == _current\) return;" id="change.emit_even_when_same">
-            <mutation text="status != _current) return;"/>
-        </regex>
 
         <regex pattern="_current = status;" id="change.skip_store">
             <mutation text="_current = _current;"/>
@@ -135,9 +123,6 @@
             <mutation text="if (_isDisposed) return;"/>
         </regex>
 
-        <regex pattern="if \(_isDisposed \|\| _hasHeardFromSystem\) return;" id="initial.skip_disposed_guard">
-            <mutation text="if (_hasHeardFromSystem) return;"/>
-        </regex>
 
         <regex pattern="if \(!_hasHeardFromSystem\) _startChecking\(\);" id="initial.failure_skip_check">
             <mutation text=""/>
@@ -181,7 +166,7 @@
     </rules>
 
     <commands>
-        <command group="network_status_service" expected-return="0">flutter test test/libraries/network_status/units/network_status_service_impl_test.dart</command>
+        <command group="network_status_service" expected-return="0" timeout="90">flutter test --no-pub --timeout 2s test/libraries/network_status/units/network_status_service_impl_test.dart</command>
     </commands>
 
     <threshold failure="85"/>

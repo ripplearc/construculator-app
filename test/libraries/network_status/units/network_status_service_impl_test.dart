@@ -456,6 +456,15 @@ void main() {
         expect(sdk.hasListener, isFalse);
       });
 
+      test('stops listening to the app lifecycle', () async {
+        final service = await createService();
+        expect(lifecycle.hasListener, isTrue);
+
+        await service.dispose();
+
+        expect(lifecycle.hasListener, isFalse);
+      });
+
       test('stops the timer', () async {
         final service = await createService();
 
