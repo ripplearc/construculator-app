@@ -109,8 +109,13 @@
         <regex pattern="data\.rate != _formValuesAtOpening\.rate" dotAll="false" id="bloc.dirty.rate">
             <mutation text="false"/>
         </regex>
-        <regex pattern="if \(data\.unit != null\) return data;" dotAll="false" id="bloc.preselect.fill_only_empty">
+        <regex pattern="if \(data\.unit != null &amp;&amp; _shownUnitIsKept\) return data;" dotAll="false" id="bloc.preselect.keep_shown_unit">
             <mutation text="if (false) return data;"/>
+            <mutation text="if (data.unit != null) return data;"/>
+            <mutation text="if (_shownUnitIsKept) return data;"/>
+        </regex>
+        <regex pattern="_shownUnitIsKept = true;" dotAll="false" id="bloc.preselect.typing_keeps_unit">
+            <mutation text="_shownUnitIsKept = false;"/>
         </regex>
         <regex pattern="if \(_withRememberedUnit\(current\)\.unit != current\.unit\)" dotAll="false" id="bloc.preselect.apply_after_load">
             <mutation text="if (false)"/>

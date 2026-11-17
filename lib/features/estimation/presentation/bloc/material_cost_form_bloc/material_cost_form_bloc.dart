@@ -24,6 +24,7 @@ class MaterialCostFormBloc
 
   static const _formValuesAtOpening = MaterialCostFormData();
   RememberedUnits _rememberedUnits = RememberedUnits.none;
+  bool _shownUnitIsKept = false;
 
   MaterialCostFormBloc({
     required this._repository,
@@ -37,13 +38,14 @@ class MaterialCostFormBloc
         (d) => _withRememberedUnit(d.copyWith(itemName: e.value)),
       ),
     );
-    on<MaterialQuantityUpdated>(
-      (e, emit) =>
-          _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value))),
-    );
-    on<MaterialUnitSelected>(
-      (e, emit) => _emit(emit, (d) => d.copyWith(unit: e.unit)),
-    );
+    on<MaterialQuantityUpdated>((e, emit) {
+      _shownUnitIsKept = true;
+      _emit(emit, (d) => d.copyWith(quantity: double.tryParse(e.value)));
+    });
+    on<MaterialUnitSelected>((e, emit) {
+      _shownUnitIsKept = true;
+      _emit(emit, (d) => d.copyWith(unit: e.unit));
+    });
     on<MaterialRateUpdated>(_onRateUpdated);
     on<MaterialCostFormSubmitted>(_onSubmitted);
   }
@@ -62,7 +64,7 @@ class MaterialCostFormBloc
   }
 
   MaterialCostFormData _withRememberedUnit(MaterialCostFormData data) {
-    if (data.unit != null) return data;
+    if (data.unit != null && _shownUnitIsKept) return data;
     return data.copyWith(unit: _rememberedUnits.forItem(data.itemName));
   }
 
@@ -71,6 +73,7 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) {
     final rate = double.tryParse(event.value);
+    _shownUnitIsKept = true;
     _emit(
       emit,
       (d) => d.copyWith(
