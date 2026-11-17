@@ -21,15 +21,16 @@ extension UnitDisplayName on Unit {
   };
 
   /// This unit's lowercase name for [count], for example "sheet" for 1 and
-  /// "sheets" for 13.25, in the language of [l10n].
+  /// "sheets" for 13.25, in the language of [l10n]. Measured units are short
+  /// symbols such as "m²" and "kg" that do not change with [count].
   String countName(AppLocalizations l10n, num count) => switch (this) {
     Unit.pieces => l10n.unitNamePieces(count),
-    Unit.meters => l10n.unitNameMeters(count),
-    Unit.squareMeters => l10n.unitNameSquareMeters(count),
-    Unit.cubicMeters => l10n.unitNameCubicMeters(count),
-    Unit.kilograms => l10n.unitNameKilograms(count),
-    Unit.tons => l10n.unitNameTons(count),
-    Unit.liters => l10n.unitNameLiters(count),
+    Unit.meters => l10n.unitNameMeters,
+    Unit.squareMeters => l10n.unitNameSquareMeters,
+    Unit.cubicMeters => l10n.unitNameCubicMeters,
+    Unit.kilograms => l10n.unitNameKilograms,
+    Unit.tons => l10n.unitNameTons,
+    Unit.liters => l10n.unitNameLiters,
     Unit.hours => l10n.unitNameHours(count),
     Unit.days => l10n.unitNameDays(count),
     Unit.boxes => l10n.unitNameBoxes(count),

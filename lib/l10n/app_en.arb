@@ -3430,65 +3430,29 @@
       }
     }
   },
-  "unitNameMeters": "{count, plural, =1{meter} other{meters}}",
+  "unitNameMeters": "m",
   "@unitNameMeters": {
-    "description": "Lowercase name of the unit meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit meters, the same for any quantity, used in a cost line's quantity and price per unit"
   },
-  "unitNameSquareMeters": "{count, plural, =1{square meter} other{square meters}}",
+  "unitNameSquareMeters": "m²",
   "@unitNameSquareMeters": {
-    "description": "Lowercase name of the unit square meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit square meters, the same for any quantity, used in a cost line's quantity and price per unit"
   },
-  "unitNameCubicMeters": "{count, plural, =1{cubic meter} other{cubic meters}}",
+  "unitNameCubicMeters": "m³",
   "@unitNameCubicMeters": {
-    "description": "Lowercase name of the unit cubic meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit cubic meters, the same for any quantity, used in a cost line's quantity and price per unit"
   },
-  "unitNameKilograms": "{count, plural, =1{kilogram} other{kilograms}}",
+  "unitNameKilograms": "kg",
   "@unitNameKilograms": {
-    "description": "Lowercase name of the unit kilograms, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit kilograms, the same for any quantity, used in a cost line's quantity and price per unit"
   },
-  "unitNameTons": "{count, plural, =1{ton} other{tons}}",
+  "unitNameTons": "t",
   "@unitNameTons": {
-    "description": "Lowercase name of the unit tons, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit tons, the same for any quantity, used in a cost line's quantity and price per unit"
   },
-  "unitNameLiters": "{count, plural, =1{liter} other{liters}}",
+  "unitNameLiters": "L",
   "@unitNameLiters": {
-    "description": "Lowercase name of the unit liters, singular for one and plural otherwise, used in a cost line's quantity and price per unit",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "decimalPattern"
-      }
-    }
+    "description": "Short symbol of the unit liters, the same for any quantity, used in a cost line's quantity and price per unit"
   },
   "unitNameHours": "{count, plural, =1{hour} other{hours}}",
   "@unitNameHours": {
@@ -3597,9 +3561,9 @@
       }
     }
   },
-  "costLineLaborHourRate": " · {rate}/h",
+  "costLineLaborHourRate": " · {rate}/hr",
   "@costLineLaborHourRate": {
-    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h",
+    "description": "Regular second part of an hourly labor line's meta row for one person, for example · $52.00/hr",
     "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
     "placeholders": {
       "rate": {
@@ -3607,9 +3571,9 @@
       }
     }
   },
-  "costLineLaborCrewHourRate": " · {people} people × {rate}/h",
+  "costLineLaborCrewHourRate": " · {people} people × {rate}/hr",
   "@costLineLaborCrewHourRate": {
-    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h",
+    "description": "Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/hr",
     "context": "CUJ 3 screen 3 and CUJ 6 equipment frames: https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html",
     "placeholders": {
       "people": {

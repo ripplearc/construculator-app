@@ -4094,41 +4094,41 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{piece} other{pieces}}'**
   String unitNamePieces(num count);
 
-  /// Lowercase name of the unit meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit meters, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{meter} other{meters}}'**
-  String unitNameMeters(num count);
+  /// **'m'**
+  String get unitNameMeters;
 
-  /// Lowercase name of the unit square meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit square meters, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{square meter} other{square meters}}'**
-  String unitNameSquareMeters(num count);
+  /// **'m²'**
+  String get unitNameSquareMeters;
 
-  /// Lowercase name of the unit cubic meters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit cubic meters, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{cubic meter} other{cubic meters}}'**
-  String unitNameCubicMeters(num count);
+  /// **'m³'**
+  String get unitNameCubicMeters;
 
-  /// Lowercase name of the unit kilograms, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit kilograms, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{kilogram} other{kilograms}}'**
-  String unitNameKilograms(num count);
+  /// **'kg'**
+  String get unitNameKilograms;
 
-  /// Lowercase name of the unit tons, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit tons, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{ton} other{tons}}'**
-  String unitNameTons(num count);
+  /// **'t'**
+  String get unitNameTons;
 
-  /// Lowercase name of the unit liters, singular for one and plural otherwise, used in a cost line's quantity and price per unit
+  /// Short symbol of the unit liters, the same for any quantity, used in a cost line's quantity and price per unit
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{liter} other{liters}}'**
-  String unitNameLiters(num count);
+  /// **'L'**
+  String get unitNameLiters;
 
   /// Lowercase name of the unit hours, singular for one and plural otherwise, used in a cost line's quantity and price per unit
   ///
@@ -4190,16 +4190,16 @@ abstract class AppLocalizations {
   /// **'{days, plural, =1{1 day} other{{days} days}}'**
   String costLineLaborDaysMeta(num days);
 
-  /// Regular second part of an hourly labor line's meta row for one person, for example · $52.00/h
+  /// Regular second part of an hourly labor line's meta row for one person, for example · $52.00/hr
   ///
   /// In en, this message translates to:
-  /// **' · {rate}/h'**
+  /// **' · {rate}/hr'**
   String costLineLaborHourRate(String rate);
 
-  /// Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/h
+  /// Regular second part of an hourly labor line's meta row for a crew of two or more, for example · 3 people × $52.00/hr
   ///
   /// In en, this message translates to:
-  /// **' · {people} people × {rate}/h'**
+  /// **' · {people} people × {rate}/hr'**
   String costLineLaborCrewHourRate(int people, String rate);
 
   /// Regular second part of a daily labor line's meta row for one person, for example · $200.00/day

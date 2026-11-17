@@ -12,16 +12,32 @@
     </exclude>
 
     <rules>
-        <regex pattern="(_amount\(l10n\)\.format\(quantity\.value\))" dotAll="true" id="meta.material.quantity_uses_price">
+        <regex pattern="(_amount\(l10n\)\.format\(quantity\))" dotAll="true" id="meta.material.quantity_uses_price">
             <mutation text="_amount(l10n).format(item.unitPrice.amount)"/>
         </regex>
 
-        <regex pattern="(unit\.countName\(l10n, quantity\.value\))" dotAll="true" id="meta.material.quantity_unit_always_singular">
+        <regex pattern="(unit\.countName\(l10n, quantity\))" dotAll="true" id="meta.material.quantity_unit_always_singular">
             <mutation text="unit.countName(l10n, 1)"/>
         </regex>
 
         <regex pattern="(unit\.countName\(l10n, 1\))" dotAll="true" id="meta.material.rate_unit_follows_quantity">
-            <mutation text="unit.countName(l10n, quantity.value)"/>
+            <mutation text="unit.countName(l10n, quantity)"/>
+        </regex>
+
+        <regex pattern="(static const _shownDecimals = 2;)" dotAll="true" id="meta.shown.three_decimals">
+            <mutation text="static const _shownDecimals = 3;"/>
+        </regex>
+
+        <regex pattern="(double\.parse\(value\.toStringAsFixed\(_shownDecimals\)\))" dotAll="true" id="meta.shown.not_rounded">
+            <mutation text="value.toDouble()"/>
+        </regex>
+
+        <regex pattern="(final quantity = _shown\(item\.quantity\.value\);)" dotAll="true" id="meta.material.quantity_not_rounded">
+            <mutation text="final quantity = item.quantity.value.toDouble();"/>
+        </regex>
+
+        <regex pattern="(l10n\.costLineLaborDaysMeta\(_shown\(days\)\))" dotAll="true" id="meta.labor.days_not_rounded">
+            <mutation text="l10n.costLineLaborDaysMeta(days)"/>
         </regex>
 
         <regex pattern="(lead: l10n\.costLineMaterialQuantity)" dotAll="true" id="meta.material.lead_becomes_tail">
@@ -76,8 +92,12 @@
             <mutation text="if (false) return null;"/>
         </regex>
 
-        <regex pattern="(l10n\.costLineEquipmentDaysDuration\(duration\))" dotAll="true" id="meta.equipment.duration_is_zero">
+        <regex pattern="(l10n\.costLineEquipmentDaysDuration\(_shown\(duration\)\))" dotAll="true" id="meta.equipment.duration_is_zero">
             <mutation text="l10n.costLineEquipmentDaysDuration(0)"/>
+        </regex>
+
+        <regex pattern="(l10n\.costLineEquipmentDaysDuration\(_shown\(duration\)\))" dotAll="true" id="meta.equipment.duration_not_rounded">
+            <mutation text="l10n.costLineEquipmentDaysDuration(duration)"/>
         </regex>
 
         <regex pattern="(DisplayFormatter\.formatCurrency\(rate\.amount\))" dotAll="true" id="meta.equipment.rate_uses_zero">

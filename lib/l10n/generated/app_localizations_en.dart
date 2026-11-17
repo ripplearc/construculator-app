@@ -2336,94 +2336,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String unitNameMeters(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'meters',
-      one: 'meter',
-    );
-    return '$_temp0';
-  }
+  String get unitNameMeters => 'm';
 
   @override
-  String unitNameSquareMeters(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'square meters',
-      one: 'square meter',
-    );
-    return '$_temp0';
-  }
+  String get unitNameSquareMeters => 'm²';
 
   @override
-  String unitNameCubicMeters(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'cubic meters',
-      one: 'cubic meter',
-    );
-    return '$_temp0';
-  }
+  String get unitNameCubicMeters => 'm³';
 
   @override
-  String unitNameKilograms(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'kilograms',
-      one: 'kilogram',
-    );
-    return '$_temp0';
-  }
+  String get unitNameKilograms => 'kg';
 
   @override
-  String unitNameTons(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'tons',
-      one: 'ton',
-    );
-    return '$_temp0';
-  }
+  String get unitNameTons => 't';
 
   @override
-  String unitNameLiters(num count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'liters',
-      one: 'liter',
-    );
-    return '$_temp0';
-  }
+  String get unitNameLiters => 'L';
 
   @override
   String unitNameHours(num count) {
@@ -2548,12 +2476,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String costLineLaborHourRate(String rate) {
-    return ' · $rate/h';
+    return ' · $rate/hr';
   }
 
   @override
   String costLineLaborCrewHourRate(int people, String rate) {
-    return ' · $people people × $rate/h';
+    return ' · $people people × $rate/hr';
   }
 
   @override

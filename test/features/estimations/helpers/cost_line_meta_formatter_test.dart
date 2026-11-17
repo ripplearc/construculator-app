@@ -34,6 +34,20 @@ void main() {
       );
     });
 
+    test('says 1 day when the duration rounds to one', () {
+      expect(
+        metaText(equipmentLine(duration: 1.0004, deliveryFee: null), l10n),
+        r'1 day · $145.00/day',
+      );
+    });
+
+    test('shows days with two decimals at most, like hours', () {
+      expect(
+        metaText(equipmentLine(duration: 2.333, deliveryFee: null), l10n),
+        r'2.33 days · $145.00/day',
+      );
+    });
+
     test('keeps a fractional number of days', () {
       expect(
         metaText(equipmentLine(duration: 2.5, deliveryFee: null), l10n),
@@ -79,7 +93,7 @@ void main() {
           materialLine(quantity: 1234567.891, unit: Unit.kilograms),
           l10n,
         ),
-        r'1,234,567.89 kilograms · $14.50/kilogram',
+        r'1,234,567.89 kg · $14.50/kg',
       );
     });
 
@@ -90,13 +104,41 @@ void main() {
       );
     });
 
+    test('writes a measured unit as a short symbol, the same for one', () {
+      expect(
+        metaText(
+          materialLine(
+            quantity: 410.67,
+            unit: Unit.squareMeters,
+            unitPrice: 2.5,
+          ),
+          l10n,
+        ),
+        r'410.67 m² · $2.50/m²',
+      );
+      expect(
+        metaText(materialLine(quantity: 1, unit: Unit.tons), l10n),
+        r'1 t · $14.50/t',
+      );
+    });
+
+    test('says one sheet when the quantity rounds to one', () {
+      for (final quantity in [1.004, 0.999, 0.996]) {
+        expect(
+          metaText(materialLine(quantity: quantity), l10n),
+          r'1 sheet · $14.50/sheet',
+          reason: '$quantity',
+        );
+      }
+    });
+
     test('drops the decimals of a whole quantity', () {
       expect(
         metaText(
           materialLine(quantity: 3, unit: Unit.liters, unitPrice: 52),
           l10n,
         ),
-        r'3 liters · $52.00/liter',
+        r'3 L · $52.00/L',
       );
     });
   });
@@ -138,7 +180,7 @@ void main() {
       final labor = meta(laborLine(calculation: const {'laborRate': 52}))!;
 
       expect(labor.lead, '10 h');
-      expect(labor.tail, r' · $52.00/h');
+      expect(labor.tail, r' · $52.00/hr');
     });
 
     test('a labor line with no rate has no tail', () {
@@ -181,6 +223,19 @@ void main() {
       );
     });
 
+    test('says 1 day for a per-day line that rounds to one', () {
+      expect(
+        metaText(
+          laborLine(
+            method: LaborCalculationMethodType.perDay,
+            value: const LaborValue(laborDays: 1.0004),
+          ),
+          l10n,
+        ),
+        '1 day',
+      );
+    });
+
     test('writes the rate after the hours for one person', () {
       expect(
         metaText(
@@ -190,7 +245,7 @@ void main() {
           ),
           l10n,
         ),
-        r'16 h · $52.00/h',
+        r'16 h · $52.00/hr',
       );
     });
 
@@ -204,7 +259,7 @@ void main() {
           ),
           l10n,
         ),
-        r'16 h · 3 people × $52.00/h',
+        r'16 h · 3 people × $52.00/hr',
       );
     });
 
@@ -214,7 +269,7 @@ void main() {
           laborLine(calculation: const {'laborRate': 52}, crewSize: 1),
           l10n,
         ),
-        r'10 h · $52.00/h',
+        r'10 h · $52.00/hr',
       );
     });
 
@@ -224,7 +279,7 @@ void main() {
           laborLine(calculation: const {'laborRate': 58}, crewSize: 2),
           l10n,
         ),
-        r'10 h · 2 people × $58.00/h',
+        r'10 h · 2 people × $58.00/hr',
       );
     });
 

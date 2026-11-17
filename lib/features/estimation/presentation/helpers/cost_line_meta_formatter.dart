@@ -29,7 +29,6 @@ class CostLineMeta {
 class CostLineMetaFormatter {
   CostLineMetaFormatter._();
 
-  /// Key of the labor rate in `CostItem.calculation`.
   static const _laborRateKey = 'laborRate';
 
   /// The meta row of [item] in the language of [l10n].
@@ -40,19 +39,24 @@ class CostLineMetaFormatter {
         EquipmentCostItem() => _equipmentMeta(item, l10n),
       };
 
+  static const _shownDecimals = 2;
+
   static NumberFormat _amount(AppLocalizations l10n) =>
       NumberFormat('#,##0.##', l10n.localeName);
+
+  static double _shown(num value) =>
+      double.parse(value.toStringAsFixed(_shownDecimals));
 
   static CostLineMeta _materialMeta(
     MaterialCostItem item,
     AppLocalizations l10n,
   ) {
-    final quantity = item.quantity;
-    final unit = quantity.unit;
+    final unit = item.quantity.unit;
+    final quantity = _shown(item.quantity.value);
     return CostLineMeta(
       lead: l10n.costLineMaterialQuantity(
-        _amount(l10n).format(quantity.value),
-        unit.countName(l10n, quantity.value),
+        _amount(l10n).format(quantity),
+        unit.countName(l10n, quantity),
       ),
       tail: l10n.costLineMaterialRate(
         DisplayFormatter.formatCurrency(item.unitPrice.amount),
@@ -75,7 +79,7 @@ class CostLineMetaFormatter {
           tail: _laborRateTail(item, l10n, perHour: true),
         ),
       LaborCalculationMethodType.perDay when days != null => CostLineMeta(
-        lead: l10n.costLineLaborDaysMeta(days),
+        lead: l10n.costLineLaborDaysMeta(_shown(days)),
         tail: _laborRateTail(item, l10n, perHour: false),
       ),
       _ => null,
@@ -124,7 +128,7 @@ class CostLineMetaFormatter {
     final rate = item.dailyRate;
     if (duration == null || rate == null) return null;
     return CostLineMeta(
-      lead: l10n.costLineEquipmentDaysDuration(duration),
+      lead: l10n.costLineEquipmentDaysDuration(_shown(duration)),
       tail: l10n.costLineEquipmentDayRate(
         DisplayFormatter.formatCurrency(rate.amount),
       ),
