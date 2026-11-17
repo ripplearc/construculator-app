@@ -299,11 +299,13 @@ void main() {
     test('deletes nothing when the flag cannot be saved', () async {
       ownerRecords.seed(OwnerRecord(userId: 'user-1'));
       ownerRecords.shouldThrowOnWrite = true;
+      await userSpace.saveData<String>('last_used_unit.user-1.material', 'kg');
 
       await expectLater(service.deleteLocalData(), throwsException);
 
       expect(executedSql(), isEmpty);
       expect(syncedData.deleteCallCount, 0);
+      expect(userSpace.valueOf('last_used_unit.user-1.material'), 'kg');
     });
 
     test('names the unreadable owner record in the exception text', () {
@@ -315,6 +317,7 @@ void main() {
 
     test('deletes nothing when the owner record cannot be read', () async {
       ownerRecords.shouldReadUnknown = true;
+      await userSpace.saveData<String>('last_used_unit.user-1.material', 'kg');
 
       await expectLater(
         service.deleteLocalData(),
@@ -324,6 +327,7 @@ void main() {
       expect(executedSql(), isEmpty);
       expect(syncedData.deleteCallCount, 0);
       expect(ownerRecords.writes, isEmpty);
+      expect(userSpace.valueOf('last_used_unit.user-1.material'), 'kg');
     });
 
     test('finishes a delete that an earlier run left flagged', () async {
