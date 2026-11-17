@@ -8,6 +8,8 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_fi
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -296,7 +298,7 @@ class _SheetTextField extends StatelessWidget {
     final textStyle = textTheme.bodyLargeRegular.copyWith(
       color: colorTheme.textHeadline,
     );
-    return ListenableBuilder(
+    final field = ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
         // Never wider than the row leaves, so large text scrolls in the field
@@ -343,6 +345,7 @@ class _SheetTextField extends StatelessWidget {
         );
       },
     );
+    return _RevealedWithGap(field);
   }
 
   double _textWidth(BuildContext context, TextStyle style) {
@@ -356,5 +359,43 @@ class _SheetTextField extends StatelessWidget {
       maxLines: 1,
     )..layout();
     return painter.width + _cursorAllowance;
+  }
+}
+
+class _RevealedWithGap extends SingleChildRenderObjectWidget {
+  const _RevealedWithGap(Widget child) : super(child: child);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderRevealedWithGap();
+}
+
+class _RenderRevealedWithGap extends RenderProxyBox {
+  static const _gap = EdgeInsets.only(bottom: CoreSpacing.space3);
+
+  @override
+  void showOnScreen({
+    RenderObject? descendant,
+    Rect? rect,
+    Duration duration = Duration.zero,
+    Curve curve = Curves.ease,
+  }) {
+    // Scrolls a focused field so it sits 12 clear of whatever is pinned below
+    // the form: the card, the number pad or the phone's keyboard (storyboard
+    // CUJ 4, "When a keyboard comes up"). The text field asks to be shown on
+    // focus and when the keyboard grows; this replaces the area it asks for,
+    // which leaves room for selection handles, with the field and 12 under
+    // it, and waits a frame so the layout for the pad has settled. A field
+    // already in view does not move.
+    SchedulerBinding.instance
+      ..addPostFrameCallback((_) {
+        if (!attached) return;
+        super.showOnScreen(
+          rect: _gap.inflateRect(Offset.zero & size),
+          duration: duration,
+          curve: curve,
+        );
+      })
+      ..ensureVisualUpdate();
   }
 }
