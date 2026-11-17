@@ -28,6 +28,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
   final SentryWrapper _sentryWrapper;
   final AnalyticsRepository _analyticsRepository;
   final CurrentCompanyResolver? Function() _currentCompanyResolver;
+  final Future<void> Function() _clearKeptCompanyId;
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
   StreamSubscription<supabase.AuthState>? _authSubscription;
@@ -42,6 +43,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
     required this._sentryWrapper,
     required this._analyticsRepository,
     required this._currentCompanyResolver,
+    required this._clearKeptCompanyId,
     required this._sessionService,
   }) {
     _initAuthListener();
@@ -50,10 +52,22 @@ class AuthManagerImpl implements AuthManager, Disposable {
   Future<void>? _resolveCompanyAfterSignIn() {
     final resolver = _currentCompanyResolver();
     if (resolver == null) {
-      _logger.warning('No company resolver in the session at sign-in');
+      _logger.error('No company resolver in the session at sign-in');
       return null;
     }
     return resolver.resolveAfterSignIn();
+  }
+
+  Future<void> _clearCompanyData(CurrentCompanyResolver? resolver) async {
+    if (resolver != null) {
+      await resolver.clearCache();
+      return;
+    }
+    try {
+      await _clearKeptCompanyId();
+    } catch (_) {
+      // The data source already logged it, and sign-out must still finish.
+    }
   }
 
   @override
@@ -84,7 +98,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
-          unawaited(_currentCompanyResolver()?.clearCache());
+          unawaited(_clearCompanyData(_currentCompanyResolver()));
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           // The session stays: Supabase also sends signedOut when a token
           // refresh fails, and open screens still hold its objects. It ends at
@@ -417,7 +431,7 @@ class AuthManagerImpl implements AuthManager, Disposable {
         ),
       );
       await _analyticsRepository.reset();
-      await companyResolver?.clearCache();
+      await _clearCompanyData(companyResolver);
 
       _logger.info('Logout successful');
       return AuthResult.success(null);

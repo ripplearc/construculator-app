@@ -37,8 +37,9 @@ class CompanyLibraryModule extends Module {
 /// which caches the company id.
 ///
 /// Only the session module calls this, so the next user starts with an empty
-/// cache. The id kept on the device is not part of the session, and
-/// [CurrentCompanyResolver.clearCache] still clears it.
+/// cache. The id kept on the device is not part of the session. Sign-out
+/// clears it through [CurrentCompanyResolver.clearCache], or through the data
+/// source when no session exists.
 void registerCompanyPerUserObjects(Injector i) => _registerPerUserObjects(i);
 
 void _registerPerUserObjects(Injector i) {
