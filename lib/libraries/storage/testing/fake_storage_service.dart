@@ -1,8 +1,10 @@
 // coverage:ignore-file
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 
-/// In-memory [StorageService] for tests, with switches to make reads or
-/// writes fail.
+/// In-memory [StorageService] for tests, with switches to make reads, writes
+/// or the clear fail. A value of another type than the one asked for reads as
+/// null, like the real service. Unlike the real service it accepts any value,
+/// so a test cannot rely on it to refuse an unstorable one.
 class FakeStorageService implements StorageService {
   final Map<String, Object?> _data = {};
 
@@ -12,6 +14,9 @@ class FakeStorageService implements StorageService {
   /// When true, [saveData] throws.
   bool shouldThrowOnWrite = false;
 
+  /// When true, [clearAll] throws.
+  bool shouldThrowOnClear = false;
+
   /// The value stored under [key], or null when nothing is stored.
   Object? valueOf(String key) => _data[key];
 
@@ -20,6 +25,7 @@ class FakeStorageService implements StorageService {
     _data.clear();
     shouldThrowOnRead = false;
     shouldThrowOnWrite = false;
+    shouldThrowOnClear = false;
   }
 
   @override
@@ -28,7 +34,8 @@ class FakeStorageService implements StorageService {
   @override
   Future<T?> getData<T>(String key) async {
     if (shouldThrowOnRead) throw StateError('read failed');
-    return _data[key] as T?;
+    final value = _data[key];
+    return value is T ? value : null;
   }
 
   @override
@@ -41,5 +48,8 @@ class FakeStorageService implements StorageService {
   Future<void> removeData(String key) async => _data.remove(key);
 
   @override
-  Future<void> clearAll() async => _data.clear();
+  Future<void> clearAll() async {
+    if (shouldThrowOnClear) throw StateError('clear failed');
+    _data.clear();
+  }
 }
