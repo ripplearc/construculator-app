@@ -30,7 +30,9 @@ class PrefixedPreferences {
   ///
   /// Throws an [ArgumentError] when [value] is not a string, int, double,
   /// bool or list of strings, and a [StateError] when the platform refuses
-  /// the write.
+  /// the write. The error names the space, never the key, because a feature
+  /// may put an account id in its keys. After a refusal the stored value is
+  /// read again, so [get] returns what is on the phone.
   Future<void> save<T>(String key, T value) async {
     final preferences = await SharedPreferences.getInstance();
     final storedKey = '$prefix$key';
@@ -42,12 +44,17 @@ class PrefixedPreferences {
       final List<String> texts => preferences.setStringList(storedKey, texts),
       _ => throw ArgumentError.value(value, 'value', 'is not storable'),
     };
-    if (!await written) throw StateError('Could not write $storedKey');
+    if (!await written) {
+      await preferences.reload();
+      throw StateError('Could not write a value of the $prefix space');
+    }
   }
 
   /// Removes the value stored under [key].
   ///
-  /// Throws a [StateError] when the platform refuses the removal.
+  /// Throws a [StateError] when the platform refuses the removal. The error
+  /// names the space, never the key, and the stored values are read again, so
+  /// [get] returns what is on the phone.
   Future<void> remove(String key) async {
     final preferences = await SharedPreferences.getInstance();
     await _removeStored(preferences, '$prefix$key');
@@ -74,7 +81,8 @@ class PrefixedPreferences {
     String storedKey,
   ) async {
     if (!await preferences.remove(storedKey)) {
-      throw StateError('Could not remove $storedKey');
+      await preferences.reload();
+      throw StateError('Could not remove a value of the $prefix space');
     }
   }
 }

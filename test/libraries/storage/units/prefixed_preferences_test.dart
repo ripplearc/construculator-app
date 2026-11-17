@@ -90,6 +90,57 @@ void main() {
       },
     );
 
+    test('get returns the stored value after a refused write', () async {
+      final space = buildSpace();
+      await space.save<String>('unit', 'kg');
+      store.refusesWrites = true;
+      await expectLater(space.save<String>('unit', 'm'), throwsStateError);
+
+      expect(await space.get<String>('unit'), 'kg');
+    });
+
+    test('get returns the stored value after a refused removal', () async {
+      final space = buildSpace();
+      await space.save<String>('unit', 'kg');
+      store.refusesRemovals = true;
+      await expectLater(space.remove('unit'), throwsStateError);
+
+      expect(await space.get<String>('unit'), 'kg');
+    });
+
+    test('a refused write names the space and not the key', () async {
+      final space = buildSpace();
+      store.refusesWrites = true;
+
+      await expectLater(
+        space.save<String>('last_used_unit.acc-123.material', 'm'),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('user.'), isNot(contains('acc-123'))),
+          ),
+        ),
+      );
+    });
+
+    test('a refused removal names the space and not the key', () async {
+      final space = buildSpace();
+      await space.save<String>('last_used_unit.acc-123.material', 'kg');
+      store.refusesRemovals = true;
+
+      await expectLater(
+        space.remove('last_used_unit.acc-123.material'),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            allOf(contains('user.'), isNot(contains('acc-123'))),
+          ),
+        ),
+      );
+    });
+
     test('remove throws when the platform refuses the removal', () async {
       final space = buildSpace();
       await space.save<String>('unit', 'kg');
