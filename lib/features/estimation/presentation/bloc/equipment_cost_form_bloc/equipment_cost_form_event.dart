@@ -90,7 +90,11 @@ class EquipmentSavedRateRecalledEvent extends EquipmentCostFormEvent {
 /// Fired once the edited Job amount of a recalled line has been saved to Your
 /// rates, so that amount becomes the saved price the line is compared with.
 class EquipmentRecalledAmountSavedEvent extends EquipmentCostFormEvent {
-  const EquipmentRecalledAmountSavedEvent();
+  const EquipmentRecalledAmountSavedEvent({this.amount});
+
+  /// The amount that was saved. Null means the amount now in the field, which
+  /// differs when the user changed it while the save ran.
+  final double? amount;
 }
 
 /// Fired when the user submits the equipment cost form.

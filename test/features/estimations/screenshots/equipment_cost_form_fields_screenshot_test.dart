@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -362,6 +363,26 @@ void main() {
       );
     });
 
+    testWidgets('renders the link in the disabled colour while the rate saves', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await typeSavableRate(tester);
+      database.getAllGate = Completer();
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pump();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/save_saving$suffix.png',
+        ),
+      );
+      database.getAllGate!.complete();
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('renders the error line when the rate was not saved', (
       tester,
     ) async {
@@ -603,6 +624,37 @@ void main() {
         ),
       );
     });
+
+    testWidgets(
+      'greys out the Save button of an edited amount while the default saves',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await pumpWidget(
+          tester: tester,
+          theme: theme,
+          initialRateEntry: savedRate(
+            'Dumpster — 30 yd',
+            400,
+            EquipmentPricingMethod.job,
+          ),
+        );
+        await tester.enterText(find.byKey(const Key('amount_field')), '450');
+        FocusManager.instance.primaryFocus!.unfocus();
+        await tester.pumpAndSettle();
+        database.getAllGate = Completer();
+        await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
+        await tester.pump();
+        await expectLater(
+          find.byType(EquipmentCostFormFields),
+          matchesGoldenFile(
+            'goldens/equipment_cost_form_fields/${size.width}x${size.height}/recalled_job_price_saving$suffix.png',
+          ),
+        );
+        database.getAllGate!.complete();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets(
       'keeps the compact saved-rate screen after the amount is edited',
