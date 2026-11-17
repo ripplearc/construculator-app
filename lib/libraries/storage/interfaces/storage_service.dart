@@ -1,4 +1,10 @@
-/// Storage service interface, used to store, retrieve and remove data from the device's storage.
+/// The user space of the storage library: preferences that belong to the
+/// signed-in user.
+///
+/// The library knows no feature. A feature keeps its keys in one named group of
+/// its own, such as `last_used_unit.`. The shared delete routine of the
+/// sign-out design empties the whole user space when the user changes or logs
+/// out, so only data that belongs to the signed-in user goes here.
 abstract class StorageService {
   /// Initialize the storage service, Some storage services may need to be initialized before use.
   Future<void> initialize();
@@ -18,8 +24,13 @@ abstract class StorageService {
   /// Remove data from the storage service.
   ///
   /// [key] is the key of the data to remove.
+  ///
+  /// Throws a [StateError] when the platform refuses the removal.
   Future<void> removeData(String key);
 
-  /// Remove all data from the storage service.
+  /// Remove all data of the user space, and nothing of the device space.
+  ///
+  /// Throws a [StateError] when the platform refuses a removal; calling it
+  /// again removes the rest.
   Future<void> clearAll();
 }
