@@ -7,7 +7,10 @@ import 'package:construculator/libraries/storage/models/device_setting.dart';
 /// Only the values of [DeviceSetting] can be stored, so the list a reviewer
 /// checks is the enum.
 abstract class DeviceSpaceStorageService {
-  /// The value saved for [setting], or null when nothing is saved.
+  /// The value saved for [setting], or null when nothing is saved or the saved
+  /// value is not a [T].
+  ///
+  /// Throws when the platform preferences cannot be read.
   Future<T?> getSetting<T>(DeviceSetting setting);
 
   /// Saves [value] for [setting].

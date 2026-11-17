@@ -27,7 +27,7 @@ class FakeDeviceSpaceStorageService implements DeviceSpaceStorageService {
 
   @override
   Future<T?> getSetting<T>(DeviceSetting setting) async {
-    if (shouldThrowOnRead) throw StateError('read failed');
+    if (shouldThrowOnRead) throw Exception('read failed');
     final value = _settings[setting];
     return value is T ? value : null;
   }

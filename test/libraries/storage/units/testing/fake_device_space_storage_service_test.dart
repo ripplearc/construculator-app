@@ -34,7 +34,7 @@ void main() {
 
       await expectLater(
         fake.getSetting<bool>(DeviceSetting.onboardingSeen),
-        throwsStateError,
+        throwsException,
       );
     });
 
