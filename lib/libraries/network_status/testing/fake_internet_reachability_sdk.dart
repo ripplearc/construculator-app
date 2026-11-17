@@ -54,6 +54,15 @@ class FakeInternetReachabilitySdk implements InternetReachabilitySdk {
   Future<void> releaseNewestCheck(bool reachable) =>
       _release(_pendingChecks.removeLast(), reachable);
 
+  /// Makes the oldest waiting check fail.
+  ///
+  /// Returns once whoever was waiting on that check has handled the error.
+  Future<void> failCheck() async {
+    final check = _pendingChecks.removeAt(0);
+    check.completeError(StateError('reachability check failed'));
+    await check.future.then((_) {}, onError: (Object _) {});
+  }
+
   Future<void> _release(Completer<bool> check, bool reachable) async {
     check.complete(reachable);
     await check.future;

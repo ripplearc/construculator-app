@@ -1,26 +1,34 @@
+import 'package:construculator/libraries/app_lifecycle/testing/fake_app_lifecycle_wrapper.dart';
 import 'package:construculator/libraries/network_status/interfaces/connectivity_sdk.dart';
+import 'package:construculator/libraries/network_status/interfaces/internet_reachability_sdk.dart';
 import 'package:construculator/libraries/network_status/interfaces/network_status_service.dart';
 import 'package:construculator/libraries/network_status/network_status_module.dart';
 import 'package:construculator/libraries/network_status/network_status_service_impl.dart';
 import 'package:construculator/libraries/network_status/testing/fake_connectivity_sdk.dart';
+import 'package:construculator/libraries/network_status/testing/fake_internet_reachability_sdk.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../utils/fake_app_bootstrap_factory.dart';
 
 // A single module graph for the whole file: flutter_modular keeps bind
 // registrations alive across destroy()/init() within one process, so
 // re-initialising per test would resolve the service from the previous test.
 void main() {
   final connectivity = FakeConnectivitySdk();
+  final reachability = FakeInternetReachabilitySdk();
 
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     Modular.init(_NetworkStatusTestModule());
     Modular.replaceInstance<ConnectivitySdk>(connectivity);
+    Modular.replaceInstance<InternetReachabilitySdk>(reachability);
   });
 
   tearDownAll(() {
     Modular.destroy();
     connectivity.dispose();
+    reachability.dispose();
   });
 
   group('NetworkStatusModule', () {
@@ -35,17 +43,25 @@ void main() {
       final service = Modular.get<NetworkStatusService>();
       await (service as NetworkStatusServiceImpl).ready;
       expect(connectivity.hasListener, isTrue);
+      expect(reachability.isPolling, isTrue);
 
       final closed = service.changes.toList();
       Modular.dispose<NetworkStatusServiceImpl>();
       await closed;
 
       expect(connectivity.hasListener, isFalse);
+      expect(reachability.isPolling, isFalse);
     });
   });
 }
 
 class _NetworkStatusTestModule extends Module {
   @override
-  List<Module> get imports => [NetworkStatusModule()];
+  List<Module> get imports => [
+    NetworkStatusModule(
+      FakeAppBootstrapFactory.create(
+        appLifecycleWrapper: FakeAppLifecycleWrapper(),
+      ),
+    ),
+  ];
 }
