@@ -17,10 +17,7 @@ void main() {
     test('throws while shouldThrowOnDelete is set and still counts', () async {
       fake.shouldThrowOnDelete = true;
 
-      await expectLater(
-        fake.deleteSyncedDataAndUnsentEdits(),
-        throwsStateError,
-      );
+      await expectLater(fake.deleteSyncedDataAndUnsentEdits(), throwsException);
 
       expect(fake.deleteCallCount, 1);
     });

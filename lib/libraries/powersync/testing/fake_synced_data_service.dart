@@ -13,6 +13,6 @@ class FakeSyncedDataService implements SyncedDataService {
   @override
   Future<void> deleteSyncedDataAndUnsentEdits() async {
     deleteCallCount++;
-    if (shouldThrowOnDelete) throw StateError('delete failed');
+    if (shouldThrowOnDelete) throw Exception('delete failed');
   }
 }
