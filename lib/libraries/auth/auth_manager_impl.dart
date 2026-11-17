@@ -17,17 +17,20 @@ import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-class AuthManagerImpl implements AuthManager {
+/// Listens to the Supabase auth events for as long as it is not disposed.
+class AuthManagerImpl implements AuthManager, Disposable {
   final SupabaseWrapper _wrapper;
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
   final SentryWrapper _sentryWrapper;
   final AnalyticsRepository _analyticsRepository;
-  final CurrentCompanyResolver _currentCompanyResolver;
+  final CurrentCompanyResolver? Function() _currentCompanyResolver;
   final SessionService _sessionService;
   final _logger = AppLogger().tag('AuthManagerImpl');
+  StreamSubscription<supabase.AuthState>? _authSubscription;
 
   /// The user the last session was started for, or null before the first.
   String? _sessionUserId;
@@ -44,12 +47,26 @@ class AuthManagerImpl implements AuthManager {
     _initAuthListener();
   }
 
+  Future<void>? _resolveCompanyAfterSignIn() {
+    final resolver = _currentCompanyResolver();
+    if (resolver == null) {
+      _logger.warning('No company resolver in the session at sign-in');
+      return null;
+    }
+    return resolver.resolveAfterSignIn();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+  }
+
   void _emitAuthStateChanged(AuthStatus status, UserCredential? user) {
     _authNotifier.emitAuthStateChanged(AuthState(status: status, user: user));
   }
 
   void _initAuthListener() {
-    _wrapper.onAuthStateChange.listen(
+    _authSubscription = _wrapper.onAuthStateChange.listen(
       (state) {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
@@ -58,7 +75,7 @@ class AuthManagerImpl implements AuthManager {
             // and the sign-out handler.
             // https://ripplearc.youtrack.cloud/issue/CA-1471
             _startSessionFor(user.id);
-            unawaited(_currentCompanyResolver.resolveAfterSignIn());
+            unawaited(_resolveCompanyAfterSignIn());
             _emitAuthStateChanged(
               AuthStatus.authenticated,
               _mapSupabaseUserToCredential(user),
@@ -67,7 +84,7 @@ class AuthManagerImpl implements AuthManager {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
-          unawaited(_currentCompanyResolver.clearCache());
+          unawaited(_currentCompanyResolver()?.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           // The session stays: Supabase also sends signedOut when a token
           // refresh fails, and open screens still hold its objects. It ends at
@@ -389,6 +406,7 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult<void>> logout() async {
     _logger.info('Logging out user');
     try {
+      final companyResolver = _currentCompanyResolver();
       await _wrapper.signOut();
       _sessionService.endSession();
 
@@ -399,7 +417,7 @@ class AuthManagerImpl implements AuthManager {
         ),
       );
       await _analyticsRepository.reset();
-      await _currentCompanyResolver.clearCache();
+      await companyResolver?.clearCache();
 
       _logger.info('Logout successful');
       return AuthResult.success(null);

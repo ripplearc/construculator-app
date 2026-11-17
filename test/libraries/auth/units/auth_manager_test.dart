@@ -375,6 +375,15 @@ void main() {
         expect(sessionService.startCount, 1);
       });
 
+      test('stops reacting to sign-in events once it is disposed', () async {
+        (authManager as Disposable).dispose();
+
+        supabaseWrapper.setCurrentUser(signedInUser());
+        await Future<void>.value();
+
+        expect(sessionService.startCount, 0);
+      });
+
       test('starts the session for a resumed login at app start', () {
         supabaseWrapper.setCurrentUser(signedInUser());
 
@@ -1818,7 +1827,7 @@ class _TestAppModule extends Module {
         authNotifier: i(),
         sentryWrapper: i<SentryWrapper>(),
         analyticsRepository: i<AnalyticsRepository>(),
-        currentCompanyResolver: i<CurrentCompanyResolver>(),
+        currentCompanyResolver: () => i<CurrentCompanyResolver>(),
         sessionService: i<SessionService>(),
       ),
     );

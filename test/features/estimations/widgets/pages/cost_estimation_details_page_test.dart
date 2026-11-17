@@ -39,6 +39,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_your_rates_database.dart';
+import '../../../../utils/start_test_session.dart';
 
 class _CostEstimationDetailsPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -78,6 +79,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationDetailsPageTestModule(appBootstrap));
+    startTestSession();
     Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
     Modular.setInitialRoute(testEstimationRoute);
   });
@@ -87,12 +89,13 @@ void main() {
     CoreToast.enableTimers();
   });
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     fakeSupabase.reset();
     database.reset();
+    (Modular.get<AuthManager>() as Disposable).dispose();
     Modular.dispose<AuthManager>();
-    Modular.dispose<CurrentCompanyResolver>();
+    await Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
       'company-1',
