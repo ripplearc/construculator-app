@@ -1264,7 +1264,7 @@ void main() {
       }
 
       test(
-        'an expected auth error adds the error type to the breadcrumb, not the error text',
+        'an expected auth error adds the error name to the breadcrumb, not the error text',
         () async {
           supabaseWrapper.shouldThrowOnSignIn = true;
           supabaseWrapper.signInErrorMessage = 'Invalid login for $testEmail';
@@ -1277,12 +1277,12 @@ void main() {
             (breadcrumb) =>
                 breadcrumb.message == '$logTag Login failed with expected error',
           );
-          expect(failure.data, {'error': 'AuthException'});
+          expect(failure.data, {'error': 'invalidCredentials'});
         },
       );
 
       test(
-        'an expected database error adds the error type to the breadcrumb, not the error text',
+        'an expected database error adds the error name to the breadcrumb, not the error text',
         () async {
           supabaseWrapper.shouldThrowOnRpc = true;
           supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
@@ -1297,7 +1297,7 @@ void main() {
                 breadcrumb.message ==
                 '$logTag Email registration check failed with expected error',
           );
-          expect(failure.data, {'error': 'PostgrestException'});
+          expect(failure.data, {'error': 'uniqueViolation'});
         },
       );
     });
