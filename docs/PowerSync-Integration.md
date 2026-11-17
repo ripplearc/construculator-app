@@ -176,6 +176,7 @@ abstract class PowerSyncManager {
   PowerSyncDatabase get database;
   Future<void> connect();
   Future<void> disconnectAndClear();
+  Future<void> disconnectAndClearOrThrow();
 }
 ```
 
@@ -307,6 +308,12 @@ implementation above.
 ---
 
 ## Auth-Driven Connect / Disconnect
+
+`disconnectAndClearOrThrow()` is the variant for the delete routine of the sign-out design:
+it clears whatever the connection state is, and throws when the clear fails, where
+`disconnectAndClear()` skips a disconnected manager and only logs a failure. It resets the
+manager's state, so a later `connect()` works, and a failed clear is retried before that
+connect. Only `PowerSyncSyncedDataService` calls it.
 
 **No code calls `powerSyncManager.connect()` or `.disconnectAndClear()` directly from a
 sign-in/sign-out code path.** The integration is event-driven, via the Supabase auth

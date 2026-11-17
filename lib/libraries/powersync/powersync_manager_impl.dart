@@ -118,6 +118,9 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
   @override
   Future<void> disconnectAndClear() => _serialize(_disconnectAndClear);
 
+  @override
+  Future<void> disconnectAndClearOrThrow() => _serialize(_clearOrThrow);
+
   Future<void> _connect() async {
     if (_state == _SyncState.clearPending) {
       await _disconnectAndClear();
@@ -145,6 +148,15 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
     if (_state == _SyncState.disconnected) {
       return;
     }
+    try {
+      await _clearOrThrow();
+    } catch (_) {
+      // Already logged by _clearOrThrow, and clearPending makes the next
+      // connect retry the clear.
+    }
+  }
+
+  Future<void> _clearOrThrow() async {
     // Local-only tables hold data PowerSync does not own (the kept company
     // id), so their owners clear them and this call must not race them.
     _logger.info('Disconnecting PowerSync and clearing local synced data');
@@ -160,6 +172,7 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
         error,
         stackTrace,
       );
+      rethrow;
     }
   }
 
