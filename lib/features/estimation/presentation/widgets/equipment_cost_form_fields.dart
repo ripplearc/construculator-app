@@ -528,6 +528,22 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   }
 
   void _handleYourRatesSaveState(BuildContext context, YourRatesState state) {
+    final isSaveRunning = switch (state) {
+      YourRatesSaving() => true,
+      YourRatesSaveCollision() ||
+      YourRatesSaveLabelTaken() ||
+      YourRatesSaveFailed() ||
+      YourRatesSaveNoCompany() ||
+      YourRatesSaveSucceeded() => false,
+      YourRatesLoading() ||
+      YourRatesRetrying() ||
+      YourRatesLoaded() ||
+      YourRatesSearchResults() ||
+      YourRatesError() => null,
+    };
+    if (isSaveRunning != null) {
+      _reportRateSaveRunning(context, isRunning: isSaveRunning);
+    }
     switch (state) {
       // TODO: [CA-1336] a recalled price that collides should ask "Replace your saved rate?" and write over the saved row, not add a second price
       case YourRatesSaving():
@@ -566,6 +582,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         break;
     }
   }
+
+  void _reportRateSaveRunning(
+    BuildContext context, {
+    required bool isRunning,
+  }) => context.read<EquipmentCostFormBloc>().add(
+    EquipmentRateSaveRunningChangedEvent(isRunning: isRunning),
+  );
 
   Future<void> _promptEntryLabel(BuildContext context, YourRateEntry entry) {
     return showDialog<void>(

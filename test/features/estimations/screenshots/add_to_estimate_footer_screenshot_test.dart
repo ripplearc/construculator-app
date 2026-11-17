@@ -22,7 +22,7 @@ void main() {
     double lineTotal = 520,
     double? deliveryFee,
     AddToEstimateBlock? block,
-    bool isSubmitting = false,
+    bool isBusy = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -47,7 +47,7 @@ void main() {
                     estimateName: 'Bedroom 2',
                     estimateTotal: 2993.62,
                     block: block,
-                    isSubmitting: isSubmitting,
+                    isBusy: isBusy,
                     onAdd: () {},
                   ),
                 ),
@@ -81,7 +81,7 @@ void main() {
     });
 
     testWidgets('submitting', (tester) async {
-      await pumpFooter(tester, theme, isSubmitting: true);
+      await pumpFooter(tester, theme, isBusy: true);
       await expectGolden(tester, 'submitting', suffix);
     });
 

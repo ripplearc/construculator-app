@@ -39,6 +39,7 @@ class EquipmentCostFormBloc
   StreamSubscription<Either<Failure, RefusedYourRate?>>? _refusalWatch;
   Future<void>? _estimateLookup;
   String? _companyId;
+  bool _isRateSaveRunning = false;
 
   final Map<String, RefusedDefaultNotice> _noticesKeptAfterShownByItem = {};
 
@@ -126,6 +127,15 @@ class EquipmentCostFormBloc
             ? d.copyWith(recalledRate: e.amount ?? d.jobAmount)
             : d,
       );
+    });
+    on<EquipmentRateSaveRunningChangedEvent>((e, emit) {
+      _isRateSaveRunning = e.isRunning;
+      final isSubmittingOrAsking =
+          state is EquipmentCostFormSubmitting ||
+          state is EquipmentCostFormSuccess ||
+          state is EquipmentCostFormOutsizedFeeConfirm;
+      if (isSubmittingOrAsking) return;
+      _emit(emit, (d) => d.copyWith(isRateSaveRunning: e.isRunning));
     });
     on<EquipmentDeliveryFeeUpdatedEvent>((e, emit) {
       final fee = double.tryParse(e.value);
@@ -381,7 +391,8 @@ class EquipmentCostFormBloc
     // A second tap while the first submit is in flight (or has already
     // succeeded) must not insert a duplicate cost line.
     if (state is EquipmentCostFormSubmitting ||
-        state is EquipmentCostFormSuccess) {
+        state is EquipmentCostFormSuccess ||
+        state.formData.isRateSaveRunning) {
       return;
     }
     final draft = _validated(state.formData);
@@ -409,7 +420,11 @@ class EquipmentCostFormBloc
   ) {
     final current = state;
     if (current is! EquipmentCostFormOutsizedFeeConfirm) return;
-    emit(EquipmentCostFormEditing(current.data));
+    emit(
+      EquipmentCostFormEditing(
+        current.data.copyWith(isRateSaveRunning: _isRateSaveRunning),
+      ),
+    );
   }
 
   Future<void> _onOutsizedFeeAccepted(
@@ -431,7 +446,12 @@ class EquipmentCostFormBloc
       _buildCostItem(draft, estimateId),
     );
     final created = result.fold<CostItem?>((failure) {
-      emit(EquipmentCostFormFailure(draft, failure));
+      emit(
+        EquipmentCostFormFailure(
+          draft.copyWith(isRateSaveRunning: _isRateSaveRunning),
+          failure,
+        ),
+      );
       return null;
     }, (item) => item);
     if (created == null) return;

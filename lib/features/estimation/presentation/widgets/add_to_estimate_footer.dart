@@ -28,8 +28,9 @@ class AddToEstimateFooter extends StatelessWidget {
   /// Null when the form is ready to submit.
   final AddToEstimateBlock? block;
 
-  /// Disables the button while a submit is in flight.
-  final bool isSubmitting;
+  /// Disables the button while the form is busy: a submit is in flight, or
+  /// another save the form must wait for is still running.
+  final bool isBusy;
 
   /// A line above the button that says the last save failed, or null when
   /// there is nothing to say.
@@ -45,7 +46,7 @@ class AddToEstimateFooter extends StatelessWidget {
     required this.estimateName,
     required this.estimateTotal,
     this.block,
-    this.isSubmitting = false,
+    this.isBusy = false,
     this.errorMessage,
     required this.onAdd,
   });
@@ -80,7 +81,7 @@ class AddToEstimateFooter extends StatelessWidget {
             CoreButton(
               key: buttonKey,
               label: block?.buttonLabel ?? l10n.addToEstimateButton,
-              isDisabled: block != null || isSubmitting,
+              isDisabled: block != null || isBusy,
               onPressed: onAdd,
             ),
           ],

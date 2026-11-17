@@ -1,8 +1,12 @@
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
@@ -25,6 +29,7 @@ import '../../../../utils/fake_your_rates_database.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeYourRatesDatabase database;
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   setUpAll(() {
@@ -34,12 +39,14 @@ void main() {
         FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
       ),
     );
-    Modular.replaceInstance<PowerSyncDatabaseWrapper>(FakeYourRatesDatabase());
+    database = FakeYourRatesDatabase();
+    Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
   });
 
   tearDownAll(Modular.dispose);
 
   setUp(() {
+    database.reset();
     Modular.get<CurrentCompanyResolver>().clearCache();
     fakeSupabase.setRpcResponse(
       DatabaseConstants.getMyCompanyIdRpcFunction,
@@ -210,6 +217,163 @@ void main() {
 
       expect(dialogTitle(), findsNothing);
       expect(find.text(l10n.addEquipmentCostsScreenTitle), findsNothing);
+    });
+  });
+
+  group('closing the equipment sheet while a default saves', () {
+    Future<Completer<void>> startSavingDefault(WidgetTester tester) async {
+      await enter(tester, 'equipment_name_field', 'Mini excavator');
+      await enter(tester, 'rate_field', '145');
+      final gate = database.getAllGate = Completer<void>();
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pump();
+      return gate;
+    }
+
+    testWidgets('Add to estimate is off until the save ends', (tester) async {
+      await openSheet(tester);
+      await enter(tester, 'duration_field', '3');
+      final addButton = find.byKey(AddToEstimateFooter.buttonKey);
+      final gate = await startSavingDefault(tester);
+
+      expect(
+        tester.getSemantics(addButton).flagsCollection.isEnabled,
+        Tristate.isFalse,
+      );
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(addButton).flagsCollection.isEnabled,
+        Tristate.isTrue,
+      );
+    });
+
+    testWidgets('back waits for the save, then asks Discard this line?', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      final gate = await startSavingDefault(tester);
+
+      await tapBack(tester);
+      expect(dialogTitle(), findsNothing);
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+      expect(
+        find.text(l10n.discardLineDialogBody('Mini excavator')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('back asks after a failed save too, and Add to estimate is '
+        'on again', (tester) async {
+      database.executeError = StateError('disk full');
+      await openSheet(tester);
+      await enter(tester, 'duration_field', '3');
+      final gate = await startSavingDefault(tester);
+
+      await tapBack(tester);
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+      await tester.tap(find.text(l10n.discardLineKeepEditingButton));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .getSemantics(find.byKey(AddToEstimateFooter.buttonKey))
+            .flagsCollection
+            .isEnabled,
+        Tristate.isTrue,
+      );
+    });
+
+    testWidgets('a failed add keeps Add to estimate off and back waiting '
+        'while the default still saves', (tester) async {
+      await Modular.get<CurrentCompanyResolver>().resolve();
+      await openSheet(tester);
+      await enter(tester, 'equipment_name_field', 'Mini excavator');
+      await enter(tester, 'duration_field', '3');
+      await enter(tester, 'rate_field', '145');
+      final insertGate = fakeSupabase.completer = Completer();
+      fakeSupabase
+        ..shouldDelayOperations = true
+        ..shouldThrowOnInsert = true;
+      final addButton = find.byKey(AddToEstimateFooter.buttonKey);
+      await tester.tap(addButton);
+      await tester.pump();
+      final saveGate = database.getAllGate = Completer<void>();
+      await tester.tap(find.byKey(const Key('save_as_my_rate_link')));
+      await tester.pump();
+
+      insertGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(addButton).flagsCollection.isEnabled,
+        Tristate.isFalse,
+      );
+      await tapBack(tester);
+      expect(dialogTitle(), findsNothing);
+      saveGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.discardLineDialogTitle), findsOneWidget);
+    });
+
+    testWidgets('a form put back as it was opened closes without asking '
+        'once the save ends', (tester) async {
+      await openSheet(tester);
+      final gate = await startSavingDefault(tester);
+      await enter(tester, 'rate_field', '');
+      await enter(tester, 'equipment_name_field', '');
+
+      await tapBack(tester);
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(dialogTitle(), findsNothing);
+      expect(find.byKey(SheetHeader.backButtonKey), findsNothing);
+    });
+
+    testWidgets('a second back while waiting asks only once', (tester) async {
+      await openSheet(tester);
+      final gate = await startSavingDefault(tester);
+
+      await tapBack(tester);
+      await tapBack(tester);
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(dialogTitle(), findsOneWidget);
+    });
+
+    testWidgets('a save that ends in the label prompt asks nothing more', (
+      tester,
+    ) async {
+      database.seedRow({
+        'id': 'rate-1',
+        'company_id': 'company-1',
+        'category': 'equipment',
+        'item_name': 'Mini excavator',
+        'rate_amount': 120,
+        'rate_currency': 'USD',
+        'equipment_method': 'day',
+        'saved_at': '2026-01-01T00:00:00.000Z',
+        'created_at': '2026-01-01T00:00:00.000Z',
+        'updated_at': '2026-01-01T00:00:00.000Z',
+      });
+      await openSheet(tester);
+      final gate = await startSavingDefault(tester);
+
+      await tapBack(tester);
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('entry_label_dialog_title')), findsOneWidget);
+      expect(dialogTitle(), findsNothing);
     });
   });
 
