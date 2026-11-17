@@ -2782,7 +2782,7 @@ abstract class AppLocalizations {
   /// **'Tube'**
   String get unitTubes;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: ea
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: ea
   ///
   /// In en, this message translates to:
   /// **'ea'**
@@ -2806,7 +2806,7 @@ abstract class AppLocalizations {
   /// **'cbm'**
   String get unitSymbolCubicMeters;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: kg
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: kg
   ///
   /// In en, this message translates to:
   /// **'kg'**
@@ -2836,127 +2836,127 @@ abstract class AppLocalizations {
   /// **'day'**
   String get unitSymbolDays;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: bx
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: bx
   ///
   /// In en, this message translates to:
   /// **'bx'**
   String get unitSymbolBoxes;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: bag
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: bag
   ///
   /// In en, this message translates to:
   /// **'bag'**
   String get unitSymbolBags;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: rl
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: rl
   ///
   /// In en, this message translates to:
   /// **'rl'**
   String get unitSymbolRolls;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: sht
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: sht
   ///
   /// In en, this message translates to:
   /// **'sht'**
   String get unitSymbolSheets;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: ft
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: ft
   ///
   /// In en, this message translates to:
   /// **'ft'**
   String get unitSymbolFeet;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: in
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: in
   ///
   /// In en, this message translates to:
   /// **'in'**
   String get unitSymbolInches;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: yd
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: yd
   ///
   /// In en, this message translates to:
   /// **'yd'**
   String get unitSymbolYards;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: lf
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: lf
   ///
   /// In en, this message translates to:
   /// **'lf'**
   String get unitSymbolLinearFeet;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: sf
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: sf
   ///
   /// In en, this message translates to:
   /// **'sf'**
   String get unitSymbolSquareFeet;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: sy
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: sy
   ///
   /// In en, this message translates to:
   /// **'sy'**
   String get unitSymbolSquareYards;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: sq
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: sq
   ///
   /// In en, this message translates to:
   /// **'sq'**
   String get unitSymbolSquares;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: cf
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: cf
   ///
   /// In en, this message translates to:
   /// **'cf'**
   String get unitSymbolCubicFeet;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: cy
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: cy
   ///
   /// In en, this message translates to:
   /// **'cy'**
   String get unitSymbolCubicYards;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: gal
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: gal
   ///
   /// In en, this message translates to:
   /// **'gal'**
   String get unitSymbolGallons;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: lb
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: lb
   ///
   /// In en, this message translates to:
   /// **'lb'**
   String get unitSymbolPounds;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: tn
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: tn
   ///
   /// In en, this message translates to:
   /// **'tn'**
   String get unitSymbolShortTons;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: pr
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: pr
   ///
   /// In en, this message translates to:
   /// **'pr'**
   String get unitSymbolPairs;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: dz
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: dz
   ///
   /// In en, this message translates to:
   /// **'dz'**
   String get unitSymbolDozens;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: bdl
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: bdl
   ///
   /// In en, this message translates to:
   /// **'bdl'**
   String get unitSymbolBundles;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: plt
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: plt
   ///
   /// In en, this message translates to:
   /// **'plt'**
   String get unitSymbolPallets;
 
-  /// Short symbol of a unit of measurement, shown on the unit button and after a material rate: tb
+  /// Short symbol of a unit of measurement, shown on the unit button, after a material rate and in the Select unit list: tb
   ///
   /// In en, this message translates to:
   /// **'tb'**

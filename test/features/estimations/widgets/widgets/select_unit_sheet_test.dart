@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/material_unit_list.dart';
+import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/select_unit_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -72,13 +73,35 @@ void main() {
     }
   });
 
-  testWidgets('shows each unit with its symbol and name', (tester) async {
+  testWidgets('reads the group headings to a screen reader as headings', (
+    tester,
+  ) async {
     await openSheet(tester);
 
-    expect(find.text('gal'), findsOneWidget);
-    expect(find.text('Gallon — paint, adhesive'), findsOneWidget);
-    expect(find.text('sht'), findsOneWidget);
-    expect(find.text('Sheet — 4×8 panel goods'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.text('BY LENGTH')),
+      isSemantics(isHeader: true, label: 'BY LENGTH'),
+    );
+  });
+
+  testWidgets('shows each unit in its own row with its symbol and name', (
+    tester,
+  ) async {
+    await openSheet(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    final units = [for (final group in imperialMaterialUnits) ...group.units];
+    expect(units, hasLength(23));
+    for (final unit in units) {
+      final row = find.byKey(Key('unit_option_${unit.name}'));
+      for (final text in [unit.symbol(l10n), unit.displayName(l10n)]) {
+        expect(
+          find.descendant(of: row, matching: find.text(text)),
+          findsOneWidget,
+          reason: '${unit.name} row shows "$text"',
+        );
+      }
+    }
   });
 
   testWidgets('opens with nothing selected when no unit is given', (
@@ -92,9 +115,25 @@ void main() {
     );
   });
 
-  testWidgets('opens scrolled to a selected unit near the end', (
+  testWidgets('opens with nothing selected for a saved unit not in the list', (
     tester,
   ) async {
+    await openSheet(tester, selected: Unit.liters);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('unit_option_liters')), findsNothing);
+    for (final group in imperialMaterialUnits) {
+      for (final unit in group.units) {
+        expect(
+          tester.getSemantics(find.byKey(Key('unit_option_${unit.name}'))),
+          isSemantics(isChecked: false),
+          reason: '${unit.name} is not checked',
+        );
+      }
+    }
+  });
+
+  testWidgets('opens scrolled to a selected unit near the end', (tester) async {
     await openSheet(tester, selected: Unit.tubes);
 
     final row = tester.getRect(find.byKey(const Key('unit_option_tubes')));
@@ -105,6 +144,21 @@ void main() {
       isSemantics(isChecked: true, label: 'tb, Tube'),
     );
   });
+
+  testWidgets(
+    'opens with a selected unit mid-list in the middle of the sheet',
+    (tester) async {
+      await openSheet(tester, selected: Unit.pounds);
+
+      final listTop = tester.getRect(find.byType(SheetHeader)).bottom;
+      final listBottom = tester.getRect(find.byType(SelectUnitSheet)).bottom;
+      final row = tester.getRect(find.byKey(const Key('unit_option_pounds')));
+      expect(
+        row.center.dy,
+        moreOrLessEquals((listTop + listBottom) / 2, epsilon: 0.5),
+      );
+    },
+  );
 
   testWidgets('closes with the unit tapped', (tester) async {
     await openSheet(tester, selected: Unit.feet);
