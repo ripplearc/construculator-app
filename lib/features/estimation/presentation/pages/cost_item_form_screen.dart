@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/discard_line_guard.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_add_to_estimate_footer.dart';
@@ -9,6 +10,8 @@ import 'package:construculator/features/estimation/presentation/widgets/equipmen
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
+import 'package:construculator/features/estimation/presentation/widgets/number_pad_sheet_layout.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_surface.dart';
@@ -80,38 +83,36 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   double _total = 0;
   bool _canSave = false;
 
+  final _numberPad = ValueNotifier<NumberPadSession?>(null);
+
+  final _materialFieldsKey = GlobalKey();
+
+  static const double _oneFieldRow = 72;
+
+  @override
+  void dispose() {
+    _numberPad.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     if (widget.presentAsSheet) {
-      final sheet = ColoredBox(
-        key: const Key('cost_item_form_screen'),
-        color: sheetSurface(context),
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildSheetHeader(context),
-              Flexible(child: _buildBody(context)),
-              _buildSheetFooter(widget.estimate),
-            ],
-          ),
-        ),
-      );
       return switch (widget.type) {
-        CostItemType.material =>
-          DiscardLineGuard<MaterialCostFormBloc, MaterialCostFormState>(
-            hasUnsavedChanges: (state) =>
-                (state is MaterialCostFormEditing ||
-                    state is MaterialCostFormFailure) &&
-                state.data.hasUnsavedChanges,
-            itemNameOf: (state) => state.data.itemName,
-            child: sheet,
-          ),
+        CostItemType.material => ValueListenableBuilder(
+          valueListenable: _numberPad,
+          builder: (context, numberPad, _) =>
+              DiscardLineGuard<MaterialCostFormBloc, MaterialCostFormState>(
+                hasUnsavedChanges: (state) =>
+                    (state is MaterialCostFormEditing ||
+                        state is MaterialCostFormFailure) &&
+                    state.data.hasUnsavedChanges,
+                itemNameOf: (state) => state.data.itemName,
+                isOwnKeyboardUp: numberPad != null,
+                child: _buildSheet(context, numberPad: numberPad),
+              ),
+        ),
         CostItemType.equipment =>
           DiscardLineGuard<EquipmentCostFormBloc, EquipmentCostFormState>(
             hasUnsavedChanges: (state) =>
@@ -120,9 +121,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 state.formData.hasUnsavedChanges,
             itemNameOf: (state) => state.formData.equipmentType,
             isSaveRunning: (state) => state.formData.isRateSaveRunning,
-            child: sheet,
+            child: _buildSheet(context, numberPad: null),
           ),
-        CostItemType.labor => sheet,
+        CostItemType.labor => _buildSheet(context, numberPad: null),
       };
     }
     return Scaffold(
@@ -134,11 +135,69 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
-  Widget _buildSheetFooter(CostEstimate? estimate) => switch (widget.type) {
+  Widget _buildSheet(
+    BuildContext context, {
+    required NumberPadSession? numberPad,
+  }) {
+    Widget footer(AddToEstimateFooterPart part) =>
+        _buildSheetFooter(widget.estimate, numberPad, part);
+    // A tap outside any field or button closes the pad, keeping the number
+    // (storyboard CUJ 4, Keys up). Screen readers close it with back instead.
+    Widget closesPad(Widget child) => GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: true,
+      onTap: FocusManager.instance.primaryFocus?.unfocus,
+      child: child,
+    );
+    return ColoredBox(
+      key: const Key('cost_item_form_screen'),
+      color: sheetSurface(context),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: numberPad == null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSheetHeader(context),
+                  Flexible(child: _buildBody(context)),
+                  footer(AddToEstimateFooterPart.all),
+                ],
+              )
+            : NumberPadSheetLayout(
+                header: closesPad(_buildSheetHeader(context)),
+                form: (panelScrolls) => closesPad(
+                  _buildBody(
+                    context,
+                    trailing: panelScrolls
+                        ? footer(AddToEstimateFooterPart.panel)
+                        : null,
+                  ),
+                ),
+                panel: footer(AddToEstimateFooterPart.panel),
+                controls: footer(AddToEstimateFooterPart.controls),
+                // About one field row stays in view above the pinned card.
+                minFormHeight: MediaQuery.textScalerOf(
+                  context,
+                ).scale(_oneFieldRow),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildSheetFooter(
+    CostEstimate? estimate,
+    NumberPadSession? numberPad,
+    AddToEstimateFooterPart part,
+  ) => switch (widget.type) {
     CostItemType.material => MaterialAddToEstimateFooter(
       estimateId: widget.estimationId,
       estimateName: estimate?.estimateName ?? '',
       estimateTotal: estimate?.totalCost ?? 0,
+      numberPad: numberPad,
+      part: part,
     ),
     CostItemType.labor ||
     CostItemType.equipment => EquipmentAddToEstimateFooter(
@@ -237,7 +296,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     CostItemType.equipment => context.l10n.addEquipmentCostsScreenTitle,
   };
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, {Widget? trailing}) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final l10n = context.l10n;
@@ -271,19 +330,24 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             ),
           ),
         if (widget.presentAsSheet)
-          Flexible(child: _buildFormFields())
+          Flexible(child: _buildFormFields(trailing))
         else
-          Expanded(child: _buildFormFields()),
+          Expanded(child: _buildFormFields(null)),
       ],
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildFormFields(Widget? trailing) {
     void onTotalChanged(double total) => setState(() => _total = total);
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => const MaterialCostFormFields(),
+      CostItemType.material => MaterialCostFormFields(
+        // Keeps the typed values and focus when the pad's layout takes over.
+        key: _materialFieldsKey,
+        numberPad: widget.presentAsSheet ? _numberPad : null,
+        trailing: trailing,
+      ),
       CostItemType.labor => LabourCostFormFields(
         fromCostFile: _fromCostFile,
         onTotalChanged: onTotalChanged,

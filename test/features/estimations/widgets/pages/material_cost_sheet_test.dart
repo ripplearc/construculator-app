@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_item_
 import 'package:construculator/features/estimation/presentation/widgets/add_to_estimate_footer.dart';
 import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/guarded_quick_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_header.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
@@ -88,6 +89,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  // A tap on the title is a tap outside the keys: it closes the number pad,
+  // which hides the form's Add button while it is up.
+  Future<void> closeNumberPad(WidgetTester tester) async {
+    await tester.tap(find.text('New material cost'));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> fillAllFields(WidgetTester tester) async {
     await tester.enterText(
       find.byKey(const Key('material_name_field')),
@@ -104,11 +112,18 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('material_rate_field')), '52');
     await tester.pumpAndSettle();
+    await closeNumberPad(tester);
   }
 
-  bool isAddDisabled(WidgetTester tester) => tester
-      .widget<CoreButton>(find.byKey(AddToEstimateFooter.buttonKey))
-      .isDisabled;
+  bool isAddDisabled(WidgetTester tester) {
+    final numberPad = find.byType(CoreNumberKeypad);
+    if (numberPad.evaluate().isNotEmpty) {
+      return !tester.widget<CoreNumberKeypad>(numberPad).isConfirmEnabled;
+    }
+    return tester
+        .widget<CoreButton>(find.byKey(AddToEstimateFooter.buttonKey))
+        .isDisabled;
+  }
 
   testWidgets('opens titled "New material cost" with every field empty', (
     tester,
@@ -137,6 +152,8 @@ void main() {
       '3',
     );
     await tester.pumpAndSettle();
+    expect(find.text('Needs a unit before it can total'), findsOneWidget);
+    await closeNumberPad(tester);
     expect(find.text('Enter a unit to continue'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('material_unit_pill')));
@@ -344,6 +361,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await tapBack(tester);
+      expect(find.byType(CoreNumberKeypad), findsNothing);
+      expect(find.text('Discard this line?'), findsNothing);
+      await tapBack(tester);
 
       expect(
         find.text('This line has not been added to the estimate.'),
@@ -373,9 +393,7 @@ void main() {
                   .decoration
               as BoxDecoration;
       expect(
-        tester
-            .widget<Text>(labelIn(ConfirmationDialog.primaryButtonKey))
-            .data,
+        tester.widget<Text>(labelIn(ConfirmationDialog.primaryButtonKey)).data,
         'Keep editing',
       );
       expect(
@@ -384,14 +402,8 @@ void main() {
             .data,
         'Discard',
       );
-      expect(
-        decorationOf(ConfirmationDialog.primaryButtonKey).color!.a,
-        1.0,
-      );
-      expect(
-        decorationOf(ConfirmationDialog.secondaryButtonKey).color!.a,
-        0.0,
-      );
+      expect(decorationOf(ConfirmationDialog.primaryButtonKey).color!.a, 1.0);
+      expect(decorationOf(ConfirmationDialog.secondaryButtonKey).color!.a, 0.0);
     });
 
     testWidgets('Keep editing stays on the sheet with every value', (
@@ -636,6 +648,201 @@ void main() {
       await tapBack(tester);
 
       expect(dialogTitle(), findsOneWidget);
+    });
+  });
+  group('number pad', () {
+    final quantity = find.byKey(const Key('material_quantity_field'));
+    final numberPad = find.byType(CoreNumberKeypad);
+    final panel = find.byKey(AddToEstimateFooter.panelKey);
+
+    String quantityText(WidgetTester tester) => tester
+        .widget<TextField>(
+          find.descendant(of: quantity, matching: find.byType(TextField)),
+        )
+        .controller!
+        .text;
+
+    Future<void> tapKey(WidgetTester tester, String name) async {
+      await tester.tap(find.byKey(Key('calc_key_$name')));
+      await tester.pump();
+    }
+
+    Future<void> openPadOnQuantity(WidgetTester tester) async {
+      await tester.tap(quantity);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('opens on the quantity in place of the form button, with the '
+        'card pinned on top of it', (tester) async {
+      await openSheet(tester);
+
+      await openPadOnQuantity(tester);
+
+      expect(numberPad, findsOneWidget);
+      expect(find.byKey(AddToEstimateFooter.buttonKey), findsNothing);
+      expect(find.text('Clear'), findsOneWidget);
+      final pad = tester.getRect(numberPad);
+      expect(tester.getRect(panel).bottom + CoreSpacing.space4, pad.top);
+      expect(
+        tester.getRect(quantity).bottom,
+        lessThan(tester.getRect(panel).top),
+      );
+      expect(
+        tester.getRect(find.byType(CostItemFormScreen)).bottom,
+        greaterThanOrEqualTo(pad.bottom),
+      );
+    });
+
+    testWidgets('keys replace the selected quantity; a tap on the title '
+        'closes the pad, keeps the number and adds nothing', (tester) async {
+      await openSheet(tester);
+      await tester.enterText(quantity, '3');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
+
+      await openPadOnQuantity(tester);
+      expect(find.text('Back to 3'), findsOneWidget);
+      await tapKey(tester, 'two');
+      await tapKey(tester, 'five');
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
+
+      expect(numberPad, findsNothing);
+      expect(quantityText(tester), '25');
+      expect(find.byKey(AddToEstimateFooter.buttonKey), findsOneWidget);
+      expect(fakeSupabase.getMethodCallsFor('insert'), isEmpty);
+    });
+
+    testWidgets('the put-back key restores the opened value and closes the '
+        'pad', (tester) async {
+      await openSheet(tester);
+      await tester.enterText(quantity, '3');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('New material cost'));
+      await tester.pumpAndSettle();
+      await openPadOnQuantity(tester);
+      await tapKey(tester, 'nine');
+
+      await tester.tap(find.byKey(CoreNumberKeypad.clearButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(quantityText(tester), '3');
+      expect(numberPad, findsNothing);
+    });
+
+    testWidgets('the pad\'s Add to estimate adds the whole cost', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await fillAllFields(tester);
+      await openPadOnQuantity(tester);
+
+      await tester.tap(find.byKey(CoreNumberKeypad.confirmButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+      expect(find.byType(CostItemFormScreen), findsNothing);
+    });
+
+    testWidgets('the back arrow and a swipe on the handle first close only '
+        'the pad', (tester) async {
+      await openSheet(tester);
+      await openPadOnQuantity(tester);
+
+      await tester.tap(find.byKey(SheetHeader.backButtonKey));
+      await tester.pumpAndSettle();
+      expect(numberPad, findsNothing);
+      expect(find.byType(CostItemFormScreen), findsOneWidget);
+
+      await openPadOnQuantity(tester);
+      await tester.fling(
+        find.byKey(GuardedQuickSheet.handleKey),
+        const Offset(0, 300),
+        1500,
+      );
+      await tester.pumpAndSettle();
+      expect(numberPad, findsNothing);
+      expect(find.byType(CostItemFormScreen), findsOneWidget);
+    });
+
+    testWidgets('a drag on the form scrolls it and keeps the pad up', (
+      tester,
+    ) async {
+      await openSheet(tester, size: const Size(375, 667));
+      await openPadOnQuantity(tester);
+
+      await tester.drag(quantity, const Offset(0, -40));
+      await tester.pumpAndSettle();
+
+      expect(numberPad, findsOneWidget);
+    });
+
+    testWidgets('a11y: with the pad up every tap target on the sheet has a '
+        'label and a 48 dp size, and a tap on the form background adds no '
+        'unlabelled action', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openSheet(tester);
+      await openPadOnQuantity(tester);
+
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+      handle.dispose();
+    });
+
+    testWidgets('the name field closes the pad before its own keyboard', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await openPadOnQuantity(tester);
+
+      await tester.tap(find.byKey(const Key('material_name_field')));
+      await tester.pump();
+
+      expect(numberPad, findsNothing);
+    });
+
+    for (final size in const [Size(375, 667), Size(360, 640)]) {
+      testWidgets('on a ${size.height.toInt()} dp phone the card scrolls with '
+          'the form and the quantity stays above the pad', (tester) async {
+        await openSheet(tester, size: size);
+
+        await openPadOnQuantity(tester);
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.descendant(
+            of: find.byType(MaterialCostFormFields),
+            matching: panel,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.getRect(quantity).bottom,
+          lessThan(tester.getRect(numberPad).top),
+        );
+        expect(numberPad, findsOneWidget);
+      });
+    }
+
+    testWidgets('on a tall phone the card stays pinned at 2.0 text scale or '
+        'scrolls, and nothing overflows', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openSheet(tester);
+      // The sheet already overflows 58 dp on the right at 2.0 text scale with
+      // the pad down, on main too. This test checks the pad adds no overflow.
+      tester.takeException();
+
+      await openPadOnQuantity(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(numberPad, findsOneWidget);
+      expect(
+        tester.getRect(quantity).top,
+        lessThan(tester.getRect(numberPad).top),
+      );
     });
   });
 }
