@@ -61,9 +61,9 @@ class AuthManagerImpl implements AuthManager {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
-          _sessionService.endSession();
           unawaited(_currentCompanyResolver.clearCache());
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
+          _sessionService.endSession();
         }
       },
       onError: (error) {
@@ -373,7 +373,6 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
-      _sessionService.endSession();
 
       await _sentryWrapper.setUser(null);
       unawaited(
