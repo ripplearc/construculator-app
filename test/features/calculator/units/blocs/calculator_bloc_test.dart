@@ -1,4 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/calculator/data/models/trade_store_seeds.dart';
+import 'package:construculator/features/calculator/domain/entities/trade_store_entities.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -78,6 +80,23 @@ void main() {
 
   CalculatorState tapeState(Tape tape, {TapeNotice? notice}) =>
       CalculatorState(tape: tape, notice: notice);
+
+  /// Appendix B's sheet sizes under [system], as the engine counts them.
+  List<PieceSize> appendixBSheets([
+    MeasurementSystem system = MeasurementSystem.imperial,
+  ]) => [
+    for (final size in TradeStoreSeeds.sizes(SizeStore.sheet, system))
+      PieceSize(width: size.width, height: size.height),
+  ];
+
+  /// The counts the store answers for the area [state] has on screen: what
+  /// the bloc's watch (S2a 2/2) brings in behind the key that put it there.
+  List<TradeCount> sheetCountsOf(CalculatorState state) =>
+      const Trades().countsFor(
+        Trade.drywall,
+        state.areaForCounts!,
+        appendixBSheets(state.tape.preferences.system),
+      );
 
   group('CalculatorBloc', () {
     group('walkthrough 11.1: Length 22ft then Width 18ft 8in', () {
@@ -3258,6 +3277,238 @@ void main() {
         expect(stateOf('1 2 ft').dimensions, isEmpty);
         expect(stateOf('[Length] 2 0 ft').dimensions, isEmpty);
       });
+    });
+
+    group('S2a 1/2 (CA-1090): the sheet counts on the strip (rule 4.4; '
+        'Section 9), with the store\'s answer in the state', () {
+      /// Row 1 as the page writes it: the chip's name, its value and, for a
+      /// count, the size it assumed.
+      List<String> rowOne(CalculatorState state) => [
+        for (final chip in state.suggestions)
+          '${chip.key}: ${chip.text}'
+              '${chip.basis == null ? '' : ' (${chip.basis})'}',
+      ];
+
+      const appendixB = [
+        'Drywall: 5.63 (48in x 96in)',
+        'Drywall: 5.00 (48in x 108in)',
+        'Drywall: 4.50 (48in x 120in)',
+      ];
+
+      /// The state after [keys], with the store's answer for the area on
+      /// the display, as the watch of 2/2 leaves it.
+      CalculatorState withCounts(String keys, {Tape tape = const Tape()}) {
+        final state = CalculatorState(tape: pressed(keys, tape: tape));
+        return state.copyWith(materialCounts: sheetCountsOf(state));
+      }
+
+      /// Length 20ft and Height 9ft with Area accepted from the strip.
+      Tape areaAccepted() {
+        final typed = pressed('[Length] 2 0 ft [Height] 9 ft');
+        final area = CalculatorState(tape: typed).suggestions.first;
+        return (typed.landAnswer(area.key!, area.value) as TapeChanged).tape;
+      }
+
+      test('after Area is accepted row 1 leads with the counts in the '
+          'store\'s order, the rule answers behind them, and the equals key '
+          'reads = (rule 4.4 rung 2a; walkthrough 11.1; rows 216, 218)', () {
+        final state = withCounts('', tape: areaAccepted());
+        expect(state.labelKeyId, DeterministicRules.areaKey);
+        expect(rowOne(state), [
+          ...appendixB,
+          'Diagonal: 21.93ft',
+          'Perimeter: 58ft',
+        ]);
+        expect([
+          for (final chip in state.suggestions.take(3)) chip.kind,
+        ], everyElement(CalculatorSuggestionKind.materialCount));
+        expect([
+          for (final chip in state.suggestions.take(3)) chip.count,
+        ], sheetCountsOf(state));
+        expect(state.equalsKeyId, isNull);
+        expect(state.equalsLands, isNull);
+      });
+
+      test('a typed area is as good as a computed one: 180 ft ft leads with '
+          'the counts, its conversions on row 2, and the equals key reads '
+          'Drywall (rule 4.4 rung 5; walkthrough 15.2; row 218 case 2)', () {
+        final state = withCounts('1 8 0 ft ft');
+        expect(state.valueText, '180ft²');
+        expect(rowOne(state), appendixB);
+        expect(
+          [for (final chip in state.conversions) chip.text],
+          ['20yd²', '25,920in²', '16.72m²'],
+        );
+        expect(state.equalsKeyId, Trade.drywall.offerKey);
+        expect(state.equalsLands, state.suggestions.first);
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'accepting a count lands it under Number of sheets, and the other '
+        'sizes stay on the strip (row 218; Section 9)',
+        build: () => bloc,
+        seed: () => withCounts('', tape: areaAccepted()),
+        act: (bloc) => bloc.add(
+          CalculatorSuggestionAccepted(bloc.state.suggestions.first),
+        ),
+        verify: (bloc) {
+          final state = bloc.state;
+          expect(state.labelKeyId, Trade.drywall.resultKey);
+          expect(state.valueText, '5.63');
+          expect(
+            state.tape.chips.last,
+            ResultChip(
+              key: Trade.drywall.resultKey,
+              value: state.materialCounts.first.value,
+            ),
+          );
+          expect(rowOne(state), [
+            'Drywall: 5.00 (48in x 108in)',
+            'Drywall: 4.50 (48in x 120in)',
+            'Diagonal: 21.93ft',
+            'Perimeter: 58ft',
+          ]);
+          expect(state.equalsKeyId, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        '= on a typed area lands the leading count, as it lands any leading '
+        'suggestion (term 2.15)',
+        build: () => bloc,
+        seed: () => withCounts('1 8 0 ft ft'),
+        act: (bloc) => bloc.add(const CalculatorEqualsPressed()),
+        verify: (bloc) {
+          expect(bloc.state.labelKeyId, Trade.drywall.resultKey);
+          expect(bloc.state.valueText, '5.63');
+          expect(rowOne(bloc.state), [
+            'Drywall: 5.00 (48in x 108in)',
+            'Drywall: 4.50 (48in x 120in)',
+          ]);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'a count chip with no count behind it changes nothing, as an answer '
+        'with no key does',
+        build: () => bloc,
+        seed: () => withCounts('1 8 0 ft ft'),
+        act: (bloc) => bloc.add(
+          CalculatorSuggestionAccepted(
+            CalculatorSuggestion(
+              key: Trade.drywall.offerKey,
+              value: bloc.state.suggestions.first.value,
+              kind: CalculatorSuggestionKind.materialCount,
+              text: '5.63',
+            ),
+          ),
+        ),
+        expect: () => <CalculatorState>[],
+      );
+
+      test('under Metric the counts follow the metric seeds, each size in '
+          'millimetres (row 214; S24)', () {
+        const metric = Tape(
+          preferences: CalculatorPreferences(system: MeasurementSystem.metric),
+        );
+        // 180ft² ÷ (1.2m × 3m) is 4.6451; the seed keeps each side to the
+        // tick (1200mm is 3024 ticks, 1200.15mm), so the stored piece is a
+        // hair larger and the third count reads 4.64 — a question for the
+        // seeds (CA-1083), pinned here as the store answers it today.
+        expect(rowOne(withCounts('1 8 0 ft ft', tape: metric)), [
+          'Drywall: 5.81 (1200mm x 2400mm)',
+          'Drywall: 5.16 (1200mm x 2700mm)',
+          'Drywall: 4.64 (1200mm x 3000mm)',
+        ]);
+      });
+
+      test('the other sizes stay on offer while a chip before the count is '
+          'reopened: the count on the tape names the area (row 219)', () {
+        final landed = withCounts('', tape: areaAccepted());
+        final count = landed.suggestions.first.count!;
+        final counted =
+            (landed.tape.landAnswer(count.trade.resultKey, count.value)
+                    as TapeChanged)
+                .tape;
+        final reopened = landed.copyWith(
+          tape: (counted.tapChip(0) as TapeChanged).tape,
+        );
+        expect(reopened.tape.editing!.index, 0);
+        expect(reopened.areaForCounts, landed.areaForCounts);
+        expect(rowOne(reopened).take(2), [
+          'Drywall: 5.00 (48in x 108in)',
+          'Drywall: 4.50 (48in x 120in)',
+        ]);
+      });
+
+      test('no area on the display, no counts: a length alone (rung 3), a '
+          'Calc that is an area (rung 4: its cost and conversions), a '
+          'function key after the Area (rung 6), and a number under an '
+          'operator', () {
+        for (final keys in [
+          '[Length] 2 0 ft',
+          '1 2 ft × 5 ft =',
+          '[Length] 2 0 ft [Height] 9 ft = [Length]',
+          '1 8 0 ft ft × 2',
+          '',
+        ]) {
+          expect(
+            CalculatorState(tape: pressed(keys)).areaForCounts,
+            isNull,
+            reason: keys,
+          );
+        }
+        expect(
+          CalculatorState(
+            tape: pressed('[Length] 2 0 ft [Height] 9 ft = [Length]'),
+          ).materialOffers,
+          isEmpty,
+        );
+      });
+
+      test('the counts of an area no longer on the display are never '
+          'offered, so a stale answer cannot show while the store\'s next '
+          'one is on its way', () {
+        final onScreen = CalculatorState(tape: pressed('1 8 0 ft ft'));
+        final elsewhere = CalculatorState(tape: pressed('4 1 0 ft ft'));
+        final stale = onScreen.copyWith(
+          materialCounts: sheetCountsOf(elsewhere),
+        );
+        expect(stale.materialOffers, isEmpty);
+        expect(
+          onScreen
+              .copyWith(materialCounts: sheetCountsOf(onScreen))
+              .suggestions,
+          hasLength(3),
+        );
+      });
+
+      test('Calc takes row 1 from the counts while an operator has values on '
+          'both sides, as it does from the rule answers (term 2.15)', () {
+        final chained = CalculatorState(tape: pressed('1 8 0 ft ft × 2'));
+        final withStale = chained.copyWith(
+          materialCounts: sheetCountsOf(
+            CalculatorState(tape: pressed('1 8 0 ft ft')),
+          ),
+        );
+        expect(
+          withStale.suggestions.single.kind,
+          CalculatorSuggestionKind.runningTotal,
+        );
+      });
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'C clears the counts with the tape',
+        build: () => bloc,
+        seed: () => withCounts('1 8 0 ft ft'),
+        act: (bloc) =>
+            bloc.add(const CalculatorControlActioned(ControlAction.clearAll)),
+        verify: (bloc) {
+          expect(bloc.state.materialCounts, isEmpty);
+          expect(bloc.state.areaForCounts, isNull);
+          expect(bloc.state.suggestions, isEmpty);
+        },
+      );
     });
 
     test(

@@ -111,6 +111,20 @@ class CalculatorLabelFormatter {
         null => '',
       };
 
+  /// The value on a strip chip: a sheet count with its size, "5.63 sheets
+  /// (48in x 96in)" (term 2.10: the assumption it used inside the chip);
+  /// every other chip its value as the tape's formatter wrote it.
+  String suggestionText(CalculatorSuggestion suggestion) =>
+      switch (suggestion) {
+        CalculatorSuggestion(
+          kind: CalculatorSuggestionKind.materialCount,
+          :final text,
+          basis: final size?,
+        ) =>
+          l10n.calculatorOfferSheetCount(text, size),
+        CalculatorSuggestion(:final text) => text,
+      };
+
   /// The label on a function key, of a result chip's key, or of an answer
   /// the rules compute (Section 8).
   String keyLabel(String id) => switch (id) {
@@ -171,6 +185,8 @@ class CalculatorLabelFormatter {
     DeterministicRules.pitchGradeKey => l10n.calculatorAnswerPitchGrade,
     DeterministicRules.columnKey => l10n.calculatorAnswerColumn,
     DeterministicRules.coneKey => l10n.calculatorAnswerCone,
+    _ when id == Trade.drywall.offerKey => l10n.calculatorOfferDrywall,
+    _ when id == Trade.drywall.resultKey => l10n.calculatorAnswerNumberOfSheets,
     _ => _untranslated(id),
   };
 
