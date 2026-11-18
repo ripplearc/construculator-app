@@ -108,6 +108,22 @@ void main() {
     expect(find.text(l10n.estimateTotalLabel), findsOneWidget);
   });
 
+  testWidgets('draws the greyed Preview 100 dp wide on an empty estimate', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      total: 0,
+      isEstimateEmpty: true,
+      previewEnabled: false,
+    );
+
+    expect(
+      tester.getSize(find.byKey(AddCostBottomBar.previewButtonKey)).width,
+      100,
+    );
+  });
+
   testWidgets('puts the Total label above the amount', (tester) async {
     await pumpBar(tester);
 

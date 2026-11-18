@@ -23,7 +23,7 @@ class AddCostBottomBar extends StatelessWidget {
   /// Key of the estimate total amount.
   static const totalKey = Key('estimate_total_amount');
 
-  static const double _emptyPreviewWidth = 120;
+  static const double _emptyPreviewWidth = 100;
 
   /// The estimate total, in dollars. A null total shows a dash, so a total
   /// that has not loaded never reads as $0.00.
