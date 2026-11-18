@@ -2182,8 +2182,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteLineDialogBody(String item, String estimate) {
-    return '$item will be removed from $estimate.';
+    return '$item will be deleted from $estimate. This cannot be undone.';
   }
+
+  @override
+  String get deleteLineNoKeepButton => 'No, keep it';
+
+  @override
+  String get deleteLineYesDeleteButton => 'Yes, delete';
 
   @override
   String get saveLineFailedError => 'This change was not saved. Try again.';

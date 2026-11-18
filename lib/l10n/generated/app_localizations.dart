@@ -3845,8 +3845,20 @@ abstract class AppLocalizations {
   /// Body of the delete-line confirmation, naming the line and the estimate it leaves
   ///
   /// In en, this message translates to:
-  /// **'{item} will be removed from {estimate}.'**
+  /// **'{item} will be deleted from {estimate}. This cannot be undone.'**
   String deleteLineDialogBody(String item, String estimate);
+
+  /// Answer that keeps the line, the filled button of the delete-line confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'No, keep it'**
+  String get deleteLineNoKeepButton;
+
+  /// Answer that deletes the line, the outlined error-coloured button of the delete-line confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, delete'**
+  String get deleteLineYesDeleteButton;
 
   /// Message above Save this line when saving the changes to a cost line fails
   ///
