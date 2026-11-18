@@ -482,11 +482,21 @@ class EquipmentCostFormBloc
     if (saved == null) return;
     emit(EquipmentCostFormSuccess(draft, saved));
     final recalledRateId = draft.recalledRateId;
-    if (edited == null &&
-        recalledRateId != null &&
-        draft.method == draft.recalledRateMethod) {
+    if (recalledRateId != null &&
+        draft.method == draft.recalledRateMethod &&
+        _isNewRatePick(draft, edited)) {
       await _yourRatesRepository.recordRateUse(recalledRateId);
     }
+  }
+
+  bool _isNewRatePick(EquipmentCostFormData draft, EquipmentCostItem? edited) {
+    if (edited == null || edited.pricingMethod != draft.method) return true;
+    final isDay = draft.method == EquipmentPricingMethod.day;
+    final storedRate = isDay
+        ? edited.dailyRate?.amount
+        : edited.jobAmount?.amount;
+    final pickedRate = isDay ? draft.dailyRate : draft.jobAmount;
+    return storedRate != pickedRate;
   }
 
   EquipmentCostFormData _validated(EquipmentCostFormData draft) {
@@ -593,6 +603,7 @@ class EquipmentCostFormBloc
       dailyRate: isDay && dailyRate != null ? Money(amount: dailyRate) : null,
       jobAmount: !isDay && jobAmount != null ? Money(amount: jobAmount) : null,
       deliveryFee: deliveryFee != null ? Money(amount: deliveryFee) : null,
+      productLink: existing?.productLink,
       description: draft.description,
     );
   }

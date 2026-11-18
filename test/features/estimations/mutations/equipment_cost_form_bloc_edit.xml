@@ -24,16 +24,16 @@
             <mutation text="final result = edited != null"/>
         </regex>
 
-        <regex pattern="(if \(edited == null &amp;&amp;)" id="edit_save.record_use_on_edit">
-            <mutation text="if (edited != null &amp;&amp;"/>
+        <regex pattern="(&amp;&amp;\s*_isNewRatePick\(draft, edited\))" id="edit_save.record_use_when_rate_unchanged">
+            <mutation text="&amp;&amp; true"/>
         </regex>
 
-        <regex pattern="(d\.isEditingExistingLine &amp;&amp;)" id="edit_rate.guard_off">
-            <mutation text="false &amp;&amp;"/>
+        <regex pattern="(if \(edited == null \|\| edited\.pricingMethod != draft\.method\) return true;)" id="edit_save.record_use_ignores_method">
+            <mutation text="if (edited == null) return true;"/>
         </regex>
 
-        <regex pattern="(rate == \(isDay \? d\.dailyRate : d\.jobAmount\))" id="edit_rate.guard_inverted">
-            <mutation text="rate != (isDay ? d.dailyRate : d.jobAmount)"/>
+        <regex pattern="(return storedRate != pickedRate;)" id="edit_save.record_use_inverted">
+            <mutation text="return storedRate == pickedRate;"/>
         </regex>
 
         <regex pattern="(_formValuesAtOpening = opened;)" id="edit_open.no_baseline">
