@@ -38,8 +38,20 @@ custom_lint:
     - sealed_over_dynamic
     - avoid_static_colors
     - avoid_static_typography
+    - forbid_direct_storage_access
+    - forbid_feature_import_outside_provider: false # TODO: [CA-1282] Turn on once features are imported only through their provider files https://ripplearc.youtrack.cloud/issue/CA-1282
     - document_enum: false # TODO: [CA-641] [Infra] Enable & Resolve document_enum Linter Violations https://ripplearc.youtrack.cloud/issue/CA-641/Infra-Enable-Resolve-documentenum-Linter-Violations
     - restrict_core_icon_data: false # TODO: [CA-633] [Lint] Scope restrict_core_icon_data rule in ripplearc-flutter-lint to fire only outside coreui https://ripplearc.youtrack.cloud/issue/CA-633/Lint-Scope-restrictcoreicondata-rule-in-ripplearc-flutter-lint-to-fire-only-outside-coreui
+
+  forbid_direct_storage_access:
+    allowed_files:
+      - lib/libraries/secure_storage/stale_secure_storage_service.dart
+      - lib/libraries/secure_storage/secure_storage_wrapper_impl.dart
+      - lib/libraries/supabase/secure_session_local_storage.dart
+      - test/libraries/secure_storage/units/stale_secure_storage_service_test.dart
+      - test/libraries/secure_storage/units/secure_storage_wrapper_impl_test.dart
+      - test/libraries/supabase/units/secure_session_local_storage_test.dart
+      - test/libraries/supabase/units/supabase_wrapper_impl_session_test.dart
 
   no_direct_instantiation:
     ignored_base_classes:
