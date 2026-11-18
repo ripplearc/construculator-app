@@ -71,16 +71,34 @@ void main() {
     });
 
     test('the footing store has the same cross-sections under Metric, and '
-        'a metric length answers in cubic metres', () async {
+        'the volume follows the System of units setting whatever unit the '
+        'length was typed in (R1, D1): 7m reads in m³ under Metric, 22ft '
+        'too, and 7m in yd³ under Imperial', () async {
       const sevenMetres = Length.exact(Rational(70000, 254), unit: Unit.metre);
-      final volumes = await useCase(
-        length: sevenMetres,
-        system: MeasurementSystem.metric,
-      ).first;
-      expect(
-        [for (final volume in volumes) formatter.format(volume.volume)],
-        ['0.58m³', '1.95m³'],
-      );
+      Future<List<String>> volumesOf(
+        Length length,
+        MeasurementSystem system,
+      ) async => [
+        for (final volume in await useCase(
+          length: length,
+          system: system,
+        ).first)
+          QuantityFormatter(
+            preferences: CalculatorPreferences(system: system),
+          ).format(volume.volume),
+      ];
+      expect(await volumesOf(sevenMetres, MeasurementSystem.metric), [
+        '0.58m³',
+        '1.95m³',
+      ]);
+      expect(await volumesOf(twentyTwoFeet, MeasurementSystem.metric), [
+        '0.55m³',
+        '1.87m³',
+      ]);
+      expect(await volumesOf(sevenMetres, MeasurementSystem.imperial), [
+        '0.76yd³',
+        '2.55yd³',
+      ]);
     });
 
     test('re-emits when a cross-section is added or edited in the '

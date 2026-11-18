@@ -28,7 +28,9 @@ class WatchFootingVolumesUseCase {
   });
 
   /// The concrete of [length] at each cross-section of the footing store
-  /// under [system], as the store is now and after every change.
+  /// under [system], written in the cubic unit of [system] whatever unit
+  /// the length was typed in (Section 6, "A trade result follows the
+  /// System of units setting"), as the store is now and after every change.
   Stream<List<FootingVolume>> call({
     required Length length,
     required MeasurementSystem system,
@@ -38,6 +40,7 @@ class WatchFootingVolumesUseCase {
         (sizes) => _trades.footingVolumesFor(
           length,
           sizes.map(_crossSectionOf).toList(),
+          system: system,
         ),
       );
 
