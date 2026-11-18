@@ -52,12 +52,38 @@ void main() {
     expect(find.text(r'$211.34'), findsOneWidget);
   });
 
-  testWidgets('shows a labor line with its hours', (tester) async {
-    await pumpRow(tester, CostLineRow(item: laborLine(), isHighlighted: false));
+  testWidgets('shows a labor line with its hours and rate', (tester) async {
+    await pumpRow(
+      tester,
+      CostLineRow(
+        item: laborLine(calculation: const {'laborRate': 48}),
+        isHighlighted: false,
+      ),
+    );
 
     expect(find.text('Framing crew'), findsOneWidget);
-    expect(find.textContaining('10 h'), findsOneWidget);
+    expect(find.textContaining(r'10 h · $48.00/hr'), findsOneWidget);
     expect(find.text(r'$480.00'), findsOneWidget);
+  });
+
+  testWidgets('keeps the amount on the first line of a wrapped name', (
+    tester,
+  ) async {
+    const longName =
+        'Type-X fire-rated gypsum board, 5/8" × 4′ × 12′, '
+        'moisture & mould resistant';
+    await pumpRow(
+      tester,
+      CostLineRow(
+        item: materialLine(name: longName, total: 104318.6),
+        isHighlighted: false,
+      ),
+    );
+
+    final nameTop = tester.getTopLeft(find.text(longName)).dy;
+    final amountTop = tester.getTopLeft(find.text(r'$104,318.60')).dy;
+    expect(tester.getSize(find.text(longName)).height, greaterThan(40));
+    expect(amountTop, nameTop);
   });
 
   testWidgets('reports a tap anywhere on the card', (tester) async {
