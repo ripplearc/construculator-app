@@ -24,7 +24,7 @@ void main() {
 
   group('CalculatorPage – accessibility', () {
     testWidgets(
-      'close button meets label and contrast guidelines in both themes',
+      'close button meets label guidelines in both themes, and text contrast in dark',
       (tester) async {
         await setupA11yTest(tester);
         // Tap target size is disabled: CoreUI's close button and keyboard drag
@@ -32,14 +32,26 @@ void main() {
         // spec), both below the 48dp Android / 44pt iOS minimums. Tracked
         // separately in the CoreUI design system.
         // TODO: [CA-1474] The Width and Rise function keys draw their text
-        // below 4.5:1, so the text contrast check stays off until CoreUI
-        // fixes the key colors.
+        // below 4.5:1 in the light theme, so the text contrast check stays off
+        // there until CoreUI fixes the key colors.
+        // https://ripplearc.youtrack.cloud/issue/CA-1474
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => makeTestableWidget(theme: theme),
           find.bySemanticsLabel(AppLocalizationsEn().closeButton),
           checkTapTargetSize: false,
           checkTextContrast: false,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(theme: createTestThemeDark()),
+        );
+        await tester.pumpAndSettle();
+        await expectMeetsTapTargetAndLabelGuidelines(
+          tester,
+          find.bySemanticsLabel(AppLocalizationsEn().closeButton),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
         );
       },
     );
