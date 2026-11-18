@@ -922,6 +922,157 @@ void main() {
       });
     });
 
+    group('rule 4.16 (CA-1367): a remembered angle that would read 0 or 90 '
+        'shows more digits (product manager, 17 November 2026)', () {
+      RememberedAngle filedAnswerOf(Angle answer) => newest(
+        const AngleMemory().filedAnswer(answer, formatter: formatter),
+        'Sine',
+      )!;
+
+      String spelled(double degrees) =>
+          filedAnswerOf(Angle(degrees)).entry.text;
+
+      test('the doc\'s three examples, from the keys: ASIN 0.00001 files as '
+          '0.001, ACOS 0.00001 as 89.999 and Pitch 9999999 Inch as '
+          '89.9999, each over its exact angle', () {
+        final arcsine = press(const Tape(), '0 . 0 0 0 0 1 ASIN');
+        final small = (arcsine.chips.last as ResultChip).value as Angle;
+        final memory = const AngleMemory().filedAnswer(
+          small,
+          formatter: formatter,
+        );
+        expect(newest(memory, 'Sine')!.entry.text, '0.001');
+        expect(newest(memory, 'Sine')!.value, small);
+        expect(newest(memory, 'Sine')!.limit, isNull);
+
+        // ACOS x is 90° − ASIN x, so the same key path gives the other end.
+        final large = Angle(90 - small.degrees);
+        expect(large.degrees, closeTo(89.99943, 1e-5));
+        expect(filedAnswerOf(large).entry.text, '89.999');
+
+        final pitch = const AngleMemory().filed(
+          activeOf(press(const Tape(), '[Pitch] 9 9 9 9 9 9 9 in')),
+          parser: parser,
+          formatter: formatter,
+        );
+        expect(newest(pitch, PlainNumberKeys.pitch)!.entry.text, '89.9999');
+        expect(
+          newest(pitch, PlainNumberKeys.pitch)!.value.degrees,
+          closeTo(89.99993, 1e-5),
+        );
+      });
+
+      test('one decimal at a time: the fewest that make the angle read as '
+          'itself, two to six, none of them a limit, and a negative keeps '
+          'its sign', () {
+        const cases = [
+          (0.004, '0.004'),
+          (0.0004, '0.0004'),
+          (0.00004, '0.00004'),
+          (0.000004, '0.000004'),
+          (89.9996, '89.9996'),
+          (89.999996, '89.999996'),
+          (-0.0001, '-0.0001'),
+          (-89.99996, '-89.99996'),
+        ];
+        for (final (degrees, text) in cases) {
+          final filed = filedAnswerOf(Angle(degrees));
+          expect(filed.entry.text, text);
+          expect(filed.limit, isNull, reason: '$degrees reads as itself');
+        }
+      });
+
+      test('an angle that still reads 0 or 90 at six decimals keeps that '
+          'spelling and names the limit it fell past: "Under 0.000001°" '
+          'or "Over 89.999999°"', () {
+        final tiny = filedAnswerOf(const Angle(0.0000001));
+        expect(tiny.entry.text, '0');
+        expect(tiny.limit, AngleDrawerLimit.belowSmallest);
+        expect(tiny.value, const Angle(0.0000001), reason: 'exact value kept');
+        final nearlyRight = filedAnswerOf(const Angle(89.9999999));
+        expect(nearlyRight.entry.text, '90');
+        expect(nearlyRight.limit, AngleDrawerLimit.aboveLargest);
+        expect(
+          filedAnswerOf(const Angle(-0.0000001)).limit,
+          AngleDrawerLimit.belowSmallest,
+        );
+      });
+
+      test('an angle that is 0 or 90 reads so, with no limit, and a double '
+          'a hair off 30 reads 30', () {
+        for (final exact in [0.0, 90.0, -90.0]) {
+          final filed = filedAnswerOf(Angle(exact));
+          expect(filed.limit, isNull, reason: '$exact');
+          expect(
+            filed.entry.text,
+            formatter.format(Angle(exact)).replaceFirst('°', ''),
+          );
+        }
+        expect(spelled(29.999999999999996), '30');
+        expect(spelled(45.123456789), '45.12');
+      });
+
+      test('a D:M:S answer keeps its three fields and only the seconds take '
+          'the decimals, by the same rule: 0.00001° files as 0°00\'00.04", '
+          '89.99999° as 89°59\'59.96"', () {
+        String dms(double degrees) => filedAnswerOf(
+          Angle(degrees, spelling: AngleSpelling.degreesMinutesSeconds),
+        ).entry.text;
+        expect(dms(0.00001), '0°00\'00.04"');
+        expect(dms(89.99999), '89°59\'59.96"');
+        expect(dms(0.000573), '0°00\'02"');
+        expect(dms(38.5), '38°30\'00"');
+        expect(dms(90), '90°00\'00"');
+        final filed = filedAnswerOf(
+          const Angle(0.00001, spelling: AngleSpelling.degreesMinutesSeconds),
+        );
+        expect(filed.entry.tokens.single.value, closeTo(0.0000111, 1e-7));
+        expect(filed.limit, isNull);
+      });
+
+      test('a recalled limit angle computes from its exact value, and the '
+          'display spelling the tape converts to stays at two decimals '
+          '(T8: drawer only)', () {
+        final tiny = filedAnswerOf(const Angle(0.0000001));
+        final sine = changed(press(const Tape(), 'SIN').recall(tiny));
+        expect(activeOf(sine).exactValue, const Angle(0.0000001));
+        expect(
+          AngleMemory.spelledAnswer(
+            const Angle(89.99993),
+            formatter: formatter,
+          )!.text,
+          '90',
+        );
+        expect(
+          AngleMemory.spelledAnswer(
+            const Angle(1234.5, spelling: AngleSpelling.degreesMinutesSeconds),
+            formatter: formatter,
+          )!.text,
+          '1234°30\'00"',
+          reason: 'the display spelling is read ungrouped, never 1,234°',
+        );
+        expect(
+          AngleMemory.spelledAnswer(
+            const Angle(16000),
+            formatter: formatter,
+          )!.text,
+          '16000',
+        );
+      });
+
+      test('drawers compare by the limit too', () {
+        const entry = EntryBuffer([Token(digits: '0')]);
+        expect(
+          const RememberedAngle(
+            entry: entry,
+            value: Angle(0.0000001),
+            limit: AngleDrawerLimit.belowSmallest,
+          ),
+          isNot(const RememberedAngle(entry: entry, value: Angle(0.0000001))),
+        );
+      });
+    });
+
     group('rule 4.16: a pitch typed in inches of rise is filed, stored as '
         'the degrees it is worth (CA-1366)', () {
       List<String> entries(AngleMemory memory) => [
