@@ -354,7 +354,10 @@ void main() {
       const sheetPrice = MaterialPriceAttached(
         rate: 14,
         rateStatus: RateStatus.ownRateConfirmed,
-        price: AttachedPrice(buyUnit: Unit.sheets, measureUnit: Unit.squareFeet),
+        price: AttachedPrice(
+          buyUnit: Unit.sheets,
+          measureUnit: Unit.squareFeet,
+        ),
       );
 
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(

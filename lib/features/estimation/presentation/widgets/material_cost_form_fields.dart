@@ -158,11 +158,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
 
   void _showAttachedRate(MaterialCostFormData data) {
     final rate = data.rate;
-    if (data.attachedPrice != null && rate != null) {
-      _rateController.text = rate.toStringAsFixed(2);
-    } else if (rate == null) {
-      _rateController.clear();
-    }
+    if (double.tryParse(_rateController.text) == rate) return;
+    _rateController.text = rate?.toStringAsFixed(2) ?? '';
   }
 
   bool _isSaving(MaterialCostFormState state) =>

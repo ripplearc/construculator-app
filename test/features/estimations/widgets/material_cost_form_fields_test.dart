@@ -480,6 +480,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        expect(textOf(tester, rateField), '9.50');
 
         await tester.tap(unitPill);
         await tester.pumpAndSettle();
@@ -495,6 +496,27 @@ void main() {
         expect(find.byType(Dialog), findsNothing);
       },
     );
+
+    for (final typed in ['15', '.']) {
+      testWidgets('keeps "$typed" typed over an attached price', (
+        tester,
+      ) async {
+        await pumpFields(tester);
+        bloc.add(
+          const MaterialPriceAttached(
+            rate: 9.5,
+            rateStatus: RateStatus.ownRateConfirmed,
+            price: AttachedPrice(buyUnit: Unit.gallons),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(rateField, typed);
+        await tester.pumpAndSettle();
+
+        expect(textOf(tester, rateField), typed);
+      });
+    }
 
     testWidgets('keeps a typed rate when the unit changes', (tester) async {
       await pumpFields(tester);
