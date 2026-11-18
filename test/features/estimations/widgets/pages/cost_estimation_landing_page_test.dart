@@ -12,6 +12,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
@@ -79,7 +80,7 @@ void main() {
 
   setUpAll(() {
     CoreToast.disableTimers();
-    clock = FakeClockImpl();
+    clock = FakeClockImpl(DateTime.utc(2026, 6, 1));
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
@@ -110,6 +111,7 @@ void main() {
       PermissionConstants.deleteCostEstimation,
       PermissionConstants.lockCostEstimation,
     ]);
+    Modular.get<CostEstimationRepository>().dispose();
     fakeSupabase.reset();
     fakePhoneDatabase.reset();
     fakeAppRouter.reset();
