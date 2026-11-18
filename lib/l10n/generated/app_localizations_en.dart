@@ -2522,4 +2522,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String costLineDeliveryFee(String fee) {
     return ' + $fee delivery';
   }
+
+  @override
+  String get estimateTotalLabel => 'Total';
+
+  @override
+  String get addCostButton => 'Add cost';
 }
