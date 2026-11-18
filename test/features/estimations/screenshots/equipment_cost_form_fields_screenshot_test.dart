@@ -458,6 +458,8 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('entry_label_dialog_save_button')));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(

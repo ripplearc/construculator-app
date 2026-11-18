@@ -69,6 +69,23 @@ abstract class YourRatesRepository {
     required String companyId,
   });
 
+  /// Looks up the saved row of [category] named [itemName] with pricing
+  /// [method] whose label is [label], within one [companyId]. This is the row
+  /// that makes [save] fail with `EstimationErrorType.duplicateLabel`.
+  ///
+  /// Name and label are matched without regard to capital letters or extra
+  /// spaces, like [save]. Returns `Right(null)` when no row has that label, and
+  /// the first one found if older data holds two rows with the same label. A
+  /// blank [companyId] returns an `EstimationErrorType.permissionDenied`
+  /// failure before any read.
+  Future<Either<Failure, YourRateEntry?>> getByItemNameAndLabel(
+    String itemName,
+    CostItemType category, {
+    required EquipmentPricingMethod? method,
+    required String label,
+    required String companyId,
+  });
+
   /// Saves [entry] into the caller's rate book, applying the collision rule
   /// for its (category, name, [YourRateEntry.equipmentMethod]) grouping:
   ///
@@ -81,7 +98,9 @@ abstract class YourRatesRepository {
   ///   existing row has the same label: rejected with an
   ///   `EstimationErrorType.duplicateLabel` failure and nothing is written.
   ///   Labels are compared without regard to capital letters or extra spaces,
-  ///   like names. The caller asks the user for a different label.
+  ///   like names. The caller can find that row with [getByItemNameAndLabel]
+  ///   and offer to replace its price with a save that has
+  ///   [replacesRateId], or ask the user for a different label.
   /// - The grouping has existing rows, [entry].entryLabel is non-null, and no
   ///   existing row has the same label: inserts [entry] as a new, distinct
   ///   row.

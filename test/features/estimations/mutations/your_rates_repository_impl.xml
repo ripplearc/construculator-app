@@ -286,6 +286,15 @@
         <regex pattern="errorType: EstimationErrorType\.notFoundError" dotAll="false" id="your_rates_repo.missing_row.wrong_error">
             <mutation text="errorType: EstimationErrorType.duplicateEntry"/>
         </regex>
+        <regex pattern="entry\.equipmentMethod == method &amp;&amp;" dotAll="false" id="your_rates_repo.label_lookup.ignore_method">
+            <mutation text="true &amp;&amp;"/>
+        </regex>
+        <regex pattern="final labelKey = _matchKey\(label\);" dotAll="false" id="your_rates_repo.label_lookup.exact_label">
+            <mutation text="final labelKey = label;"/>
+        </regex>
+        <regex pattern="return Right\(matches\.firstOrNull\);" dotAll="false" id="your_rates_repo.label_lookup.never_found">
+            <mutation text="return const Right(null);"/>
+        </regex>
     </rules>
 
     <commands>
