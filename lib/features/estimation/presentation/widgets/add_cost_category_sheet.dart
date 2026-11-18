@@ -46,7 +46,7 @@ class AddCostCategorySheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               _rowHorizontalPadding,
-              CoreSpacing.space2,
+              0,
               _rowHorizontalPadding,
               CoreSpacing.space3,
             ),
@@ -145,13 +145,12 @@ class AddCostCategorySheet extends StatelessWidget {
                 child: CoreIconWidget(
                   icon: icon,
                   size: CoreIconSize.size20,
-                  color: colorTheme.iconOrient,
+                  color: colorTheme.iconDark,
                 ),
               ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: CoreSpacing.space1,
                   children: [
                     Text(
                       title,
