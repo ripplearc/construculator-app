@@ -349,6 +349,10 @@
             <mutation text=""/>
             <mutation text="(TapeEntryRefused(reason: EntryRefusal.angleHasThreeParts), _, _) =&gt; const CalculatorMinutesTwoDigitsToast(),"/>
         </regex>
+        <!-- CA-1376: the % key presses nothing -->
+        <regex pattern="\) =&gt; _press\(emit, \(tape\) =&gt; tape\.pressPercent\(\)\);" dotAll="true" id="calculator_bloc.percent.presses_nothing">
+            <mutation text=") =&gt; _press(emit, TapeChanged.new);"/>
+        </regex>
     </rules>
 
     <commands>

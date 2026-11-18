@@ -61,6 +61,11 @@ class CalculatorOperatorPressed extends CalculatorEvent {
   List<Object?> get props => [operator];
 }
 
+/// The % key was pressed (UX Design Doc Section 7, "Percent").
+class CalculatorPercentPressed extends CalculatorEvent {
+  const CalculatorPercentPressed();
+}
+
 /// The equals key was pressed.
 class CalculatorEqualsPressed extends CalculatorEvent {
   const CalculatorEqualsPressed();

@@ -270,6 +270,43 @@ void main() {
       expect(labels.toastBody(three), contains('and 2 more removed'));
     });
 
+    test('CA-1376: each percent Alert reads in the words of rule 4.12', () {
+      final words = {
+        const CalculatorPercentNeedsANumberToast(operator: '−'): (
+          'Type a number first',
+          'Type the number after −, then press %.',
+        ),
+        const CalculatorPercentNeedsAnOperatorToast(insideABracket: true): (
+          '% needs an operator first',
+          'Press ) and +, −, × or ÷, then the percent.',
+        ),
+        const CalculatorPercentNeedsAnOperatorToast(insideABracket: false): (
+          '% needs an operator first',
+          'Press +, −, × or ÷, then the percent.',
+        ),
+        const CalculatorAlreadyAPercentToast(): (
+          'Already a percent',
+          'Press +, −, × or ÷ to go on, or ⌫ to remove the %.',
+        ),
+        const CalculatorPercentTakesNoUnitToast(): (
+          'That number is a percent',
+          'A percent has no unit. Press +, −, × or ÷ to go on.',
+        ),
+        const CalculatorPercentHasNoUnitToast(): (
+          'A percent has no unit',
+          'Press ⌫ to remove the unit, then press %.',
+        ),
+        const CalculatorPercentDividesByZeroToast(bracket: '(2−2)'): (
+          'Cannot divide by zero',
+          'The bracket (2−2) is 0. Press ⌫ to change the bracket.',
+        ),
+      };
+      for (final MapEntry(key: toast, value: (title, body)) in words.entries) {
+        expect(labels.toastTitle(toast), title, reason: '$toast');
+        expect(labels.toastBody(toast), body, reason: '$toast');
+      }
+    });
+
     test('= on a pitch or a slope warning repeats the note, title then body, '
         'and a Sides count no polygon has reads as its own note (Section '
         '1.8; decision tree rows 339, 375; CA-1094)', () {

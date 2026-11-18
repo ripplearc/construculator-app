@@ -188,17 +188,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
     UnitType.divideSymbol => const CalculatorFractionPressed(),
   };
 
-  // TODO: [CA-1376] Press the % key on the tape once the engine has the
-  // four-function percent of Section 7.
-  // https://ripplearc.youtrack.cloud/issue/CA-1376
-  CalculatorEvent? _operatorEventFor(
+  CalculatorEvent _operatorEventFor(
     OperatorType operator,
   ) => switch (operator) {
     OperatorType.add => const CalculatorOperatorPressed(Operator.add),
     OperatorType.subtract => const CalculatorOperatorPressed(Operator.subtract),
     OperatorType.multiply => const CalculatorOperatorPressed(Operator.multiply),
     OperatorType.divide => const CalculatorOperatorPressed(Operator.divide),
-    OperatorType.percent => null,
+    OperatorType.percent => const CalculatorPercentPressed(),
   };
 
   List<SuggestionData> _stripRow(
@@ -481,11 +478,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       onDigitPressed: (digit) =>
                           bloc.add(CalculatorDigitPressed(digit.label)),
                       onUnitSelected: (unit) => bloc.add(_unitEventFor(unit)),
-                      onOperatorPressed: (op) {
-                        if (_operatorEventFor(op) case final event?) {
-                          bloc.add(event);
-                        }
-                      },
+                      onOperatorPressed: (op) =>
+                          bloc.add(_operatorEventFor(op)),
                       onControlAction: (action) =>
                           bloc.add(CalculatorControlActioned(action)),
                       onResultTapped: () =>
