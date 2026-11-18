@@ -34,9 +34,6 @@ enum DependentKeyId {
   /// The material density behind a weight.
   density(CoreDependentKeyKind.editable),
 
-  /// How a pitch is spelled: in/12in, degrees or grade.
-  shownAs(CoreDependentKeyKind.toggle),
-
   /// Which span of a polygon the diameter measures: corner to corner,
   /// or flat side to flat side.
   across(CoreDependentKeyKind.toggle);
