@@ -257,6 +257,28 @@ void main() {
       );
     });
 
+    testWidgets('app bar has the same fill as the page', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      final appBar = tester.widget<AppBar>(
+        find.descendant(
+          of: find.byType(CoreAppBar),
+          matching: find.byType(AppBar),
+        ),
+      );
+      expect(
+        appBar.backgroundColor,
+        sheetSurface(tester.element(find.byType(CoreAppBar))),
+      );
+    });
+
     testWidgets('displays back navigation button', (WidgetTester tester) async {
       setUpAuthenticatedUser(
         credentialId: 'test-credential-id',
