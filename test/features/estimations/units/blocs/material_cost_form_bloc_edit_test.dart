@@ -374,6 +374,70 @@ void main() {
     );
 
     blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'saving keeps the other values stored in the line\'s calculation',
+      setUp: () => fakeSupabaseWrapper.addTableData(
+        DatabaseConstants.costItemsTable,
+        [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: itemId,
+            estimateId: estimateId,
+            itemName: 'Rebar',
+            unitPrice: 100.0,
+            quantity: 5.0,
+            unit: 'pieces',
+            itemTotalCost: 500.0,
+            rateStatus: 'own_rate_confirmed',
+            calculation: {
+              'unit_price': 100.0,
+              'quantity': 5.0,
+              'waste_percent': 10.0,
+            },
+          ),
+        ],
+      ),
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialQuantityUpdated('7'))
+          ..add(const MaterialCostFormSubmitted(estimateId: estimateId));
+      },
+      verify: (_) async {
+        final line = await storedLine();
+        expect(line.calculation['quantity'], 7.0);
+        expect(line.calculation['unit_price'], 100.0);
+        expect(line.calculation['waste_percent'], 10.0);
+      },
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'shows no change in the estimate while the quantity or the rate is '
+      'being retyped',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc.add(const MaterialQuantityUpdated(''));
+      },
+      verify: (bloc) =>
+          expect(bloc.state.data.changeInEstimateTotal, isNull),
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+      'shows the change in the estimate once the rate is back',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        await open(bloc);
+        bloc
+          ..add(const MaterialRateUpdated(''))
+          ..add(const MaterialRateUpdated('110'));
+      },
+      verify: (bloc) =>
+          expect(bloc.state.data.changeInEstimateTotal, closeTo(50, 0.001)),
+    );
+
+    blocTest<MaterialCostFormBloc, MaterialCostFormState>(
       'saving a new quantity makes the quantity manual and drops the formula',
       setUp: seedRichLine,
       build: () => bloc,
