@@ -107,14 +107,56 @@ void main() {
         );
       });
 
-      test('S85: closing the minutes carries 89 into 31°29\'00", and typed '
-          'seconds show as typed until the seal', () {
-        var tape = press(const Tape(), '[Pitch] 3 0 . 8 9');
-        expect(activeText(tape), '30.89');
-        tape = press(tape, '.');
-        expect(activeText(tape), '31°29\'00"');
-        tape = press(tape, '0 0');
-        expect(activeText(tape), '31°29\'00"');
+      test('S85 under rule 4.10 (CA-1372): 89 is a legal decimal, and the '
+          'point that would close it as minutes is refused — nothing '
+          'carries into the degrees', () {
+        final decimal = press(const Tape(), '[Pitch] 3 0 . 8 9');
+        expect(activeText(decimal), '30.89');
+        expect(
+          decimal.typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          decimal.pressDmsKey(),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        final closed = press(const Tape(), '[Pitch] 3 0 . 5 9 . 0 0');
+        expect(activeText(closed), '30°59\'00"');
+      });
+
+      test('rule 4.10 (CA-1372): the digit that makes a part 60 or more, or '
+          'a third digit, is refused and the chip stays (decision tree rows '
+          '172 to 174, 177, 370)', () {
+        final minutes = press(const Tape(), 'SIN 3 8 DMS 7');
+        expect(
+          minutes.typeDigit('5'),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(activeText(minutes), '38°7\'00"');
+        expect(
+          press(const Tape(), '1 2 DMS 9').typeDigit('9'),
+          const TapeEntryRefused(EntryRefusal.partOfSixtyOrMore),
+        );
+        expect(
+          press(const Tape(), 'SIN 3 8 DMS 5 9').typeDigit('0'),
+          const TapeEntryRefused(EntryRefusal.minutesHaveTwoDigits),
+        );
+        final seconds = press(const Tape(), 'SIN 3 0 . 5 . 1 2');
+        expect(
+          seconds.typeDigit('3'),
+          const TapeEntryRefused(EntryRefusal.secondsHaveTwoDigits),
+        );
+        expect(
+          seconds.typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.angleHasThreeParts),
+        );
+        expect(
+          formatter.format(seconds.trigAnswer!.value),
+          '0.501309',
+          reason:
+              'the sine of 30°05\'12" is on offer, the 3 having changed '
+              'nothing (row 175)',
+        );
       });
 
       test('a bare number takes the point, and the trig keys read the '
@@ -147,9 +189,13 @@ void main() {
         }
       });
 
-      test('a third point changes nothing: an angle has three segments', () {
+      test('a third point is refused: an angle has three parts (rule 4.10, '
+          'decision tree row 176)', () {
         final full = press(const Tape(), '2 3 . 1 6 . 4 5');
-        expect(full.typeDigit('.'), TapeChanged(full));
+        expect(
+          full.typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.angleHasThreeParts),
+        );
       });
 
       test('a number that continues a compound cannot become an angle', () {
@@ -169,16 +215,13 @@ void main() {
         expect(activeText(tape), '38°30\'00"');
         tape = press(tape, 'DMS 4 5');
         expect(activeText(tape), '38°30\'45"');
-        final full = press(tape, 'DMS');
         expect(
-          full,
-          tape,
-          reason:
-              'a fourth segment is refused without '
-              'eating the third',
+          tape.pressDmsKey(),
+          const TapeEntryRefused(EntryRefusal.angleHasThreeParts),
+          reason: 'a fourth segment is refused without eating the third',
         );
-        expect(lastResult(press(full, 'SIN')), 'Sine 0.622685');
-        final operand = press(full, 'SIN').chips.first as ValueChip;
+        expect(lastResult(press(tape, 'SIN')), 'Sine 0.622685');
+        final operand = press(tape, 'SIN').chips.first as ValueChip;
         expect(formatter.format(operand.trigOperand!), '38°30\'45"');
       });
 
@@ -202,7 +245,10 @@ void main() {
           '38°00\'45"',
         );
         final full = press(const Tape(), '3 8 DMS 3 0 DMS 4 5');
-        expect(full.typeDigit('.'), TapeChanged(full));
+        expect(
+          full.typeDigit('.'),
+          const TapeEntryRefused(EntryRefusal.angleHasThreeParts),
+        );
       });
 
       test('S113: the padding is the seal, on the entry side', () {
@@ -283,16 +329,16 @@ void main() {
     group('a key that leaves the chip closes the open field (rule 4.10)', () {
       String firstText(Tape tape) => (tape.chips.first as ValueChip).entry.text;
 
-      test('38 [D:M:S] 75 [SIN] reads 39°15\'00" on the chip and answers '
-          'from 39.25°', () {
-        final tape = press(const Tape(), '3 8 DMS 7 5 SIN');
-        expect(firstText(tape), '39°15\'00"');
-        expect(lastResult(tape), 'Sine 0.632705');
+      test('38 [D:M:S] 15 [SIN] reads 38°15\'00" on the chip and answers '
+          'from 38.25°', () {
+        final tape = press(const Tape(), '3 8 DMS 1 5 SIN');
+        expect(firstText(tape), '38°15\'00"');
+        expect(lastResult(tape), 'Sine 0.619094');
       });
 
       test('an operator, a function key and a closing bracket close the '
           'field alike, and whole degrees alone seal to 38°00\'00"', () {
-        expect(firstText(press(const Tape(), '3 8 DMS 7 5 +')), '39°15\'00"');
+        expect(firstText(press(const Tape(), '3 8 DMS 1 5 +')), '38°15\'00"');
         expect(firstText(press(const Tape(), '3 8 DMS +')), '38°00\'00"');
         expect(lastResult(press(const Tape(), '3 8 DMS SIN')), 'Sine 0.615661');
         expect(
@@ -303,22 +349,23 @@ void main() {
         expect((bracket.chips.last as BracketChip).expression, '(23°16\'05")');
       });
 
-      test('typed seconds pad when the field closes, and carry past 59', () {
+      test('typed seconds pad when the field closes, and 59 is the most a '
+          'part holds (CA-1372)', () {
         expect(
           firstText(press(const Tape(), '3 8 DMS 3 0 DMS 5 ×')),
           '38°30\'05"',
         );
-        final carried = press(const Tape(), '3 8 DMS 3 0 DMS 7 5 + 1 =');
-        expect(firstText(carried), '38°31\'15"');
-        expect(lastResult(carried), 'Calc 39.52°');
+        final full = press(const Tape(), '3 8 DMS 3 0 DMS 5 9 + 1 =');
+        expect(firstText(full), '38°30\'59"');
+        expect(lastResult(full), 'Calc 39.52°');
       });
 
       test('= with nothing to compute still closes the field, and says so', () {
-        final outcome = press(const Tape(), '3 8 DMS 7 5').pressEquals();
+        final outcome = press(const Tape(), '3 8 DMS 1 5').pressEquals();
         expect(outcome, isA<TapeChanged>());
         final closed = outcome as TapeChanged;
         expect(closed.notice, TapeNotice.entryClosedNothingToCompute);
-        expect(activeText(closed.tape), '39°15\'00"');
+        expect(activeText(closed.tape), '38°15\'00"');
         expect(
           press(const Tape(), '3 8 DMS 3 0 DMS 4 5').pressEquals(),
           const TapeRefused(TapeRefusal.nothingToCompute),
@@ -328,17 +375,17 @@ void main() {
 
       test('⌫ brings the chip back without the seal\'s padding, so a digit '
           'continues what was typed; sealing it again changes nothing', () {
-        final sealed = press(const Tape(), '3 8 DMS 7 5 +');
+        final sealed = press(const Tape(), '3 8 DMS 1 5 +');
         final reopened = press(sealed, '⌫');
-        expect(activeText(reopened), '39°15\'00"');
+        expect(activeText(reopened), '38°15\'00"');
         expect(press(reopened, '+'), sealed);
-        expect(activeText(press(reopened, '5')), '39°15\'5"');
+        expect(activeText(press(reopened, '5')), '38°15\'5"');
         expect(
           activeText(press(reopened, '⌫')),
-          '39°15\'00"',
+          '38°15\'00"',
           reason: 'the empty seconds close and the minutes reopen',
         );
-        expect(activeText(press(reopened, '⌫ ⌫')), '39°1\'00"');
+        expect(activeText(press(reopened, '⌫ ⌫')), '38°1\'00"');
         expect(
           activeText(press(const Tape(), '3 8 DMS 3 0 DMS + ⌫ 7')),
           '38°30\'7"',
@@ -356,15 +403,15 @@ void main() {
       test('the padding goes whichever chip ⌫ removes to get back: a result, '
           'an empty bracket or one it reopens', () {
         expect(
-          activeText(press(const Tape(), '3 8 DMS 7 5 SIN ⌫ 5')),
-          '39°15\'5"',
+          activeText(press(const Tape(), '3 8 DMS 1 5 SIN ⌫ 5')),
+          '38°15\'5"',
         );
         expect(
-          activeText(press(const Tape(), '3 8 . 7 5 . ( ⌫ 5')),
-          '39°15\'5"',
+          activeText(press(const Tape(), '3 8 . 1 5 . ( ⌫ 5')),
+          '38°15\'5"',
         );
-        final reopened = press(const Tape(), '( 3 8 . 7 5 . ( ⌫ 5');
-        expect((reopened.chips.last as BracketChip).expression, '(39°15\'5"');
+        final reopened = press(const Tape(), '( 3 8 . 1 5 . ( ⌫ 5');
+        expect((reopened.chips.last as BracketChip).expression, '(38°15\'5"');
         expect(
           activeText(press(const Tape(), '1 8 ft 8 in + ⌫')),
           '18ft 8in',
