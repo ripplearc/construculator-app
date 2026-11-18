@@ -739,7 +739,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('your_rates_disclaimer')), findsNothing);
-        expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+        expect(find.byKey(const Key('new_cost_row')), findsOneWidget);
       },
     );
 
@@ -755,7 +755,7 @@ void main() {
 
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
@@ -784,7 +784,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+        await tester.tap(find.byKey(const Key('create_typed_name_row')));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
@@ -804,7 +804,7 @@ void main() {
       await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
       await tester.fling(
-        find.byKey(const Key('new_equipment_cost_row')),
+        find.byKey(const Key('new_cost_row')),
         const Offset(0, 600),
         2000,
       );
@@ -849,9 +849,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
-        expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
+        expect(find.byKey(const Key('new_cost_row')), findsOneWidget);
 
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
@@ -997,7 +997,7 @@ void main() {
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.text('New equipment cost'), findsOneWidget);
@@ -1030,7 +1030,7 @@ void main() {
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.tap(find.byKey(const Key('new_cost_row')));
       await tester.pumpAndSettle();
 
       final sheetHeight = tester
@@ -1054,7 +1054,7 @@ void main() {
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.tap(find.byKey(const Key('new_cost_row')));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.byKey(const Key('rate_field')));
@@ -1085,7 +1085,7 @@ void main() {
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tapAddCost(tester, CostItemType.equipment);
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.tap(find.byKey(const Key('new_cost_row')));
       await tester.pumpAndSettle();
       expect(find.byType(CostItemFormScreen), findsOneWidget);
 
@@ -1121,7 +1121,7 @@ void main() {
         );
         fakeSupabase.shouldDelayOperations = false;
         await tapAddCost(tester, CostItemType.equipment, settle: settle);
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await pumpFrames(tester, settle: settle);
       }
 
@@ -1253,7 +1253,7 @@ void main() {
 
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
         await fillValidDayForm(tester);
         await tester.tap(addButton());
@@ -1462,7 +1462,7 @@ void main() {
         await tester.pumpAndSettle();
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
         await fillValidDayForm(tester);
 
@@ -1593,7 +1593,7 @@ void main() {
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tapAddCost(tester, CostItemType.equipment);
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
         await fillValidDayForm(tester);
 
@@ -1652,7 +1652,7 @@ void main() {
         bool settle = true,
       }) async {
         await tapAddCost(tester, CostItemType.equipment, settle: settle);
-        await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await pumpFrames(tester, settle: settle);
       }
 
@@ -1730,6 +1730,7 @@ void main() {
         );
         fakeSupabase.shouldDelayOperations = false;
         await tapAddCost(tester, CostItemType.material, settle: settle);
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await pumpFrames(tester, settle: settle);
       }
 
@@ -1806,6 +1807,88 @@ void main() {
         expect(find.text(r'$3,149.62'), findsOneWidget);
       });
 
+      String fieldText(WidgetTester tester, String key) => tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(Key(key)),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller!
+          .text;
+
+      Future<void> openMaterialRecents(WidgetTester tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+        seedEstimate();
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tapAddCost(tester, CostItemType.material);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('Add material cost opens the material recents first', (
+        tester,
+      ) async {
+        await openMaterialRecents(tester);
+
+        expect(find.byType(YourRatesRecentsSheet), findsOneWidget);
+        expect(find.text(l10n.yourRatesMaterialRecentsTitle), findsOneWidget);
+        expect(find.byType(CostItemFormScreen), findsNothing);
+      });
+
+      testWidgets('a picked recent material opens the form with its name, '
+          'rate and unit filled in', (tester) async {
+        database.seedRows([
+          {
+            'id': 'paint-rate',
+            'company_id': 'company-1',
+            'category': 'material',
+            'item_name': 'Interior paint',
+            'rate_amount': 52.0,
+            'rate_currency': 'USD',
+            'unit': 'liters',
+            'saved_at': clock.now().toIso8601String(),
+          },
+        ]);
+        await openMaterialRecents(tester);
+
+        await tester.tap(find.byKey(const Key('your_rate_row_paint-rate')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(fieldText(tester, 'material_name_field'), 'Interior paint');
+        expect(fieldText(tester, 'material_rate_field'), '52');
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('material_unit_pill')),
+            matching: find.text(l10n.unitSymbolLiters),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a typed name opens the form with that name', (tester) async {
+        await openMaterialRecents(tester);
+
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const Key('your_rates_search_field')),
+            matching: find.byType(EditableText),
+          ),
+          'primer',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('create_typed_name_row')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(fieldText(tester, 'material_name_field'), 'primer');
+        expect(fieldText(tester, 'material_rate_field'), isEmpty);
+      });
+
       testWidgets('opens the sheet even when the estimate cannot be loaded', (
         tester,
       ) async {
@@ -1816,6 +1899,8 @@ void main() {
         await pumpAppAtRoute(tester, testEstimationRoute);
 
         await tapAddCost(tester, CostItemType.material);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsOneWidget);
@@ -2069,6 +2154,8 @@ void main() {
         final first = highlightedLine(tester);
 
         await tapAddCost(tester, CostItemType.material);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('new_cost_row')));
         await tester.pumpAndSettle();
         await fillValidMaterialForm(tester);
         await tester.tap(addButton());

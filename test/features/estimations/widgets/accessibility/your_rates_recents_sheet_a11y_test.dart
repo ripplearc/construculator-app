@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/your_rates_recents_sheet.dart';
@@ -73,7 +74,10 @@ void main() {
     database.reset();
   });
 
-  Widget makeWidget(ThemeData theme) {
+  Widget makeWidget(
+    ThemeData theme, {
+    CostItemType category = CostItemType.equipment,
+  }) {
     return MaterialApp(
       theme: theme,
       locale: const Locale('en'),
@@ -82,7 +86,7 @@ void main() {
       home: Scaffold(
         body: BlocProvider<YourRatesBloc>(
           create: (_) => Modular.get<YourRatesBloc>(),
-          child: YourRatesRecentsSheet(clock: clock),
+          child: YourRatesRecentsSheet(clock: clock, category: category),
         ),
       ),
     );
@@ -112,7 +116,7 @@ void main() {
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           makeWidget,
-          find.byKey(const Key('new_equipment_cost_row')),
+          find.byKey(const Key('new_cost_row')),
         );
       },
     );
@@ -150,7 +154,7 @@ void main() {
 
         await expectMeetsTapTargetAndLabelGuidelines(
           tester,
-          find.byKey(const Key('create_typed_equipment_row')),
+          find.byKey(const Key('create_typed_name_row')),
         );
       },
     );
@@ -234,5 +238,38 @@ void main() {
         '${l10n.yourRatesLoadError} ${l10n.yourRatesRecentsLoadErrorHint}',
       ]);
     });
+
+    testWidgets(
+      'a11y: a material row and "New material cost" meet tap target and '
+      'label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        database.seedRows([
+          {
+            'id': 'paint-rate',
+            'company_id': 'company-1',
+            'category': 'material',
+            'item_name': 'Interior paint',
+            'rate_amount': 52.0,
+            'rate_currency': 'USD',
+            'unit': 'liters',
+            'saved_at': clock.now().toIso8601String(),
+          },
+        ]);
+        Widget materialSheet(ThemeData theme) =>
+            makeWidget(theme, category: CostItemType.material);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          materialSheet,
+          find.byKey(const Key('your_rate_row_paint-rate')),
+        );
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          materialSheet,
+          find.byKey(const Key('new_cost_row')),
+        );
+      },
+    );
   });
 }
