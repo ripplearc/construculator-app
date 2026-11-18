@@ -119,6 +119,10 @@
             <mutation text="expandLabel: labels.l10n.calculatorDetailCollapseButton, collapseLabel: labels.l10n.calculatorDetailExpandButton,"/>
         </regex>
 
+        <!-- CA-1376: the % key sends another key -->
+        <regex pattern="OperatorType\.percent =&gt; const CalculatorPercentPressed\(\)," dotAll="true" id="calculator_page.percent.another_key">
+            <mutation text="OperatorType.percent =&gt; const CalculatorEqualsPressed(),"/>
+        </regex>
     </rules>
 
     <commands>
