@@ -87,6 +87,25 @@ void main() {
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'puts back the stored rate status when the stored Job amount is typed '
+      'again',
+      setUp: () => seedLine(pricingMethod: 'job'),
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('60'))
+          ..add(const EquipmentRateUpdatedEvent('600'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.method, EquipmentPricingMethod.job);
+        expect(bloc.state.formData.jobAmount, 600.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.sampleRateUnverified);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'marks the rate as the own rate while a different rate is typed',
       setUp: seedLine,
       build: () => bloc,
