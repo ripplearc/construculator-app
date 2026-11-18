@@ -2316,6 +2316,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get materialLookupUseRateButton => 'Use rate';
 
   @override
+  String get materialLookupSampleHeading => 'From sample cost file';
+
+  @override
+  String get materialLookupSampleNotice =>
+      'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.';
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 
   @override
