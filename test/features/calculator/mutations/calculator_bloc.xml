@@ -100,8 +100,8 @@
         </regex>
 
         <!-- RULE 6: the close is left out of the state's equality -->
-        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*groupEditsNoticed,\s*toastsRaised,\s*toastClosed,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
-            <mutation text="removedResults, refusedUnit, groupEditsNoticed, toastsRaised, toastClosed, ];"/>
+        <regex pattern="closesCalculator,\s*removedResults,\s*refusedUnit,\s*groupEditsNoticed,\s*toastsRaised,\s*toastClosed,\s*materialCounts,\s*\];" dotAll="true" id="calculator_state.props.drop_close">
+            <mutation text="removedResults, refusedUnit, groupEditsNoticed, toastsRaised, toastClosed, materialCounts, ];"/>
         </regex>
 
         <!-- RULE 7: no chip is ever inert -->
@@ -313,6 +313,12 @@
         <!-- RULE 40: a result after a reopened bracket shows its stale number -->
         <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
             <mutation text=""/>
+        </regex>
+        <!-- RULE (S2a 1/2, CA-1090): an accepted count lands under the
+             offer's name (Drywall) instead of the trade's result key
+             (Number of sheets) -->
+        <regex pattern="tape\.landAnswer\(count\.trade\.resultKey, count\.value\)" dotAll="true" id="calculator_bloc.accept.count_lands_under_offer_key">
+            <mutation text="tape.landAnswer(count.trade.offerKey, count.value)"/>
         </regex>
     </rules>
 

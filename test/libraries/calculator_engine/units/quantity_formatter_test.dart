@@ -658,6 +658,31 @@ void main() {
       const sheetWidth = Length(48 * Length.ticksPerInch, unit: Unit.inch);
       const metricSheet = Length(3023, unit: Unit.inch);
 
+      test('a piece reads width x height, each side as a stored length: '
+          '48in x 96in under Imperial, 1219mm x 2438mm under Metric '
+          '(Section 9; decision tree row 214)', () {
+        const sheet = PieceSize(
+          width: sheetWidth,
+          height: Length(96 * Length.ticksPerInch, unit: Unit.inch),
+        );
+        expect(formatter.formatPieceSize(sheet), '48in x 96in');
+        expect(
+          const QuantityFormatter(
+            preferences: CalculatorPreferences(
+              system: MeasurementSystem.metric,
+            ),
+          ).formatPieceSize(sheet),
+          '1219mm x 2438mm',
+        );
+        expect(
+          formatter.formatPieceSize(
+            const PieceSize(height: sheetWidth, width: metricSheet),
+          ),
+          '47.23in x 48in',
+          reason: 'the width comes first whatever the sizes',
+        );
+      });
+
       test(
         'render in inches under Imperial and whole millimetres under Metric',
         () {

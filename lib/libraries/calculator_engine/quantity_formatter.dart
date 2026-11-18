@@ -5,6 +5,7 @@ import 'package:construculator/libraries/calculator_engine/models/quantity.dart'
 import 'package:construculator/libraries/calculator_engine/models/rational.dart';
 import 'package:construculator/libraries/calculator_engine/models/token.dart';
 import 'package:construculator/libraries/calculator_engine/models/unit.dart';
+import 'package:construculator/libraries/calculator_engine/trades.dart';
 import 'package:equatable/equatable.dart';
 
 /// Turns a quantity into the text on screen, following UX Design Doc
@@ -119,6 +120,13 @@ class QuantityFormatter extends Equatable {
             '${Unit.millimetre.suffix}',
     };
   }
+
+  /// A stored piece as the strip and the pill quote it, width first: 48in x
+  /// 96in under Imperial, 1200mm x 2400mm under Metric (Section 9, "with
+  /// its sheet size"; decision tree row 214), each side as
+  /// [formatStoredLength] writes it.
+  String formatPieceSize(PieceSize size) =>
+      '${formatStoredLength(size.width)} x ${formatStoredLength(size.height)}';
 
   /// A density stored in lbs/yd³ in the unit the setting chooses.
   String formatDensity(double poundsPerCubicYard) {

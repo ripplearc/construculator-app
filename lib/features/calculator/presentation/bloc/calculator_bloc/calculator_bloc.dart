@@ -34,7 +34,9 @@ part 'calculator_toast.dart';
 /// The strip is the state's reading of the same tape (CA-1088, S1b):
 /// accepting a chip lands the answer the engine had already computed, so
 /// nothing is recalculated on tap (Section 1.2). An answer lands through
-/// [Tape.landAnswer], the running total through =, a conversion through
+/// [Tape.landAnswer], as does a sheet count the store answered for the area
+/// on the display ([CalculatorState.materialCounts]; S2a, CA-1090), under
+/// the trade's result key, Number of sheets; the running total through =, a conversion through
 /// [Tape.acceptConversion], the unit key of its spelling (rule 4.3) with a
 /// ft-in chip read as the strip wrote it (3ft 3-3/8in; decision tree row
 /// 201), and an angle's other spelling through the D:M:S key (Section
@@ -196,14 +198,22 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         !state.conversions.contains(suggestion)) {
       return _press(emit, TapeChanged.new);
     }
-    switch ((suggestion.kind, suggestion.key)) {
-      case (CalculatorSuggestionKind.answer, final key?):
+    switch ((suggestion.kind, suggestion.key, suggestion.count)) {
+      case (CalculatorSuggestionKind.answer, final key?, _):
         _press(emit, (tape) => tape.landAnswer(key, suggestion.value));
-      case (CalculatorSuggestionKind.runningTotal, _):
+      case (CalculatorSuggestionKind.runningTotal, _, _):
         _press(emit, (tape) => tape.pressEquals());
-      case (CalculatorSuggestionKind.conversion, _):
+      case (CalculatorSuggestionKind.conversion, _, _):
         _press(emit, (tape) => _converted(tape, suggestion.value));
-      case (CalculatorSuggestionKind.answer, null):
+      // the count lands under the trade's result key (Number of sheets), not
+      // under the offer's name (Drywall)
+      case (CalculatorSuggestionKind.materialCount, _, final count?):
+        _press(
+          emit,
+          (tape) => tape.landAnswer(count.trade.resultKey, count.value),
+        );
+      case (CalculatorSuggestionKind.answer, null, _) ||
+          (CalculatorSuggestionKind.materialCount, _, null):
         _press(emit, TapeChanged.new);
     }
   }

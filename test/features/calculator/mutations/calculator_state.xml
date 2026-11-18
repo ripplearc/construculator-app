@@ -47,14 +47,41 @@
             <mutation text="tape.namedValues,)) _answer(answer.key, answer.value),"/>
             <mutation text="tape.namedValues,)) if (_hasLanded(answer.key)) _answer(answer.key, answer.value),"/>
         </regex>
-        <regex pattern="if \(runningTotal != null\) runningTotal else \.\.\.dimensions," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
-            <mutation text="if (runningTotal != null) runningTotal,"/>
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*\.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.dimensions.not_on_row_one">
+            <mutation text="if (runningTotal != null) runningTotal else ...materialOffers,"/>
         </regex>
         <!-- RULE: the tiles give way to Calc as row 1 does -->
         <regex pattern="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; \[" dotAll="true" id="calculator_state.dimensions.hidden_by_calc">
             <mutation text="List&lt;CalculatorSuggestion&gt; get dimensions =&gt; [ if (tape.runningTotal case ChainValue(isCalculation: true)) ...const &lt;CalculatorSuggestion&gt;[] else"/>
         </regex>
 
+        <!-- RULES (S2a 1/2, CA-1090): the sheet counts on the strip -->
+        <!-- RULE: a count of an area no longer on the display is offered, or
+             the count already landed stays on offer -->
+        <regex pattern="if \(count\.area == area &amp;&amp; !_hasLandedCount\(count\)\)" dotAll="true" id="calculator_state.material_offers.stale_or_landed_shown">
+            <mutation text="if (!_hasLandedCount(count))"/>
+            <mutation text="if (count.area == area)"/>
+        </regex>
+        <!-- RULE: the rule answers lead the counts, or the counts never reach
+             row 1 -->
+        <regex pattern="if \(runningTotal != null\)\s*runningTotal\s*else \.\.\.\[\s*\.\.\.materialOffers,\s*\.\.\.dimensions,\s*\]," dotAll="true" id="calculator_state.suggestions.counts_behind_or_gone">
+            <mutation text="if (runningTotal != null) runningTotal else ...[...dimensions, ...materialOffers],"/>
+            <mutation text="if (runningTotal != null) runningTotal else ...dimensions,"/>
+        </regex>
+        <!-- RULE: a Calc that is an area earns sheet counts (rule 4.4 rung 4
+             offers its cost and conversions, never a count) -->
+        <regex pattern="ResultChip\(value: final Area area, :final key\) when key != Tape\.calcKey =&gt;" dotAll="true" id="calculator_state.area_for_counts.calc_counted">
+            <mutation text="ResultChip(value: final Area area, :final key) =&gt;"/>
+        </regex>
+        <!-- RULE: a count on the tape no longer names its area, so the other
+             sizes leave the strip once one is accepted (row 218) -->
+        <regex pattern="return _areaOf\(chips\[index - 1\]\);" dotAll="true" id="calculator_state.area_for_counts.other_sizes_leave">
+            <mutation text="return null;"/>
+        </regex>
+        <!-- RULE: one landed count hides every count of the trade -->
+        <regex pattern="chip\.key == count\.trade\.resultKey &amp;&amp;\s*chip\.value == count\.value," dotAll="true" id="calculator_state.landed_count.hides_every_count">
+            <mutation text="chip.key == count.trade.resultKey,"/>
+        </regex>
     </rules>
 
     <commands>

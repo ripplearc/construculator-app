@@ -246,6 +246,10 @@
         <regex pattern="Token\(digits: _decimalLengthNumber\(value, false\), unit: unit\)," dotAll="true" id="formatter.tokens.grouped_length">
             <mutation text="Token(digits: _decimalLengthNumber(value, true), unit: unit),"/>
         </regex>
+        <!-- RULE (S2a 1/2, CA-1090): a piece reads height first -->
+        <regex pattern="'\$\{formatStoredLength\(size\.width\)\} x \$\{formatStoredLength\(size\.height\)\}'" dotAll="true" id="quantity_formatter.piece_size.height_first">
+            <mutation text="'${formatStoredLength(size.height)} x ${formatStoredLength(size.width)}'"/>
+        </regex>
     </rules>
 
     <commands>
