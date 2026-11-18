@@ -72,6 +72,7 @@ void main() {
   });
 
   tearDown(() {
+    AppLogger.setSentryWrapper(null);
     sentryWrapper.reset();
     analyticsRepository.resetFake();
     Modular.destroy();
@@ -285,6 +286,26 @@ void main() {
         );
         await errorEvent;
       });
+
+      test(
+        'stream error breadcrumb holds the error type and not the error text',
+        () {
+          AppLogger.setSentryWrapper(sentryWrapper);
+
+          supabaseWrapper.setAuthStreamError(
+            'unused',
+            exception: const FormatException(
+              'refresh_token=secret-session-value',
+            ),
+          );
+
+          final breadcrumb = sentryWrapper.breadcrumbs.singleWhere(
+            (call) =>
+                call.message == '[AuthManagerImpl] Error in auth state stream',
+          );
+          expect(breadcrumb.data, {'error': 'FormatException'});
+        },
+      );
 
       test('should transition through expected auth states', () async {
         final eventListener = expectLater(
