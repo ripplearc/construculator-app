@@ -47,6 +47,7 @@ class CostLineRow extends StatelessWidget {
         children: [
           LayoutBuilder(
             builder: (context, constraints) => Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               spacing: CoreSpacing.space3,
               children: [
                 Expanded(child: Text(item.itemName, style: nameStyle)),
