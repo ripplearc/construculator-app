@@ -89,6 +89,7 @@ class MaterialCostFormData extends Equatable {
     this.fieldErrors = const {},
     this.hasUnsavedChanges = false,
     this.recalledRateId,
+    this.isFromSampleFile = false,
   });
 
   /// The material name entered by the user.
@@ -123,6 +124,20 @@ class MaterialCostFormData extends Equatable {
   /// the line marks the saved rate as used only while it is still the one
   /// picked.
   final String? recalledRateId;
+
+  /// Whether the rate came from the sample cost file, picked as it is or
+  /// typed over afterwards. Picking a saved rate clears it.
+  final bool isFromSampleFile;
+
+  /// Whether the form offers to save the rate as the user's default: a rate
+  /// from the sample cost file that is not saved yet, on a named material,
+  /// with no error on the rate.
+  bool get offersSaveAsDefault =>
+      isFromSampleFile &&
+      (rateStatus == RateStatus.sampleRateUnverified ||
+          rateStatus == RateStatus.ownRateUnconfirmed) &&
+      isItemNameValid &&
+      !fieldErrors.containsKey(MaterialFormField.rate);
 
   /// Quantity times rate rounded to the cent, or 0 while either is missing or
   /// unusable.
@@ -167,6 +182,7 @@ class MaterialCostFormData extends Equatable {
     Map<MaterialFormField, MaterialFieldError>? fieldErrors,
     bool? hasUnsavedChanges,
     Object? recalledRateId = _unset,
+    bool? isFromSampleFile,
   }) {
     return MaterialCostFormData(
       itemName: itemName ?? this.itemName,
@@ -180,6 +196,7 @@ class MaterialCostFormData extends Equatable {
       recalledRateId: recalledRateId == _unset
           ? this.recalledRateId
           : recalledRateId as String?,
+      isFromSampleFile: isFromSampleFile ?? this.isFromSampleFile,
     );
   }
 
@@ -194,6 +211,7 @@ class MaterialCostFormData extends Equatable {
     fieldErrors,
     hasUnsavedChanges,
     recalledRateId,
+    isFromSampleFile,
   ];
 }
 

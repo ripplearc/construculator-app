@@ -44,6 +44,7 @@ class MaterialCostFormBloc
           unit: e.entry.unit ?? d.unit,
           rateStatus: RateStatus.ownRateConfirmed,
           recalledRateId: e.entry.id,
+          isFromSampleFile: false,
         ),
       ),
     );
@@ -56,6 +57,7 @@ class MaterialCostFormBloc
           unit: e.unit ?? d.unit,
           rateStatus: RateStatus.sampleRateUnverified,
           recalledRateId: null,
+          isFromSampleFile: true,
         ),
       ),
     );

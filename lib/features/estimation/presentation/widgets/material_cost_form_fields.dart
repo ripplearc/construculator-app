@@ -12,6 +12,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_fi
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/currency_display_controller.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -137,7 +138,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     return BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
       buildWhen: (previous, current) =>
           previous.data.unit != current.data.unit ||
-          _isRateMissing(previous) != _isRateMissing(current) ||
+          previous.data.rateStatus != current.data.rateStatus ||
+          previous.data.offersSaveAsDefault !=
+              current.data.offersSaveAsDefault ||
+          (current.data.offersSaveAsDefault &&
+              (previous.data.rate != current.data.rate ||
+                  previous.data.itemName != current.data.itemName)) ||
           _isSaving(previous) != _isSaving(current),
       builder: (context, state) => SingleChildScrollView(
         child: Column(
@@ -199,6 +205,14 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
             ),
             SheetFieldRow(
               label: l10n.materialRateLabel,
+              labelTrailing:
+                  state.data.rateStatus == RateStatus.sampleRateUnverified
+                  ? CoreStatusBadge(
+                      key: const Key('rate_status_badge'),
+                      label: l10n.materialSampleRateBadge,
+                      size: CoreStatusBadgeSize.compact,
+                    )
+                  : null,
               valueGap: 0,
               bottomPadding: 0,
               trailingInset: CoreSpacing.space5,
@@ -260,7 +274,16 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
                 ),
               ),
             ),
-            if (_isRateMissing(state)) const _RateLookupHint(),
+            if (_isRateMissing(state))
+              _FieldHint(
+                key: const Key('material_rate_lookup_hint'),
+                text: l10n.materialRateLookupHint(
+                  l10n.materialRateLookupHintSearchIcon,
+                ),
+                boldText: l10n.materialRateLookupHintSearchIcon,
+              ),
+            if (state.data.offersSaveAsDefault)
+              _SaveAsDefaultHint(data: state.data),
             const SizedBox(height: CoreSpacing.space4),
           ],
         ),
@@ -286,20 +309,46 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   }
 }
 
-class _RateLookupHint extends StatelessWidget {
-  const _RateLookupHint();
+class _SaveAsDefaultHint extends StatelessWidget {
+  final MaterialCostFormData data;
+
+  const _SaveAsDefaultHint({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final amount = DisplayFormatter.currency.format(data.rate);
+    final price = switch (data.unit) {
+      final unit? =>
+        '$amount ${l10n.materialRatePerUnitSuffix(unit.displayName(l10n))}',
+      null => amount,
+    };
+    return _FieldHint(
+      key: const Key('save_as_default_helper_text'),
+      text: l10n.materialSaveAsDefaultHelperText(
+        price,
+        l10n.yourRatesName,
+        data.itemName.trim().toLowerCase(),
+      ),
+    );
+  }
+}
+
+class _FieldHint extends StatelessWidget {
+  final String text;
+
+  /// The words inside [text] drawn in bold, such as "search icon".
+  final String? boldText;
+
+  const _FieldHint({super.key, required this.text, this.boldText});
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
-    final l10n = context.l10n;
-    final searchIcon = l10n.materialRateLookupHintSearchIcon;
-    final [before, after] = l10n
-        .materialRateLookupHint(searchIcon)
-        .split(searchIcon);
+    final bold = boldText;
+    final parts = bold == null ? [text] : text.split(bold);
     return Padding(
-      key: const Key('material_rate_lookup_hint'),
       padding: const EdgeInsets.fromLTRB(
         CoreSpacing.space5,
         CoreSpacing.space3,
@@ -319,14 +368,16 @@ class _RateLookupHint extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(text: before),
-                  TextSpan(
-                    text: searchIcon,
-                    style: textTheme.bodySmallSemiBold.copyWith(
-                      color: colorTheme.textHeadline,
-                    ),
-                  ),
-                  TextSpan(text: after),
+                  for (var i = 0; i < parts.length; i++) ...[
+                    if (i > 0)
+                      TextSpan(
+                        text: boldText,
+                        style: textTheme.bodySmallSemiBold.copyWith(
+                          color: colorTheme.textHeadline,
+                        ),
+                      ),
+                    TextSpan(text: parts[i]),
+                  ],
                 ],
               ),
               style: textTheme.bodySmallRegular.copyWith(
