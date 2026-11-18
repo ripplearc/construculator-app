@@ -101,8 +101,10 @@ abstract class CostEstimationRepository {
 
   /// Creates a new cost estimation.
   ///
+  /// Saves on the phone, which uploads later. An empty id gets a new one there.
+  ///
   /// Returns a [Future] that completes with the created [CostEstimate] containing
-  /// the newly created cost estimation with its assigned ID and timestamps.
+  /// the cost estimation as the phone stored it, with its ID and timestamps.
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
   );

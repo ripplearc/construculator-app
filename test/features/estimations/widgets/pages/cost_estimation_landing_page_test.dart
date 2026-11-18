@@ -25,7 +25,6 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -350,15 +349,14 @@ void main() {
         ),
       );
 
-      fakeSupabase.shouldThrowOnInsert = true;
-      fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+      fakePhoneDatabase.executeError = Exception('disk full');
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
       await tester.tap(find.text(l10n().addEstimation));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
 
       final addButton = tester.widget<CoreButton>(
         find.widgetWithText(CoreButton, l10n().addEstimation),
