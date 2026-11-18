@@ -146,7 +146,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     Widget closesPad(Widget child) => GestureDetector(
       behavior: HitTestBehavior.translucent,
       excludeFromSemantics: true,
-      onTap: FocusManager.instance.primaryFocus?.unfocus,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: child,
     );
     return ColoredBox(
