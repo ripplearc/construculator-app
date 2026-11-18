@@ -194,6 +194,47 @@ const Schema schema = Schema([
     ],
   ),
 
+  // Written on the phone and uploaded; no sync stream sends this table down
+  // yet, so it holds only the lines written on this phone. `calculation` is
+  // the line's JSON object as text here and jsonb on the server, and the
+  // connector decodes it before upload. Columns match `CostItemDto.toJson`.
+  Table(
+    'cost_items',
+    [
+      Column.text('estimate_id'),
+      Column.text('item_type'),
+      Column.text('item_name'),
+      Column.real('unit_price'),
+      Column.real('quantity'),
+      Column.text('unit_measurement'),
+      Column.text('calculation'),
+      Column.real('item_total_cost'),
+      Column.text('currency'),
+      Column.text('product_link'),
+      Column.text('description'),
+      Column.text('pricing_method'),
+      Column.real('duration'),
+      Column.real('daily_rate'),
+      Column.real('job_amount'),
+      Column.real('delivery_fee'),
+      Column.text('rate_status'),
+      Column.text('labor_calc_method'),
+      Column.real('labor_days'),
+      Column.real('labor_hours'),
+      Column.text('labor_unit_type'),
+      Column.real('labor_unit_value'),
+      Column.integer('crew_size'),
+      Column.real('waste_percent'),
+      Column.text('quantity_provenance'),
+      Column.text('calculator_formula'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+    ],
+    indexes: [
+      Index('by_estimate', [IndexedColumn('estimate_id')]),
+    ],
+  ),
+
   // The calculator's trade stores (UX Design Doc term 2.16, Appendix B):
   // the editable lists the material keys read. Synced by the auto-subscribed
   // `user_calculator_stores` stream (Design Appendices E.4), filtered on the
