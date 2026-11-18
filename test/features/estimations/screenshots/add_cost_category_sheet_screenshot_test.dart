@@ -46,7 +46,7 @@ void main() {
     theme,
     suffix,
   ) {
-    testWidgets('the category list as a sheet over the estimate', (
+    testWidgets('the category list as a sheet over an empty page', (
       tester,
     ) async {
       await pumpApp(tester, theme, _page());

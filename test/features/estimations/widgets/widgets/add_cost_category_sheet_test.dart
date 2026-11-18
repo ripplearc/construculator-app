@@ -40,6 +40,40 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('draws each row icon in the dark orient colour', (tester) async {
+    await openSheet(tester);
+
+    final iconDark = CoreTheme.light()
+        .extension<AppColorsExtension>()!
+        .iconDark;
+    for (final type in CostItemType.values) {
+      expect(
+        find.descendant(
+          of: find.byKey(AddCostCategorySheet.rowKey(type)),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is CoreIconWidget &&
+                widget.size == CoreIconSize.size20 &&
+                widget.color == iconDark,
+          ),
+        ),
+        findsOneWidget,
+        reason: type.name,
+      );
+    }
+  });
+
+  testWidgets('puts the row title right above its subtitle', (tester) async {
+    await openSheet(tester);
+
+    final title = find.text(l10n.addCostCategoryLaborTitle);
+    final subtitle = find.text(l10n.addCostCategoryLaborSubtitle);
+    expect(
+      tester.getTopLeft(subtitle).dy - tester.getBottomLeft(title).dy,
+      lessThan(2),
+    );
+  });
+
   testWidgets('lists Material, Labor and Equipment in that order', (
     tester,
   ) async {
