@@ -3401,6 +3401,11 @@
       }
     }
   },
+  "materialLookupUseRateButton": "Use rate",
+  "@materialLookupUseRateButton": {
+    "description": "Greyed-out button at the foot of the material Look up a rate sheet before a row is picked; once a row is picked it reads yourRatesUseButtonLabel instead",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 4 Look up a rate; the storyboard leaves the unpicked label open, chosen by Sabona 2026-11-18"
+  },
   "newMaterialCostSheetTitle": "New material cost",
   "@newMaterialCostSheetTitle": {
     "description": "Title of the bottom sheet for adding a material cost to an estimate",

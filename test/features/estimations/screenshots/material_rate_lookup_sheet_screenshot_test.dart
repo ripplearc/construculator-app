@@ -109,10 +109,22 @@ void main() {
     theme,
     suffix,
   ) {
-    testWidgets('displays the matching rates under YOUR RATES', (tester) async {
+    testWidgets('displays YOUR RATES with the button greyed out as Use rate', (
+      tester,
+    ) async {
       await pumpSheet(tester, theme);
 
-      await expectGolden('results', suffix);
+      await expectGolden('results_none_picked', suffix);
+    });
+
+    testWidgets('displays the picked row and its price on the button', (
+      tester,
+    ) async {
+      await pumpSheet(tester, theme);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await expectGolden('results_picked', suffix);
     });
   });
 }
