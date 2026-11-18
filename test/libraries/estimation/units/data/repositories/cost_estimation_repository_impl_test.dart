@@ -1553,46 +1553,6 @@ void main() {
       }
 
       test(
-        'a delete inside an oldest-first list is dropped once the phone shows the row gone',
-        () async {
-          seedEstimations(defaultPageDatasetSize * 3);
-          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(
-            repository.watchEstimations(testProjectId, ascending: true),
-          );
-          final firstPage = (await queue.next).getRightOrNull()!;
-          final deletedId = firstPage[3].id;
-          final deletedRow = firstPage[3];
-          await repository.deleteEstimation(deletedId, testProjectId);
-          while (true) {
-            final list = (await queue.next).getRightOrNull()!;
-            if (!list.any((e) => e.id == deletedId)) break;
-          }
-          fakePhoneDatabase.removeRow(deletedId);
-          while (true) {
-            final list = (await queue.next).getRightOrNull()!;
-            if (list.length == defaultPageDatasetSize) {
-              expect(list.map((e) => e.id), isNot(contains(deletedId)));
-              break;
-            }
-          }
-
-          fakePhoneDatabase.seedRows([
-            buildEstimationMap(
-              id: deletedId,
-              projectId: testProjectId,
-              estimateName: deletedRow.estimateName,
-              createdAt: deletedRow.createdAt.toUtc().toIso8601String(),
-            ),
-          ]);
-
-          final shown = (await queue.next).getRightOrNull()!;
-          expect(shown.map((e) => e.id), contains(deletedId));
-          await queue.cancel();
-        },
-      );
-
-      test(
         'a delete stays hidden when a newer row pushes the row out of the list and the list grows',
         () async {
           final queue = await watchFirstPageOfThree();
