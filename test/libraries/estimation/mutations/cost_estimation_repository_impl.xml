@@ -246,6 +246,11 @@
         <regex pattern="newName: newName,\n      \);\n      if \(renamedDto" dotAll="true" id="repo.rename.writes_wrong_name">
             <mutation text="newName: estimationId,\n      );\n      if (renamedDto"/>
         </regex>
+        <!-- A list that failed on an unreadable row keeps no old copy for a later write to republish -->
+        <regex pattern="(\} catch \(e\) \{\s*_phoneCopies\.remove\(streamKey\);)" dotAll="true" id="repo.watch.error_keeps_old_phone_copy">
+            <mutation text="} catch (e) {"/>
+        </regex>
+
     </rules>
 
     <commands>
