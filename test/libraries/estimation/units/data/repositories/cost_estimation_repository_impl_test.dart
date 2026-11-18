@@ -870,6 +870,49 @@ void main() {
       );
 
       test(
+        'should leave the list and the phone without the estimation when it is deleted right after it is created',
+        () async {
+          seedEstimationTable([
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              createdAt: timestampDefault,
+              updatedAt: timestampDefault,
+            ),
+          ]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
+          await queue.next;
+          final created = (await repository.createEstimation(
+            newEstimate(id: estimateId2),
+          )).getRightOrNull()!;
+          expect(
+            (await queue.next).getRightOrNull()!.map((e) => e.id),
+            contains(created.id),
+          );
+
+          final result = await repository.deleteEstimation(
+            created.id,
+            testProjectId,
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(
+            (await queue.next).getRightOrNull()!.map((e) => e.id),
+            [estimateIdDefault],
+          );
+          expect(
+            fakePhoneDatabase.executeCalls.map((call) => call.sql),
+            [
+              startsWith('INSERT INTO cost_estimates'),
+              startsWith('DELETE FROM cost_estimates'),
+            ],
+          );
+          await queue.cancel();
+        },
+      );
+
+      test(
         'should show the new estimation first in the watched list at once',
         () async {
           seedEstimationTable([
