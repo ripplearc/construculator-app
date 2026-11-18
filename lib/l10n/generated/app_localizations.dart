@@ -3824,11 +3824,11 @@ abstract class AppLocalizations {
   /// **'Changes this estimate'**
   String get changesThisEstimateLabel;
 
-  /// Note in the summary card of the edit sheet before any field of the line has changed
+  /// Title of the summary card of the edit sheet before any field of the line has changed, in the place of "Changes this estimate"
   ///
   /// In en, this message translates to:
   /// **'No change yet'**
-  String get noChangeYetNote;
+  String get noChangeYetLabel;
 
   /// Disabled submit button label while the equipment name is empty
   ///

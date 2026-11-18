@@ -3179,9 +3179,9 @@
     "description": "Title of the summary card above the Save this line button, replacing the Adds to this estimate title when a line is edited",
     "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
   },
-  "noChangeYetNote": "No change yet",
-  "@noChangeYetNote": {
-    "description": "Note in the summary card of the edit sheet before any field of the line has changed",
+  "noChangeYetLabel": "No change yet",
+  "@noChangeYetLabel": {
+    "description": "Title of the summary card of the edit sheet before any field of the line has changed, in the place of \"Changes this estimate\"",
     "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/99e46f5/construculator-calc-to-estimate-storyboard.html (CUJ 6, Screen 5 · Tap a line to edit it)"
   },
   "enterEquipmentNameToContinueButton": "Enter an equipment name to continue",

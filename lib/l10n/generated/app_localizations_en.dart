@@ -2172,7 +2172,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get changesThisEstimateLabel => 'Changes this estimate';
 
   @override
-  String get noChangeYetNote => 'No change yet';
+  String get noChangeYetLabel => 'No change yet';
 
   @override
   String get enterEquipmentNameToContinueButton =>
