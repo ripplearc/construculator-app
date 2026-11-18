@@ -232,7 +232,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('active_date_filter_chip')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('active_date_filter_chip')));
+      await tester.tap(find.byKey(CoreDateFilterChip.clearButtonKey));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('global_search_date_filter_chip')), findsOneWidget);
