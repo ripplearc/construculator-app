@@ -1,6 +1,6 @@
 # Storage library
 
-The storage library (`lib/libraries/storage/`) is where the app keeps preferences, small files and the database path. Three files keep their own secure storage flags on purpose (see The lint rule). A feature that stores data on the phone goes through it, so that sign-out can find and delete that data.
+The storage library (`lib/libraries/storage/`) is where the app keeps preferences, small files and the database path. Three other files may use the platform packages directly, each for its own reason (see The lint rule). A feature that stores data on the phone goes through it, so that sign-out can find and delete that data.
 
 ## Two spaces
 
@@ -21,4 +21,11 @@ The library knows no feature. It offers `getData`, `saveData` and `removeData`, 
 
 `forbid_direct_storage_access` (package `ripplearc_linter`) fails the check when code imports `shared_preferences`, `path_provider` or `flutter_secure_storage` outside `lib/libraries/storage/`, `test/libraries/storage/` and the exact files listed under `forbid_direct_storage_access: allowed_files` in `analysis_options.yaml`. It is listed in `scripts/run_check.sh` and in the CI code analysis step, and it runs in `fvm dart run custom_lint`. All three need `ripplearc_linter` 0.8.0.
 
-The listed files are the secure session storage (`secure_session_local_storage.dart`), the stale secure storage check (`stale_secure_storage_service.dart`), the secure storage wrapper (`secure_storage_wrapper_impl.dart`) and the tests of those three and of the Supabase session. They keep their own flags on purpose, because deleting the user space must not trigger the secure storage delete again. Do not add a file to the list without a reason that a reviewer accepts.
+The listed files, and why each one is allowed:
+
+- `stale_secure_storage_service.dart` keeps the first-run flag outside the user space. Emptying the user space must not make the next launch empty secure storage again.
+- `secure_storage_wrapper_impl.dart` is the secure storage (Keychain or Keystore) itself.
+- `secure_session_local_storage.dart` moves a login session saved by an older app version from `shared_preferences` into secure storage.
+- The tests of those three files and of the Supabase session may use the packages to set up and check them.
+
+Do not add a file to the list without a reason that a reviewer accepts.
