@@ -107,17 +107,18 @@ class MaterialCostFormBloc
     Emitter<MaterialCostFormState> emit,
   ) {
     final rate = double.tryParse(event.value);
-    _emit(
-      emit,
-      (d) => d.copyWith(
+    _emit(emit, (d) {
+      final stored = d.editedItem;
+      return d.copyWith(
         rate: rate,
         rateStatus: switch (rate) {
           null => RateStatus.missing,
-          _ when d.isEditingExistingLine && rate == d.rate => d.rateStatus,
+          _ when stored != null && rate == stored.unitPrice.amount =>
+            stored.rateStatus,
           _ => RateStatus.ownRateUnconfirmed,
         },
-      ),
-    );
+      );
+    });
   }
 
   void _emit(
@@ -198,7 +199,11 @@ class MaterialCostFormBloc
       id: existing?.id ?? '',
       estimateId: estimateId,
       itemName: draft.itemName.trim(),
-      calculation: {'unit_price': rate, 'quantity': quantity},
+      calculation: {
+        ...?existing?.calculation,
+        'unit_price': rate,
+        'quantity': quantity,
+      },
       itemTotalCost: draft.lineTotal,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -207,7 +212,16 @@ class MaterialCostFormBloc
       unitPrice: Money(amount: rate),
       quantity: Quantity(value: quantity, unit: unit),
       rateStatus: draft.rateStatus,
-      quantityProvenance: QuantityProvenance.manual,
+      quantityProvenance:
+          existing != null && quantity == existing.quantity.value
+          ? existing.quantityProvenance
+          : QuantityProvenance.manual,
+      calculatorFormula: existing != null && quantity == existing.quantity.value
+          ? existing.calculatorFormula
+          : null,
+      wastePercent: existing?.wastePercent,
+      productLink: existing?.productLink,
+      description: existing?.description,
     );
   }
 

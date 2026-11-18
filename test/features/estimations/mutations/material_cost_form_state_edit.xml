@@ -12,28 +12,32 @@
     </exclude>
 
     <rules>
-        <regex pattern="(edit_change.stored_total_zero)" id="_toCents\(edited\.itemTotalCost\)">
+        <regex pattern="(_toCents\(edited\.itemTotalCost\))" id="edit_change.stored_total_zero">
             <mutation text="0"/>
         </regex>
 
-        <regex pattern="(edit_change.total_added)" id="_toCents\(lineTotal\) -">
+        <regex pattern="(_toCents\(lineTotal\) -)" id="edit_change.total_added">
             <mutation text="_toCents(lineTotal) +"/>
         </regex>
 
-        <regex pattern="(edit_change.cents_off)" id="\) / 100;\n  \}\n\n  /// Quantity times">
+        <regex pattern="(\) / 100;\n  \}\n\n  /// Quantity times)" id="edit_change.cents_off">
             <mutation text=") * 100;\n  }\n\n  /// Quantity times"/>
         </regex>
 
-        <regex pattern="(edit_name.typed_name_wins)" id="editedItem\?\.itemName \?\? itemName">
+        <regex pattern="(editedItem\?\.itemName \?\? itemName)" id="edit_name.typed_name_wins">
             <mutation text="itemName"/>
         </regex>
 
-        <regex pattern="(edit_flag.inverted)" id="bool get isEditingExistingLine =&gt; editedItem != null;">
+        <regex pattern="(bool get isEditingExistingLine =&gt; editedItem != null;)" id="edit_flag.inverted">
             <mutation text="bool get isEditingExistingLine =&gt; editedItem == null;"/>
         </regex>
 
-        <regex pattern="(edit_change.new_line_reports_change)" id="if \(edited == null\) return null;">
+        <regex pattern="(if \(edited == null\) return null;)" id="edit_change.new_line_reports_change">
             <mutation text="if (edited == null) return 0;"/>
+        </regex>
+
+        <regex pattern="(edited == null \|\| quantity == null \|\| rate == null)" id="edit_total.change_while_missing">
+            <mutation text="edited == null"/>
         </regex>
 
     </rules>
