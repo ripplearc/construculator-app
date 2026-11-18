@@ -8,10 +8,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class AddToEstimateFooter extends StatelessWidget {
   /// Key of the summary card.
   static const panelKey = Key('adds_to_estimate_panel');
+
   /// Key of the submit button.
   static const buttonKey = Key('add_to_estimate_button');
+
   /// Key of the save-error line.
   static const errorKey = Key('add_to_estimate_error');
+
+  /// Key of the Delete this line button.
+  static const deleteButtonKey = Key('delete_line_button');
 
   /// The line's own total including delivery. Ignored while [block] is set.
   final double lineTotal;
@@ -48,6 +53,14 @@ class AddToEstimateFooter extends StatelessWidget {
   /// [changeInEstimateTotal] is not null; it picks the title of the panel.
   final bool hasUnsavedChanges;
 
+  /// Called when the user taps Delete this line. The button is drawn only
+  /// when this is set, which is for a line already on the estimate.
+  final VoidCallback? onDelete;
+
+  /// Whether the last delete failed. When it turns true, focus goes back to
+  /// Delete this line, so the user can try again without searching for it.
+  final bool deleteFailed;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -60,6 +73,8 @@ class AddToEstimateFooter extends StatelessWidget {
     required this.onAdd,
     this.changeInEstimateTotal,
     this.hasUnsavedChanges = false,
+    this.onDelete,
+    this.deleteFailed = false,
   });
 
   @override
@@ -101,7 +116,83 @@ class AddToEstimateFooter extends StatelessWidget {
               isDisabled: block != null || isBusy,
               onPressed: onAdd,
             ),
+            if (onDelete case final onDelete?) ...[
+              _DeleteLine(
+                key: deleteButtonKey,
+                isDisabled: isBusy,
+                takesFocus: deleteFailed,
+                onTap: onDelete,
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The red `Delete this line` text under the save button. It is plain text,
+/// not an outlined button, with a tap area at least 48 dp high. It takes
+/// focus when [takesFocus] turns true.
+class _DeleteLine extends StatefulWidget {
+  final bool isDisabled;
+  final bool takesFocus;
+  final VoidCallback onTap;
+
+  const _DeleteLine({
+    super.key,
+    required this.isDisabled,
+    required this.takesFocus,
+    required this.onTap,
+  });
+
+  @override
+  State<_DeleteLine> createState() => _DeleteLineState();
+}
+
+class _DeleteLineState extends State<_DeleteLine> {
+  final _focusNode = FocusNode(debugLabel: 'delete_this_line');
+
+  @override
+  void didUpdateWidget(_DeleteLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.takesFocus && !oldWidget.takesFocus) _focusNode.requestFocus();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.deleteThisLineButton;
+    final colorTheme = context.colorTheme;
+    final isDisabled = widget.isDisabled;
+    return Focus(
+      focusNode: _focusNode,
+      child: Semantics(
+        button: true,
+        enabled: !isDisabled,
+        label: label,
+        onTap: isDisabled ? null : widget.onTap,
+        excludeSemantics: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: isDisabled ? null : widget.onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: context.textTheme.bodyLargeSemiBold.copyWith(
+                color: isDisabled
+                    ? colorTheme.textDisable
+                    : colorTheme.textError,
+              ),
+            ),
+          ),
         ),
       ),
     );
