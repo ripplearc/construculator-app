@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -166,6 +167,54 @@ void main() {
         );
       },
     );
+
+    for (final answer in {
+      'Replace': ConfirmationDialog.primaryButtonKey,
+      'Go back': ConfirmationDialog.secondaryButtonKey,
+    }.entries) {
+      for (final theme in kA11yTestThemes) {
+        final themeName = theme.brightness == Brightness.dark
+            ? 'dark'
+            : 'light';
+        testWidgets(
+          'a11y: the ${answer.key} answer of the replace-saved-rate question '
+          'meets tap target, label and contrast guidelines in the $themeName '
+          'theme',
+          (tester) async {
+            await setupA11yTest(tester);
+            final dumpster = YourRateEntry(
+              id: 'rate-1',
+              companyId: 'company-1',
+              itemName: 'Dumpster',
+              category: CostItemType.equipment,
+              rate: const Money(amount: 400),
+              savedAt: DateTime(2026, 1, 1),
+              equipmentMethod: EquipmentPricingMethod.job,
+            );
+            await Modular.get<YourRatesRepository>().save(dumpster);
+            await tester.pumpWidget(
+              makeWidget(theme, initialRateEntry: dumpster),
+            );
+            await tester.pumpAndSettle();
+            await tester.enterText(
+              find.byKey(const Key('amount_field')),
+              '450',
+            );
+            FocusManager.instance.primaryFocus!.unfocus();
+            await tester.pumpAndSettle();
+            await tester.tap(
+              find.byKey(const Key('save_recalled_amount_button')),
+            );
+            await tester.pumpAndSettle();
+
+            await expectMeetsTapTargetAndLabelGuidelines(
+              tester,
+              find.byKey(answer.value),
+            );
+          },
+        );
+      }
+    }
 
     testWidgets(
       'a11y: the recalled-rate Duration field meets text contrast guidelines '

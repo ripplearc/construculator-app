@@ -4087,6 +4087,34 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Equipment'**
   String get costSectionEquipment;
+
+  /// Title of the question asked when 'Save as my default' on a recalled price would overwrite the saved price
+  ///
+  /// In en, this message translates to:
+  /// **'Replace your saved rate?'**
+  String get replaceSavedRateDialogTitle;
+
+  /// Body of the replace question; itemName, savedPrice and newPrice are drawn in bold. Each price is the formatted amount followed by its unit (yourRatesDaySuffix/yourRatesJobSuffix), as in '$400.00 job'
+  ///
+  /// In en, this message translates to:
+  /// **'You already have {itemName} at {savedPrice} in Your rates. Replace it with {newPrice}?'**
+  String replaceSavedRateDialogBody(
+    String itemName,
+    String savedPrice,
+    String newPrice,
+  );
+
+  /// Filled button of the replace question that writes the new price over the saved one
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replaceSavedRateReplaceButton;
+
+  /// Outlined button of the replace question that keeps the saved price and saves nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Go back'**
+  String get replaceSavedRateGoBackButton;
 }
 
 class _AppLocalizationsDelegate

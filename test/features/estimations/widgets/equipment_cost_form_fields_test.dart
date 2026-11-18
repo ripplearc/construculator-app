@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -2857,17 +2858,29 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      Future<void> saveUnderLabel(WidgetTester tester) async {
+      Future<void> tapSave(WidgetTester tester) async {
         await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
         await tester.pumpAndSettle();
-        await tester.enterText(
-          find.byKey(const Key('entry_label_field')),
-          'Supplier B',
-        );
-        await tester.tap(
-          find.byKey(const Key('entry_label_dialog_save_button')),
-        );
+      }
+
+      Future<void> answerReplaceDialog(
+        WidgetTester tester,
+        Key answerKey,
+      ) async {
+        await tester.tap(find.byKey(answerKey));
         await tester.pumpAndSettle();
+      }
+
+      Future<List<double>> savedDumpsterPrices() async {
+        final saved = await Modular.get<YourRatesRepository>().search(
+          'Dumpster',
+          category: CostItemType.equipment,
+          companyId: 'company-1',
+        );
+        return saved.fold(
+          (_) => <double>[],
+          (entries) => entries.map((e) => e.rate.amount).toList()..sort(),
+        );
       }
 
       testWidgets('shows neither the hint nor the button before an edit', (
@@ -2906,10 +2919,7 @@ void main() {
           );
           gate.complete();
           await tester.pumpAndSettle();
-          expect(
-            find.byKey(const Key('entry_label_dialog_title')),
-            findsOneWidget,
-          );
+          expect(find.text(l10n.replaceSavedRateDialogTitle), findsOneWidget);
         },
       );
 
@@ -3003,95 +3013,227 @@ void main() {
       });
 
       testWidgets(
-        'saving asks for a name, then says it was saved as a second price and '
-        'keeps the old default in the header',
+        'saving asks to replace the saved rate, naming both prices, before '
+        'anything is written',
         (tester) async {
           await recallDumpster(tester);
           await editAmount(tester, '450');
 
-          await saveUnderLabel(tester);
+          await tapSave(tester);
 
+          expect(find.text(l10n.replaceSavedRateDialogTitle), findsOneWidget);
           expect(
             find.text(
-              l10n.equipmentRecalledAmountSavedSecondPriceHint('\$400.00'),
+              l10n.replaceSavedRateDialogBody(
+                'Dumpster',
+                '\$400.00 ${l10n.yourRatesJobSuffix}',
+                '\$450.00 ${l10n.yourRatesJobSuffix}',
+              ),
+              findRichText: true,
             ),
+            findsOneWidget,
+          );
+          expect(await savedDumpsterPrices(), [400.0]);
+          expect(find.byKey(const Key('entry_label_field')), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'Go back keeps the saved price, saves nothing and leaves the button',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          await tapSave(tester);
+
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.secondaryButtonKey,
+          );
+
+          expect(find.text(l10n.replaceSavedRateDialogTitle), findsNothing);
+          expect(await savedDumpsterPrices(), [400.0]);
+          expect(
+            find.byKey(const Key('save_recalled_amount_button')),
             findsOneWidget,
           );
           expect(
             find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
             findsNothing,
           );
+        },
+      );
+
+      testWidgets('tapping outside the question counts as Go back', (
+        tester,
+      ) async {
+        await recallDumpster(tester);
+        await editAmount(tester, '450');
+        await tapSave(tester);
+
+        await tester.tapAt(const Offset(1, 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.replaceSavedRateDialogTitle), findsNothing);
+        expect(await savedDumpsterPrices(), [400.0]);
+      });
+
+      testWidgets(
+        'Replace tapped after the form left the screen writes nothing',
+        (tester) async {
+          final dumpster = await seedRate(
+            itemName: 'Dumpster',
+            amount: 400,
+            method: EquipmentPricingMethod.job,
+          );
+          final showForm = ValueNotifier(true);
+          addTearDown(showForm.dispose);
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: CoreTheme.light(),
+              locale: const Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: ValueListenableBuilder<bool>(
+                  valueListenable: showForm,
+                  builder: (_, isShown, _) => isShown
+                      ? BlocProvider<EquipmentCostFormBloc>(
+                          create: (_) => Modular.get<EquipmentCostFormBloc>(),
+                          child: EquipmentCostFormFields(
+                            fromCostFile: false,
+                            yourRatesBlocFactory: () =>
+                                Modular.get<YourRatesBloc>(),
+                            clock: FakeClockImpl(),
+                            initialRateEntry: dumpster,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await editAmount(tester, '450');
+          await tapSave(tester);
+
+          showForm.value = false;
+          await tester.pump();
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
+
+          expect(tester.takeException(), isNull);
+          expect(await savedDumpsterPrices(), [400.0]);
+        },
+      );
+
+      testWidgets(
+        'Replace writes the new price over the saved one and makes it the '
+        'default in the header and the hint',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          await tapSave(tester);
+
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
+
+          expect(await savedDumpsterPrices(), [450.0]);
+          expect(
+            find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+            findsOneWidget,
+          );
+          expect(
+            find.text(
+              recalledRateSubtitleText(450, EquipmentPricingMethod.job),
+            ),
+            findsOneWidget,
+          );
           expect(
             find.byKey(const Key('save_recalled_amount_button')),
             findsNothing,
           );
           expect(find.byKey(const Key('recalled_amount_hint')), findsNothing);
-          expect(
-            find.text(
-              recalledRateSubtitleText(400, EquipmentPricingMethod.job),
-            ),
-            findsOneWidget,
-          );
-          final saved = await Modular.get<YourRatesRepository>().search(
-            'Dumpster',
-            category: CostItemType.equipment,
-            companyId: 'company-1',
-          );
-          expect(
-            saved.fold(
-              (_) => <double>[],
-              (entries) => entries.map((e) => e.rate.amount).toList()..sort(),
-            ),
-            [400.0, 450.0],
-          );
         },
       );
 
       testWidgets(
-        'a further edit after saving is still compared with the saved default',
+        'a further edit after replacing is compared with the new default',
         (tester) async {
           await recallDumpster(tester);
           await editAmount(tester, '450');
-          await saveUnderLabel(tester);
+          await tapSave(tester);
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
 
           await editAmount(tester, '500');
 
           expect(
-            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$400.00')),
+            find.text(l10n.equipmentRecalledAmountUsedOnceHint('\$450.00')),
             findsOneWidget,
           );
           expect(
             find.text(l10n.equipmentRecalledAmountSaveButton('\$500.00')),
             findsOneWidget,
           );
+        },
+      );
+
+      testWidgets(
+        'a saved row that is gone when Replace is tapped says the default '
+        'was not saved and keeps the button',
+        (tester) async {
+          await recallDumpster(tester);
+          await editAmount(tester, '450');
+          database.reset();
+          await seedRate(
+            itemName: 'Dumpster',
+            amount: 300,
+            method: EquipmentPricingMethod.job,
+          );
+          await tapSave(tester);
+
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
+          );
+
           expect(
-            find.text(
-              l10n.equipmentRecalledAmountSavedSecondPriceHint('\$400.00'),
-            ),
-            findsNothing,
+            find.text(l10n.equipmentRecalledAmountSaveFailedError),
+            findsOneWidget,
+          );
+          expect(await savedDumpsterPrices(), [300.0]);
+          expect(
+            find.byKey(const Key('save_recalled_amount_button')),
+            findsOneWidget,
           );
         },
       );
 
       testWidgets(
-        'a failed save says the default was not saved, under the button',
+        'a failed replace says the default was not saved, under the button, '
+        'and the saved price stays',
         (tester) async {
           await recallDumpster(tester);
           await editAmount(tester, '450');
-          await tester.tap(
-            find.byKey(const Key('save_recalled_amount_button')),
-          );
-          await tester.pumpAndSettle();
+          await tapSave(tester);
           database.executeError = StateError('disk full');
-          await tester.enterText(
-            find.byKey(const Key('entry_label_field')),
-            'Supplier B',
+          await answerReplaceDialog(
+            tester,
+            ConfirmationDialog.primaryButtonKey,
           );
-          await tester.tap(
-            find.byKey(const Key('entry_label_dialog_save_button')),
-          );
-          await tester.pumpAndSettle();
+          database.executeError = null;
 
+          expect(await savedDumpsterPrices(), [400.0]);
+          expect(
+            find.text(l10n.equipmentRecalledAmountSavedHint('\$450.00')),
+            findsNothing,
+          );
           expect(
             find.text(l10n.equipmentRecalledAmountSaveFailedError),
             findsOneWidget,
@@ -3113,6 +3255,36 @@ void main() {
             find.byKey(const Key('save_recalled_amount_button')),
             findsOneWidget,
           );
+        },
+      );
+
+      testWidgets(
+        'the question bolds the equipment name and both prices, even when '
+        'the name is a short word that also appears in the sentence',
+        (tester) async {
+          await seedRate(
+            itemName: 'In',
+            amount: 400,
+            method: EquipmentPricingMethod.job,
+          );
+          await recallRate(tester, 'In');
+          await editAmount(tester, '450');
+
+          await tapSave(tester);
+
+          final body = tester.widget<Text>(
+            find.byKey(ConfirmationDialog.bodyKey),
+          );
+          final boldParts = (body.textSpan! as TextSpan).children!
+              .whereType<TextSpan>()
+              .where((span) => span.style != null)
+              .map((span) => span.text)
+              .toList();
+          expect(boldParts, [
+            'In',
+            '\$400.00 ${l10n.yourRatesJobSuffix}',
+            '\$450.00 ${l10n.yourRatesJobSuffix}',
+          ]);
         },
       );
 
@@ -4458,26 +4630,27 @@ void main() {
       expect(noticeTop - subtitleBottom, CoreSpacing.space2);
     });
 
-    testWidgets('is not recorded as shown when the estimate lookup then fails', (
-      tester,
-    ) async {
-      refuse();
-      keepOnLine();
-      await Modular.get<CurrentCompanyResolver>().resolve();
-      fakeSupabase
-        ..shouldDelayOperations = true
-        ..completer = Completer<void>();
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-      await pickItemOnJob(tester);
-      expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
+    testWidgets(
+      'is not recorded as shown when the estimate lookup then fails',
+      (tester) async {
+        refuse();
+        keepOnLine();
+        await Modular.get<CurrentCompanyResolver>().resolve();
+        fakeSupabase
+          ..shouldDelayOperations = true
+          ..completer = Completer<void>();
+        await tester.pumpWidget(makeWidget());
+        await tester.pumpAndSettle();
+        await pickItemOnJob(tester);
+        expect(find.byKey(const Key('refused_default_notice')), findsOneWidget);
 
-      fakeSupabase.shouldThrowOnSelectMatch = true;
-      fakeSupabase.completer!.complete();
-      await tester.pumpAndSettle();
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+        fakeSupabase.completer!.complete();
+        await tester.pumpAndSettle();
 
-      expect(database.refusalRow(refusalId)!['shown_at'], isNull);
-    });
+        expect(database.refusalRow(refusalId)!['shown_at'], isNull);
+      },
+    );
 
     testWidgets('goes when a new default is saved for the item', (
       tester,

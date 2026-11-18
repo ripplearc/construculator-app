@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/repositories/your_rate
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/confirmation_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/company/domain/current_company_resolver.dart';
@@ -730,6 +731,35 @@ void main() {
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
           'goldens/equipment_cost_form_fields/${size.width}x${size.height}/rate_applied_from_lookup$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the Replace your saved rate question (5r)', (
+      tester,
+    ) async {
+      final dumpster = savedRate(
+        'Dumpster — 30 yd',
+        400,
+        EquipmentPricingMethod.job,
+      );
+      await Modular.get<YourRatesRepository>().save(dumpster);
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(
+        tester: tester,
+        theme: theme,
+        initialRateEntry: dumpster,
+      );
+      await tester.enterText(find.byKey(const Key('amount_field')), '450');
+      FocusManager.instance.primaryFocus!.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('save_recalled_amount_button')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(ConfirmationDialog),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/replace_saved_rate_dialog$suffix.png',
         ),
       );
     });
