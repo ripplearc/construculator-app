@@ -4,6 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/your_rate_refusal_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/refused_your_rate_entity.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/your_rates_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
@@ -2070,6 +2071,135 @@ void main() {
           isA<EquipmentCostFormSuccess>(),
         ],
       );
+
+      group('on a line already on the estimate', () {
+        const lineId = 'line-1';
+
+        Future<EquipmentCostItem> storedLine({
+          double dailyRate = 100,
+          String? productLink,
+        }) async {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, [
+            CostItemTestDataMapFactory.createEquipmentItemData(
+              id: lineId,
+              estimateId: testEstimateId,
+              itemName: testEquipmentType,
+              pricingMethod: 'day',
+              duration: 3.0,
+              dailyRate: dailyRate,
+              itemTotalCost: dailyRate * 3,
+              productLink: productLink,
+            ),
+          ]);
+          final items = await Modular.get<CostItemRepository>()
+              .getCostItemsForEstimate(testEstimateId);
+          return items.getRightOrNull()!.single as EquipmentCostItem;
+        }
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'puts a different saved rate first in recents when the line is saved '
+          'with it',
+          build: () => bloc,
+          act: (bloc) async {
+            bloc.add(EquipmentCostEditOpened(await storedLine()));
+            recall(bloc, 'older');
+            bloc.add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+          },
+          verify: (_) async {
+            expect(await recentsOrder(), ['older', 'newer']);
+            expect(database.updatedRowIds, ['older']);
+          },
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'leaves the order alone when the line is saved without picking a '
+          'rate',
+          build: () => bloc,
+          act: (bloc) async {
+            bloc
+              ..add(EquipmentCostEditOpened(await storedLine()))
+              ..add(const EquipmentDurationUpdatedEvent('5'))
+              ..add(
+                const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+              );
+          },
+          verify: (_) async {
+            expect(await recentsOrder(), ['newer', 'older']);
+            expect(database.updatedRowIds, isEmpty);
+          },
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'leaves the order alone when the picked rate is the one the line '
+          'already has',
+          build: () => bloc,
+          act: (bloc) async {
+            bloc.add(EquipmentCostEditOpened(await storedLine(dailyRate: 250)));
+            recall(bloc, 'older');
+            bloc.add(
+              const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+            );
+          },
+          verify: (_) async {
+            expect(await recentsOrder(), ['newer', 'older']);
+            expect(database.updatedRowIds, isEmpty);
+          },
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'puts a saved Job rate first when it has the same amount as the '
+          "line's Day rate",
+          setUp: () => database.seedRow({
+            ...savedRate('jobrate', '2026-01-05T00:00:00.000Z'),
+            'rate_amount': 100.0,
+            'equipment_method': 'job',
+          }),
+          build: () => bloc,
+          act: (bloc) async {
+            bloc
+              ..add(EquipmentCostEditOpened(await storedLine()))
+              ..add(
+                const EquipmentSavedRateRecalledEvent(
+                  rateId: 'jobrate',
+                  method: EquipmentPricingMethod.job,
+                  rate: 100,
+                ),
+              )
+              ..add(
+                const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+              );
+          },
+          verify: (_) async {
+            expect(database.updatedRowIds, ['jobrate']);
+          },
+        );
+
+        blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+          'keeps the stored product link when the line is saved',
+          build: () => bloc,
+          act: (bloc) async {
+            final stored = await storedLine(
+              productLink: 'https://example.test/lift',
+            );
+            bloc
+              ..add(EquipmentCostEditOpened(stored))
+              ..add(const EquipmentDurationUpdatedEvent('5'))
+              ..add(
+                const EquipmentCostSubmittedEvent(estimateId: testEstimateId),
+              );
+          },
+          verify: (_) async {
+            final items = await Modular.get<CostItemRepository>()
+                .getCostItemsForEstimate(testEstimateId);
+            expect(
+              items.getRightOrNull()!.single.productLink,
+              'https://example.test/lift',
+            );
+          },
+        );
+      });
     });
 
     group('hasUnsavedChanges', () {
