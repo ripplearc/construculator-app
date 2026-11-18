@@ -73,6 +73,12 @@ void main() {
         expect(Unit.fromJson(unit.name), unit);
       }
     });
+
+    test('reads an imperial unit back instead of falling back to pieces', () {
+      expect(Unit.fromJson('gallons'), Unit.gallons);
+      expect(Unit.fromJson('shortTons'), Unit.shortTons);
+      expect(Unit.fromJson('linearFeet'), Unit.linearFeet);
+    });
   });
 
   group('LaborCalculationMethodType enum', () {
