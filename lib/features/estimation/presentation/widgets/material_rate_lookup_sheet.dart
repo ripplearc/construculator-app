@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/widgets/sheet_su
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -46,16 +47,16 @@ class MaterialRateLookupSheet extends StatefulWidget {
   State<MaterialRateLookupSheet> createState() =>
       _MaterialRateLookupSheetState();
 
-  /// Opens this sheet in a [CoreQuickSheet] and returns the picked
-  /// [YourRateEntry], or null if the sheet was closed without one.
-  static Future<YourRateEntry?> show({
+  /// Opens this sheet in a [CoreQuickSheet] and returns the picked rate, or
+  /// null if the sheet was closed without one.
+  static Future<MaterialLookupPick?> show({
     required BuildContext context,
     required String initialQuery,
     required Clock clock,
     required YourRatesBloc Function() blocFactory,
     required List<SampleRateRow> Function(String query) sampleRatesFor,
   }) {
-    return CoreQuickSheet.show<YourRateEntry>(
+    return CoreQuickSheet.show<MaterialLookupPick>(
       context: context,
       backgroundColor: sheetSurface(context),
       isFixedHeight: true,
@@ -82,7 +83,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 
   List<YourRateEntry> _shownEntries = const [];
   List<SampleRateRow> _sampleRows = const [];
-  String? _selectedId;
+  MaterialLookupPick? _picked;
   bool _retrying = false;
 
   @override
@@ -109,8 +110,8 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     _search(_searchController.text);
   }
 
-  void _onRowTap(YourRateEntry entry) =>
-      setState(() => _selectedId = _selectedId == entry.id ? null : entry.id);
+  void _onRowTap(MaterialLookupPick pick) =>
+      setState(() => _picked = _picked == pick ? null : pick);
 
   void _onStateChanged(BuildContext context, YourRatesState state) {
     if (state is YourRatesError) {
@@ -120,8 +121,9 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
     if (state is! YourRatesSearchResults) return;
     _retrying = false;
     _shownEntries = state.results;
-    if (!state.results.any((entry) => entry.id == _selectedId)) {
-      _selectedId = null;
+    if (_picked case MaterialLookupYourRate(:final entry)
+        when !state.results.any((shown) => shown.id == entry.id)) {
+      _picked = null;
     }
   }
 
@@ -137,9 +139,11 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
           _ => _shownEntries,
         };
         final hasReadError = state is YourRatesError || _retrying;
-        final selected = entries
-            .where((entry) => entry.id == _selectedId)
-            .firstOrNull;
+        final picks = [
+          for (final entry in entries) MaterialLookupYourRate(entry),
+          for (final row in _sampleRows) MaterialLookupSampleRate(row),
+        ];
+        final selected = picks.contains(_picked) ? _picked : null;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -200,8 +204,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                               onAction: _retry,
                             ),
                           )
-                        else if (entries.isEmpty &&
-                            _sampleRows.isEmpty &&
+                        else if (picks.isEmpty &&
                             state is YourRatesSearchResults &&
                             state.query.trim().isNotEmpty)
                           Padding(
@@ -229,13 +232,16 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                               entry.rate.amount,
                             ),
                             unit: _unitSuffix(context, entry.unit),
-                            selected: entry.id == selected?.id,
-                            onTap: () => _onRowTap(entry),
+                            selected: selected == MaterialLookupYourRate(entry),
+                            onTap: () =>
+                                _onRowTap(MaterialLookupYourRate(entry)),
                           ),
                         if (_sampleRows.isNotEmpty)
                           _SampleGroup(
                             rows: _sampleRows,
+                            selected: selected,
                             unitSuffix: (unit) => _unitSuffix(context, unit),
+                            onTap: _onRowTap,
                             hasContentAbove: entries.isNotEmpty || hasReadError,
                           ),
                       ],
@@ -243,7 +249,7 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
                   ),
                 ),
               ),
-              if (entries.isNotEmpty) ...[
+              if (picks.isNotEmpty) ...[
                 const CoreDivider(),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -284,12 +290,16 @@ class _MaterialRateLookupSheetState extends State<MaterialRateLookupSheet> {
 
 class _SampleGroup extends StatelessWidget {
   final List<SampleRateRow> rows;
+  final MaterialLookupPick? selected;
   final String? Function(Unit? unit) unitSuffix;
+  final ValueChanged<MaterialLookupPick> onTap;
   final bool hasContentAbove;
 
   const _SampleGroup({
     required this.rows,
+    required this.selected,
     required this.unitSuffix,
+    required this.onTap,
     required this.hasContentAbove,
   });
 
@@ -337,14 +347,61 @@ class _SampleGroup extends StatelessWidget {
           ),
         ),
         for (final row in rows)
-          CoreListRow(
+          CoreListRow.selectable(
             key: Key('sample_rate_row_${row.id}'),
             title: row.productName,
             subtitle: row.details,
             value: DisplayFormatter.currency.format(row.rate.amount),
             unit: unitSuffix(row.unit),
+            selected: selected == MaterialLookupSampleRate(row),
+            onTap: () => onTap(MaterialLookupSampleRate(row)),
           ),
       ],
     );
   }
+}
+
+/// What was picked on [MaterialRateLookupSheet].
+sealed class MaterialLookupPick extends Equatable {
+  const MaterialLookupPick();
+
+  /// The price of one unit.
+  Money get rate;
+
+  /// The unit [rate] is the price of.
+  Unit? get unit;
+}
+
+/// A rate from YOUR RATES: it arrives as the user's own, with no tag.
+final class MaterialLookupYourRate extends MaterialLookupPick {
+  const MaterialLookupYourRate(this.entry);
+
+  /// The saved rate.
+  final YourRateEntry entry;
+
+  @override
+  Money get rate => entry.rate;
+
+  @override
+  Unit? get unit => entry.unit;
+
+  @override
+  List<Object?> get props => [entry.id];
+}
+
+/// A rate from FROM SAMPLE COST FILE: it arrives tagged Sample rate.
+final class MaterialLookupSampleRate extends MaterialLookupPick {
+  const MaterialLookupSampleRate(this.row);
+
+  /// The sample cost file rate.
+  final SampleRateRow row;
+
+  @override
+  Money get rate => row.rate;
+
+  @override
+  Unit? get unit => row.unit;
+
+  @override
+  List<Object?> get props => [row.id];
 }
