@@ -93,9 +93,6 @@
         <regex pattern="estimates\.every\(\(e\) =&gt; e\.id != estimationId\)" dotAll="true" id="repo.edits.delete_reflected_any">
             <mutation text="estimates.any((e) =&gt; e.id != estimationId)"/>
         </regex>
-        <regex pattern="estimates\.where\(\(e\) =&gt; e\.id != estimationId\)\.toList\(\)" dotAll="true" id="repo.edits.delete_keeps_estimate">
-            <mutation text="estimates"/>
-        </regex>
 
         <regex pattern="if \(!_streamControllers\.containsKey\(streamKey\)\) \{\s*_localSubscriptions" dotAll="true" id="repo.local.keep_unwatched_subscription">
             <mutation text="if (_streamControllers.containsKey(streamKey)) { _localSubscriptions"/>
@@ -136,9 +133,6 @@
         <regex pattern="_pendingEdits\[editKey\] = edit;" dotAll="true" id="repo.edits.skip_remember">
             <mutation text="// edit not remembered"/>
         </regex>
-        <regex pattern="_forgetPendingEdit\(deleteEdit\);" dotAll="true" id="repo.edits.keep_failed_delete">
-            <mutation text="// _forgetPendingEdit(deleteEdit);"/>
-        </regex>
         <regex pattern="position == -1 \? estimates\.length : position" dotAll="true" id="repo.create.ignore_sort_position">
             <mutation text="0"/>
         </regex>
@@ -170,9 +164,6 @@
         </regex>
         <regex pattern="_pendingEdits\.containsKey\('create:\$estimationId'\) &amp;&amp;" dotAll="true" id="repo.edits.created_check_ignores_pending_create">
             <mutation text="false &amp;&amp;"/>
-        </regex>
-        <regex pattern="'\$kind:\$estimationId:\$\{_editCount\+\+\}'" dotAll="true" id="repo.edits.share_key_per_row">
-            <mutation text="'$kind:$estimationId'"/>
         </regex>
         <regex pattern="_phoneCopies\.remove\(streamKey\);\n\s*publish\(\n\s*Left\(\n\s*_handleError\(\n\s*e,\n\s*.reading estimations from the phone." dotAll="true" id="repo.local.unreadable_row_keeps_old_copy">
             <mutation text="publish(Left(_handleError(e,

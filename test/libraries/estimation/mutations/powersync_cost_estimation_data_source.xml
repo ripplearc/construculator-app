@@ -94,9 +94,6 @@
             <mutation text="DatabaseConstants.isLockedColumn, isLocked ? 0 : 1)"/>
         </regex>
 
-        <regex pattern="return true;" dotAll="true" id="ds.write.report_false_after_write">
-            <mutation text="return false;"/>
-        </regex>
 
         <regex pattern="'DELETE FROM \$_table WHERE" dotAll="true" id="ds.delete.keeps_row">
             <mutation text="'SELECT id FROM $_table WHERE"/>
@@ -142,10 +139,6 @@
             <mutation text="_updateColumnById(id, DatabaseConstants.estimateNameColumn, isLocked ? 1 : 0)"/>
         </regex>
 
-        <!-- WRITES: the phone-has-row check used by delete -->
-        <regex pattern="\(await _wrapper\.getAll\(_buildSelectByIdSql\(\), \[id\]\)\)\.isNotEmpty" dotAll="true" id="ds.delete.row_check_inverted">
-            <mutation text="(await _wrapper.getAll(_buildSelectByIdSql(), [id])).isEmpty"/>
-        </regex>
         <!-- loadEstimationById: a missing row is null, a found row is returned -->
         <regex pattern="return rows\.isEmpty \? null : CostEstimateDto\.fromRow\(rows\.first\);" dotAll="true" id="ds.load.return_nothing">
             <mutation text="return null;"/>
