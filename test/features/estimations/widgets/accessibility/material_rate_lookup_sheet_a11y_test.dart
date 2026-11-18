@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
@@ -101,6 +102,20 @@ void main() {
         tester,
         makeWidget,
         find.byKey(const Key('your_rates_search_field')),
+      );
+    });
+
+    testWidgets('a11y: the Use button meets tap target and label guidelines '
+        'once a row is picked', (tester) async {
+      await setupA11yTest(tester);
+      await tester.pumpWidget(makeWidget(CoreTheme.light()));
+      await waitForSearch(tester);
+      await tester.tap(find.byKey(const Key('your_rate_row_proclassic')));
+      await tester.pumpAndSettle();
+
+      await expectMeetsTapTargetAndLabelGuidelines(
+        tester,
+        find.byKey(const Key('material_lookup_use_button')),
       );
     });
   });
