@@ -351,13 +351,30 @@ void main() {
 
         expect(find.text(l10n.deleteLineDialogTitle), findsOneWidget);
         expect(
-          find.text(l10n.deleteLineDialogBody('Scissor lift', 'Bedroom 2')),
+          find.text(
+            'Scissor lift will be deleted from Bedroom 2. '
+            'This cannot be undone.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(ConfirmationDialog.primaryButtonKey),
+            matching: find.text('No, keep it'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(ConfirmationDialog.secondaryButtonKey),
+            matching: find.text('Yes, delete'),
+          ),
           findsOneWidget,
         );
         expect(fakeSupabase.getMethodCallsFor('delete'), isEmpty);
       });
 
-      testWidgets('No, Keep leaves the line stored and the sheet open', (
+      testWidgets('No, keep it leaves the line stored and the sheet open', (
         tester,
       ) async {
         await openEditSheet(tester);
@@ -371,7 +388,7 @@ void main() {
         expect(dialogTitle(), findsNothing);
       });
 
-      testWidgets('Yes, Delete removes the stored line and closes the sheet', (
+      testWidgets('Yes, delete removes the stored line and closes the sheet', (
         tester,
       ) async {
         await openEditSheet(tester);
@@ -398,6 +415,27 @@ void main() {
 
         expect(find.text(l10n.deleteLineFailedError), findsOneWidget);
         expect(find.byType(SheetHeader), findsOneWidget);
+      });
+
+      testWidgets('focus goes back to Delete this line after a failed delete', (
+        tester,
+      ) async {
+        await openEditSheet(tester);
+        fakeSupabase.shouldThrowOnDelete = true;
+        await tapDelete(tester);
+
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        final deleteFocus = tester
+            .widget<Focus>(
+              find.descendant(
+                of: find.byKey(AddToEstimateFooter.deleteButtonKey),
+                matching: find.byType(Focus),
+              ),
+            )
+            .focusNode!;
+        expect(deleteFocus.hasPrimaryFocus, isTrue);
       });
 
       testWidgets('a failed save says the change was not saved', (
