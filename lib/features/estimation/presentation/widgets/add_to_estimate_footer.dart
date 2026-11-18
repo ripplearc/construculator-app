@@ -16,7 +16,7 @@ enum AddToEstimateFooterPart {
 }
 
 /// The "Adds to this estimate" summary card and the full-width submit button
-/// at the bottom of the equipment cost sheet.
+/// at the bottom of the material, equipment and labor cost sheets.
 ///
 /// [part] splits the two, so a phone too short to pin both the card and the
 /// number pad can scroll the card with the form.
