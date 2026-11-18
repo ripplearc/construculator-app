@@ -2185,9 +2185,7 @@ void main() {
             ),
           );
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
-          final queue = StreamQueue(
-            repository.watchEstimations(testProjectId),
-          );
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
           final firstPage = (await queue.next).getRightOrNull()!;
           final lastRowId = firstPage.last.id;
           expect(firstPage.length, defaultPageDatasetSize);
@@ -3182,6 +3180,261 @@ void main() {
           expect(fakePhoneDatabase.syncStreamUnsubscribes, isNotEmpty);
         },
       );
+
+      test(
+        'a list that failed on an unreadable row is not replaced by the old list when a write republishes',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          Map<String, dynamic> broken(String createdAt) => buildEstimationMap(
+            id: 'estimate-broken',
+            projectId: testProjectId,
+            createdAt: createdAt,
+          );
+          fakePhoneDatabase.seedRows([broken('not-a-date')]);
+          expect((await queue.next).isLeft(), isTrue);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          fakePhoneDatabase.replaceRow(broken('2026-07-01T00:00:00.000Z'));
+
+          expect(idsIn(await queue.next), contains('estimate-broken'));
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a fetch with nobody watching does not keep an edit alive after the phone copy shows it',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.take(2);
+          await repository.fetchInitialEstimations(
+            testProjectId,
+            ascending: true,
+          );
+
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              isLocked: true,
+            ),
+          );
+          await queue.next;
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              isLocked: false,
+            ),
+          );
+
+          expect(estimateIn(await queue.next).lockStatus.isLocked, isFalse);
+          await queue.cancel();
+        },
+      );
+
+      test(
+        'a teammate\'s change made before my write reached the server does not replace my lock',
+        () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          final serverReply = Completer<void>();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          fakeSupabaseWrapper.completer = serverReply;
+
+          final locking = repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.next;
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: estimateIdDefault,
+              projectId: testProjectId,
+              isLocked: false,
+              updatedAt: '2025-01-01T00:00:00.000Z',
+            ),
+          );
+          await queue.next;
+          serverReply.complete();
+          await locking;
+
+          expect(estimateIn(await queue.next).lockStatus.isLocked, isTrue);
+          await queue.cancel();
+        },
+      );
+
+      group('an edit that outlived its list', () {
+        Map<String, dynamic> lockedBy(bool locked) => buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: locked,
+        );
+
+        test('stops being applied once the reopened list shows it', () async {
+          final queue = await watchSeeded([projectEstimate()]);
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await queue.cancel();
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final reopened = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+          await reopened.next;
+
+          fakePhoneDatabase.replaceRow(lockedBy(true));
+          await reopened.next;
+          fakePhoneDatabase.replaceRow(lockedBy(false));
+
+          expect(estimateIn(await reopened.next).lockStatus.isLocked, isFalse);
+          await reopened.cancel();
+        });
+
+        test('stops being applied once the lists still open show it', () async {
+          final closedQueue = await watchSeeded([projectEstimate()]);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final openQueue = StreamQueue(
+            repository.watchEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+          );
+          await openQueue.next;
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await closedQueue.cancel();
+          await openQueue.take(2);
+
+          fakePhoneDatabase.replaceRow(lockedBy(true));
+          await openQueue.next;
+          fakePhoneDatabase.replaceRow(lockedBy(false));
+
+          expect(estimateIn(await openQueue.next).lockStatus.isLocked, isFalse);
+          await openQueue.cancel();
+        });
+      });
+
+      test(
+        'a lock and a delete of different estimates are both kept when the phone copy re-emits',
+        () async {
+          final queue = await watchSeeded([
+            projectEstimate(),
+            buildEstimationMap(
+              id: estimateId2,
+              projectId: testProjectId,
+              estimateName: estimateName2,
+              createdAt: '2025-01-01T00:00:00.000Z',
+            ),
+          ]);
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+          await repository.deleteEstimation(estimateId2, testProjectId);
+          while (true) {
+            final list = (await queue.next).getRightOrNull()!;
+            final deleted = !list.any((e) => e.id == estimateId2);
+            final locked = list.any(
+              (e) => e.id == estimateIdDefault && e.lockStatus.isLocked,
+            );
+            if (deleted && locked) break;
+          }
+          syncUnrelatedEstimate();
+
+          final reEmitted = (await queue.next).getRightOrNull()!;
+          expect(idsIn(Right(reEmitted)), isNot(contains(estimateId2)));
+          expect(
+            reEmitted
+                .singleWhere((e) => e.id == estimateIdDefault)
+                .lockStatus
+                .isLocked,
+            isTrue,
+          );
+          await queue.cancel();
+        },
+      );
+
+      group('with another limited list of the project watched', () {
+        const newestId = 'estimate-newest';
+
+        Map<String, dynamic> row(
+          String id, {
+          required String createdAt,
+          required String updatedAt,
+        }) => buildEstimationMap(
+          id: id,
+          projectId: testProjectId,
+          estimateName: id,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        );
+
+        test(
+          'a delete stays hidden when a limited list that never held the row syncs first',
+          () async {
+            final queue = await watchSeeded([
+              row(
+                newestId,
+                createdAt: '2023-04-01T00:00:00.000Z',
+                updatedAt: '2023-01-01T00:00:00.000Z',
+              ),
+              row(
+                estimateId2,
+                createdAt: '2023-03-01T00:00:00.000Z',
+                updatedAt: '2023-02-01T00:00:00.000Z',
+              ),
+              row(
+                estimateId3,
+                createdAt: '2023-02-01T00:00:00.000Z',
+                updatedAt: '2023-09-01T00:00:00.000Z',
+              ),
+            ]);
+            // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+            final recentQueue = StreamQueue(
+              repository.watchEstimations(
+                testProjectId,
+                sortBy: EstimationSortOption.updatedAt,
+                limit: 1,
+              ),
+            );
+            expect(idsIn(await recentQueue.next), [estimateId3]);
+
+            await repository.deleteEstimation(newestId, testProjectId);
+            expect(idsIn(await queue.next), [estimateId2, estimateId3]);
+            await recentQueue.next;
+
+            syncUnrelatedEstimate();
+            await queue.next;
+            await recentQueue.next;
+            fakePhoneDatabase.seedRows([
+              row(
+                'estimate-second-unrelated',
+                createdAt: '2022-01-01T00:00:00.000Z',
+                updatedAt: '2022-01-01T00:00:00.000Z',
+              ),
+            ]);
+
+            expect(idsIn(await queue.next), isNot(contains(newestId)));
+            await queue.cancel();
+            await recentQueue.cancel();
+          },
+        );
+      });
     });
 
     group('writes with other estimates in the list', () {
