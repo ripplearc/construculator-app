@@ -3378,16 +3378,6 @@
       }
     }
   },
-  "discardChangesDialogBodyUnnamed": "Your changes to this line will be lost. The line stays at {amount}.",
-  "@discardChangesDialogBodyUnnamed": {
-    "description": "Body of the discard-changes question while the name of the line being edited is cleared",
-    "context": "https://github.com/ripplearc/construculator-design-artifacts/blob/ab7caa6d/construculator-calc-to-estimate-storyboard.html (CUJ 6, Build: closing a form with unsaved input)",
-    "placeholders": {
-      "amount": {
-        "type": "String"
-      }
-    }
-  },
   "discardLineDiscardButton": "Discard",
   "@discardLineDiscardButton": {
     "description": "Outlined button that closes the material sheet and drops what was typed",

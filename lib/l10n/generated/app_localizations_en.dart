@@ -2290,11 +2290,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String discardChangesDialogBodyUnnamed(String amount) {
-    return 'Your changes to this line will be lost. The line stays at $amount.';
-  }
-
-  @override
   String get discardLineDiscardButton => 'Discard';
 
   @override

@@ -947,7 +947,6 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     if (note != null) {
       _noteController.text = note;
     }
-    _deliveryExpanded = fee != null || note != null;
   }
 
   EquipmentPricingMethod _methodOfForm() => _daySelected.value
