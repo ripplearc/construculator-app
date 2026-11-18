@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/calculator_bloc_factory.dart';
 
 void main() {
   const size = Size(390, 844);
@@ -27,7 +28,10 @@ void main() {
         debugShowCheckedModeBanner: false,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: FakeAppRouter()),
+        home: CalculatorPage(
+          router: FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
     await tester.pump();

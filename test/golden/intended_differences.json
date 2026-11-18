@@ -215,9 +215,51 @@
   },
   {
    "scenario": "S01",
-   "checkpoint": "material suggestion follows",
-   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
-   "dart": {"kind": "stripAt", "index": 0, "equals": "Diagonal: 28.85ft"}
+   "checkpoint": "dependent key shows the sheet size",
+   "reason": "Waits for G1 (CA-1072): the engine's result chip carries no stored fact yet, so the accepted count has no Sheet size pill (UX doc rule 4.7). S2a (CA-1090) lands the count under Number of sheets and keeps the other sizes on the strip (decision tree row 218); the pill and the recompute on edit come with the engine's trade rung.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 3, "equals": "Number of sheets12.83"}, {"kind": "depKeyShown", "equals": false}]}
+  },
+  {
+   "scenario": "S02",
+   "checkpoint": "sheet size 1 (5.81)",
+   "reason": "UX doc Appendix B and decision tree rows 214 and 216: the sheet seeds are 48in x 96in, 48in x 108in and 48in x 120in, never the prototype's metric sheets written in inches (47.24in x 94.49in, Appendix D); a count is written to two decimals with its zeros kept (Section 9, row 377). 180ft² ÷ 32ft² = 5.63.",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Drywall: 5.63 sheets (48in x 96in)"}
+  },
+  {
+   "scenario": "S02",
+   "checkpoint": "sheet size 2 (5.16)",
+   "reason": "As above: the second seed is 48in x 108in, and 180ft² ÷ 36ft² = 5.00 with its zeros kept (UX doc Section 9; decision tree rows 216, 377).",
+   "dart": {"kind": "stripAt", "index": 1, "equals": "Drywall: 5.00 sheets (48in x 108in)"}
+  },
+  {
+   "scenario": "S02",
+   "checkpoint": "tapping the hint switches to Materials",
+   "reason": "The design names the group by its tab label, Materials (UX doc Section 1.5, Appendix B; CA-1086 names every group from i18n); the prototype's label adds the word \"group\". The prototype's hint itself is its own device (its risk audit #5): the driver selects the group as the \"View all\" sheet does.",
+   "dart": {"kind": "functionGroup", "equals": "Materials"}
+  },
+  {
+   "scenario": "S02",
+   "checkpoint": "chip relabeled \"Drywall covered area\"",
+   "reason": "Waits for G1 (CA-1072): [Drywal] on an Area result relabels it \"Drywall covered area\" (UX doc walkthrough 19.1, line 2857), which the engine does not do yet; today the key opens an empty Drywal chip as every function key does, and the Area keeps its name.",
+   "dart": {"kind": "all", "checks": [{"kind": "tapeAt", "index": 2, "equals": "Area180ft²"}, {"kind": "tapeAtStartsWith", "index": 3, "prefix": "Drywal"}]}
+  },
+  {
+   "scenario": "S02",
+   "checkpoint": "sheet suggestions stay",
+   "reason": "Waits for G1 (CA-1072), as above: with an empty Drywal chip open the display shows no area, so the strip falls to the rule answers of the named values (UX doc rule 4.4, rung 3) and the sheet counts wait for the relabel.",
+   "dart": {"kind": "stripAt", "index": 0, "equals": "Diagonal: 21.93ft"}
+  },
+  {
+   "scenario": "S19",
+   "checkpoint": "Unit group active",
+   "reason": "The design names the group by its tab label, Unit (UX doc Section 1.5, Appendix B; CA-1086 names every group from i18n); the prototype's label adds the word \"group\".",
+   "dart": {"kind": "functionGroup", "equals": "Unit"}
+  },
+  {
+   "scenario": "S28",
+   "checkpoint": "tiny area: cost + conversions, no 0.00-sheet noise",
+   "reason": "UX doc Section 9 and decision tree row 377 (product manager, 5 November 2026): a typed area earns its sheet counts, and a count under 0.005 reads 0.00 with its zeros kept, where the prototype hides a count that rounds to zero. The cost chip waits for G3 (CA-1074); conversions sit on their own row (Section 6).",
+   "dart": {"kind": "all", "checks": [{"kind": "stripAt", "index": 0, "equals": "Drywall: 0.00 sheets (48in x 96in)"}, {"kind": "strip2At", "index": 0, "equals": "0.01ft²"}]}
   },
   {
    "scenario": "S16",
@@ -228,8 +270,8 @@
   {
    "scenario": "S25",
    "checkpoint": "strip offers cost + area conversions",
-   "reason": "UX doc Section 6, 'Where conversions show': conversions sit on their own row as plain values and the 'Conv:' label is not used; the cost chip waits for G3 (CA-1074).",
-   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "0.01ft²"}]}
+   "reason": "UX doc Section 6, 'Where conversions show': conversions sit on their own row as plain values and the 'Conv:' label is not used; the cost chip waits for G3 (CA-1074). A typed area earns its sheet counts, 0.00 for 2in² with the zeros kept (Section 9; decision tree row 377, product manager 5 November 2026).",
+   "dart": {"kind": "all", "checks": [{"kind": "stripAt", "index": 0, "equals": "Drywall: 0.00 sheets (48in x 96in)"}, {"kind": "strip2At", "index": 0, "equals": "0.01ft²"}]}
   },
   {
    "scenario": "S26",
@@ -240,8 +282,14 @@
   {
    "scenario": "S27",
    "checkpoint": "sheet counts offered directly",
-   "reason": "Waits for G3 (CA-1074): the ladder's trade rungs (sheet counts, cost, weight, bind offers) read the stores; S1b maps only what the engine answers today (CA-1088). The Dart answer pins what the strip shows meanwhile.",
-   "dart": {"kind": "all", "checks": [{"kind": "stripLength", "equals": 0}, {"kind": "strip2At", "index": 0, "equals": "20yd²"}]}
+   "reason": "UX doc Appendix B and decision tree rows 214 and 218: the sheet seeds are 48in x 96in, 48in x 108in and 48in x 120in, never the prototype's 47.24in x 94.49in (Appendix D); a typed 180ft² earns 5.63 sheets at the first seed (Section 9, walkthrough 15.2).",
+   "dart": {"kind": "all", "checks": [{"kind": "stripAt", "index": 0, "equals": "Drywall: 5.63 sheets (48in x 96in)"}, {"kind": "strip2At", "index": 0, "equals": "20yd²"}]}
+  },
+  {
+   "scenario": "S27",
+   "checkpoint": "second size follows",
+   "reason": "As above: the second seed is 48in x 108in, and 180ft² ÷ 36ft² = 5.00 with its zeros kept (UX doc Section 9; decision tree rows 218, 377).",
+   "dart": {"kind": "stripAt", "index": 1, "equals": "Drywall: 5.00 sheets (48in x 108in)"}
   },
   {
    "scenario": "S48",

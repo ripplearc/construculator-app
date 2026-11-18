@@ -314,9 +314,22 @@
         <regex pattern="ResultChip\(\) when openIndex != null &amp;&amp; index &gt; openIndex =&gt;\s*_staleResultDash," dotAll="true" id="calculator_state.chips.stale_result_shown">
             <mutation text=""/>
         </regex>
-        <!-- RULE (S2a 1/2, CA-1090): an accepted count lands under the
-             offer's name (Drywall) instead of the trade's result key
-             (Number of sheets) -->
+        <!-- RULES (S2a 1/2, CA-1090): the watch on the sheet-size store -->
+        <!-- RULE: the watch ignores a change of unit system, or of area -->
+        <regex pattern="if \(area == _watchedArea &amp;&amp; system == _watchedSystem\) return;" dotAll="true" id="calculator_bloc.watch.ignores_system_or_area">
+            <mutation text="if (area == _watchedArea) return;"/>
+            <mutation text="if (system == _watchedSystem) return;"/>
+        </regex>
+        <!-- RULE: the store's answer is not kept -->
+        <regex pattern="emit\(state\.copyWith\(materialCounts: event\.counts\)\);" dotAll="true" id="calculator_bloc.counts.not_kept">
+            <mutation text="emit(state);"/>
+        </regex>
+        <!-- RULE: an answer for an area no longer watched is kept -->
+        <regex pattern="if \(event\.counts\.any\(\(count\) =&gt; count\.area != _watchedArea\)\) return;" dotAll="true" id="calculator_bloc.counts.unwatched_area_kept">
+            <mutation text=""/>
+        </regex>
+        <!-- RULE: an accepted count lands under the offer's name (Drywall)
+             instead of the trade's result key (Number of sheets) -->
         <regex pattern="tape\.landAnswer\(count\.trade\.resultKey, count\.value\)" dotAll="true" id="calculator_bloc.accept.count_lands_under_offer_key">
             <mutation text="tape.landAnswer(count.trade.offerKey, count.value)"/>
         </regex>

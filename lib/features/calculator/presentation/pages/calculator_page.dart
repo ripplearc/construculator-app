@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:construculator/features/calculator/presentation/formatters/calculator_label_formatter.dart';
 import 'package:construculator/libraries/calculator_engine/calculator_engine.dart';
@@ -9,25 +11,48 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The calculator screen: the display area, the suggestion strip and the
-/// keyboard over one [CalculatorBloc] the page owns. It is pushed above the
-/// shell, so ✕ with no value in progress leaves it through [router] and
-/// returns to Home (UX Design Doc Section 1.1). Folding the keypad, by a
-/// drag or a tap on its handle, shows the detail panel under the strip, and
-/// unfolding it brings the keys back (Section 1.4, term 2.17).
+/// keyboard over one [CalculatorBloc], which the page creates from
+/// [calculatorBlocFactory] for its lifetime and closes with it. It is
+/// pushed above the shell, so ✕ with no value in progress leaves it through
+/// [router] and returns to Home (UX Design Doc Section 1.1). Folding the
+/// keypad, by a drag or a tap on its handle, shows the detail panel under
+/// the strip, and unfolding it brings the keys back (Section 1.4, term
+/// 2.17).
 class CalculatorPage extends StatefulWidget {
   /// Pops the page when the bloc says the calculator closes.
   final AppRouter router;
 
-  /// Creates the page over the app's [router].
-  const CalculatorPage({super.key, required this.router});
+  /// Builds the bloc the page owns, resolved by the module.
+  final CalculatorBloc Function() calculatorBlocFactory;
+
+  /// Creates the page over the app's [router] and the module's bloc.
+  const CalculatorPage({
+    super.key,
+    required this.router,
+    required this.calculatorBlocFactory,
+  });
 
   @override
   State<CalculatorPage> createState() => _CalculatorPageState();
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
+  late final CalculatorBloc _bloc;
+
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
   bool _isKeypadFolded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = widget.calculatorBlocFactory();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_bloc.close());
+    super.dispose();
+  }
 
   // CoreGeometryArea always draws the heading of its Attachments section,
   // and the detail panel of Section 1.4 has no attachments, so the heading
@@ -245,8 +270,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
         group.name: _accentFor(colors, group.name.id),
     };
 
-    return BlocProvider<CalculatorBloc>(
-      create: (_) => CalculatorBloc(),
+    return BlocProvider<CalculatorBloc>.value(
+      value: _bloc,
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: SafeArea(
