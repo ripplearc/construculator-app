@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -207,6 +209,22 @@ void main() {
           expect(stored['estimate_name'], 'Old');
         },
       );
+      test('a write waits for executeGate but is recorded at once', () async {
+        database.seedRows([row('a')]);
+        final gate = Completer<void>();
+        database.executeGate = gate;
+
+        final deleting = database.execute(
+          'DELETE FROM cost_estimates WHERE id = ?',
+          ['a'],
+        );
+
+        expect(database.executeCalls, hasLength(1));
+        expect(await database.getAll(byIdSql, ['a']), hasLength(1));
+        gate.complete();
+        await deleting;
+        expect(await database.getAll(byIdSql, ['a']), isEmpty);
+      });
     });
   });
 }
