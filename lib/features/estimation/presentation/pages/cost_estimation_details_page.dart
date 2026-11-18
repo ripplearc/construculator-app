@@ -80,12 +80,13 @@ class CostEstimationDetailsPage extends StatefulWidget {
       _CostEstimationDetailsPageState();
 }
 
-enum _SheetOutcome { editing, submitting, added, failed }
+enum _SheetOutcome { editing, submitting, added, changed, failed }
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   late final EstimateSummaryBloc _summaryBloc;
   late final CostItemsBloc _costItemsBloc;
   final _addedLineHighlight = AddedLineHighlightCubit();
+  bool _isLineSheetOpen = false;
 
   @override
   void initState() {
@@ -104,22 +105,54 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     super.dispose();
   }
 
-  Future<void> _openEquipmentSheet(YourRateEntry? entry, {String? name}) =>
-      _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
-        type: CostItemType.equipment,
-        asksBeforeClosing: true,
-        entry: entry,
-        name: name,
-        blocFactory: widget.equipmentCostFormBlocFactory,
-        addedItemIdOf: (state) =>
-            state is EquipmentCostFormSuccess ? state.createdItem.id : null,
-        outcomeOf: (state) => switch (state) {
-          EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
-          EquipmentCostFormSuccess() => _SheetOutcome.added,
-          EquipmentCostFormFailure() => _SheetOutcome.failed,
-          _ => _SheetOutcome.editing,
-        },
-      );
+  Future<void> _openEquipmentSheet(
+    YourRateEntry? entry, {
+    String? name,
+    EquipmentCostItem? editedItem,
+  }) => _openCostSheet<EquipmentCostFormBloc, EquipmentCostFormState>(
+    type: CostItemType.equipment,
+    asksBeforeClosing: true,
+    entry: entry,
+    name: name,
+    editedItem: editedItem,
+    blocFactory: widget.equipmentCostFormBlocFactory,
+    addedItemIdOf: (state) =>
+        state is EquipmentCostFormSuccess && !state.data.isEditingExistingLine
+        ? state.createdItem.id
+        : null,
+    outcomeOf: (state) => switch (state) {
+      EquipmentCostFormSubmitting() => _SheetOutcome.submitting,
+      EquipmentCostFormSuccess(:final data) when data.isEditingExistingLine =>
+        _SheetOutcome.changed,
+      EquipmentCostFormSuccess() => _SheetOutcome.added,
+      EquipmentCostFormDeleted() => _SheetOutcome.changed,
+      EquipmentCostFormFailure() => _SheetOutcome.failed,
+      _ => _SheetOutcome.editing,
+    },
+    failedMessageOf: (state) => switch (state) {
+      EquipmentCostFormFailure(whileDeleting: true) =>
+        context.l10n.deleteLineFailedError,
+      EquipmentCostFormFailure(:final data) when data.isEditingExistingLine =>
+        context.l10n.saveLineFailedError,
+      _ => context.l10n.addToEstimateFailedError,
+    },
+  );
+
+  void _openLine(CostItem line) {
+    _addedLineHighlight.clear();
+    if (line is EquipmentCostItem && !_isLineSheetOpen) {
+      unawaited(_editEquipmentLine(line));
+    }
+  }
+
+  Future<void> _editEquipmentLine(EquipmentCostItem line) async {
+    _isLineSheetOpen = true;
+    try {
+      await _openEquipmentSheet(null, editedItem: line);
+    } finally {
+      _isLineSheetOpen = false;
+    }
+  }
 
   Future<void> _openMaterialSheet() =>
       _openCostSheet<MaterialCostFormBloc, MaterialCostFormState>(
@@ -142,6 +175,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     required B Function() blocFactory,
     String? Function(S state)? addedItemIdOf,
     required _SheetOutcome Function(S state) outcomeOf,
+    String Function(S state)? failedMessageOf,
+    CostItem? editedItem,
     YourRateEntry? entry,
     String? name,
   }) async {
@@ -166,6 +201,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
                 : null,
             initialRateEntry: entry,
             initialEquipmentName: name,
+            editedEquipmentItem: editedItem is EquipmentCostItem
+                ? editedItem
+                : null,
           ),
         ),
       );
@@ -214,7 +252,8 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         case _SheetOutcome.failed when wasSavingWhenDismissed:
           CoreToast.showError(
             context,
-            l10n.addToEstimateFailedError,
+            failedMessageOf?.call(formBloc.state) ??
+                l10n.addToEstimateFailedError,
             l10n.closeLabel,
           );
         default:
@@ -296,7 +335,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
             builder: (context, highlightedItemId) => CostSectionsList(
               costs: state,
               highlightedItemId: highlightedItemId,
-              onLineTap: (_) => _addedLineHighlight.clear(),
+              onLineTap: _openLine,
               onAddFirstCost: () => unawaited(_openAddCost(context)),
             ),
           ),
