@@ -60,6 +60,11 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
           estimateTotal: estimateTotal,
           isEditingExistingLine: data.isEditingExistingLine,
           changeInEstimateTotal: data.changeInEstimateTotal,
+          hasUnsavedChanges: data.hasUnsavedChanges,
+          deleteFailed: switch (state) {
+            MaterialCostFormFailure(whileDeleting: true) => true,
+            _ => false,
+          },
           onDelete: data.isEditingExistingLine
               ? () => _confirmDelete(context, data.lineName)
               : null,
@@ -91,8 +96,8 @@ class MaterialAddToEstimateFooter extends StatelessWidget {
       context,
       title: l10n.deleteLineDialogTitle,
       body: TextSpan(text: l10n.deleteLineDialogBody(itemName, estimateName)),
-      secondaryLabel: l10n.yesDeleteButton,
-      primaryLabel: l10n.noKeepButton,
+      secondaryLabel: l10n.deleteLineYesDeleteButton,
+      primaryLabel: l10n.deleteLineNoKeepButton,
       isSecondaryDestructive: true,
     );
     if (keepLine == false) bloc.add(const MaterialCostDeleteRequested());
