@@ -1,3 +1,5 @@
+import 'dart:ui' show CheckedState;
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
@@ -131,10 +133,11 @@ void main() {
   }
 
   bool isOwnerChecked(WidgetTester tester, String ownerId) {
-    final tile = tester.widget<CheckboxListTile>(
+    final row = tester.getSemantics(
       find.byKey(Key('project_search_owner_filter_item_$ownerId')),
     );
-    return tile.value == true;
+    return row.getSemanticsData().flagsCollection.isChecked ==
+        CheckedState.isTrue;
   }
 
   group('User on ProjectSearchOwnerFilterSheet', () {
@@ -164,7 +167,14 @@ void main() {
         find.byKey(const Key('project_search_owner_filter_empty_label')),
         findsOneWidget,
       );
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget.key.toString().contains(
+            'project_search_owner_filter_item_',
+          ),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('filters the owner list by full name', (tester) async {

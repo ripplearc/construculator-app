@@ -1,3 +1,5 @@
+import 'dart:ui' show CheckedState;
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
@@ -107,10 +109,9 @@ void main() {
   }
 
   bool isTagChecked(WidgetTester tester, String tag) {
-    final tile = tester.widget<CheckboxListTile>(
-      find.byKey(Key('tag_filter_item_$tag')),
-    );
-    return tile.value == true;
+    final row = tester.getSemantics(find.byKey(Key('tag_filter_item_$tag')));
+    return row.getSemanticsData().flagsCollection.isChecked ==
+        CheckedState.isTrue;
   }
 
   group('User on GlobalSearchTagsFilterSheet', () {
@@ -140,7 +141,12 @@ void main() {
       await openSheet(tester);
 
       expect(find.byKey(const Key('tags_filter_empty_label')), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget.key.toString().contains('tag_filter_item_'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('filters the tag list when typing a search query', (
