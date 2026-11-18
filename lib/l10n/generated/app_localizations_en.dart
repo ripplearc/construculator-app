@@ -2333,6 +2333,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get materialSampleRateBadge => 'Sample rate';
+
+  @override
+  String materialSaveAsDefaultHelperText(
+    String price,
+    String yourRates,
+    String itemName,
+  ) {
+    return 'Saves $price to $yourRates — it auto-fills next time you add $itemName.';
+  }
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 
   @override
