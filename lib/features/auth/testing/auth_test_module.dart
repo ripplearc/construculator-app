@@ -37,6 +37,7 @@ import 'package:construculator/libraries/consent/testing/fake_consent_repository
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
@@ -55,6 +56,7 @@ class AuthTestModule extends Module {
     currentScreenTracker: CurrentScreenTracker(),
     appLifecycleWrapper: FakeAppLifecycleWrapper(),
     appVersion: '1.0.0',
+    sessionService: FakeSessionService(),
   );
 
   @override
@@ -81,6 +83,7 @@ class AuthTestModule extends Module {
         currentScreenTracker: appBootstrap.currentScreenTracker,
         appLifecycleWrapper: appBootstrap.appLifecycleWrapper,
         appVersion: appBootstrap.appVersion,
+        sessionService: appBootstrap.sessionService,
       ),
     ),
     RouterTestModule(),

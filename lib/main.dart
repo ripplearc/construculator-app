@@ -1,6 +1,7 @@
 import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
+import 'package:construculator/app/per_user_registrations.dart';
 import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
 import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/feature_flag_repository_impl.dart';
@@ -20,6 +21,7 @@ import 'package:construculator/libraries/secure_storage/secure_storage_wrapper_i
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/sentry/sentry_sdk_impl.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
+import 'package:construculator/libraries/session/session_service_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -97,6 +99,7 @@ Future<AppBootstrap> _initializeApp({
     // here. Only a rebuilt bootstrap would need to call its dispose().
     appLifecycleWrapper: AppLifecycleWrapperImpl(),
     appVersion: packageInfo.version,
+    sessionService: SessionServiceImpl(registrations: perUserRegistrations),
   );
 }
 

@@ -11,6 +11,8 @@ import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
+import 'package:construculator/libraries/session/testing/fake_session_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:powersync/powersync.dart';
@@ -35,6 +37,8 @@ class FakeAppBootstrapFactory {
   ///   (e.g. FakeFeatureFlagRepository with overrides) to control flag state
   /// - [appLifecycleWrapper]: Provide a specific fake to move the app between
   ///   foreground and background
+  /// - [sessionService]: Provide a specific SessionService; defaults to
+  ///   FakeSessionService, which adds no per-user objects
   /// - [appVersion]: Provide a distinctive version to assert where it ends up
   ///
   /// When parameters are omitted, sensible test defaults are provided.
@@ -58,6 +62,7 @@ class FakeAppBootstrapFactory {
     PowerSyncDatabase? powerSyncDatabase,
     FeatureFlagRepository? featureFlagRepository,
     FakeAppLifecycleWrapper? appLifecycleWrapper,
+    SessionService? sessionService,
     String appVersion = '1.0.0',
   }) {
     return AppBootstrap(
@@ -74,6 +79,7 @@ class FakeAppBootstrapFactory {
       currentScreenTracker: CurrentScreenTracker(),
       appLifecycleWrapper: appLifecycleWrapper ?? FakeAppLifecycleWrapper(),
       appVersion: appVersion,
+      sessionService: sessionService ?? FakeSessionService(),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:construculator/libraries/app_lifecycle/interfaces/app_lifecycle_
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
+import 'package:construculator/libraries/session/interfaces/session_service.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:powersync/powersync.dart';
 
@@ -139,6 +140,11 @@ class AppBootstrap {
   /// reading it is asynchronous and it never changes at runtime.
   final String appVersion;
 
+  /// Adds and removes the objects that belong to the signed-in user. One
+  /// instance for the whole run, so every holder agrees on whether a session
+  /// is active.
+  final SessionService sessionService;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -150,5 +156,6 @@ class AppBootstrap {
     required this.currentScreenTracker,
     required this.appLifecycleWrapper,
     required this.appVersion,
+    required this.sessionService,
   });
 }
