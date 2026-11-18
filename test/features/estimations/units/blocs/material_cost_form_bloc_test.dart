@@ -548,6 +548,82 @@ void main() {
       );
     });
 
+    group('rate picked on Look up a rate', () {
+      final savedRate = YourRateEntry(
+        id: 'paint-rate',
+        companyId: 'company-1',
+        itemName: 'Interior paint ProClassic',
+        category: CostItemType.material,
+        rate: const Money(amount: 52),
+        unit: Unit.liters,
+        savedAt: DateTime.utc(2026, 1, 10),
+      );
+
+      setUp(() {
+        database.seedRow({
+          'id': 'paint-rate',
+          'company_id': 'company-1',
+          'category': 'material',
+          'item_name': 'Interior paint ProClassic',
+          'rate_amount': 52.0,
+          'rate_currency': 'USD',
+          'unit': 'liters',
+          'saved_at': '2026-01-10T00:00:00.000Z',
+        });
+      });
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the rate and its unit as the saved, confirmed rate and keeps '
+        'the typed name',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostItemTypeChanged('Interior paint'))
+          ..add(const MaterialUnitSelected(Unit.bags))
+          ..add(MaterialRateLookedUp(savedRate)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.itemName, 'Interior paint');
+          expect(data.rate, 52);
+          expect(data.unit, Unit.liters);
+          expect(data.rateStatus, RateStatus.ownRateConfirmed);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the name too while it is empty',
+        build: () => bloc,
+        act: (b) => b.add(MaterialRateLookedUp(savedRate)),
+        verify: (b) =>
+            expect(_dataOf(b.state).itemName, 'Interior paint ProClassic'),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the picked unit when the saved rate has none',
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialUnitSelected(Unit.bags))
+          ..add(MaterialRateLookedUp(savedRate.copyWith(unit: clearField))),
+        verify: (b) => expect(_dataOf(b.state).unit, Unit.bags),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'counts as a change, so closing the form asks first',
+        build: () => bloc,
+        act: (b) => b.add(MaterialRateLookedUp(savedRate)),
+        verify: (b) => expect(_dataOf(b.state).hasUnsavedChanges, isTrue),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'marks the saved rate as used once the line is added',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialRateLookedUp(savedRate))
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (_) => expect(database.updatedRowIds, ['paint-rate']),
+      );
+    });
+
     group('line total', () {
       blocTest<MaterialCostFormBloc, MaterialCostFormState>(
         'is zero until both quantity and rate are set',

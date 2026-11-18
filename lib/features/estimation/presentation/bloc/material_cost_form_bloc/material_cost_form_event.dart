@@ -20,6 +20,16 @@ class MaterialSavedRateRecalled extends MaterialCostFormEvent {
   final YourRateEntry entry;
 }
 
+/// Fired when a rate is picked on the Look up a rate sheet. Fills the rate and
+/// its unit, and the name only while it is empty; unlike
+/// [MaterialSavedRateRecalled] this is an edit, so closing the form asks.
+class MaterialRateLookedUp extends MaterialCostFormEvent {
+  const MaterialRateLookedUp(this.entry);
+
+  /// The saved rate that was picked.
+  final YourRateEntry entry;
+}
+
 /// Fired when the user changes the material name.
 class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   const MaterialCostItemTypeChanged(this.value);
