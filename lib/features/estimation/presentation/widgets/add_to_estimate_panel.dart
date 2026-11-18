@@ -46,6 +46,12 @@ class AddToEstimatePanel extends StatelessWidget {
   /// difference.
   final double? changeInEstimateTotal;
 
+  /// Whether any field of the line being edited differs from how the sheet
+  /// opened. While it is false the card is titled "No change yet", even if
+  /// [changeInEstimateTotal] is not zero; once a field changes it is titled
+  /// "Changes this estimate", also when the total stays the same.
+  final bool hasUnsavedChanges;
+
   const AddToEstimatePanel({
     super.key,
     required this.lineTotal,
@@ -54,6 +60,7 @@ class AddToEstimatePanel extends StatelessWidget {
     required this.estimateTotal,
     required this.block,
     this.changeInEstimateTotal,
+    this.hasUnsavedChanges = false,
   });
 
   @override
@@ -65,7 +72,7 @@ class AddToEstimatePanel extends StatelessWidget {
     final change = changeInEstimateTotal;
     final title = switch (change) {
       null => l10n.addsToEstimateLabel,
-      0 => l10n.noChangeYetNote,
+      _ when !hasUnsavedChanges => l10n.noChangeYetLabel,
       _ => l10n.changesThisEstimateLabel,
     };
     if (block != null) {

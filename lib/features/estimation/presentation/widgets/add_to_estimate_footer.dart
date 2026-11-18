@@ -70,6 +70,10 @@ class AddToEstimateFooter extends StatelessWidget {
   /// new line. Switches the panel and the button label to their edit wording.
   final double? changeInEstimateTotal;
 
+  /// Whether any field of the line being edited has changed. Only read when
+  /// [changeInEstimateTotal] is not null; it picks the title of the panel.
+  final bool hasUnsavedChanges;
+
   const AddToEstimateFooter({
     super.key,
     required this.lineTotal,
@@ -83,6 +87,7 @@ class AddToEstimateFooter extends StatelessWidget {
     this.keypad,
     this.part = AddToEstimateFooterPart.all,
     this.changeInEstimateTotal,
+    this.hasUnsavedChanges = false,
   });
 
   @override
@@ -100,6 +105,7 @@ class AddToEstimateFooter extends StatelessWidget {
         estimateTotal: estimateTotal,
         block: block,
         changeInEstimateTotal: changeInEstimateTotal,
+        hasUnsavedChanges: hasUnsavedChanges,
       ),
     );
     if (part == AddToEstimateFooterPart.panel) {

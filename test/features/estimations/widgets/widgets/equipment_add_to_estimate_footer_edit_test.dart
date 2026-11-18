@@ -95,7 +95,7 @@ void main() {
     ) async {
       await pumpFooter(tester, [openScissorLift]);
 
-      expect(find.text(l10n.noChangeYetNote), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
       expect(find.text(l10n.changesThisEstimateLabel), findsNothing);
       expect(find.text('+\$0.00'), findsOneWidget);
       expect(find.text(' total  \$2,993.62 →'), findsOneWidget);
@@ -112,7 +112,7 @@ void main() {
 
       expect(find.text('+\$200.00'), findsOneWidget);
       expect(find.textContaining('\$3,193.62'), findsOneWidget);
-      expect(find.text(l10n.noChangeYetNote), findsNothing);
+      expect(find.text(l10n.noChangeYetLabel), findsNothing);
     });
 
     testWidgets(
@@ -128,6 +128,36 @@ void main() {
       },
     );
 
+    testWidgets('titles the card Changes this estimate after only a rename', (
+      tester,
+    ) async {
+      await pumpFooter(tester, [
+        openScissorLift,
+        const EquipmentCostItemTypeChanged('Boom lift'),
+      ]);
+
+      expect(find.text(l10n.changesThisEstimateLabel), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsNothing);
+      expect(find.text('+\$0.00'), findsOneWidget);
+    });
+
+    testWidgets(
+      'titles the card Changes this estimate when fields change but the '
+      'total stays the same',
+      (tester) async {
+        await pumpFooter(tester, [
+          openScissorLift,
+          const EquipmentDurationUpdatedEvent('4'),
+          const EquipmentRateUpdatedEvent('150'),
+          const EquipmentDeliveryFeeUpdatedEvent('85'),
+        ]);
+
+        expect(find.text(l10n.changesThisEstimateLabel), findsOneWidget);
+        expect(find.text(l10n.noChangeYetLabel), findsNothing);
+        expect(find.text('+\$0.00'), findsOneWidget);
+      },
+    );
+
     testWidgets('says no change again when a field is put back', (
       tester,
     ) async {
@@ -137,7 +167,7 @@ void main() {
         const EquipmentDurationUpdatedEvent('3'),
       ]);
 
-      expect(find.text(l10n.noChangeYetNote), findsOneWidget);
+      expect(find.text(l10n.noChangeYetLabel), findsOneWidget);
     });
 
     testWidgets('keeps asking for what is missing, under the Changes title', (
