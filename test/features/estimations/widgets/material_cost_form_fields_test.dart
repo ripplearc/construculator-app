@@ -62,7 +62,11 @@ void main() {
     );
   });
 
-  Future<void> pumpFields(WidgetTester tester) async {
+  Future<void> pumpFields(
+    WidgetTester tester, {
+    YourRateEntry? initialRateEntry,
+    String? initialName,
+  }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
     await tester.pumpWidget(
@@ -74,7 +78,10 @@ void main() {
         home: Scaffold(
           body: BlocProvider<MaterialCostFormBloc>.value(
             value: bloc,
-            child: const MaterialCostFormFields(),
+            child: MaterialCostFormFields(
+              initialRateEntry: initialRateEntry,
+              initialName: initialName,
+            ),
           ),
         ),
       ),
@@ -511,6 +518,59 @@ void main() {
 
       expect(textOf(tester, quantityField), '3');
       expect(dataOf().quantity, 3);
+    });
+  });
+
+  group('opened from Your recents', () {
+    final savedRate = YourRateEntry(
+      id: 'paint-rate',
+      companyId: 'company-1',
+      itemName: 'Interior paint',
+      category: CostItemType.material,
+      rate: const Money(amount: 52),
+      unit: Unit.liters,
+      savedAt: DateTime.utc(2026, 1, 10),
+    );
+
+    testWidgets('a picked saved rate fills the name, rate and unit', (
+      tester,
+    ) async {
+      await pumpFields(tester, initialRateEntry: savedRate);
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, nameField), 'Interior paint');
+      expect(textOf(tester, rateField), '52');
+      expect(textOf(tester, quantityField), isEmpty);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.descendant(of: unitPill, matching: find.text(l10n.unitLiters)),
+        findsOneWidget,
+      );
+      expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+      expect(bloc.state.data.hasUnsavedChanges, isFalse);
+    });
+
+    testWidgets('a rate with cents is put back as typed, not rounded', (
+      tester,
+    ) async {
+      await pumpFields(
+        tester,
+        initialRateEntry: savedRate.copyWith(rate: const Money(amount: 9.5)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, rateField), '9.5');
+    });
+
+    testWidgets('a typed name fills the name and leaves the rate empty', (
+      tester,
+    ) async {
+      await pumpFields(tester, initialName: 'primer');
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, nameField), 'primer');
+      expect(textOf(tester, rateField), isEmpty);
+      expect(bloc.state.data.itemName, 'primer');
     });
   });
 }

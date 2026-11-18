@@ -8,6 +8,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:construculator/libraries/storage/interfaces/storage_service.dart';
 import 'package:construculator/libraries/storage/testing/fake_storage_service.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -16,6 +17,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 MaterialCostFormData _dataOf(MaterialCostFormState state) =>
     (state as MaterialCostFormEditing).data;
@@ -27,6 +29,7 @@ void main() {
     late FakeStorageService storage;
     late FakeAuthRepository auth;
     late LastUsedUnitRepository lastUsedUnits;
+    late FakeYourRatesDatabase database;
 
     setUpAll(() {
       final clock = FakeClockImpl();
@@ -40,6 +43,8 @@ void main() {
       );
       Modular.replaceInstance<StorageService>(storage);
       Modular.replaceInstance<AuthRepository>(auth);
+      database = FakeYourRatesDatabase();
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
       lastUsedUnits = Modular.get<LastUsedUnitRepository>();
     });
 
@@ -51,6 +56,7 @@ void main() {
       fakeSupabase.reset();
       storage.reset();
       auth.reset();
+      database.reset();
       auth.setCurrentCredentials(
         UserCredential(
           id: 'account-1',
@@ -401,6 +407,144 @@ void main() {
         },
         verify: (_) =>
             expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1)),
+      );
+    });
+
+    group('saved rate picked on Your recents', () {
+      final savedRate = YourRateEntry(
+        id: 'paint-rate',
+        companyId: 'company-1',
+        itemName: 'Interior paint',
+        category: CostItemType.material,
+        rate: const Money(amount: 52),
+        unit: Unit.liters,
+        savedAt: DateTime.utc(2026, 1, 10),
+      );
+
+      setUp(() {
+        database.seedRow({
+          'id': 'paint-rate',
+          'company_id': 'company-1',
+          'category': 'material',
+          'item_name': 'Interior paint',
+          'rate_amount': 52.0,
+          'rate_currency': 'USD',
+          'unit': 'liters',
+          'saved_at': '2026-01-10T00:00:00.000Z',
+        });
+      });
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the name, rate and unit as the saved, confirmed rate',
+        build: () => bloc,
+        act: (b) => b.add(MaterialSavedRateRecalled(savedRate)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.itemName, 'Interior paint');
+          expect(data.rate, 52);
+          expect(data.unit, Unit.liters);
+          expect(data.rateStatus, RateStatus.ownRateConfirmed);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'counts the picked values as how the form opened, so there are no '
+        'unsaved changes',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(MaterialSavedRateRecalled(savedRate)),
+        verify: (b) {
+          expect(_dataOf(b.state).unit, Unit.liters);
+          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'has no unsaved changes again once a typed quantity is cleared, '
+        'when the remembered unit arrives after the pick',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialQuantityUpdated('')),
+        verify: (b) => expect(_dataOf(b.state).hasUnsavedChanges, isFalse),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'keeps the remembered unit, with no unsaved changes, when the saved '
+        'rate has no unit',
+        setUp: () =>
+            lastUsedUnits.saveLastUnit(CostItemType.material, Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(
+            MaterialSavedRateRecalled(savedRate.copyWith(unit: clearField)),
+          ),
+        verify: (b) {
+          expect(_dataOf(b.state).unit, Unit.bags);
+          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'marks the saved rate as used once the line is added',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (_) {
+          expect(database.updatedRowIds, ['paint-rate']);
+          final row =
+              fakeSupabase.getMethodCallsFor('insert').single['data']
+                  as Map<String, dynamic>;
+          expect(row['rate_status'], 'own_rate_confirmed');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'does not mark it as used when the line is never added',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialQuantityUpdated('3')),
+        verify: (_) => expect(database.updatedRowIds, isEmpty),
+      );
+
+      for (final edit in <MaterialCostFormEvent>[
+        const MaterialRateUpdated('60'),
+        const MaterialCostItemTypeChanged('Exterior paint'),
+      ]) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'does not mark it as used after ${edit.runtimeType} changes it',
+          build: () => bloc,
+          act: (b) => b
+            ..add(MaterialSavedRateRecalled(savedRate))
+            ..add(edit)
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+          verify: (_) {
+            expect(fakeSupabase.getMethodCallsFor('insert'), hasLength(1));
+            expect(database.updatedRowIds, isEmpty);
+          },
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'a typed rate is the user\'s own, not yet confirmed',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialRateUpdated('60')),
+        verify: (b) =>
+            expect(_dataOf(b.state).rateStatus, RateStatus.ownRateUnconfirmed),
       );
     });
 

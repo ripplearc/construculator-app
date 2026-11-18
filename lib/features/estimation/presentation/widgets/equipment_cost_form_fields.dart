@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/editable_number_text.dart';
 import 'package:construculator/features/estimation/presentation/widgets/choice_chip_toggle.dart';
 import 'package:construculator/features/estimation/presentation/widgets/money_input_formatter.dart';
 import 'package:construculator/features/estimation/presentation/widgets/recalled_rate_subtitle.dart';
@@ -15,10 +16,6 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-
-String _formatTrimmedNumber(double value) => value == value.roundToDouble()
-    ? value.toStringAsFixed(0)
-    : value.toString();
 
 enum _RateSaveStatus { idle, saving, saved, failed }
 
@@ -898,7 +895,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     (method == EquipmentPricingMethod.day
             ? _dailyRateController
             : _jobAmountController)
-        .text = _formatTrimmedNumber(
+        .text = editableNumberText(
       entry.rate.amount,
     );
     context.read<EquipmentCostFormBloc>().add(
@@ -1430,7 +1427,7 @@ class _OutsizedFeeDialog extends StatelessWidget {
     if (value == 1) return l10n.equipmentDeliveryFeeOutsizedDialogOneDay;
     if (value == 0.5) return l10n.equipmentDeliveryFeeOutsizedDialogHalfDay;
     return l10n.equipmentDeliveryFeeOutsizedDialogDurationDays(
-      _formatTrimmedNumber(value),
+      editableNumberText(value),
     );
   }
 
