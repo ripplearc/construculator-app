@@ -28,10 +28,6 @@
             <mutation text="&amp;&amp; true"/>
         </regex>
 
-        <regex pattern="(if \(edited == null \|\| edited\.pricingMethod != draft\.method\) return true;)" id="edit_save.record_use_ignores_method">
-            <mutation text="if (edited == null) return true;"/>
-        </regex>
-
         <regex pattern="(return storedRate != pickedRate;)" id="edit_save.record_use_inverted">
             <mutation text="return storedRate == pickedRate;"/>
         </regex>
