@@ -53,6 +53,16 @@ class MaterialSampleRatePicked extends MaterialCostFormEvent {
   final Unit? unit;
 }
 
+/// Fired when Save as my default has saved [rate] to Your rates. The rate on
+/// the form becomes the user's own, confirmed, unless it was edited while
+/// the save ran.
+class MaterialRateSavedAsDefault extends MaterialCostFormEvent {
+  const MaterialRateSavedAsDefault(this.rate);
+
+  /// The price that was saved.
+  final double rate;
+}
+
 /// Fired when the user changes the material name.
 class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   const MaterialCostItemTypeChanged(this.value);
