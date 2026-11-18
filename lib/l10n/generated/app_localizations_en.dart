@@ -2632,6 +2632,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Editing this group. Press ( ) to close it. If you type nothing, everything stays as it was.';
 
   @override
+  String get calculatorToastPartUnderSixtyTitle => 'Minutes must be under 60';
+
+  @override
+  String get calculatorToastPartUnderSixtyBody =>
+      'Press ⌫ and type the minutes again.';
+
+  @override
+  String get calculatorToastMinutesTwoDigitsTitle => 'Minutes have two digits';
+
+  @override
+  String get calculatorToastMinutesTwoDigitsBody =>
+      'Press . to type the seconds, or = to finish the angle.';
+
+  @override
+  String get calculatorToastSecondsTwoDigitsTitle => 'Seconds have two digits';
+
+  @override
+  String get calculatorToastAngleThreePartsTitle => 'An angle has three parts';
+
+  @override
+  String get calculatorToastFinishTheAngleBody =>
+      'Press = or an operator to finish the angle.';
+
+  @override
   String calculatorToastKeepsLengthBody(String unit, String value, String key) {
     return 'Pressing $unit again would make this $value² — $key can\'t hold an area or volume.';
   }

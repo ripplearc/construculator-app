@@ -118,3 +118,42 @@ final class CalculatorKeepsLengthToast extends CalculatorToast {
   @override
   List<Object?> get props => [key, unit, value];
 }
+
+/// "Minutes must be under 60" / "Press ⌫ and type the minutes again.": the
+/// digit, or the point closing the minutes, that would make the minutes or
+/// the seconds of an angle 60 or more (rule 4.10; decision tree rows 172,
+/// 177 and 370; CA-1372). The chip stays as it was.
+final class CalculatorPartUnderSixtyToast extends CalculatorToast {
+  const CalculatorPartUnderSixtyToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "Minutes have two digits" / "Press . to type the seconds, or = to finish
+/// the angle.": a third digit typed into the minutes (rule 4.10; row 173).
+final class CalculatorMinutesTwoDigitsToast extends CalculatorToast {
+  const CalculatorMinutesTwoDigitsToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "Seconds have two digits" / "Press = or an operator to finish the
+/// angle.": a third digit typed into the seconds (rule 4.10; row 174).
+final class CalculatorSecondsTwoDigitsToast extends CalculatorToast {
+  const CalculatorSecondsTwoDigitsToast();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// "An angle has three parts" / "Press = or an operator to finish the
+/// angle.": a point, or the D:M:S key, once the seconds are open (rule
+/// 4.10; row 176).
+final class CalculatorAngleThreePartsToast extends CalculatorToast {
+  const CalculatorAngleThreePartsToast();
+
+  @override
+  List<Object?> get props => const [];
+}

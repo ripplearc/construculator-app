@@ -45,11 +45,13 @@
             <mutation text="final rebuilds = false;"/>
         </regex>
 
-        <!-- RULE 5b: a D:M:S reading of 90° or more is offered, or the
-             boundary is off by one -->
+        <!-- RULE 5b: a D:M:S reading of 90° or more is offered. The
+             off-by-one mutant (&gt;) is equivalent since CA-1372: a D:M:S
+             reading of exactly 90° needs 60 minutes, which the entry
+             refuses at the digit, or 90.00, which the all-zeros guard
+             above skips -->
         <regex pattern="if \(promoted\.tokens\.single\.value &gt;= _degreesInARightAngle\) return null;" dotAll="true" id="read_as.degrees.right_angle_offered">
             <mutation text=""/>
-            <mutation text="if (promoted.tokens.single.value &gt; _degreesInARightAngle) return null;"/>
         </regex>
 
         <!-- RULE 5: a trailing point is asked about -->
@@ -134,9 +136,10 @@
              Slope asks about a
              fraction or a length, the rise the pill reads has no way back
              so a digit after it starts a compound -->
+        <!-- The 90° off-by-one mutant (&lt;=) is equivalent since CA-1372:
+             no stop reads exactly 90° once 89.60 is refused at the digit -->
         <regex pattern="static bool _isAPitch\(double\? degrees\) =&gt;\s*degrees != null &amp;&amp; degrees &gt; 0 &amp;&amp; degrees &lt; _degreesInARightAngle;" dotAll="true" id="read_as.pitch.stop_the_rules_refuse">
             <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null;"/>
-            <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null &amp;&amp; degrees &gt; 0 &amp;&amp; degrees &lt;= _degreesInARightAngle;"/>
             <mutation text="static bool _isAPitch(double? degrees) =&gt; degrees != null &amp;&amp; degrees &gt;= 0 &amp;&amp; degrees &lt; _degreesInARightAngle;"/>
         </regex>
 
@@ -177,11 +180,11 @@
             <mutation text="if (seconds.isEmpty) { return _replaceLast(last.copyWith(seconds: () =&gt; null, typedAs: () =&gt; null)); }"/>
         </regex>
 
-        <regex pattern="minutes: \(\) =&gt; '\$\{angle\.minutes\}\$digit',\s*typedAs: \(\) =&gt; null," dotAll="true" id="read_as.typed_as.survives_minutes_digit">
-            <mutation text="minutes: () =&gt; '${angle.minutes}$digit',"/>
+        <regex pattern=": angle\.copyWith\(minutes: \(\) =&gt; part, typedAs: \(\) =&gt; null\)," dotAll="true" id="read_as.typed_as.survives_minutes_digit">
+            <mutation text=": angle.copyWith(minutes: () =&gt; part),"/>
         </regex>
-        <regex pattern="_withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\)," dotAll="true" id="read_as.typed_as.dms_key_forgets">
-            <mutation text="_withMinutesClosed(last.digits, minutes, typedAs: null),"/>
+        <regex pattern="return _withMinutesClosed\(last\.digits, minutes, typedAs: last\.typedAs\);" dotAll="true" id="read_as.typed_as.dms_key_forgets">
+            <mutation text="return _withMinutesClosed(last.digits, minutes, typedAs: null);"/>
         </regex>
         <regex pattern="seconds,\s*typedAs,\s*\];" dotAll="true" id="read_as.typed_as.not_in_props">
             <mutation text="seconds, ];"/>
