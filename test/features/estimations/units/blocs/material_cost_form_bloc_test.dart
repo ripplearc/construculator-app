@@ -22,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/fake_cost_items_database.dart';
+import '../../../../utils/fake_your_rates_database.dart';
 
 MaterialCostFormData _dataOf(MaterialCostFormState state) =>
     (state as MaterialCostFormEditing).data;
@@ -34,11 +35,13 @@ void main() {
     late FakeStorageService storage;
     late FakeAuthRepository auth;
     late LastUsedUnitRepository lastUsedUnits;
+    late FakeYourRatesDatabase yourRates;
 
     setUpAll(() {
       final clock = FakeClockImpl();
       fakeSupabase = FakeSupabaseWrapper(clock: clock);
-      database = FakeCostItemsDatabase();
+      yourRates = FakeYourRatesDatabase();
+      database = yourRates.costItems;
       storage = FakeStorageService();
       auth = FakeAuthRepository(clock: clock);
       Modular.init(
@@ -46,7 +49,7 @@ void main() {
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase),
         ),
       );
-      Modular.replaceInstance<PowerSyncDatabaseWrapper>(database);
+      Modular.replaceInstance<PowerSyncDatabaseWrapper>(yourRates);
       Modular.replaceInstance<StorageService>(storage);
       Modular.replaceInstance<AuthRepository>(auth);
       lastUsedUnits = Modular.get<LastUsedUnitRepository>();
@@ -58,7 +61,7 @@ void main() {
 
     setUp(() {
       fakeSupabase.reset();
-      database.reset();
+      yourRates.reset();
       Modular.replaceInstance<IdGenerator>(FakeIdGeneratorImpl());
       storage.reset();
       auth.reset();
@@ -806,6 +809,122 @@ void main() {
         expect(savedRow()['id'], FakeIdGeneratorImpl.idAt(2));
         await second.close();
       });
+    });
+
+    group('saved rate picked on Your recents', () {
+      final savedRate = YourRateEntry(
+        id: 'paint-rate',
+        companyId: 'company-1',
+        itemName: 'Interior paint',
+        category: CostItemType.material,
+        rate: const Money(amount: 52),
+        unit: Unit.liters,
+        savedAt: DateTime.utc(2026, 1, 10),
+      );
+
+      setUp(() {
+        yourRates.seedRow({
+          'id': 'paint-rate',
+          'company_id': 'company-1',
+          'category': 'material',
+          'item_name': 'Interior paint',
+          'rate_amount': 52.0,
+          'rate_currency': 'USD',
+          'unit': 'liters',
+          'saved_at': '2026-01-10T00:00:00.000Z',
+        });
+      });
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'fills the name, rate and unit as the saved, confirmed rate',
+        build: () => bloc,
+        act: (b) => b.add(MaterialSavedRateRecalled(savedRate)),
+        verify: (b) {
+          final data = _dataOf(b.state);
+          expect(data.itemName, 'Interior paint');
+          expect(data.rate, 52);
+          expect(data.unit, Unit.liters);
+          expect(data.rateStatus, RateStatus.ownRateConfirmed);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'counts the picked values as how the form opened, so there are no '
+        'unsaved changes',
+        setUp: () => remember('Interior paint', Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(const MaterialCostFormStarted())
+          ..add(MaterialSavedRateRecalled(savedRate)),
+        verify: (b) {
+          expect(_dataOf(b.state).unit, Unit.liters);
+          expect(_dataOf(b.state).hasUnsavedChanges, isFalse);
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'has no unsaved changes again once a typed quantity is cleared, '
+        'when the remembered unit arrives after the pick',
+        setUp: () => remember('Interior paint', Unit.bags),
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialCostFormStarted())
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialQuantityUpdated('')),
+        verify: (b) => expect(_dataOf(b.state).hasUnsavedChanges, isFalse),
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'marks the saved rate as used once the line is added',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialQuantityUpdated('3'))
+          ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+        verify: (_) {
+          expect(yourRates.updatedRowIds, ['paint-rate']);
+          expect(database.rows.single['rate_status'], 'own_rate_confirmed');
+        },
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'does not mark it as used when the line is never added',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialQuantityUpdated('3')),
+        verify: (_) => expect(yourRates.updatedRowIds, isEmpty),
+      );
+
+      for (final edit in <MaterialCostFormEvent>[
+        const MaterialRateUpdated('60'),
+        const MaterialCostItemTypeChanged('Exterior paint'),
+      ]) {
+        blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+          'does not mark it as used after ${edit.runtimeType} changes it',
+          build: () => bloc,
+          act: (b) => b
+            ..add(MaterialSavedRateRecalled(savedRate))
+            ..add(edit)
+            ..add(const MaterialQuantityUpdated('3'))
+            ..add(const MaterialCostFormSubmitted(estimateId: 'estimate-1')),
+          verify: (_) {
+            expect(database.rows, hasLength(1));
+            expect(yourRates.updatedRowIds, isEmpty);
+          },
+        );
+      }
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'a typed rate is the user\'s own, not yet confirmed',
+        build: () => bloc,
+        act: (b) => b
+          ..add(MaterialSavedRateRecalled(savedRate))
+          ..add(const MaterialRateUpdated('60')),
+        verify: (b) =>
+            expect(_dataOf(b.state).rateStatus, RateStatus.ownRateUnconfirmed),
+      );
     });
 
     group('line total', () {

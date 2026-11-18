@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/number_pad_session.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -67,6 +68,8 @@ void main() {
     ValueNotifier<NumberPadSession?>? numberPad,
     ThemeData? theme,
     Widget? trailing,
+    YourRateEntry? initialRateEntry,
+    String? initialName,
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -82,6 +85,8 @@ void main() {
             child: MaterialCostFormFields(
               numberPad: numberPad,
               trailing: trailing,
+              initialRateEntry: initialRateEntry,
+              initialName: initialName,
             ),
           ),
         ),
@@ -906,5 +911,61 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  group('opened from Your recents', () {
+    final savedRate = YourRateEntry(
+      id: 'paint-rate',
+      companyId: 'company-1',
+      itemName: 'Interior paint',
+      category: CostItemType.material,
+      rate: const Money(amount: 52),
+      unit: Unit.liters,
+      savedAt: DateTime.utc(2026, 1, 10),
+    );
+
+    testWidgets('a picked saved rate fills the name, rate and unit', (
+      tester,
+    ) async {
+      await pumpFields(tester, initialRateEntry: savedRate);
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, nameField), 'Interior paint');
+      expect(textOf(tester, rateField), '52');
+      expect(textOf(tester, quantityField), isEmpty);
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.descendant(
+          of: unitPill,
+          matching: find.text(Unit.liters.symbol(l10n)),
+        ),
+        findsOneWidget,
+      );
+      expect(bloc.state.data.rateStatus, RateStatus.ownRateConfirmed);
+      expect(bloc.state.data.hasUnsavedChanges, isFalse);
+    });
+
+    testWidgets('a rate with cents is put back as typed, not rounded', (
+      tester,
+    ) async {
+      await pumpFields(
+        tester,
+        initialRateEntry: savedRate.copyWith(rate: const Money(amount: 9.5)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, rateField), '9.5');
+    });
+
+    testWidgets('a typed name fills the name and leaves the rate empty', (
+      tester,
+    ) async {
+      await pumpFields(tester, initialName: 'primer');
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, nameField), 'primer');
+      expect(textOf(tester, rateField), isEmpty);
+      expect(bloc.state.data.itemName, 'primer');
+    });
   });
 }

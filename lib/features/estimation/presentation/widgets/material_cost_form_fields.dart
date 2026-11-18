@@ -27,6 +27,7 @@ const double _nameBottomPadding = 6;
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
 ///
+// TODO: [CA-1184] open a picked saved rate on the quantity-only screen instead of this full form. https://ripplearc.youtrack.cloud/issue/CA-1184
 // TODO: [CA-1185] add the search button inside the Rate row and the "Never priced this?" hint under it. https://ripplearc.youtrack.cloud/issue/CA-1185
 // TODO: [CA-1187] add the "Waste 10% · Add note" row under the rate hint. https://ripplearc.youtrack.cloud/issue/CA-1187
 class MaterialCostFormFields extends StatefulWidget {
@@ -44,11 +45,21 @@ class MaterialCostFormFields extends StatefulWidget {
   /// fields from, or `null` when the form adds a new line.
   final MaterialCostItem? editedItem;
 
+  /// A rate picked on the Your recents sheet before the form opened. Fills the
+  /// name, rate and unit.
+  final YourRateEntry? initialRateEntry;
+
+  /// A name typed on the Your recents search before the form opened. Fills the
+  /// name and leaves the rate empty. Ignored when [initialRateEntry] is set.
+  final String? initialName;
+
   const MaterialCostFormFields({
     super.key,
     this.numberPad,
     this.trailing,
     this.editedItem,
+    this.initialRateEntry,
+    this.initialName,
   });
 
   @override
@@ -85,7 +96,16 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         shown: context.l10n.numberPadRateValue,
       ),
     );
-    if (widget.editedItem case final item?) _fillFromEditedItem(item);
+    if (widget.editedItem case final item?) {
+      _fillFromEditedItem(item);
+    } else if (widget.initialRateEntry case final entry?) {
+      _nameController.text = entry.itemName;
+      _rateController.text = formatTrimmedNumber(entry.rate.amount);
+      _bloc.add(MaterialSavedRateRecalled(entry));
+    } else if (widget.initialName case final name?) {
+      _nameController.text = name;
+      _bloc.add(MaterialCostItemTypeChanged(name));
+    }
   }
 
   @override
