@@ -150,6 +150,8 @@ void main() {
 
     testWidgets('the delivery fee is removed', (tester) async {
       await openEditSheet(tester, theme);
+      await tester.tap(find.byKey(const Key('delivery_fee_row')));
+      await tester.pumpAndSettle();
       await enter(tester, 'delivery_fee_field', '');
       await expectSheetGolden(tester, 'change_down', suffix);
     });

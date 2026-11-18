@@ -86,6 +86,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
   late final EstimateSummaryBloc _summaryBloc;
   late final CostItemsBloc _costItemsBloc;
   final _addedLineHighlight = AddedLineHighlightCubit();
+  bool _isLineSheetOpen = false;
 
   @override
   void initState() {
@@ -113,7 +114,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     asksBeforeClosing: true,
     entry: entry,
     name: name,
-    editedEquipmentItem: editedItem,
+    editedItem: editedItem,
     blocFactory: widget.equipmentCostFormBlocFactory,
     addedItemIdOf: (state) =>
         state is EquipmentCostFormSuccess && !state.data.isEditingExistingLine
@@ -136,8 +137,6 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
       _ => context.l10n.addToEstimateFailedError,
     },
   );
-
-  bool _isLineSheetOpen = false;
 
   void _openLine(CostItem line) {
     _addedLineHighlight.clear();
@@ -177,7 +176,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     String? Function(S state)? addedItemIdOf,
     required _SheetOutcome Function(S state) outcomeOf,
     String Function(S state)? failedMessageOf,
-    EquipmentCostItem? editedEquipmentItem,
+    CostItem? editedItem,
     YourRateEntry? entry,
     String? name,
   }) async {
@@ -202,7 +201,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
                 : null,
             initialRateEntry: entry,
             initialEquipmentName: name,
-            editedEquipmentItem: editedEquipmentItem,
+            editedEquipmentItem: editedItem is EquipmentCostItem
+                ? editedItem
+                : null,
           ),
         ),
       );
