@@ -7,8 +7,11 @@ import 'package:construculator/libraries/estimation/domain/entities/lock_status_
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimates_database.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -25,6 +28,7 @@ void main() {
     final fakePhoneDatabase = FakeCostEstimatesDatabase();
     late FakeClockImpl fakeClock;
     late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
+    late FakeProjectRepository fakeProjectRepository;
 
     const testProjectId = 'test-project-123';
     const testEstimationName = 'Test Estimation';
@@ -79,6 +83,10 @@ void main() {
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
 
+      Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+      fakeProjectRepository =
+          Modular.get<ProjectRepository>() as FakeProjectRepository;
+
       fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
         initialProjectId: testProjectId,
       );
@@ -96,6 +104,9 @@ void main() {
       fakeSupabaseWrapper.reset();
       fakePhoneDatabase.reset();
       fakeCurrentProjectNotifier.reset(projectId: testProjectId);
+      fakeProjectRepository.setProjectPermissions(testProjectId, [
+        PermissionConstants.addCostEstimation,
+      ]);
 
       setupAuth();
 
@@ -165,6 +176,27 @@ void main() {
             isA<UnexpectedFailure>(),
           ),
         ],
+      );
+
+      blocTest<AddCostEstimationBloc, AddCostEstimationState>(
+        'emits a permission failure and writes nothing when the user lacks the add permission',
+        build: () {
+          fakeProjectRepository.setProjectPermissions(testProjectId, [
+            PermissionConstants.editCostEstimation,
+          ]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
+        ),
+        expect: () => [
+          isA<AddCostEstimationFailure>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.permissionDenied,
+          ),
+        ],
+        verify: (_) => expect(fakePhoneDatabase.executeCalls, isEmpty),
       );
 
       blocTest<AddCostEstimationBloc, AddCostEstimationState>(
