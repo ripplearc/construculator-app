@@ -541,7 +541,7 @@ void main() {
       expect(find.text(l10n().loadMoreLogsError), findsOneWidget);
       expect(find.text(l10n().logsLoadErrorReassurance), findsOneWidget);
       expect(
-        find.text(l10n().closeLabel),
+        find.bySemanticsLabel(l10n().closeLabel),
         findsNothing,
         reason: 'the failure is shown in the list, not in a dismissible toast',
       );
@@ -607,7 +607,7 @@ void main() {
       );
       expect(find.text(l10n().errorLoadingLogs), findsOneWidget);
       expect(
-        find.text(l10n().closeLabel),
+        find.bySemanticsLabel(l10n().closeLabel),
         findsNothing,
         reason: 'the failure is shown in the body, not in a dismissible toast',
       );
