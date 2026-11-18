@@ -189,5 +189,15 @@ void main() {
 
       await expectGolden('material_saved_as_default', suffix);
     });
+
+    testWidgets('renders a failed save of the default', (tester) async {
+      await pumpFields(tester, theme);
+      await showSampleRate(tester);
+      database.executeError = StateError('disk full');
+      await tester.tap(find.byKey(const Key('save_as_default_link')));
+      await tester.pumpAndSettle();
+
+      await expectGolden('material_save_as_default_failed', suffix);
+    });
   });
 }

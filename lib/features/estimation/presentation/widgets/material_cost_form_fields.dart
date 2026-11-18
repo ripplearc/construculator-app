@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/presentation/bloc/material_co
 import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
 import 'package:construculator/features/estimation/presentation/helpers/editable_number_text.dart';
 import 'package:construculator/features/estimation/presentation/helpers/unit_display_name.dart';
+import 'package:construculator/features/estimation/presentation/widgets/entry_label_dialog.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_rate_lookup_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_pill.dart';
@@ -29,7 +30,7 @@ const double _nameBottomPadding = 6;
 
 const double _lookupButtonTapSize = 48;
 
-enum _DefaultSave { idle, saving, saved }
+enum _DefaultSave { idle, saving, saved, failed }
 
 /// The material name, quantity with its unit, and rate rows of the "New
 /// material cost" sheet.
@@ -81,6 +82,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   _DefaultSave _defaultSave = _DefaultSave.idle;
   double? _rateBeingSaved;
   String? _savedItemName;
+  bool _isAskingForLabel = false;
 
   @override
   void initState() {
@@ -159,6 +161,11 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       case YourRatesSaving():
         setState(() => _defaultSave = _DefaultSave.saving);
         _reportSaveRunning(context, isRunning: true);
+      case YourRatesSaveCollision(:final entry) ||
+          YourRatesSaveLabelTaken(:final entry):
+        setState(() => _defaultSave = _DefaultSave.idle);
+        _reportSaveRunning(context, isRunning: false);
+        if (!_isAskingForLabel) unawaited(_askForLabel(entry));
       case YourRatesSaveSucceeded(:final saved):
         setState(() => _defaultSave = _DefaultSave.saved);
         if (_rateBeingSaved case final rate?) {
@@ -167,11 +174,8 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           );
         }
         _reportSaveRunning(context, isRunning: false);
-      case YourRatesSaveCollision() ||
-          YourRatesSaveLabelTaken() ||
-          YourRatesSaveFailed() ||
-          YourRatesSaveNoCompany():
-        setState(() => _defaultSave = _DefaultSave.idle);
+      case YourRatesSaveFailed() || YourRatesSaveNoCompany():
+        setState(() => _defaultSave = _DefaultSave.failed);
         _reportSaveRunning(context, isRunning: false);
       case YourRatesLoading() ||
           YourRatesRetrying() ||
@@ -180,6 +184,18 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           YourRatesError():
         break;
     }
+  }
+
+  Future<void> _askForLabel(YourRateEntry entry) async {
+    _isAskingForLabel = true;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => BlocProvider.value(
+        value: _saveBloc,
+        child: EntryLabelDialog(entry: entry.copyWith(entryLabel: clearField)),
+      ),
+    );
+    _isAskingForLabel = false;
   }
 
   @override
@@ -361,6 +377,13 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
               ),
             if (state.data.offersSaveAsDefault)
               _SaveAsDefaultHint(data: state.data),
+            if (state.data.offersSaveAsDefault &&
+                _defaultSave == _DefaultSave.failed)
+              _FieldHint(
+                key: const Key('save_as_default_error'),
+                text: l10n.yourRatesSaveFailedError,
+                isError: true,
+              ),
             if (_defaultSave == _DefaultSave.saved &&
                 state.data.rateStatus == RateStatus.ownRateConfirmed &&
                 state.data.itemName.trim() == _savedItemName)
@@ -463,14 +486,20 @@ class _SaveAsDefaultLink extends StatelessWidget {
 class _FieldHint extends StatelessWidget {
   final String text;
   final String? emphasis;
+  final bool isError;
 
-  const _FieldHint({super.key, required this.text, this.emphasis});
+  const _FieldHint({
+    super.key,
+    required this.text,
+    this.emphasis,
+    this.isError = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final style = context.textTheme.bodySmallRegular.copyWith(
-      color: colorTheme.textBody,
+      color: isError ? colorTheme.textError : colorTheme.textBody,
     );
     final emphasis = this.emphasis;
     final at = emphasis == null ? -1 : text.indexOf(emphasis);
@@ -486,9 +515,9 @@ class _FieldHint extends StatelessWidget {
         spacing: CoreSpacing.space2,
         children: [
           CoreIconWidget(
-            icon: CoreIcons.info,
+            icon: isError ? CoreIcons.error : CoreIcons.info,
             size: CoreIconSize.size16,
-            color: colorTheme.iconGrayMid,
+            color: isError ? colorTheme.iconRed : colorTheme.iconGrayMid,
           ),
           Expanded(
             child: emphasis == null || at < 0
