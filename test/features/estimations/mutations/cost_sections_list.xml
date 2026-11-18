@@ -17,11 +17,11 @@
             <mutation text="if (lines.isNotEmpty)"/>
         </regex>
 
-        <regex pattern="(isHighlighted: line\.id == widget\.highlightedItemId,)" dotAll="true" id="list.row.never_highlight">
+        <regex pattern="(isHighlighted: line\.id == highlightedItemId,)" dotAll="true" id="list.row.never_highlight">
             <mutation text="isHighlighted: false,"/>
         </regex>
 
-        <regex pattern="(onTap: \(\) =&gt; widget\.onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
+        <regex pattern="(onTap: \(\) =&gt; onLineTap\(line\),)" dotAll="true" id="list.row.drop_tap">
             <mutation text="onTap: null,"/>
         </regex>
 
@@ -37,8 +37,8 @@
             <mutation text="CostItemType.material =&gt; l10n.costSectionEmptyEquipment"/>
         </regex>
 
-        <regex pattern="(else if \(lines\.isEmpty\)\s+_emptySection\(context, type\))" dotAll="true" id="list.placeholder.never_shown">
-            <mutation text="else if (false) _emptySection(context, type)"/>
+        <regex pattern="(if \(lines\.isEmpty\)\s+_emptySection\(context, type\))" dotAll="true" id="list.placeholder.never_shown">
+            <mutation text="if (false) _emptySection(context, type)"/>
         </regex>
 
         <regex pattern="(CoreSpacing\.space7,)" dotAll="true" id="list.spacing.no_bottom_gap">
