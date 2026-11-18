@@ -731,6 +731,20 @@ void main() {
       expect(bloc.state.data.quantity, 25);
     });
 
+    testWidgets('typing 25 over a selected 2 gives 25, not 5', (tester) async {
+      await pumpWithPad(tester);
+      await tester.enterText(quantityField, '2');
+      await tester.tap(quantityField);
+      await tester.pump();
+
+      numberPad.value!.typeDigit(2);
+      numberPad.value!.typeDigit(5);
+      await tester.pumpAndSettle();
+
+      expect(textOf(tester, quantityField), '25');
+      expect(bloc.state.data.quantity, 25);
+    });
+
     testWidgets('an empty rate puts back nothing: the key reads Clear', (
       tester,
     ) async {
