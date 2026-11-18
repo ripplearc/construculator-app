@@ -2210,16 +2210,166 @@ void main() {
         expect(find.byType(CostItemFormScreen), findsOneWidget);
       });
 
-      testWidgets('tapping a material line opens no sheet yet', (tester) async {
-        await openLine(tester, [
+      Map<String, dynamic> drywall() =>
           CostItemTestDataMapFactory.createMaterialItemData(
             id: 'm1',
             estimateId: testEstimationId,
             itemName: 'Drywall sheets',
+            unitPrice: 100.0,
+            quantity: 5.0,
+            itemTotalCost: 500.0,
+          );
+
+      String barTotal(WidgetTester tester) =>
+          tester.widget<Text>(find.byKey(AddCostBottomBar.totalKey)).data!;
+
+      testWidgets('tapping a material line opens its sheet, filled in', (
+        tester,
+      ) async {
+        await openLine(tester, [drywall()]);
+
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+        expect(find.text(l10n.saveThisLineButton), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(SheetHeader),
+            matching: find.text('Drywall sheets'),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('saving a change to a material line shows its new total '
+          'and adds no line or toast', (tester) async {
+        await openLine(tester, [drywall()]);
+        expect(barTotal(tester), r'$500.00');
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('material_quantity_field')),
+          '7',
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(
+          find.descendant(of: lineRow('m1'), matching: find.text(r'$700.00')),
+          findsOneWidget,
+        );
+        expect(barTotal(tester), r'$700.00');
+        expect(find.text('Added to Bedroom 2'), findsNothing);
+        expect(
+          BlocProvider.of<AddedLineHighlightCubit>(
+            tester.element(find.byType(Scaffold).first),
+          ).state,
+          isNull,
+        );
+      });
+
+      testWidgets('deleting a material line takes it off the list', (
+        tester,
+      ) async {
+        await openLine(tester, [drywall()]);
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsNothing);
+        expect(lineRow('m1'), findsNothing);
+        expect(barTotal(tester), r'$0.00');
+      });
+
+      testWidgets('a save that fails after the sheet was closed shows the '
+          'change was not saved and keeps the material line', (tester) async {
+        await openLine(tester, [drywall()]);
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const Key('material_quantity_field')),
+          '7',
+        );
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnUpdate = true;
+        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.updateErrorMessage = 'Connection failed';
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.saveLineFailedError), findsOneWidget);
+        expect(find.text(l10n.deleteLineFailedError), findsNothing);
+        expect(
+          find.descendant(of: lineRow('m1'), matching: find.text(r'$500.00')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a delete that fails after the sheet was closed shows the '
+          'line was not deleted and keeps the material line', (tester) async {
+        await openLine(tester, [drywall()]);
+        await tester.tap(lineRow('m1'));
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnDelete = true;
+        fakeSupabase.deleteExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.deleteErrorMessage = 'Connection failed';
+
+        await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.deleteLineFailedError), findsOneWidget);
+        expect(find.text(l10n.saveLineFailedError), findsNothing);
+        expect(lineRow('m1'), findsOneWidget);
+      });
+
+      testWidgets('a material line and an equipment line cannot both be '
+          'opened at once', (tester) async {
+        await openLine(tester, [drywall(), scissorLift()]);
+
+        final rows = tester.widgetList<CostLineRow>(find.byType(CostLineRow));
+        for (final row in rows) {
+          row.onTap!();
+        }
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostItemFormScreen), findsOneWidget);
+      });
+
+      testWidgets('tapping a labor line opens no sheet yet', (tester) async {
+        await openLine(tester, [
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'l1',
+            estimateId: testEstimationId,
+            itemName: 'Framing crew',
           ),
         ]);
 
-        await tester.tap(lineRow('m1'));
+        await tester.tap(lineRow('l1'));
         await tester.pumpAndSettle();
 
         expect(find.byType(CostItemFormScreen), findsNothing);
