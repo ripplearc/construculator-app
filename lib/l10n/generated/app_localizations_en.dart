@@ -2309,6 +2309,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get materialLookupUseRateButton => 'Use rate';
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 
   @override
