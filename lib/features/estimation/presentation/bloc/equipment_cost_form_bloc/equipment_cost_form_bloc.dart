@@ -490,7 +490,7 @@ class EquipmentCostFormBloc
   }
 
   bool _isNewRatePick(EquipmentCostFormData draft, EquipmentCostItem? edited) {
-    if (edited == null || edited.pricingMethod != draft.method) return true;
+    if (edited == null) return true;
     final isDay = draft.method == EquipmentPricingMethod.day;
     final storedRate = isDay
         ? edited.dailyRate?.amount
