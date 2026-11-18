@@ -426,12 +426,12 @@ test('handles authentication state changes', () async {
 
 ```dart
 test('calls correct database operations', () async {
-  await realDataSource.createEstimation(estimationData);
+  await realDataSource.getEstimationById(estimateId);
   
   // Verify the fake received expected calls
-  final insertCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
-  expect(insertCalls.length, 1);
-  expect(insertCalls.first['table'], 'cost_estimates');
+  final selectCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
+  expect(selectCalls.length, 1);
+  expect(selectCalls.first['table'], 'cost_estimates');
 });
 ```
 
