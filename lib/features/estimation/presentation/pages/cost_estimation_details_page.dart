@@ -160,7 +160,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         asksBeforeClosing: true,
         blocFactory: widget.materialCostFormBlocFactory,
         addedItemIdOf: (state) =>
-            state is MaterialCostFormSuccess ? state.createdItem.id : null,
+            state is MaterialCostFormSuccess ? state.savedItem.id : null,
         outcomeOf: (state) => switch (state) {
           MaterialCostFormSubmitting() => _SheetOutcome.submitting,
           MaterialCostFormSuccess() => _SheetOutcome.added,
