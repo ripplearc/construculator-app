@@ -262,18 +262,55 @@ class QuantityFormatter extends Equatable {
     return '$sign${_localeNumber(whole.toDouble(), 0, group)}${fraction.text}';
   }
 
-  String _degreesMinutesSeconds(double degrees, bool group) {
+  /// An angle in decimal degrees to [decimals] places, ungrouped, for the
+  /// angle drawer (rule 4.16): 0.000573° to 3 decimals is 0.001°, and
+  /// 89.99993° to 4 is 89.9999°. The display keeps [resultDecimals].
+  String formatDegrees(Angle angle, {required int decimals}) =>
+      '${_jsRoundedNumber(angle.degrees, decimals, false)}°';
+
+  /// An angle as degrees, minutes and seconds with the seconds to
+  /// [secondsDecimals] places, ungrouped, for the angle drawer (rule 4.16):
+  /// 0.00001° to 2 is 0°00'00.04", and 89.99999° to 2 is 89°59'59.96". A
+  /// rounding that reaches 60 seconds carries, so 89.99999° to 1 reads
+  /// 90°00'00.0".
+  String formatDegreesMinutesSeconds(
+    Angle angle, {
+    required int secondsDecimals,
+  }) => _degreesMinutesSeconds(
+    angle.degrees,
+    false,
+    secondsDecimals: secondsDecimals,
+  );
+
+  String _degreesMinutesSeconds(
+    double degrees,
+    bool group, {
+    int secondsDecimals = 0,
+  }) {
     // The seconds stay a double: an int would clamp at 2^63 and show a
-    // different angle from the degrees spelling (CA-1201 owns 2^53).
-    final totalSeconds = (degrees.abs() * secondsPerDegree + 0.5)
+    // different angle from the degrees spelling (CA-1201 owns 2^53). They
+    // are counted in units of the last decimal, so that a rounding that
+    // reaches 60 carries into the minutes.
+    final scale = math.pow(10, secondsDecimals).toDouble();
+    final totalUnits = (degrees.abs() * secondsPerDegree * scale + 0.5)
         .floorToDouble();
-    final rest = (totalSeconds % secondsPerDegree).toInt();
-    final wholeDegrees = (totalSeconds - rest) / secondsPerDegree;
-    final minutes = rest ~/ secondsPerMinute;
-    final seconds = rest % secondsPerMinute;
-    final sign = degrees < 0 && totalSeconds > 0 ? '-' : '';
+    final unitsPerDegree = secondsPerDegree * scale;
+    final rest = totalUnits % unitsPerDegree;
+    final wholeDegrees = (totalUnits - rest) / unitsPerDegree;
+    final unitsPerMinute = secondsPerMinute * scale;
+    final secondUnits = rest % unitsPerMinute;
+    final minutes = ((rest - secondUnits) / unitsPerMinute).round();
+    final seconds = _secondsText(secondUnits, scale, secondsDecimals);
+    final sign = degrees < 0 && totalUnits > 0 ? '-' : '';
     return '$sign${_localeNumber(wholeDegrees, 0, group)}°'
-        "${_twoDigits(minutes)}'${_twoDigits(seconds)}\"";
+        "${_twoDigits(minutes)}'$seconds\"";
+  }
+
+  String _secondsText(double units, double scale, int decimals) {
+    final whole = (units / scale).floor();
+    if (decimals == 0) return _twoDigits(whole);
+    final fraction = (units - whole * scale).round().toString();
+    return '${_twoDigits(whole)}.${fraction.padLeft(decimals, '0')}';
   }
 
   String _twoDigits(int value) => value.toString().padLeft(2, '0');

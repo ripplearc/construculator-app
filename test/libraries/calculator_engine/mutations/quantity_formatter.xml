@@ -101,20 +101,20 @@
 
         <!-- RULE 17: the angle is truncated to whole seconds instead of
              rounded, so 29.99999° reads 29°59'59" -->
-        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
-            <mutation text="final totalSeconds = (degrees.abs() * secondsPerDegree).floorToDouble();"/>
+        <regex pattern="final totalUnits = \(degrees\.abs\(\) \* secondsPerDegree \* scale \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.truncate_seconds">
+            <mutation text="final totalUnits = (degrees.abs() * secondsPerDegree * scale).floorToDouble();"/>
         </regex>
 
         <!-- RULE 17b: the seconds become an int, which clamps at 2^63, so a
              very large angle reads a different number in D:M:S -->
-        <regex pattern="final totalSeconds = \(degrees\.abs\(\) \* secondsPerDegree \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.int_seconds_clamp">
-            <mutation text="final totalSeconds = _jsMathRound(degrees.abs() * secondsPerDegree).toDouble();"/>
+        <regex pattern="final totalUnits = \(degrees\.abs\(\) \* secondsPerDegree \* scale \+ 0\.5\)\s*\.floorToDouble\(\);" dotAll="true" id="quantity_formatter.dms.int_seconds_clamp">
+            <mutation text="final totalUnits = _jsMathRound(degrees.abs() * secondsPerDegree * scale).toDouble();"/>
         </regex>
 
         <!-- RULE 17c: the whole degrees keep the seconds' remainder, so
              1234.5° rounds up to 1,235° -->
-        <regex pattern="final wholeDegrees = \(totalSeconds - rest\) / secondsPerDegree;" dotAll="true" id="quantity_formatter.dms.degrees_keep_remainder">
-            <mutation text="final wholeDegrees = totalSeconds / secondsPerDegree;"/>
+        <regex pattern="final wholeDegrees = \(totalUnits - rest\) / unitsPerDegree;" dotAll="true" id="quantity_formatter.dms.degrees_keep_remainder">
+            <mutation text="final wholeDegrees = totalUnits / unitsPerDegree;"/>
         </regex>
 
         <!-- RULE 17d: the degrees of a D:M:S answer never group their
@@ -125,20 +125,20 @@
 
         <!-- RULE 18: minutes are taken from the whole count instead of the
              remainder after the degrees -->
-        <regex pattern="final minutes = rest ~/ secondsPerMinute;" dotAll="true" id="quantity_formatter.dms.minutes_not_remainder">
-            <mutation text="final minutes = totalSeconds.toInt() ~/ secondsPerMinute;"/>
+        <regex pattern="final minutes = \(\(rest - secondUnits\) / unitsPerMinute\)\.round\(\);" dotAll="true" id="quantity_formatter.dms.minutes_not_remainder">
+            <mutation text="final minutes = ((totalUnits - secondUnits) / unitsPerMinute).round();"/>
         </regex>
 
         <!-- RULE 19: the minus is dropped, or written on a zero -->
-        <regex pattern="final sign = degrees &lt; 0 &amp;&amp; totalSeconds &gt; 0 \? '-' : '';" dotAll="true" id="quantity_formatter.dms.no_sign">
+        <regex pattern="final sign = degrees &lt; 0 &amp;&amp; totalUnits &gt; 0 \? '-' : '';" dotAll="true" id="quantity_formatter.dms.no_sign">
             <mutation text="final sign = '';"/>
             <mutation text="final sign = degrees &lt; 0 ? '-' : '';"/>
         </regex>
 
         <!-- RULE 20 (CA-1070 2/2): zero seconds are dropped, so 30°00'00"
              reads 30°00' -->
-        <regex pattern="&quot;\$\{_twoDigits\(minutes\)\}'\$\{_twoDigits\(seconds\)\}\\&quot;&quot;;" dotAll="true" id="quantity_formatter.dms.seconds_dropped">
-            <mutation text="&quot;${_twoDigits(minutes)}'${seconds == 0 ? '' : '${_twoDigits(seconds)}\&quot;'}&quot;;"/>
+        <regex pattern="&quot;\$\{_twoDigits\(minutes\)\}'\$seconds\\&quot;&quot;;" dotAll="true" id="quantity_formatter.dms.seconds_dropped">
+            <mutation text="&quot;${_twoDigits(minutes)}'${seconds == '00' ? '' : '$seconds\&quot;'}&quot;;"/>
         </regex>
 
         <!-- RULE 21: segments are no longer padded, so 45°02' reads 45°2' -->
@@ -200,6 +200,16 @@
              instead of falling back to double math -->
         <regex pattern="\} on RationalOverflow \{\s*return inches\.toDouble\(\) / unit\.inchesPer\.toDouble\(\);" dotAll="true" id="quantity.amount_in.no_fallback">
             <mutation text="} on RationalOverflow { rethrow;"/>
+        </regex>
+        <!-- RULES (CA-1367, rule 4.16): decimal seconds — the half is not
+             added before the floor, so 59.964 to one decimal reads 59.9
+             and never carries; the minutes are truncated instead of taken
+             whole; whole seconds are written with a point -->
+        <regex pattern="final minutes = \(\(rest - secondUnits\) / unitsPerMinute\)\.round\(\);" dotAll="true" id="quantity_formatter.dms.minutes_truncated">
+            <mutation text="final minutes = ((rest - secondUnits) / unitsPerMinute).floor() - 1;"/>
+        </regex>
+        <regex pattern="if \(decimals == 0\) return _twoDigits\(whole\);" dotAll="true" id="quantity_formatter.dms.whole_seconds_with_point">
+            <mutation text=""/>
         </regex>
     </rules>
 

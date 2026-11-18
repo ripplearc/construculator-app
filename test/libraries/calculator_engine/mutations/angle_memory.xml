@@ -122,8 +122,9 @@
 
         <!-- RULE 5: an answer is filed at its two decimals, or a D:M:S
              answer as decimal degrees, or its seconds are kept at zero -->
-        <regex pattern="return _withFront\(RememberedAngle\(entry: entry, value: angle\)\);" dotAll="true" id="angle_memory.answer.two_decimals">
-            <mutation text="return _withFront(RememberedAngle(entry: entry, value: Angle(entry.tokens.single.value, spelling: angle.spelling)));"/>
+        <regex pattern="return _withFront\(\s*RememberedAngle\(entry: spelled\.entry, value: angle, limit: spelled\.limit\),\s*\);" dotAll="true" id="angle_memory.answer.two_decimals">
+            <mutation text="return _withFront(RememberedAngle(entry: spelled.entry, value: Angle(spelled.entry.tokens.single.value, spelling: angle.spelling), limit: spelled.limit));"/>
+            <mutation text="return _withFront(RememberedAngle(entry: spelled.entry, value: angle));"/>
         </regex>
         <regex pattern="Token\(digits: degrees, minutes: minutes, seconds: seconds\)," dotAll="true" id="angle_memory.answer.seconds_dropped">
             <mutation text="Token(digits: degrees, minutes: minutes, seconds: ''),"/>
@@ -239,6 +240,33 @@
         </regex>
         <regex pattern="ValueChip _reactivated\(ValueChip chip\) =&gt;\s*_withEntry\(chip, chip\.entry\.reopened\)\.copyWith\(isActive: true\);" dotAll="true" id="tape.reactivated.exact_dropped">
             <mutation text="ValueChip _reactivated(ValueChip chip) =&gt; chip.copyWith(entry: chip.entry.reopened, isActive: true);"/>
+        </regex>
+
+        <!-- RULES (CA-1367, rule 4.16): the drawer's decimals — it starts
+             at the display's two for a D:M:S answer too, or at zero for
+             degrees; it stops a decimal short; an angle that is 0 or 90
+             gets decimals it does not need, or every angle is taken as
+             exact; the limit names the wrong end; 90 is not a limit;
+             decimal seconds are not read back -->
+        <regex pattern="var decimals = isDegreesMinutesSeconds \? 0 : drawerDecimals;" dotAll="true" id="angle_memory.drawer.start_decimals">
+            <mutation text="var decimals = drawerDecimals;"/>
+            <mutation text="var decimals = 0;"/>
+        </regex>
+        <regex pattern="decimals &lt;= drawerMostDecimals;" dotAll="true" id="angle_memory.drawer.stops_short">
+            <mutation text="decimals &lt; drawerMostDecimals;"/>
+        </regex>
+        <regex pattern="if \(exact \|\| !_isZeroOrRightAngle\(entry\.tokens\.single\.value\)\) \{" dotAll="true" id="angle_memory.drawer.exact_exemption">
+            <mutation text="if (!_isZeroOrRightAngle(entry.tokens.single.value)) {"/>
+            <mutation text="if (true) {"/>
+        </regex>
+        <regex pattern="limit: angle\.degrees\.abs\(\) &lt; _halfOfARightAngle" dotAll="true" id="angle_memory.drawer.limit_end">
+            <mutation text="limit: angle.degrees.abs() &gt; _halfOfARightAngle"/>
+        </regex>
+        <regex pattern="\(degrees\.abs\(\) - 90\)\.abs\(\) &lt;= sameAngleTolerance;" dotAll="true" id="angle_memory.drawer.ninety_not_a_limit">
+            <mutation text="false;"/>
+        </regex>
+        <regex pattern="'\^\(-\?\\\\d\+\)°\(\\\\d\+\)\\'\(\\\\d\+\(\?:\\\\\.\\\\d\+\)\?\)&quot;\\\$'," dotAll="true" id="angle_memory.spelled.whole_seconds_only">
+            <mutation text="'^(-?\\d+)°(\\d+)\'(\\d+)&quot;\$',"/>
         </regex>
     </rules>
 

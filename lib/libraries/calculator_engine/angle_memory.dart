@@ -8,10 +8,25 @@ import 'package:construculator/libraries/calculator_engine/tape.dart';
 import 'package:construculator/libraries/calculator_engine/trig.dart';
 import 'package:equatable/equatable.dart';
 
+/// Which end of the drawer's six decimals an angle fell past (rule 4.16):
+/// it reads 0 or 90 at six decimals and is not 0 or 90, so the drawer shows
+/// it as "Under 0.000001°" or "Over 89.999999°" rather than a number that
+/// lies. The words are the screen's; the engine says only which.
+enum AngleDrawerLimit {
+  /// Above 0 and under 0.000001°.
+  belowSmallest,
+
+  /// Over 89.999999° and under 90°.
+  aboveLargest,
+}
+
 /// An angle the drawer remembers: the entry it is offered back as, with the
 /// spelling it was typed or rendered in (38°03'00" stays 38°03'00"), and
 /// the angle it is worth at full precision, so that a recalled answer
-/// computes from the value and not from the two decimals on screen.
+/// computes from the value and not from the two decimals on screen. An
+/// answer that would read 0 or 90 at the display rounding carries more
+/// decimals (rule 4.16; [AngleMemory.spelledForDrawer]), and one that still
+/// reads so at six names its [limit] instead.
 final class RememberedAngle extends Equatable {
   /// The entry the recalled chip shows.
   final EntryBuffer entry;
@@ -19,7 +34,11 @@ final class RememberedAngle extends Equatable {
   /// The angle the entry stands for.
   final Angle value;
 
-  const RememberedAngle({required this.entry, required this.value});
+  /// The end of the drawer's decimals the angle fell past, or `null` for an
+  /// angle the [entry] reads as it is.
+  final AngleDrawerLimit? limit;
+
+  const RememberedAngle({required this.entry, required this.value, this.limit});
 
   /// Whether [other] is the same drawer entry: it reads as the same angle in
   /// any spelling, or it is worth the same angle (rule 4.16, "filed by what
@@ -39,7 +58,7 @@ final class RememberedAngle extends Equatable {
       (degrees - otherDegrees).abs() <= AngleMemory.sameAngleTolerance;
 
   @override
-  List<Object?> get props => [entry, value];
+  List<Object?> get props => [entry, value, limit];
 }
 
 /// The shared angle drawer of UX Design Doc rule 4.16: a value enters it
@@ -148,6 +167,8 @@ class AngleMemory extends Equatable {
   /// own text, so the two can never split an angle differently. A pitch
   /// answer is filed in degrees, the spelling every angle key reads
   /// (16in/12in comes back as 53.13°); a negative answer keeps its hyphen.
+  /// An answer that would read 0 or 90 and is not gets more decimals
+  /// ([spelledForDrawer]; rule 4.16, product manager 17 November 2026).
   AngleMemory filedAnswer(
     Angle answer, {
     required QuantityFormatter formatter,
@@ -157,10 +178,73 @@ class AngleMemory extends Equatable {
       AngleSpelling.grade => answer.spelledAs(AngleSpelling.degrees),
       AngleSpelling.degrees || AngleSpelling.degreesMinutesSeconds => answer,
     };
-    final entry = spelledAnswer(angle, formatter: formatter);
-    if (entry == null) return this;
-    return _withFront(RememberedAngle(entry: entry, value: angle));
+    final spelled = spelledForDrawer(angle, formatter: formatter);
+    if (spelled == null) return this;
+    return _withFront(
+      RememberedAngle(entry: spelled.entry, value: angle, limit: spelled.limit),
+    );
   }
+
+  /// The decimals a remembered angle shows, the display's two.
+  static const int drawerDecimals = 2;
+
+  /// The most decimals the drawer adds before it names a limit instead.
+  static const int drawerMostDecimals = 6;
+
+  /// The entry the drawer files an angle answer as (rule 4.16): the
+  /// [formatter]'s own spelling at two decimals, and, when that would read
+  /// 0.00° or 90.00° for an angle that is not 0 or 90, one decimal more at
+  /// a time up to six (ASIN 0.00001 files as 0.001°, ACOS 0.00001 as
+  /// 89.999°, Pitch 9999999 Inch as 89.9999°). A D:M:S answer keeps its
+  /// three fields and only its seconds take the decimals, by the same rule
+  /// (0.00001° files as 0°00'00.04", 89.99999° as 89°59'59.96"). An angle
+  /// that still reads 0 or 90 at six decimals keeps that spelling and
+  /// names the [AngleDrawerLimit] it fell past, "Under 0.000001°" or "Over
+  /// 89.999999°". `null` for a spelling the formatter does not write as a
+  /// plain number or a D:M:S angle.
+  static ({EntryBuffer entry, AngleDrawerLimit? limit})? spelledForDrawer(
+    Angle angle, {
+    required QuantityFormatter formatter,
+  }) {
+    final isDegreesMinutesSeconds =
+        angle.spelling == AngleSpelling.degreesMinutesSeconds;
+    final exact = _isZeroOrRightAngle(angle.degrees);
+    EntryBuffer? spelledTo(int decimals) => _spelled(
+      isDegreesMinutesSeconds
+          ? formatter.formatDegreesMinutesSeconds(
+              angle,
+              secondsDecimals: decimals,
+            )
+          : formatter.formatDegrees(angle, decimals: decimals),
+    );
+    for (
+      var decimals = isDegreesMinutesSeconds ? 0 : drawerDecimals;
+      decimals <= drawerMostDecimals;
+      decimals++
+    ) {
+      final entry = spelledTo(decimals);
+      if (entry == null) return null;
+      if (exact || !_isZeroOrRightAngle(entry.tokens.single.value)) {
+        return (entry: entry, limit: null);
+      }
+    }
+    final pastTheLimit = spelledTo(drawerMostDecimals);
+    if (pastTheLimit == null) return null;
+    return (
+      entry: pastTheLimit,
+      limit: angle.degrees.abs() < _halfOfARightAngle
+          ? AngleDrawerLimit.belowSmallest
+          : AngleDrawerLimit.aboveLargest,
+    );
+  }
+
+  static const double _halfOfARightAngle = 45;
+
+  // Whether [degrees] is 0 or ±90, within the drawer's own tolerance for
+  // one angle, so that a double's rounding noise never passes for a limit.
+  static bool _isZeroOrRightAngle(double degrees) =>
+      degrees.abs() <= sameAngleTolerance ||
+      (degrees.abs() - 90).abs() <= sameAngleTolerance;
 
   /// The entry an angle answer reads as, taken off [formatter]'s own text
   /// (53.13, or 31°26'56" for an answer spelled that way), the one the
@@ -177,7 +261,7 @@ class AngleMemory extends Equatable {
       AngleMemory.of([angle, ...remembered]);
 
   static final RegExp _degreesMinutesSeconds = RegExp(
-    '^(-?\\d+)°(\\d+)\'(\\d+)"\$',
+    '^(-?\\d+)°(\\d+)\'(\\d+(?:\\.\\d+)?)"\$',
   );
 
   static EntryBuffer? _spelled(String rendered) {

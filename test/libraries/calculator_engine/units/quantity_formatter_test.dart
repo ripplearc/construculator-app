@@ -371,6 +371,66 @@ void main() {
         expect(formatter.format(const Angle(90)), '90°');
       });
 
+      test('the angle drawer asks for more decimals (rule 4.16, CA-1367): '
+          'degrees to N places, and D:M:S with the seconds to N places, a '
+          'rounding that reaches 60 seconds carrying', () {
+        expect(
+          formatter.formatDegrees(const Angle(89.99993), decimals: 4),
+          '89.9999°',
+        );
+        expect(
+          formatter.formatDegrees(const Angle(89.99993), decimals: 2),
+          '90°',
+        );
+        expect(
+          formatter.formatDegrees(const Angle(0.000573), decimals: 3),
+          '0.001°',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(0.00001),
+            secondsDecimals: 2,
+          ),
+          '0°00\'00.04"',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(89.99999),
+            secondsDecimals: 2,
+          ),
+          '89°59\'59.96"',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(89.99999),
+            secondsDecimals: 1,
+          ),
+          '90°00\'00.0"',
+          reason: '59.964 rounds to 60.0 and carries',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(89.99999),
+            secondsDecimals: 0,
+          ),
+          '90°00\'00"',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(-38.5),
+            secondsDecimals: 3,
+          ),
+          '-38°30\'00.000"',
+        );
+        expect(
+          formatter.formatDegreesMinutesSeconds(
+            const Angle(31.4542),
+            secondsDecimals: 1,
+          ),
+          '31°27\'15.1"',
+        );
+      });
+
       test('a pitch reads as inches per 12in of run or as a grade (C3)', () {
         const sixteenInTwelve = Angle(53.13010235415598);
         expect(
