@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -250,10 +251,17 @@ void main() {
 
         await connector.uploadData(fakeDatabase);
 
-        final data = fakeSupabase.getMethodCallsFor('upsert').single['data'];
+        final data =
+            fakeSupabase.getMethodCallsFor('upsert').single['data']
+                as Map<String, dynamic>;
+        final columns = schema.tables
+            .singleWhere((table) => table.name == 'cost_items')
+            .columns
+            .map((column) => column.name);
+        expect(data.keys, unorderedEquals([...columns, 'id']));
         expect(data, containsPair('description', null));
-        expect(data, containsPair('item_name', null));
         expect(data, containsPair('estimate_id', 'estimate-1'));
+        expect(data, containsPair('calculation', isEmpty));
       });
 
       test('PUT of another table sends only the columns it has', () async {

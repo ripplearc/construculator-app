@@ -505,7 +505,8 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
       return;
     }
 
-    // TODO: [CA-1291] a cost_items line the server refuses for good (a deleted estimate, 23503) is retried forever and blocks the queue. https://ripplearc.youtrack.cloud/issue/CA-1291
+    // TODO: [CA-1477] a cost_items line the server refuses for good (42501: an estimate that was soft deleted, or removed access) is dropped from the queue and from the phone, and a calculation text that is not JSON blocks the queue.
+    // https://ripplearc.youtrack.cloud/issue/CA-1477
     _logger.error(
       'Transient error during upload: $error. '
       'PowerSync will retry automatically.',
