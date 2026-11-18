@@ -2817,6 +2817,37 @@
   "@yourRatesNewEquipmentCostAction": {
     "description": "Label for the trailing row in the 'Your recents' sheet that opens the equipment cost-entry form blank instead of recalling a saved rate"
   },
+  "yourRatesMaterialRecentsTitle": "Add material",
+  "@yourRatesMaterialRecentsTitle": {
+    "description": "Title of the 'Your recents' sheet opened by the Material tab's '+ Add material cost' button, before the material form itself",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 2 Your recents"
+  },
+  "yourRatesMaterialSearchHint": "Search or type a material",
+  "@yourRatesMaterialSearchHint": {
+    "description": "Placeholder of the search box at the top of the Material 'Your recents' sheet",
+    "context": "Storyboard CUJ 4, sub-flow C, Results for primer"
+  },
+  "yourRatesNewMaterialCostAction": "New material cost",
+  "@yourRatesNewMaterialCostAction": {
+    "description": "Last row of the Material 'Your recents' sheet while its search box is empty; opens the material form blank instead of recalling a saved rate",
+    "context": "Storyboard CUJ 4, sub-flow A, screen 2 Your recents"
+  },
+  "yourRatesCreateMaterialAction": "Create “{name}” as a new material cost",
+  "@yourRatesCreateMaterialAction": {
+    "description": "Last row of the Material 'Your recents' sheet while a name is typed in its search box; opens the material form with that name. The name is in curly quotes",
+    "context": "Storyboard CUJ 4, sub-flow C, build note No matches",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "primer"
+      }
+    }
+  },
+  "yourRatesMaterialRecentsLoadErrorHint": "You can still search, or add a new material cost.",
+  "@yourRatesMaterialRecentsLoadErrorHint": {
+    "description": "Grey line under the Material 'Your recents' sheet's error line when the phone could not read Your rates",
+    "context": "Storyboard CUJ 6, frame Saved prices not read, with material in place of equipment"
+  },
   "equipmentRefusedDefaultNotice": "Your new default, {refused}, was not saved.{hasAccepted, select, true{ Your default is still {accepted}.} other{}}{hasEstimate, select, true{ {estimate} still uses {refused}.} other{}}",
   "@equipmentRefusedDefaultNotice": {
     "description": "Message above the Rate/Amount field on the first equipment form for an item after the server refused its saved default (storyboard CUJ 6, frame Not kept); refused and accepted are pre-formatted currency strings, hasAccepted is 'true' when the server ever accepted a price for the item (its middle sentence), and hasEstimate is 'true' when an estimate has a line at the refused amount (its last sentence) with estimate as that estimate's name",

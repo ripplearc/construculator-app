@@ -10,11 +10,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// everywhere else it is used, so this wraps it in the bordered box.
 class SheetSearchField extends StatelessWidget {
   final TextEditingController controller;
+  final String hintText;
   final ValueChanged<String> onChanged;
 
   const SheetSearchField({
     super.key,
     required this.controller,
+    required this.hintText,
     required this.onChanged,
   });
 
@@ -41,7 +43,7 @@ class SheetSearchField extends StatelessWidget {
           ],
         ),
         child: CoreSearchBox(
-          hintText: context.l10n.yourRatesSearchHint,
+          hintText: hintText,
           controller: controller,
           onChanged: onChanged,
           clearSemanticLabel: context.l10n.yourRatesClearSearchSemanticLabel,

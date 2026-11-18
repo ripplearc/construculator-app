@@ -89,7 +89,10 @@ void main() {
       .where((call) => call.sql.contains('your_rates'))
       .length;
 
-  Future<void> openSheet(WidgetTester tester) async {
+  Future<void> openSheet(
+    WidgetTester tester, {
+    CostItemType category = CostItemType.equipment,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: CoreTheme.light(),
@@ -105,6 +108,7 @@ void main() {
                   result = await YourRatesRecentsSheet.show(
                     context: context,
                     clock: clock,
+                    category: category,
                     blocFactory: () => Modular.get<YourRatesBloc>(),
                   );
                 },
@@ -277,7 +281,10 @@ void main() {
           home: Scaffold(
             body: BlocProvider<YourRatesBloc>(
               create: (_) => Modular.get<YourRatesBloc>(),
-              child: YourRatesRecentsSheet(clock: clock),
+              child: YourRatesRecentsSheet(
+                clock: clock,
+                category: CostItemType.equipment,
+              ),
             ),
           ),
         ),
@@ -321,17 +328,17 @@ void main() {
     ) async {
       await openSheet(tester);
 
-      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.tap(find.byKey(const Key('new_cost_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(result, isA<YourRatesRecentsNewCost>());
     });
 
     testWidgets('swiping the sheet down returns dismissed', (tester) async {
       await openSheet(tester);
 
       await tester.fling(
-        find.byKey(const Key('new_equipment_cost_row')),
+        find.byKey(const Key('new_cost_row')),
         const Offset(0, 600),
         2000,
       );
@@ -410,10 +417,10 @@ void main() {
     ) async {
       await openFailedSheet(tester);
 
-      await tester.tap(find.byKey(const Key('new_equipment_cost_row')));
+      await tester.tap(find.byKey(const Key('new_cost_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(result, isA<YourRatesRecentsNewCost>());
     });
 
     testWidgets('Try again replaces the message with the recent list when the '
@@ -452,14 +459,11 @@ void main() {
       await tester.enterText(searchField, 'stump grinder');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
-      expect(
-        (result! as YourRatesRecentsNewEquipmentCost).name,
-        'stump grinder',
-      );
+      expect(result, isA<YourRatesRecentsNewCost>());
+      expect((result! as YourRatesRecentsNewCost).name, 'stump grinder');
     });
 
     testWidgets('Create tapped while the search read is failing opens the form '
@@ -469,14 +473,11 @@ void main() {
 
       await tester.enterText(searchField, 'stump grinder');
       await tester.pump();
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
-      expect(
-        (result! as YourRatesRecentsNewEquipmentCost).name,
-        'stump grinder',
-      );
+      expect(result, isA<YourRatesRecentsNewCost>());
+      expect((result! as YourRatesRecentsNewCost).name, 'stump grinder');
     });
 
     testWidgets('Create with a typed name starts no new read when the saved '
@@ -486,11 +487,11 @@ void main() {
       await tester.pump();
       final readsBefore = yourRatesReads();
 
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pump();
 
       expect(yourRatesReads(), readsBefore);
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
+      expect(result, isA<YourRatesRecentsNewCost>());
     });
 
     testWidgets('while Try again runs, the label stays, there is no spinner '
@@ -536,10 +537,7 @@ void main() {
       expect(yourRatesReads(), readsBefore + 1);
       expect(find.text('Try again'), findsOneWidget);
       expect(find.byType(CoreLoadingIndicator), findsNothing);
-      expect(
-        find.byKey(const Key('create_typed_equipment_row')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('create_typed_name_row')), findsOneWidget);
 
       database.getAllGate!.complete();
       await tester.pumpAndSettle();
@@ -593,18 +591,15 @@ void main() {
       await openSheet(tester);
 
       await typeQuery(tester, 'mini excavator');
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
       expect(
         find.text('Create “mini excavator” as a new equipment cost'),
         findsNothing,
       );
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
-      expect(
-        (result! as YourRatesRecentsNewEquipmentCost).name,
-        'mini excavator',
-      );
+      expect(result, isA<YourRatesRecentsNewCost>());
+      expect((result! as YourRatesRecentsNewCost).name, 'mini excavator');
     });
 
     testWidgets(
@@ -620,7 +615,7 @@ void main() {
           find.text('Create “stump grinder” as a new equipment cost'),
           findsOneWidget,
         );
-        expect(find.byKey(const Key('new_equipment_cost_row')), findsNothing);
+        expect(find.byKey(const Key('new_cost_row')), findsNothing);
       },
     );
 
@@ -666,10 +661,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
-      expect(
-        find.byKey(const Key('create_typed_equipment_row')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('create_typed_name_row')), findsOneWidget);
 
       database.getAllGate!.complete();
       await tester.pumpAndSettle();
@@ -680,7 +672,7 @@ void main() {
       await openSheet(tester);
 
       await typeQuery(tester, 'SCISSOR LIFT');
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
       expect(result, isA<YourRatesRecentsPicked>());
@@ -692,7 +684,7 @@ void main() {
       await openSheet(tester);
 
       await typeQuery(tester, 'Scissor  lift');
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
       expect(result, isA<YourRatesRecentsPicked>());
@@ -705,7 +697,7 @@ void main() {
 
       await tester.enterText(searchField, 'Scissor lift');
       await tester.pump();
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
       expect(result, isA<YourRatesRecentsPicked>());
@@ -718,14 +710,11 @@ void main() {
 
       await tester.enterText(searchField, 'stump grinder');
       await tester.pump();
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
-      expect(
-        (result! as YourRatesRecentsNewEquipmentCost).name,
-        'stump grinder',
-      );
+      expect(result, isA<YourRatesRecentsNewCost>());
+      expect((result! as YourRatesRecentsNewCost).name, 'stump grinder');
     });
 
     testWidgets('Create on a name that is not saved opens the form with just '
@@ -733,11 +722,11 @@ void main() {
       await openSheet(tester);
 
       await typeQuery(tester, 'scissor');
-      await tester.tap(find.byKey(const Key('create_typed_equipment_row')));
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
       await tester.pumpAndSettle();
 
-      expect(result, isA<YourRatesRecentsNewEquipmentCost>());
-      expect((result! as YourRatesRecentsNewEquipmentCost).name, 'scissor');
+      expect(result, isA<YourRatesRecentsNewCost>());
+      expect((result! as YourRatesRecentsNewCost).name, 'scissor');
     });
 
     testWidgets('clearing the box shows the recents and the New row again', (
@@ -750,8 +739,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('your_rate_row_day-rate')), findsOneWidget);
-      expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
-      expect(find.byKey(const Key('create_typed_equipment_row')), findsNothing);
+      expect(find.byKey(const Key('new_cost_row')), findsOneWidget);
+      expect(find.byKey(const Key('create_typed_name_row')), findsNothing);
     });
 
     testWidgets('spaces alone are not a name', (tester) async {
@@ -759,8 +748,140 @@ void main() {
 
       await typeQuery(tester, '   ');
 
-      expect(find.byKey(const Key('new_equipment_cost_row')), findsOneWidget);
-      expect(find.byKey(const Key('create_typed_equipment_row')), findsNothing);
+      expect(find.byKey(const Key('new_cost_row')), findsOneWidget);
+      expect(find.byKey(const Key('create_typed_name_row')), findsNothing);
+    });
+  });
+
+  group('YourRatesRecentsSheet – material', () {
+    Map<String, Object?> materialRow(
+      String id,
+      String name, {
+      required double rate,
+      required int daysAgo,
+      String? unit = 'liters',
+    }) => {
+      'id': id,
+      'company_id': 'company-1',
+      'category': 'material',
+      'item_name': name,
+      'rate_amount': rate,
+      'rate_currency': 'USD',
+      'unit': unit,
+      'saved_at': clock
+          .now()
+          .subtract(Duration(days: daysAgo))
+          .toIso8601String(),
+    };
+
+    void seedMaterials(int count) {
+      database.reset();
+      database.seedRows([
+        for (var i = 1; i <= count; i++)
+          materialRow(
+            'paint-$i',
+            'Interior paint $i',
+            rate: 50.0 + i,
+            daysAgo: i,
+          ),
+        materialRow('lift', 'Scissor lift', rate: 120, daysAgo: 0, unit: null)
+          ..['category'] = 'equipment'
+          ..['equipment_method'] = 'day',
+      ]);
+    }
+
+    testWidgets('lists the last four materials, newest first, with no '
+        'equipment rows', (tester) async {
+      seedMaterials(5);
+      await openSheet(tester, category: CostItemType.material);
+
+      final rows = [
+        for (var i = 1; i <= 4; i++) find.byKey(Key('your_rate_row_paint-$i')),
+      ];
+      for (final row in rows) {
+        expect(row, findsOneWidget);
+      }
+      for (var i = 0; i < rows.length - 1; i++) {
+        expect(
+          tester.getTopLeft(rows[i]).dy,
+          lessThan(tester.getTopLeft(rows[i + 1]).dy),
+        );
+      }
+      expect(find.byKey(const Key('your_rate_row_paint-5')), findsNothing);
+      expect(find.byKey(const Key('your_rate_row_lift')), findsNothing);
+    });
+
+    testWidgets('shows the material title, search hint and New material '
+        'cost row', (tester) async {
+      seedMaterials(1);
+      await openSheet(tester, category: CostItemType.material);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.yourRatesMaterialRecentsTitle), findsOneWidget);
+      expect(find.text(l10n.yourRatesMaterialSearchHint), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('new_cost_row')),
+          matching: find.text(l10n.yourRatesNewMaterialCostAction),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('prices each row per its unit', (tester) async {
+      seedMaterials(1);
+      await openSheet(tester, category: CostItemType.material);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('your_rate_row_paint-1')),
+          matching: find.textContaining('/Liters'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a typed name offers to create it as a new material cost, '
+        'and tapping it returns that name', (tester) async {
+      seedMaterials(1);
+      await openSheet(tester, category: CostItemType.material);
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const Key('your_rates_search_field')),
+          matching: find.byType(EditableText),
+        ),
+        'primer',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.yourRatesNoMatchState('primer')), findsOneWidget);
+      expect(
+        find.text(l10n.yourRatesCreateMaterialAction('primer')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('create_typed_name_row')));
+      await tester.pumpAndSettle();
+
+      expect(
+        result,
+        isA<YourRatesRecentsNewCost>().having((r) => r.name, 'name', 'primer'),
+      );
+    });
+
+    testWidgets('the load error says a new material cost can still be added', (
+      tester,
+    ) async {
+      database.getAllError = StateError('database locked');
+      await openSheet(tester, category: CostItemType.material);
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        find.text(l10n.yourRatesMaterialRecentsLoadErrorHint),
+        findsOneWidget,
+      );
     });
   });
 }
