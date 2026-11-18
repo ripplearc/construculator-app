@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/calculator_bloc_factory.dart';
 
 void main() {
   setUpAll(loadAppFontsAll);
@@ -29,7 +30,10 @@ void main() {
         theme: theme ?? CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: CalculatorPage(router: router ?? FakeAppRouter()),
+        home: CalculatorPage(
+          router: router ?? FakeAppRouter(),
+          calculatorBlocFactory: calculatorBlocForTests,
+        ),
       ),
     );
   }
@@ -374,6 +378,79 @@ void main() {
     expect(equalsFace(tester), l10n.calculatorAnswerArea);
   });
 
+  testWidgets('after Area is accepted the strip leads with the sheet counts '
+      'as predictive chips, each with its size from l10n, and tapping one '
+      'lands Number of sheets (S2a, CA-1090; rule 4.4 rung 2a; row 218)', (
+    tester,
+  ) async {
+    // A tablet-wide view: with the test font's wider glyphs a sheet-count
+    // chip does not fit the collapsed row at phone width and the strip hides
+    // it behind "+5"; with the app's fonts it fits, ellipsized, as the
+    // detail-panel golden shows.
+    await pumpPage(tester, size: const Size(800, 844));
+    final l10n = l10nOf(tester);
+    await typeRectangle(tester);
+    await tester.tap(find.byKey(CoreResultButton.testKey));
+    // the store's answer follows the landed Area a frame later, and the
+    // chips it brings slide in before they can be tapped
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(CoreSuggestionArea.animationDuration);
+    await tester.pump();
+
+    final strip = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(
+      [for (final chip in strip.aiSuggestions!) '${chip.label}: ${chip.value}'],
+      [
+        '${l10n.calculatorOfferDrywall}: '
+            '${l10n.calculatorOfferSheetCount('12.83', '48in x 96in')}',
+        '${l10n.calculatorOfferDrywall}: '
+            '${l10n.calculatorOfferSheetCount('11.41', '48in x 108in')}',
+        '${l10n.calculatorOfferDrywall}: '
+            '${l10n.calculatorOfferSheetCount('10.27', '48in x 120in')}',
+        '${l10n.calculatorAnswerDiagonal}: 28.85ft',
+        '${l10n.calculatorAnswerPerimeter}: 81.33ft',
+      ],
+    );
+    expect(
+      [for (final chip in strip.aiSuggestions!.take(3)) chip.kind],
+      [
+        SuggestionKind.predictive,
+        SuggestionKind.predictive,
+        SuggestionKind.predictive,
+      ],
+    );
+    expect(equalsFace(tester), CalculatorLabelFormatter.equalsSign);
+
+    await tester.tap(find.byKey(CoreSuggestionArea.chipTestKey(0)));
+    await tester.pump();
+    await tester.pump();
+
+    final bloc = blocOf(tester);
+    expect(bloc.state.refusal, isNull);
+    expect(
+      [for (final chip in bloc.state.chipsList) '${chip.label}${chip.value}'],
+      ['Length22ft', 'Width18ft 8in', 'Area410.67ft²', 'Number of sheets12.83'],
+    );
+    expect(bloc.state.labelKeyId, Trade.drywall.resultKey);
+    expect(bloc.state.valueText, '12.83');
+    expect(find.text(l10n.calculatorAnswerNumberOfSheets), findsWidgets);
+    final after = tester.widget<CoreSuggestionArea>(
+      find.byType(CoreSuggestionArea),
+    );
+    expect(
+      [for (final chip in after.aiSuggestions!.take(2)) chip.value],
+      [
+        l10n.calculatorOfferSheetCount('11.41', '48in x 108in'),
+        l10n.calculatorOfferSheetCount('10.27', '48in x 120in'),
+      ],
+    );
+    // A tapped chip keeps its highlight for a second.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('tapping a strip chip lands its answer on the tape, and the '
       'equals key reads = while the strip still offers the next answer, '
       'since = after a result lands nothing', (tester) async {
@@ -388,7 +465,9 @@ void main() {
     expect(bloc.state.labelKeyId, DeterministicRules.areaKey);
     expect(bloc.state.valueText, '410.67ft²');
     expect(find.text(l10n.calculatorAnswerArea), findsWidgets);
-    expect(bloc.state.suggestions.first.key, DeterministicRules.diagonalKey);
+    // the sheet counts lead after an accepted Area (S2a); Diagonal follows
+    expect(bloc.state.suggestions.first.key, Trade.drywall.offerKey);
+    expect(bloc.state.suggestions[3].key, DeterministicRules.diagonalKey);
     expect(bloc.state.equalsKeyId, isNull);
     expect(equalsFace(tester), CalculatorLabelFormatter.equalsSign);
 
@@ -675,7 +754,10 @@ void main() {
           builder: (context) => Localizations.override(
             context: context,
             locale: locale,
-            child: CalculatorPage(router: FakeAppRouter()),
+            child: CalculatorPage(
+              router: FakeAppRouter(),
+              calculatorBlocFactory: calculatorBlocForTests,
+            ),
           ),
         ),
       ),
@@ -1302,7 +1384,13 @@ void main() {
       expect(inPanel(l10n.calculatorAnswerDiagonal), findsOneWidget);
 
       final bloc = blocOf(tester);
-      bloc.add(CalculatorSuggestionAccepted(bloc.state.suggestions.first));
+      bloc.add(
+        CalculatorSuggestionAccepted(
+          bloc.state.suggestions.firstWhere(
+            (chip) => chip.key == DeterministicRules.diagonalKey,
+          ),
+        ),
+      );
       await settle(tester);
 
       expect(bloc.state.labelKeyId, DeterministicRules.diagonalKey);

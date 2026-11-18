@@ -163,3 +163,16 @@ class CalculatorResetRequested extends CalculatorEvent {
 class CalculatorToastClosed extends CalculatorEvent {
   const CalculatorToastClosed();
 }
+
+/// The trade store answered, or changed, for the area the bloc is watching
+/// (requirement R9): the counts of that area at every stored size, in the
+/// user's order. Not a key: what the last key said stays.
+class CalculatorMaterialCountsArrived extends CalculatorEvent {
+  /// The counts, one per stored size.
+  final List<TradeCount> counts;
+
+  const CalculatorMaterialCountsArrived(this.counts);
+
+  @override
+  List<Object?> get props => [counts];
+}

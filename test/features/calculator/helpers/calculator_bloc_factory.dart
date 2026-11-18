@@ -1,0 +1,16 @@
+import 'package:construculator/features/calculator/domain/usecases/watch_material_counts_usecase.dart';
+import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/features/calculator/testing/fake_trade_stores_repository.dart';
+
+/// A bloc as the page's factory builds one, over [stores] — a fake
+/// trade-stores repository showing Appendix B's defaults unless the test
+/// hands in its own — so the page and replay tests see the sheet counts
+/// the module's chain would read, with no database behind them.
+CalculatorBloc calculatorBlocForTests({FakeTradeStoresRepository? stores}) =>
+    // ignore: no_direct_instantiation
+    CalculatorBloc(
+      // ignore: no_direct_instantiation
+      materialCounts: WatchMaterialCountsUseCase(
+        repository: stores ?? FakeTradeStoresRepository(),
+      ),
+    );
