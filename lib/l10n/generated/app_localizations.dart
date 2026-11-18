@@ -3856,6 +3856,58 @@ abstract class AppLocalizations {
   /// **'Sides needs a whole number, 3 or more.'**
   String get calculatorNoteSidesNotWhole;
 
+  /// Strip note after a percent pressed on + (UX Design Doc Section 1.8, "A percent tip after + or −"; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Adds {percent} of the total {total} = {amount}.'**
+  String calculatorNotePercentAddsOfTheTotal(
+    String percent,
+    String total,
+    String amount,
+  );
+
+  /// Strip note after a percent pressed on + inside an open bracket (UX Design Doc Section 1.8, "A percent tip after + or −"; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Adds {percent} of the bracket {total} = {amount}.'**
+  String calculatorNotePercentAddsOfTheBracket(
+    String percent,
+    String total,
+    String amount,
+  );
+
+  /// Strip note after a percent pressed on − (UX Design Doc Section 1.8, "A percent tip after + or −"; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Takes off {percent} of the total {total} = {amount}.'**
+  String calculatorNotePercentTakesOffOfTheTotal(
+    String percent,
+    String total,
+    String amount,
+  );
+
+  /// Strip note after a percent pressed on − inside an open bracket (UX Design Doc Section 1.8, "A percent tip after + or −"; Section 7, "Percent")
+  ///
+  /// In en, this message translates to:
+  /// **'Takes off {percent} of the bracket {total} = {amount}.'**
+  String calculatorNotePercentTakesOffOfTheBracket(
+    String percent,
+    String total,
+    String amount,
+  );
+
+  /// Short form of the percent tip after +, shown when the full tip is over 52 characters (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Adds {percent} of the total so far.'**
+  String calculatorNotePercentAddsSoFar(String percent);
+
+  /// Short form of the percent tip after −, shown when the full tip is over 52 characters (UX Design Doc Section 1.8)
+  ///
+  /// In en, this message translates to:
+  /// **'Takes off {percent} of the total so far.'**
+  String calculatorNotePercentTakesOffSoFar(String percent);
+
   /// Strip note shown after the D:M:S key is pressed on a calculator pitch answer, until the next key
   ///
   /// In en, this message translates to:
