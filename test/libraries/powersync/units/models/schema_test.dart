@@ -1,47 +1,51 @@
 import 'package:construculator/libraries/powersync/models/schema.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:powersync/powersync.dart';
 
 void main() {
   group('cost_items table', () {
-    test('has exactly the columns the server table accepts from the app', () {
-      final columns = schema.tables
-          .singleWhere((table) => table.name == 'cost_items')
-          .columns
-          .map((column) => column.name);
+    test(
+      'has exactly the columns the server table accepts from the app, with their types',
+      () {
+        final columnTypes = {
+          for (final column
+              in schema.tables
+                  .singleWhere((table) => table.name == 'cost_items')
+                  .columns)
+            column.name: column.type,
+        };
 
-      expect(
-        columns,
-        unorderedEquals([
-          'estimate_id',
-          'item_type',
-          'item_name',
-          'unit_price',
-          'quantity',
-          'unit_measurement',
-          'calculation',
-          'item_total_cost',
-          'currency',
-          'product_link',
-          'description',
-          'pricing_method',
-          'duration',
-          'daily_rate',
-          'job_amount',
-          'delivery_fee',
-          'rate_status',
-          'labor_calc_method',
-          'labor_days',
-          'labor_hours',
-          'labor_unit_type',
-          'labor_unit_value',
-          'crew_size',
-          'waste_percent',
-          'quantity_provenance',
-          'calculator_formula',
-          'created_at',
-          'updated_at',
-        ]),
-      );
-    });
+        expect(columnTypes, {
+          'estimate_id': ColumnType.text,
+          'item_type': ColumnType.text,
+          'item_name': ColumnType.text,
+          'unit_price': ColumnType.real,
+          'quantity': ColumnType.real,
+          'unit_measurement': ColumnType.text,
+          'calculation': ColumnType.text,
+          'item_total_cost': ColumnType.real,
+          'currency': ColumnType.text,
+          'product_link': ColumnType.text,
+          'description': ColumnType.text,
+          'pricing_method': ColumnType.text,
+          'duration': ColumnType.real,
+          'daily_rate': ColumnType.real,
+          'job_amount': ColumnType.real,
+          'delivery_fee': ColumnType.real,
+          'rate_status': ColumnType.text,
+          'labor_calc_method': ColumnType.text,
+          'labor_days': ColumnType.real,
+          'labor_hours': ColumnType.real,
+          'labor_unit_type': ColumnType.text,
+          'labor_unit_value': ColumnType.real,
+          'crew_size': ColumnType.integer,
+          'waste_percent': ColumnType.real,
+          'quantity_provenance': ColumnType.text,
+          'calculator_formula': ColumnType.text,
+          'created_at': ColumnType.text,
+          'updated_at': ColumnType.text,
+        });
+      },
+    );
   });
 }
