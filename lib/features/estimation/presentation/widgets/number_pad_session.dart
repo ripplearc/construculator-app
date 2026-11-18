@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 /// The pad's keys never reach the platform text input, so the field's
 /// [TextInputFormatter] and its `onChanged` do not run for them. The session
 /// edits the [controller] at its selection the way a typed key would, runs
-/// [formatter] over the edit, and reports every accepted change through
+/// [formatter] over the edit, and reports every change to the text through
 /// [onChanged], so the form's bloc hears the pad exactly as it hears the
 /// phone's keyboard.
 ///
@@ -19,8 +19,8 @@ class NumberPadSession {
   /// The field's own formatter, applied to every edit the pad makes.
   final TextInputFormatter formatter;
 
-  /// Called with the field's new text after every accepted edit, and after
-  /// [putBack].
+  /// Called with the field's new text after every edit that changes it, and
+  /// after [putBack].
   final ValueChanged<String> onChanged;
 
   /// The text the field held when the pad opened.
@@ -80,8 +80,7 @@ class NumberPadSession {
       selection: TextSelection.collapsed(offset: range.start + text.length),
     );
     final formatted = formatter.formatEditUpdate(previous, next);
-    if (formatted.text == previous.text) return;
     controller.value = formatted;
-    onChanged(formatted.text);
+    if (formatted.text != previous.text) onChanged(formatted.text);
   }
 }

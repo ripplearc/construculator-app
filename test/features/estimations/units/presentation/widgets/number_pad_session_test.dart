@@ -58,6 +58,25 @@ void main() {
       expect(reported, ['2']);
     });
 
+    test('a digit typed over the same selected digit moves the caret past '
+        'it, so the next digit is added', () {
+      final session = open(
+        '2',
+        selection: const TextSelection(baseOffset: 0, extentOffset: 1),
+      );
+
+      session.typeDigit(2);
+
+      expect(controller.text, '2');
+      expect(controller.selection, const TextSelection.collapsed(offset: 1));
+      expect(reported, isEmpty);
+
+      session.typeDigit(5);
+
+      expect(controller.text, '25');
+      expect(reported, ['25']);
+    });
+
     test('inserts at a caret in the middle of the value', () {
       final session = open(
         '15',

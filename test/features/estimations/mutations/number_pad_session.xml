@@ -42,17 +42,20 @@
         <regex pattern="offset: range\.start \+ text\.length" dotAll="false" id="session.apply.caret_before_typed">
             <mutation text="offset: range.start"/>
         </regex>
-        <regex pattern="if \(formatted\.text == previous\.text\) return;" dotAll="false" id="session.apply.report_refused">
-            <mutation text=""/>
+        <regex pattern="if \(formatted\.text != previous\.text\) onChanged" dotAll="false" id="session.apply.report_unchanged">
+            <mutation text="onChanged"/>
         </regex>
         <regex pattern="formatter\.formatEditUpdate\(previous, next\)" dotAll="false" id="session.apply.skip_formatter">
             <mutation text="next"/>
         </regex>
-        <regex pattern="onChanged\(formatted\.text\);" dotAll="false" id="session.apply.silent">
+        <regex pattern="if \(formatted\.text != previous\.text\) onChanged\(formatted\.text\);" dotAll="false" id="session.apply.silent">
             <mutation text=""/>
         </regex>
         <regex pattern="controller\.value = formatted;" dotAll="false" id="session.apply.not_written">
             <mutation text=""/>
+        </regex>
+        <regex pattern="controller\.value = formatted;" dotAll="false" id="session.apply.caret_kept_on_same_text">
+            <mutation text="if (formatted.text != previous.text) controller.value = formatted;"/>
         </regex>
     </rules>
 
