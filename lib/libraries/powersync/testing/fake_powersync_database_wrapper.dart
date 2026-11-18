@@ -21,6 +21,7 @@ typedef RecordedSqlCall = ({String sql, List<Object?> parameters});
 /// scripted result / stream.
 class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   final Map<String, List<Map<String, dynamic>>> _getAllResults = {};
+  final Map<String, List<List<Map<String, dynamic>>>> _getAllSequences = {};
 
   final Map<String, StreamController<List<Map<String, dynamic>>>>
   _watchControllers = {};
@@ -107,6 +108,16 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     _getAllResults[sql] = rows;
   }
 
+  /// Scripts [results] as the answers of successive [getAll] calls for [sql]:
+  /// the first call gets the first list, the second call the second, and every
+  /// later call the last one. It takes precedence over [stubGetAll] for [sql].
+  void stubGetAllSequence(
+    String sql,
+    List<List<Map<String, dynamic>>> results,
+  ) {
+    _getAllSequences[sql] = [...results];
+  }
+
   /// Emits [rows] to listeners of `watch(sql)` and records it as the current
   /// value, so later listeners replay it on subscription.
   void emitWatch(String sql, List<Map<String, dynamic>> rows) {
@@ -134,6 +145,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     final error = getAllError;
     if (error != null) {
       throw error;
+    }
+    final sequence = _getAllSequences[sql];
+    if (sequence != null && sequence.isNotEmpty) {
+      return sequence.length > 1 ? sequence.removeAt(0) : sequence.first;
     }
     return _getAllResults[sql] ?? const [];
   }
@@ -223,6 +238,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// state so it can be reused across tests.
   void reset() {
     _getAllResults.clear();
+    _getAllSequences.clear();
     _watchSeed.clear();
     getAllCalls.clear();
     watchCalls.clear();
