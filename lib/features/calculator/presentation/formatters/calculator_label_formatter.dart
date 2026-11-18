@@ -287,6 +287,7 @@ class CalculatorLabelFormatter {
     CalculatorFlatPitchHasNoRunNote() => l10n.calculatorNoteFlatPitchHasNoRun,
     CalculatorSlopeOutOfRangeNote() => l10n.calculatorNoteSlopeAboveZero,
     CalculatorSidesNotWholeNote() => l10n.calculatorNoteSidesNotWhole,
+    final CalculatorPercentTipNote tip => _percentTip(tip),
     CalculatorPitchHasNoDmsNote() => l10n.calculatorNotePitchHasNoDms,
     CalculatorTrigCannotAnswerNote(:final function) =>
       l10n.calculatorNoteTrigCannotAnswer(trigLabel(function)),
@@ -411,6 +412,43 @@ class CalculatorLabelFormatter {
     Unit.millimetre => l10n.calculatorKeyMillimetre,
     _ => unitName(unit),
   };
+
+  /// The longest strip note that fits two lines on a 300 px screen (UX
+  /// Design Doc Section 1.8: "Each English note is about 52 characters or
+  /// fewer").
+  static const int longestNote = 52;
+
+  // The percent tip, or its short form when the full one is longer than
+  // [longestNote] (Section 1.8: "If the full tip is over 52 characters, it
+  // shows 'Adds 10% of the total so far.'").
+  String _percentTip(CalculatorPercentTipNote tip) {
+    final full = switch ((tip.addsToTheTotal, tip.ofTheBracket)) {
+      (true, false) => l10n.calculatorNotePercentAddsOfTheTotal(
+        tip.percent,
+        tip.total,
+        tip.amount,
+      ),
+      (true, true) => l10n.calculatorNotePercentAddsOfTheBracket(
+        tip.percent,
+        tip.total,
+        tip.amount,
+      ),
+      (false, false) => l10n.calculatorNotePercentTakesOffOfTheTotal(
+        tip.percent,
+        tip.total,
+        tip.amount,
+      ),
+      (false, true) => l10n.calculatorNotePercentTakesOffOfTheBracket(
+        tip.percent,
+        tip.total,
+        tip.amount,
+      ),
+    };
+    if (full.length <= longestNote) return full;
+    return tip.addsToTheTotal
+        ? l10n.calculatorNotePercentAddsSoFar(tip.percent)
+        : l10n.calculatorNotePercentTakesOffSoFar(tip.percent);
+  }
 
   /// The title of [toast], or `null` for a toast that is one sentence.
   String? toastTitle(CalculatorToast toast) => switch (toast) {

@@ -70,3 +70,42 @@ final class CalculatorTrigCannotAnswerNote extends CalculatorStripNote {
   @override
   List<Object?> get props => [function];
 }
+
+/// The tip after a percent pressed on + or − (Section 1.8, "A percent tip
+/// after + or −"; Section 7, "Percent"): "Adds 10% of the total 1,500 =
+/// 150." It closes on the next key, and a warning or a key that changed
+/// nothing wins over it. There is no tip after × or ÷.
+final class CalculatorPercentTipNote extends CalculatorStripNote {
+  /// Whether the percent is added, after +, or taken off, after −.
+  final bool addsToTheTotal;
+
+  /// The percent as the tape writes it, "10%".
+  final String percent;
+
+  /// The running total the percent is of, "1,500".
+  final String total;
+
+  /// What the percent is worth, "150".
+  final String amount;
+
+  /// Whether the percent is inside an open bracket, so it is of the
+  /// bracket's own total.
+  final bool ofTheBracket;
+
+  const CalculatorPercentTipNote({
+    required this.addsToTheTotal,
+    required this.percent,
+    required this.total,
+    required this.amount,
+    required this.ofTheBracket,
+  });
+
+  @override
+  List<Object?> get props => [
+    addsToTheTotal,
+    percent,
+    total,
+    amount,
+    ofTheBracket,
+  ];
+}
