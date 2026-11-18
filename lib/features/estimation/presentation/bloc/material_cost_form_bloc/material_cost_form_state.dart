@@ -132,10 +132,12 @@ class MaterialCostFormData extends Equatable {
 
   /// How much the estimate total moves if the form is saved now, in dollars.
   ///
-  /// `null` when the form adds a new line, so there is nothing to compare.
+  /// `null` when the form adds a new line, so there is nothing to compare,
+  /// and while the quantity or the rate is missing, so a number being retyped
+  /// does not show the whole line as removed.
   double? get changeInEstimateTotal {
     final edited = editedItem;
-    if (edited == null) return null;
+    if (edited == null || quantity == null || rate == null) return null;
     return (_toCents(lineTotal) - _toCents(edited.itemTotalCost)) / 100;
   }
 
@@ -223,7 +225,7 @@ class MaterialCostFormSubmitting extends MaterialCostFormState {
 
 /// State when the cost item was saved.
 class MaterialCostFormSuccess extends MaterialCostFormState {
-  const MaterialCostFormSuccess(this.data, this.createdItem);
+  const MaterialCostFormSuccess(this.data, this.savedItem);
 
   /// The form data as it was when saved.
   @override
@@ -231,7 +233,7 @@ class MaterialCostFormSuccess extends MaterialCostFormState {
 
   /// The cost item as saved by [CostItemRepository.createCostItem], or by
   /// [CostItemRepository.updateCostItem] when the form edited a line.
-  final CostItem createdItem;
+  final CostItem savedItem;
 }
 
 /// State when saving or deleting the cost item failed. The form keeps every
