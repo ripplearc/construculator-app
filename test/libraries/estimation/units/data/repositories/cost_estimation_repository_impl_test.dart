@@ -2173,6 +2173,39 @@ void main() {
       );
 
       test(
+        'a delete of the last row stays hidden when it has the same time as the row before it',
+        () async {
+          seedEstimations(defaultPageDatasetSize * 3);
+          fakePhoneDatabase.replaceRow(
+            buildEstimationMap(
+              id: 'estimate-21',
+              projectId: testProjectId,
+              estimateName: 'estimate-21',
+              createdAt: '2026-01-21T00:00:00.000Z',
+            ),
+          );
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(
+            repository.watchEstimations(testProjectId),
+          );
+          final firstPage = (await queue.next).getRightOrNull()!;
+          final lastRowId = firstPage.last.id;
+          expect(firstPage.length, defaultPageDatasetSize);
+          expect(
+            firstPage[firstPage.length - 2].createdAt,
+            firstPage.last.createdAt,
+          );
+          await repository.deleteEstimation(lastRowId, testProjectId);
+          await syncNewerRowFirst(queue);
+
+          final grown = await grownListAfterLoadMore(queue);
+
+          expect(grown.map((e) => e.id), isNot(contains(lastRowId)));
+          await queue.cancel();
+        },
+      );
+
+      test(
         'a delete of a row no list has shown yet stays hidden when the list grows to it',
         () async {
           const rowBelowFirstPage = 'estimate-5';

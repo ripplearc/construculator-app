@@ -228,18 +228,23 @@
         </regex>
 
         <!-- RULE 61: A row that sorts outside a full list proves its absence -->
-        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.ignore_sort_position">
+        <regex pattern="(return row != null &amp;&amp; _sortsStrictlyBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.ignore_sort_position">
             <mutation text="return row != null;"/>
         </regex>
 
         <!-- RULE 62: A row never seen on the phone proves its absence from a full list -->
-        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.unseen_row_proves_absence">
-            <mutation text="return row == null || _sortsBefore(row, estimates.last, view);"/>
+        <regex pattern="(return row != null &amp;&amp; _sortsStrictlyBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.unseen_row_proves_absence">
+            <mutation text="return row == null || _sortsStrictlyBefore(row, estimates.last, view);"/>
         </regex>
 
         <!-- RULE 63: A full list never proves an absence -->
-        <regex pattern="(return row != null &amp;&amp; _sortsBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.full_list_never_proves">
+        <regex pattern="(return row != null &amp;&amp; _sortsStrictlyBefore\(row, estimates\.last, view\);)" dotAll="true" id="repo.absence.full_list_never_proves">
             <mutation text="return false;"/>
+        </regex>
+
+        <!-- RULE 63b: A row with the same time as the last row proves nothing -->
+        <regex pattern="(return view\.ascending \? aTime\.isBefore\(bTime\) : aTime\.isAfter\(bTime\);)" dotAll="true" id="repo.absence.tie_proves_absence">
+            <mutation text="return view.ascending ? !aTime.isAfter(bTime) : !aTime.isBefore(bTime);"/>
         </regex>
 
         <!-- RULE 64: The edit forgets which row was on the phone -->

@@ -388,7 +388,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   ) {
     if (estimates.length < view.limit) return true;
     final row = edit.rowOnPhone;
-    return row != null && _sortsBefore(row, estimates.last, view);
+    return row != null && _sortsStrictlyBefore(row, estimates.last, view);
   }
 
   CostEstimate? _rowOnPhone(String projectId, String? estimationId) {
@@ -470,6 +470,13 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     final aTime = byUpdatedAt ? a.updatedAt : a.createdAt;
     final bTime = byUpdatedAt ? b.updatedAt : b.createdAt;
     return view.ascending ? aTime.isBefore(bTime) : !aTime.isBefore(bTime);
+  }
+
+  bool _sortsStrictlyBefore(CostEstimate a, CostEstimate b, _ListView view) {
+    final byUpdatedAt = view.sortBy == EstimationSortOption.updatedAt;
+    final aTime = byUpdatedAt ? a.updatedAt : a.createdAt;
+    final bTime = byUpdatedAt ? b.updatedAt : b.createdAt;
+    return view.ascending ? aTime.isBefore(bTime) : aTime.isAfter(bTime);
   }
 
   @override
