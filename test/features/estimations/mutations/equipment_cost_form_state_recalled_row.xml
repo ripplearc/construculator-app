@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_state.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <regex pattern="if \(!recalledFromRecents \|\|" dotAll="false" id="recalled_row.from_recents.negate">
+            <mutation text="if (recalledFromRecents ||"/>
+        </regex>
+        <regex pattern="id == null \|\|" dotAll="false" id="recalled_row.id.negate">
+            <mutation text="id != null ||"/>
+        </regex>
+        <regex pattern="price == null \|\|" dotAll="false" id="recalled_row.price.negate">
+            <mutation text="price != null ||"/>
+        </regex>
+        <regex pattern="recalledRateMethod != method\) \{" dotAll="false" id="recalled_row.method.negate">
+            <mutation text="recalledRateMethod == method) {"/>
+        </regex>
+        <regex pattern="if \(!recalledFromRecents \|\|" dotAll="false" id="recalled_row.from_recents.or_to_and">
+            <mutation text="if (!recalledFromRecents &amp;&amp;"/>
+        </regex>
+        <regex pattern="return \(id: id, price: price, method: method\);" dotAll="false" id="recalled_row.result.blank_id">
+            <mutation text="return (id: '', price: price, method: method);"/>
+        </regex>
+        <regex pattern="return \(id: id, price: price, method: method\);" dotAll="false" id="recalled_row.result.zero_price">
+            <mutation text="return (id: id, price: 0, method: method);"/>
+        </regex>
+        <regex pattern="return \(id: id, price: price, method: method\);" dotAll="false" id="recalled_row.result.other_method">
+            <mutation text="return (id: id, price: price, method: EquipmentPricingMethod.day);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="recalled_row" expected-return="0" timeout="120">flutter test --no-pub test/features/estimations/units/blocs/equipment_cost_form_bloc_test.dart</command>
+    </commands>
+</mutations>

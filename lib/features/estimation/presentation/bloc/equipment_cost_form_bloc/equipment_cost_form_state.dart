@@ -253,6 +253,25 @@ class EquipmentCostFormData extends Equatable {
       (jobAmount ?? 0) > 0 &&
       jobAmount != recalledRate;
 
+  /// The Your rates row that "Save as my default" would write over: the row
+  /// this line was opened from, with its saved price and pricing method.
+  ///
+  /// Null when the line was not opened from a recents row, or when the pricing
+  /// method no longer matches that row. Editing the equipment name clears the
+  /// recalled row id, which also makes this null.
+  ({String id, double price, EquipmentPricingMethod method})?
+  get recalledRowToReplace {
+    final id = recalledRateId;
+    final price = recalledRate;
+    if (!recalledFromRecents ||
+        id == null ||
+        price == null ||
+        recalledRateMethod != method) {
+      return null;
+    }
+    return (id: id, price: price, method: method);
+  }
+
   /// Returns a copy with the given fields replaced. For a nullable field, an
   /// explicit value sets it, `null` clears it, and omitting the parameter
   /// keeps its current value.

@@ -2540,4 +2540,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String costLineDeliveryFee(String fee) {
     return ' + $fee delivery';
   }
+
+  @override
+  String get replaceSavedRateDialogTitle => 'Replace your saved rate?';
+
+  @override
+  String replaceSavedRateDialogBody(
+    String itemName,
+    String savedPrice,
+    String newPrice,
+  ) {
+    return 'You already have $itemName at $savedPrice in Your rates. Replace it with $newPrice?';
+  }
+
+  @override
+  String get replaceSavedRateReplaceButton => 'Replace';
+
+  @override
+  String get replaceSavedRateGoBackButton => 'Go back';
 }

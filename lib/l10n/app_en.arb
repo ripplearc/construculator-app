@@ -3666,5 +3666,30 @@
         "type": "String"
       }
     }
+  },
+  "replaceSavedRateDialogTitle": "Replace your saved rate?",
+  "@replaceSavedRateDialogTitle": {
+    "description": "Title of the question asked when 'Save as my default' on a recalled price would overwrite the saved price",
+    "context": "Storyboard CUJ 6, frame 5r (Saved price changed, then saved again)"
+  },
+  "replaceSavedRateDialogBody": "You already have {itemName} at {savedPrice} in Your rates. Replace it with {newPrice}?",
+  "@replaceSavedRateDialogBody": {
+    "description": "Body of the replace question; itemName, savedPrice and newPrice are drawn in bold. Each price is the formatted amount followed by its unit (yourRatesDaySuffix/yourRatesJobSuffix), as in '$400.00 job'",
+    "context": "Storyboard CUJ 6, frame 5r (Saved price changed, then saved again)",
+    "placeholders": {
+      "itemName": {"type": "String", "example": "Dumpster - 30 yd"},
+      "savedPrice": {"type": "String", "example": "$400.00 job"},
+      "newPrice": {"type": "String", "example": "$450.00 job"}
+    }
+  },
+  "replaceSavedRateReplaceButton": "Replace",
+  "@replaceSavedRateReplaceButton": {
+    "description": "Filled button of the replace question that writes the new price over the saved one",
+    "context": "Storyboard CUJ 6, frame 5r (Saved price changed, then saved again)"
+  },
+  "replaceSavedRateGoBackButton": "Go back",
+  "@replaceSavedRateGoBackButton": {
+    "description": "Outlined button of the replace question that keeps the saved price and saves nothing",
+    "context": "Storyboard CUJ 6, frame 5r (Saved price changed, then saved again)"
   }
 }
