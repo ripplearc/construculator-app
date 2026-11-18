@@ -239,6 +239,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     return Scaffold(
       backgroundColor: sheetSurface(context),
       appBar: CoreAppBar(
+        backgroundColor: sheetSurface(context),
         height: CoreSpacing.space12,
         padding: const EdgeInsets.only(
           top: CoreSpacing.space2,
