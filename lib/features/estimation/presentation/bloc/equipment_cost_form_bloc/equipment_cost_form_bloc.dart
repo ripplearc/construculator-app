@@ -92,12 +92,23 @@ class EquipmentCostFormBloc
       final rateStatus = rate == null
           ? RateStatus.missing
           : RateStatus.ownRateUnconfirmed;
-      _emit(
-        emit,
-        (d) => d.method == EquipmentPricingMethod.day
+      _emit(emit, (d) {
+        final isDay = d.method == EquipmentPricingMethod.day;
+        // Typing the rate the line was stored with puts back its stored
+        // status, so deleting a digit and typing it again changes nothing.
+        final stored = d.editedItem;
+        final storedRate = stored == null
+            ? null
+            : (isDay ? stored.dailyRate?.amount : stored.jobAmount?.amount);
+        if (stored != null && rate == storedRate) {
+          return isDay
+              ? d.copyWith(dailyRate: rate, rateStatus: stored.rateStatus)
+              : d.copyWith(jobAmount: rate, rateStatus: stored.rateStatus);
+        }
+        return isDay
             ? d.copyWith(dailyRate: rate, rateStatus: rateStatus)
-            : d.copyWith(jobAmount: rate, rateStatus: rateStatus),
-      );
+            : d.copyWith(jobAmount: rate, rateStatus: rateStatus);
+      });
     });
     on<EquipmentSavedRateRecalledEvent>((e, emit) {
       _watchRefusalWhenItemChanges(state.formData.equipmentType, e.method);

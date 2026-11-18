@@ -70,6 +70,58 @@ void main() {
     tearDown(() => bloc.close());
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'puts back the stored rate status when the stored rate is typed again',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('20'))
+          ..add(const EquipmentRateUpdatedEvent('200'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.dailyRate, 200.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.sampleRateUnverified);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'puts back the stored rate status when the stored Job amount is typed '
+      'again',
+      setUp: () => seedLine(pricingMethod: 'job'),
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('60'))
+          ..add(const EquipmentRateUpdatedEvent('600'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.method, EquipmentPricingMethod.job);
+        expect(bloc.state.formData.jobAmount, 600.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.sampleRateUnverified);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'marks the rate as the own rate while a different rate is typed',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        final stored = await storedLine();
+        bloc
+          ..add(EquipmentCostEditOpened(stored))
+          ..add(const EquipmentRateUpdatedEvent('20'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.dailyRate, 20.0);
+        expect(bloc.state.formData.rateStatus, RateStatus.ownRateUnconfirmed);
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'opens a day line with every stored value in the form',
       setUp: seedLine,
       build: () => bloc,
@@ -155,6 +207,27 @@ void main() {
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'names the stored line while the name field is changed',
+      setUp: seedLine,
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentCostItemTypeChanged('Boom lift'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.formData.equipmentType, 'Boom lift');
+        expect(bloc.state.formData.lineName, 'Scissor lift');
+      },
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'names a new line by the name typed so far',
+      build: () => bloc,
+      act: (bloc) => bloc.add(const EquipmentCostItemTypeChanged('Boom lift')),
+      verify: (bloc) => expect(bloc.state.formData.lineName, 'Boom lift'),
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
       'a new line has no change to report',
       build: () => bloc,
       act: (bloc) => bloc.add(const EquipmentDurationUpdatedEvent('4')),
@@ -184,6 +257,32 @@ void main() {
           false,
         ),
       ],
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'typing the stored rate again keeps the stored rate status',
+      setUp: () => seedLine(),
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentRateUpdatedEvent('200'));
+      },
+      verify: (bloc) => expect(
+        bloc.state.formData.rateStatus,
+        RateStatus.sampleRateUnverified,
+      ),
+    );
+
+    blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
+      'typing a different rate makes the rate status the typed own rate',
+      setUp: () => seedLine(),
+      build: () => bloc,
+      act: (bloc) async {
+        bloc.add(EquipmentCostEditOpened(await storedLine()));
+        bloc.add(const EquipmentRateUpdatedEvent('250'));
+      },
+      verify: (bloc) =>
+          expect(bloc.state.formData.rateStatus, RateStatus.ownRateUnconfirmed),
     );
 
     blocTest<EquipmentCostFormBloc, EquipmentCostFormState>(
