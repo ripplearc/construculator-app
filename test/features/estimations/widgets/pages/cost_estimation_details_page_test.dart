@@ -2127,6 +2127,61 @@ void main() {
         expect(find.text(l10n.costSectionExamplesEquipment), findsOneWidget);
       });
 
+      testWidgets('a save that fails after the sheet was closed shows the '
+          'change was not saved and keeps the line', (tester) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byKey(const Key('duration_field')), '4');
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnUpdate = true;
+        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.updateErrorMessage = 'Connection failed';
+
+        await tester.tap(find.byKey(AddToEstimateFooter.buttonKey));
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.saveLineFailedError), findsOneWidget);
+        expect(find.text(l10n.deleteLineFailedError), findsNothing);
+        expect(
+          find.descendant(of: lineRow('q1'), matching: find.text(r'$600.00')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a delete that fails after the sheet was closed shows the '
+          'line was not deleted and keeps the line', (tester) async {
+        await openLine(tester, [scissorLift()]);
+        await tester.tap(lineRow('q1'));
+        await tester.pumpAndSettle();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+        fakeSupabase.shouldThrowOnDelete = true;
+        fakeSupabase.deleteExceptionType = SupabaseExceptionType.socket;
+        fakeSupabase.deleteErrorMessage = 'Connection failed';
+
+        await tester.tap(find.byKey(AddToEstimateFooter.deleteButtonKey));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ConfirmationDialog.secondaryButtonKey));
+        await tester.pump();
+        await tester.tapAt(const Offset(200, 20));
+        await tester.pumpAndSettle();
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.deleteLineFailedError), findsOneWidget);
+        expect(find.text(l10n.saveLineFailedError), findsNothing);
+        expect(lineRow('q1'), findsOneWidget);
+      });
+
       testWidgets('two quick taps on a line open one sheet', (tester) async {
         await openLine(tester, [scissorLift()]);
 
