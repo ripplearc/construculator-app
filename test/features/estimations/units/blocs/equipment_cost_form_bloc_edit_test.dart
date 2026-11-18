@@ -229,7 +229,7 @@ void main() {
       verify: (_) async {
         final line = await storedLine();
         expect(line.pricingMethod, EquipmentPricingMethod.job);
-        expect(line.jobAmount?.amount, 500.0);
+        expect(line.jobAmount!.amount, 500.0);
         expect(line.duration, isNull);
         expect(line.itemTotalCost, 585.0);
       },
