@@ -4,7 +4,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'cost_line_test_items.dart';
+import '../../../helpers/cost_line_test_items.dart';
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
