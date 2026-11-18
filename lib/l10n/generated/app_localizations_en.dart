@@ -2323,6 +2323,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not your own rates. Anything you pick is tagged Sample rate until you save it as your default.';
 
   @override
+  String materialLookupPricePerUnitFootnote(String unit) {
+    return 'These come in different sizes, so each price also shows the price per $unit.';
+  }
+
+  @override
+  String materialLookupPricePerUnit(String amount, String unit) {
+    return '$amount$unit';
+  }
+
+  @override
   String get newMaterialCostSheetTitle => 'New material cost';
 
   @override

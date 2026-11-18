@@ -2,6 +2,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/domain/repositories/last_used_unit_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/your_rates_bloc/your_rates_bloc.dart';
+import 'package:construculator/features/estimation/presentation/helpers/sample_rate_row.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/sheet_field_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -81,6 +83,7 @@ void main() {
     WidgetTester tester, {
     YourRateEntry? initialRateEntry,
     String? initialName,
+    List<SampleRateRow> sampleRows = const [],
   }) async {
     bloc = Modular.get<MaterialCostFormBloc>();
     addTearDown(bloc.close);
@@ -98,6 +101,7 @@ void main() {
               initialName: initialName,
               yourRatesBlocFactory: yourRatesBlocWithoutDebounce,
               clock: FakeClockImpl(),
+              sampleRatesFor: (_) => sampleRows,
             ),
           ),
         ),
@@ -753,6 +757,51 @@ void main() {
 
       expect(textOf(tester, rateField), isEmpty);
       expect(lookupButton, findsOneWidget);
+    });
+  });
+
+  group('picking a sample cost file rate', () {
+    const proClassic = SampleRateRow(
+      id: 'proclassic',
+      productName: 'ProClassic',
+      rate: Money(amount: 52),
+      unit: Unit.liters,
+    );
+
+    Future<void> pickSample(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('lookup_rate_button')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+      final row = find.byKey(const Key('sample_rate_row_proclassic'));
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('material_lookup_use_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('appends the product to the typed name and fills the rate '
+        'tagged Sample rate', (tester) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+      await tester.enterText(nameField, 'Interior paint');
+
+      await pickSample(tester);
+
+      expect(textOf(tester, nameField), 'Interior paint · ProClassic');
+      expect(textOf(tester, rateField), '52');
+      expect(bloc.state.data.itemName, 'Interior paint · ProClassic');
+      expect(bloc.state.data.rateStatus, RateStatus.sampleRateUnverified);
+    });
+
+    testWidgets('uses the product alone as the name while none is typed', (
+      tester,
+    ) async {
+      await pumpFields(tester, sampleRows: const [proClassic]);
+
+      await pickSample(tester);
+
+      expect(textOf(tester, nameField), 'ProClassic');
     });
   });
 }
