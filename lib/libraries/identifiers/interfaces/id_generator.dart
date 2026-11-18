@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Creates the ids that rows get on the phone before the server has seen them.
 ///
 /// Code that writes a new row asks an [IdGenerator] for its id instead of
